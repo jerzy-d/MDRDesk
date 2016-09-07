@@ -1,0 +1,9 @@
+﻿[dumps]
+dacfolder = "D:\\Jerzy\WinDbgStuff\\mscordacwks"
+dumpfolder = "D:\Jerzy\WinDbgStuff\dumps"
+subdumpfolders = []
+
+
+tests = [
+	"analytics9_1512161604.good.dmp"
+]

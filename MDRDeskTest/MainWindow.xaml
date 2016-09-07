@@ -1,0 +1,17 @@
+﻿<Window x:Class="MDRDeskTest.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:MDRDeskTest"
+        mc:Ignorable="d"
+        Title="MainWindow" Height="350" Width="525">
+    <Grid>
+        <StackPanel Height="32" VerticalAlignment="Top" Orientation="Horizontal">
+            <Menu>
+                <MenuItem></MenuItem>
+            </Menu>
+        </StackPanel>
+        <Grid></Grid>
+    </Grid>
+</Window>

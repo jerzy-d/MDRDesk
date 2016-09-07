@@ -1,0 +1,5 @@
+﻿0001 05/19/16 
+*** Get rid of _finalizerObjectAddresses, LoadFinalizerObjectAddresses from map and WriteFinalizerObjectAddresses from Indexer.
+0002 07/18/16
+*** Add instance sizes to the index.
+
