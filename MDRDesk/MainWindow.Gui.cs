@@ -465,13 +465,15 @@ namespace MDRDesk
 
 		#region Utils
 
+		private static long _lastEnteredValue = 0;
+
 		private bool GetUserEnteredNumber(string title, string descr, out long value)
 		{
 			value = 0;
 			string str;
 			if (!GetDlgString(title, 
 				string.IsNullOrWhiteSpace(descr) ? "Enter number:" : descr,
-				" ", 
+				_lastEnteredValue > 0 ? _lastEnteredValue.ToString() : " ", 
 				out str)) return false;
 			str = str.Trim();
 			if (!Int64.TryParse(str, NumberStyles.Number, CultureInfo.InvariantCulture, out value))
@@ -480,6 +482,7 @@ namespace MDRDesk
 					MessageBoxImage.Error);
 				return false;
 			}
+			_lastEnteredValue = value;
 			return true;
 		}
 
