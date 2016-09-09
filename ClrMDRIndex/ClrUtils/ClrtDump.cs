@@ -902,7 +902,7 @@ namespace ClrMDRIndex
 
 		#region Strings
 
-		public static StringStats GetStringStats(ClrHeap heap, ulong[] addresses, string dumpPath, int minReferenceCount, out string error, int runtimeIndex=0)
+		public static StringStats GetStringStats(ClrHeap heap, ulong[] addresses, string dumpPath, out string error, int runtimeIndex=0)
 		{
 			error = null;
 			try
@@ -930,6 +930,7 @@ namespace ClrMDRIndex
 					catch (Exception ex)
 					{
 						int a = 1; // TODO JRD ???
+						len = 0;
 					}
 					KeyValuePair<uint, List<ulong>> kv;
 					if (strDct.TryGetValue(str, out kv))
@@ -940,15 +941,11 @@ namespace ClrMDRIndex
 					{
 						strDct.Add(str, new KeyValuePair<uint, List<ulong>>((uint)Utils.RoundupToPowerOf2Boundary(hsz, dataOffset),new List<ulong>() {addr}));
 					}
-
 				}
 
 				var strTxtPath = DumpFileMoniker.GetRuntimeFilePath(runtimeIndex, dumpPath, Constants.TxtDumpStringsPostfix);
 				var strDatPath = DumpFileMoniker.GetRuntimeFilePath(runtimeIndex, dumpPath, Constants.MapDumpStringsInfoPostfix);
 				var strStats = StringStats.GetStringStats(strDct, strTxtPath, strDatPath, out error);
-
-				//ListingInfo data = strStats.GetGridData(minReferenceCount, out error);
-
 				return strStats;
 			}
 			catch (Exception ex)

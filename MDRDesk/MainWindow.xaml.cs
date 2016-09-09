@@ -563,6 +563,12 @@ namespace MDRDesk
 				? "Collecting strings of: " + CurrentMap.DumpBaseName + " done."
 				: "Collecting strings of: " + CurrentMap.DumpBaseName + " failed.");
 
+			if (taskResult.Error != null)
+			{
+				ShowError(taskResult.Error);
+				return;
+			}
+
 			DisplayListViewBottomGrid(taskResult, Constants.BlackDiamond, ReportNameSizeDiffs, ReportTitleSizeDiffs);
 		}
 
@@ -603,7 +609,7 @@ namespace MDRDesk
 					{
 						return new ListingInfo(error);
 					}
-					var strStats = ClrtDump.GetStringStats(heap, addresses, dumpFilePath, (int) _minStringUsage, out error);
+					var strStats = ClrtDump.GetStringStats(heap, addresses, dumpFilePath, out error);
 					return strStats.GetGridData((int)_minStringUsage, out error);
 				}
 			});

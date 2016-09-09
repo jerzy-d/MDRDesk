@@ -974,7 +974,7 @@ namespace ClrMDRIndex
 				var heap = runtime.GetHeap();
 
 
-				var stats = ClrtDump.GetStringStats(heap, addresses, DumpPath, minReferenceCount, out error);
+				var stats = ClrtDump.GetStringStats(heap, addresses, DumpPath, out error);
 				if (stats == null) return null;
 				ListingInfo lstData = null;
 				if (includeGenerations)
@@ -989,6 +989,53 @@ namespace ClrMDRIndex
 				return new ListingInfo(Utils.GetExceptionErrorString(ex));
 			}
 		}
+
+		public StringStats GetStringStats(out string error)
+		{
+			error = null;
+			try
+			{
+				if (StringStats.StringStatsFilesExist(_currentRuntime, DumpPath))
+				{
+					StringStats strStats = null;
+					if (_stringStats[_currentRuntime] == null || !_stringStats[_currentRuntime].TryGetTarget(out strStats))
+					{
+						strStats = StringStats.GetStringsInfoFromFiles(_currentRuntime, DumpPath, out error);
+						if (strStats == null)
+							return null;
+						if (_stringStats[_currentRuntime] == null)
+							_stringStats[_currentRuntime] = new WeakReference<StringStats>(strStats);
+						else
+							_stringStats[_currentRuntime].SetTarget(strStats);
+					}
+					return strStats;
+				}
+
+				var strTypeId = _clrtTypes[_currentRuntime].GetTypeId("System.String");
+				Debug.Assert(strTypeId != Constants.InvalidIndex);
+				ulong[] addresses = GetTypeAddresses(strTypeId);
+				var runtime = Dump.Runtime;
+				runtime.Flush();
+				var heap = runtime.GetHeap();
+
+
+				var stats = ClrtDump.GetStringStats(heap, addresses, DumpPath, out error);
+				if (stats == null) return null;
+
+				if (_stringStats[_currentRuntime] == null)
+					_stringStats[_currentRuntime] = new WeakReference<StringStats>(stats);
+				else
+					_stringStats[_currentRuntime].SetTarget(stats);
+
+				return stats;
+			}
+			catch (Exception ex)
+			{
+				error = Utils.GetExceptionErrorString(ex);
+				return null;
+			}
+		}
+
 
 		public StringStats GetCurrentStringStats(out string error)
 		{
@@ -1755,6 +1802,7 @@ namespace ClrMDRIndex
 
 		public ListingInfo CompareTypesWithOther(string otherDumpPath)
 		{
+			const int ColumnCount = 6;
 			string error;
 			var runtime = Dump.Runtime;
 			runtime.Flush();
@@ -1767,7 +1815,7 @@ namespace ClrMDRIndex
 			HashSet<string> set = new HashSet<string>(myTypeDCT.Keys);
 			set.UnionWith(otherTypeDct.Keys);
 			listing<string>[] dataListing = new listing<string>[set.Count];
-			string[] data = new string[set.Count * 5];
+			string[] data = new string[set.Count * ColumnCount];
 			int totalCount0 = 0;
 			ulong grandTotalSize0 = 0UL;
 			int totalCount1 = 0;
@@ -1797,9 +1845,10 @@ namespace ClrMDRIndex
 					totalCount1 += count1;
 					grandTotalSize1 += totSize1;
 				}
-				dataListing[listNdx++] = new listing<string>(data, dataNdx, 5);
+				dataListing[listNdx++] = new listing<string>(data, dataNdx, ColumnCount);
 				data[dataNdx++] = Utils.LargeNumberString(count0);
 				data[dataNdx++] = Utils.LargeNumberString(count1);
+				data[dataNdx++] = Utils.LargeNumberString(count0-count1);
 				data[dataNdx++] = Utils.LargeNumberString(totSize0);
 				data[dataNdx++] = Utils.LargeNumberString(totSize1);
 				data[dataNdx++] = str;
@@ -1817,8 +1866,9 @@ namespace ClrMDRIndex
 			{
 				new ColumnInfo(Constants.BlackDiamond + " Count", ReportFile.ColumnType.Int32,150,1,true),
 				new ColumnInfo(Constants.AdhocQuerySymbol + " Count", ReportFile.ColumnType.Int32,150,2,true),
-				new ColumnInfo(Constants.BlackDiamond + " Total Size", ReportFile.ColumnType.UInt64,150,3,true),
-				new ColumnInfo(Constants.AdhocQuerySymbol + " Total Size", ReportFile.ColumnType.UInt64,150,4,true),
+				new ColumnInfo(Constants.BlackDiamond + " Count Diff", ReportFile.ColumnType.Int32,150,3,true),
+				new ColumnInfo(Constants.BlackDiamond + " Total Size", ReportFile.ColumnType.UInt64,150,4,true),
+				new ColumnInfo(Constants.AdhocQuerySymbol + " Total Size", ReportFile.ColumnType.UInt64,150,5,true),
 				new ColumnInfo("Type", ReportFile.ColumnType.String,500,5,true),
 			};
 
@@ -1840,7 +1890,9 @@ namespace ClrMDRIndex
 		{
 			string error;
 
-			StringStats myStrStats = GetCurrentStringStats(out error);
+			const int ColumnCount = 7;
+
+			StringStats myStrStats = GetStringStats(out error);
 			if (error != null) return new ListingInfo(error);
 
 			long otherTotalSize, otherTotalUniqueSize;
@@ -1926,8 +1978,8 @@ namespace ClrMDRIndex
 			}
 
 			string[] dataAry = data.ToArray();
-			listing<string>[] listing = new listing<string>[dataAry.Length / 6];
-			Debug.Assert((dataAry.Length % 6) == 0);
+			listing<string>[] listing = new listing<string>[dataAry.Length / ColumnCount];
+			Debug.Assert((dataAry.Length % ColumnCount) == 0);
 
 			data.Clear();
 			data = null;
@@ -1935,17 +1987,18 @@ namespace ClrMDRIndex
 			for (int i = 0, icnt = listing.Length; i < icnt; ++i)
 			{
 				listing[i] = new listing<string>(dataAry, dataNdx, 6);
-				dataNdx += 6;
+				dataNdx += ColumnCount;
 			}
 
 			ColumnInfo[] colInfos = new[]
 			{
 				new ColumnInfo(Constants.BlackDiamond + " Count", ReportFile.ColumnType.Int32,150,1,true),
 				new ColumnInfo(Constants.AdhocQuerySymbol + " Count", ReportFile.ColumnType.Int32,150,2,true),
-				new ColumnInfo(Constants.BlackDiamond + " Total Size", ReportFile.ColumnType.UInt64,150,3,true),
-				new ColumnInfo(Constants.AdhocQuerySymbol + " Total Size", ReportFile.ColumnType.UInt64,150,4,true),
-				new ColumnInfo("Size", ReportFile.ColumnType.UInt32,150,5,true),
-				new ColumnInfo("Type", ReportFile.ColumnType.String,500,6,true),
+				new ColumnInfo(Constants.BlackDiamond + " Count Diff", ReportFile.ColumnType.Int32,150,3,true),
+				new ColumnInfo(Constants.BlackDiamond + " Total Size", ReportFile.ColumnType.UInt64,150,4,true),
+				new ColumnInfo(Constants.AdhocQuerySymbol + " Total Size", ReportFile.ColumnType.UInt64,150,5,true),
+				new ColumnInfo("Size", ReportFile.ColumnType.UInt32,150,6,true),
+				new ColumnInfo("Type", ReportFile.ColumnType.String,500,7,true),
 			};
 
 			//Array.Sort(dataListing, ReportFile.GetComparer(colInfos[6]));
@@ -1973,11 +2026,13 @@ namespace ClrMDRIndex
 
 			var myCountStr = Utils.LargeNumberString(myCount);
 			var otCntStr = Utils.LargeNumberString(otCount);
+			var cntDiffStr = Utils.LargeNumberString(myCount-otCount);
 			var myTotSizeStr = Utils.LargeNumberString((ulong)myCount * (ulong)size);
 			var otTotSizeStr = Utils.LargeNumberString((ulong)otCount * (ulong)size);
 			var mySizeStr = Utils.LargeNumberString(size);
 			data.Add(myCountStr);
 			data.Add(otCntStr);
+			data.Add(cntDiffStr);
 			data.Add(myTotSizeStr);
 			data.Add(otTotSizeStr);
 			data.Add(mySizeStr);

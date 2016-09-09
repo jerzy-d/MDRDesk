@@ -119,6 +119,7 @@
     <Compile Include="Utils\StringIdDct.cs" />
     <Compile Include="Utils\TempArena.cs" />
     <Compile Include="Utils\Tuples.cs" />
+    <Compile Include="Utils\TypeDependencyNode.cs" />
     <Compile Include="Utils\TypeIdDct.cs" />
     <Compile Include="Utils\Utils.cs" />
     <Compile Include="ValueExtractor.cs" />

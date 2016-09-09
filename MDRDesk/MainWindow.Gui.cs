@@ -84,6 +84,7 @@ namespace MDRDesk
             host1.Child = DmpNdxQueries.Auxiliaries.getColumnChart(histograms[1]);
 
             var txtBlock = (TextBlock)LogicalTreeHelper.FindLogicalNode(grid, "GeneralInfoText");
+			Debug.Assert(txtBlock!=null);
             txtBlock.Inlines.Add(info);
 
             var chartGrid = (Grid)LogicalTreeHelper.FindLogicalNode(grid, "GeneralInfoChart");
@@ -127,8 +128,8 @@ namespace MDRDesk
             var selndx = lb.SelectedIndex;
             if (selndx < 0) return;
             var data = lb.ItemsSource as KeyValuePair<string, KeyValuePair<string, int>[]>[];
+			Debug.Assert(lbTpNames!=null);
             lbTpNames.ItemsSource = data[selndx].Value;
-         //   var lbTpAddresses = (ListBox)LogicalTreeHelper.FindLogicalNode(grid, @"lbTpAddresses");
             lbTpNames.SelectedIndex = 0;
         }
 
@@ -223,6 +224,7 @@ namespace MDRDesk
 
 			listView.ItemsSource = info.Items;
 			var bottomGrid = (Panel)LogicalTreeHelper.FindLogicalNode(grid, "BottomGrid");
+			Debug.Assert(bottomGrid!=null);
 			TextBox txtBox = new TextBox
 			{
 				HorizontalAlignment = HorizontalAlignment.Stretch,

@@ -978,6 +978,13 @@ namespace ClrMDRIndex
 		{
 			public int Compare(string a, string b)
 			{
+				bool aMinusSign = a.Length > 0 && a[0] == '-';
+				bool bMinusSign = b.Length > 0 && b[0] == '-';
+				if (aMinusSign && bMinusSign)
+					return CompareNegatives(a, b);
+				if (aMinusSign && !bMinusSign) return -1;
+				if (!aMinusSign && bMinusSign) return 1;
+
 				if (a.Length == b.Length)
 				{
 					for (int i = 0, icnt = a.Length; i < icnt; ++i)
@@ -989,6 +996,20 @@ namespace ClrMDRIndex
 				}
 				return a.Length < b.Length ? -1 : 1;
 			}
+
+			private int CompareNegatives(string a, string b)
+			{
+				if (a.Length == b.Length)
+				{
+					for (int i = 1, icnt = a.Length; i < icnt; ++i)
+					{
+						if (a[i] > b[i]) return -1;
+						if (a[i] < b[i]) return 1;
+					}
+					return 0;
+				}
+				return a.Length < b.Length ? 1 : -1;
+			}
 		}
 
 		public static NumStrCmpDesc NumStrDescComparer = new NumStrCmpDesc();
@@ -997,6 +1018,13 @@ namespace ClrMDRIndex
 		{
 			public int Compare(string a, string b)
 			{
+				bool aMinusSign = a.Length > 0 && a[0] == '-';
+				bool bMinusSign = b.Length > 0 && b[0] == '-';
+				if (aMinusSign && bMinusSign)
+					return CompareNegatives(a, b);
+				if (aMinusSign && !bMinusSign) return 1;
+				if (!aMinusSign && bMinusSign) return -1;
+
 				if (a.Length == b.Length)
 				{
 					for (int i = 0, icnt = a.Length; i < icnt; ++i)
@@ -1008,7 +1036,23 @@ namespace ClrMDRIndex
 				}
 				return a.Length > b.Length ? -1 : 1;
 			}
+
+			private int CompareNegatives(string a, string b)
+			{
+				if (a.Length == b.Length)
+				{
+					for (int i = 1, icnt = a.Length; i < icnt; ++i)
+					{
+						if (a[i] > b[i]) return 1;
+						if (a[i] < b[i]) return -1;
+					}
+					return 0;
+				}
+				return a.Length < b.Length ? -1 : 1;
+			}
 		}
+
+
 
 	    public class KvStrKvStrInt : IComparer<KeyValuePair<string, KeyValuePair<string, int>[]>>
 	    {
