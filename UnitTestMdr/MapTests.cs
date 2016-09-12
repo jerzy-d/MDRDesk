@@ -46,6 +46,28 @@ namespace UnitTestMdr
 		}
 
         [TestMethod]
+        public void TestDependencyTree()
+        {
+            const string typeName = @"ECS.Common.Collections.Common.EzeBitVector";
+            string error;
+            //var map = OpenMap(@"D:\Jerzy\WinDbgStuff\Dumps\DumpTest\DumpTest.exe_160820_073947.map");
+            var map = OpenMap(@"C:\WinDbgStuff\Dumps\Analytics\AnalyticsMemory\A2_noDF.map");
+            var outPath = map.ReportPath + Path.DirectorySeparatorChar + "FIELD_DEPENDENCIES.txt";
+            using (map)
+            {
+                int typeId = map.GetTypeId(typeName);
+                ulong[] typeAddresses = map.GetTypeAddresses(typeId);
+
+                DependencyNode node = map.GetAddressesDescendants(typeId, typeAddresses, 6, out error);
+
+                map.DebugFieldDependencyDump(outPath, out error);
+            }
+
+            Assert.IsNull(error, error);
+        }
+
+
+        [TestMethod]
         public void TestFieldDependencyFields2()
         {
             string error;

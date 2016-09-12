@@ -569,7 +569,18 @@ namespace ClrMDRIndex
 			return ndx < 0 ? Constants.Unknown : _clrtTypes[_currentRuntime].GetName(_instTypes[_currentRuntime][ndx]);
 		}
 
-		public KeyValuePair<int, string>[] GetElementTypes(ClrElementType et) // TODO JRD
+
+        public KeyValuePair<string,int> GetTypeNameAndIdAtAddr(ulong addr)
+        {
+            var ndx = Array.BinarySearch(_instances[_currentRuntime], addr);
+            if (ndx < 0)
+                return new KeyValuePair<string, int>(Constants.Unknown,Constants.InvalidIndex);
+            int typeId = _instTypes[_currentRuntime][ndx];
+            string typeName = GetTypeName(typeId);
+            return new KeyValuePair<string, int>(typeName,typeId);
+        }
+
+        public KeyValuePair<int, string>[] GetElementTypes(ClrElementType et) // TODO JRD
 		{
 			//var etinfo = _elementTypeCounts[_currentRuntime][(int)et];
 			//if (etinfo.TypeIds.Count == 0) return Utils.EmptyArray<KeyValuePair<int, string>>.Value;
@@ -776,11 +787,65 @@ namespace ClrMDRIndex
 			return lst;
 		}
 
-		#endregion Types
+	    public DependencyNode GetAddressesDescendants(int typeId, ulong[] addresses, int maxLevel, out string error)
+	    {
+	        error = null;
+ 	        try
+	        {
+	            string typeName = GetTypeName(typeId);
+                DependencyNode root = new DependencyNode(0,typeId,typeName,string.Empty,addresses);
+                List<KeyValuePair<ulong,int>[]> lst = new List<KeyValuePair<ulong, int>[]>(addresses.Length);
+                HashSet<ulong> addrSet = new HashSet<ulong>();
+	            KeyValuePair<ulong, int>[][] descendantAddresses = GetDescendants(addresses, lst, addrSet, out error);
+                DependencyNode[] nodes = DependencyNode.BuildBranches(this, root, addresses, descendantAddresses);
+                Queue<DependencyNode> que = new Queue<DependencyNode>(nodes.Length);
+	            for (int i = 0, icnt = nodes.Length; i < icnt; ++i) que.Enqueue(nodes[i]);
+	            while (que.Count > 0)
+	            {
+	                var node = que.Dequeue();
+                    if (node.Level==maxLevel) continue;
+	                var descendants = node.Descendants;
+                    lst.Clear();
+                    for (int i = 0, icnt = descendants.Length; i < icnt; ++i)
+                    {
+                        var descendant = descendants[i];
+                        descendantAddresses = GetDescendants(descendant.Addresses, lst, addrSet, out error);
+                        if (descendantAddresses == null || descendantAddresses.Length < 1) continue;
+                        nodes = DependencyNode.BuildBranches(this, node, node.Addresses, descendantAddresses);
+                        for (int j = 0, jcnt = nodes.Length; j < jcnt; ++j) que.Enqueue(nodes[j]);
+                    }
+                }
 
-		#region Field References
+                return root;
+	        }
+	        catch (Exception ex)
+	        {
+	            error = Utils.GetExceptionErrorString(ex);
+	            return null;
+	        }
+	    }
 
-		public Tuple<string,triple<string, string, string>[], triple<string, string, string>[]> GetInstanceParentsAndChildren(ulong address, out string error)
+	    private KeyValuePair<ulong, int>[][] GetDescendants(ulong[] addresses, List<KeyValuePair<ulong, int>[]> lst,
+	        HashSet<ulong> addrSet, out string error)
+	    {
+	        error = null;
+            var fldDpnds = _fieldDependencies[_currentRuntime];
+            lst.Clear();
+            for (int i = 0, icnt = addresses.Length; i < icnt; ++i)
+            {
+                if (!addrSet.Add(addresses[i])) continue;
+                var result = fldDpnds.GetFieldParents(addresses[i], out error);
+                if (result != null && result.Length > 0)
+                    lst.Add(result);
+            }
+	        return lst.ToArray();
+	    }
+
+        #endregion Types
+
+        #region Field References
+
+        public Tuple<string,triple<string, string, string>[], triple<string, string, string>[]> GetInstanceParentsAndChildren(ulong address, out string error)
 		{
 			error = null;
 			var parents = _fieldDependencies[_currentRuntime].GetFieldParents(address, out error);
