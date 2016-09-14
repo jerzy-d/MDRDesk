@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.ComponentModel;
+using System.Data.SqlClient;
 using System.Diagnostics;
 using System.Globalization;
 using System.IO;
@@ -216,8 +217,7 @@ namespace MDRDesk
 
         #region Index
 
-
-        private void ToggleButton_OnChecked(object sender, RoutedEventArgs e)
+		private void ToggleButton_OnChecked(object sender, RoutedEventArgs e)
         {
             if (!IsIndexAvailable()) return;
 
@@ -1235,9 +1235,20 @@ namespace MDRDesk
 		{
             var lbNames = GetTypeNamesListBox(sender);
             if (lbNames != null && lbNames.SelectedItems.Count > 0)
-			{
-				var sel = lbNames.SelectedItems[0].ToString();
-				Clipboard.SetText(sel);
+            {
+	            string typeName = string.Empty;
+				var sel = lbNames.SelectedItems[0];
+				if (sel is KeyValuePair<string, int>)
+				{
+					KeyValuePair<string, int> kv = (KeyValuePair<string, int>) sel;
+					typeName = CurrentMap.GetTypeName(kv.Value);
+				}
+				else
+				{
+					typeName = sel.ToString();
+				}
+
+				Clipboard.SetText(typeName);
 				MainStatusShowMessage("Copied to Clipboard: " + sel);
 				return;
 			}
@@ -1344,6 +1355,13 @@ namespace MDRDesk
 		private void CopyAddressSelectionClicked(object sender, RoutedEventArgs e)
 		{
 			var lbAddresses = GetTypeAddressesListBox(sender);
+
+			if (lbAddresses == null)
+			{
+				ShowInformation("Copy Address Command", "ACTION FAILED", "Grid's ListBox control not found.",null);
+				return;
+			}
+
             var sb = StringBuilderCache.Acquire(512);
 			int cnt = 0;
 			foreach (var item in lbAddresses.SelectedItems)
@@ -1351,44 +1369,158 @@ namespace MDRDesk
 				if (++cnt > 10000) break;
 				sb.AppendLine(Utils.AddressString((ulong)item));
 			}
+			if (cnt < 1)
+			{
+				MainStatusShowMessage("No address is copied to Clipboard. Is an address selected?");
+				return;
+			}
+
 			string str = StringBuilderCache.GetStringAndRelease(sb);
 			if (cnt == 1)
 				str = str.Trim();
 			Clipboard.SetText(str);
+			if (cnt == 1)
+			{
+				MainStatusShowMessage("Address: " + str + " is copied to Clipboard.");
+				return;
+			}
+			MainStatusShowMessage(cnt + " addresses are copied to Clipboard.");
 		}
 
 		private void CopyAddressAllClicked(object sender, RoutedEventArgs e)
 		{
 			var lbAddresses = GetTypeAddressesListBox(sender);
-            var addresses = lbAddresses.ItemsSource as ulong[];
+			if (lbAddresses == null)
+			{
+				ShowInformation("Copy Address Command", "ACTION FAILED", "Grid's ListBox control not found.", null);
+				return;
+			}
+
+			var addresses = lbAddresses.ItemsSource as ulong[];
 
 			int maxLen = Math.Min(10000, addresses.Length);
+			if (maxLen < 1)
+			{
+				MainStatusShowMessage("No address is copied to Clipboard. Address list is ermpty.");
+				return;
+			}
+
 			var sb = StringBuilderCache.Acquire(maxLen * 18);
 			for (int i = 0, icnt = addresses.Length; i < icnt; ++i)
 			{
 				sb.AppendLine(Utils.AddressString(addresses[i]));
 			}
 			string str = StringBuilderCache.GetStringAndRelease(sb);
+
 			if (maxLen == 1)
 				str = str.Trim();
 			Clipboard.SetText(str);
+			if (maxLen == 1)
+			{
+				MainStatusShowMessage("Address: " + str + " is copied to Clipboard.");
+				return;
+			}
+			MainStatusShowMessage(maxLen + " addresses are copied to Clipboard.");
 		}
 
-	    private ListBox GetTypeAddressesListBox(object sender)
+		private ListBox GetTypeAddressesListBox(object sender)
 	    {
-            MenuItem menuItem = sender as MenuItem;
-            Debug.Assert(menuItem != null);
             var grid = GetCurrentTabGrid();
-            string listName = menuItem.Name.StartsWith("Ns") ? "lbTpAddresses" : "lbTypeAddresses";
+			string gridName = Utils.GetNameWithoutId(grid.Name);
+		    string listName = null;
+		    switch (gridName)
+		    {
+				case GridNameFullNameTypeView:
+				case GridNameClassTypeView:
+				    listName = "lbTypeAddresses";
+					break;
+				case GridNameNamespaceTypeView:
+				    listName = "lbTpAddresses";
+				    break;
+		    }
+		    if (listName == null) return null;
             var lbAddresses = (ListBox)LogicalTreeHelper.FindLogicalNode(grid, listName);
             Debug.Assert(lbAddresses != null);
 	        return lbAddresses;
 	    }
 
-        private void GetParentReferences(object sender, RoutedEventArgs e)
+		private ListBox GetTypeNameListBox(object sender)
+		{
+			var grid = GetCurrentTabGrid();
+			string gridName = Utils.GetNameWithoutId(grid.Name);
+			string listName = null;
+			switch (gridName)
+			{
+				case GridNameFullNameTypeView:
+				case GridNameClassTypeView:
+					listName = "lbTypeNames";
+					break;
+				case GridNameNamespaceTypeView:
+					listName = "lbTpNames";
+					break;
+			}
+			if (listName == null) return null;
+			var lbTypeNames = (ListBox)LogicalTreeHelper.FindLogicalNode(grid, listName);
+			Debug.Assert(lbTypeNames != null);
+			return lbTypeNames;
+		}
+
+
+		private async void GetParentReferences(object sender, RoutedEventArgs e)
 		{
 
+			var lbTypeNames = GetTypeNameListBox(sender);
+
+			var selectedItem = lbTypeNames.SelectedItems[0];
+
+			if (selectedItem == null)
+			{
+				return; // TODO JRD -- display message
+			}
+
+			ulong[] typeAddresses = null;
+			string typeName = null;
+			int typeId = Constants.InvalidIndex;
+			if (selectedItem is KeyValuePair<string, int>) // namespace display
+			{
+				typeId = ((KeyValuePair<string, int>) selectedItem).Value;
+				typeName = ((KeyValuePair<string, int>) selectedItem).Key;
+				typeAddresses = CurrentMap.GetTypeAddresses(typeId);
+			}
+
+
+
+			ReferenceSearchSetup dlg = new ReferenceSearchSetup(typeName + ", instance count: " + typeAddresses.Length) {Owner = this};
+			dlg.ShowDialog();
+			if (dlg.Cancelled) return;
+			int level = dlg.GetAllReferences ? Int32.MaxValue : dlg.SearchDepthLevel;
+
+			SetStartTaskMainWindowState("Getting parent references for: '" + typeName + "', please wait...");
+
+			var result = await Task.Run(() =>
+			{
+				string error;
+				var nodes = CurrentMap.GetAddressesDescendants(typeId, typeAddresses, level, out error);
+				return new Tuple<string, DependencyNode, int>(error, nodes.Item1, nodes.Item2);
+			});
+
+			bool actionFailed = result.Item1 != null && !Utils.IsInformationString(result.Item1);
+
+			SetEndTaskMainWindowState("Getting parent references for: '" + typeName + (!actionFailed ? "' succeeded." : "' failed."));
+
+			if (actionFailed)
+			{
+				if (!Utils.IsInformationString(result.Item1))
+				{
+					ShowError(result.Item1);
+					return;
+				}
+			}
+
+			DisplayDependencyNodeGrid(result.Item2);
+
 		}
+
 		private void LbGetInstImmediateRefsClicked(object sender, RoutedEventArgs e)
 		{
 		    var lbAddresses = GetTypeAddressesListBox(sender);
@@ -1409,7 +1541,13 @@ namespace MDRDesk
 
         }
 
-        private void LbGetNLevelRefsClicked(object sender, RoutedEventArgs e)
+		private async void GetInstImmediateRefsClicked(object sender, RoutedEventArgs e)
+		{
+			
+		}
+
+
+		private void LbGetNLevelRefsClicked(object sender, RoutedEventArgs e)
 		{
 			int level;
 
@@ -1479,6 +1617,11 @@ namespace MDRDesk
 
 		}
 
+
+		/// <summary>
+		/// TODO JRD -- thsi is Alex instance walker
+		/// </summary>
+		/// <param name="rootNode"></param>
 		private void DisplayInstanceReferenceTree(InstanceTypeNode rootNode)
 		{
 			var grid = this.TryFindResource("TreeViewGrid") as Grid;
@@ -1548,6 +1691,35 @@ namespace MDRDesk
 
 		}
 
+		private void SettingsClicked(object sender, RoutedEventArgs e)
+		{
 
+		}
+
+		private void GetTypeStringUsage(object sender, RoutedEventArgs e)
+		{
+			ListBox listBox = GetTypeNameListBox(sender);
+			if (listBox == null)
+			{
+				return; // TODO JRD -- display message
+			}
+			object selectedItem = listBox.SelectedItem;
+			if (selectedItem == null)
+			{
+				return; // TODO JRD -- display message
+			}
+
+			ulong[] typeAddresses = null;
+			string typeName = null;
+			int typeId = Constants.InvalidIndex;
+			if (selectedItem is KeyValuePair<string, int>) // namespace display
+			{
+				typeId = ((KeyValuePair<string, int>)selectedItem).Value;
+				typeName = ((KeyValuePair<string, int>)selectedItem).Key;
+				typeAddresses = CurrentMap.GetTypeAddresses(typeId);
+			}
+
+
+		}
 	}
 }

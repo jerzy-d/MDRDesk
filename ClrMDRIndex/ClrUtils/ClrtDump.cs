@@ -488,7 +488,20 @@ namespace ClrMDRIndex
 			return totSize;
 		}
 
-		public Tuple<ulong, ulong[], SortedDictionary<string, List<int>>> GetTotalSizeDetail(ClrtDump dmp, ulong[] addresses, out string error)
+		/// <summary>
+		/// 
+		/// </summary>
+		/// <param name="dmp"></param>
+		/// <param name="addresses"></param>
+		/// <param name="error"></param>
+		/// <returns>
+		/// Tuple of
+		/// total size
+		/// list of addresses for which type was not found -- TODO JRD check this
+		/// collection of records : type name, type count, total type size
+		/// collection of records : array type name, list of arrays element count
+		/// /returns>
+		public static Tuple<ulong, ulong[], SortedDictionary<string, KeyValuePair<int,ulong>>, SortedDictionary<string, List<int>>> GetTotalSizeDetail(ClrtDump dmp, ulong[] addresses, out string error)
 		{
 			error = null;
 			ulong totalSize = 0;
@@ -498,7 +511,8 @@ namespace ClrMDRIndex
 				runtime.Flush();
 				var heap = runtime.GetHeap();
 				HashSet<ulong> done = new HashSet<ulong>();
-				SortedDictionary<string, List<int>> aryDct = new SortedDictionary<string, List<int>>(StringComparer.Ordinal);
+				var aryDct = new SortedDictionary<string, List<int>>(StringComparer.Ordinal);
+				var typeDct = new SortedDictionary<string, KeyValuePair<int, ulong>>(StringComparer.Ordinal);
 				List<ulong> typesNotFound = new List<ulong>();
 				for (int i = 0, icnt = addresses.Length; i < icnt; ++i)
 				{
@@ -516,19 +530,19 @@ namespace ClrMDRIndex
 					}
 					if (clrType.IsObjectReference)
 					{
-						totalSize += GetObjectSizeDetails(heap, addr, done, typesNotFound, aryDct);
+						totalSize += GetObjectSizeDetails(heap, addr, done, typesNotFound, aryDct, typeDct);
 					}
 				}
-				return new Tuple<ulong, ulong[], SortedDictionary<string, List<int>>>(totalSize, typesNotFound.ToArray(), aryDct);
+				return new Tuple<ulong, ulong[], SortedDictionary<string, KeyValuePair<int, ulong>>, SortedDictionary<string, List<int>>>(totalSize, typesNotFound.ToArray(),typeDct, aryDct);
 			}
 			catch (Exception ex)
 			{
 				error = Utils.GetExceptionErrorString(ex);
-				return new Tuple<ulong, ulong[], SortedDictionary<string, List<int>>>(0ul, Utils.EmptyArray<ulong>.Value, null);
+				return null;
 			}
 		}
 
-		private ulong GetObjectSizeDetails(ClrHeap heap, ulong addr, HashSet<ulong> done, List<ulong> typesNotFound, SortedDictionary<string, List<int>> aryDct)
+		private static ulong GetObjectSizeDetails(ClrHeap heap, ulong addr, HashSet<ulong> done, List<ulong> typesNotFound, SortedDictionary<string, List<int>> aryDct, SortedDictionary<string, KeyValuePair<int, ulong>> typeDct)
 		{
 			var que = new Queue<ulong>(64);
 			que.Enqueue(addr);
@@ -544,13 +558,14 @@ namespace ClrMDRIndex
 					typesNotFound.Add(curAddr);
 					continue;
 				}
-
+		
 				#region Process Arrays
 
 				if (curType.IsArray)
 				{
 					var asz = curType.GetSize(curAddr);
 					totalSize += asz;
+					AddNameCount(curType.Name, asz, typeDct);
 					var acnt = curType.GetArrayLength(curAddr);
 					List<int> lst;
 					if (aryDct.TryGetValue(curType.Name, out lst))
@@ -600,12 +615,15 @@ namespace ClrMDRIndex
 
 				if (curType.IsString)
 				{
-					totalSize += Utils.RoundupToPowerOf2Boundary(curType.GetSize(curAddr), (ulong)Constants.PointerSize);
+					var size = Utils.RoundupToPowerOf2Boundary(curType.GetSize(curAddr), (ulong) Constants.PointerSize);
+					totalSize += size;
+					AddNameCount(curType.Name,size, typeDct);
 					continue;
 				}
 
 				if (curType.Fields == null || curType.Fields.Count < 1) continue;
 				ulong sz = curType.GetSize(curAddr);
+				AddNameCount(curType.Name, sz, typeDct);
 				totalSize += Utils.RoundupToPowerOf2Boundary(sz, (ulong)Constants.PointerSize);
 
 				bool parentIsRef = curType.IsObjectReference;
@@ -617,6 +635,17 @@ namespace ClrMDRIndex
 				}
 			}
 			return totalSize;
+		}
+
+		private static void AddNameCount(string name, ulong size, SortedDictionary<string, KeyValuePair<int, ulong>> dct)
+		{
+			KeyValuePair<int, ulong> kv;
+			if (dct.TryGetValue(name, out kv))
+			{
+				dct[name] = new KeyValuePair<int, ulong>(kv.Key+1, kv.Value + size);
+				return;
+			}
+			dct.Add(name,new KeyValuePair<int, ulong>(1,size));
 		}
 
 		public static Tuple<ulong, ulong[]> GetTotalSize(ClrHeap heap, ulong[] addresses, HashSet<ulong> done, out string error, bool justBaseSize = false)
@@ -1249,6 +1278,110 @@ namespace ClrMDRIndex
 				error = Utils.GetExceptionErrorString(ex);
 				return null;
 			}
+		}
+
+		//public 
+
+		public static bool GetTypeStringUsage(ClrHeap heap, ulong[] addresses, out string error)
+		{
+			error = null;
+			try
+			{
+				ClrType clrType = null;
+				for (int i = 0, icnt = addresses.Length; i < icnt; ++i)
+				{
+					clrType = heap.GetObjectType(addresses[i]);
+					if (clrType != null) break;
+				}
+
+				ClrInstanceField[] fields = GetStringFields(clrType);
+				if (fields.Length < 1) return true;
+				string[] fldNames = GetFieldNames(fields);
+				HashSet<ulong>[] fldStrAddresses = new HashSet<ulong>[fldNames.Length];
+				for (int i = 0, icnt = fldStrAddresses.Length; i < icnt; ++i) fldStrAddresses[i] = new HashSet<ulong>();
+				Dictionary<ulong,KeyValuePair<int,int>> addrDct = new Dictionary<ulong, KeyValuePair<int, int>>(addresses.Length*(fldNames.Length/2));
+				SortedDictionary<string,int> dupDct = new SortedDictionary<string, int>();
+
+				int nullCount = 0;
+				bool inner = clrType.IsValueClass;
+				ulong strAddr;
+				string str;
+				int addrNdx, fldNdx, addrCnt = addresses.Length, fldCnt = fields.Length;
+				try
+				{
+					for (addrNdx = 0; addrNdx < addrCnt; ++addrNdx)
+					{
+						for (fldNdx = 0; fldNdx < fldCnt; ++fldNdx)
+						{
+							object addrObj = fields[fldNdx].GetValue(addresses[addrNdx], inner, false);
+							if (addrObj == null || ((ulong)addrObj)==0)
+							{
+								strAddr = 0;
+								str = null;
+								fldStrAddresses[fldNdx].Add(strAddr);
+								++nullCount;
+								continue;
+							}
+							strAddr = (ulong)addrObj;
+							fldStrAddresses[fldNdx].Add(strAddr);
+							str = (string)fields[fldNdx].GetValue(addresses[addrNdx], inner, true);
+							int cnt;
+							if (dupDct.TryGetValue(str, out cnt))
+							{
+								dupDct[str] = cnt + 1;
+							}
+							else
+							{
+								dupDct.Add(str, 1);
+							}
+						}
+					}
+				}
+				catch (Exception ex)
+				{
+					error = Utils.GetExceptionErrorString(ex);
+					return false;
+				}
+
+				return true;
+			}
+			catch (Exception ex)
+			{
+				error = Utils.GetExceptionErrorString(ex);
+				return false;
+			}
+		}
+
+		private static int[] GetStringFieldsIndices(ClrType clrType)
+		{
+			List<int> lst = new List<int>(clrType.Fields.Count);
+			for (int i = 0, icnt = clrType.Fields.Count; i < icnt; ++i)
+			{
+				var fld = clrType.Fields[i];
+				if (fld.IsObjectReference && fld.Type != null && fld.Type.IsString)
+					lst.Add(i);
+			}
+			return lst.ToArray();
+		}
+
+		private static ClrInstanceField[] GetStringFields(ClrType clrType)
+		{
+			List<ClrInstanceField> lst = new List<ClrInstanceField>(clrType.Fields.Count);
+			for (int i = 0, icnt = clrType.Fields.Count; i < icnt; ++i)
+			{
+				var fld = clrType.Fields[i];
+				if (fld.IsObjectReference && fld.Type != null && fld.Type.IsString)
+					lst.Add(fld);
+			}
+			return lst.ToArray();
+		}
+
+		private static string[] GetFieldNames(ClrInstanceField[] fields)
+		{
+			string[] names = new string[fields.Length];
+			for (int i = 0, icnt = fields.Length; i < icnt; ++i)
+				names[i] = fields[i].Name;
+			return names;
 		}
 
 		#endregion Strings

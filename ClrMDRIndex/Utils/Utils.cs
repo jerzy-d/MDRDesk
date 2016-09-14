@@ -1197,6 +1197,12 @@ namespace ClrMDRIndex
 		}
 
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		public static string CountStringHeader(int sz)
+		{
+			return sz == 0 ? "[       0] " : string.Format("[{0,8:#,###,###}] ", sz);
+		}
+
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		public static string SizeStringHeader(long sz)
 		{
 			return sz == 0 ? "[           0] " : string.Format("[{0,12:#,###,###}] ", sz);
@@ -1502,6 +1508,11 @@ namespace ClrMDRIndex
 		}
 
 		#region Errors Formatting
+
+		public static bool IsInformationString(string str)
+		{
+			return (!string.IsNullOrEmpty(str) && str[0] == Constants.InformationSymbol) ? true : false;
+		}
 
 		public static string GetErrorString(string caption, string heading, string text, string details=null)
 		{

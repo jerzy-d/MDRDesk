@@ -629,38 +629,6 @@ namespace ClrMDRIndex
 				addresses[i] = instances[instSortedByTypes[offset]];
 				++offset;
 			}
-
-			//var typesOrdered = _instTypesOrdered[_currentRuntime];
-			//var pos = Array.BinarySearch(typesOrdered, typeId);
-			//if (pos < 0) return Utils.EmptyArray<ulong>.Value;
-			//var begin = pos;
-			//for (; begin >= 0; --begin)
-			//{
-			//	if (typesOrdered[begin] != typeId)
-			//	{
-			//		++begin;
-			//		break;
-			//	}
-			//}
-			//if (begin < 0) begin = 0; // it might be -1
-			//var cnt = typesOrdered.Length;
-			//var end = pos;
-			//for (; end < cnt; ++end)
-			//{
-			//	if (typesOrdered[end] != typeId)
-			//	{
-			//		break;
-			//	}
-			//}
-			//cnt = end - begin;
-			//ulong[] addresses = new ulong[cnt];
-			//int ndx = 0;
-			//var typesMap = _instTypesOrderedMap[_currentRuntime];
-			//var instances = _instances[_currentRuntime];
-			//for (var i = begin; i < end; ++i)
-			//{
-			//	addresses[ndx++] = instances[typesMap[i]];
-			//}
 			Array.Sort(addresses);
 			return addresses;
 		}
@@ -787,36 +755,39 @@ namespace ClrMDRIndex
 			return lst;
 		}
 
-	    public DependencyNode GetAddressesDescendants(int typeId, ulong[] addresses, int maxLevel, out string error)
+	    public Tuple<DependencyNode,int>  GetAddressesDescendants(int typeId, ulong[] addresses, int maxLevel, out string error)
 	    {
 	        error = null;
+		    int nodeCount = 0;
  	        try
 	        {
 	            string typeName = GetTypeName(typeId);
                 DependencyNode root = new DependencyNode(0,typeId,typeName,string.Empty,addresses);
-                List<KeyValuePair<ulong,int>[]> lst = new List<KeyValuePair<ulong, int>[]>(addresses.Length);
+		        ++nodeCount;
                 HashSet<ulong> addrSet = new HashSet<ulong>();
-	            KeyValuePair<ulong, int>[][] descendantAddresses = GetDescendants(addresses, lst, addrSet, out error);
-                DependencyNode[] nodes = DependencyNode.BuildBranches(this, root, addresses, descendantAddresses);
-                Queue<DependencyNode> que = new Queue<DependencyNode>(nodes.Length);
-	            for (int i = 0, icnt = nodes.Length; i < icnt; ++i) que.Enqueue(nodes[i]);
-	            while (que.Count > 0)
+				Queue<DependencyNode> que = new Queue<DependencyNode>(1024);
+
+				DependencyNode[] nodes = DependencyNode.BuildBranches(this, root, addresses, out error);
+		        for (int i = 0, icnt = nodes.Length; i < icnt; ++i)
+		        {
+			        que.Enqueue(nodes[i]);
+			        ++nodeCount;
+		        }
+
+				while (que.Count > 0)
 	            {
 	                var node = que.Dequeue();
                     if (node.Level==maxLevel) continue;
-	                var descendants = node.Descendants;
-                    lst.Clear();
-                    for (int i = 0, icnt = descendants.Length; i < icnt; ++i)
-                    {
-                        var descendant = descendants[i];
-                        descendantAddresses = GetDescendants(descendant.Addresses, lst, addrSet, out error);
-                        if (descendantAddresses == null || descendantAddresses.Length < 1) continue;
-                        nodes = DependencyNode.BuildBranches(this, node, node.Addresses, descendantAddresses);
-                        for (int j = 0, jcnt = nodes.Length; j < jcnt; ++j) que.Enqueue(nodes[j]);
-                    }
-                }
 
-                return root;
+					nodes = DependencyNode.BuildBranches(this, node, node.Addresses, out error);
+		            for (int i = 0, icnt = nodes.Length; i < icnt; ++i)
+		            {
+			            que.Enqueue(nodes[i]);
+			            ++nodeCount;
+		            }
+				}
+
+                return Tuple.Create(root,nodeCount);
 	        }
 	        catch (Exception ex)
 	        {
@@ -825,21 +796,21 @@ namespace ClrMDRIndex
 	        }
 	    }
 
-	    private KeyValuePair<ulong, int>[][] GetDescendants(ulong[] addresses, List<KeyValuePair<ulong, int>[]> lst,
-	        HashSet<ulong> addrSet, out string error)
-	    {
-	        error = null;
-            var fldDpnds = _fieldDependencies[_currentRuntime];
-            lst.Clear();
-            for (int i = 0, icnt = addresses.Length; i < icnt; ++i)
-            {
-                if (!addrSet.Add(addresses[i])) continue;
-                var result = fldDpnds.GetFieldParents(addresses[i], out error);
-                if (result != null && result.Length > 0)
-                    lst.Add(result);
-            }
-	        return lst.ToArray();
-	    }
+	    //private KeyValuePair<ulong, int>[][] GetDescendants(ulong[] addresses, List<KeyValuePair<ulong, int>[]> lst,
+	    //    HashSet<ulong> addrSet, out string error)
+	    //{
+	    //    error = null;
+     //       var fldDpnds = _fieldDependencies[_currentRuntime];
+     //       lst.Clear();
+     //       for (int i = 0, icnt = addresses.Length; i < icnt; ++i)
+     //       {
+     //           if (!addrSet.Add(addresses[i])) continue;
+     //           var result = fldDpnds.GetFieldParents(addresses[i], out error);
+     //           if (result != null && result.Length > 0)
+     //               lst.Add(result);
+     //       }
+	    //    return lst.ToArray();
+	    //}
 
         #endregion Types
 
@@ -999,6 +970,7 @@ namespace ClrMDRIndex
 				return null;
 			}
 		}
+
 
 		/// <summary>
 		/// 
@@ -1934,7 +1906,7 @@ namespace ClrMDRIndex
 				new ColumnInfo(Constants.BlackDiamond + " Count Diff", ReportFile.ColumnType.Int32,150,3,true),
 				new ColumnInfo(Constants.BlackDiamond + " Total Size", ReportFile.ColumnType.UInt64,150,4,true),
 				new ColumnInfo(Constants.AdhocQuerySymbol + " Total Size", ReportFile.ColumnType.UInt64,150,5,true),
-				new ColumnInfo("Type", ReportFile.ColumnType.String,500,5,true),
+				new ColumnInfo("Type", ReportFile.ColumnType.String,500,6,true),
 			};
 
 			Array.Sort(dataListing, ReportFile.GetComparer(colInfos[4]));
@@ -2200,6 +2172,11 @@ namespace ClrMDRIndex
 			}
 		}
 
+		public Tuple<ulong, ulong[], SortedDictionary<string, KeyValuePair<int, ulong>>, SortedDictionary<string, List<int>>> GetTypeSizeDetails(int typeId, out string error)
+		{
+			ulong[] addresses = GetTypeAddresses(typeId);
+			return ClrtDump.GetTotalSizeDetail(Dump, addresses, out error);
+		}
 
         #endregion Dump Interface
 

@@ -51,16 +51,13 @@ namespace UnitTestMdr
             const string typeName = @"ECS.Common.Collections.Common.EzeBitVector";
             string error;
             //var map = OpenMap(@"D:\Jerzy\WinDbgStuff\Dumps\DumpTest\DumpTest.exe_160820_073947.map");
-            var map = OpenMap(@"C:\WinDbgStuff\Dumps\Analytics\AnalyticsMemory\A2_noDF.map");
-            var outPath = map.ReportPath + Path.DirectorySeparatorChar + "FIELD_DEPENDENCIES.txt";
+            var map = OpenMap(@"D:\Jerzy\WinDbgStuff\dumps\Analytics\Memory.Usage.OPAM.971\DupCacheIssue\A2_noDF.map");
             using (map)
             {
                 int typeId = map.GetTypeId(typeName);
                 ulong[] typeAddresses = map.GetTypeAddresses(typeId);
-
-                DependencyNode node = map.GetAddressesDescendants(typeId, typeAddresses, 6, out error);
-
-                map.DebugFieldDependencyDump(outPath, out error);
+				Tuple<DependencyNode, int> result = map.GetAddressesDescendants(typeId, typeAddresses, 6, out error);
+	            var count = result.Item2;
             }
 
             Assert.IsNull(error, error);
@@ -849,7 +846,88 @@ namespace UnitTestMdr
 			}
         }
 
-        [TestMethod]
+
+		[TestMethod]
+		public void TestGetTypeSizeDetails()
+		{
+			string reportPath = null;
+			StreamWriter sw = null;
+			const string typeName = "ECS.Common.HierarchyCache.Structure.RealPosition";
+			string error = null;
+			Tuple<ulong, ulong[], SortedDictionary<string, KeyValuePair<int, ulong>>, SortedDictionary<string, List<int>>> result = null;
+
+			try
+			{
+				using (
+					var map =
+						OpenMap(
+							@"D:\Jerzy\WinDbgStuff\dumps\Analytics\Memory.Usage.OPAM.971\RealPositionCmp\Eze.Analytics.Svc.RPSMALL0_160913_153220.map")
+					)
+				{
+					int typeId = map.GetTypeId(typeName);
+					result = map.GetTypeSizeDetails(typeId, out error);
+					reportPath = map.ReportPath + Path.DirectorySeparatorChar + Utils.BaseTypeName(typeName) + ".SIZE.DETAILS.txt";
+				}
+
+				Assert.IsNotNull(result,error);
+
+				sw = new StreamWriter(reportPath);
+				sw.WriteLine("### TOTAL SIZE: " + Utils.LargeNumberString(result.Item1));
+				sw.WriteLine("### INVALID ADDRESSES COUNT: " + Utils.LargeNumberString(result.Item2.Length));
+				var typeDct = result.Item3;
+				sw.WriteLine("### TYPE COUNT: " + Utils.LargeNumberString(typeDct.Count));
+				foreach (var kv in typeDct)
+				{
+					var name = kv.Key;
+					var cnt = kv.Value.Key;
+					var sz = kv.Value.Value;
+					sw.WriteLine(Utils.SortableSizeStringHeader(cnt) + Utils.SortableLengthStringHeader(sz) + name);
+				}
+				var aryDct = result.Item4;
+				sw.WriteLine("### ARRAYS AND THEIR COUNTS");
+				sw.WriteLine("### ARRAY COUNT: " + Utils.LargeNumberString(aryDct.Count));
+				sw.WriteLine("### Columns: array count, min elem count, max elem count, avg elem count, total elem count, type name");
+				foreach (var kv in aryDct)
+				{
+					var name = kv.Key;
+					var lst = kv.Value;
+					var acnt = lst.Count;
+					var totalElemCount = 0;
+					var minElemCount = Int32.MaxValue;
+					var maxElemCount = 0;
+					var avgElemCount = 0;
+					for (int i = 0, icnt = lst.Count; i < icnt; ++i)
+					{
+						var val = lst[i];
+						totalElemCount += val;
+						if (val < minElemCount) minElemCount = val;
+						if (val > maxElemCount) maxElemCount = val;
+					}
+					avgElemCount = (int) Math.Round((double) totalElemCount/(double) acnt);
+					sw.Write(Utils.CountStringHeader(acnt));
+					sw.Write(Utils.CountStringHeader(minElemCount));
+					sw.Write(Utils.CountStringHeader(maxElemCount));
+					sw.Write(Utils.CountStringHeader(avgElemCount));
+					sw.Write(Utils.SortableSizeStringHeader(totalElemCount));
+					sw.WriteLine(name);
+
+				}
+
+			}
+			catch (Exception ex)
+			{
+				Assert.IsTrue(false, ex.ToString());
+			}
+			finally
+			{
+				sw?.Close();
+			}
+
+
+
+		}
+
+		[TestMethod]
         public void TestDumpTypesFields()
         {
             var fldRefList = new List<KeyValuePair<ulong, int>>(64);

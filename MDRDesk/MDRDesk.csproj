@@ -132,6 +132,9 @@
       <DependentUpon>MdrMessageBox.xaml</DependentUpon>
     </Compile>
     <Compile Include="RecentFileList.cs" />
+    <Compile Include="ReferenceSearchSetup.xaml.cs">
+      <DependentUpon>ReferenceSearchSetup.xaml</DependentUpon>
+    </Compile>
     <Page Include="InputStringDlg.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
@@ -153,6 +156,10 @@
       <SubType>Code</SubType>
     </Compile>
     <Page Include="MdrMessageBox.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="ReferenceSearchSetup.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>
@@ -230,6 +237,9 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="Images\ErrorSummary_24x.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <Resource Include="Images\Settings_32x.png" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <PropertyGroup>

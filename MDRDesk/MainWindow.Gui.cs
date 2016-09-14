@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Diagnostics;
@@ -49,6 +50,9 @@ namespace MDRDesk
 		private const string ReportTitleSizeDiffs = "Count;/Size Comp";
 		private const string ReportNameSizeDiffs = "SizesDiff";
 
+		private const string GridNameNamespaceTypeView = "NamespaceTypeView";
+		private const string GridNameFullNameTypeView = "HeapIndexTypeView";
+		private const string GridNameClassTypeView = "ReversedHeapIndexTypeView";
 
 		private string GetReportTitle(ListView lst)
 		{
@@ -106,14 +110,17 @@ namespace MDRDesk
 
         private void DisplayNamespaceGrid(KeyValuePair<string, KeyValuePair<string, int>[]>[] namespaces)
 	    {
-            var grid = this.TryFindResource("NamespaceTypeView") as Grid;
+            var grid = this.TryFindResource(GridNameNamespaceTypeView) as Grid;
             Debug.Assert(grid != null);
-            grid.Name = "NamespaceTypeView__" + Utils.GetNewID();
-	        grid.Tag = namespaces;
+			//grid.Name = "NamespaceTypeView__" + Utils.GetNewID();
+			grid.Name = grid.Name + "__" + Utils.GetNewID();
+			grid.Tag = namespaces;
             var lb = (ListBox)LogicalTreeHelper.FindLogicalNode(grid, "lbTpNamespaces");
             Debug.Assert(lb != null);
             lb.ItemsSource = namespaces;
-            var tab = new CloseableTabItem() { Header = Constants.BlackDiamond + " Types", Content = grid, Name = "HeapIndexTypeViewTab" };
+			var nsCountLabel = (Label)LogicalTreeHelper.FindLogicalNode(grid, @"lTpNsCount");
+	        nsCountLabel.Content = Utils.LargeNumberString(namespaces.Length);
+			var tab = new CloseableTabItem() { Header = Constants.BlackDiamond + " Types", Content = grid, Name = "HeapIndexTypeViewTab" };
             MainTab.Items.Add(tab);
             MainTab.SelectedItem = tab;
             MainTab.UpdateLayout();
@@ -129,11 +136,13 @@ namespace MDRDesk
             if (selndx < 0) return;
             var data = lb.ItemsSource as KeyValuePair<string, KeyValuePair<string, int>[]>[];
 			Debug.Assert(lbTpNames!=null);
-            lbTpNames.ItemsSource = data[selndx].Value;
+			var classCountLabel = (Label)LogicalTreeHelper.FindLogicalNode(grid, @"lTpClassCount");
+			lbTpNames.ItemsSource = data[selndx].Value;
             lbTpNames.SelectedIndex = 0;
-        }
+			classCountLabel.Content = Utils.LargeNumberString(data[selndx].Value.Length);
+		}
 
-        private void lbTpNamesSelectionChange(object sender, SelectionChangedEventArgs e)
+		private void lbTpNamesSelectionChange(object sender, SelectionChangedEventArgs e)
         {
             var grid = GetCurrentTabGrid();
             var lbTpNames = (ListBox)LogicalTreeHelper.FindLogicalNode(grid, @"lbTpNames");
@@ -145,17 +154,19 @@ namespace MDRDesk
             ClrElementType elem;
             var addresses = CurrentMap.GetTypeAddressesFromSortedIndex(data[selndx].Value, out elem);
             var lbTpAddresses = (ListBox)LogicalTreeHelper.FindLogicalNode(grid, @"lbTpAddresses");
-
-            lbTpAddresses.ItemsSource = addresses;
+			var addrCountLabel = (Label)LogicalTreeHelper.FindLogicalNode(grid, @"lTpAddressCount");
+	        addrCountLabel.Content = Utils.LargeNumberString(addresses.Length);
+			lbTpAddresses.ItemsSource = addresses;
 
         }
 
 	    private void DisplayTypesGrid(bool reversedTypeNames)
 	    {
-            var grid = this.TryFindResource("HeapIndexTypeView") as Grid;
+            var grid = this.TryFindResource(GridNameFullNameTypeView) as Grid;
             Debug.Assert(grid != null);
-            grid.Name =   (reversedTypeNames?"Reversed":string.Empty) +  "HeapIndexTypeView__" + Utils.GetNewID();
-            var lb = (ListBox)LogicalTreeHelper.FindLogicalNode(grid, "lbTypeNames");
+			//grid.Name = (reversedTypeNames ? "Reversed" : string.Empty) + "HeapIndexTypeView__" + Utils.GetNewID();
+			grid.Name = (reversedTypeNames ? GridNameClassTypeView : GridNameFullNameTypeView) + "__" + Utils.GetNewID();
+			var lb = (ListBox)LogicalTreeHelper.FindLogicalNode(grid, "lbTypeNames");
             Debug.Assert(lb != null);
 	        if (reversedTypeNames)
 	            lb.ItemsSource = CurrentMap.ReversedTypeNames;
@@ -185,7 +196,7 @@ namespace MDRDesk
                 addresses = CurrentMap.GetTypeAddressesFromSortedIndex(lbNames.SelectedIndex, out elem);
             var lab = (Label)LogicalTreeHelper.FindLogicalNode(grid, @"lAddressCount");
             Debug.Assert(lab != null);
-            lab.Content = addresses.Length < 1 ? "count: 0" : "count: " + string.Format("{0:#,###}", addresses.Length);
+	        lab.Content = Utils.LargeNumberString(addresses.Length);
             var lelem = (Label)LogicalTreeHelper.FindLogicalNode(grid, @"lElementType");
             Debug.Assert(lelem != null);
             lelem.Content = elem;
@@ -257,11 +268,53 @@ namespace MDRDesk
 			MainTab.UpdateLayout();
 		}
 
-        #endregion Display Grids
+		private void DisplayDependencyNodeGrid(DependencyNode root)
+		{
 
-        #region MessageBox
 
-        private void ShowInformation(string caption, string header, string text, string details)
+			TreeViewItem tvRoot = new TreeViewItem();
+			tvRoot.Header = root.ToString();
+			tvRoot.Tag = root;
+			Queue<KeyValuePair<DependencyNode,TreeViewItem>> que = new Queue<KeyValuePair<DependencyNode, TreeViewItem>>();
+			que.Enqueue(new KeyValuePair<DependencyNode, TreeViewItem>(root,tvRoot));
+			while (que.Count > 0)
+			{
+				var info = que.Dequeue();
+				DependencyNode parentNode = info.Key;
+				TreeViewItem tvParentNode = info.Value;
+				DependencyNode[] descendants = parentNode.Descendants;
+				for (int i = 0, icount = descendants.Length; i < icount; ++i)
+				{
+					var descNode = descendants[i];
+					TreeViewItem tvNode = new TreeViewItem();
+					tvNode.Header = descNode.ToString();
+					tvNode.Tag = descNode;
+					tvParentNode.Items.Add(tvNode);
+					que.Enqueue(new KeyValuePair<DependencyNode, TreeViewItem>(descNode,tvNode));
+				}
+			}
+
+			var grid = this.TryFindResource("TreeViewGrid") as Grid;
+			Debug.Assert(grid != null);
+			grid.Name = "DependencyNodeTreeView__" + Utils.GetNewID();
+			grid.Tag = root;
+			var treeView = (TreeView)LogicalTreeHelper.FindLogicalNode(grid, "treeView");
+			Debug.Assert(treeView != null);
+			treeView.Items.Add(tvRoot);
+
+			//tvRoot.ExpandSubtree();
+
+			var tab = new CloseableTabItem() { Header = Constants.BlackDiamond + " Type References", Content = grid, Name = "HeapIndexTypeViewTab" };
+			MainTab.Items.Add(tab);
+			MainTab.SelectedItem = tab;
+			MainTab.UpdateLayout();
+		}
+
+		#endregion Display Grids
+
+		#region MessageBox
+
+		private void ShowInformation(string caption, string header, string text, string details)
 		{
 			var dialog = new MdrMessageBox()
 			{
@@ -292,6 +345,7 @@ namespace MDRDesk
 			dialog.DetailsExpander.Visibility = string.IsNullOrWhiteSpace(dialog.DeatilsText) ? Visibility.Collapsed : Visibility.Visible;
 			var result = dialog.ShowDialog();
 		}
+
 
 		private MdrMessageBox GetErrorMsgBox(string errStr)
 		{

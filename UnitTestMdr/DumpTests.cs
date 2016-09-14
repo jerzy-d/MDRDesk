@@ -1154,6 +1154,47 @@ namespace UnitTestMdr
 		#region Strings, Arrays, Dictionaries, etc...
 
 		[TestMethod]
+		public void TestTypeStringFields()
+		{
+			string typeName = @"ECS.Common.HierarchyCache.Structure.RealPosition";
+			string error = null;
+			using (var clrDump = GetDump(@"D:\Jerzy\WinDbgStuff\dumps\Analytics\Memory.Usage.OPAM.971\DupCacheIssue\A2_noDF.dmp"))
+			{
+				List<ulong> addrLst = new List<ulong>(1024);
+				try
+				{
+					var heap = clrDump.GetFreshHeap();
+					var segs = heap.Segments;
+					for (int i = 0, icnt = segs.Count; i < icnt; ++i)
+					{
+						var seg = segs[i];
+						ulong addr = seg.FirstObject;
+						while (addr != 0ul)
+						{
+							var clrType = heap.GetObjectType(addr);
+							if (clrType == null) goto NEXT_OBJECT;
+							if (!Utils.SameStrings(typeName,clrType.Name)) goto NEXT_OBJECT;
+							addrLst.Add(addr);
+
+							NEXT_OBJECT:
+							addr = seg.NextObject(addr);
+						}
+					}
+
+					heap = clrDump.GetFreshHeap();
+					ClrtDump.GetTypeStringUsage(heap, addrLst.ToArray(), out error);
+
+				}
+				catch (Exception ex)
+				{
+					error = Utils.GetExceptionErrorString(ex);
+					Assert.IsTrue(false, error);
+				}
+			}
+		}
+
+
+		[TestMethod]
 		public void TestGetEmptyStrings()
 		{
 			var t1 = string.IsNullOrEmpty("  ");
@@ -2008,7 +2049,6 @@ namespace UnitTestMdr
 				}
 			}
 		}
-
 
 		[TestMethod]
 		public void TestSpecificFilteredType()
