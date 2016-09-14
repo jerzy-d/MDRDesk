@@ -1,6 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Configuration;
 using System.Diagnostics;
+using System.Globalization;
 using System.IO;
 using System.Linq;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
@@ -925,6 +927,107 @@ namespace UnitTestMdr
 
 
 
+		}
+
+		[TestMethod]
+		public void TestGetProportionsOfFromFiles()
+		{
+			StreamWriter sw = null;
+			string path1 = @"D:\Jerzy\WinDbgStuff\dumps\Analytics\Memory.Usage.OPAM.971\RealPositionCmp\Eze.Analytics.Svc.RPBIG_160913_151123.map\ad-hoc.queries\RealPosition.SIZE.DETAILS.TYPES.txt";
+			string path2 = @"D:\Jerzy\WinDbgStuff\dumps\Analytics\Memory.Usage.OPAM.971\RealPositionCmp\Eze.Analytics.Svc.RPSMALL0_160913_153220.map\ad-hoc.queries\RealPosition.SIZE.DETAILS.TYPES.txt";
+			string path3 = @"D:\Jerzy\WinDbgStuff\dumps\Analytics\Memory.Usage.OPAM.971\RealPositionCmp\Eze.Analytics.Svc.RPSMALL1_160913_153641.map\ad-hoc.queries\RealPosition.SIZE.DETAILS.TYPES.txt";
+
+			SortedDictionary<string,long[]> resDct = new SortedDictionary<string, long[]>(StringComparer.Ordinal);
+			string[] seps = new[] {Constants.HeavyGreekCrossPadded};
+
+			try
+			{
+				ReadProportionsFromFile(path1, 0, 6, resDct, seps);
+				ReadProportionsFromFile(path2, 2, 6, resDct, seps);
+				ReadProportionsFromFile(path3, 4, 6, resDct, seps);
+				var path = path1 + ".PROPORTIONS.txt";
+				sw = new StreamWriter(path);
+				sw.WriteLine("### MDRDESK REPORT: SIZE DETAILS TYPES PROPORTIONS");
+				sw.WriteLine("### TITLE: PROPORTIONS");
+				sw.WriteLine("### COUNT: " + Utils.LargeNumberString(resDct.Count));
+				sw.WriteLine("### SEPARATOR: " + Constants.HeavyGreekCrossPadded);
+				sw.WriteLine("### COLUMNS: Count1 Prop|int|150 "
+					+ Constants.HeavyGreekCrossPadded + "Count2 Prop|int|150"
+					+ Constants.HeavyGreekCrossPadded + "Size1 Prop|int|150"
+					+ Constants.HeavyGreekCrossPadded + "Size2 Prop|int|150"
+					+ Constants.HeavyGreekCrossPadded + "Type|string|500");
+
+				sw.WriteLine(ReportFile.DescrPrefix + path1);
+				sw.WriteLine(ReportFile.DescrPrefix + path2);
+				sw.WriteLine(ReportFile.DescrPrefix + path3);
+
+				foreach (var kv in resDct)
+				{
+					long[] vals = kv.Value;
+					int c1Prop = (int)Math.Round((double)vals[0] / (double)(vals[2] == 0 ? 1 : vals[2]));
+					int s1Prop = (int)Math.Round((double)vals[1] / (double)(vals[3] == 0 ? 1 : vals[3]));
+					int c2Prop = (int)Math.Round((double)vals[0] / (double)(vals[4] == 0 ? 1 : vals[4]));
+					int s2Prop = (int)Math.Round((double)vals[1] / (double)(vals[5] == 0 ? 1 : vals[5]));
+
+					sw.Write(Utils.LargeNumberString(c1Prop) + Constants.HeavyGreekCrossPadded);
+					sw.Write(Utils.LargeNumberString(s1Prop) + Constants.HeavyGreekCrossPadded);
+					sw.Write(Utils.LargeNumberString(c2Prop) + Constants.HeavyGreekCrossPadded);
+					sw.Write(Utils.LargeNumberString(s1Prop) + Constants.HeavyGreekCrossPadded);
+					sw.WriteLine(kv.Key);
+				}
+
+			}
+			catch (Exception ex)
+			{
+				Assert.IsTrue(false, ex.ToString());
+			}
+			finally
+			{
+				sw?.Close();
+			}
+		}
+
+		private bool ReadProportionsFromFile(string path, int saveNdx, int aryLen, SortedDictionary<string, long[]> resDct, string[] seps)
+		{
+			StreamReader sr = null;
+			string ln = null;
+			try
+			{
+				sr = new StreamReader(path);
+
+				int nextNdx = saveNdx + 1;
+				while ((ln = sr.ReadLine()) != null)
+				{
+					if (string.IsNullOrWhiteSpace(ln) || !Char.IsDigit(ln[0])) continue;
+					var parts = ln.Split(seps, StringSplitOptions.None);
+					long val1 = Int64.Parse(parts[0],NumberStyles.AllowThousands);
+					long val2 = Int64.Parse(parts[1],NumberStyles.AllowThousands);
+					long[] ary;
+					if(resDct.TryGetValue(parts[2], out ary))
+					{
+						ary[saveNdx] = val1;
+						ary[nextNdx] = val2;
+					}
+					else
+					{
+						ary = new long[aryLen];
+						ary[saveNdx] = val1;
+						ary[nextNdx] = val2;
+						resDct.Add(parts[2],ary);
+					}
+				}
+
+				return true;
+			}
+			catch (Exception ex)
+			{
+				Assert.IsTrue(false, ex.ToString());
+				return false;
+			}
+			finally
+			{
+				sr?.Close();
+			}
 		}
 
 		[TestMethod]

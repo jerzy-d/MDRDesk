@@ -1521,6 +1521,44 @@ namespace MDRDesk
 
 		}
 
+		private async void GenerateSizeDetailsReport(object sender, RoutedEventArgs e)
+		{
+			var lbTypeNames = GetTypeNameListBox(sender);
+			var selectedItem = lbTypeNames.SelectedItems[0];
+			if (selectedItem == null)
+			{
+				return; // TODO JRD -- display message
+			}
+
+			string typeName = null;
+			int typeId = Constants.InvalidIndex;
+			if (selectedItem is KeyValuePair<string, int>) // namespace display
+			{
+				typeId = ((KeyValuePair<string, int>)selectedItem).Value;
+				typeName = ((KeyValuePair<string, int>)selectedItem).Key;
+			}
+
+			var baseTypeName = Utils.BaseTypeName(typeName);
+
+			SetStartTaskMainWindowState("Getting size details for: '" + baseTypeName + "', please wait...");
+
+			var result = await Task.Run(() =>
+			{
+				string error;
+				var info = CurrentMap.GetTypeSizeDetails(typeId, out error);
+				if (info == null)
+					return new Tuple<string, string, string> (error,null,null);
+
+				var rep = Reports.DumpTypeSizeDetails(CurrentMap.ReportPath, typeName, info.Item1, info.Item2, info.Item3, info.Item4,
+					out error);
+
+				return new Tuple<string, string, string>(null, rep.Item1, rep.Item2);
+			});
+
+			SetEndTaskMainWindowState("Getting size details for: '" + baseTypeName + "', done");
+
+		}
+
 		private void LbGetInstImmediateRefsClicked(object sender, RoutedEventArgs e)
 		{
 		    var lbAddresses = GetTypeAddressesListBox(sender);
@@ -1721,5 +1759,6 @@ namespace MDRDesk
 
 
 		}
+
 	}
 }

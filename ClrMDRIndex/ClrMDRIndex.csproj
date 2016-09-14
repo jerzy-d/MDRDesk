@@ -115,6 +115,7 @@
     <Compile Include="Utils\InstanceValue.cs" />
     <Compile Include="Utils\IntervalHeap.cs" />
     <Compile Include="Utils\ReportFile.cs" />
+    <Compile Include="Utils\Reports.cs" />
     <Compile Include="Utils\StringBuilderCache.cs" />
     <Compile Include="Utils\StringCache.cs" />
     <Compile Include="Utils\StringIdDct.cs" />

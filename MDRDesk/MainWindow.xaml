@@ -159,6 +159,7 @@
                         <MenuItem x:Name="NsGetBaseHeapSize" Header="Get Type Heap Base Size" Click="GetHeapBaseSizeClicked"></MenuItem>
                         <MenuItem x:Name="NsGetStringUsage" Header="Get String Usage" Click="GetTypeStringUsage"></MenuItem>
                         <MenuItem x:Name="NsGetParentReferences" Header="Get Parent References" Click="GetParentReferences"></MenuItem>
+                        <MenuItem x:Name="NsGenerateSizeDetailsReport" Header="Generate Size Details Report" Click="GenerateSizeDetailsReport"></MenuItem>
                     </ContextMenu>
                 </ListBox.ContextMenu>
             </ListBox>
