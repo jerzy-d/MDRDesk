@@ -1549,7 +1549,7 @@ namespace MDRDesk
 				if (info == null)
 					return new Tuple<string, string, string> (error,null,null);
 
-				var rep = Reports.DumpTypeSizeDetails(CurrentMap.ReportPath, typeName, info.Item1, info.Item2, info.Item3, info.Item4,
+				var rep = Reports.DumpTypeSizeDetails(CurrentMap.ReportPath, typeName, info.Item1, info.Item2, info.Item3, info.Item4,info.Item5,
 					out error);
 
 				return new Tuple<string, string, string>(null, rep.Item1, rep.Item2);

@@ -2172,7 +2172,7 @@ namespace ClrMDRIndex
 			}
 		}
 
-		public Tuple<ulong, ulong[], SortedDictionary<string, KeyValuePair<int, ulong>>, SortedDictionary<string, List<int>>> GetTypeSizeDetails(int typeId, out string error)
+		public Tuple<ulong, ulong[], SortedDictionary<string, KeyValuePair<int, ulong>>, SortedDictionary<string, List<int>>, triple<int, ulong,string>[]> GetTypeSizeDetails(int typeId, out string error)
 		{
 			ulong[] addresses = GetTypeAddresses(typeId);
 			return ClrtDump.GetTotalSizeDetail(Dump, addresses, out error);

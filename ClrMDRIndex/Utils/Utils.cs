@@ -912,7 +912,27 @@ namespace ClrMDRIndex
             }
         }
 
-        public class KVUlongUlongKeyCmp : IComparer<KeyValuePair<ulong, ulong>>
+		public class KVIntUlongCmpAsc : IComparer<KeyValuePair<int, ulong>>
+		{
+			public int Compare(KeyValuePair<int, ulong> a, KeyValuePair<int, ulong> b)
+			{
+				if (a.Key == b.Key)
+					return a.Value > b.Value ? -1 : (a.Value < b.Value ? 1 : 0);
+				return a.Key > b.Key ? -1 : (a.Key < b.Key ? 1 : 0);
+			}
+		}
+
+		public class KVIntUlongCmpDesc : IComparer<KeyValuePair<int, ulong>>
+		{
+			public int Compare(KeyValuePair<int, ulong> a, KeyValuePair<int, ulong> b)
+			{
+				if (a.Key == b.Key)
+					return a.Value < b.Value ? -1 : (a.Value > b.Value ? 1 : 0);
+				return a.Key < b.Key ? -1 : (a.Key > b.Key ? 1 : 0);
+			}
+		}
+
+		public class KVUlongUlongKeyCmp : IComparer<KeyValuePair<ulong, ulong>>
 		{
 			public int Compare(KeyValuePair<ulong, ulong> a, KeyValuePair<ulong, ulong> b)
 			{
@@ -937,7 +957,35 @@ namespace ClrMDRIndex
 			}
 		}
 
-        public class QuadrupleUlongUlongIntKeyCmp : IComparer<quadruple<ulong, ulong, int, int>>
+		public class TripleIntUlongStrCmpAsc : IComparer<triple<int, ulong, string>>
+		{
+			public int Compare(triple<int, ulong, string> a, triple<int, ulong, string> b)
+			{
+				if (a.First == b.First)
+				{
+					if (a.Second == b.Second)
+						return string.Compare(a.Third, b.Third, StringComparison.Ordinal);
+					return a.Second < b.Second ? -1 : (a.Second > b.Second ? 1 : 0);
+				}
+				return a.First < b.First ? -1 : (a.First > b.First ? 1 : 0);
+			}
+		}
+
+		public class TripleIntUlongStrCmpDesc : IComparer<triple<int, ulong, string>>
+		{
+			public int Compare(triple<int, ulong, string> a, triple<int, ulong, string> b)
+			{
+				if (a.First == b.First)
+				{
+					if (a.Second == b.Second)
+						return string.Compare(b.Third, a.Third, StringComparison.Ordinal);
+					return b.Second < a.Second ? -1 : (b.Second > a.Second ? 1 : 0);
+				}
+				return b.First < a.First ? -1 : (b.First > a.First ? 1 : 0);
+			}
+		}
+
+		public class QuadrupleUlongUlongIntKeyCmp : IComparer<quadruple<ulong, ulong, int, int>>
         {
             public int Compare(quadruple<ulong, ulong, int, int> a, quadruple<ulong, ulong, int, int> b)
             {

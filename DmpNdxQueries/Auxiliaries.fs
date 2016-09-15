@@ -104,6 +104,13 @@ module Auxiliaries =
                     | _ -> (TypeCategory.Struct, TypeCategory.Struct)
                 | _ -> (TypeCategory.Primitive, TypeCategory.Primitive)
 
+    type ClrCategory = TypeCategory * TypeCategory
+
+    type ClrValue =
+        | Value of string
+        | Values of string array
+        | ComplexValue of ClrValue
+
     type KeyValuePairInfo =
         { keyFld: ClrInstanceField;
           keyType: ClrType;
@@ -111,6 +118,8 @@ module Auxiliaries =
           valFld: ClrInstanceField;
           valType: ClrType;
           valCat: TypeCategory * TypeCategory; }
+
+
 
     /// Format address given unsigned long value.
     let getAddrDispStr (addr : uint64) =
@@ -147,7 +156,7 @@ module Auxiliaries =
         getting selected field values for a selected type
     *)
 
-    let getFieldValue (heap : ClrHeap) (field : ClrInstanceField) (typeCats: TypeCategory * TypeCategory) (classAddr : address) (isinternal:bool) =
+    let getFieldValue (heap : ClrHeap) (field : ClrInstanceField) (typeCats: ClrCategory) (classAddr : address) (isinternal:bool) =
         let clrType: ClrType = field.Type
         if clrType = null then 
             "!field-type-null"
@@ -189,7 +198,7 @@ module Auxiliaries =
                    ValueExtractor.GetPrimitiveValue(o, field.Type)
                 | _ -> "?DON'T KNOW HOW TO GET VALUE?"
 
-    let getObjectValue (heap : ClrHeap) (clrType:ClrType) (typeCats: TypeCategory * TypeCategory) (value : Object) (isinternal:bool) =
+    let getObjectValue (heap : ClrHeap) (clrType:ClrType) (typeCats: ClrCategory) (value : Object) (isinternal:bool) =
             match fst typeCats with
                 | TypeCategory.Reference ->
                     let addr = unbox<uint64>(value)
@@ -224,7 +233,7 @@ module Auxiliaries =
 
 
 
-    let getFieldVal (heap:ClrHeap) (parentAddr:address) (fld:ClrInstanceField) (fldType:ClrType) (fldCat:TypeCategory * TypeCategory) (isInternal:bool) =
+    let getFieldVal (heap:ClrHeap) (parentAddr:address) (fld:ClrInstanceField) (fldType:ClrType) (fldCat:ClrCategory) (isInternal:bool) =
         let value = fld.GetValue(parentAddr,isInternal)
         getObjectValue heap fldType fldCat value isInternal
 

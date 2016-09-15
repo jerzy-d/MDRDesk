@@ -14,6 +14,7 @@ namespace ClrMDRIndex
 														ulong total, ulong[] notFound,
 														SortedDictionary<string, KeyValuePair<int, ulong>> typeDct,
 														SortedDictionary<string, List<int>> aryDct,
+														triple<int, ulong,string>[] largeArrays,
 														out string error)
 		{
 			error = null;
@@ -35,6 +36,7 @@ namespace ClrMDRIndex
 				sw.WriteLine(ReportFile.DescrPrefix + "Total Size: " + Utils.LargeNumberString(total));
 				sw.WriteLine(ReportFile.DescrPrefix + "Type Count: " + Utils.LargeNumberString(typeDct.Count));
 				sw.WriteLine(ReportFile.DescrPrefix + "INVALID ADDRESSES COUNT: : " + Utils.LargeNumberString(notFound.Length) + " (will be resolved)");
+
 
 				foreach (var kv in typeDct)
 				{
@@ -62,6 +64,11 @@ namespace ClrMDRIndex
 
 				sw.WriteLine(ReportFile.DescrPrefix + "Array Details for : " + typeName);
 				sw.WriteLine(ReportFile.DescrPrefix + "Total Array Count: " + Utils.LargeNumberString(aryDct.Count));
+				sw.WriteLine(ReportFile.DescrPrefix + "Large Arrays:");
+				for (int i = 0, icnt = largeArrays.Length; i < icnt; ++i)
+				{
+					sw.WriteLine(ReportFile.DescrPrefix + Utils.SizeStringHeader(largeArrays[i].First) + Utils.AddressString(largeArrays[i].Second) + "  " + largeArrays[i].Third);
+				}
 
 				foreach (var kv in aryDct)
 				{

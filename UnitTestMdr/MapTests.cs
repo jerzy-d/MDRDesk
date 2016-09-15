@@ -856,7 +856,7 @@ namespace UnitTestMdr
 			StreamWriter sw = null;
 			const string typeName = "ECS.Common.HierarchyCache.Structure.RealPosition";
 			string error = null;
-			Tuple<ulong, ulong[], SortedDictionary<string, KeyValuePair<int, ulong>>, SortedDictionary<string, List<int>>> result = null;
+			Tuple<ulong, ulong[], SortedDictionary<string, KeyValuePair<int, ulong>>, SortedDictionary<string, List<int>>, triple<int, ulong,string>[]> result = null;
 
 			try
 			{
@@ -930,7 +930,7 @@ namespace UnitTestMdr
 		}
 
 		[TestMethod]
-		public void TestGetProportionsOfFromFiles()
+		public void TestGetProportionsOfFromThreeFiles()
 		{
 			StreamWriter sw = null;
 			string path1 = @"D:\Jerzy\WinDbgStuff\dumps\Analytics\Memory.Usage.OPAM.971\RealPositionCmp\Eze.Analytics.Svc.RPBIG_160913_151123.map\ad-hoc.queries\RealPosition.SIZE.DETAILS.TYPES.txt";
@@ -986,6 +986,58 @@ namespace UnitTestMdr
 				sw?.Close();
 			}
 		}
+
+
+		[TestMethod]
+		public void TestGetProportionsOfFromTwoFiles()
+		{
+			StreamWriter sw = null;
+			string path1 = @"D:\Jerzy\WinDbgStuff\dumps\Analytics\Memory.Usage.OPAM.971\RealPositionCmp\Eze.Analytics.Svc.BIG.map\ad-hoc.queries\RealPosition.SIZE.DETAILS.TYPES.txt";
+			string path2 = @"D:\Jerzy\WinDbgStuff\dumps\Analytics\Memory.Usage.OPAM.971\RealPositionCmp\Eze.Analytics.Svc.SMALL.map\ad-hoc.queries\RealPosition.SIZE.DETAILS.TYPES.txt";
+
+			SortedDictionary<string, long[]> resDct = new SortedDictionary<string, long[]>(StringComparer.Ordinal);
+			string[] seps = new[] { Constants.HeavyGreekCrossPadded };
+
+			try
+			{
+				ReadProportionsFromFile(path1, 0, 4, resDct, seps);
+				ReadProportionsFromFile(path2, 2, 4, resDct, seps);
+				var path = path1 + ".PROPORTIONS.txt";
+				sw = new StreamWriter(path);
+				sw.WriteLine("### MDRDESK REPORT: SIZE DETAILS TYPES PROPORTIONS");
+				sw.WriteLine("### TITLE: PROPORTIONS");
+				sw.WriteLine("### COUNT: " + Utils.LargeNumberString(resDct.Count));
+				sw.WriteLine("### SEPARATOR: " + Constants.HeavyGreekCrossPadded);
+				sw.WriteLine("### COLUMNS: Count1 Prop|int|200 "
+					+ Constants.HeavyGreekCrossPadded + "Size1 Prop|int|200"
+					+ Constants.HeavyGreekCrossPadded + "Type|string|500");
+
+				sw.WriteLine(ReportFile.DescrPrefix + path1);
+				sw.WriteLine(ReportFile.DescrPrefix + path2);
+
+				foreach (var kv in resDct)
+				{
+					long[] vals = kv.Value;
+					int c1Prop = (int)Math.Round((double)vals[0] / (double)(vals[2] == 0 ? 1 : vals[2]));
+					int s1Prop = (int)Math.Round((double)vals[1] / (double)(vals[3] == 0 ? 1 : vals[3]));
+
+					sw.Write(Utils.LargeNumberString(c1Prop) + Constants.HeavyGreekCrossPadded);
+					sw.Write(Utils.LargeNumberString(s1Prop) + Constants.HeavyGreekCrossPadded);
+					sw.WriteLine(kv.Key);
+				}
+
+			}
+			catch (Exception ex)
+			{
+				Assert.IsTrue(false, ex.ToString());
+			}
+			finally
+			{
+				sw?.Close();
+			}
+		}
+
+
 
 		private bool ReadProportionsFromFile(string path, int saveNdx, int aryLen, SortedDictionary<string, long[]> resDct, string[] seps)
 		{
