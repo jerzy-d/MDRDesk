@@ -23,6 +23,19 @@ namespace MDRDesk
             _lock = new object();
 		}
 
+	    public string[] GetPaths()
+	    {
+	        lock (_lock)
+	        {
+                string[] lst = new string[_list.Count];
+                for (int i = 0, icnt = lst.Length; i < icnt; ++i)
+                {
+                    lst[i] = _list[i].FilePath;
+                }
+	            return lst;
+	        }
+        }
+
 	    public void Add(string path)
 	    {
 	        lock (_lock)

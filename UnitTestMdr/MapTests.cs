@@ -327,7 +327,7 @@ namespace UnitTestMdr
 		public void TestTypeElemnts()
 		{
 			string error;
-			var map = OpenMap0();
+			var map = OpenMap(@"");
 
 			var ets0 = map.GetElementTypes(ClrElementType.Struct);
 
@@ -366,7 +366,7 @@ namespace UnitTestMdr
 			const string typeName =
 				"ECS.Common.Threading.Queue.Queues.MessageQueuePriorityPair+CollectionStatistics<Eze.Server.Common.Pulse.Common.Types.IPendingTick>";
 			string error;
-			var map = OpenMap0();
+			var map = OpenMap(@"");
 
 			var tname = map.GetTypeName(3);
 			var addresses = map.GetTypeAddresses(3);
@@ -382,7 +382,7 @@ namespace UnitTestMdr
 		public void TestTypeInstances()
 		{
 			const string typeName = "System.Threading.ReaderWriterLock";
-			var map = OpenMap0();
+			var map = OpenMap(@"");
 
 			var did = map.GetTypeId("Eze.Server.Common.Pulse.Common.Types.PositionCalcGroupToRowDeltaApplicationInfo");
 			Assert.IsTrue(IndexValue.IsIndex(did));
@@ -482,7 +482,7 @@ namespace UnitTestMdr
 		[TestMethod]
 		public void TestDumpReversedTypeName()
 		{
-			var map = OpenMap0();
+			var map = OpenMap(@"");
 			Assert.IsNotNull(map);
 			var outFile = DumpFileMoniker.GetOuputFolder(map.DumpPath) + Path.DirectorySeparatorChar + "REVERSEDNAMES.txt";
 			string error;
@@ -575,7 +575,7 @@ namespace UnitTestMdr
 		public void TestTypeParents()
 		{
 			const string typeName = "System.Threading.CancellationTokenRegistration[]";
-			var map = OpenMap0();
+			var map = OpenMap(@"");
 
 			var id = map.GetTypeId(typeName);
 			Assert.IsTrue(IndexValue.IsIndex(id));
@@ -590,7 +590,7 @@ namespace UnitTestMdr
 		{
 			//const string typeName = "System.Threading.CancellationTokenRegistration[]";
 			string typeName = "System.String";
-			var map = OpenMap0();
+			var map = OpenMap(@"");
 
 
 			var names = map.TypeNames;
@@ -1265,15 +1265,15 @@ namespace UnitTestMdr
 		[TestMethod]
 		public void CompareDumpsTypeInstances()
 		{
-			var map0 = OpenMap0();
-			var map1 = OpenMap1();
+			var map0 = OpenMap(@"");
+			var map1 = OpenMap(@"");
 			Map.MapsDiff(map0,map1);
 		}
 
 		[TestMethod]
 		public void ArraysScanTest()
 		{
-			var map = OpenMap0();
+			var map = OpenMap(@"");
 			using (map)
 			{
 				var stopWatch = new Stopwatch();
@@ -1569,7 +1569,7 @@ namespace UnitTestMdr
 		[TestMethod]
 		public void TestArrayCounts()
 		{
-			var map = OpenMap0();
+			var map = OpenMap(@"");
 			Stopwatch stopWatch = new Stopwatch();
 			stopWatch.Start();
 
@@ -1670,8 +1670,8 @@ namespace UnitTestMdr
 
 			stopWatch.Stop();
 			TestContext.WriteLine("TEST DURATION: " + Utils.DurationString(stopWatch.Elapsed));
-			TestContext.WriteLine("Array Total Count: " + Utils.SizeString(totalAryCount));
-			TestContext.WriteLine("Array Type Count: " + Utils.SizeString(aryInfos.Length));
+			TestContext.WriteLine("Array Total Count: " + Utils.SizeString((long)totalAryCount));
+			TestContext.WriteLine("Array Type Count: " + Utils.SizeString((long)aryInfos.Length));
 			TestContext.WriteLine("###");
 			TestContext.WriteLine("Empty Array Count: " + Utils.SizeString(emptyCnt));
 			TestContext.WriteLine("One Item Array Count: " + Utils.SizeString(oneItemCnt));
@@ -1703,24 +1703,5 @@ namespace UnitTestMdr
 			return map;
 		}
 
-		/// <summary>
-		/// Opens dump map using th from App.config, key: test_mapfolder.
-		/// </summary>
-		/// <returns>Instance of a dump map, or null on failure.</returns>
-		public static Map OpenMap0()
-		{
-			string error;
-			var map = Map.OpenMap(new Version(1,0,0), TestConfiguration.MapPath0, out error);
-			Assert.IsTrue(map != null, error);
-			return map;
-		}
-
-		private static Map OpenMap1()
-		{
-			string error;
-			var map = Map.OpenMap(new Version(1,0,0), TestConfiguration.MapPath1, out error);
-			Assert.IsTrue(map != null, error);
-			return map;
-		}
 	}
 }

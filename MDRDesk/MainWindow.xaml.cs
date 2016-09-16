@@ -83,11 +83,11 @@ namespace MDRDesk
 				this.AddHandler(CloseableTabItem.CloseTabEvent, new RoutedEventHandler(this.CloseTab));
 
 				var result = Setup.GetConfigSettings(out error);
-                RecentDumpList = new RecentFileList(RecentDumpsMenuItem, 5);
+                RecentDumpList = new RecentFileList(RecentDumpsMenuItem, (int)Setup.RecentFiles.MaxCount);
                 RecentDumpList.Add(Setup.RecentDumpList);
-                RecentIndexList = new RecentFileList(RecentIndexMenuItem, 5);
+                RecentIndexList = new RecentFileList(RecentIndexMenuItem, (int)Setup.RecentFiles.MaxCount);
                 RecentIndexList.Add(Setup.RecentIndexList);
-                RecentAdhocList = new RecentFileList(RecentAdhocMenuItem, 5);
+                RecentAdhocList = new RecentFileList(RecentAdhocMenuItem, (int)Setup.RecentFiles.MaxCount);
                 RecentAdhocList.Add(Setup.RecentAdhocList);
                 SetupDispatcherTimer();
  
@@ -163,6 +163,11 @@ namespace MDRDesk
 
 		public void MainWindow_Closing(object sender, CancelEventArgs e)
 		{
+		    string error;
+            Setup.ResetRecentFileList(RecentDumpList.GetPaths(), Setup.RecentFiles.Dump);
+            Setup.ResetRecentFileList(RecentIndexList.GetPaths(), Setup.RecentFiles.Map);
+            Setup.ResetRecentFileList(RecentAdhocList.GetPaths(), Setup.RecentFiles.Adhoc);
+            Setup.SaveConfigSettings(out error);
 			var task = Task.Factory.StartNew(() =>
 			{
 				CurrentMap?.Dispose();
@@ -197,10 +202,8 @@ namespace MDRDesk
 				return;
 			}
 			SW.Clipboard.SetText(dacFile);
-
-			//SW.MessageBox.Show(dacFile + Environment.NewLine + Environment.NewLine + "Dac file name is copied to Clipboard."
-			//    , "Required Dac File", MessageBoxButton.OK, MessageBoxImage.Information);
-			ShowInformation("Required Dac File", dacFile, "Dac file name (shown above) is copied to Clipboard.", string.Empty);
+            RecentDumpList.Add(path);
+            ShowInformation("Required Dac File", dacFile, "Dac file name (shown above) is copied to Clipboard.", string.Empty);
 		}
 
 		private void AddDacFileClicked(object sender, RoutedEventArgs e)
@@ -219,11 +222,25 @@ namespace MDRDesk
 
 		private void ToggleButton_OnChecked(object sender, RoutedEventArgs e)
         {
-            if (!IsIndexAvailable()) return;
-
             RadioButton button = sender as RadioButton;
-
             string buttonName = button.Name;
+            if (!IsIndexAvailable())
+		    {
+                switch (buttonName)
+                {
+                    case "TypeDisplayNamespaceClass":
+                        Setup.SetTypesDisplayMode("namespaces");
+                        break;
+                    case "TypeDisplayClass":
+                        Setup.SetTypesDisplayMode("types");
+                        break;
+                    case "TypeDisplayNamespace":
+                        Setup.SetTypesDisplayMode("fulltypenames");
+                        break;
+                }
+                return;
+		    }
+
             bool openNewTab = true;
             List<string> lst = new List<string>(3);
             foreach (TabItem tabItem in MainTab.Items)
@@ -303,8 +320,10 @@ namespace MDRDesk
 			if (!result.Item1)
 			{
 				ShowError(result.Item2);
+			    return;
 			}
-		}
+            RecentIndexList.Add(path);
+        }
 
 		private async void OpenDumpIndexClicked(object sender, RoutedEventArgs e)
 		{
@@ -357,9 +376,10 @@ namespace MDRDesk
             }
 
             this.Title = BaseTitle + Constants.BlackDiamondPadded + CurrentMap.DumpBaseName;
-		}
+            RecentIndexList.Add(path);
+        }
 
-		private async void IndexShowFinalizerQueueClicked(object sender, RoutedEventArgs e)
+        private async void IndexShowFinalizerQueueClicked(object sender, RoutedEventArgs e)
 		{
 			if (!IsIndexAvailable("Show Finalizer Queue")) return;
 
@@ -629,6 +649,7 @@ namespace MDRDesk
 				new SWC.MenuItem { Header = "Get References of String Prefix" }
 			};
 			DisplayListViewBottomGrid(taskResult, Constants.BlackDiamond, ReportNameStringUsage, ReportTitleStringUsage, menuItems);
+            RecentAdhocList.Add(dumpFilePath);
 		}
 
 

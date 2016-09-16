@@ -1,11 +1,20 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Configuration;
 
 namespace ClrMDRIndex
 {
 	public class Setup
 	{
+	    public enum RecentFiles : int
+	    {
+	        Dump,
+            Adhoc,
+            Map,
+            MaxCount = 5
+	    }
+
 		public static string Error { get; private set; }
 		public static string DacPathFolder { get; private set; }
 
@@ -36,7 +45,49 @@ namespace ClrMDRIndex
 	        TypesDisplayMode = mode;
 	    }
 
-		public static bool GetConfigSettings(out string error)
+	    public static void AddRecentFileList(string path, RecentFiles files )
+	    {
+	        if (files == RecentFiles.Dump)
+	        {
+	            if (RecentDumpList.Count > (int)RecentFiles.MaxCount)
+                    RecentDumpList.RemoveAt(RecentDumpList.Count-1);
+                RecentDumpList.Insert(0, path);
+            }
+            else if (files == RecentFiles.Adhoc)
+            {
+                if (RecentAdhocList.Count > (int)RecentFiles.MaxCount)
+                    RecentAdhocList.RemoveAt(RecentAdhocList.Count - 1);
+                RecentAdhocList.Insert(0, path);
+            }
+            else if (files == RecentFiles.Map)
+            {
+                if (RecentIndexList.Count > (int)RecentFiles.MaxCount)
+                    RecentIndexList.RemoveAt(RecentIndexList.Count - 1);
+                RecentIndexList.Insert(0, path);
+            }
+        }
+
+        public static void ResetRecentFileList(IList<string> paths, RecentFiles files)
+        {
+            if (files == RecentFiles.Dump)
+            {
+                RecentDumpList.Clear();
+                RecentDumpList.AddRange(paths);
+            }
+            else if (files == RecentFiles.Adhoc)
+            {
+                RecentAdhocList.Clear();
+                RecentAdhocList.AddRange(paths);
+            }
+            else if (files == RecentFiles.Map)
+            {
+                RecentIndexList.Clear();
+                RecentIndexList.AddRange(paths);
+            }
+        }
+
+
+        public static bool GetConfigSettings(out string error)
 		{
 			error = null;
 			PrivateDacFolder = string.Empty;
@@ -58,10 +109,6 @@ namespace ClrMDRIndex
 						{
 							PrivateDacFolder = appSettings.Settings[key].Value.Trim();
 						}
-						else if (Utils.SameStrings(ky,"lastdump"))
-						{
-							LastDump = appSettings.Settings[key].Value.Trim();
-						}
 						else if (Utils.SameStrings(ky,"mapfolder"))
 						{
 							MapFolder = appSettings.Settings[key].Value.Trim();
@@ -76,15 +123,15 @@ namespace ClrMDRIndex
 						}
                         else if (Utils.SameStrings(ky, "recentdumps"))
                         {
-                            SetSemicolonDelimitedList(RecentDumpList, appSettings.Settings[key].Value);
+                            GetSemicolonDelimitedPaths(RecentDumpList, appSettings.Settings[key].Value);
                         }
                         else if (Utils.SameStrings(ky, "recentindices"))
                         {
-                            SetSemicolonDelimitedList(RecentIndexList, appSettings.Settings[key].Value);
+                            GetSemicolonDelimitedPaths(RecentIndexList, appSettings.Settings[key].Value);
                         }
                         else if (Utils.SameStrings(ky, "recentadhocs"))
                         {
-                            SetSemicolonDelimitedList(RecentAdhocList, appSettings.Settings[key].Value);
+                            GetSemicolonDelimitedPaths(RecentAdhocList, appSettings.Settings[key].Value);
                         }
                         else if (Utils.SameStrings(ky, "typedisplaymode"))
                         {
@@ -107,7 +154,27 @@ namespace ClrMDRIndex
 			}
 		}
 
-	    private static void SetSemicolonDelimitedList(List<string> lst, string str)
+        public static bool SaveConfigSettings(out string error)
+        {
+            error = null;
+            try
+            {
+                var config = ConfigurationManager.OpenExeConfiguration(ConfigurationUserLevel.None);
+                config.AppSettings.Settings["typedisplaymode"].Value = TypesDisplayMode;
+                config.AppSettings.Settings["recentdumps"].Value = JoinSemicolonDelimitedList(RecentDumpList);
+                config.AppSettings.Settings["recentindices"].Value = JoinSemicolonDelimitedList(RecentIndexList);
+                config.AppSettings.Settings["recentadhocs"].Value = JoinSemicolonDelimitedList(RecentAdhocList);
+                config.Save(ConfigurationSaveMode.Modified);
+                return true;
+            }
+            catch (Exception ex)
+            {
+                error = Utils.GetExceptionErrorString(ex);
+                return false;
+            }
+        }
+
+        private static void GetSemicolonDelimitedPaths(List<string> lst, string str)
 	    {
 	        if (string.IsNullOrWhiteSpace(str)) return;
 	        str = str.Trim();
@@ -116,43 +183,50 @@ namespace ClrMDRIndex
             {
                 if (!string.IsNullOrWhiteSpace(parts[i]))
                 {
-                    lst.Add(parts[i].Trim());
+                    var path = parts[i].Trim();
+                    if (File.Exists(path))
+                        lst.Add(path);
                 }
             }
         }
-    
 
-		//public static bool ReadAppSettings()
-		//{
-		//	try
-		//	{
-		//		var appSettings = ConfigurationManager.AppSettings;
+        private static string JoinSemicolonDelimitedList(List<string> lst)
+        {
+            if (lst.Count < 1) return string.Empty;
+            return  string.Join(";", lst);
+        }
 
-		//		if (appSettings.Count == 0)
-		//		{
-		//			_dacPaths = Utils.EmptyArray<string>.Value;
-		//			_dumpPaths = Utils.EmptyArray<string>.Value;
-		//		}
-		//		else
-		//		{
-		//			List<string> dacs = new List<string>();
-		//			List<string> dumps = new List<string>();
-		//			foreach (var key in appSettings.AllKeys)
-		//			{
-		//				if (key.StartsWith("dac")) dacs.Add(appSettings[key]);
-		//				else if (key.StartsWith("dump")) dumps.Add(appSettings[key]);
-		//			}
-		//			_dacPaths = dacs.ToArray();
-		//			_dumpPaths = dumps.ToArray();
-		//		}
-		//		return true;
-		//	}
-		//	catch (ConfigurationErrorsException ex)
-		//	{
-		//		Error = "Error reading app settings" + Environment.NewLine + ex.ToString();
-		//		return false;
-		//	}
+        //public static bool ReadAppSettings()
+        //{
+        //	try
+        //	{
+        //		var appSettings = ConfigurationManager.AppSettings;
 
-		//}
-	}
+        //		if (appSettings.Count == 0)
+        //		{
+        //			_dacPaths = Utils.EmptyArray<string>.Value;
+        //			_dumpPaths = Utils.EmptyArray<string>.Value;
+        //		}
+        //		else
+        //		{
+        //			List<string> dacs = new List<string>();
+        //			List<string> dumps = new List<string>();
+        //			foreach (var key in appSettings.AllKeys)
+        //			{
+        //				if (key.StartsWith("dac")) dacs.Add(appSettings[key]);
+        //				else if (key.StartsWith("dump")) dumps.Add(appSettings[key]);
+        //			}
+        //			_dacPaths = dacs.ToArray();
+        //			_dumpPaths = dumps.ToArray();
+        //		}
+        //		return true;
+        //	}
+        //	catch (ConfigurationErrorsException ex)
+        //	{
+        //		Error = "Error reading app settings" + Environment.NewLine + ex.ToString();
+        //		return false;
+        //	}
+
+        //}
+    }
 }
