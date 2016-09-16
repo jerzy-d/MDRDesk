@@ -5,6 +5,7 @@ using System.Diagnostics;
 using System.Globalization;
 using System.IO;
 using System.Linq;
+using System.Text;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using ClrMDRIndex;
 using Microsoft.Diagnostics.Runtime;
@@ -849,6 +850,149 @@ namespace UnitTestMdr
         }
 
 
+		[TestMethod]
+		public void TestGetTypeGroupedContent()
+		{
+			const string str = "Eze.Server.Common.Pulse.Common.Types.CachedValue+DefaultOnly<System.Decimal>";
+			string error = null;
+			SortedDictionary<string,int> dct = new SortedDictionary<string, int>(StringComparer.Ordinal);
+			using (var map = OpenMap(@"D:\Jerzy\WinDbgStuff\dumps\Analytics\Memory.Usage.OPAM.971\RealPositionCmp\Eze.Analytics.Svc.RPSMALL0_160913_153220.map"))
+			{
+				try
+				{
+					ClrType clrType = null;
+					ClrInstanceField bitwiseCurrentPositionToggleState = null;
+					ClrInstanceField indexIntoPositionIndexToFieldNumberConversionSet = null;
+					int typeId = map.GetTypeId(str);
+					ulong[] addresses = map.GetTypeAddresses(typeId);
+					var heap = map.Dump.GetFreshHeap();
+					for (int i = 0, icnt = addresses.Length; i < icnt; ++i)
+					{
+						var addr = addresses[i];
+						if (clrType == null)
+						{
+							clrType = heap.GetObjectType(addr);
+							bitwiseCurrentPositionToggleState = clrType.GetFieldByName("bitwiseCurrentPositionToggleState");
+							indexIntoPositionIndexToFieldNumberConversionSet = clrType.GetFieldByName("indexIntoPositionIndexToFieldNumberConversionSet");
+							Assert.IsNotNull(bitwiseCurrentPositionToggleState.Type);
+							Assert.IsNotNull(indexIntoPositionIndexToFieldNumberConversionSet.Type);
+						}
+
+						object fld1ValObj = bitwiseCurrentPositionToggleState.GetValue(addr);
+						string fld1Val = ValueExtractor.GetPrimitiveValue(fld1ValObj, bitwiseCurrentPositionToggleState.Type);
+						object fld2ValObj = indexIntoPositionIndexToFieldNumberConversionSet.GetValue(addr);
+						string fld2Val = ValueExtractor.GetPrimitiveValue(fld2ValObj, indexIntoPositionIndexToFieldNumberConversionSet.Type);
+						var key = fld1Val + "_" + fld2Val;
+						int count;
+						if (dct.TryGetValue(key, out count))
+						{
+							dct[key] = count + 1;
+						}
+						else
+						{
+							dct.Add(key,1);
+						}
+					}
+
+				}
+				catch (Exception ex)
+				{
+					Assert.IsTrue(false,ex.ToString());
+				}
+			}
+		}
+
+
+		[TestMethod]
+		public void TestGetTypeGroupedContent2()
+		{
+			const string str = "ECS.Common.Collections.Common.EzeBitVector";
+			string error = null;
+			SortedDictionary<string, int> dct = new SortedDictionary<string, int>(StringComparer.Ordinal);
+			int nullFieldCount = 0;
+			StringBuilder sb = new StringBuilder(256);
+			using (var map = OpenMap(@"D:\Jerzy\WinDbgStuff\dumps\Analytics\Memory.Usage.OPAM.971\RealPositionCmp\Eze.Analytics.Svc.RPBIG_160913_151123.map"))
+			{
+				try
+				{
+					ClrType clrType = null;
+					ClrType aryType = null;
+					ClrInstanceField bits = null;
+					ulong aryAddr = 0;
+					int typeId = map.GetTypeId(str);
+					ulong[] addresses = map.GetTypeAddresses(typeId);
+					var heap = map.Dump.GetFreshHeap();
+					for (int i = 0, icnt = addresses.Length; i < icnt; ++i)
+					{
+						var addr = addresses[i];
+						if (clrType == null)
+						{
+							clrType = heap.GetObjectType(addr);
+							bits = clrType.GetFieldByName("bits");
+							Assert.IsNotNull(bits.Type);
+							Assert.IsNotNull(bits.Type);
+							aryType = bits.Type;
+						}
+						var aryAddrObj = bits.GetValue(addr);
+						if (aryAddrObj == null)
+						{
+							++nullFieldCount;
+							continue;
+						}
+						aryAddr = (ulong) aryAddrObj;
+						int aryCount = aryType.GetArrayLength(aryAddr);
+						sb.Clear();
+						sb.Append(aryCount.ToString()).Append("_");
+						for (int j = 0; j < aryCount; ++j)
+						{
+							var elemVal = aryType.GetArrayElementValue(aryAddr, j);
+							if (elemVal == null)
+								continue;
+							var valStr = elemVal.ToString();
+							sb.Append(valStr).Append("_");
+						}
+						if (sb.Length > 0) sb.Remove(sb.Length - 1, 1);
+						var key = sb.ToString();
+						int dctCnt;
+						if (dct.TryGetValue(key, out dctCnt))
+						{
+							dct[key] = dctCnt + 1;
+						}
+						else
+						{
+							dct.Add(key, 1);
+						}
+					}
+
+					StreamWriter sw = null;
+					try
+					{
+
+						sw = new StreamWriter(map.ReportPath + Path.DirectorySeparatorChar + "EzeBitVector.txt");
+						sw.WriteLine("#### Total EzeBitVector Instance Count: " + Utils.SizeString(addresses.Length));
+						sw.WriteLine("#### Total EzeBitVector Unique Count: " + Utils.SizeString(dct.Count));
+						sw.WriteLine("#### Columns: duplicate count, ulong[] size, vector content");
+						foreach (var kv in dct)
+						{
+							var pos = kv.Key.IndexOf('_');
+							int aryCount = Int32.Parse(kv.Key.Substring(0, pos));
+							sw.WriteLine(Utils.CountStringHeader(kv.Value) + Utils.CountStringHeader(aryCount) + kv.Key.Substring(pos+1));
+						}
+
+					}
+					catch (Exception ex)
+					{
+						Assert.IsTrue(false, ex.ToString());
+					}
+					finally { sw?.Close();}
+
+				}
+				catch (Exception ex)
+				{
+					Assert.IsTrue(false, ex.ToString());
+				}
+			}
+		}
 		[TestMethod]
 		public void TestGetTypeSizeDetails()
 		{

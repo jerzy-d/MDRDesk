@@ -9,7 +9,7 @@
         xmlns:system="clr-namespace:System;assembly=mscorlib"
         xmlns:objectModel="clr-namespace:System.Collections.ObjectModel;assembly=mscorlib"
         mc:Ignorable="d"
-        Title="MainWindow" Height="700" Width="1200"  Background="#FF43626C"
+        Title="MainWindow" Height="750" Width="1200"  Background="#FF43626C"
         Icon="Images/appbar.list.gear.ico"
         Closing="MainWindow_Closing">
     <Window.Resources>
@@ -121,9 +121,9 @@
                     </DataTemplate>
                 </ListBox.ItemTemplate>
             </ListBox>
-            <Label Name="lTypeCount" Margin="4,0,4,0" Grid.Row="2" Grid.Column="0" FontWeight="Bold" FontStyle="Italic" Foreground="DarkGreen"/>
-            <Label Name="lElementType" Margin="200,0,4,0" Grid.Row="2" Grid.Column="0" FontWeight="Bold" Foreground="Maroon"/>
-            <Label Name="lAddressCount" Margin="4,0,4,0" Grid.Row="2" Grid.Column="1" FontWeight="Bold" FontStyle="Italic" Foreground="DarkGreen"/>
+            <Label Name="lTypeCount" Margin="4,0,4,0" Grid.Row="2" Grid.Column="0" FontWeight="Bold" FontSize="16" Foreground="DarkSlateGray"/>
+            <Label Name="lElementType" Margin="200,0,4,0" Grid.Row="2" Grid.Column="0" FontWeight="Bold" FontSize="16" Foreground="DarkSlateGray"/>
+            <Label Name="lAddressCount" Margin="4,0,4,0" Grid.Row="2" Grid.Column="1" FontWeight="Bold" FontSize="16" Foreground="DarkSlateGray"/>
             <Expander x:Name="TypeViewDataExpander" Margin="0,7,0,0" DockPanel.Dock="Bottom" Header="..." Grid.Row="3" Grid.Column="0" Grid.ColumnSpan="2">
                 <!--<DockPanel x:Name="TypeViewDataExpanderPanel" Margin="3" LastChildFill="True">
                 </DockPanel>-->
@@ -182,9 +182,9 @@
                 </DataTemplate>
             </ListBox.ItemTemplate>
             </ListBox>
-            <Label Name="lTpNsCount" Margin="4,0,4,0" Grid.Row="2" Grid.Column="0" FontWeight="Bold" FontStyle="Italic" Foreground="DarkGreen"/>
-            <Label Name="lTpClassCount" Margin="4,0,4,0" Grid.Row="2" Grid.Column="2" FontWeight="Bold" Foreground="Maroon"/>
-            <Label Name="lTpAddressCount" Margin="4,0,4,0" Grid.Row="2" Grid.Column="4" FontWeight="Bold" FontStyle="Italic" Foreground="DarkGreen"/>
+            <Label Name="lTpNsCount" Margin="4,0,4,0" Grid.Row="2" Grid.Column="0" FontWeight="Bold" FontSize="16" Foreground="DarkSlateGray" VerticalAlignment="Top"/>
+            <Label Name="lTpClassCount" Margin="4,0,4,0" Grid.Row="2" Grid.Column="2" FontWeight="Bold" FontSize="16" Foreground="DarkSlateGray" VerticalAlignment="Top"/>
+            <Label Name="lTpAddressCount" Margin="4,0,4,0" Grid.Row="2" Grid.Column="4" FontWeight="Bold" FontSize="16" Foreground="DarkSlateGray" VerticalAlignment="Top"/>
             <Expander x:Name="TypeViewExpander" Margin="0,7,0,0" DockPanel.Dock="Bottom" Header="..." Grid.Row="3" Grid.Column="0" Grid.ColumnSpan="5">
                 <!--<DockPanel x:Name="TypeViewDataExpanderPanel" Margin="3" LastChildFill="True">
                 </DockPanel>-->

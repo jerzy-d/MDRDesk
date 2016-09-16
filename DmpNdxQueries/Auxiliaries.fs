@@ -106,10 +106,12 @@ module Auxiliaries =
 
     type ClrCategory = TypeCategory * TypeCategory
 
-    type ClrValue =
+    type ClrtValue =
         | Value of string
         | Values of string array
-        | ComplexValue of ClrValue
+        | Composite of ClrtValue
+        | Composites of ClrtValue array
+        | Address of uint64
 
     type KeyValuePairInfo =
         { keyFld: ClrInstanceField;
@@ -119,15 +121,15 @@ module Auxiliaries =
           valType: ClrType;
           valCat: TypeCategory * TypeCategory; }
 
-
-
-    /// Format address given unsigned long value.
-    let getAddrDispStr (addr : uint64) =
-        "0x" + Convert.ToString((int64 addr),16).ToLower()
-
-    /// Format address given boxed unsigned long value.
-    let getAddrObjDispStr (addr : Object) =
-        "0x" + Convert.ToString((int64 (unbox<uint64>(addr))),16).ToLower()
+//
+//
+//    /// Format address given unsigned long value.
+//    let getAddrDispStr (addr : uint64) =
+//        "0x" + Convert.ToString((int64 addr),16).ToLower()
+//
+//    /// Format address given boxed unsigned long value.
+//    let getAddrObjDispStr (addr : Object) =
+//        "0x" + Convert.ToString((int64 (unbox<uint64>(addr))),16).ToLower()
 
     let kvStringAddressComparer = new KvStringAddressComparer()
 
@@ -140,7 +142,7 @@ module Auxiliaries =
         clrType.Name = "ERROR"
 
     let getDispAddress (objAddr: obj) : string =
-        if objAddr = null then Constants.ZeroAddressStr else getAddrObjDispStr objAddr
+        if objAddr = null then Constants.ZeroAddressStr else Utils.AddressString(unbox<address>objAddr)
 
 
     let getTypeFieldIndices (clrType:ClrType) (fldNames:string array) =

@@ -9,8 +9,9 @@ module CollectionContent =
     open FSharp.Charting
     open FSharp.Charting.ChartTypes
     open Microsoft.Diagnostics.Runtime
-
-        (*
+    open ClrMDRIndex
+    
+    (*
         System.Collections.Generic.SortedDictionary<TKey,TValue>
     *)
 
@@ -52,11 +53,11 @@ module CollectionContent =
         try
             let dctType = heap.GetObjectType addr
             if isNull dctType then
-                getErrorDictionaryResult ("Get type returns null at address: " + (getAddrDispStr addr))
+                getErrorDictionaryResult ("Get type returns null at address: " + Utils.AddressString(addr))
             else if not (dctType.Name.StartsWith "System.Collections.Generic.SortedDictionary<") then
-                getErrorDictionaryResult ("Expected type: SortedDictionary, but  at address: "+ (getAddrDispStr addr) + " we have: " + dctType.Name)
+                getErrorDictionaryResult ("Expected type: SortedDictionary, but  at address: "+ Utils.AddressString(addr) + " we have: " + dctType.Name)
             else if isNull dctType.Fields || dctType.Fields.Count < 1 then
-                getErrorDictionaryResult ("SortedDictionary instance at address: "+ (getAddrDispStr addr) + " does not have fields.")
+                getErrorDictionaryResult ("SortedDictionary instance at address: "+ Utils.AddressString(addr) + " does not have fields.")
             else
                 let setFld = dctType.GetFieldByName("_set"); // get TreeSet 
                 let setFldAddr = unbox<address>(setFld.GetValue(addr))
@@ -147,7 +148,7 @@ module CollectionContent =
         let count = aryType.GetArrayLength(addr)
         let aryElemType = getArrayElemType heap addr aryType 0 count
         if aryElemType = null then
-            ("Getting type at : " + (getAddrDispStr addr) + " failed, null was returned.", null, count, emptyStringArray)
+            ("Getting type at : " + Utils.AddressString(addr) + " failed, null was returned.", null, count, emptyStringArray)
         else
             let values = getArrayValues heap addr aryType aryType.ComponentType aryElemType count
             (null, aryElemType.Name,count,values.ToArray())
@@ -156,8 +157,8 @@ module CollectionContent =
         let heap = runtime.GetHeap()
         let clrType = heap.GetObjectType(addr)
         if (clrType = null) then 
-            ("Getting type at : " + (getAddrDispStr addr) + " failed, null was returned.", null, 0, emptyStringArray)
+            ("Getting type at : " + Utils.AddressString(addr) + " failed, null was returned.", null, 0, emptyStringArray)
         elif (not clrType.IsArray) then
-            ("Type at : " + (getAddrDispStr addr) + " is not an array.", null, 0, emptyStringArray)
+            ("Type at : " + Utils.AddressString(addr) + " is not an array.", null, 0, emptyStringArray)
         else
             getArrayContentImpl runtime addr clrType 
