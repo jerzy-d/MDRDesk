@@ -248,6 +248,51 @@
             <Grid Name="BottomGrid" Row="3" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" Margin="2,2,2,2">
             </Grid>
         </Grid>
+        <Grid x:Key="InstanceTaversalGrid">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="10*"/>
+                <RowDefinition Height="90*"/>
+            </Grid.RowDefinitions>
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="30*"/>
+                <ColumnDefinition Width="5"/>
+                <ColumnDefinition Width="30*"/>
+                <ColumnDefinition Width="5"/>
+                <ColumnDefinition Width="30*"/>
+            </Grid.ColumnDefinitions>
+            <Grid x:Name="InstanceValueGrid" Grid.Row="0" Grid.Column="0" Grid.ColumnSpan="5">
+                <Label x:Name="InstanceValuLabel" VerticalAlignment="Center" HorizontalAlignment="Center"/>
+
+            </Grid>
+            <Grid x:Name="AncestorValueGrid" Grid.Row="1" Grid.Column="0">
+                <Grid>
+                    <Grid.RowDefinitions>
+                     <RowDefinition Height="50*"/>
+                    <RowDefinition Height="5"/>
+                    <RowDefinition Height="45*"/>
+                     </Grid.RowDefinitions>
+                    <ListBox x:Name="AncestorNameListBox" Grid.Row="0"></ListBox>
+                    <GridSplitter Grid.Row="1" VerticalAlignment="Center" HorizontalAlignment="Stretch" Height="5" ShowsPreview="False" Background="DarkGray"></GridSplitter>
+                    <ListBox x:Name="AncestorAddressListBox" Grid.Row="2"></ListBox>
+                </Grid>
+                
+                <ListBox x:Name="AncestorListBox"></ListBox>
+            </Grid>
+            <GridSplitter Grid.Row="1" Grid.Column="1" VerticalAlignment="Stretch" HorizontalAlignment="Center" Width="5" ShowsPreview="False" Background="DarkGray"></GridSplitter>
+            <Grid x:Name="InstanceFieldGrid" Grid.Row="1" Grid.Column="3">
+                <TreeView x:Name="InstanceFieldTreeview">
+                    
+                </TreeView>
+
+            </Grid>
+            <GridSplitter Grid.Row="1" Grid.Column="3" VerticalAlignment="Stretch" HorizontalAlignment="Center" Width="5" ShowsPreview="False" Background="DarkGray"></GridSplitter>
+            <Expander x:Name="CollectionExpander" Margin="0,7,0,0" DockPanel.Dock="Bottom" Header="..." Grid.Row="1" Grid.Column="4">
+                <DockPanel x:Name="CollectionExpanderPanel" Margin="3" LastChildFill="True">
+                </DockPanel>
+            </Expander>
+
+
+        </Grid>
  </Window.Resources>
     <Grid>
         <Grid.RowDefinitions>

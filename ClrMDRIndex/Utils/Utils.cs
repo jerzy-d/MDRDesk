@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
 using System.IO;
+using System.Resources;
 using System.Runtime;
 using System.Runtime.CompilerServices;
 using System.Text;
@@ -1006,6 +1007,56 @@ namespace ClrMDRIndex
             }
         }
 
+        public class QuadrupleIntIntStrStrCmp : IComparer<quadruple<int, int, string, string>>
+        {
+            public int Compare(quadruple<int, int, string, string> a, quadruple<int, int, string, string> b)
+            {
+                if (a.First == b.First)
+                {
+                    if (a.Second == b.Second)
+                    {
+                        if (Utils.SameStrings(a.Third,b.Third))
+                        {
+                            return string.Compare(a.Forth,b.Forth,StringComparison.Ordinal);
+                        }
+                        return string.Compare(a.Third, b.Third, StringComparison.Ordinal);
+                    }
+                    return a.Second < b.Second ? -1 : (a.Second > b.Second ? 1 : 0);
+                }
+                return a.First < b.First ? -1 : (a.First > b.First ? 1 : 0);
+            }
+        }
+
+        public class QuadrupleIntStrStrAryUlongCmp : IComparer<quadruple<int, string, string, ulong[]>>
+        {
+            public int Compare(quadruple<int, string, string, ulong[]> a, quadruple<int, string, string, ulong[]> b)
+            {
+                if (a.First == b.First)
+                {
+                    if (Utils.SameStrings(a.Second, b.Second))
+                    {
+                         return string.Compare(a.Third, b.Third, StringComparison.Ordinal);
+                    }
+                    return string.Compare(a.Third, b.Third, StringComparison.Ordinal);
+                }
+                return a.First < b.First ? -1 : (a.First > b.First ? 1 : 0);
+            }
+        }
+        public class TripleIntStrStrCmp : IComparer<triple<int, string, string>>
+        {
+            public int Compare(triple<int, string, string> a, triple<int, string, string> b)
+            {
+                if (a.First == b.First)
+                {
+                    if (Utils.SameStrings(a.Second, b.Second))
+                    {
+                        return string.Compare(a.Third, b.Third, StringComparison.Ordinal);
+                    }
+                   return string.Compare(a.Second, b.Second, StringComparison.Ordinal);
+                }
+                return a.First < b.First ? -1 : (a.First > b.First ? 1 : 0);
+            }
+        }
         public class StrListCmp : IComparer<IList<string>>
 		{
 			public int Compare(IList<string> a, IList<string> b)
@@ -1124,11 +1175,156 @@ namespace ClrMDRIndex
                 return cmp;
             }
         }
-		#endregion Comparers
+        #endregion Comparers
 
-		#region Misc
+        #region Formatting
 
-		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static string AddressString(ulong addr)
+        {
+            return string.Format("0x{0:x14}", addr);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static string AddressStringHeader(ulong addr)
+        {
+            return string.Format("[0x{0:x14}] ", addr);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static string UintHexStringHeader(uint num)
+        {
+            return string.Format("[0x{0:x8}] ", num);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static string DurationString(TimeSpan ts)
+        {
+            return string.Format(" {0:00}:{1:00}:{2:00}.{3:00}", ts.Hours, ts.Minutes, ts.Seconds, ts.Milliseconds / 10);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static string SortableLengthString(ulong len)
+        {
+            return len == 0 ? "             O" : string.Format("{0,14:0#,###,###,###}", len);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static string SortableLengthStringHeader(ulong len)
+        {
+            return len == 0 ? "             O" : string.Format("[{0,14:0#,###,###,###}] ", len);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static string SortableSizeString(int sz)
+        {
+            return sz == 0 ? "           O" : string.Format("{0,12:0##,###,###}", sz);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static string SortableSizeStringHeader(int sz)
+        {
+            return sz == 0 ? "           O" : string.Format("[{0,12:0#,###,###}] ", sz);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static string SizeString(int sz)
+        {
+            return sz == 0 ? "           O" : string.Format("{0,12:#,###,###}", sz);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static string SizeString(long sz)
+        {
+            return sz == 0 ? "           O" : string.Format("{0,12:#,###,###}", sz);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static string SizeString(ulong sz)
+        {
+            return sz == 0 ? "           O" : string.Format("{0,12:#,###,###}", sz);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static string SizeStringHeader(int sz)
+        {
+            return sz == 0 ? "[           0] " : string.Format("[{0,12:#,###,###}] ", sz);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static string CountStringHeader(int sz)
+        {
+            return sz == 0 ? "[       0] " : string.Format("[{0,8:#,###,###}] ", sz);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static string SizeStringHeader(long sz)
+        {
+            return sz == 0 ? "[           0] " : string.Format("[{0,12:#,###,###}] ", sz);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static string SmallIdHeader(int id)
+        {
+            return string.Format("[{0,06}] ", id);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static string SmallNumberHeader(int num)
+        {
+            return string.Format("[{0,03}] ", num);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static string LargeNumberString(int num)
+        {
+            return num == 0 ? Constants.ZeroStr : string.Format("{0:#,###,###,###}", num);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static string LargeNumberString(long num)
+        {
+            return num == 0 ? Constants.ZeroStr : string.Format("{0:#,###,###,###}", num);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static string LargeNumberString(ulong num)
+        {
+            return num == 0 ? Constants.ZeroStr : string.Format("{0:#,###,###,###}", num);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static string TimeString(DateTime dt)
+        {
+            return dt.ToString("hh:mm:ss:fff");
+        }
+
+        public static string FormatBytes(long bytes)
+        {
+            const int scale = 1024;
+            string[] orders = new string[] { "GB", "MB", "KB", "Bytes" };
+            long max = (long)Math.Pow(scale, orders.Length - 1);
+            foreach (string order in orders)
+            {
+                if (bytes > max)
+                    return string.Format("{0:##.##} {1}", decimal.Divide(bytes, max), order);
+
+                max /= scale;
+            }
+            return "0 Bytes";
+        }
+
+        #endregion Formatting
+
+        #region Misc
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static bool IsNonValue(string val)
+	    {
+	        return !string.IsNullOrEmpty(val) && val[0] == Constants.NonValueChar;
+	    }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
 		public static bool IsIndexInvalid(int ndx)
 		{
 			return Constants.InvalidIndex == ndx;
@@ -1173,140 +1369,6 @@ namespace ClrMDRIndex
 			return (number + powerOf2 - 1) & ~(powerOf2 - 1);
 		}
 
-		[MethodImpl(MethodImplOptions.AggressiveInlining)]
-		public static string AddressString(ulong addr)
-		{
-			return string.Format("0x{0:x14}", addr);
-		}
-
-		[MethodImpl(MethodImplOptions.AggressiveInlining)]
-		public static string AddressStringHeader(ulong addr)
-		{
-			return string.Format("[0x{0:x14}] ", addr);
-		}
-
-		[MethodImpl(MethodImplOptions.AggressiveInlining)]
-		public static string UintHexStringHeader(uint num)
-		{
-			return string.Format("[0x{0:x8}] ", num);
-		}
-
-		[MethodImpl(MethodImplOptions.AggressiveInlining)]
-		public static string DurationString(TimeSpan ts)
-		{
-			return string.Format(" {0:00}:{1:00}:{2:00}.{3:00}",ts.Hours, ts.Minutes, ts.Seconds,ts.Milliseconds / 10);
-		}
-
-		[MethodImpl(MethodImplOptions.AggressiveInlining)]
-		public static string SortableLengthString(ulong len)
-		{
-			return len == 0 ? "             O" : string.Format("{0,14:0#,###,###,###}", len);
-		}
-
-		[MethodImpl(MethodImplOptions.AggressiveInlining)]
-		public static string SortableLengthStringHeader(ulong len)
-		{
-			return len == 0 ? "             O" : string.Format("[{0,14:0#,###,###,###}] ", len);
-		}
-
-		[MethodImpl(MethodImplOptions.AggressiveInlining)]
-		public static string SortableSizeString(int sz)
-		{
-			return sz == 0 ? "           O" : string.Format("{0,12:0##,###,###}", sz);
-		}
-
-		[MethodImpl(MethodImplOptions.AggressiveInlining)]
-		public static string SortableSizeStringHeader(int sz)
-		{
-			return sz == 0 ? "           O" : string.Format("[{0,12:0#,###,###}] ", sz);
-		}
-
-		[MethodImpl(MethodImplOptions.AggressiveInlining)]
-		public static string SizeString(int sz)
-		{
-			return sz == 0 ? "           O" : string.Format("{0,12:#,###,###}", sz);
-		}
-
-		[MethodImpl(MethodImplOptions.AggressiveInlining)]
-		public static string SizeString(long sz)
-		{
-			return sz == 0 ? "           O" : string.Format("{0,12:#,###,###}", sz);
-		}
-
-		[MethodImpl(MethodImplOptions.AggressiveInlining)]
-		public static string SizeString(ulong sz)
-		{
-			return sz == 0 ? "           O" : string.Format("{0,12:#,###,###}", sz);
-		}
-
-		[MethodImpl(MethodImplOptions.AggressiveInlining)]
-		public static string SizeStringHeader(int sz)
-		{
-			return sz == 0 ? "[           0] " : string.Format("[{0,12:#,###,###}] ", sz);
-		}
-
-		[MethodImpl(MethodImplOptions.AggressiveInlining)]
-		public static string CountStringHeader(int sz)
-		{
-			return sz == 0 ? "[       0] " : string.Format("[{0,8:#,###,###}] ", sz);
-		}
-
-		[MethodImpl(MethodImplOptions.AggressiveInlining)]
-		public static string SizeStringHeader(long sz)
-		{
-			return sz == 0 ? "[           0] " : string.Format("[{0,12:#,###,###}] ", sz);
-		}
-
-		[MethodImpl(MethodImplOptions.AggressiveInlining)]
-		public static string SmallIdHeader(int id)
-		{
-			return string.Format("[{0,06}] ", id);
-		}
-
-		[MethodImpl(MethodImplOptions.AggressiveInlining)]
-		public static string SmallNumberHeader(int num)
-		{
-			return string.Format("[{0,03}] ", num);
-		}
-
-		[MethodImpl(MethodImplOptions.AggressiveInlining)]
-		public static string LargeNumberString(int num)
-		{
-			return num == 0 ? Constants.ZeroStr : string.Format("{0:#,###,###,###}", num);
-		}
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static string LargeNumberString(long num)
-        {
-            return num == 0 ? Constants.ZeroStr : string.Format("{0:#,###,###,###}", num);
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static string LargeNumberString(ulong num)
-        {
-            return num == 0 ? Constants.ZeroStr : string.Format("{0:#,###,###,###}", num);
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-		public static string TimeString(DateTime dt)
-		{
-			return dt.ToString("hh:mm:ss:fff");
-		}
-
-		public static string FormatBytes(long bytes)
-		{
-			const int scale = 1024;
-			string[] orders = new string[] { "GB", "MB", "KB", "Bytes" };
-			long max = (long)Math.Pow(scale, orders.Length - 1);
-			foreach (string order in orders)
-			{
-				if (bytes > max)
-					return string.Format("{0:##.##} {1}", decimal.Divide(bytes, max), order);
-
-				max /= scale;
-			}
-			return "0 Bytes";
-		}
 
 		public static bool IsWhiteSpace(string str)
 		{

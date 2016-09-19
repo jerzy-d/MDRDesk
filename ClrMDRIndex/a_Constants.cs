@@ -52,9 +52,11 @@ namespace ClrMDRIndex
 		public const char HeavyAsterisk = '\u2731'; // ✱ heavy asterisk		
 		public const string HeavyAsteriskPadded = " \u2731 "; // ✱  heavy asterisk		
 		public const string NamespaceSepPadded = " \u2731 "; // ✱  heavy asterisk		
-		public const char FancyKleeneStar = '\u2734'; // 2734 ✴ EIGHT POINTED BLACK STAR
-		//public const string FieldSymbolPadded = " \u1D4D5 "; // 𝓕 MATHEMATICAL BOLD SCRIPT CAPITAL F
-		public const string FieldSymbolPadded = " \u2131 "; // ℱ SCRIPT CAPITAL F
+        public const char FancyKleeneStar = '\u2734'; // 2734 ✴ EIGHT POINTED BLACK STAR
+        public const char NonValueChar = '\u2734'; // 2734 ✴ EIGHT POINTED BLACK STAR
+        public const string NonValue = "\u2734"; // 2734 ✴ EIGHT POINTED BLACK STAR
+                                                   //public const string FieldSymbolPadded = " \u1D4D5 "; // 𝓕 MATHEMATICAL BOLD SCRIPT CAPITAL F
+        public const string FieldSymbolPadded = " \u2131 "; // ℱ SCRIPT CAPITAL F
                                                             //public const string InformationSymbolPadded = " \u2111 "; // ℑ BLACK-LETTER CAPITAL I
                                                             // 2139 ℹ INFORMATION SOURCE
         public const string InformationSymbolHeader = "\u2110 "; // ℐ SCRIPT CAPITAL I
@@ -186,5 +188,7 @@ namespace ClrMDRIndex
 
 		public const string TxtThreadsAndBlocksFilePostfix = ".THREADSANDBLOCKS[0].txt";
 		public const string MapThreadsAndBlocksFilePostfix = ".THREADSANDBLOCKS[0].map";
+
+        
 	}
 }

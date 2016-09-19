@@ -21,6 +21,7 @@ module Auxiliaries =
     let nsPrefix:string = " \u0359 "
     let zeroAddressStr = "0x00000000000000"
     let nullName = "{null}"
+    let nonValue = "\u2734"
 
     let addressString (addr:address) = String.Format("0x{0:x14}", addr)
     let fullAddressString (addr:address) = String.Format("0x{0:x16}", addr)
@@ -233,7 +234,41 @@ module Auxiliaries =
                    ValueExtractor.GetPrimitiveValue(value, clrType)
                 | _ -> "?DON'T KNOW HOW TO GET VALUE?"
 
-
+    let tryGetPrimitiveValue (heap:ClrHeap) (classAddr:address) (field : ClrInstanceField) (internalAddr: bool) =
+        let clrType = field.Type
+        let cat = getTypeCategory clrType
+        match fst cat with
+                | TypeCategory.Reference ->
+                    match snd cat with
+                        | TypeCategory.String ->
+                            let addr = unbox<address>(field.GetValue(classAddr, internalAddr,false))
+                            if (addr = 0UL) then Constants.NullName
+                            else ValueExtractor.GetStringValue(clrType, addr)
+                        | TypeCategory.Exception ->
+                            let addr = unbox<address>(field.GetValue(classAddr, internalAddr,false))
+                            if (addr = 0UL) then Constants.NullName
+                            else ValueExtractor.GetShortExceptionValue(addr, clrType, heap)
+                        | _ ->
+                            nonValue
+                | TypeCategory.Struct ->
+                    match snd cat with
+                        | TypeCategory.Decimal -> 
+                            let addr = unbox<address>(field.GetValue(classAddr, internalAddr,false))
+                            ValueExtractor.GetDecimalValue(addr,clrType,null)
+                        | TypeCategory.DateTime -> 
+                            let addr = unbox<address>(field.GetValue(classAddr, internalAddr,false))
+                            ValueExtractor.GetDateTimeValue(addr,clrType)
+                        | TypeCategory.TimeSpan -> 
+                            let addr = unbox<address>(field.GetValue(classAddr, internalAddr,false))
+                            ValueExtractor.GetTimeSpanValue(addr,clrType)
+                        | TypeCategory.Guid -> 
+                            let addr = unbox<address>(field.GetValue(classAddr, internalAddr,false))
+                            ValueExtractor.GetGuidValue(addr,clrType)
+                        | _ -> nonValue
+                | TypeCategory.Primitive -> // primitives
+                   let valObj = field.GetValue(classAddr)
+                   ValueExtractor.GetPrimitiveValue(valObj, clrType)
+                | _ -> nonValue
 
     let getFieldVal (heap:ClrHeap) (parentAddr:address) (fld:ClrInstanceField) (fldType:ClrType) (fldCat:ClrCategory) (isInternal:bool) =
         let value = fld.GetValue(parentAddr,isInternal)

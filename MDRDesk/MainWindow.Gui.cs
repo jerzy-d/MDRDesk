@@ -491,7 +491,10 @@ namespace MDRDesk
 			var result = await Task.Run(() =>
 			{
 				string error;
-				return CurrentMap.GetInstanceParentsAndChildren(addr, out error);
+                Tuple<InstanceValue,
+			    quadruple<int, string, string, ulong[]>[] > instanceInfo = CurrentMap.GetInstanceInfo(addr, out error);
+
+                return Tuple.Create(error,instanceInfo);
 			});
 
 			Mouse.OverrideCursor = null;
@@ -503,16 +506,60 @@ namespace MDRDesk
 				ShowError(result.Item1);
 				return;
 			}
-			MainStatusShowMessage(statusMessage + ": DONE");
-			//DisplayListViewBottomGrid(result, Constants.BlackDiamond, ReportNameInstRef, ReportTitleInstRef);
 
-		}
 
-		#endregion Map Queries
+            MainStatusShowMessage(statusMessage + ": DONE");
 
-		#region TabItem Cleanup
+            //DisplayInstanceInfoGrid(result, Constants.BlackDiamond, ReportNameInstRef, ReportTitleInstRef);
+            DisplayInstanceInfoGrid(result.Item2);
 
-		public void ClearTabItem(Grid grid)
+        }
+
+        private void DisplayInstanceInfoGrid(Tuple<InstanceValue,quadruple<int, string, string, ulong[]>[]> instanceInfo)
+        {
+            InstanceValue instVal = instanceInfo.Item1;
+            TreeViewItem tvRoot = new TreeViewItem();
+            tvRoot.Header = instVal.ToString();
+            tvRoot.Tag = instVal;
+
+            Queue<KeyValuePair<InstanceValue, TreeViewItem>> que = new Queue<KeyValuePair<InstanceValue, TreeViewItem>>();
+            que.Enqueue(new KeyValuePair<InstanceValue, TreeViewItem>(instVal, tvRoot));
+            while (que.Count > 0)
+            {
+                var info = que.Dequeue();
+                InstanceValue parentNode = info.Key;
+                TreeViewItem tvParentNode = info.Value;
+                List<InstanceValue> descendants = parentNode.Values;
+                for (int i = 0, icount = descendants.Count; i < icount; ++i)
+                {
+                    var descNode = descendants[i];
+                    TreeViewItem tvNode = new TreeViewItem();
+                    tvNode.Header = descNode.ToString();
+                    tvNode.Tag = descNode;
+                    tvParentNode.Items.Add(tvNode);
+                    que.Enqueue(new KeyValuePair<InstanceValue, TreeViewItem>(descNode, tvNode));
+                }
+            }
+
+            var grid = this.TryFindResource("InstanceTaversalGrid") as Grid;
+            Debug.Assert(grid != null);
+            grid.Name = "InstanceTaversalGrid__" + Utils.GetNewID();
+            var treeView = (TreeView)LogicalTreeHelper.FindLogicalNode(grid, "InstanceFieldTreeview");
+            Debug.Assert(treeView != null);
+            treeView.Items.Add(tvRoot);
+            tvRoot.ExpandSubtree();
+
+            var tab = new CloseableTabItem() { Header = Constants.BlackDiamond + " Instance Info", Content = grid, Name = "InstanceTaversalGrid" };
+            MainTab.Items.Add(tab);
+            MainTab.SelectedItem = tab;
+            MainTab.UpdateLayout();
+        }
+
+        #endregion Map Queries
+
+        #region TabItem Cleanup
+
+        public void ClearTabItem(Grid grid)
 		{
 			int a = 0; // TODO JRD -- implement this -- make sure that delegates are removed
 		}

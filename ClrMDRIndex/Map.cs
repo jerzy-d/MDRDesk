@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -580,6 +581,37 @@ namespace ClrMDRIndex
             return new KeyValuePair<string, int>(typeName,typeId);
         }
 
+	    public quadruple<int, string, string, ulong[]>[] GroupAddressesByTypesForDisplay(KeyValuePair<ulong, int>[] infos)
+	    {
+	        var dct = new SortedDictionary<triple<int, string, string>, List<ulong>>(new Utils.TripleIntStrStrCmp());
+	        for (int i = 0, icnt = infos.Length; i < icnt; ++i)
+	        {
+	            var addr = infos[i].Key;
+                KeyValuePair<string, int> typeInfo = GetTypeNameAndIdAtAddr(addr);
+	            var typeName = typeInfo.Key;
+	            var typeId = typeInfo.Value;
+	            var fldName = GetString(infos[i].Value);
+                var key = new triple<int,string,string>(typeId,typeName,fldName);
+	            List<ulong> lst;
+	            if (dct.TryGetValue(key, out lst))
+	            {
+	                lst.Add(addr);
+	            }
+	            else
+	            {
+	                dct.Add(key,new List<ulong>(8) {addr});
+	            }
+	        }
+            quadruple<int,string,string,ulong[]>[] ary = new quadruple<int, string, string, ulong[]>[dct.Count];
+	        int ndx = 0;
+	        foreach (var kv in dct)
+	        {
+	            ary[ndx++] = new quadruple<int, string, string, ulong[]>(kv.Key.First,kv.Key.Second,kv.Key.Third,kv.Value.ToArray());
+	        }
+            Array.Sort(ary,new Utils.QuadrupleIntStrStrAryUlongCmp());
+	        return ary;
+	    }
+
         public KeyValuePair<int, string>[] GetElementTypes(ClrElementType et) // TODO JRD
 		{
 			//var etinfo = _elementTypeCounts[_currentRuntime][(int)et];
@@ -796,23 +828,107 @@ namespace ClrMDRIndex
 	        }
 	    }
 
-	    //private KeyValuePair<ulong, int>[][] GetDescendants(ulong[] addresses, List<KeyValuePair<ulong, int>[]> lst,
-	    //    HashSet<ulong> addrSet, out string error)
-	    //{
-	    //    error = null;
-     //       var fldDpnds = _fieldDependencies[_currentRuntime];
-     //       lst.Clear();
-     //       for (int i = 0, icnt = addresses.Length; i < icnt; ++i)
-     //       {
-     //           if (!addrSet.Add(addresses[i])) continue;
-     //           var result = fldDpnds.GetFieldParents(addresses[i], out error);
-     //           if (result != null && result.Length > 0)
-     //               lst.Add(result);
-     //       }
-	    //    return lst.ToArray();
-	    //}
+        //private KeyValuePair<ulong, int>[][] GetDescendants(ulong[] addresses, List<KeyValuePair<ulong, int>[]> lst,
+        //    HashSet<ulong> addrSet, out string error)
+        //{
+        //    error = null;
+        //       var fldDpnds = _fieldDependencies[_currentRuntime];
+        //       lst.Clear();
+        //       for (int i = 0, icnt = addresses.Length; i < icnt; ++i)
+        //       {
+        //           if (!addrSet.Add(addresses[i])) continue;
+        //           var result = fldDpnds.GetFieldParents(addresses[i], out error);
+        //           if (result != null && result.Length > 0)
+        //               lst.Add(result);
+        //       }
+        //    return lst.ToArray();
+        //}
 
         #endregion Types
+
+        #region Instance Walk
+
+	    public Tuple<InstanceValue, quadruple<int, string, string, ulong[]>[]> GetInstanceInfo(ulong addr, out string error)
+	    {
+	        error = null;
+	        try
+	        {
+	            var typeInfo = GetTypeNameAndIdAtAddr(addr);
+
+                // get ancestors
+                //
+	            var ancestors = _fieldDependencies[_currentRuntime].GetFieldParents(addr, out error);
+	            quadruple<int, string, string, ulong[]>[] ancestorInfos = GroupAddressesByTypesForDisplay(ancestors);
+
+                // get instance info: fields and values
+                //
+                var heap = GetFreshHeap();
+	            ClrType clrType = heap.GetObjectType(addr);
+	            InstanceValue root;
+	            string clrValue = null;
+	            if (clrType.HasSimpleValue && !clrType.IsObjectReference)
+	            {
+	                var obj = clrType.GetValue(addr);
+	                clrValue = ValueExtractor.GetPrimitiveValue(obj, clrType);
+                    root = new InstanceValue(typeInfo.Value,addr,typeInfo.Key,string.Empty,clrValue);
+	            }
+	            else
+	            {
+	                if (clrType.IsArray)
+	                {
+	                    var acnt = clrType.GetArrayLength(addr);
+	                    clrValue = "[" + acnt.ToString() + "]";
+                        root = new InstanceValue(typeInfo.Value, addr, typeInfo.Key, string.Empty, clrValue);
+                    }
+                    else
+	                {
+                        root = new InstanceValue(typeInfo.Value, addr, typeInfo.Key, string.Empty, Constants.NonValue);
+                        for (int i = 0, icnt = clrType.Fields.Count; i < icnt; ++i)
+                        {
+                            InstanceValue instVal = null;
+                            var fld = clrType.Fields[i];
+                            clrValue = ValueExtractor.TryGetPrimitiveValue(heap, addr, clrType.Fields[i], clrType.IsInternal);
+                            if (Utils.IsNonValue(clrValue))
+                            {
+                                if (clrType.IsValueClass)
+                                {
+                                    var typeName = fld.Type != null ? fld.Type.Name : Constants.NullName;
+                                    var typeId = GetTypeId(typeName);
+                                    instVal = new InstanceValue(typeId, Constants.InvalidAddress, typeName, fld.Name, clrValue);
+
+                                }
+                                else
+                                {
+                                    var typeAddrObj = fld.GetValue(addr, clrType.IsInternal, false);
+                                    ulong typeAddr = (ulong?)typeAddrObj ?? Constants.InvalidAddress;
+                                    var typeNameId = GetTypeNameAndIdAtAddr(typeAddr);
+                                    instVal = new InstanceValue(typeNameId.Value, typeAddr, typeNameId.Key, fld.Name, clrValue);
+                                }
+                            }
+                            else
+                            {
+                                var typeName = fld.Type != null ? fld.Type.Name : Constants.NullName;
+                                var typeId = GetTypeId(typeName);
+                                instVal = new InstanceValue(typeId, Constants.InvalidAddress, typeName, fld.Name, clrValue);
+                            }
+
+                            root.Addvalue(instVal);
+                        }
+                    }
+                }
+
+	            return new Tuple<InstanceValue, quadruple<int, string, string, ulong[]>[]>(root,ancestorInfos);
+	        }
+	        catch (Exception ex)
+	        {
+                error = Utils.GetExceptionErrorString(ex);
+	            return null;
+	        }
+	    }
+
+
+        #endregion Instance Walk
+
 
         #region Field References
 
@@ -1570,33 +1686,33 @@ namespace ClrMDRIndex
 
 		#region Instance Values
 
-		public InstanceValue GetValue(ulong address, out string error)
-		{
-			error = null;
-			int typeId = GetInstanceIdAtAddr(address);
-			if (Utils.IsIndexInvalid(typeId))
-			{
-				error = "Cannot get instance type at address: " + Utils.AddressString(address);
-				return null;
-			}
+		//public InstanceValue GetValue(ulong address, out string error)
+		//{
+		//	error = null;
+		//	int typeId = GetInstanceIdAtAddr(address);
+		//	if (Utils.IsIndexInvalid(typeId))
+		//	{
+		//		error = "Cannot get instance type at address: " + Utils.AddressString(address);
+		//		return null;
+		//	}
 
-			var heap = GetFreshHeap();
-			ClrType clrType = heap.GetObjectType(address);
-			if (clrType == null)
-			{
-				error = "Cannot get object type at address: " + Utils.AddressString(address);
-				return null;
-			}
+		//	var heap = GetFreshHeap();
+		//	ClrType clrType = heap.GetObjectType(address);
+		//	if (clrType == null)
+		//	{
+		//		error = "Cannot get object type at address: " + Utils.AddressString(address);
+		//		return null;
+		//	}
 
-			InstanceValue value = new InstanceValue(typeId,address);
-
-
+		//	InstanceValue value = new InstanceValue(typeId,address);
 
 
 
-			return value;
 
-		}
+
+		//	return value;
+
+		//}
 
 		#endregion Instance Values
 
