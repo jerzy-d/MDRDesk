@@ -117,6 +117,7 @@ namespace ClrMDRIndex
 		// TODO JRD -- check this one 
 		public static string GetStringValue(ClrType clrType, ulong addr)
 		{
+			if (addr == Constants.InvalidAddress) return Constants.NullValue;
 			ClrInstanceField instanceField;
 			int fieldOffset;
 			clrType.GetFieldForOffset(0, true, out instanceField, out fieldOffset);
@@ -127,23 +128,26 @@ namespace ClrMDRIndex
 			}
 			var length = (int)(fieldValue ?? 0);
 			if (length < 1)
-				return string.Empty;
+				return Constants.EmptyStringValue;
 
-			var charArray = new char[length];
+			var charArray = new char[length+2];
 
 			ClrInstanceField charInstanceField;
 			int charFieldOffset;
 			clrType.GetFieldForOffset(4, true, out charInstanceField, out charFieldOffset);
 			ulong offset = 0;
+			charArray[0] = '\"';
+			charArray[charArray.Length-1] = '\"';
 			for (var i = 0; i < length; ++i)
 			{
 				var charObject = charInstanceField.GetValue(addr + offset);
 				var unicodeChar = (char)charObject;
 				if (unicodeChar < 0x0020 || unicodeChar == 0x007F || unicodeChar > 0x1EFF)
 					unicodeChar = '?';
-				charArray[i] = unicodeChar;
+				charArray[i+1] = unicodeChar;
 				offset += 2;
 			}
+			
 
 			return new string(charArray);
 		}
@@ -183,9 +187,9 @@ namespace ClrMDRIndex
 			return ts.ToString("c");
 		}
 
-		public static string GetTimeSpanValue(ulong addr, ClrInstanceField fld, bool internalPtr) // TODO JRD -- check if this works
+		public static string GetTimeSpanValue(ulong addr, ClrInstanceField fld) // TODO JRD -- check if this works
 		{
-			ulong fldAddr = fld.GetAddress(addr, internalPtr);
+			ulong fldAddr = fld.GetAddress(addr, true);
 			var data = (long)fld.Type.Fields[0].GetValue(fldAddr, true);
 			var ts = TimeSpan.FromTicks(data);
 			return ts.ToString("c");
@@ -410,7 +414,7 @@ namespace ClrMDRIndex
 	                {
 	                    case TypeCategory.String:
 	                        addrObj = field.GetValue(classAddr, internalAddr, false);
-	                        if (addrObj == null) return Constants.NullName;
+	                        if (addrObj == null) return Constants.NullValue;
 	                        return ValueExtractor.GetStringValue(clrType, (ulong) addrObj);
                         case TypeCategory.Exception:
                             addrObj = field.GetValue(classAddr, internalAddr, false);
@@ -423,13 +427,13 @@ namespace ClrMDRIndex
 	                switch (cat.Value)
 	                {
                         case TypeCategory.Decimal:
-                            addrObj = field.GetValue(classAddr, internalAddr, false);
-                            if (addrObj == null) return Constants.NullName;
-                            return ValueExtractor.GetDecimalValue((ulong)addrObj, clrType, null);
+                            //addrObj = field.GetValue(classAddr, internalAddr, false);
+                            //if (addrObj == null) return Constants.NullName;
+                            return ValueExtractor.GetDecimalValue(classAddr, field);
                         case TypeCategory.DateTime:
-                            addrObj = field.GetValue(classAddr, internalAddr, false);
-                            if (addrObj == null) return Constants.NullName;
-                            return ValueExtractor.GetDateTimeValue((ulong)addrObj, clrType, null);
+                            //addrObj = field.GetValue(classAddr, internalAddr, false);
+                            //if (addrObj == null) return Constants.NullName;
+                            return ValueExtractor.GetDateTimeValue(classAddr, field, true, null);
                         case TypeCategory.TimeSpan:
                             addrObj = field.GetValue(classAddr, internalAddr, false);
                             if (addrObj == null) return Constants.NullName;

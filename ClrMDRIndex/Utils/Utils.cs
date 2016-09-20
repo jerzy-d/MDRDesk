@@ -1042,6 +1042,7 @@ namespace ClrMDRIndex
                 return a.First < b.First ? -1 : (a.First > b.First ? 1 : 0);
             }
         }
+
         public class TripleIntStrStrCmp : IComparer<triple<int, string, string>>
         {
             public int Compare(triple<int, string, string> a, triple<int, string, string> b)

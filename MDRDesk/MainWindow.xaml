@@ -61,17 +61,23 @@
         </Grid>
         <Grid x:Key="GeneralInfoView" Name="GeneralInfoView">
             <Grid.RowDefinitions>
-                <RowDefinition Height="80*"/>
+                <RowDefinition Height="70*"/>
+                <RowDefinition Height="10*"/>
                 <RowDefinition Height="20*"/>
             </Grid.RowDefinitions>
             <TextBlock Name="GeneralInfoText" Grid.Row="0" HorizontalAlignment="Stretch" VerticalAlignment="Stretch"></TextBlock>
-            <Grid Name="GeneralInfoChart" Grid.Row="1" >
+            <Label Name="GenerationInfoLabel" Grid.Row="1" FontWeight="Bold" FontSize="12"></Label>
+            <Grid Name="GeneralInfoChart" Grid.Row="2" >
                 <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="50*"/>
-                    <ColumnDefinition Width="50*"/>
+                    <ColumnDefinition Width="25*"/>
+                    <ColumnDefinition Width="25*"/>
+                    <ColumnDefinition Width="25*"/>
+                    <ColumnDefinition Width="25*"/>
                 </Grid.ColumnDefinitions>
                 <Grid Name="GeneralInfoChart1" Grid.Column="0"></Grid>
                 <Grid Name="GeneralInfoChart2" Grid.Column="1"></Grid>
+                <Grid Name="GeneralInfoChart3" Grid.Column="2"></Grid>
+                <Grid Name="GeneralInfoChart4" Grid.Column="3"></Grid>
             </Grid>
         </Grid>
         <!-- display non-static instances -->
@@ -248,7 +254,7 @@
             <Grid Name="BottomGrid" Row="3" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" Margin="2,2,2,2">
             </Grid>
         </Grid>
-        <Grid x:Key="InstanceTaversalGrid">
+        <Grid x:Key="InstanceHierarchyGrid"  x:Shared="False">
             <Grid.RowDefinitions>
                 <RowDefinition Height="10*"/>
                 <RowDefinition Height="90*"/>
@@ -258,35 +264,36 @@
                 <ColumnDefinition Width="5"/>
                 <ColumnDefinition Width="30*"/>
                 <ColumnDefinition Width="5"/>
-                <ColumnDefinition Width="30*"/>
+                <ColumnDefinition Width="Auto"/>
             </Grid.ColumnDefinitions>
-            <Grid x:Name="InstanceValueGrid" Grid.Row="0" Grid.Column="0" Grid.ColumnSpan="5">
-                <Label x:Name="InstanceValuLabel" VerticalAlignment="Center" HorizontalAlignment="Center"/>
-
+            <Grid x:Name="InstHierarchyValueGrid" Grid.Row="0" Grid.Column="0" Grid.ColumnSpan="5">
+                <Label x:Name="InstHierarchyValueLabel" VerticalAlignment="Center" HorizontalAlignment="Center"/>
             </Grid>
-            <Grid x:Name="AncestorValueGrid" Grid.Row="1" Grid.Column="0">
+            <Grid x:Name="InstHierarchyAncestorsGrid" Grid.Row="1" Grid.Column="0">
                 <Grid>
                     <Grid.RowDefinitions>
                      <RowDefinition Height="50*"/>
                     <RowDefinition Height="5"/>
                     <RowDefinition Height="45*"/>
                      </Grid.RowDefinitions>
-                    <ListBox x:Name="AncestorNameListBox" Grid.Row="0"></ListBox>
+                    <ListBox x:Name="InstHierarchyAncestorNames" Grid.Row="0" Margin="2,2,2,2" SelectionChanged="InstHierarchyAncestorChanged"></ListBox>
                     <GridSplitter Grid.Row="1" VerticalAlignment="Center" HorizontalAlignment="Stretch" Height="5" ShowsPreview="False" Background="DarkGray"></GridSplitter>
-                    <ListBox x:Name="AncestorAddressListBox" Grid.Row="2"></ListBox>
+                    <ListBox x:Name="InstHierarchyAncestorAddresses" Grid.Row="2" Margin="2,2,2,2">
+                        <ListBox.ItemTemplate>
+                            <DataTemplate>
+                                <TextBlock Text="{Binding Converter={StaticResource LongHexConverter}}"/>
+                            </DataTemplate>
+                        </ListBox.ItemTemplate>
+                    </ListBox>
                 </Grid>
-                
-                <ListBox x:Name="AncestorListBox"></ListBox>
             </Grid>
             <GridSplitter Grid.Row="1" Grid.Column="1" VerticalAlignment="Stretch" HorizontalAlignment="Center" Width="5" ShowsPreview="False" Background="DarkGray"></GridSplitter>
-            <Grid x:Name="InstanceFieldGrid" Grid.Row="1" Grid.Column="3">
-                <TreeView x:Name="InstanceFieldTreeview">
-                    
+            <Grid x:Name="InstHierarchyFieldGrid" Grid.Row="1" Grid.Column="2">
+                <TreeView x:Name="InstHierarchyFieldTreeview" VerticalAlignment="Stretch" HorizontalAlignment="Stretch" Margin="2,2,2,2" FontSize="12" TreeViewItem.Expanded="InstHierarchyTreeViewExpanded">
                 </TreeView>
-
             </Grid>
             <GridSplitter Grid.Row="1" Grid.Column="3" VerticalAlignment="Stretch" HorizontalAlignment="Center" Width="5" ShowsPreview="False" Background="DarkGray"></GridSplitter>
-            <Expander x:Name="CollectionExpander" Margin="0,7,0,0" DockPanel.Dock="Bottom" Header="..." Grid.Row="1" Grid.Column="4">
+            <Expander x:Name="CollectionExpander" Margin="0,7,0,0" DockPanel.Dock="Bottom" Header="..." Grid.Row="1" Grid.Column="4" ExpandDirection="Left">
                 <DockPanel x:Name="CollectionExpanderPanel" Margin="3" LastChildFill="True">
                 </DockPanel>
             </Expander>

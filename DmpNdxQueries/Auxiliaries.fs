@@ -351,3 +351,7 @@ module Auxiliaries =
     let getColumnChart (data:(string*int64) array) =
         let chart = Chart.Column data
         new ChartControl(chart)
+
+    let getColumnChartWithTitle (data:(string*int64) array) (title:string) =
+        let chart = Chart.Column (data, Title=title)
+        new ChartControl(chart)

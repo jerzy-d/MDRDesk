@@ -581,7 +581,7 @@ namespace ClrMDRIndex
             return new KeyValuePair<string, int>(typeName,typeId);
         }
 
-	    public quadruple<int, string, string, ulong[]>[] GroupAddressesByTypesForDisplay(KeyValuePair<ulong, int>[] infos)
+	    public AncestorDispRecord[] GroupAddressesByTypesForDisplay(KeyValuePair<ulong, int>[] infos)
 	    {
 	        var dct = new SortedDictionary<triple<int, string, string>, List<ulong>>(new Utils.TripleIntStrStrCmp());
 	        for (int i = 0, icnt = infos.Length; i < icnt; ++i)
@@ -602,13 +602,13 @@ namespace ClrMDRIndex
 	                dct.Add(key,new List<ulong>(8) {addr});
 	            }
 	        }
-            quadruple<int,string,string,ulong[]>[] ary = new quadruple<int, string, string, ulong[]>[dct.Count];
+            var ary = new AncestorDispRecord[dct.Count];
 	        int ndx = 0;
 	        foreach (var kv in dct)
 	        {
-	            ary[ndx++] = new quadruple<int, string, string, ulong[]>(kv.Key.First,kv.Key.Second,kv.Key.Third,kv.Value.ToArray());
+	            ary[ndx++] = new AncestorDispRecord(kv.Key.First,kv.Key.Second,kv.Key.Third,kv.Value.ToArray());
 	        }
-            Array.Sort(ary,new Utils.QuadrupleIntStrStrAryUlongCmp());
+            Array.Sort(ary,new AncestorDispRecordCmp());
 	        return ary;
 	    }
 
@@ -848,7 +848,7 @@ namespace ClrMDRIndex
 
         #region Instance Walk
 
-	    public Tuple<InstanceValue, quadruple<int, string, string, ulong[]>[]> GetInstanceInfo(ulong addr, out string error)
+	    public Tuple<InstanceValue, AncestorDispRecord[]> GetInstanceInfo(ulong addr, out string error)
 	    {
 	        error = null;
 	        try
@@ -858,7 +858,7 @@ namespace ClrMDRIndex
                 // get ancestors
                 //
 	            var ancestors = _fieldDependencies[_currentRuntime].GetFieldParents(addr, out error);
-	            quadruple<int, string, string, ulong[]>[] ancestorInfos = GroupAddressesByTypesForDisplay(ancestors);
+				AncestorDispRecord[] ancestorInfos = GroupAddressesByTypesForDisplay(ancestors);
 
                 // get instance info: fields and values
                 //
@@ -892,7 +892,7 @@ namespace ClrMDRIndex
                             {
                                 if (clrType.IsValueClass)
                                 {
-                                    var typeName = fld.Type != null ? fld.Type.Name : Constants.NullName;
+                                    var typeName = fld.Type != null ? fld.Type.Name : Constants.Unknown;
                                     var typeId = GetTypeId(typeName);
                                     instVal = new InstanceValue(typeId, Constants.InvalidAddress, typeName, fld.Name, clrValue);
 
@@ -901,8 +901,14 @@ namespace ClrMDRIndex
                                 {
                                     var typeAddrObj = fld.GetValue(addr, clrType.IsInternal, false);
                                     ulong typeAddr = (ulong?)typeAddrObj ?? Constants.InvalidAddress;
-                                    var typeNameId = GetTypeNameAndIdAtAddr(typeAddr);
-                                    instVal = new InstanceValue(typeNameId.Value, typeAddr, typeNameId.Key, fld.Name, clrValue);
+									KeyValuePair<string,int> typeInformation = GetTypeNameAndIdAtAddr(typeAddr);
+									if (typeAddr == Constants.InvalidAddress)
+	                                {
+										var typeName = fld.Type != null ? fld.Type.Name : Constants.Unknown;
+		                                var typeId = GetTypeId(typeName);
+										typeInformation = new KeyValuePair<string, int>(typeName,typeId);
+	                                }
+                                    instVal = new InstanceValue(typeInformation.Value, typeAddr, typeInformation.Key, fld.Name, clrValue);
                                 }
                             }
                             else
@@ -917,7 +923,7 @@ namespace ClrMDRIndex
                     }
                 }
 
-	            return new Tuple<InstanceValue, quadruple<int, string, string, ulong[]>[]>(root,ancestorInfos);
+	            return new Tuple<InstanceValue, AncestorDispRecord[]>(root,ancestorInfos);
 	        }
 	        catch (Exception ex)
 	        {
@@ -1547,39 +1553,43 @@ namespace ClrMDRIndex
 
 		#region Segments/Generations
 
-
 		public Tuple<string, long>[][] GetGenerationTotals()
 		{
 			Tuple<int[], ulong[], int[], ulong[]> histograms =
 				ClrtSegment.GetTotalGenerationDistributions(_segments[_currentRuntime]);
 
-			Tuple<string, long>[] ary0 = new Tuple<string, long>[8];
-			ary0[0] = new Tuple<string, long>("Ints G0 Count", histograms.Item1[0]);
-			ary0[1] = new Tuple<string, long>("Ints G1 Count", histograms.Item1[1]);
-			ary0[2] = new Tuple<string, long>("Ints G2 Count", histograms.Item1[2]);
-			ary0[3] = new Tuple<string, long>("Ints LOH Count", histograms.Item1[3]);
-			ary0[4] = new Tuple<string, long>("Ints G0 Size", (long)histograms.Item2[0]);
-			ary0[5] = new Tuple<string, long>("Ints G1 Size", (long)histograms.Item2[1]);
-			ary0[6] = new Tuple<string, long>("Ints G2 Size", (long)histograms.Item2[2]);
-			ary0[7] = new Tuple<string, long>("Ints LOH Size", (long)histograms.Item2[3]);
+			Tuple<string, long>[] ary0 = new Tuple<string, long>[4];
+			ary0[0] = new Tuple<string, long>("G0", histograms.Item1[0]);
+			ary0[1] = new Tuple<string, long>("G1", histograms.Item1[1]);
+			ary0[2] = new Tuple<string, long>("G2", histograms.Item1[2]);
+			ary0[3] = new Tuple<string, long>("LOH", histograms.Item1[3]);
 
-			Tuple<string, long>[] ary1 = new Tuple<string, long>[8];
-			ary1[0] = new Tuple<string, long>("Free G0 Count", histograms.Item3[0]);
-			ary1[1] = new Tuple<string, long>("Free G1 Count", histograms.Item3[1]);
-			ary1[2] = new Tuple<string, long>("Free G2 Count", histograms.Item3[2]);
-			ary1[3] = new Tuple<string, long>("Free LOH Count", histograms.Item3[3]);
-			ary1[4] = new Tuple<string, long>("Free G0 Size", (long)histograms.Item4[0]);
-			ary1[5] = new Tuple<string, long>("Free G1 Size", (long)histograms.Item4[1]);
-			ary1[6] = new Tuple<string, long>("Free G2 Size", (long)histograms.Item4[2]);
-			ary1[7] = new Tuple<string, long>("Free LOH Size", (long)histograms.Item4[3]);
+			Tuple<string, long>[] ary1 = new Tuple<string, long>[4];
+			ary1[0] = new Tuple<string, long>("G0", (long)histograms.Item2[0]);
+			ary1[1] = new Tuple<string, long>("G1", (long)histograms.Item2[1]);
+			ary1[2] = new Tuple<string, long>("G2", (long)histograms.Item2[2]);
+			ary1[3] = new Tuple<string, long>("LOH", (long)histograms.Item2[3]);
+
+			Tuple<string, long>[] ary2 = new Tuple<string, long>[4];
+			ary2[0] = new Tuple<string, long>("G0", histograms.Item3[0]);
+			ary2[1] = new Tuple<string, long>("G1", histograms.Item3[1]);
+			ary2[2] = new Tuple<string, long>("G2", histograms.Item3[2]);
+			ary2[3] = new Tuple<string, long>("LOH", histograms.Item3[3]);
+
+			Tuple<string, long>[] ary3 = new Tuple<string, long>[4];
+			ary3[0] = new Tuple<string, long>("G0", (long)histograms.Item4[0]);
+			ary3[1] = new Tuple<string, long>("G1", (long)histograms.Item4[1]);
+			ary3[2] = new Tuple<string, long>("G2", (long)histograms.Item4[2]);
+			ary3[3] = new Tuple<string, long>("LOH", (long)histograms.Item4[3]);
 
 			return new Tuple<string, long>[][]
 			{
 				ary0,
 				ary1,
+				ary2,
+				ary3,
 			};
 		}
-
 
 		public int[] GetGenerationHistogram(ulong[] addresses)
 		{

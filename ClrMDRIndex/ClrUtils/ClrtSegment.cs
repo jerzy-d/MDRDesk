@@ -359,6 +359,23 @@ namespace ClrMDRIndex
 			}
 		}
 
+		public static string GetGenerationsString(string[] titles, Tuple<string, long>[][] histogr)
+		{
+			StringBuilder sb = StringBuilderCache.Acquire(256);
+			Debug.Assert(titles.Length == histogr.Length);
+			string[] genPrefix = new[] {" 0[", " 1[", " 2[", " L["};
+			for (int i = 0, icnt = titles.Length; i < icnt; ++i)
+			{
+				sb.Append(titles[i]);
+				for (int j = 0, jcnt = histogr[i].Length; j < jcnt; ++j)
+				{
+					sb.Append(" ").Append(genPrefix[j]).Append(Utils.LargeNumberString(histogr[i][j].Item2)).Append("]");
+				}
+				sb.Append("  ");
+			}
+			return StringBuilderCache.GetStringAndRelease(sb);
+		}
+
 		public static ClrtSegment[] ReadSegments(BinaryReader reader)
 		{
 			var count = reader.ReadInt32();

@@ -19,11 +19,14 @@ namespace ClrMDRIndex
 		public const string ZeroAddressStr = "0x0000000000000000";
 		public const string ZeroStr = "0";
 		public const string AdHocQueryDirName = "ad-hoc.queries";
+		public const string EmptyStringValue = "\"\"";
+
 
 		// some standard type names and their ids
 		//
 		public const string UnknownName = "{unknown}";
 		public const string NullName = "{null}";
+		public const string NullValue = "null";
 		public const int NullNameId = 0;
 		public const string ErrorStr = "ERROR";
 		public const int ErrorStrId = 1;
@@ -87,12 +90,13 @@ namespace ClrMDRIndex
 		public const char RightSquatArrow = '\u27a7'; // ➧ SQUAT BLACK RIGHTWARDS ARROW
 		public const char RightArrow = '\u2B95'; // RIGHTWARDS BLACK ARROW
 		public const string RightTrianglePadded = " \u23F5 "; // BLACK MEDIUM RIGHT-POINTING TRIANGLE
-
-		// 24EA ⓪ CIRCLED DIGIT ZERO
-		// 2070 ⁰ SUPERSCRIPT ZERO
-		// 2080 ₀ SUBSCRIPT ZERO
-		// 2466  ⑦  Circled Digit Seven 
-		// 2474  ⑴  Parenthesized Digit One
+		public const char LeftCurlyBracket = '\u2774'; // ❴ MEDIUM LEFT CURLY BRACKET ORNAMENT
+		public const char RightCurlyBracket = '\u2775'; // ❵ MEDIUM RIGHT CURLY BRACKET ORNAMENT
+														// 24EA ⓪ CIRCLED DIGIT ZERO
+														// 2070 ⁰ SUPERSCRIPT ZERO
+														// 2080 ₀ SUBSCRIPT ZERO
+														// 2466  ⑦  Circled Digit Seven 
+														// 2474  ⑴  Parenthesized Digit One
 		public char[] SubDigits = new[]
 		{
 			'\u2080', // ₀ SUBSCRIPT ZERO

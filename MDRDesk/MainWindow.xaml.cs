@@ -543,7 +543,7 @@ namespace MDRDesk
 					Dispatcher.CurrentDispatcher.InvokeAsync(() => ExecuteGenerationQuery("Get instance generation", new ulong[] { addr }, grid));
 					break;
 				case "INSTANCE HIERARCHY WALK":
-					Dispatcher.CurrentDispatcher.InvokeAsync(() => ExecuteHierarchyWalkQuery("Get instance hierarchy", addr));
+					Dispatcher.CurrentDispatcher.InvokeAsync(() => ExecuteInstanceHierarchyQuery("Get instance hierarchy " + Utils.AddressStringHeader(addr), addr));
 					break;
 			}
 		}
@@ -1780,6 +1780,7 @@ namespace MDRDesk
 
 
 		}
+
 
 	}
 }

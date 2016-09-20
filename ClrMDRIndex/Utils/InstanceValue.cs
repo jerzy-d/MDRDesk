@@ -36,8 +36,13 @@ namespace ClrMDRIndex
 	    public override string ToString()
 	    {
 	        return
-	            ((_value.Length> 1 && _value[0] == Constants.NonValueChar) ? Utils.AddressStringHeader(_address) : _value)
-	            + "(" + _fieldName + ") " + _typeName;
+				Constants.LeftCurlyBracket
+	            + ((_value.Length> 0 && _value[0] == Constants.NonValueChar) ? (Constants.FancyKleeneStar+Utils.AddressString(_address)) : _value)
+				+ Constants.RightCurlyBracket
+	            + "  "
+				+ _fieldName
+				+ "   "
+				+ _typeName;
 	    }
 	}
 }
