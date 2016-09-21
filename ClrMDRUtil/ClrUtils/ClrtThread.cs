@@ -122,4 +122,16 @@ namespace ClrMDRIndex
 			return StringBuilderCache.GetStringAndRelease(sb);
 		}
 	}
+
+	public class ClrThreadCmp : IComparer<ClrThread>
+	{
+		public int Compare(ClrThread a, ClrThread b)
+		{
+			if (a.OSThreadId == b.OSThreadId)
+			{
+				return a.ManagedThreadId < b.ManagedThreadId ? -1 : (a.ManagedThreadId > b.ManagedThreadId ? 1 : 0);
+			}
+			return a.OSThreadId < b.OSThreadId ? -1 : 1;
+		}
+	}
 }

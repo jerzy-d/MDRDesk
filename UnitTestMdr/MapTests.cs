@@ -53,9 +53,10 @@ namespace UnitTestMdr
         {
             const string typeName = @"ECS.Common.Collections.Common.EzeBitVector";
             string error;
-            //var map = OpenMap(@"D:\Jerzy\WinDbgStuff\Dumps\DumpTest\DumpTest.exe_160820_073947.map");
-            var map = OpenMap(@"D:\Jerzy\WinDbgStuff\dumps\Analytics\Memory.Usage.OPAM.971\DupCacheIssue\A2_noDF.map");
-            using (map)
+			//var map = OpenMap(@"D:\Jerzy\WinDbgStuff\Dumps\DumpTest\DumpTest.exe_160820_073947.map");
+			//var map = OpenMap(@"D:\Jerzy\WinDbgStuff\dumps\Analytics\Memory.Usage.OPAM.971\DupCacheIssue\A2_noDF.map");
+			var map = OpenMap(@"D:\Jerzy\WinDbgStuff\dumps\Analytics\Memory.Usage.OPAM.971\DupCacheIssue\A2_noDF.map");
+			using (map)
             {
                 int typeId = map.GetTypeId(typeName);
                 ulong[] typeAddresses = map.GetTypeAddresses(typeId);
@@ -912,7 +913,9 @@ namespace UnitTestMdr
 			int nullFieldCount = 0;
 			StringBuilder sb = new StringBuilder(256);
 			//using (var map = OpenMap(@"D:\Jerzy\WinDbgStuff\dumps\Analytics\Memory.Usage.OPAM.971\RealPositionCmp\Eze.Analytics.Svc.RPBIG_160913_151123.map"))
-			using (var map = OpenMap(@"D:\Jerzy\WinDbgStuff\dumps\Analytics\Baly\analytics9_1512161604.good.map"))
+			//using (var map = OpenMap(@"D:\Jerzy\WinDbgStuff\dumps\Analytics\Baly\analytics9_1512161604.good.map"))
+			//using (var map = OpenMap(@"D:\Jerzy\WinDbgStuff\dumps\Analytics\Memory.Usage.OPAM.971\Eze.Analytics.Svc.exe.EzeBitVector.map"))
+			using (var map = OpenMap(@"D:\Jerzy\WinDbgStuff\dumps\Analytics\Memory.Usage.OPAM.971\Eze.Analytics.Svc.exe.EzeBitVector.PadOff.map"))
 			{
 				try
 				{

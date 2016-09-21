@@ -13,7 +13,6 @@ using Microsoft.Diagnostics.Runtime.ICorDebug;
 using RequestType = System.Tuple<string, object>;
 using DumpParamType = System.Tuple<string, System.Collections.Concurrent.BlockingCollection<System.Tuple<string, object>>, System.Collections.Concurrent.BlockingCollection<System.Collections.Generic.KeyValuePair<string, object>>, int, System.Threading.CancellationToken>;
 
-
 namespace ClrMDRIndex
 {
 	public class Map : IDisposable
@@ -38,7 +37,10 @@ namespace ClrMDRIndex
 		public int CurrentRuntime => _currentRuntime;
 
 		private ClrtTypes[] _clrtTypes; // type informations, see ClrtTypes class for details
+
+		public ClrtTypes Types => _clrtTypes[_currentRuntime];
 		private string[][] _stringIds; // ordered by string ids
+		public string[] StringIds => _stringIds[_currentRuntime];
 
 		//private int[][] _fieldParents; // instance offsets to field references
 
@@ -46,6 +48,7 @@ namespace ClrMDRIndex
 		private ulong[][] _instances; // list of all heap addresses
 		private uint[][] _sizes; // size of instances from Microsoft.Diagnostics.Runtime GetSize(Address objRef) method
 		private int[][] _instTypes; // ids of instance types
+		public int[] InstanceTypeIds => _instTypes[_currentRuntime];
 		private int[][] _instSortedByTypes; // addresses sorted by types, for faster lookups
 		private int[][] _instTypeOffsets; // to speed up type addresses lookup 
 		private FieldDependency[] _fieldDependencies;
@@ -799,7 +802,7 @@ namespace ClrMDRIndex
                 HashSet<ulong> addrSet = new HashSet<ulong>();
 				Queue<DependencyNode> que = new Queue<DependencyNode>(1024);
 
-				DependencyNode[] nodes = DependencyNode.BuildBranches(this, root, addresses, out error);
+				DependencyNode[] nodes = DependencyNode.BuildBranches(Types, Instances, InstanceTypeIds, StringIds, FieldDependencies, root, addresses, out error);
 		        for (int i = 0, icnt = nodes.Length; i < icnt; ++i)
 		        {
 			        que.Enqueue(nodes[i]);
@@ -811,7 +814,7 @@ namespace ClrMDRIndex
 	                var node = que.Dequeue();
                     if (node.Level==maxLevel) continue;
 
-					nodes = DependencyNode.BuildBranches(this, node, node.Addresses, out error);
+					nodes = DependencyNode.BuildBranches(Types, Instances, InstanceTypeIds, StringIds, FieldDependencies, node, node.Addresses, out error);
 		            for (int i = 0, icnt = nodes.Length; i < icnt; ++i)
 		            {
 			            que.Enqueue(nodes[i]);

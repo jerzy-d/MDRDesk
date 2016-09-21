@@ -368,6 +368,9 @@ namespace MDRDesk
 			Debug.Assert(mainGrid != null);
 			mainGrid.Name = "InstanceHierarchyGrid__" + Utils.GetNewID();
 
+			var mainLabel = (Label)LogicalTreeHelper.FindLogicalNode(mainGrid, "InstHierarchyValueLabel");
+			mainLabel.Content = instVal;
+
 			var ancestorNameList = (ListBox)LogicalTreeHelper.FindLogicalNode(mainGrid, "InstHierarchyAncestorNames");
 			ancestorNameList.ItemsSource = instanceInfo.Item2;
 

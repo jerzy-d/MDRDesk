@@ -34,11 +34,18 @@ namespace ClrMDRIndex
 			_recursionCnt = bo.RecursionCount;
 			_blkReason = bo.Reason;
 			_taken = bo.Taken;
-			_owner = _taken && bo.HasSingleOwner ? Indexer.GetThreadId(threads, bo.Owner) : Constants.InvalidIndex;
+			_owner = _taken && bo.HasSingleOwner ? GetThreadId(threads, bo.Owner) : Constants.InvalidIndex;
 			_owners = GetThreadList(bo.Owners, threads);
 			_waiters = GetThreadList(bo.Waiters, threads);
 			_typeId = GetTypeId(_address, typeInfos.Key , typeInfos.Value);
 		}
+
+		public static int GetThreadId(ClrThread[] ary, ClrThread thrd)
+		{
+			if (thrd == null) return Constants.InvalidIndex;
+			return Array.BinarySearch(ary, thrd, new ClrThreadCmp());
+		}
+
 
 		private int[] GetThreadList(IList<ClrThread> lst, ClrThread[] threads)
 		{
@@ -46,7 +53,7 @@ namespace ClrMDRIndex
 			List<int> threadLst = new List<int>();
 			for (int i = 0, icnt = lst.Count; i < icnt; ++i)
 			{
-				var id = Indexer.GetThreadId(threads, lst[i]);
+				var id = GetThreadId(threads, lst[i]);
 				if (id >= 0) threadLst.Add(id);
 			}
 			return threadLst.Count > 0 ? threadLst.ToArray() : Utils.EmptyArray<int>.Value;
@@ -57,5 +64,6 @@ namespace ClrMDRIndex
 			var idNdx = Array.BinarySearch(instances, addr);
 			return idNdx < 0 ? Constants.InvalidIndex : types[idNdx];
 		}
+
 	}
 }

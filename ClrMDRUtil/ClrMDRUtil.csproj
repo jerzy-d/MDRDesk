@@ -4,14 +4,13 @@
   <PropertyGroup>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
-    <ProjectGuid>{99D75B6D-9BA0-48FF-9C2E-9EC8F0415901}</ProjectGuid>
+    <ProjectGuid>{7B01CCC0-8C10-4AA1-8154-4B55160E322B}</ProjectGuid>
     <OutputType>Library</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
-    <RootNamespace>ClrMDRIndex</RootNamespace>
-    <AssemblyName>ClrMDRIndex</AssemblyName>
+    <RootNamespace>ClrMDRUtil</RootNamespace>
+    <AssemblyName>ClrMDRUtil</AssemblyName>
     <TargetFrameworkVersion>v4.6.1</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
-    <TargetFrameworkProfile />
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
     <DebugSymbols>true</DebugSymbols>
@@ -25,11 +24,10 @@
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
     <DebugType>pdbonly</DebugType>
     <Optimize>true</Optimize>
-    <OutputPath>..\..\..\..\..\WinDbgStuff\MDRDesk\32\</OutputPath>
+    <OutputPath>bin\Release\</OutputPath>
     <DefineConstants>TRACE</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
-    <PlatformTarget>AnyCPU</PlatformTarget>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|x64'">
     <DebugSymbols>true</DebugSymbols>
@@ -41,7 +39,7 @@
     <CodeAnalysisRuleSet>MinimumRecommendedRules.ruleset</CodeAnalysisRuleSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|x64'">
-    <OutputPath>..\..\..\..\..\WinDbgStuff\MDRDesk\</OutputPath>
+    <OutputPath>bin\x64\Release\</OutputPath>
     <DefineConstants>TRACE</DefineConstants>
     <Optimize>true</Optimize>
     <DebugType>pdbonly</DebugType>
@@ -49,33 +47,12 @@
     <ErrorReport>prompt</ErrorReport>
     <CodeAnalysisRuleSet>MinimumRecommendedRules.ruleset</CodeAnalysisRuleSet>
   </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|x86'">
-    <DebugSymbols>true</DebugSymbols>
-    <OutputPath>bin\x86\Debug\</OutputPath>
-    <DefineConstants>DEBUG;TRACE</DefineConstants>
-    <DebugType>full</DebugType>
-    <PlatformTarget>x86</PlatformTarget>
-    <ErrorReport>prompt</ErrorReport>
-    <CodeAnalysisRuleSet>MinimumRecommendedRules.ruleset</CodeAnalysisRuleSet>
-  </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|x86'">
-    <OutputPath>..\..\..\..\..\WinDbgStuff\MDRDesk\32\</OutputPath>
-    <DefineConstants>TRACE</DefineConstants>
-    <Optimize>true</Optimize>
-    <DebugType>pdbonly</DebugType>
-    <PlatformTarget>x86</PlatformTarget>
-    <ErrorReport>prompt</ErrorReport>
-    <CodeAnalysisRuleSet>MinimumRecommendedRules.ruleset</CodeAnalysisRuleSet>
-  </PropertyGroup>
   <ItemGroup>
-    <Reference Include="DmpNdxQueries">
-      <HintPath>..\DmpNdxQueries\bin\DmpNdxQueries.dll</HintPath>
-    </Reference>
     <Reference Include="Microsoft.Diagnostics.Runtime">
-      <HintPath>..\ClrMd\32\Microsoft.Diagnostics.Runtime.dll</HintPath>
+      <HintPath>..\ClrMd\64\Microsoft.Diagnostics.Runtime.dll</HintPath>
     </Reference>
     <Reference Include="System" />
-    <Reference Include="System.configuration" />
+    <Reference Include="System.Configuration" />
     <Reference Include="System.Core" />
     <Reference Include="System.Xml.Linq" />
     <Reference Include="System.Data.DataSetExtensions" />
@@ -85,19 +62,49 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Indexer.cs" />
-    <Compile Include="Map.cs" />
+    <Compile Include="a_Constants.cs" />
+    <Compile Include="b_Setup.cs" />
+    <Compile Include="ClrUtils\ClrtAppDomain.cs" />
+    <Compile Include="ClrUtils\ClrtBlkObject.cs" />
+    <Compile Include="ClrUtils\ClrtDump.cs" />
+    <Compile Include="ClrUtils\ClrtRoots.cs" />
+    <Compile Include="ClrUtils\ClrtSegment.cs" />
+    <Compile Include="ClrUtils\ClrtThread.cs" />
+    <Compile Include="ClrUtils\ClrtTypes.cs" />
+    <Compile Include="ClrUtils\DumpFileMoniker.cs" />
+    <Compile Include="ClrUtils\ElementTypeCount.cs" />
+    <Compile Include="ClrUtils\FieldDependency.cs" />
+    <Compile Include="ClrUtils\StringStats.cs" />
+    <Compile Include="ClrUtils\ThreadBlockMap.cs" />
+    <Compile Include="Graph\DepthFirstOrder.cs" />
+    <Compile Include="Graph\Digraph.cs" />
+    <Compile Include="Graph\DirectedCycle.cs" />
+    <Compile Include="Graph\TopologicalSort.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="QueriesAndReports\DumpComparison.cs" />
+    <Compile Include="Utils\AncestorDispRecord.cs" />
+    <Compile Include="Utils\Arena.cs" />
+    <Compile Include="Utils\BinaryHeap.cs" />
+    <Compile Include="Utils\DependencyNode.cs" />
+    <Compile Include="Utils\IndexValue.cs" />
+    <Compile Include="Utils\InstanceNode.cs" />
+    <Compile Include="Utils\InstanceSizeNode.cs" />
+    <Compile Include="Utils\InstanceTypeNode.cs" />
+    <Compile Include="Utils\InstanceValue.cs" />
+    <Compile Include="Utils\IntervalHeap.cs" />
+    <Compile Include="Utils\ReportFile.cs" />
+    <Compile Include="Utils\Reports.cs" />
+    <Compile Include="Utils\StringBuilderCache.cs" />
+    <Compile Include="Utils\StringCache.cs" />
+    <Compile Include="Utils\StringIdDct.cs" />
+    <Compile Include="Utils\TempArena.cs" />
+    <Compile Include="Utils\Tuples.cs" />
+    <Compile Include="Utils\TypeDependencyNode.cs" />
+    <Compile Include="Utils\TypeIdDct.cs" />
+    <Compile Include="Utils\Utils.cs" />
+    <Compile Include="ValueExtractor.cs" />
   </ItemGroup>
-  <ItemGroup>
-    <Content Include="TODO.txt" />
-  </ItemGroup>
-  <ItemGroup>
-    <ProjectReference Include="..\ClrMDRUtil\ClrMDRUtil.csproj">
-      <Project>{7b01ccc0-8c10-4aa1-8154-4b55160e322b}</Project>
-      <Name>ClrMDRUtil</Name>
-    </ProjectReference>
-  </ItemGroup>
+  <ItemGroup />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.

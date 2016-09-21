@@ -12,13 +12,14 @@
         Title="MainWindow" Height="750" Width="1200"  Background="#FF43626C"
         Icon="Images/appbar.list.gear.ico"
         Closing="MainWindow_Closing">
+
     <Window.Resources>
         <!--<ToolBar x:Key="TypesGridToolbar">
             <RadioButton x:Name ="TypeDisplayNamespaceClass" GroupName="TypeDisplayMode" Margin="4,0,4,0" FontWeight="Bold" Checked="ToggleButton_OnChecked">Namespace/Class Display</RadioButton>
             <RadioButton x:Name ="TypeDisplayClass" GroupName="TypeDisplayMode" Margin="4,0,4,0" FontWeight="Bold" Checked="ToggleButton_OnChecked">Class Display</RadioButton>
             <RadioButton x:Name ="TypeDisplayNamespace" GroupName="TypeDisplayMode" Margin="4,0,4,0" FontWeight="Bold" Checked="ToggleButton_OnChecked">Namespace Display</RadioButton>
         </ToolBar>-->
-        <Style x:Key="comboBoxStyle">
+    <Style x:Key="comboBoxStyle">
             <Style.Resources>
                 <!-- Background of selected item when focussed -->
                 <SolidColorBrush x:Key="{x:Static SystemColors.HighlightBrushKey}" Color="LightGray" />
@@ -267,7 +268,24 @@
                 <ColumnDefinition Width="Auto"/>
             </Grid.ColumnDefinitions>
             <Grid x:Name="InstHierarchyValueGrid" Grid.Row="0" Grid.Column="0" Grid.ColumnSpan="5">
-                <Label x:Name="InstHierarchyValueLabel" VerticalAlignment="Center" HorizontalAlignment="Center"/>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="10*"/>
+                    <ColumnDefinition Width="80*"/>
+                    <ColumnDefinition Width="10*"/>
+                </Grid.ColumnDefinitions>
+                <Button x:Name="InstHierarchyRedo" Grid.Column="0">
+                    <StackPanel>
+                        <Image Source="./Images/Redo.png"></Image>
+                        <!--<TextBlock>Redo</TextBlock>-->
+                    </StackPanel>
+                </Button>
+                <Label x:Name="InstHierarchyValueLabel" Grid.Column="1" VerticalAlignment="Center" HorizontalAlignment="Center"/>
+                <Button x:Name="InstHierarchyUndo" Grid.Column="2">
+                    <StackPanel>
+                        <Image Source="./Images/Undo.png"></Image>
+                        <!--<TextBlock>Undo</TextBlock>-->
+                    </StackPanel>
+                </Button>
             </Grid>
             <Grid x:Name="InstHierarchyAncestorsGrid" Grid.Row="1" Grid.Column="0">
                 <Grid>

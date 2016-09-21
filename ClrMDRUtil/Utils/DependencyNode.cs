@@ -46,20 +46,41 @@ namespace ClrMDRIndex
             _descendantMap = groups;
         }
 
-	    /// <summary>
-	    /// Group ancestors and descendants by descendants type id;
-	    /// </summary>
-	    /// <param name="map">Index map.</param>
-	    /// <param name="ancestor"></param>
-	    /// <param name="ancestors">Ancestor addresses.They are expected to be sorted.</param>
-	    /// <param name="error">Exception message if any.</param>
-	    public static DependencyNode[] BuildBranches(Map map, DependencyNode ancestor, ulong[] ancestors, out string error)
+		public static KeyValuePair<string, int> GetTypeNameAndIdAtAddr(ulong addr, ulong[] instances,int[] typeIds, ClrtTypes types)
+		{
+			var ndx = Array.BinarySearch(instances, addr);
+			if (ndx < 0)
+				return new KeyValuePair<string, int>(Constants.Unknown, Constants.InvalidIndex);
+			int typeId = typeIds[ndx];
+			string typeName = types.GetName(typeId);
+			return new KeyValuePair<string, int>(typeName, typeId);
+		}
+
+		public static string GetString(int id, string[] ids)
+		{
+			if (id < 0 || id >= ids.Length) return Constants.Unknown;
+			return ids[id];
+		}
+
+		/// <summary>
+		/// Group ancestors and descendants by descendants type id;
+		/// </summary>
+		/// <param name="map">Index map.</param>
+		/// <param name="ancestor"></param>
+		/// <param name="ancestors">Ancestor addresses.They are expected to be sorted.</param>
+		/// <param name="error">Exception message if any.</param>
+		public static DependencyNode[] BuildBranches(
+			ClrtTypes types,
+			ulong[] instances,
+			int[] typeIds,
+			string[] stringIds,
+
+			FieldDependency fldDpnds, DependencyNode ancestor, ulong[] ancestors, out string error)
         {
 	        error = null;
 	        try
 	        {
 				var typeRelationMap = new SortedDictionary<KeyValuePair<int, int>, quadruple<string, string, HashSet<ulong>, HashSet<ulong>>>(new Utils.KVIntIntCmp());
-				var fldDpnds = map.FieldDependencies;
 				for (int i = 0, icnt = ancestors.Length; i < icnt; ++i)
 				{
 					ulong ancestorAddr = ancestors[i];
@@ -67,8 +88,9 @@ namespace ClrMDRIndex
 					for (int j = 0, jcnt = descendants.Length; j < jcnt; ++j)
 					{
 						ulong descAddr = descendants[j].Key;
-						KeyValuePair<string, int> typeInfo = map.GetTypeNameAndIdAtAddr(descAddr);
-						string fldName = map.GetString(descendants[j].Value);
+						KeyValuePair<string, int> typeInfo = GetTypeNameAndIdAtAddr(descAddr, instances, typeIds, types);
+
+						string fldName = GetString(descendants[j].Value, stringIds);
 						KeyValuePair<int, int> key = new KeyValuePair<int, int>(typeInfo.Value, descendants[j].Value);
 						quadruple<string, string, HashSet<ulong>, HashSet<ulong>> relation;
 						if (typeRelationMap.TryGetValue(key, out relation))

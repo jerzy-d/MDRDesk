@@ -107,6 +107,10 @@
       <Project>{99d75b6d-9ba0-48ff-9c2e-9ec8f0415901}</Project>
       <Name>ClrMDRIndex</Name>
     </ProjectReference>
+    <ProjectReference Include="..\ClrMDRUtil\ClrMDRUtil.csproj">
+      <Project>{7b01ccc0-8c10-4aa1-8154-4b55160e322b}</Project>
+      <Name>ClrMDRUtil</Name>
+    </ProjectReference>
     <ProjectReference Include="..\DmpNdxQueries\DmpNdxQueries.fsproj">
       <Project>{edc2770a-abb6-482e-a78f-a8d5d5c40d86}</Project>
       <Name>DmpNdxQueries</Name>

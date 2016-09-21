@@ -2054,11 +2054,11 @@ namespace UnitTestMdr
 		public void TestSpecificFilteredType()
 		{
 			string typeName = @"ECS.Common.HierarchyCache.Structure.RealPosition";
-			string symbolName = @"4578 JP";
+			string symbolName = @"APN SJ";
 			string error = null;
-			using (var clrDump = GetDump(@"D:\Jerzy\WinDbgStuff\dumps\Analytics\Scopia\Eze.Analytics.Svc_160830_090707.dmp"))
+			using (var clrDump = GetDump(@"D:\Jerzy\WinDbgStuff\dumps\Analytics\Scopia\Eze.Analytics.Svc_160921_134355.dmp"))
 			{
-				var addrLst = new List<quintuple<ulong, string, string, string, string>>(1024);
+				var addrLst = new List<sextuple<ulong, string, string, string, string,string>>(1024);
 				try
 				{
 					var runtime = clrDump.Runtimes[0];
@@ -2077,6 +2077,8 @@ namespace UnitTestMdr
 							var val = (string)fld.GetValue(addr, false, true);
 							if (val == null || val.Length < 2 || !(val[0] == 'T' && char.IsDigit(val[1]))) goto NEXT_OBJECT;
 
+							var prtcd = clrType.GetFieldByName("portcd");
+							var prtcdVal = (string)prtcd.GetValue(addr, false, true);
 
 							fld = clrType.GetFieldByName("sec");
 							ulong faddr = (ulong)fld.GetValue(addr, false);
@@ -2100,30 +2102,31 @@ namespace UnitTestMdr
 
 
 
-							addrLst.Add(new quintuple<ulong, string, string, string, string>(addr, val, fval, nval, tstate));
+							addrLst.Add(new sextuple<ulong, string, string, string, string,string>(addr, val, fval, nval, tstate, prtcdVal));
 
 							NEXT_OBJECT:
 							addr = seg.NextObject(addr);
 						}
 					}
 
-					addrLst.Sort(new QuintupleUlongStrStrCmp2());
+					addrLst.Sort(new SextupleUlongStrStrCmp2());
 					StreamWriter wr = null;
 					try
 					{
 						Tuple<string, string> dmpFolders = DumpFileMoniker.GetAndCreateMapFolders(clrDump.DumpPath, out error);
 
-						var path = dmpFolders.Item2 + @"\4578_JP.RealPositions.txt";
+						var path = dmpFolders.Item2 + @"\APN_SJ.RealPositions.prt.txt";
 
 						wr = new StreamWriter(path);
-						wr.WriteLine("### " + "4578 JP RealPosition" + " [" + addrLst.Count + "]" + "  ADDRESSES, FILLED AMOUNT, NETCOST, TRADESTATE");
+						wr.WriteLine("### " + "APN SJ RealPosition" + " [" + addrLst.Count + "]" + "  ADDRESSES, FILLED AMOUNT, NETCOST, TRADESTATE, PORTFOLIO");
 						for (int i = 0, icnt = addrLst.Count; i < icnt; ++i)
 						{
 							wr.Write(Utils.AddressStringHeader(addrLst[i].First));
 							wr.Write(addrLst[i].Second + "  ");
 							wr.Write(addrLst[i].Third + " ");
 							wr.Write(addrLst[i].Forth + " ");
-							wr.WriteLine(addrLst[i].Fifth);
+							wr.Write(addrLst[i].Fifth + " ");
+							wr.WriteLine(addrLst[i].Sixth);
 						}
 						wr.Close();
 						wr = null;
@@ -2156,6 +2159,15 @@ namespace UnitTestMdr
 				return string.Compare(a.Second, b.Second, StringComparison.OrdinalIgnoreCase);
 			}
 		}
+
+		public class SextupleUlongStrStrCmp2 : IComparer<sextuple<ulong, string, string, string, string,string>>
+		{
+			public int Compare(sextuple<ulong, string, string, string, string,string> a, sextuple<ulong, string, string, string, string,string> b)
+			{
+				return string.Compare(a.Second, b.Second, StringComparison.OrdinalIgnoreCase);
+			}
+		}
+
 
 		[TestMethod]
 		public void TestFieldParents()

@@ -1252,23 +1252,31 @@ namespace MDRDesk
             return lbAddresses;
         }
 
+		private string GetTypeNameFromSelection(object sel, out int typeId)
+		{
+			typeId = Constants.InvalidIndex;
+			string typeName = string.Empty;
+			if (sel is KeyValuePair<string, int>)
+			{
+				KeyValuePair<string, int> kv = (KeyValuePair<string, int>)sel;
+				typeName = CurrentMap.GetTypeName(kv.Value);
+				typeId = kv.Value;
+			}
+			else
+			{
+				typeName = sel.ToString();
+			}
+			return typeName;
+		}
+
         private void CopyTypeNameClicked(object sender, RoutedEventArgs e)
 		{
             var lbNames = GetTypeNamesListBox(sender);
             if (lbNames != null && lbNames.SelectedItems.Count > 0)
             {
-	            string typeName = string.Empty;
 				var sel = lbNames.SelectedItems[0];
-				if (sel is KeyValuePair<string, int>)
-				{
-					KeyValuePair<string, int> kv = (KeyValuePair<string, int>) sel;
-					typeName = CurrentMap.GetTypeName(kv.Value);
-				}
-				else
-				{
-					typeName = sel.ToString();
-				}
-
+	            int typeId;
+				string typeName = GetTypeNameFromSelection(sel, out typeId);
 				Clipboard.SetText(typeName);
 				MainStatusShowMessage("Copied to Clipboard: " + sel);
 				return;
@@ -1282,15 +1290,17 @@ namespace MDRDesk
             if (lbNames != null && lbNames.SelectedItems.Count > 0)
 			{
 				string error;
-				var sel = lbNames.SelectedItems[0].ToString();
-				var genHistogram = CurrentMap.GetTypeGcGenerationHistogram(sel, out error);
+				var sel = lbNames.SelectedItems[0];
+				int typeId;
+				string typeName = GetTypeNameFromSelection(sel, out typeId);
+				var genHistogram = CurrentMap.GetTypeGcGenerationHistogram(typeName, out error);
 				if (error != null)
 				{
 					MessageBox.Show(error, "Action Aborted", MessageBoxButton.OK, MessageBoxImage.Exclamation);
 					return;
 				}
 				var histStr = ClrtSegment.GetGenerationHistogramSimpleString(genHistogram);
-				MainStatusShowMessage(sel + ": " + histStr);
+				MainStatusShowMessage(typeName + ": " + histStr);
 				return;
 			}
 			MainStatusShowMessage("Getting generation distribution failed, no item selected.");
@@ -1307,7 +1317,13 @@ namespace MDRDesk
 		    var lbAddresses = GetTypeAddressesListBox(sender);
 			var addresses = lbAddresses.ItemsSource as ulong[];
             var lbNames = GetTypeNamesListBox(sender);
-            var typeName = lbNames.SelectedItem;
+			string typeName = null;
+			if (lbNames != null && lbNames.SelectedItems.Count > 0)
+			{
+				int typeId;
+				typeName = GetTypeNameFromSelection(lbNames.SelectedItems[0], out typeId);
+			}
+
 			if (typeName == null)
 			{
 				MessageBox.Show("No type is selected!", "Action Aborted", MessageBoxButton.OK, MessageBoxImage.Exclamation);
@@ -1343,7 +1359,12 @@ namespace MDRDesk
 			var lbAddresses = GetTypeAddressesListBox(sender);
             var addresses = lbAddresses.ItemsSource as ulong[];
             var lbNames = GetTypeNamesListBox(sender);
-			var typeName = lbNames.SelectedItem;
+			string typeName = null;
+			if (lbNames != null && lbNames.SelectedItems.Count > 0)
+			{
+				int typeId;
+				typeName = GetTypeNameFromSelection(lbNames.SelectedItems[0],out typeId);
+			}
 			if (typeName == null)
 			{
 				MessageBox.Show("No type is selected!", "Action Aborted", MessageBoxButton.OK, MessageBoxImage.Exclamation);
@@ -1491,7 +1512,6 @@ namespace MDRDesk
 		{
 
 			var lbTypeNames = GetTypeNameListBox(sender);
-
 			var selectedItem = lbTypeNames.SelectedItems[0];
 
 			if (selectedItem == null)
@@ -1502,6 +1522,7 @@ namespace MDRDesk
 			ulong[] typeAddresses = null;
 			string typeName = null;
 			int typeId = Constants.InvalidIndex;
+
 			if (selectedItem is KeyValuePair<string, int>) // namespace display
 			{
 				typeId = ((KeyValuePair<string, int>) selectedItem).Value;
@@ -1758,29 +1779,16 @@ namespace MDRDesk
 		private void GetTypeStringUsage(object sender, RoutedEventArgs e)
 		{
 			ListBox listBox = GetTypeNameListBox(sender);
-			if (listBox == null)
-			{
-				return; // TODO JRD -- display message
-			}
-			object selectedItem = listBox.SelectedItem;
-			if (selectedItem == null)
-			{
-				return; // TODO JRD -- display message
-			}
-
-			ulong[] typeAddresses = null;
 			string typeName = null;
 			int typeId = Constants.InvalidIndex;
-			if (selectedItem is KeyValuePair<string, int>) // namespace display
+			if (listBox != null && listBox.SelectedItems.Count > 0)
 			{
-				typeId = ((KeyValuePair<string, int>)selectedItem).Value;
-				typeName = ((KeyValuePair<string, int>)selectedItem).Key;
-				typeAddresses = CurrentMap.GetTypeAddresses(typeId);
+				string error;
+				var sel = listBox.SelectedItems[0];
+				typeName = GetTypeNameFromSelection(sel, out typeId);
+
+				return;
 			}
-
-
 		}
-
-
 	}
 }
