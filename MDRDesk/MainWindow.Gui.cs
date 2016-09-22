@@ -599,7 +599,10 @@ namespace MDRDesk
 			if (result.Item1 != null)
 			{
 				SetEndTaskMainWindowState(statusMessage + ", FAILED.");
-				ShowError(result.Item1);
+				if (result.Item1[0] == Constants.InformationSymbol)
+					ShowInformation("Instance Hierarchy", "Instance " + Utils.AddressString(addr) + " seatrch failed", result.Item1,null);
+				else
+					ShowError(result.Item1);
 				return;
 			}
 

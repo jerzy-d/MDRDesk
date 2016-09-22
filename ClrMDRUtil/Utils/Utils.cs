@@ -904,7 +904,20 @@ namespace ClrMDRIndex
 			}
 		}
 
-        public class KVIntIntCmp : IComparer<KeyValuePair<int, int>>
+		public class KVUlongStrByStrCmp : IComparer<KeyValuePair<ulong, string>>
+		{
+			public int Compare(KeyValuePair<ulong, string> a, KeyValuePair<ulong, string> b)
+			{
+				int cmp = string.Compare(a.Value, b.Value, StringComparison.Ordinal);
+				if (cmp == 0)
+				{
+					cmp = a.Key < b.Key ? -1 : (a.Key > b.Key ? 1 : 0);
+				}
+				return cmp;
+			}
+		}
+
+		public class KVIntIntCmp : IComparer<KeyValuePair<int, int>>
         {
             public int Compare(KeyValuePair<int, int> a, KeyValuePair<int, int> b)
             {
@@ -944,6 +957,24 @@ namespace ClrMDRIndex
 			}
 		}
 
+
+		/// <summary>
+		/// Sort order: Third, Second, First
+		/// </summary>
+		public class TripleUlUlStrByStrUl2Cmp : IComparer<triple<ulong, ulong, string>>
+		{
+			public int Compare(triple<ulong, ulong, string> a, triple<ulong, ulong, string> b)
+			{
+				int cmp = string.Compare(a.Third, b.Third, StringComparison.Ordinal);
+				if (cmp==0)
+				{
+					if (a.Third == b.Third)
+						return a.Second < b.Second ? -1 : (a.Second > b.Second ? 1 : 0);
+					return a.First < b.First ? -1 : (a.First > b.First ? 1 : 0);
+				}
+				return cmp;
+			}
+		}
 
 		public class TripleUlongUlongIntKeyCmp : IComparer<triple<ulong, ulong,int>>
 		{

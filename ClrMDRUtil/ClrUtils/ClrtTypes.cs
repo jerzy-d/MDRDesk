@@ -382,6 +382,25 @@ namespace ClrMDRIndex
 			return id < 0 ? Constants.InvalidIndex : id;
 		}
 
+		public int[] GetTypeIds(string prefix)
+		{
+			List<int> lst = new List<int>();
+			int id = Array.BinarySearch(Names, prefix, StringComparer.Ordinal);
+			if (id < 0) id = ~id;
+			for (int i = id; i >= 0 && i < Names.Length; --i)
+			{
+				if (Names[i].StartsWith(prefix,StringComparison.Ordinal)) lst.Add(i);
+				else break;
+			}
+			for (int i = id+1; i < Names.Length; ++i)
+			{
+				if (Names[i].StartsWith(prefix, StringComparison.Ordinal)) lst.Add(i);
+				else break;
+			}
+			lst.Sort();
+			return lst.Count > 0 ? lst.ToArray() : Utils.EmptyArray<int>.Value;
+		}
+
 		public int GetTypeId(ulong methodTbl)
 		{
 			var pos = Array.BinarySearch(MethodTables, methodTbl);
@@ -393,6 +412,12 @@ namespace ClrMDRIndex
 		{
 			if (id < 0 || id >= Names.Length) return Constants.NullName;
 			return Names[id];
+		}
+
+		public bool IsArray(int typeId)
+		{
+			if (typeId < 0 || typeId >= ElementTypes.Length) return false;
+			return ElementTypes[typeId] == ClrElementType.SZArray || ElementTypes[typeId] == ClrElementType.Array;
 		}
 
 		public ulong GetMethodTable(int id)
@@ -493,6 +518,11 @@ namespace ClrMDRIndex
 		public bool HasFieldInfo()
 		{
 			return FieldTypeNames != null;
+		}
+
+		public bool IsArray()
+		{
+			return Element == ClrElementType.Array;
 		}
 
 	public static string GetKey(string name, ulong mthdTbl)

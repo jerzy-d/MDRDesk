@@ -57,6 +57,7 @@ namespace ClrMDRIndex
 		private ClrtSegment[][] _segments; // segment infos, for instances generation histograms
 
 		private ClrtRoots[] _roots; // root informations, see ClrtRoots for details
+		public ClrtRoots Roots => _roots[_currentRuntime];
 
 		// Dump opened with Microsoft.Runtime.Diagnostics 
 		//
@@ -666,6 +667,67 @@ namespace ClrMDRIndex
 			}
 			Array.Sort(addresses);
 			return addresses;
+		}
+
+		public ulong[] GetTypeAddresses(int[] typeIds)
+		{
+			List<ulong[]> lst = new List<ulong[]>();
+			int totalCount = 0;
+			for (int i = 0, icnt = typeIds.Length; i < icnt; ++i)
+			{
+				var addrAry = GetTypeAddresses(typeIds[i]);
+				totalCount += addrAry.Length;
+				lst.Add(addrAry);
+			}
+			ulong[] addresses = new ulong[totalCount];
+			int offset = 0;
+			for (int i = 0, icnt = lst.Count; i < icnt; ++i)
+			{
+				ulong[] ary = lst[i];
+				Array.Copy(ary,0,addresses,offset,ary.Length);
+				offset += ary.Length;
+			}
+			return addresses;
+		}
+
+		public int[] GetTypeIds(string prefix)
+		{
+			return Types.GetTypeIds(prefix);
+		}
+
+		public ulong[] GetTypeWithPrefixAddresses(string prefix, bool includeArrays)
+		{
+			int[] ids = Types.GetTypeIds(prefix);
+			if (!includeArrays)
+			{
+				ids = RemoveArrayType(ids);
+			}
+			return GetTypeAddresses(ids);
+		}
+
+		private int[] RemoveArrayType(int[] typeIds)
+		{
+			int cntToRemove = 0;
+			for (int i = 0, icnt = typeIds.Length; i < icnt; ++i)
+			{
+				if (Types.IsArray(typeIds[i]))
+				{
+					typeIds[i] = Int32.MaxValue;
+					++cntToRemove;
+				}
+			}
+			if (cntToRemove > 0)
+			{
+				int[] newAry = new int[typeIds.Length-cntToRemove];
+				int ndx = 0;
+				for (int i = 0, icnt = typeIds.Length; i < icnt; ++i)
+				{
+					if (typeIds[i] != Int32.MaxValue)
+						newAry[ndx++] = typeIds[i];
+				}
+				return newAry;
+			}
+			return typeIds;
 		}
 
 		public int GetBaseId(int id)

@@ -14,12 +14,7 @@
         Closing="MainWindow_Closing">
 
     <Window.Resources>
-        <!--<ToolBar x:Key="TypesGridToolbar">
-            <RadioButton x:Name ="TypeDisplayNamespaceClass" GroupName="TypeDisplayMode" Margin="4,0,4,0" FontWeight="Bold" Checked="ToggleButton_OnChecked">Namespace/Class Display</RadioButton>
-            <RadioButton x:Name ="TypeDisplayClass" GroupName="TypeDisplayMode" Margin="4,0,4,0" FontWeight="Bold" Checked="ToggleButton_OnChecked">Class Display</RadioButton>
-            <RadioButton x:Name ="TypeDisplayNamespace" GroupName="TypeDisplayMode" Margin="4,0,4,0" FontWeight="Bold" Checked="ToggleButton_OnChecked">Namespace Display</RadioButton>
-        </ToolBar>-->
-    <Style x:Key="comboBoxStyle">
+        <Style x:Key="comboBoxStyle">
             <Style.Resources>
                 <!-- Background of selected item when focussed -->
                 <SolidColorBrush x:Key="{x:Static SystemColors.HighlightBrushKey}" Color="LightGray" />
@@ -42,7 +37,7 @@
             <MenuItem x:Name="AddrLstGetParentRefs" Header="Get Instance References" Click="LbGetInstImmediateRefsClicked"/>
             <MenuItem x:Name="AddrLstGetInstValue" Header="Get Instance Value" Click="LbGetInstValueClicked"/>
         </ContextMenu>
-        <!-- change ulong value to hex string-->
+         <!-- change ulong value to hex string-->
         <local:LongHexConverter x:Key="LongHexConverter" />
         <Grid x:Key="InstanceHierarchyView" Name="InstanceHierarchyView" x:Shared="False">
             <Grid.RowDefinitions>
@@ -273,17 +268,17 @@
                     <ColumnDefinition Width="80*"/>
                     <ColumnDefinition Width="10*"/>
                 </Grid.ColumnDefinitions>
-                <Button x:Name="InstHierarchyRedo" Grid.Column="0">
-                    <StackPanel>
-                        <Image Source="./Images/Redo.png"></Image>
-                        <!--<TextBlock>Redo</TextBlock>-->
+                <Button  x:Name="InstHierarchyRedo" Grid.Column="0" Width="100" Height="60" HorizontalAlignment="Left" VerticalAlignment="Center">
+                    <StackPanel Orientation="Horizontal">
+                        <Image Source=".\Images\ArrowRightWithAsterisk32.png" Width="32" Height="32" Margin="0,0,10,0"/>
+                        <TextBlock FontWeight="Bold" FontSize="12">Redo</TextBlock>
                     </StackPanel>
                 </Button>
-                <Label x:Name="InstHierarchyValueLabel" Grid.Column="1" VerticalAlignment="Center" HorizontalAlignment="Center"/>
-                <Button x:Name="InstHierarchyUndo" Grid.Column="2">
-                    <StackPanel>
-                        <Image Source="./Images/Undo.png"></Image>
-                        <!--<TextBlock>Undo</TextBlock>-->
+                <Label x:Name="InstHierarchyValueLabel" Grid.Column="1" VerticalAlignment="Center" HorizontalAlignment="Center" FontSize="14" FontWeight="Bold"/>
+                <Button x:Name="InstHierarchyUndo" Grid.Column="2" Width="100" Height="60" HorizontalAlignment="Right" VerticalAlignment="Center">
+                    <StackPanel Orientation="Horizontal">
+                        <Image Source=".\Images\ArrowLeftWithAsterisk32x.png" Width="32" Height="32" Margin="0,0,10,0"/>
+                        <TextBlock FontWeight="Bold" FontSize="12">Undo</TextBlock>
                     </StackPanel>
                 </Button>
             </Grid>

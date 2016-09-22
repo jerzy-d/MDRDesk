@@ -54,6 +54,21 @@ module FQry =
         with
             | exn -> (exn.ToString(),instances.ToArray(), nullTypes.ToArray())
 
+    let getFieldsTypeInfos (heap:ClrHeap) (addresses:address array) (fld1:ClrInstanceField) (fld2:ClrInstanceField): (string*triple<address,address,string>[]) =
+        let typeInfos = ResizeArray<triple<address,address,string>>(addresses.Length)
+        try
+            for addr in addresses do
+                let fld1Val = fld1.GetValue(addr, false, false) :?> int64
+                let fld2Val = fld2.GetValue(Convert.ToUInt64(fld1Val), true, false) :?> address
+                let clrType = heap.GetObjectType(fld2Val)
+                let typeName = if isNull clrType then Constants.Unknown else clrType.Name
+                typeInfos.Add(new triple<address,address,string>(addr,fld2Val,typeName))
+                ()
+            (null, typeInfos.ToArray())
+        with
+            | exn -> (exn.ToString(),null)
+
+
     let getStringInstancesInfo (heap:ClrHeap) (progress:IProgress<string>): (string * SortedDictionary<string,KeyValuePair<int,int>>) =
         let mutable addrCnt = 0
         try

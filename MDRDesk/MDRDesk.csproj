@@ -246,10 +246,14 @@
     <Resource Include="Images\Settings_32x.png" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="Images\Undo.png" />
+    <Resource Include="Images\Undo.png" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="Images\Redo.png" />
+    <Resource Include="Images\Redo.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <Resource Include="Images\ArrowLeftWithAsterisk32x.png" />
+    <Resource Include="Images\ArrowRightWithAsterisk32.png" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <PropertyGroup>

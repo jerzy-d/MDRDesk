@@ -85,7 +85,67 @@ namespace UnitTestMdr
 			//Assert.IsNull(error, error);
 		}
 
-        [TestMethod]
+		[TestMethod]
+		public void TestWeakReferenceFields()
+		{
+			string error;
+			ulong address = 0x0000008000c0d8;
+			var map = OpenMap(@"D:\Jerzy\WinDbgStuff\dumps\Analytics\Memory.Usage.OPAM.971\Eze.Analytics.Svc.exe.EzeBitVector.PadOff.map");
+			Assert.IsNotNull(map);
+			List<string> errors = new List<string>();
+			using (map)
+			{
+				ulong[] prefaddresses = map.GetTypeWithPrefixAddresses("System.WeakReference",false);
+
+				int typeId = map.GetTypeId("System.WeakReference");
+				ulong[] addresses = map.GetTypeAddresses(typeId);
+
+				var heap = map.GetFreshHeap();
+				ClrType weakReferenceType = heap.GetObjectType(address); // System.WeakReference
+				ClrInstanceField m_handleField = weakReferenceType.Fields[0];
+				object m_handleValue = m_handleField.GetValue(address, false, false);
+				ClrType m_handleType = m_handleField.Type; //  System.IntPtr
+				ClrInstanceField m_valueField = m_handleType.Fields[0];
+				ulong m_valueValue = (ulong)m_valueField.GetValue((ulong)(long)m_handleValue, true, false);
+				ClrType eeferencedType = heap.GetObjectType(m_valueValue); // type this WeakReference points to
+
+				//ulong[] addrTest = new[] {address};
+				var result = DmpNdxQueries.FQry.getFieldsTypeInfos(heap, addresses, m_handleField, m_valueField);
+				if (result.Item1 != null)
+				{
+					Assert.IsTrue(false,result.Item1);
+				}
+
+				string repPath = map.ReportPath + @"\WeakReferenceObjects.txt";
+				StreamWriter sw = null;
+				try
+				{
+					sw = new StreamWriter(repPath);
+					var infos = result.Item2;
+					Array.Sort(infos,new Utils.TripleUlUlStrByStrUl2Cmp());
+					sw.WriteLine("#### Total WeakReference instance count: " + infos.Length);
+					sw.WriteLine("#### Clumns: address of WeakReference, address of type pointed to, type name");
+					sw.WriteLine("####");
+					for (int i = 0, icnt = infos.Length; i < icnt; ++i)
+					{
+						sw.WriteLine(Utils.AddressStringHeader(infos[i].First) + Utils.AddressStringHeader(infos[i].Second) + infos[i].Third);
+					}
+				}
+				catch (Exception ex)
+				{
+					Assert.IsTrue(false, ex.ToString());
+				}
+				finally
+				{
+					sw?.Close();
+				}
+
+			}
+
+			//Assert.IsNull(error, error);
+		}
+
+		[TestMethod]
         public void TestTypeNamespaceDisplay()
         {
             using (var map = OpenMap(@"D:\Jerzy\WinDbgStuff\Dumps\DumpTest\DumpTest.exe_160820_073947.map"))
