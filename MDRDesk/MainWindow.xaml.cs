@@ -441,6 +441,11 @@ namespace MDRDesk
 			MainTab.UpdateLayout();
 		}
 
+		private void IndexShowRootsClicked(object sender, RoutedEventArgs e)
+		{
+
+		}
+
 		private async void IndexGetSizeInformationClicked(object sender, RoutedEventArgs e)
 		{
 			if (!IsIndexAvailable("Get Size Information")) return;
@@ -465,7 +470,6 @@ namespace MDRDesk
 
 			DisplayListViewBottomGrid(result, Constants.BlackDiamond, ReportNameSizeInfo, ReportTitleSizeInfo);
 		}
-
 
 		private long _minStringUsage = 1;
 		private async void IndexStringUsageClicked(object sender, RoutedEventArgs e)
@@ -1790,5 +1794,6 @@ namespace MDRDesk
 				return;
 			}
 		}
+
 	}
 }

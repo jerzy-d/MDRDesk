@@ -110,7 +110,7 @@ namespace UnitTestMdr
 				ClrType eeferencedType = heap.GetObjectType(m_valueValue); // type this WeakReference points to
 
 				//ulong[] addrTest = new[] {address};
-				var result = DmpNdxQueries.FQry.getFieldsTypeInfos(heap, addresses, m_handleField, m_valueField);
+				var result = DmpNdxQueries.SpecializedQueries.getWeakReferenceInfos(heap, addresses, m_handleField, m_valueField);
 				if (result.Item1 != null)
 				{
 					Assert.IsTrue(false,result.Item1);

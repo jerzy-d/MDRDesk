@@ -42,9 +42,6 @@ namespace ClrMDRIndex
 		private string[][] _stringIds; // ordered by string ids
 		public string[] StringIds => _stringIds[_currentRuntime];
 
-		//private int[][] _fieldParents; // instance offsets to field references
-
-
 		private ulong[][] _instances; // list of all heap addresses
 		private uint[][] _sizes; // size of instances from Microsoft.Diagnostics.Runtime GetSize(Address objRef) method
 		private int[][] _instTypes; // ids of instance types

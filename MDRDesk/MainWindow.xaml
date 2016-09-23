@@ -344,8 +344,9 @@
                     <MenuItem x:Name="CreateDumpIndex" Header="Create Dump Index..." Click="CreateDumpIndexClicked"/>
                     <MenuItem x:Name="OpenDumpIndex" Header="Open Dump Index..." Click="OpenDumpIndexClicked"/>
                     <Separator></Separator>
-                    <MenuItem x:Name="IndexShowFinalizerQueue" Header="Show Finalizer Queue" Click="IndexShowFinalizerQueueClicked"/>
-                    <MenuItem x:Name="IndexGetSizeInformation" Header="Type Sizes Information" Click="IndexGetSizeInformationClicked"/>
+                        <MenuItem x:Name="IndexShowFinalizerQueue" Header="Show Finalizer Queue" Click="IndexShowFinalizerQueueClicked"/>
+                        <MenuItem x:Name="IndexShowRoots" Header="Show Roots" Click="IndexShowRootsClicked"/>
+                        <MenuItem x:Name="IndexGetSizeInformation" Header="Type Sizes Information" Click="IndexGetSizeInformationClicked"/>
                         <MenuItem x:Name="IndexStringUsage" Header="String Usage" Click="IndexStringUsageClicked"/>
                         <MenuItem x:Name="IndexStringUsageGen" Header="String Usage with GC Generations" Click="IndexStringUsageClicked"/>
                         <Separator></Separator>
