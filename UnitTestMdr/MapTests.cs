@@ -9,7 +9,7 @@ using System.Text;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using ClrMDRIndex;
 using Microsoft.Diagnostics.Runtime;
-
+using DmpNdxQueries;
 
 namespace UnitTestMdr
 {
@@ -85,7 +85,10 @@ namespace UnitTestMdr
 			//Assert.IsNull(error, error);
 		}
 
-		[TestMethod]
+        #region Specialized Queries
+
+
+        [TestMethod]
 		public void TestWeakReferenceFields()
 		{
 			string error;
@@ -145,7 +148,53 @@ namespace UnitTestMdr
 			//Assert.IsNull(error, error);
 		}
 
-		[TestMethod]
+	    [TestMethod]
+	    public void TestStringBuilderContent()
+	    {
+	        string expectedString =
+	            @"0aaaaaaaaaa1aaaaaaaaaa2aaaaaaaaaa3aaaaaaaaaa4aaaaaaaaaa5aaaaaaaaaa6aaaaaaaaaa7aaaaaaaaaa8aaaaaaaaaa9aaaaaaaaaa";
+	        var sbTypeName = @"System.Text.StringBuilder";
+            var map = OpenMap(@"C:\WinDbgStuff\Dumps\TestApp\TestApp.exe_160925_113318.map");
+	        bool found = false;
+ 			using (map)
+ 			{
+ 			    var typeId = map.GetTypeId(sbTypeName);
+                Assert.IsFalse(typeId==Constants.InvalidIndex);
+ 			    ulong[] typeAddresses = map.GetTypeAddresses(typeId);
+                Assert.IsTrue(typeAddresses!=null && typeAddresses.Length>0);
+ 			    for (int i = 0, icnt = typeAddresses.Length; i < icnt; ++i)
+ 			    {
+                    var str = SpecializedQueries.getStringBuilderString(map.GetFreshHeap(), typeAddresses[i]);
+ 			        if (string.Compare(expectedString, str, StringComparison.Ordinal) == 0)
+ 			            found = true;
+ 			    }
+                Assert.IsTrue(found);
+ 			}
+	    }
+
+
+        [TestMethod]
+        public void TestConcurrentDictionaryContent()
+        {
+            var sbTypeName = @"System.Collections.Concurrent.ConcurrentDictionary<System.String,System.Collections.Generic.KeyValuePair<System.String,System.String>>";
+            var map = OpenMap(@"C:\WinDbgStuff\Dumps\TestApp\TestApp.exe_160925_113318.map");
+            bool found = false;
+            using (map)
+            {
+                var typeId = map.GetTypeId(sbTypeName);
+                Assert.IsFalse(typeId == Constants.InvalidIndex);
+                ulong[] typeAddresses = map.GetTypeAddresses(typeId);
+                Assert.IsTrue(typeAddresses != null && typeAddresses.Length > 0);
+                for (int i = 0, icnt = typeAddresses.Length; i < icnt; ++i)
+                {
+                    SpecializedQueries.getConcurrentDictionaryContent(map.GetFreshHeap(), typeAddresses[i]);
+                }
+            }
+        }
+
+        #endregion Specialized Queries
+
+        [TestMethod]
         public void TestTypeNamespaceDisplay()
         {
             using (var map = OpenMap(@"D:\Jerzy\WinDbgStuff\Dumps\DumpTest\DumpTest.exe_160820_073947.map"))

@@ -7,6 +7,7 @@ using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Reflection;
+using System.Runtime;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows;
@@ -63,7 +64,7 @@ namespace MDRDesk
 			string error;
 			if (!Init(out error))
 			{
-				MessageBox.Show(error, "Initialization Failed", MessageBoxButton.OK, MessageBoxImage.Information);
+                Dispatcher.CurrentDispatcher.InvokeAsync(() => MessageBoxShowError(error));
 			}
 		}
 
@@ -83,6 +84,7 @@ namespace MDRDesk
 				this.AddHandler(CloseableTabItem.CloseTabEvent, new RoutedEventHandler(this.CloseTab));
 
 				var result = Setup.GetConfigSettings(out error);
+			    if (!result) return false;
                 RecentDumpList = new RecentFileList(RecentDumpsMenuItem, (int)Setup.RecentFiles.MaxCount);
                 RecentDumpList.Add(Setup.RecentDumpList);
                 RecentIndexList = new RecentFileList(RecentIndexMenuItem, (int)Setup.RecentFiles.MaxCount);
@@ -164,9 +166,9 @@ namespace MDRDesk
 		public void MainWindow_Closing(object sender, CancelEventArgs e)
 		{
 		    string error;
-            Setup.ResetRecentFileList(RecentDumpList.GetPaths(), Setup.RecentFiles.Dump);
-            Setup.ResetRecentFileList(RecentIndexList.GetPaths(), Setup.RecentFiles.Map);
-            Setup.ResetRecentFileList(RecentAdhocList.GetPaths(), Setup.RecentFiles.Adhoc);
+            if (RecentDumpList!=null) Setup.ResetRecentFileList(RecentDumpList.GetPaths(), Setup.RecentFiles.Dump);
+            if (RecentIndexList != null) Setup.ResetRecentFileList(RecentIndexList.GetPaths(), Setup.RecentFiles.Map);
+            if (RecentAdhocList != null) Setup.ResetRecentFileList(RecentAdhocList.GetPaths(), Setup.RecentFiles.Adhoc);
             Setup.SaveConfigSettings(out error);
 			var task = Task.Factory.StartNew(() =>
 			{
@@ -1057,13 +1059,33 @@ namespace MDRDesk
 		}
 
 
-		#endregion File Reports
+        #endregion File Reports
 
-		#endregion Menu
+        #region Settings
+        private void SettingsClicked(object sender, RoutedEventArgs e)
+        {
 
-		#region File/Folder Selection
+        }
 
-		private string SelectCrashDumpFile()
+        #endregion Settings
+
+        #region Force GC
+        private void ForceGCClicked(object sender, RoutedEventArgs e)
+        {
+            long totMem = GC.GetTotalMemory(false);
+            SetStartTaskMainWindowState("Forcing GC collection, total memory: " + Utils.SizeString(totMem) + ", please wait.");
+            Utils.ForceGcWithCompaction();
+            long totMemAfter = GC.GetTotalMemory(true);
+            SetEndTaskMainWindowState("GC collection done, total memory: " + Utils.SizeString(totMemAfter) + ", before/after diff: " + Utils.SizeString(totMem - totMemAfter));
+        }
+
+        #endregion Force GC
+
+        #endregion Menu
+
+        #region File/Folder Selection
+
+        private string SelectCrashDumpFile()
 		{
 			return SelectFile(string.Format("*.{0}", Constants.CrashDumpFileExt),
 							string.Format("Dump Map Files|*.{0}|All Files|*.*", Constants.CrashDumpFileExt));
@@ -1698,15 +1720,16 @@ namespace MDRDesk
 				return;
 			}
 			var addr = (ulong)lbAddresses.SelectedItems[0];
+            Dispatcher.CurrentDispatcher.InvokeAsync(() => ExecuteInstanceHierarchyQuery("Get instance hierarchy " + Utils.AddressStringHeader(addr), addr));
 
-		}
+        }
 
 
-		/// <summary>
-		/// TODO JRD -- thsi is Alex instance walker
-		/// </summary>
-		/// <param name="rootNode"></param>
-		private void DisplayInstanceReferenceTree(InstanceTypeNode rootNode)
+        /// <summary>
+        /// TODO JRD -- thsi is Alex instance walker
+        /// </summary>
+        /// <param name="rootNode"></param>
+        private void DisplayInstanceReferenceTree(InstanceTypeNode rootNode)
 		{
 			var grid = this.TryFindResource("TreeViewGrid") as Grid;
 			Debug.Assert(grid != null);
@@ -1775,11 +1798,6 @@ namespace MDRDesk
 
 		}
 
-		private void SettingsClicked(object sender, RoutedEventArgs e)
-		{
-
-		}
-
 		private void GetTypeStringUsage(object sender, RoutedEventArgs e)
 		{
 			ListBox listBox = GetTypeNameListBox(sender);
@@ -1795,5 +1813,6 @@ namespace MDRDesk
 			}
 		}
 
-	}
+
+    }
 }

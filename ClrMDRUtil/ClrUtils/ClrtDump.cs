@@ -49,15 +49,17 @@ namespace ClrMDRIndex
 				_dataTarget = DataTarget.LoadCrashDump(_dumpPath);
 				if (_dataTarget == null)
 				{
-					error = "ERROR [Runtime.Init] DataTarget.LoadCrashDump returned null.";
+					error = "Indexing Failed" + Constants.HeavyGreekCrossPadded + "Indexer.Init(..)" + Constants.HeavyGreekCrossPadded + "DataTarget.LoadCrashDump returned null." + Constants.HeavyGreekCrossPadded + _dumpPath;
 					return false;
 				}
 				// Now check bitness of our program/target:
 				bool isTarget64Bit = _dataTarget.PointerSize == 8;
 				if (Environment.Is64BitProcess != isTarget64Bit)
 				{
-					error = string.Format("Architecture mismatch:  Process is {0} but target is {1}",
-						Environment.Is64BitProcess ? "64 bit" : "32 bit", isTarget64Bit ? "64 bit" : "32 bit");
+					error = "Indexing Failed" + Constants.HeavyGreekCrossPadded + "Indexer.Init(..)" + Constants.HeavyGreekCrossPadded +
+                        string.Format("Architecture mismatch:  MDRDesk process is {0} but target is {1}",
+						Environment.Is64BitProcess ? "64 bit" : "32 bit", isTarget64Bit ? "64 bit" : "32 bit")
+                        + Environment.NewLine + "Use MDRDesk 32 bit version.";
 					_dataTarget.Dispose();
 					_dataTarget = null;
 					return false;

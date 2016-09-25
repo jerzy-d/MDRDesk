@@ -10,9 +10,10 @@ namespace ClrMDRIndex
 	{
 		private int _typeId;
 		private ulong _address;
+	    public ulong Address => _address;
 	    private string _typeName;
 	    private string _fieldName;
-		private string _value;
+		private ValueString _value;
 		private List<InstanceValue> _values;
 	    public List<InstanceValue> Values => _values;
 
@@ -22,7 +23,7 @@ namespace ClrMDRIndex
 			_address = addr;
 		    _typeName = typeName;
 		    _fieldName = fldName;
-		    _value = value;
+		    _value = new ValueString(value);
 		    _values = new List<InstanceValue>(0);
 		}
 
@@ -35,9 +36,10 @@ namespace ClrMDRIndex
 
 	    public override string ToString()
 	    {
+	        string value = _value.Content;
 	        return
 				Constants.LeftCurlyBracket
-	            + ((_value.Length> 0 && _value[0] == Constants.NonValueChar) ? (Constants.FancyKleeneStar+Utils.AddressString(_address)) : _value)
+	            + ((value.Length> 0 && value[0] == Constants.NonValueChar) ? (Constants.FancyKleeneStar+Utils.AddressString(_address)) : _value.ToString())
 				+ Constants.RightCurlyBracket
 	            + "  "
 				+ _fieldName

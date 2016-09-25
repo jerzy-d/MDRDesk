@@ -1750,6 +1750,7 @@ namespace ClrMDRIndex
 		{
 			GCSettings.LargeObjectHeapCompactionMode = GCLargeObjectHeapCompactionMode.CompactOnce;
 			GC.Collect();
+            GC.WaitForPendingFinalizers();
 			GC.Collect();
 		}
 

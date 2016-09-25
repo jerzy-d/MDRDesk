@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Configuration;
+using System.Text;
 
 namespace ClrMDRIndex
 {
@@ -95,32 +96,35 @@ namespace ClrMDRIndex
             RecentDumpList = new List<string>();
             RecentIndexList = new List<string>();
             RecentAdhocList = new List<string>();
+            StringBuilder errors = StringBuilderCache.Acquire(256);
 
             try
-			{
-				var config = ConfigurationManager.OpenExeConfiguration(ConfigurationUserLevel.None);
-				var appSettings = (AppSettingsSection)config.GetSection("appSettings");
-				if (appSettings.Settings.Count != 0)
-				{
-					foreach (string key in appSettings.Settings.AllKeys)
-					{
-						var ky = key.ToLower();
-						if (Utils.SameStrings(ky,"dacfolder"))
-						{
-							PrivateDacFolder = appSettings.Settings[key].Value.Trim();
-						}
-						else if (Utils.SameStrings(ky,"mapfolder"))
-						{
-							MapFolder = appSettings.Settings[key].Value.Trim();
-						}
-						else if (Utils.SameStrings(ky,"graphproxy"))
-						{
-							GraphDbJar = appSettings.Settings[key].Value.Trim();
-						}
-						else if (Utils.SameStrings(ky,"graphport"))
-						{
-							GraphPort = Int32.Parse(appSettings.Settings[key].Value.Trim());
-						}
+            {
+                var config = ConfigurationManager.OpenExeConfiguration(ConfigurationUserLevel.None);
+                var appSettings = (AppSettingsSection) config.GetSection("appSettings");
+                if (appSettings.Settings.Count != 0)
+                {
+                    foreach (string key in appSettings.Settings.AllKeys)
+                    {
+                        var ky = key.ToLower();
+                        if (Utils.SameStrings(ky, "dacfolder"))
+                        {
+                            PrivateDacFolder = appSettings.Settings[key].Value.Trim();
+                        }
+                        else if (Utils.SameStrings(ky, "mapfolder"))
+                        {
+                            MapFolder = appSettings.Settings[key].Value.Trim();
+                            if (!Directory.Exists(MapFolder))
+                                errors.AppendLine("MapFolder does not exist: " + MapFolder);
+                        }
+                        else if (Utils.SameStrings(ky, "graphproxy"))
+                        {
+                            GraphDbJar = appSettings.Settings[key].Value.Trim();
+                        }
+                        else if (Utils.SameStrings(ky, "graphport"))
+                        {
+                            GraphPort = Int32.Parse(appSettings.Settings[key].Value.Trim());
+                        }
                         else if (Utils.SameStrings(ky, "recentdumps"))
                         {
                             GetSemicolonDelimitedPaths(RecentDumpList, appSettings.Settings[key].Value);
@@ -139,19 +143,37 @@ namespace ClrMDRIndex
                         }
                     }
                 }
-				else
-				{
-					error = "The appSettings section is empty.";
-				}
+                else
+                {
+                    error = "The appSettings section is empty.";
+                }
 
-				DacPathFolder = PrivateDacFolder;
-				return true;
-			}
-			catch (Exception ex)
-			{
-				error = Utils.GetExceptionErrorString(ex);
-				return false;
-			}
+                DacPathFolder = PrivateDacFolder;
+                if (!Directory.Exists(DacPathFolder))
+                    errors.AppendLine("DacPathFolder does not exist: " + DacPathFolder);
+                if (errors.Length > 0) return false;
+                return true;
+            }
+            catch (Exception ex)
+            {
+                error = Utils.GetExceptionErrorString(ex);
+                return false;
+            }
+            finally
+            {
+                if (errors.Length > 0)
+                {
+                    error = "Initialization Failed" + Constants.HeavyGreekCrossPadded
+                            + "Setup.GetConfigSettings()" + Constants.HeavyGreekCrossPadded
+                            + "MDRDesk application config file is invalid." + Environment.NewLine + "See details." +
+                            Constants.HeavyGreekCrossPadded
+                            + StringBuilderCache.GetStringAndRelease(errors);
+                }
+                else
+                {
+                    StringBuilderCache.Release(errors);
+                }
+            }
 		}
 
         public static bool SaveConfigSettings(out string error)

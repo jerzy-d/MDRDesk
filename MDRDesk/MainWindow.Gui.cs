@@ -336,60 +336,69 @@ namespace MDRDesk
 
 		private void DisplayInstanceHierarchyGrid(Tuple<InstanceValue, AncestorDispRecord[]> instanceInfo)
 		{
-			InstanceValue instVal = instanceInfo.Item1;
-			var tvRoot = new TreeViewItem
-			{
-				Header = instVal.ToString(),
-				Tag = instVal
-			};
+            var mainGrid = this.TryFindResource("InstanceHierarchyGrid") as Grid;
+            Debug.Assert(mainGrid != null);
+            mainGrid.Name = "InstanceHierarchyGrid__" + Utils.GetNewID();
 
-			Queue<KeyValuePair<InstanceValue, TreeViewItem>> que = new Queue<KeyValuePair<InstanceValue, TreeViewItem>>();
-			que.Enqueue(new KeyValuePair<InstanceValue, TreeViewItem>(instVal, tvRoot));
-			while (que.Count > 0)
-			{
-				var info = que.Dequeue();
-				InstanceValue parentNode = info.Key;
-				TreeViewItem tvParentNode = info.Value;
-				List<InstanceValue> descendants = parentNode.Values;
-				for (int i = 0, icount = descendants.Count; i < icount; ++i)
-				{
-					var descNode = descendants[i];
-					var tvNode = new TreeViewItem
-					{
-						Header = descNode.ToString(),
-						Tag = descNode
-					};
-					tvParentNode.Items.Add(tvNode);
-					que.Enqueue(new KeyValuePair<InstanceValue, TreeViewItem>(descNode, tvNode));
-				}
-			}
-
-			var mainGrid = this.TryFindResource("InstanceHierarchyGrid") as Grid;
-			Debug.Assert(mainGrid != null);
-			mainGrid.Name = "InstanceHierarchyGrid__" + Utils.GetNewID();
-
-			var mainLabel = (Label)LogicalTreeHelper.FindLogicalNode(mainGrid, "InstHierarchyValueLabel");
-			mainLabel.Content = instVal;
-
-			var ancestorNameList = (ListBox)LogicalTreeHelper.FindLogicalNode(mainGrid, "InstHierarchyAncestorNames");
-			ancestorNameList.ItemsSource = instanceInfo.Item2;
-
-			var treeViewGrid = (Grid)LogicalTreeHelper.FindLogicalNode(mainGrid, "InstHierarchyFieldGrid");
-			Debug.Assert(treeViewGrid != null);
-			var treeView = (TreeView)LogicalTreeHelper.FindLogicalNode(treeViewGrid, "InstHierarchyFieldTreeview");
-			Debug.Assert(treeView != null);
-			treeView.Items.Add(tvRoot);
-			SetSelectedItem(treeView, tvRoot);
-			tvRoot.ExpandSubtree();
+		    var ancestorList = UpdateInstanceHierarchyGrid(instanceInfo, mainGrid);
 
 			var tab = new CloseableTabItem() { Header = Constants.BlackDiamond + " Instance Hierarchy", Content = mainGrid, Name = "InstanceHierarchyGrid" };
 			MainTab.Items.Add(tab);
 			MainTab.SelectedItem = tab;
 			MainTab.UpdateLayout();
-			ancestorNameList.SelectedIndex = 0;
+		    ancestorList.SelectedIndex = 0;
 		}
 
-		private void InstHierarchyTreeViewExpanded(object sender, RoutedEventArgs e)
+        private ListBox UpdateInstanceHierarchyGrid(Tuple<InstanceValue, AncestorDispRecord[]> instanceInfo, Grid mainGrid)
+        {
+            InstanceValue instVal = instanceInfo.Item1;
+            var tvRoot = new TreeViewItem
+            {
+                Header = instVal.ToString(),
+                Tag = instVal
+            };
+
+            Queue<KeyValuePair<InstanceValue, TreeViewItem>> que = new Queue<KeyValuePair<InstanceValue, TreeViewItem>>();
+            que.Enqueue(new KeyValuePair<InstanceValue, TreeViewItem>(instVal, tvRoot));
+            while (que.Count > 0)
+            {
+                var info = que.Dequeue();
+                InstanceValue parentNode = info.Key;
+                TreeViewItem tvParentNode = info.Value;
+                List<InstanceValue> descendants = parentNode.Values;
+                for (int i = 0, icount = descendants.Count; i < icount; ++i)
+                {
+                    var descNode = descendants[i];
+                    var tvNode = new TreeViewItem
+                    {
+                        Header = descNode.ToString(),
+                        Tag = descNode
+                    };
+                    tvParentNode.Items.Add(tvNode);
+                    que.Enqueue(new KeyValuePair<InstanceValue, TreeViewItem>(descNode, tvNode));
+                }
+            }
+
+            var mainLabel = (Label)LogicalTreeHelper.FindLogicalNode(mainGrid, "InstHierarchyValueLabel");
+            mainLabel.Content = instVal;
+
+            var ancestorNameList = (ListBox)LogicalTreeHelper.FindLogicalNode(mainGrid, "InstHierarchyAncestorNames");
+            ancestorNameList.ItemsSource = instanceInfo.Item2;
+
+            var treeViewGrid = (Grid)LogicalTreeHelper.FindLogicalNode(mainGrid, "InstHierarchyFieldGrid");
+            Debug.Assert(treeViewGrid != null);
+            var treeView = (TreeView)LogicalTreeHelper.FindLogicalNode(treeViewGrid, "InstHierarchyFieldTreeview");
+            Debug.Assert(treeView != null);
+            treeView.Items.Clear();
+            treeView.Items.Add(tvRoot);
+            SetSelectedItem(treeView, tvRoot);
+            tvRoot.ExpandSubtree();
+            var lstAddresses =  (ListBox)LogicalTreeHelper.FindLogicalNode(mainGrid, "InstHierarchyAncestorAddresses");
+            lstAddresses.ItemsSource = null;
+            return ancestorNameList;
+        }
+
+        private void InstHierarchyTreeViewExpanded(object sender, RoutedEventArgs e)
 		{
 			var treeView = sender as TreeView;
 			Debug.Assert(treeView != null);
@@ -412,11 +421,80 @@ namespace MDRDesk
 
 		}
 
-		#endregion Display Grids
+        private async void InstHierarchyTreeViewDoubleClicked(object sender, MouseButtonEventArgs e)
+        {
+            TreeView tv = sender as TreeView;
+            var selItem = tv.SelectedItem as TreeViewItem;
+            var instValue = selItem.Tag as InstanceValue;
+            Debug.Assert(instValue!=null);
+            if (instValue.Address != Constants.InvalidAddress)
+            {
+                SetStartTaskMainWindowState("Getting instance info" + ", please wait...");
+                ulong addr = instValue.Address;
+                var result = await Task.Run(() =>
+                {
+                    string error;
+                    Tuple<InstanceValue, AncestorDispRecord[]> instanceInfo = CurrentMap.GetInstanceInfo(addr, out error);
+                    return Tuple.Create(error, instanceInfo);
+                });
 
-		#region MessageBox
+                if (result.Item1 != null)
+                {
+                    SetEndTaskMainWindowState("Getting instance info" + ", FAILED.");
+                    if (result.Item1[0] == Constants.InformationSymbol)
+                        ShowInformation("Instance Hierarchy", "Instance " + Utils.AddressString(addr) + " seatrch failed", result.Item1, null);
+                    else
+                        ShowError(result.Item1);
+                    return;
+                }
 
-		private void ShowInformation(string caption, string header, string text, string details)
+                var mainGrid = GetCurrentTabGrid();
+                var ancestorList = UpdateInstanceHierarchyGrid(result.Item2, mainGrid);
+                ancestorList.SelectedIndex = 0;
+
+                SetEndTaskMainWindowState("Getting instance info" + ", DONE.");
+            }
+        }
+
+        private async void InstHierarchyAncestorAddressesDoubleClicked(object sender, MouseButtonEventArgs e)
+        {
+            var lstBox = sender as ListBox;
+            Debug.Assert(lstBox!=null);
+            if (lstBox.SelectedItem != null)
+            {
+                var selectedAddress = (ulong) lstBox.SelectedItem;
+                SetStartTaskMainWindowState("Getting instance info" + ", please wait...");
+                var result = await Task.Run(() =>
+                {
+                    string error;
+                    Tuple<InstanceValue, AncestorDispRecord[]> instanceInfo = CurrentMap.GetInstanceInfo(selectedAddress, out error);
+                    return Tuple.Create(error, instanceInfo);
+                });
+
+                if (result.Item1 != null)
+                {
+                    SetEndTaskMainWindowState("Getting instance info" + ", FAILED.");
+                    if (result.Item1[0] == Constants.InformationSymbol)
+                        ShowInformation("Instance Hierarchy", "Instance " + Utils.AddressString(selectedAddress) + " seatrch failed", result.Item1, null);
+                    else
+                        ShowError(result.Item1);
+                    return;
+                }
+
+                var mainGrid = GetCurrentTabGrid();
+                var ancestorList = UpdateInstanceHierarchyGrid(result.Item2, mainGrid);
+                ancestorList.SelectedIndex = 0;
+
+                SetEndTaskMainWindowState("Getting instance info" + ", DONE.");
+
+            }
+        }
+
+        #endregion Display Grids
+
+        #region MessageBox
+
+        private void ShowInformation(string caption, string header, string text, string details)
 		{
 			var dialog = new MdrMessageBox()
 			{
@@ -448,8 +526,18 @@ namespace MDRDesk
 			var result = dialog.ShowDialog();
 		}
 
+        private void MessageBoxShowError(string errStr)
+        {
+            string[] parts = errStr.Split(new[] { Constants.HeavyGreekCrossPadded }, StringSplitOptions.None);
+            Debug.Assert(parts.Length > 2);
+            var sb = StringBuilderCache.Acquire(StringBuilderCache.MaxCapacity);
+            for (int i = 1, icnt = parts.Length; i < icnt; ++i)
+                sb.AppendLine(parts[i]);
+            MessageBox.Show(StringBuilderCache.GetStringAndRelease(sb), parts[0], MessageBoxButton.OK,
+                MessageBoxImage.Error);
+        }
 
-		private MdrMessageBox GetErrorMsgBox(string errStr)
+        private MdrMessageBox GetErrorMsgBox(string errStr)
 		{
 			string[] parts = errStr.Split(new[] { Constants.HeavyGreekCrossPadded }, StringSplitOptions.None);
 			Debug.Assert(parts.Length > 2);
@@ -592,9 +680,6 @@ namespace MDRDesk
 
 				return Tuple.Create(error, instanceInfo);
 			});
-
-			Mouse.OverrideCursor = null;
-			MainToolbarTray.IsEnabled = true;
 
 			if (result.Item1 != null)
 			{

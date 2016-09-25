@@ -36,6 +36,7 @@
             <MenuItem x:Name="AddrLstCopyAddressAll" Header="Copy All Addresses (clipboard)" Click="CopyAddressAllClicked"></MenuItem>
             <MenuItem x:Name="AddrLstGetParentRefs" Header="Get Instance References" Click="LbGetInstImmediateRefsClicked"/>
             <MenuItem x:Name="AddrLstGetInstValue" Header="Get Instance Value" Click="LbGetInstValueClicked"/>
+            <MenuItem x:Name="AddrLstGetInstHierarchy" Header="Get Instance Hierarchy" Click="LbGetInstHierarchyClicked"/>
         </ContextMenu>
          <!-- change ulong value to hex string-->
         <local:LongHexConverter x:Key="LongHexConverter" />
@@ -252,13 +253,13 @@
         </Grid>
         <Grid x:Key="InstanceHierarchyGrid"  x:Shared="False">
             <Grid.RowDefinitions>
-                <RowDefinition Height="10*"/>
-                <RowDefinition Height="90*"/>
+                <RowDefinition Height="5*"/>
+                <RowDefinition Height="95*"/>
             </Grid.RowDefinitions>
             <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="30*"/>
+                <ColumnDefinition Width="20*"/>
                 <ColumnDefinition Width="5"/>
-                <ColumnDefinition Width="30*"/>
+                <ColumnDefinition Width="40*"/>
                 <ColumnDefinition Width="5"/>
                 <ColumnDefinition Width="Auto"/>
             </Grid.ColumnDefinitions>
@@ -268,16 +269,16 @@
                     <ColumnDefinition Width="80*"/>
                     <ColumnDefinition Width="10*"/>
                 </Grid.ColumnDefinitions>
-                <Button  x:Name="InstHierarchyRedo" Grid.Column="0" Width="100" Height="60" HorizontalAlignment="Left" VerticalAlignment="Center">
-                    <StackPanel Orientation="Horizontal">
-                        <Image Source=".\Images\ArrowRightWithAsterisk32.png" Width="32" Height="32" Margin="0,0,10,0"/>
+                <Button  x:Name="InstHierarchyRedo" Grid.Column="0" Width="100" Height="40" HorizontalAlignment="Left" VerticalAlignment="Center">
+                    <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                        <Image Source=".\Images\ArrowRightWithAsterisk_18x17.png" Width="18" Height="17" Margin="0,0,10,0"/>
                         <TextBlock FontWeight="Bold" FontSize="12">Redo</TextBlock>
                     </StackPanel>
                 </Button>
                 <Label x:Name="InstHierarchyValueLabel" Grid.Column="1" VerticalAlignment="Center" HorizontalAlignment="Center" FontSize="14" FontWeight="Bold"/>
-                <Button x:Name="InstHierarchyUndo" Grid.Column="2" Width="100" Height="60" HorizontalAlignment="Right" VerticalAlignment="Center">
-                    <StackPanel Orientation="Horizontal">
-                        <Image Source=".\Images\ArrowLeftWithAsterisk32x.png" Width="32" Height="32" Margin="0,0,10,0"/>
+                <Button x:Name="InstHierarchyUndo" Grid.Column="2" Width="100" Height="40" HorizontalAlignment="Right" VerticalAlignment="Center">
+                    <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                        <Image Source=".\Images\ArrowLeftWithAsterisk_18x17.png" Width="18" Height="17" Margin="0,0,10,0"/>
                         <TextBlock FontWeight="Bold" FontSize="12">Undo</TextBlock>
                     </StackPanel>
                 </Button>
@@ -291,7 +292,7 @@
                      </Grid.RowDefinitions>
                     <ListBox x:Name="InstHierarchyAncestorNames" Grid.Row="0" Margin="2,2,2,2" SelectionChanged="InstHierarchyAncestorChanged"></ListBox>
                     <GridSplitter Grid.Row="1" VerticalAlignment="Center" HorizontalAlignment="Stretch" Height="5" ShowsPreview="False" Background="DarkGray"></GridSplitter>
-                    <ListBox x:Name="InstHierarchyAncestorAddresses" Grid.Row="2" Margin="2,2,2,2">
+                    <ListBox x:Name="InstHierarchyAncestorAddresses" Grid.Row="2" Margin="2,2,2,2"  MouseDoubleClick="InstHierarchyAncestorAddressesDoubleClicked">
                         <ListBox.ItemTemplate>
                             <DataTemplate>
                                 <TextBlock Text="{Binding Converter={StaticResource LongHexConverter}}"/>
@@ -302,7 +303,7 @@
             </Grid>
             <GridSplitter Grid.Row="1" Grid.Column="1" VerticalAlignment="Stretch" HorizontalAlignment="Center" Width="5" ShowsPreview="False" Background="DarkGray"></GridSplitter>
             <Grid x:Name="InstHierarchyFieldGrid" Grid.Row="1" Grid.Column="2">
-                <TreeView x:Name="InstHierarchyFieldTreeview" VerticalAlignment="Stretch" HorizontalAlignment="Stretch" Margin="2,2,2,2" FontSize="12" TreeViewItem.Expanded="InstHierarchyTreeViewExpanded">
+                <TreeView x:Name="InstHierarchyFieldTreeview" VerticalAlignment="Stretch" HorizontalAlignment="Stretch" Margin="2,2,2,2" FontSize="12" TreeViewItem.Expanded="InstHierarchyTreeViewExpanded" MouseDoubleClick="InstHierarchyTreeViewDoubleClicked">
                 </TreeView>
             </Grid>
             <GridSplitter Grid.Row="1" Grid.Column="3" VerticalAlignment="Stretch" HorizontalAlignment="Center" Width="5" ShowsPreview="False" Background="DarkGray"></GridSplitter>
@@ -383,11 +384,16 @@
                     </MenuItem.Icon>
                 </MenuItem>
                 <MenuItem x:Name="Settings" HorizontalContentAlignment="Center" HorizontalAlignment="Center" Click="SettingsClicked">
-                     <MenuItem.Icon>
+                    <MenuItem.Icon>
                             <Image Source="./Images/Settings_32x.png" ToolTip="MDR Desk settings/configuration" ToolTipService.HasDropShadow="True" Height="32" Width="32" HorizontalAlignment="Center" VerticalAlignment="Center" Margin="16,0,0,0"></Image>
-                      </MenuItem.Icon>
+                    </MenuItem.Icon>
                 </MenuItem>
-              <!--
+                    <MenuItem x:Name="ForceGC" Background="LightBlue" HorizontalContentAlignment="Center" HorizontalAlignment="Center" Click="ForceGCClicked">
+                    <MenuItem.Icon>
+                         <Image Source="./Images/ClearWindowContent_16x.png" ToolTip="Force GC" ToolTipService.HasDropShadow="True" Height="16" Width="16" HorizontalAlignment="Center" VerticalAlignment="Center" Margin="16,0,0,0"></Image>
+                    </MenuItem.Icon>
+                </MenuItem>
+                    <!--
                 <Label x:Name="LbCurrentAdHocDump" HorizontalAlignment="Right" Width="Auto" VerticalAlignment="Center" Content="{Binding ElementName=CbAdHocDump, Path=SelectedItem}"></Label>
                 -->
              </Menu>
