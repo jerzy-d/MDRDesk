@@ -376,6 +376,11 @@ namespace ClrMDRIndex
 
         #endregion Ctrs/Initialization
 
+		public static bool HasInternalAddresses(ClrType clrType)
+		{
+			return clrType.IsValueClass;
+		}
+
         public int GetTypeId(string name)
 		{
 			int id = Array.BinarySearch(Names, name, StringComparer.Ordinal);

@@ -1362,6 +1362,12 @@ namespace ClrMDRIndex
 			return Constants.InvalidIndex == ndx;
 		}
 
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		public static bool IsInvalidAddress(ulong addr)
+		{
+			return addr == Constants.InvalidAddress;
+		}
+
 		private static int _id = 0;
 
 		public static int GetNewID()

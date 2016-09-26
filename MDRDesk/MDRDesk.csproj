@@ -96,7 +96,7 @@
   <ItemGroup>
     <Reference Include="DmpNdxQueries, Version=1.0.0.0, Culture=neutral, processorArchitecture=AMD64">
       <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\DmpNdxQueries\bin\DmpNdxQueries.dll</HintPath>
+      <HintPath>..\DmpNdxQueries\bin\Debug\DmpNdxQueries.dll</HintPath>
     </Reference>
     <Reference Include="FSharp.Charting">
       <HintPath>..\packages\FSharp.Charting.0.90.14\lib\net40\FSharp.Charting.dll</HintPath>

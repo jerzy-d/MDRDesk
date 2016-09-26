@@ -61,7 +61,7 @@ namespace MDRDesk
 
 	    private void AddImpl(string path)
 	    {
-            if (CanAdd(path)) return;
+            if (!CanAdd(path)) return;
             if (_list.Count == _maxItems)
             {
                 _list.RemoveAt(_list.Count - 1);
@@ -74,9 +74,9 @@ namespace MDRDesk
 	        if (!(Directory.Exists(path) || File.Exists(path))) return false;
 	        for (int i = 0, icnt = _list.Count; i < icnt; ++i)
 	        {
-	            if (string.Compare(_list[i].FilePath, path, StringComparison.OrdinalIgnoreCase) == 0) return true;
+	            if (string.Compare(_list[i].FilePath, path, StringComparison.OrdinalIgnoreCase) == 0) return false;
 	        }
-	        return false;
+	        return true;
 	    }
 	}
 

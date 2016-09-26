@@ -949,7 +949,7 @@ namespace ClrMDRIndex
                         {
                             InstanceValue instVal = null;
                             var fld = clrType.Fields[i];
-                            clrValue = ValueExtractor.TryGetPrimitiveValue(heap, addr, clrType.Fields[i], clrType.IsInternal);
+                            clrValue = ValueExtractor.TryGetPrimitiveValue(heap, addr, clrType.Fields[i], ClrtTypes.HasInternalAddresses(clrType));
                             if (Utils.IsNonValue(clrValue))
                             {
                                 if (clrType.IsValueClass)
@@ -961,7 +961,7 @@ namespace ClrMDRIndex
                                 }
                                 else
                                 {
-                                    var typeAddrObj = fld.GetValue(addr, clrType.IsInternal, false);
+                                    var typeAddrObj = fld.GetValue(addr, ClrtTypes.HasInternalAddresses(clrType), false);
                                     ulong typeAddr = (ulong?)typeAddrObj ?? Constants.InvalidAddress;
 									KeyValuePair<string,int> typeInformation = GetTypeNameAndIdAtAddr(typeAddr);
 									if (typeAddr == Constants.InvalidAddress)

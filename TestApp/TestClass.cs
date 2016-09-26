@@ -33,7 +33,7 @@ namespace TestApp
             _cancelSource.Cancel();
         }
 
-        private void ThreadProc(Object obj)
+        private void ThreadProc(object obj)
         {
             Console.WriteLine("Started worker... Id: " + Thread.CurrentThread.ManagedThreadId);
             CancellationToken calcelToken = (CancellationToken)obj;
@@ -58,7 +58,7 @@ namespace TestApp
             var sb = new StringBuilder();
             for (int i = 0; i < 10; ++i)
             {
-                sb.Append(i.ToString() + "aaaaaaaaaa");
+                sb.Append(i + "aaaaaaaaaa");
             }
             return sb;
         }

@@ -127,15 +127,15 @@ namespace ClrMDRIndex
                         }
                         else if (Utils.SameStrings(ky, "recentdumps"))
                         {
-                            GetSemicolonDelimitedPaths(RecentDumpList, appSettings.Settings[key].Value);
+                            GetSemicolonDelimitedFilePaths(RecentDumpList, appSettings.Settings[key].Value);
                         }
                         else if (Utils.SameStrings(ky, "recentindices"))
                         {
-                            GetSemicolonDelimitedPaths(RecentIndexList, appSettings.Settings[key].Value);
+							GetSemicolonDelimitedFolderPaths(RecentIndexList, appSettings.Settings[key].Value);
                         }
                         else if (Utils.SameStrings(ky, "recentadhocs"))
                         {
-                            GetSemicolonDelimitedPaths(RecentAdhocList, appSettings.Settings[key].Value);
+                            GetSemicolonDelimitedFilePaths(RecentAdhocList, appSettings.Settings[key].Value);
                         }
                         else if (Utils.SameStrings(ky, "typedisplaymode"))
                         {
@@ -196,7 +196,7 @@ namespace ClrMDRIndex
             }
         }
 
-        private static void GetSemicolonDelimitedPaths(List<string> lst, string str)
+        private static void GetSemicolonDelimitedFilePaths(List<string> lst, string str)
 	    {
 	        if (string.IsNullOrWhiteSpace(str)) return;
 	        str = str.Trim();
@@ -212,7 +212,23 @@ namespace ClrMDRIndex
             }
         }
 
-        private static string JoinSemicolonDelimitedList(List<string> lst)
+		private static void GetSemicolonDelimitedFolderPaths(List<string> lst, string str)
+		{
+			if (string.IsNullOrWhiteSpace(str)) return;
+			str = str.Trim();
+			var parts = str.Split(';');
+			for (var i = 0; i < parts.Length; ++i)
+			{
+				if (!string.IsNullOrWhiteSpace(parts[i]))
+				{
+					var path = parts[i].Trim();
+					if (Directory.Exists(path))
+						lst.Add(path);
+				}
+			}
+		}
+
+		private static string JoinSemicolonDelimitedList(List<string> lst)
         {
             if (lst.Count < 1) return string.Empty;
             return  string.Join(";", lst);

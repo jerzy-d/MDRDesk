@@ -329,7 +329,17 @@ namespace MDRDesk
 
 		private async void OpenDumpIndexClicked(object sender, RoutedEventArgs e)
 		{
-			string path = GetFolderPath(Setup.MapFolder);
+			string path = null;
+			if (sender is MenuItem)
+			{
+				var menuItem = sender as MenuItem;
+				if (menuItem.HasHeader && menuItem.Header is string && (menuItem.Header as string)== "Recent Indices")
+				{
+					path = e.OriginalSource as string;
+				}
+			}
+			if (path == null) path = GetFolderPath(Setup.MapFolder);
+
 			if (path == null) return;
             var progressHandler = new Progress<string>(MainStatusShowMessage);
             var progress = progressHandler as IProgress<string>;
@@ -596,6 +606,20 @@ namespace MDRDesk
 			}
 
 			DisplayListViewBottomGrid(taskResult, Constants.BlackDiamond, ReportNameSizeDiffs, ReportTitleSizeDiffs);
+		}
+
+		private void RecentIndicesClicked(object sender, RoutedEventArgs e)
+		{
+			var menuItem = sender as MenuItem;
+			Debug.Assert(menuItem!=null);
+			if (menuItem.Items != null && menuItem.Items.Count > 0 && menuItem.Items.CurrentItem != null)
+			{
+				var fileInfo = menuItem.Items.CurrentItem as FileInfo;
+				if (fileInfo != null)
+				{
+					Dispatcher.CurrentDispatcher.InvokeAsync(() => OpenDumpIndexClicked(menuItem, new RoutedEventArgs(null, fileInfo.FilePath)));
+				}
+			}
 		}
 
 		#endregion Index
@@ -1814,5 +1838,5 @@ namespace MDRDesk
 		}
 
 
-    }
+	}
 }

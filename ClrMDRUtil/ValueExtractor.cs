@@ -254,11 +254,12 @@ namespace ClrMDRIndex
 		{
 			Debug.Assert(type.IsException);
 
+			if (Utils.IsInvalidAddress(addr)) return Constants.NullValue;
 			var classNameObj = type.GetFieldByName("_className").GetValue(addr);
-			var classNameVal = classNameObj == null ? Constants.NullName : GetStringAtAddress((ulong)classNameObj, heap);
+			var classNameVal = classNameObj == null ? Constants.NullValue : GetStringAtAddress((ulong)classNameObj, heap);
 
 			var messageObj = type.GetFieldByName("_message").GetValue(addr);
-			var messageVal = messageObj == null ? Constants.NullName : GetStringAtAddress((ulong)messageObj, heap);
+			var messageVal = messageObj == null ? Constants.NullValue : GetStringAtAddress((ulong)messageObj, heap);
 
 			var hresult = type.GetFieldByName("_HResult");
 			Debug.Assert(hresult.ElementType == ClrElementType.Int32);
@@ -433,7 +434,7 @@ namespace ClrMDRIndex
                         case TypeCategory.DateTime:
                             //addrObj = field.GetValue(classAddr, internalAddr, false);
                             //if (addrObj == null) return Constants.NullName;
-                            return ValueExtractor.GetDateTimeValue(classAddr, field, true, null);
+                            return ValueExtractor.GetDateTimeValue(classAddr, field, internalAddr, null);
                         case TypeCategory.TimeSpan:
                             addrObj = field.GetValue(classAddr, internalAddr, false);
                             if (addrObj == null) return Constants.NullName;

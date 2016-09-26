@@ -219,10 +219,17 @@ module SpecializedQueries =
             index <- index + 1
         result
 
-
-    let rec getConcurrentDictionaryNodeContent (heap:ClrHeap) (addr:address) (clrType:ClrType) (m_next:ClrInstanceField) (m_key:ClrInstanceField) (m_value:ClrInstanceField)  (values:ResizeArray<KeyValuePair<string,string>>) =
-        
-
+    let rec getConcurrentDictionaryNodeContent (heap:ClrHeap) (addr:address) (clrType:ClrType) (m_next:ClrInstanceField) (m_key:ClrInstanceField) (m_keyCat:ClrCategory) (m_value:ClrInstanceField) (m_valueCat:ClrCategory) (values:ResizeArray<KeyValuePair<string,string>>) =
+        let m_keyValue = getFieldValue heap m_key m_keyCat addr false
+        let m_valueValue = getFieldValue heap m_value m_valueCat addr false
+        values.Add(new KeyValuePair<string,string>(m_keyValue,m_valueValue))
+        let nextObj = m_next.GetValue(addr)
+        match nextObj with
+        | null -> ()
+        | _ ->
+            let newAddr = unbox<address>(nextObj)
+            getConcurrentDictionaryNodeContent heap newAddr clrType m_next m_key m_keyCat m_value m_valueCat values
+            ()
         ()
 
     let getConcurrentDictionaryContent (heap:ClrHeap) (addr:address) =
@@ -234,9 +241,9 @@ module SpecializedQueries =
         let m_bucketsAryLength = m_bucketsType.GetArrayLength(m_bucketsAddr)
         let mutable values = ResizeArray<KeyValuePair<string,string>>()
         let nodeType, m_next, m_key, m_value = getConcurrentDictionaryNodeFields heap m_bucketsType m_bucketsAddr m_bucketsAryLength
+        let m_keyCategory = getTypeCategory m_key.Type
+        let m_valueCategory = getTypeCategory m_value.Type
         for i in [0..m_bucketsAryLength-1] do
-            getConcurrentDictionaryNodeContent heap addr nodeType m_next m_key m_value values
-
-
+            getConcurrentDictionaryNodeContent heap addr nodeType m_next m_key m_keyCategory m_value m_valueCategory values
         ()
 

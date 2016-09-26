@@ -85,10 +85,54 @@ namespace UnitTestMdr
 			//Assert.IsNull(error, error);
 		}
 
-        #region Specialized Queries
+		[TestMethod]
+		public void TestBuildTestUnitIssues()
+		{
+			const string typeName = @"Microsoft.VisualStudio.TestTools.TestTypes.Unit.UnitTestResult";
+			string error=null;
+			//var map = OpenMap(@"D:\Jerzy\WinDbgStuff\Dumps\DumpTest\DumpTest.exe_160820_073947.map");
+			//var map = OpenMap(@"D:\Jerzy\WinDbgStuff\dumps\Analytics\Memory.Usage.OPAM.971\DupCacheIssue\A2_noDF.map");
+			var map = OpenMap(@"D:\Jerzy\WinDbgStuff\dumps\mainlinebuildissue\LouDump.map");
+			using (map)
+			{
+				int typeId = map.GetTypeId(typeName);
+				ulong[] typeAddresses = map.GetTypeAddresses(typeId);
+				var heap = map.GetFreshHeap();
+				ClrType clrType = null;
+				ClrInstanceField m_timerResults = null;
+				List<ulong> lst = new List<ulong>();
+
+				for (int i = 0, icnt = typeAddresses.Length; i < icnt; ++i)
+				{
+					if (clrType == null)
+					{
+						clrType = heap.GetObjectType(typeAddresses[i]);
+						if (clrType != null)
+						{
+							m_timerResults = clrType.GetFieldByName("m_timerResults");
+							break;
+						}
+					}
+				}
 
 
-        [TestMethod]
+				for (int i = 0, icnt = typeAddresses.Length; i < icnt; ++i)
+				{
+					ulong address = SpecializedQueries.getAddressFromField(typeAddresses[i], m_timerResults, false);
+					if (address == Constants.InvalidAddress)
+						lst.Add(typeAddresses[i]);
+				}
+				int a = 1;
+
+				
+			}
+			Assert.IsNull(error, error);
+		}
+
+		#region Specialized Queries
+
+
+		[TestMethod]
 		public void TestWeakReferenceFields()
 		{
 			string error;
@@ -154,7 +198,7 @@ namespace UnitTestMdr
 	        string expectedString =
 	            @"0aaaaaaaaaa1aaaaaaaaaa2aaaaaaaaaa3aaaaaaaaaa4aaaaaaaaaa5aaaaaaaaaa6aaaaaaaaaa7aaaaaaaaaa8aaaaaaaaaa9aaaaaaaaaa";
 	        var sbTypeName = @"System.Text.StringBuilder";
-            var map = OpenMap(@"C:\WinDbgStuff\Dumps\TestApp\TestApp.exe_160925_113318.map");
+            var map = OpenMap(@"D:\Jerzy\WinDbgStuff\dumps\TestApp\TestApp.exe_160926_081822.map");
 	        bool found = false;
  			using (map)
  			{
@@ -177,7 +221,7 @@ namespace UnitTestMdr
         public void TestConcurrentDictionaryContent()
         {
             var sbTypeName = @"System.Collections.Concurrent.ConcurrentDictionary<System.String,System.Collections.Generic.KeyValuePair<System.String,System.String>>";
-            var map = OpenMap(@"C:\WinDbgStuff\Dumps\TestApp\TestApp.exe_160925_113318.map");
+            var map = OpenMap(@"D:\Jerzy\WinDbgStuff\dumps\TestApp\TestApp.exe_160926_081822.map");
             bool found = false;
             using (map)
             {
