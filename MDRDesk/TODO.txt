@@ -1,0 +1,4 @@
+﻿0001 09/27/16 
+Clean up after closing TabItem.
+0002 09/27/16
+Add to index menu => Copy Index Path to Clippboard.

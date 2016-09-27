@@ -391,7 +391,23 @@ namespace MDRDesk
             RecentIndexList.Add(path);
         }
 
-        private async void IndexShowFinalizerQueueClicked(object sender, RoutedEventArgs e)
+		private void IndexShowModuleInfosClicked(object sender, RoutedEventArgs e)
+		{
+			if (!IsIndexAvailable("Show Loaded Modules Infos")) return;
+			var path = CurrentMap.MapFolder + Path.DirectorySeparatorChar + CurrentMap.DumpBaseName + Constants.TxtTargetModulesPostfix;
+
+			string error, title;
+			var result = ReportFile.ReadReportFile(path, out title, out error);
+			if (result == null || error != null)
+			{
+				MessageBox.Show(path + Environment.NewLine + error, "Action Failed", MessageBoxButton.OK,
+					MessageBoxImage.Exclamation);
+				return;
+			}
+			DisplayListViewBottomGrid(result, Constants.BlackDiamond, "Modules", (string.IsNullOrWhiteSpace(title) ? "Modules" : title), null, path);
+		}
+
+		private async void IndexShowFinalizerQueueClicked(object sender, RoutedEventArgs e)
 		{
 			if (!IsIndexAvailable("Show Finalizer Queue")) return;
 

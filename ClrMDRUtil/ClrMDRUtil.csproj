@@ -84,6 +84,7 @@
     <Compile Include="b_Setup.cs" />
     <Compile Include="ClrUtils\ClrtAppDomain.cs" />
     <Compile Include="ClrUtils\ClrtBlkObject.cs" />
+    <Compile Include="ClrUtils\ClrtDisplayableType.cs" />
     <Compile Include="ClrUtils\ClrtDump.cs" />
     <Compile Include="ClrUtils\ClrtRoots.cs" />
     <Compile Include="ClrUtils\ClrtSegment.cs" />

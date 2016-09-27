@@ -94,9 +94,9 @@
     <Prefer32Bit>true</Prefer32Bit>
   </PropertyGroup>
   <ItemGroup>
-    <Reference Include="DmpNdxQueries, Version=1.0.0.0, Culture=neutral, processorArchitecture=AMD64">
+    <Reference Include="DmpNdxQueries, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\DmpNdxQueries\bin\Debug\DmpNdxQueries.dll</HintPath>
+      <HintPath>..\DmpNdxQueries\bin\DmpNdxQueries.dll</HintPath>
     </Reference>
     <Reference Include="FSharp.Charting">
       <HintPath>..\packages\FSharp.Charting.0.90.14\lib\net40\FSharp.Charting.dll</HintPath>
@@ -135,6 +135,7 @@
     <Compile Include="MdrMessageBox.xaml.cs">
       <DependentUpon>MdrMessageBox.xaml</DependentUpon>
     </Compile>
+    <Compile Include="OverlayAdorner.cs" />
     <Compile Include="RecentFileList.cs" />
     <Compile Include="ReferenceSearchSetup.xaml.cs">
       <DependentUpon>ReferenceSearchSetup.xaml</DependentUpon>
@@ -259,6 +260,9 @@
   </ItemGroup>
   <ItemGroup>
     <Resource Include="Images\ArrowRightWithAsterisk_18x17.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <Resource Include="TODO.txt" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <PropertyGroup>

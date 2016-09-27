@@ -890,22 +890,65 @@ namespace ClrMDRIndex
 	        }
 	    }
 
-        //private KeyValuePair<ulong, int>[][] GetDescendants(ulong[] addresses, List<KeyValuePair<ulong, int>[]> lst,
-        //    HashSet<ulong> addrSet, out string error)
-        //{
-        //    error = null;
-        //       var fldDpnds = _fieldDependencies[_currentRuntime];
-        //       lst.Clear();
-        //       for (int i = 0, icnt = addresses.Length; i < icnt; ++i)
-        //       {
-        //           if (!addrSet.Add(addresses[i])) continue;
-        //           var result = fldDpnds.GetFieldParents(addresses[i], out error);
-        //           if (result != null && result.Length > 0)
-        //               lst.Add(result);
-        //       }
-        //    return lst.ToArray();
-        //}
+		//private KeyValuePair<ulong, int>[][] GetDescendants(ulong[] addresses, List<KeyValuePair<ulong, int>[]> lst,
+		//    HashSet<ulong> addrSet, out string error)
+		//{
+		//    error = null;
+		//       var fldDpnds = _fieldDependencies[_currentRuntime];
+		//       lst.Clear();
+		//       for (int i = 0, icnt = addresses.Length; i < icnt; ++i)
+		//       {
+		//           if (!addrSet.Add(addresses[i])) continue;
+		//           var result = fldDpnds.GetFieldParents(addresses[i], out error);
+		//           if (result != null && result.Length > 0)
+		//               lst.Add(result);
+		//       }
+		//    return lst.ToArray();
+		//}
 
+		public ClrtDisplayableType GetDisplayableType(ClrHeap heap, ulong addr, int typeId, string fieldName, out string error)
+		{
+			error = null;
+			try
+			{
+				var clrType = heap.GetObjectType(addr);
+				var category = ValueExtractor.GetTypeCategory(clrType);
+				var dispType = new ClrtDisplayableType(typeId, clrType.Name, fieldName, category);
+				if (clrType.Fields.Count == 0) return dispType;
+				bool internalAddr = ClrtTypes.HasInternalAddresses(clrType);
+				for (int i = 0, icnt = clrType.Fields.Count; i < icnt; ++i)
+				{
+					ClrInstanceField fld = clrType.Fields[i];
+					ClrType fldType = null;
+					if (fld.IsObjectReference)
+					{
+						var obj = fld.GetValue(addr, internalAddr, false);
+						if (obj == null) // use field type
+						{
+							fldType = fld.Type;
+						}
+						else
+						{
+							fldType = heap.GetObjectType((ulong) obj);
+						}
+						// var fldTypeId = GetTypeNameAndIdAtAddr() // TODO JRD
+					}
+					else
+					{
+						
+					}
+
+				}
+
+				return dispType;
+			}
+			catch (Exception ex)
+			{
+				error = Utils.GetExceptionErrorString(ex);
+				return null;
+			}
+		}
+		
         #endregion Types
 
         #region Instance Walk

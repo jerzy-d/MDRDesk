@@ -2054,10 +2054,10 @@ namespace UnitTestMdr
 		public void TestSpecificFilteredType()
 		{
 			string typeName = @"ECS.Common.HierarchyCache.Structure.RealPosition";
-			string symbolName = @"VOD LN";
+			string symbolName = @"4578 JP";
 			string error = null;
 			//using (var clrDump = GetDump(@"D:\Jerzy\WinDbgStuff\dumps\Analytics\Scopia\Eze.Analytics.Svc_160921_134355.dmp"))
-			using (var clrDump = GetDump(@"D:\Jerzy\WinDbgStuff\dumps\Analytics\Scopia\louLocal1.dmp"))
+			using (var clrDump = GetDump(@"D:\Jerzy\WinDbgStuff\dumps\Analytics\Scopia\Eze.Analytics.Svc_160927_110749.dmp"))
 			{
 				var addrLst = new List<sextuple<ulong, string, string, string, string,string>>(1024);
 				try
@@ -2116,7 +2116,7 @@ namespace UnitTestMdr
 					{
 						Tuple<string, string> dmpFolders = DumpFileMoniker.GetAndCreateMapFolders(clrDump.DumpPath, out error);
 
-						var path = dmpFolders.Item2 + @"\VOD_LN.RealPositions.prt.txt";
+						var path = dmpFolders.Item2 + @"\4578_JP.RealPositions.prt.txt";
 
 						wr = new StreamWriter(path);
 						wr.WriteLine("### " + "APN SJ RealPosition" + " [" + addrLst.Count + "]" + "  ADDRESSES, FILLED AMOUNT, NETCOST, TRADESTATE, PORTFOLIO");

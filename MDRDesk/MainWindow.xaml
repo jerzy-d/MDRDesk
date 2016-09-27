@@ -23,6 +23,7 @@
                 <!--SolidColorBrush x:Key="{x:Static SystemColors.ControlBrush}" Color="Gray"/-->
             </Style.Resources>
         </Style>
+
         <Style x:Key="MenuTooltip" TargetType="{x:Type ToolTip}">
             <Setter Property="HorizontalOffset" Value="50" />
             <Setter Property="VerticalOffset" Value="-50" />
@@ -315,7 +316,7 @@
 
         </Grid>
  </Window.Resources>
-    <Grid>
+    <Grid x:Name="MainGrid">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"></RowDefinition>
             <RowDefinition Height="Auto"></RowDefinition>
@@ -345,6 +346,7 @@
                     <MenuItem x:Name="CreateDumpIndex" Header="Create Dump Index..." Click="CreateDumpIndexClicked"/>
                     <MenuItem x:Name="OpenDumpIndex" Header="Open Dump Index..." Click="OpenDumpIndexClicked"/>
                     <Separator></Separator>
+                        <MenuItem x:Name="IndexShowModuleInfos" Header="Show Loaded Modules Infos" Click="IndexShowModuleInfosClicked"/>
                         <MenuItem x:Name="IndexShowFinalizerQueue" Header="Show Finalizer Queue" Click="IndexShowFinalizerQueueClicked"/>
                         <MenuItem x:Name="IndexShowRoots" Header="Show Roots" Click="IndexShowRootsClicked"/>
                         <MenuItem x:Name="IndexGetSizeInformation" Header="Type Sizes Information" Click="IndexGetSizeInformationClicked"/>

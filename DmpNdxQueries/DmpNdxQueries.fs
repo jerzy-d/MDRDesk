@@ -208,3 +208,20 @@ module FQry =
             (null,info,result)
         with
             | exn -> (exn.ToString(),null,null)
+
+(*
+    let getDisplayableTypeFields (heap:ClrHeap) (addr: address) (clrType:ClrType) =
+        if clrType.Fields.Count == 0 then
+            dispType
+        else
+            for fld in clrType.Fields do
+                
+
+
+    let getDisplayableType (heap:ClrHeap) (addr: address) (typeId:int) (fieldName:string) =
+        let clrType = heap.GetObjectType(addr)
+        let cat = getTypeCategory clrType
+        let dispType = new ClrtDisplayableType(typeId, clrType.Name, fieldName, 
+            new KeyValuePair<ValueExtractor.TypeCategory, ValueExtractor.TypeCategory>(fst cat, snd cat))
+            *)
+            

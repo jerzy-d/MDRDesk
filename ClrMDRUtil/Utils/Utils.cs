@@ -1289,7 +1289,13 @@ namespace ClrMDRIndex
             return sz == 0 ? "[       0] " : string.Format("[{0,8:#,###,###}] ", sz);
         }
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		public static string CountString(int sz)
+		{
+			return sz == 0 ? "0" : string.Format("{0:#,###,###}", sz);
+		}
+
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static string SizeStringHeader(long sz)
         {
             return sz == 0 ? "[           0] " : string.Format("[{0,12:#,###,###}] ", sz);
@@ -1707,7 +1713,7 @@ namespace ClrMDRIndex
 
 		public static int VersionValue(Version version)
 		{
-			return version.Major*1000 + version.Minor*100 + (version.Build%10);
+			return version.Major*1000 + version.Minor*100 + (version.MinorRevision);
 		}
 
 

@@ -116,7 +116,7 @@ namespace ClrMDRIndex
 
 	    public const string ReportPath = @"ad-hoc.queries";
 
-        public const string TxtStringIdsPostfix = ".STRINGIDS[0].txt"; // list of strings, ordered by ids
+		public const string TxtStringIdsPostfix = ".STRINGIDS[0].txt"; // list of strings, ordered by ids
 		public const string MapTypeInfosFilePostfix = ".TYPEINFOS[0].map"; // type infos, see ClrtTypes class
 		public const string MapInstanceFilePostfix = ".INSTANCES[0].map"; // instance addresses and corresponding type ids
 		public const string MapTypeInstancesFilePostfix = ".TYPEINSTANCES[0].map"; // mapping of ordered type ids onto instances
@@ -132,6 +132,7 @@ namespace ClrMDRIndex
 
 		// TODO JRD not considered yet 
 
+		public const string TxtTargetModulesPostfix = ".~TARGETMODULES.txt";
 		public const string TxtIndexInfoFilePostfix = ".~INDEXINFO.txt";
 
 

@@ -7,7 +7,9 @@ using System.Diagnostics;
 using System.Globalization;
 using System.IO;
 using System.Linq;
+using System.Net.Configuration;
 using System.Runtime;
+using System.Text;
 using System.Threading;
 using Microsoft.Diagnostics.Runtime;
 
@@ -110,6 +112,10 @@ namespace ClrMDRIndex
 					// indexing
 					//
 					if (!GetPrerequisites(clrDump, progress, out _stringIdDcts, out error)) return false;
+
+					// get module information
+					//
+					GetTargetModuleInfos(clrDump, progress, out error);
 
 					var typesAndRoots = GetTypeInfos(clrDump, progress, _stringIdDcts, _errors, out _instances, out _sizes,
 						out _typeIds, out error);
@@ -220,15 +226,6 @@ namespace ClrMDRIndex
 			try
 			{
 				strIds = new StringIdDct[clrtDump.RuntimeCount];
-				//for (int r = 0, rcnt = clrtDump.RuntimeCount; r < rcnt; ++r)
-				//{
-				//	var clrRuntime = clrtDump.Runtimes[r];
-				//	progress?.Report(Utils.TimeString(DateTime.Now) + " Getting finalize queue addresses...");
-				//	var finalizeQueue = clrRuntime.EnumerateFinalizerQueueObjectAddresses().ToArray();
-				//	if (!Utils.IsSorted(finalizeQueue)) Array.Sort(finalizeQueue);
-				//	var path = Utils.GetFilePath(r, MapOutputFolder, DumpFileName, Constants.MapFinalizerFilePostfix);
-				//	if (!Utils.WriteUlongArray(path, finalizeQueue, out error)) return false;
-				//}
 				_clrtAppDomains = new ClrtAppDomains[clrtDump.RuntimeCount];
 				for (int r = 0, rcnt = clrtDump.Runtimes.Length; r < rcnt; ++r)
 				{
@@ -240,6 +237,52 @@ namespace ClrMDRIndex
 					_clrtAppDomains[r] = GetAppDomains(clrRuntime, _stringIdDcts[r]);
 				}
 
+				return true;
+			}
+			catch (Exception ex)
+			{
+				error = Utils.GetExceptionErrorString(ex);
+				return false;
+			}
+		}
+
+		public bool GetTargetModuleInfos(ClrtDump clrtDump, IProgress<string> progress, out string error)
+		{
+			error = null;
+			progress?.Report(Utils.TimeString(DateTime.Now) + " Getting target module infos...");
+			try
+			{
+				StringBuilder sb = new StringBuilder(1024);
+				var target = clrtDump.DataTarget;
+				var modules = target.EnumerateModules().ToArray();
+				var dct = new SortedDictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+				var lst = new string[5];
+				for (int i = 0, icnt = modules.Length; i < icnt; ++i)
+				{
+					var module = modules[i];
+					var moduleName = System.IO.Path.GetFileName(module.FileName);
+					var key = moduleName + Constants.HeavyGreekCrossPadded + module.FileName;
+					int nameNdx = 1;
+					while (dct.ContainsKey(key))
+					{
+						moduleName = moduleName + "(" + nameNdx + ")";
+						key = moduleName + Constants.HeavyGreekCrossPadded + module.FileName;
+						++nameNdx;
+					}
+					lst[0] = Utils.AddressString(module.ImageBase);
+					lst[1] = Utils.SizeString(module.FileSize);
+					lst[2] = module.IsRuntime ? "T" : "F";
+					lst[3] = module.IsManaged ? "T" : "F";
+					lst[4] =  module.Version.ToString();
+					var entry = string.Join(Constants.HeavyGreekCrossPadded, lst);
+					dct.Add(key,entry);
+				}
+				string[] extraInfos = new[]
+				{
+					DumpFilePath,
+					"Module Count: " + Utils.CountString(dct.Count)
+				};
+				DumpModuleInfos(dct, extraInfos);
 				return true;
 			}
 			catch (Exception ex)
@@ -274,161 +317,6 @@ namespace ClrMDRIndex
 			domains.AddAppDomains(appDomains);
 			return domains;
 		}
-
-		//public bool GetTypeInstances(ClrtDump clrtDump, IProgress<string> progress, out string error)
-		//{
-		//	progress?.Report(Utils.TimeString(DateTime.Now) + " Getting type instances...");
-		//	error = null;
-		//	BinaryWriter freeWriter = null;
-		//	BlockingStringCache strCache = new BlockingStringCache(10000);
-		//	_clrAppDomains = new ClrAppDomain[clrtDump.Runtimes.Length][];
-		//	_systemAndSharedDomains = new KeyValuePair<ClrAppDomain, ClrAppDomain>[clrtDump.Runtimes.Length];
-
-		//	try
-		//	{
-		//		for (int r = 0, rcnt = clrtDump.Runtimes.Length; r < rcnt; ++r)
-		//		{
-		//			var clrRuntime = clrtDump.Runtimes[r];
-		//			clrRuntime.Flush();
-		//			var heap = clrRuntime.GetHeap();
-
-		//			_clrAppDomains[r] = clrRuntime.AppDomains.ToArray();
-		//			_systemAndSharedDomains[r] = new KeyValuePair<ClrAppDomain, ClrAppDomain>(clrRuntime.SystemDomain, clrRuntime.SharedDomain);
-		//			_arrayIndexers[r] = new ArrayIndexer();
-		//			_typeNameIdDcts[r] = new TypeIdDct();
-		//			AddStandardStringIds(_typeNameIdDcts[r]);
-		//			_stringIdDcts[r] = new StringIdDct();
-		//			AddStandardStringIds(_stringIdDcts[r]);
-
-
-		//			var instances = new TempArena<ulong>(100, 1000000);
-		//			var types = new TempArena<int>(100, 1000000);
-		//			var sizes = new TempArena<int>(100, 1000000);
-
-		//			_clrtAppDomains[r] = GetAppDomains(clrRuntime, _stringIdDcts[r], out error);
-
-		//			// for Free type collection
-		//			int freeCount = 0;
-		//			freeWriter = new BinaryWriter(File.Open(Utils.GetFilePath(r, MapOutputFolder, DumpFileName, Constants.MapHeapFreeFilePostfix), FileMode.Create));
-		//			freeWriter.Write(0);
-		//			// for segment info collection
-		//			var segments = new ClrtSegment[heap.Segments.Count];
-		//			int segIndex = 0;
-
-		//			for (int s = 0, scnt = heap.Segments.Count; s < scnt; ++s)
-		//			{
-		//				progress?.Report(Utils.TimeString(DateTime.Now) +  " Runtime[" + r + "] " + "Processing segment " + (s + 1) + " / " + scnt);
-		//				var seg = heap.Segments[s];
-
-		//				ulong firstSegAddr = seg.FirstObject;
-		//				ulong addr = firstSegAddr;
-
-		//				while (addr != 0ul)
-		//				{
-		//					var clrType = heap.GetObjectType(addr);
-		//					if (clrType == null)
-		//					{
-		//						AddError(r, $"[Indexer.Index] ClrHeap.GetObjectType returned null at address 0x{addr:x14}");
-		//						goto NEXT_OBJECT;
-		//					}
-
-		//					if (clrType.Name == Constants.Free)
-		//					{
-		//						++freeCount;
-		//						freeWriter.Write(addr);
-		//						freeWriter.Write(clrType.GetSize(addr));
-		//						goto NEXT_OBJECT;
-		//					}
-
-		//					var typeName = strCache.GetCachedString(clrType.Name);
-		//					bool newType;
-		//					int typeId = _typeNameIdDcts[r].GetId(typeName, out newType);
-		//					var sz = clrType.GetSize(addr);
-		//					instances.Add(addr);
-		//					types.Add(typeId);
-		//					sizes.Add((int)sz);
-		//					if (newType)
-		//					{
-		//						SetTypeInfo(_typeNameIdDcts[r], clrType, typeId);
-		//					}
-		//					_typeNameIdDcts[r].AddCount(typeId);
-
-		//					if (clrType.ElementType == ClrElementType.SZArray)
-		//					{
-		//						var asz = clrType.GetArrayLength(addr);
-		//						var componentType = clrType.ComponentType;
-		//						int compId = _typeNameIdDcts[r].GetId(componentType == null ? Constants.NullName : componentType.Name, out newType);
-		//						_arrayIndexers[r].Add(addr, typeId, asz, compId);
-		//						if (newType)
-		//						{
-		//							SetTypeInfo(_typeNameIdDcts[r], componentType, compId);
-		//						}
-		//					}
-
-		//					NEXT_OBJECT:
-		//					addr = seg.NextObject(addr);
-		//				}
-
-		//				var instCount = instances.Count();
-		//				segments[s] = new ClrtSegment(heap.Segments[s], firstSegAddr, instances.LastItem(), segIndex, instCount - 1);
-		//				segIndex = instCount;
-		//			}
-
-		//			freeWriter.Seek(0, SeekOrigin.Begin);
-		//			freeWriter.Write(freeCount);
-		//			Utils.CloseStream(ref freeWriter);
-
-		//			_instances[r] = instances.GetArray();
-		//			_typeIds[r] = types.GetArray();
-		//			_sizes[r] = sizes.GetArray();
-
-		//			instances.Clear();
-		//			instances = null;
-		//			types.Clear();
-		//			types = null;
-		//			sizes.Clear();
-		//			sizes = null;
-		//		}
-
-		//		GCSettings.LargeObjectHeapCompactionMode = GCLargeObjectHeapCompactionMode.CompactOnce;
-		//		GC.Collect();
-		//		return true;
-		//	}
-		//	catch (Exception ex)
-		//	{
-		//		error = Utils.GetExceptionErrorString(ex);
-		//		return false;
-		//	}
-		//	finally
-		//	{
-		//		freeWriter?.Close();
-		//	}
-		//}
-
-		//private void SetTypeInfo(TypeIdDct idDct, ClrType clrType, int typeId)
-		//{
-		//	Debug.Assert(clrType != null);
-		//	var curType = clrType;
-		//	while (curType != null)
-		//	{
-		//		var baseTypeName = curType.BaseType == null ? Constants.NullName : curType.BaseType.Name;
-		//		bool newType;
-		//		var baseTypeId = idDct.GetId(baseTypeName, out newType);
-		//		var elemType = curType.ElementType;
-		//		var fldCnt = curType.Fields.Count;
-		//		var staticFldCount = clrType.StaticFields.Count;
-		//		idDct.AddRefs(typeId, baseTypeId, elemType, staticFldCount, fldCnt);
-		//		if (newType)
-		//		{
-		//			curType = curType.BaseType;
-		//			typeId = baseTypeId;
-		//		}
-		//		else
-		//		{
-		//			break;
-		//		}
-		//	}
-		//}
 
 		private static ClrType AddTypeGetBase(string key, ClrType clrType, SortedDictionary<string, ClrtType> typeDct)
 		{
@@ -880,454 +768,6 @@ namespace ClrMDRIndex
 			}
 		}
 
-
-		//public static bool GetFieldInfos(ClrtDump clrtDump,
-		//							IProgress<string> progress,
-		//							ClrtTypes[] allTypes, ulong[][] allInstances,
-		//							int[][] allInstanceTypes,
-		//							StringIdDct[] stringIds,
-		//							out int[] fldNotFoundCnt,
-		//							out string error)
-		//{
-		//	error = null;
-		//	fldNotFoundCnt = new int[clrtDump.RuntimeCount];
-		//	var fldRefList = new List<KeyValuePair<ulong, int>>(64);
-		//	var fldRefSet = new HashSet<ulong>();
-		//	//var fldRefIdLst = new List<ulong>(32);
-		//	var fldRefIdNameLst = new List<KeyValuePair<ulong, int>>(32);
-		//	progress?.Report("Getting field information starts...");
-		//	var que = new BlockingCollection<KeyValuePair<ulong, KeyValuePair<ulong, int>[]>>();
-		//	List<string> workerErrors = new List<string>(0);
-		//	try
-		//	{
-		//		for (int r = 0, rcnt = clrtDump.Runtimes.Length; r < rcnt; ++r)
-		//		{
-		//			int notFoundCount = 0;
-
-		//			var clrRuntime = clrtDump.Runtimes[r];
-		//			clrRuntime.Flush();
-		//			var heap = clrRuntime.GetHeap();
-		//			var instances = allInstances[r];
-		//			var fieldIds = stringIds[r];
-
-
-		//			Thread thread = new Thread(FieldDependency.WriteFieldsDependencies);
-		//			thread.Start(new Tuple<string, string, BlockingCollection<KeyValuePair<ulong, KeyValuePair<ulong, int>[]>>, List<string>>(
-		//					Utils.GetFilePath(r, Utils.GetMapFolder(clrtDump.DumpPath), clrtDump.DumpFileNameNoExt,
-		//							Constants.MapFieldOffsetsFilePostfix),
-		//					Utils.GetFilePath(r, Utils.GetMapFolder(clrtDump.DumpPath), clrtDump.DumpFileNameNoExt,
-		//							Constants.MapFieldInstancesPostfix),
-		//					que,
-		//					workerErrors
-		//				));
-
-		//			for (int i = 0, icnt = instances.Length; i < icnt; ++i)
-		//			{
-		//				if ((i % 100000) == 0) progress?.Report("Runtime: " + r + ", instance: " + Utils.LargeNumberString(i) + "/" + Utils.LargeNumberString(icnt));
-		//				var addr = instances[i];
-
-		//				var clrType = heap.GetObjectType(addr);
-		//				if (clrType == null) continue;
-
-		//				fldRefList.Clear();
-		//				fldRefSet.Clear();
-		//				clrType.EnumerateRefsOfObjectCarefully(addr, (address, off) =>
-		//				{
-		//					fldRefList.Add(new KeyValuePair<ulong, int>(address, off));
-		//				});
-
-		//				// match fields with offsets
-		//				//
-		//				bool isArray = clrType.IsArray;
-		//				bool isStruct = clrType.IsValueClass;
-		//				string curFldName;
-		//				if (fldRefList.Count > 0)
-		//				{
-		//					fldRefIdNameLst.Clear();
-		//					for (int k = 0, kcnt = fldRefList.Count; k < kcnt; ++k)
-		//					{
-		//						var fldAddr = fldRefList[k].Key;
-		//						if (fldAddr != 0UL) // TODO JRD -- we need that?
-		//						{
-		//							var fldNdx = Array.BinarySearch(instances, fldAddr);
-		//							if (fldNdx < 0)
-		//							{
-		//								++notFoundCount;
-		//							}
-		//							int fldNameNdx;
-		//							int childFieldOffset;
-		//							int curOffset;
-		//							if (!isArray)
-		//							{
-		//								curOffset = fldRefList[k].Value;
-		//								ClrInstanceField iFld;
-		//								if (clrType.GetFieldForOffset(curOffset, isStruct, out iFld, out childFieldOffset))
-		//								{
-		//									curFldName = iFld.Name;
-		//									if (addr == 0x00000002c433a0)
-		//									{
-		//										if (iFld.Type.IsString)
-		//										{
-		//											var str = (string)iFld.GetValue(addr, false, true);
-		//										}
-		//									}
-		//									fldNameNdx = fieldIds.JustGetId(curFldName);
-		//									if (iFld.IsObjectReference)
-		//										fldRefIdNameLst.Add(new KeyValuePair<ulong, int>(fldAddr, fldNameNdx));
-		//									while (childFieldOffset != 0 && curOffset != childFieldOffset)
-		//									{
-		//										curOffset = childFieldOffset;
-		//										if (clrType.GetFieldForOffset(curOffset, isStruct, out iFld, out childFieldOffset))
-		//										{
-		//											if (iFld.IsObjectReference)
-		//											{
-		//												curFldName = curFldName + "." + iFld.Name;
-		//												fldNameNdx = fieldIds.JustGetId(curFldName);
-		//												fldRefIdNameLst.Add(new KeyValuePair<ulong, int>(fldAddr, fldNameNdx));
-		//											}
-		//										}
-		//										else break;
-		//									}
-		//								}
-		//								//else
-		//								//{
-		//								//	fldNameNdx = fieldIds.JustGetId(Constants.Unknown);
-		//								//	fldRefIdNameLst.Add(new KeyValuePair<ulong, int>(fldAddr, fldNameNdx));
-		//								//}
-		//							}
-		//							else
-		//							{
-		//								fldNameNdx = fieldIds.JustGetId("[]");
-		//								fldRefIdNameLst.Add(new KeyValuePair<ulong, int>(fldAddr, fldNameNdx));
-		//							}
-		//						}
-		//					}
-		//					que.Add(new KeyValuePair<ulong, KeyValuePair<ulong, int>[]>(
-		//						addr,
-		//						fldRefIdNameLst.Count == 0 ? Utils.EmptyArray<KeyValuePair<ulong, int>>.Value : fldRefIdNameLst.ToArray()));
-
-		//				}
-
-
-		//			}
-
-		//			que.Add(new KeyValuePair<ulong, KeyValuePair<ulong, int>[]>(Constants.InvalidAddress, null)); // signal worker thread to stop
-
-		//			// augment types info with fields
-		//			//
-
-
-
-		//			//progress?.Report("Runtime: " + r + ", preparing objects and fields reference map: " + arenaFlds.Count());
-
-
-		//			//var flds = arenaFlds.GetArrayAndClear();
-		//			//arenaFlds = null;
-		//			//Utils.ForceGcWithCompaction();
-		//			//var prnts = arenaPrnts.GetArrayAndClear();
-		//			//arenaPrnts = null;
-		//			//Utils.ForceGcWithCompaction();
-		//			//Array.Sort(flds, prnts);
-		//			//List<pair<int, int>> prnCnts = new List<pair<int, int>>(flds.Length / 2);
-		//			//int curFld = flds[0];
-		//			//prnCnts.Add(new pair<int, int>(curFld, 0));
-		//			//for (int i = 1, icnt = flds.Length; i < icnt; ++i)
-		//			//{
-		//			//	if (curFld != flds[i])
-		//			//	{
-		//			//		curFld = flds[i];
-		//			//		prnCnts.Add(new pair<int, int>(curFld, i));
-		//			//	}
-		//			//}
-		//			////prnCnts.Add(new pair<int, int>(Constants.InvalidIndex, flds.Length));
-		//			//fields[r] = prnCnts.ToArray();
-		//			//prnCnts = null;
-		//			Utils.ForceGcWithCompaction();
-		//			//parents[r] = prnts;
-		//			fldNotFoundCnt[r] = notFoundCount;
-
-		//			progress?.Report("Waiting for field writer...");
-		//			thread.Join();
-
-		//		}
-
-		//		//long refCount = 0;
-		//		//for (int r = 0, rcnt = fields.Length; r < rcnt; ++r) refCount += fields[r].Length;
-		//		return true;
-		//	}
-		//	catch (Exception ex)
-		//	{
-		//		error = Utils.GetExceptionErrorString(ex);
-		//		return false;
-		//	}
-		//}
-
-
-
-		//public static Tuple<uint[][], int[][]> GetFieldReference(ClrtDump clrtDump, ClrtTypes[] allTypes, ulong[][] allInstances, int[][] allInstanceTypes, out int[] fldNotFoundCnt, out string error)
-		//{
-		//	error = null;
-		//	error = null;
-		//	fldNotFoundCnt = new int[clrtDump.RuntimeCount];
-		//	var fldRefList = new List<KeyValuePair<ulong, int>>(64);
-		//	uint[][] fields = new uint[clrtDump.RuntimeCount][];
-		//	int[][] fieldOffs = new int[clrtDump.RuntimeCount][];
-		//	try
-		//	{
-		//		for (int r = 0, rcnt = clrtDump.Runtimes.Length; r < rcnt; ++r)
-		//		{
-		//			TempArena<uint> arena = new TempArena<uint>(10000000, 10);
-		//			TempArena<int> fldOffs = new TempArena<int>(10000000, 10);
-		//			int fldOff = 0;
-		//			int notFoundCount = 0;
-
-		//			var clrRuntime = clrtDump.Runtimes[r];
-		//			clrRuntime.Flush();
-		//			var heap = clrRuntime.GetHeap();
-		//			var instances = allInstances[r];
-		//			var types = allInstanceTypes[r];
-
-		//			var segs = heap.Segments;
-		//			for (int i = 0, icnt = instances.Length; i < icnt; ++i)
-		//			{
-		//				var addr = instances[i];
-
-		//				var clrType = heap.GetObjectType(addr);
-		//				if (clrType == null) continue;
-		//				fldOffs.Add(fldOff);
-
-		//				fldRefList.Clear();
-		//				clrType.EnumerateRefsOfObjectCarefully(addr, (address, off) => fldRefList.Add(new KeyValuePair<ulong, int>(address, off)));
-		//				for (int k = 0, kcnt = fldRefList.Count; k < kcnt; ++k)
-		//				{
-		//					++fldOff;
-		//					var fldAddr = fldRefList[k].Key;
-		//					if (fldAddr != 0UL)
-		//					{
-		//						var fldNdx = Array.BinarySearch(instances, fldAddr);
-		//						if (fldNdx >= 0)
-		//						{
-		//							arena.Add((uint)((fldNdx << 16) | i));
-		//						}
-		//						else
-		//						{
-		//							arena.Add(Constants.InvalidHalfIndexMSB | (uint)i);
-		//							++notFoundCount;
-		//						}
-		//					}
-		//				}
-		//				//for (int j = 0, jcnt = clrType.Fields.Count; j < jcnt; ++j)
-		//				//{
-		//				//    var fldType = clrType.Fields[j].Type;
-		//				//    if (fldType == null) continue;
-		//				//    var fldId0 = types[r].GetTypeId(clrType.Name);
-		//				//    var fldId1 = types[r].GetTypeId(fldType.MethodTable);
-		//				//    Debug.Assert(fldId0==fldId1);
-		//				//}
-
-		//			}
-
-		//			fields[r] = arena.GetArray();
-		//			fieldOffs[r] = fldOffs.GetArray();
-		//			fldNotFoundCnt[r] = notFoundCount;
-
-
-		//		}
-		//		return new Tuple<uint[][], int[][]>(fields, fieldOffs);
-		//	}
-		//	catch (Exception ex)
-		//	{
-		//		error = Utils.GetExceptionErrorString(ex);
-		//		return null;
-		//	}
-		//}
-
-		// TODO JRD -- remove
-		//public bool BuildInstanceReferenceGraph(ClrtDump clrtDump, IProgress<string> progress, out string error)
-		//{
-		//	error = null;
-		//	BinaryWriter fieldInfoWriter = null;
-		//	BinaryWriter fieldIndexWriter = null;
-		//	_parents = new int[clrtDump.Runtimes.Length][];
-		//	_multiparents = new MultiparentIndexer[clrtDump.Runtimes.Length];
-		//	var fldRefList = new List<KeyValuePair<ulong, int>>(64);
-		//	var typesWithNewTypeFields = new List<KeyValuePair<int, ClrType>>(32);
-
-		//	try
-		//	{
-		//		for (int r = 0, rcnt = clrtDump.Runtimes.Length; r < rcnt; ++r)
-		//		{
-		//			var clrRuntime = clrtDump.Runtimes[r];
-		//			var heap = clrRuntime.GetHeap();
-		//			var alreadyDone = new HashSet<int>();
-		//			var rtInstances = _instances[r];
-		//			_parents[r] = new int[rtInstances.Length];
-		//			var rtParents = _parents[r];
-		//			Utils.InitArray(rtParents, IndexValue.InvalidIndex);
-		//			var rtTypes = _typeIds[r];
-		//			var typeIdDct = _typeNameIdDcts[r];
-		//			bool newId;
-		//			KeyValuePair<int, int>[] fldIndices = new KeyValuePair<int, int>[typeIdDct.Count];
-		//			List<KeyValuePair<int, int>> fldInfos = new List<KeyValuePair<int, int>>(typeIdDct.Count * 10);
-		//			_multiparents[r] = new MultiparentIndexer(rtInstances.Length / 5);
-		//			var rtMultiparents = _multiparents[r];
-
-		//			for (int i = 0, icnt = rtInstances.Length; i < icnt; ++i)
-		//			{
-		//				if ((i % 100000) == 0) progress.Report("Runtime[" + r + "] Building instance references " + Utils.LargeNumberString(i + 1) + " / " + Utils.LargeNumberString(icnt));
-		//				var instAddr = rtInstances[i];
-		//				if (alreadyDone.Contains(rtTypes[i])) continue;
-		//				alreadyDone.Add(rtTypes[i]);
-		//				var clrType = heap.GetObjectType(instAddr);
-		//				Debug.Assert(clrType != null);
-
-		//				fldIndices[rtTypes[i]] = new KeyValuePair<int, int>(fldInfos.Count, clrType.Fields.Count);
-
-		//				for (int f = 0, fcnt = clrType.Fields.Count; f < fcnt; ++f)
-		//				{
-		//					var fld = clrType.Fields[f];
-		//					var fldTypeName = fld.Type != null ? (fld.Type.Name ?? Constants.FieldTypeNull) : Constants.FieldTypeNull;
-		//					var fldTypeId = typeIdDct.GetId(fldTypeName, out newId);
-
-		//					if (newId && fld.Type != null)
-		//					{
-		//						typesWithNewTypeFields.Add(new KeyValuePair<int, ClrType>(fldTypeId, fld.Type));
-		//						SetTypeInfo(typeIdDct, fld.Type, fldTypeId);
-		//					}
-		//					var fldNameId = _stringIdDcts[r].GetId(fld.Name ?? Constants.FieldNameNull, out newId);
-		//					fldInfos.Add(new KeyValuePair<int, int>(fldTypeId, fldNameId));
-		//				}
-
-		//				fldRefList.Clear();
-		//				clrType.EnumerateRefsOfObjectCarefully(instAddr, (addr, off) => fldRefList.Add(new KeyValuePair<ulong, int>(addr, off)));
-		//				for (int k = 0, kcnt = fldRefList.Count; k < kcnt; ++k)
-		//				{
-		//					var fldAddr = fldRefList[k].Key;
-		//					if (fldAddr != 0UL)
-		//					{
-		//						var fldNdx = Array.BinarySearch(rtInstances, fldAddr);
-		//						if (fldNdx >= 0)
-		//						{
-		//							var pndx = rtParents[fldNdx];
-		//							if (pndx == IndexValue.InvalidIndex)
-		//							{
-		//								rtParents[fldNdx] = i;
-		//							}
-		//							else if (IndexValue.IsMultiparentIndex(pndx))
-		//							{
-		//								rtMultiparents.AddParent(pndx, i);
-		//							}
-		//							else
-		//							{
-		//								rtParents[fldNdx] = rtMultiparents.NewList(pndx, i);
-		//							}
-		//						}
-		//					}
-		//				}
-		//			}
-
-		//			List<KeyValuePair<int, int>> extraFldIndices = new List<KeyValuePair<int, int>>(typesWithNewTypeFields.Count);
-
-		//			int j = 0;
-		//			while (j < typesWithNewTypeFields.Count)
-		//			{
-		//				var fldType = typesWithNewTypeFields[j].Value;
-		//				var parentId = typesWithNewTypeFields[j].Key;
-		//				extraFldIndices.Add(new KeyValuePair<int, int>(fldInfos.Count, fldType.Fields.Count));
-		//				for (int f = 0, fcnt = fldType.Fields.Count; f < fcnt; ++f)
-		//				{
-		//					var fld = fldType.Fields[f];
-		//					var fldTypeName = fld.Type != null ? (fld.Type.Name ?? Constants.FieldTypeNull) : Constants.FieldTypeNull;
-		//					var fldTypeId = typeIdDct.GetId(fldTypeName, out newId);
-		//					if (newId)
-		//					{
-		//						if (fld.Type != null && (typesWithNewTypeFields.Count < 1 ||
-		//													fldType.Name != typesWithNewTypeFields[typesWithNewTypeFields.Count - 1].Value.Name))
-		//						{
-		//							typesWithNewTypeFields.Add(new KeyValuePair<int, ClrType>(parentId, fld.Type));
-		//						}
-		//					}
-		//					var fldNameId = _stringIdDcts[r].GetId(fld.Name ?? Constants.FieldNameNull, out newId);
-		//					fldInfos.Add(new KeyValuePair<int, int>(fldTypeId, fldNameId));
-		//				}
-		//				++j;
-		//			}
-
-		//			// dump field info
-
-		//			fieldInfoWriter =
-		//				new BinaryWriter(File.Open(
-		//					Utils.GetFilePath(r, MapOutputFolder, DumpFileName, Constants.MapFieldTypeMapFilePostfix), FileMode.Create));
-		//			fieldIndexWriter =
-		//				new BinaryWriter(
-		//					File.Open(Utils.GetFilePath(r, MapOutputFolder, DumpFileName, Constants.MapTypeFieldIndexFilePostfix),
-		//						FileMode.Create));
-
-		//			fieldInfoWriter.Write(fldInfos.Count);
-		//			for (int i = 0, icnt = fldInfos.Count; i < icnt; ++i)
-		//			{
-		//				fieldInfoWriter.Write(fldInfos[i].Key);
-		//				fieldInfoWriter.Write(fldInfos[i].Value);
-		//			}
-		//			Utils.CloseStream(ref fieldInfoWriter);
-
-		//			fieldIndexWriter.Write(fldIndices.Length + extraFldIndices.Count);
-		//			for (int i = 0, icnt = fldIndices.Length; i < icnt; ++i)
-		//			{
-		//				var index = fldIndices[i].Value > 0 ? fldIndices[i].Key : Constants.InvalidIndex;
-		//				fieldIndexWriter.Write(index);
-		//				fieldIndexWriter.Write(fldIndices[i].Value);
-		//			}
-		//			for (int i = 0, icnt = extraFldIndices.Count; i < icnt; ++i)
-		//			{
-		//				var index = extraFldIndices[i].Value > 0 ? extraFldIndices[i].Key : Constants.InvalidIndex;
-		//				fieldIndexWriter.Write(index);
-		//				fieldIndexWriter.Write(extraFldIndices[i].Value);
-		//			}
-		//			Utils.CloseStream(ref fieldIndexWriter);
-		//		}
-
-		//		return true;
-		//	}
-		//	catch (Exception ex)
-		//	{
-		//		error = Utils.GetExceptionErrorString(ex);
-		//		return false;
-		//	}
-		//	finally
-		//	{
-		//		fieldInfoWriter?.Close();
-		//		fieldIndexWriter?.Close();
-		//	}
-		//}
-
-		// TODO JRD -- remove
-		//public bool IndexRoots(ClrtDump clrtDump, IProgress<string> progress, out string error)
-		//{
-		//	error = null;
-		//	try
-		//	{
-		//		for (int r = 0, rcnt = clrtDump.Runtimes.Length; r < rcnt; ++r)
-		//		{
-		//			List<KeyValuePair<int, string>> newTypes = new List<KeyValuePair<int, string>>();
-		//			var clrRuntime = clrtDump.Runtimes[r];
-		//			var threadIds = Indexer.GetThreadIds(clrRuntime);
-
-		//			// TODO
-		//			//_roots[r] = GetRoots(clrRuntime, _typeNameIdDcts[r], _stringIdDcts[r],_clrtAppDomains[r], threadIds,
-		//			//				newTypes, out error);
-		//		}
-		//		return true;
-		//	}
-		//	catch (Exception ex)
-		//	{
-		//		error = Utils.GetExceptionErrorString(ex);
-		//		return false;
-		//	}
-		//}
-
-
-
 		public static bool ImplementsInterface(ClrType tp, string interfaceName)
 		{
 			if (tp == null || tp.Interfaces == null) return false;
@@ -1561,50 +1001,47 @@ namespace ClrMDRIndex
 			}
 		}
 
-		// TODO JRD -- remove
-		//private bool DumpInstanceInfo(int rtCount, out string error)
-		//{
-		//	error = null;
-		//	BinaryWriter bw = null;
-		//	try
-		//	{
-		//		for (int r = 0; r < rtCount; ++r)
-		//		{
-		//			bw = new BinaryWriter(File.Open(Utils.GetFilePath(r, MapOutputFolder, DumpFileName, Constants.MapInstanceFilePostfix), FileMode.Create));
-		//			var instances = _instances[r];
-		//			var typeids = _typeIds[r];
-		//			var parents = _parents[r];
-		//			var sizes = _sizes[r];
-		//			Debug.Assert(instances.Length == typeids.Length && instances.Length == parents.Length && sizes.Length == parents.Length);
-		//			bw.Write(instances.Length);
-		//			for (int i = 0, icnt = instances.Length; i < icnt; ++i)
-		//			{
-		//				bw.Write(instances[i]);
-		//				bw.Write(sizes[i]);
-		//				bw.Write(typeids[i]);
-		//				bw.Write(parents[i]);
-		//			}
-		//			Utils.CloseStream(ref bw);
-		//			bw = new BinaryWriter(File.Open(Utils.GetFilePath(r, MapOutputFolder, DumpFileName, Constants.MapMultiParentsFilePostfix), FileMode.Create));
-		//			if (!_multiparents[r].Dump(bw, out error)) return false;
-		//			Utils.CloseStream(ref bw);
-		//			bw = new BinaryWriter(File.Open(Utils.GetFilePath(r, MapOutputFolder, DumpFileName, Constants.MapArrayInstanceFilePostfix), FileMode.Create));
-		//			_arrayIndexers[r].Dump(bw);
-		//			Utils.CloseStream(ref bw);
-		//		}
-		//		return true;
-		//	}
-		//	catch (Exception ex)
-		//	{
-		//		error = Utils.GetExceptionErrorString(ex);
-		//		return false;
-		//	}
-		//	finally
-		//	{
-		//		bw?.Close();
-		//	}
+		private void DumpModuleInfos(SortedDictionary<string,string> dct, IList<string> extraInfos)
+		{
+			var path = MapOutputFolder + Path.DirectorySeparatorChar + DumpFileName + Constants.TxtTargetModulesPostfix;
+			StreamWriter txtWriter = null;
+			try
+			{
+				ResetReadOnlyAttribute(path);
+				txtWriter = new StreamWriter(path);
+				txtWriter.WriteLine("### MDRDESK REPORT: Target Module Infos");
+				txtWriter.WriteLine("### TITLE: Target Modules");
+				txtWriter.WriteLine("### COUNT: " + Utils.LargeNumberString(dct.Count));
+				txtWriter.WriteLine("### COLUMNS: Image Base|uint64" + Constants.HeavyGreekCrossPadded + "File Size|uint32" 
+					+ Constants.HeavyGreekCrossPadded + "Is Runtime|string" + Constants.HeavyGreekCrossPadded + "Is Managed|string"
+					+ Constants.HeavyGreekCrossPadded + "Version|string"
+					 + Constants.HeavyGreekCrossPadded + "File Name|string" + Constants.HeavyGreekCrossPadded + "Path|string");
+				txtWriter.WriteLine("### SEPARATOR: " + Constants.HeavyGreekCrossPadded);
 
-		//}
+				for (int i = 0, icnt = extraInfos.Count; i < icnt; ++i)
+				{
+					txtWriter.WriteLine(ReportFile.DescrPrefix + extraInfos[i]);
+				}
+				foreach (var kv in dct)
+				{
+					txtWriter.Write(kv.Value);
+					txtWriter.Write(Constants.HeavyGreekCrossPadded);
+					txtWriter.WriteLine(kv.Key);
+				}
+			}
+			catch (Exception ex)
+			{
+				AddError(-1, "[Indexer.DumpModuleInfos]" + Environment.NewLine + Utils.GetExceptionErrorString(ex));
+			}
+			finally
+			{
+				if (txtWriter != null)
+				{
+					txtWriter.Close();
+					File.SetAttributes(path, File.GetAttributes(path) | FileAttributes.ReadOnly);
+				}
+			}
+		}
 
 		private bool WriteStringDct(out string error)
 		{

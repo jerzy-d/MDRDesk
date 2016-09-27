@@ -2,4 +2,7 @@
 *** Get rid of _finalizerObjectAddresses, LoadFinalizerObjectAddresses from map and WriteFinalizerObjectAddresses from Indexer.
 0002 07/18/16
 *** Add instance sizes to the index.
-
+0003 09/27/16
+When indexing again the same dump, delete all previous index files.
+0004 09/27/16
+Field/Parent map => cannot open MemoryMappedFile in two processes.

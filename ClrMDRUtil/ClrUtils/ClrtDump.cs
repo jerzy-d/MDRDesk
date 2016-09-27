@@ -30,6 +30,7 @@ namespace ClrMDRIndex
 
 		public int RuntimeCount => _runtimes.Length;
 		public ClrRuntime Runtime => _runtimes[_curRuntimeIndex];
+		public ClrHeap Heap => Runtime.GetHeap();
 
 		#endregion Fields/Properties
 
