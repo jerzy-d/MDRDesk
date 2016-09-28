@@ -122,8 +122,7 @@ module Auxiliaries =
           valType: ClrType;
           valCat: TypeCategory * TypeCategory; }
 
-//
-//
+
 //    /// Format address given unsigned long value.
 //    let getAddrDispStr (addr : uint64) =
 //        "0x" + Convert.ToString((int64 addr),16).ToLower()
@@ -134,7 +133,30 @@ module Auxiliaries =
 
     let kvStringAddressComparer = new KvStringAddressComparer()
 
-        /// Types which do not tell us much.
+    let hasInternalAddresses (clrType:ClrType) = clrType.IsValueClass
+
+    let getFieldName (clrType:ClrType) (ndx:int) =
+        match clrType with
+        | null -> String.Empty
+        | _ -> 
+            match clrType.Fields with
+            | null -> String.Empty
+            | _ -> if clrType.Fields.Count > ndx then
+                       clrType.Fields.[ndx].Name
+                    else
+                        String.Empty
+
+    let fieldCount (clrType:ClrType) =
+        match clrType.Fields with
+        | null -> 0
+        | _ -> clrType.Fields.Count
+        
+    let fieldTypeName (fld:ClrInstanceField) =
+        match fld.Type with
+        | null -> Constants.Unknown
+        | _ -> fld.Type.Name
+        
+    /// Types which do not tell us much.
     let isTypeNameVague (name:string) =
         name = "System.Object" || name = "System.__Canon"
     

@@ -294,8 +294,6 @@ namespace MDRDesk
 
 		private void DisplayDependencyNodeGrid(DependencyNode root)
 		{
-
-
 			TreeViewItem tvRoot = new TreeViewItem();
 			tvRoot.Header = root.ToString();
 			tvRoot.Tag = root;

@@ -88,6 +88,9 @@ namespace ClrMDRIndex
 
 		public WeakReference<StringStats>[] _stringStats;
 
+
+		private IndexCurrentInfo _currentInfo;
+
 		#endregion Fields/Properties
 
 		#region Ctors/Dtors/Initialization
@@ -128,6 +131,7 @@ namespace ClrMDRIndex
 
 				if (!map.InitDump(out error, progress)) return null;
 
+				map.SetCurrentInfo(map.CurrentRuntime);
 				return map;
 			}
 			catch (Exception ex)
@@ -497,6 +501,20 @@ namespace ClrMDRIndex
 		//	}
 		//	return true;
 		//}
+
+
+		public void SetCurrentInfo(int runtimeIndex)
+		{
+			_currentInfo = new IndexCurrentInfo(
+				_instances[runtimeIndex],
+				_sizes[runtimeIndex],
+				_instTypes[runtimeIndex],
+				_instSortedByTypes[runtimeIndex],
+				_instTypeOffsets[runtimeIndex],
+				_clrtTypes[runtimeIndex],
+				_stringIds[runtimeIndex]
+				);
+		}
 
 		#endregion Ctors/Dtors/Initialization
 
@@ -969,6 +987,7 @@ namespace ClrMDRIndex
                 //
                 var heap = GetFreshHeap();
 	            ClrType clrType = heap.GetObjectType(addr);
+		        bool hasInternalAddresses = ClrtTypes.HasInternalAddresses(clrType);
 	            InstanceValue root;
 	            string clrValue = null;
 	            if (clrType.HasSimpleValue && !clrType.IsObjectReference)
@@ -992,7 +1011,7 @@ namespace ClrMDRIndex
                         {
                             InstanceValue instVal = null;
                             var fld = clrType.Fields[i];
-                            clrValue = ValueExtractor.TryGetPrimitiveValue(heap, addr, clrType.Fields[i], ClrtTypes.HasInternalAddresses(clrType));
+                            clrValue = ValueExtractor.TryGetPrimitiveValue(heap, addr, clrType.Fields[i], hasInternalAddresses);
                             if (Utils.IsNonValue(clrValue))
                             {
                                 if (clrType.IsValueClass)
@@ -1004,8 +1023,26 @@ namespace ClrMDRIndex
                                 }
                                 else
                                 {
-                                    var typeAddrObj = fld.GetValue(addr, ClrtTypes.HasInternalAddresses(clrType), false);
-                                    ulong typeAddr = (ulong?)typeAddrObj ?? Constants.InvalidAddress;
+									ulong typeAddr = Constants.InvalidAddress;
+									ulong valAddr = Constants.InvalidAddress;
+									object typeAddrObj = null;
+									if (fld.Type != null)
+	                                {
+		                                if (fld.Type.IsValueClass)
+		                                {
+			                                typeAddr = fld.GetAddress(addr, hasInternalAddresses);
+										}
+										else
+		                                {
+											typeAddrObj = fld.GetValue(addr, hasInternalAddresses, false);
+											typeAddr = (ulong?)typeAddrObj ?? Constants.InvalidAddress;
+										}
+									}
+									else
+									{
+										typeAddrObj = fld.GetValue(addr, hasInternalAddresses, false);
+										typeAddr = (ulong?)typeAddrObj ?? Constants.InvalidAddress;
+									}
 									KeyValuePair<string,int> typeInformation = GetTypeNameAndIdAtAddr(typeAddr);
 									if (typeAddr == Constants.InvalidAddress)
 	                                {

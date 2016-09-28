@@ -15,11 +15,19 @@ namespace TestApp
         private Thread _thread;
         private ConcurrentDictionary<string, KeyValuePair<string, string>> _concurrentDictionary;
         private Dictionary<int, string> _dictionary;
+	    private TestStruct _testStruct;
 
         public TestClass(int processId)
         {
             _processId = processId;
-        }
+	        var name = "From TestClass_" + processId;
+			TestStructClass testStructClass = new TestStructClass(name + "_toTestStructClass", 20);
+			KeyValuePair<string, KeyValuePair<DateTime, TestStructClass>> kvPair = 
+				new KeyValuePair<string, KeyValuePair<DateTime, TestStructClass>>(name + "key",new KeyValuePair<DateTime, TestStructClass>(DateTime.Now, testStructClass));
+			_testStruct = new TestStruct(name + "_fromTestClass",20,kvPair);
+
+
+		}
 
         public void Init()
         {
