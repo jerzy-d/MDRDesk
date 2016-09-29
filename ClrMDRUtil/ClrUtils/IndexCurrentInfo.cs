@@ -53,6 +53,13 @@ namespace ClrMDRIndex
 			return new KeyValuePair<string, int>(typeName, typeId);
 		}
 
+		public int GetTypeIdAtAddr(ulong addr)
+		{
+			var ndx = Array.BinarySearch(_instances, addr);
+			if (ndx < 0) return Constants.InvalidIndex;
+			return _instTypes[ndx];
+		}
+
 		public bool HasInternalAddresses(ClrType clrType)
 		{
 			return ClrtTypes.HasInternalAddresses(clrType);

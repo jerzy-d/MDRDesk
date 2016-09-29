@@ -575,7 +575,7 @@ namespace MDRDesk
 					Dispatcher.CurrentDispatcher.InvokeAsync(() => ExecuteGenerationQuery("Get instance generation", new ulong[] { addr }, grid));
 					break;
 				case "INSTANCE HIERARCHY WALK":
-					Dispatcher.CurrentDispatcher.InvokeAsync(() => ExecuteInstanceHierarchyQuery("Get instance hierarchy " + Utils.AddressStringHeader(addr), addr));
+					Dispatcher.CurrentDispatcher.InvokeAsync(() => ExecuteInstanceHierarchyQuery("Get instance hierarchy " + Utils.AddressStringHeader(addr), addr, Constants.InvalidIndex));
 					break;
 			}
 		}
@@ -1629,7 +1629,7 @@ namespace MDRDesk
 
 		}
 
-		private async void GenerateSizeDetailsReport(object sender, RoutedEventArgs e)
+		private async void GenerateSizeDetailsReport(object sender, RoutedEventArgs e) // TODO JRD -- display as ListView (listing)
 		{
 			var lbTypeNames = GetTypeNameListBox(sender);
 			var selectedItem = lbTypeNames.SelectedItems[0];
@@ -1664,6 +1664,96 @@ namespace MDRDesk
 			});
 
 			SetEndTaskMainWindowState("Getting size details for: '" + baseTypeName + "', done");
+
+		}
+
+		private async void GetTypeValuesReportClicked(object sender, RoutedEventArgs e)
+		{
+
+			var lbTypeNames = GetTypeNameListBox(sender);
+			var selectedItem = lbTypeNames.SelectedItems[0];
+			if (selectedItem == null)
+			{
+				return; // TODO JRD -- display message
+			}
+
+			string typeName = null;
+			int typeId = Constants.InvalidIndex;
+			if (selectedItem is KeyValuePair<string, int>) // namespace display
+			{
+				typeId = ((KeyValuePair<string, int>)selectedItem).Value;
+				typeName = ((KeyValuePair<string, int>)selectedItem).Key;
+			}
+			var baseTypeName = Utils.BaseTypeName(typeName);
+
+			SetStartTaskMainWindowState("Getting type details for: '" + baseTypeName + "', please wait...");
+
+			var result = await Task.Run(() =>
+			{
+				string error;
+				ClrtDisplayableType dispType = CurrentMap.GetTypeDisplayableRecord(typeId, out error);
+				if (dispType == null)
+					return new Tuple<string, ClrtDisplayableType>(error, null);
+				return new Tuple<string, ClrtDisplayableType>(null, dispType);
+			});
+
+			if (result.Item1 != null)
+			{
+				// TODO JRD
+				return;
+			}
+
+			DisplayTypeValueSetupGrid(result.Item2);
+			SetEndTaskMainWindowState("Getting type details for: '" + baseTypeName + "', done");
+		}
+
+		private async void TypeValueReportTreeViewClicked(object sender, MouseButtonEventArgs e)
+		{
+			TreeView tv = sender as TreeView;
+			var selItem = tv.SelectedItem as TreeViewItem;
+			Debug.Assert(selItem!=null);
+			var dispType = selItem.Tag as ClrtDisplayableType;
+			Debug.Assert(dispType!=null);
+
+			if (dispType.FieldIndex == Constants.InvalidIndex)
+			{
+				// TODO JRD 
+				return;
+			}
+
+			SetStartTaskMainWindowState("Getting type details for field: '" + dispType.FieldName + "', please wait...");
+
+			var result = await Task.Run(() =>
+			{
+				string error;
+				ClrtDisplayableType fldDispType = CurrentMap.GetTypeDisplayableRecord(dispType.TypeId, out error);
+				if (fldDispType == null)
+					return new Tuple<string, ClrtDisplayableType>(error, null);
+				return new Tuple<string, ClrtDisplayableType>(null, fldDispType);
+			});
+
+			if (result.Item1 != null)
+			{
+				// TODO JRD
+				SetEndTaskMainWindowState("Getting type details for field: '" + dispType.FieldName + "', failed");
+				return;
+			}
+
+			var fields = result.Item2.Fields;
+			selItem.Items.Clear();
+			for (int i = 0, icnt = fields.Length; i < icnt; ++i)
+			{
+				var fld = fields[i];
+				var node = new TreeViewItem
+				{
+					Header = fld.ToString(),
+					Tag = fld
+				};
+				selItem.Items.Add(node);
+			}
+
+			SetEndTaskMainWindowState("Getting type details for field: '" + dispType.FieldName + "', done");
+
 
 		}
 
@@ -1760,7 +1850,7 @@ namespace MDRDesk
 				return;
 			}
 			var addr = (ulong)lbAddresses.SelectedItems[0];
-            Dispatcher.CurrentDispatcher.InvokeAsync(() => ExecuteInstanceHierarchyQuery("Get instance hierarchy " + Utils.AddressStringHeader(addr), addr));
+            Dispatcher.CurrentDispatcher.InvokeAsync(() => ExecuteInstanceHierarchyQuery("Get instance hierarchy " + Utils.AddressStringHeader(addr), addr, Constants.InvalidIndex));
 
         }
 

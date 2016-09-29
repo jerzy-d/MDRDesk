@@ -39,6 +39,10 @@
             <MenuItem x:Name="AddrLstGetInstValue" Header="Get Instance Value" Click="LbGetInstValueClicked"/>
             <MenuItem x:Name="AddrLstGetInstHierarchy" Header="Get Instance Hierarchy" Click="LbGetInstHierarchyClicked"/>
         </ContextMenu>
+        <ControlTemplate x:Key="TreeViewItemCheckTemplate" TargetType="{x:Type TreeViewItem}">
+            <CheckBox Focusable="False" IsChecked="{Binding Path=IsSelected,RelativeSource={RelativeSource TemplatedParent},Mode=TwoWay}">
+            </CheckBox>
+        </ControlTemplate>
          <!-- change ulong value to hex string-->
         <local:LongHexConverter x:Key="LongHexConverter" />
         <Grid x:Key="InstanceHierarchyView" Name="InstanceHierarchyView" x:Shared="False">
@@ -164,22 +168,12 @@
                         <MenuItem x:Name="NsGetStringUsage" Header="Get String Usage" Click="GetTypeStringUsage"></MenuItem>
                         <MenuItem x:Name="NsGetParentReferences" Header="Get Parent References" Click="GetParentReferences"></MenuItem>
                         <MenuItem x:Name="NsGenerateSizeDetailsReport" Header="Generate Size Details Report" Click="GenerateSizeDetailsReport"></MenuItem>
+                        <MenuItem x:Name="NsGetTypeValuesReport" Header="Type Values Report" Click="GetTypeValuesReportClicked"></MenuItem>
                     </ContextMenu>
                 </ListBox.ContextMenu>
             </ListBox>
             <GridSplitter Grid.Row="1"  Grid.Column="3" VerticalAlignment="Stretch" HorizontalAlignment="Center" Width="5" ShowsPreview="False" Background="DarkGray"></GridSplitter>
             <ListBox Grid.Row="1" Grid.Column="4" Margin="4,4,4,4" Name="lbTpAddresses" HorizontalAlignment="Stretch" SelectionMode="Single" ContextMenu="{StaticResource AddresListContextMenu}">
-                <!--<ListBox.ContextMenu>
-                    <ContextMenu>
-                        <MenuItem x:Name="NsCopyAddressSelection" Header="Copy Selected (clipboard)" Click="CopyAddressSelectionClicked"></MenuItem>
-                        <MenuItem x:Name="NsCopyAddressAll" Header="Copy All (clipboard)" Click="CopyAddressAllClicked"></MenuItem>
-                        <MenuItem x:Name="NsLbGetInstImmediateRefs" Header="Get Instance Immediate References" Click="LbGetInstImmediateRefsClicked"/>
-                        <MenuItem x:Name="NsLbGetNLevelRefs" Header="Get Instance N-level References" Click="LbGetNLevelRefsClicked"/>
-                        <MenuItem x:Name="NsLbGetInstAllRefs" Header="Get Instance All References" Click="LbGetInstAllRefsClicked"/>
-                        <MenuItem x:Name="NsLbGetInstValue" Header="Get Instance Value" Click="LbGetInstValueClicked"/>
-                        <MenuItem x:Name="NsLbGetInstHierarchyView" Header="Instance Hierarchy View" Click="LbGetInstHierarchyClicked"/>
-                    </ContextMenu>
-                </ListBox.ContextMenu>-->
                 <ListBox.ItemTemplate>
                 <DataTemplate>
                     <TextBlock Text="{Binding Converter={StaticResource LongHexConverter}}"/>
@@ -312,10 +306,22 @@
                 <DockPanel x:Name="CollectionExpanderPanel" Margin="3" LastChildFill="True">
                 </DockPanel>
             </Expander>
-
-
         </Grid>
- </Window.Resources>
+        <!-- display tree view -->
+        <Grid x:Key="TypeValueReportSetupGrid" x:Shared="False">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="10*"/>
+                <RowDefinition Height="75*"/>
+                <RowDefinition Height="5"/>
+                <RowDefinition Height="10*"/>
+            </Grid.RowDefinitions>
+            <TextBox x:Name="TypeValueReportTopTextBox" Grid.Row="0" />
+            <TreeView x:Name="TypeValueReportTreeView" Grid.Row="1" VerticalAlignment="Stretch" HorizontalAlignment="Stretch" Margin="2,2,2,90"  MouseDoubleClick="TypeValueReportTreeViewClicked">
+            </TreeView>
+            <GridSplitter Grid.Row="2" VerticalAlignment="Stretch" HorizontalAlignment="Center" Width="5" ShowsPreview="False" Background="DarkGray"></GridSplitter>
+            <TextBox x:Name="TypeValueReportBottomTextBox" Grid.Row="3" />
+        </Grid>
+    </Window.Resources>
     <Grid x:Name="MainGrid">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"></RowDefinition>

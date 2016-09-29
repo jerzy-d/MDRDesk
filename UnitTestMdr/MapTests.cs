@@ -16,6 +16,9 @@ namespace UnitTestMdr
 	[TestClass]
 	public class MapTests
 	{
+		private const string _mapPath = @"D:\Jerzy\WinDbgStuff\dumps\Analytics\Scopia\noDeleteMsgs.map";
+		private const string _typeName = @"ECS.Common.HierarchyCache.Structure.RealPosition";
+
 		private TestContext testContextInstance;
 		/// <summary>
 		///Gets or sets the test context which provides
@@ -32,6 +35,8 @@ namespace UnitTestMdr
 				testContextInstance = value;
 			}
 		}
+
+		#region Instance Dependencies
 
 		[TestMethod]
 		public void TestFieldDependencyFields()
@@ -84,6 +89,9 @@ namespace UnitTestMdr
 
 			//Assert.IsNull(error, error);
 		}
+
+		#endregion Instance Dependencies
+
 
 		[TestMethod]
 		public void TestBuildTestUnitIssues()
@@ -1634,53 +1642,6 @@ namespace UnitTestMdr
 			}
 		}
 
-		//[TestMethod]
-		//public void GetArraysContentTest()
-		//{
-		//	string error;
-		//	var map = OpenMap0();
-		//	using (map)
-		//	{
-		//		var dump = map.ClrtDump;
-		//		Assert.IsNotNull(dump);
-		//		var typeName = "System.Int32[]";
-		//		var typeId = map.GetTypeId(typeName);
-		//		Assert.IsTrue(IndexValue.IsIndex(typeId),"Failed to get type id for " + typeName);
-		//		var addresses = map.GetTypeAddresses(typeId);
-		//		Assert.IsNotNull(addresses, "Map.GetTypeAddresses returned null.");
-		//		if (addresses.Length < 1)
-		//		{
-		//			TestContext.WriteLine("There's no instances for : " + typeName);
-		//			return;
-		//		}
-
-		//		var runtime = dump.Runtime;
-		//		var warmResult = AdHocQueries.Queries.warmupHeap(runtime);
-		//		Assert.IsNull(warmResult.Item1, warmResult.Item1);
-		//		var heap = runtime.GetHeap();
-
-		//		{ // temporary
-		//			var guid = Guid.NewGuid();
-		//			var tName = "System.Guid";
-		//			var tId = map.GetTypeId(tName);
-		//			var addrs = map.GetTypeAddresses(tId);
-		//			Assert.IsNotNull(addrs);
-		//			var gs = new string[addrs.Length];
-		//			for (int i = 0, icnt = addrs.Length; i < icnt; ++i)
-		//			{
-		//				var tType = heap.GetObjectType(addrs[0]);
-		//				Assert.IsNotNull(tType);
-		//				var tStr = AdHocQueries.ValueExtractor.getGuidValue(addrs[0], tType);
-		//				gs[i] = tStr;
-		//			}
-		//		}
-		//	}
-
-		//	TestContext.WriteLine("Map folder: " + map.MapFolder);
-		//	TestContext.WriteLine("Map dump: " + map.DumpBaseName);
-		//	TestContext.WriteLine("Dump path: " + map.DumpPath);
-		//}
-
 		#region Field Parents / Dependencies
 
 		[TestMethod]
@@ -1708,6 +1669,32 @@ namespace UnitTestMdr
 		}
 
 		#endregion Field Parents / Dependencies
+
+		#region Type Value Reports
+
+		[TestMethod]
+		public void TestTypeValueReports()
+		{
+			string error = null;
+			using (var map = OpenMap(_mapPath))
+			{
+				try
+				{
+					var typeId = map.GetTypeId(_typeName);
+					var addresses = map.GetTypeAddresses(typeId);
+					Assert.IsTrue(addresses != null && addresses.Length > 0);
+					var dispType = DmpNdxQueries.FQry.getDisplayableType(map.CurrentInfo, map.GetFreshHeap(), addresses[0]);
+
+				}
+				catch (Exception ex)
+				{
+					Assert.IsTrue(false,ex.ToString());
+				}
+			}
+		}
+
+
+		#endregion Type Value Reports
 
 		#region Object Sizes
 
@@ -1996,6 +1983,8 @@ namespace UnitTestMdr
 
 		#endregion Object Sizes
 
+		#region Open Map
+
 		public static Map OpenMap(string mapPath)
 		{
 			string error;
@@ -2003,6 +1992,8 @@ namespace UnitTestMdr
 			Assert.IsTrue(map != null, error);
 			return map;
 		}
+
+		#endregion OpenMap
 
 	}
 }

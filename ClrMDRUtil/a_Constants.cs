@@ -88,7 +88,7 @@ namespace ClrMDRIndex
 		public const string ReturnDisp = "\u27a7 "; // ➧ SQUAT BLACK RIGHTWARDS ARROW
 		public const char NewLineDispChar = '\u2B92'; // NEWLINE LEFT
 		public const char RightSquatArrow = '\u27a7'; // ➧ SQUAT BLACK RIGHTWARDS ARROW
-		public const char RightArrow = '\u2B95'; // RIGHTWARDS BLACK ARROW
+		//public const char RightArrow = '\u2B95'; // RIGHTWARDS BLACK ARROW
 		public const string RightTrianglePadded = " \u23F5 "; // BLACK MEDIUM RIGHT-POINTING TRIANGLE
 		public const char LeftCurlyBracket = '\u2774'; // ❴ MEDIUM LEFT CURLY BRACKET ORNAMENT
 		public const char RightCurlyBracket = '\u2775'; // ❵ MEDIUM RIGHT CURLY BRACKET ORNAMENT
@@ -97,6 +97,12 @@ namespace ClrMDRIndex
 														// 2080 ₀ SUBSCRIPT ZERO
 														// 2466  ⑦  Circled Digit Seven 
 														// 2474  ⑴  Parenthesized Digit One
+		public const string HeavyLeftAngleBracketPadded = " \u2770 "; // ❰ HEAVY LEFT-POINTING ANGLE BRACKET
+		public const string HeavyRightAngleBracketPadded = " \u2771 "; // ❱ HEAVY RIGHT-POINTING ANGLE BRACKET
+
+		public const char LeftwardsDoubleArrow = '\u2906'; // ⤆ LEFTWARDS DOUBLE ARROW FROM BAR
+		public const char RightwardsDoubleArrow = '\u2907'; // ⤇ RIGHTWARDS DOUBLE ARROW FROM BAR
+
 		public char[] SubDigits = new[]
 		{
 			'\u2080', // ₀ SUBSCRIPT ZERO

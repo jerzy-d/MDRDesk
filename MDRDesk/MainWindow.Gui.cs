@@ -332,6 +332,53 @@ namespace MDRDesk
 			MainTab.UpdateLayout();
 		}
 
+		private void DisplayTypeValueSetupGrid(ClrtDisplayableType dispType)
+		{
+			var mainGrid = this.TryFindResource("TypeValueReportSetupGrid") as Grid;
+			Debug.Assert(mainGrid != null);
+			mainGrid.Name = "TypeValueReportSetupGrid__" + Utils.GetNewID();
+			TreeView treeView = UpdateTypeValueSetupGrid(dispType, mainGrid, null);
+			var tab = new CloseableTabItem() { Header = Constants.BlackDiamond + " Type Value Setup", Content = mainGrid, Name = mainGrid.Name + "_tab" };
+			MainTab.Items.Add(tab);
+			MainTab.SelectedItem = tab;
+			MainTab.UpdateLayout();
+		}
+
+		private TreeView UpdateTypeValueSetupGrid(ClrtDisplayableType dispType, Grid mainGrid, TreeViewItem root)
+		{
+			bool realRoot = false;
+			if (root == null)
+			{
+				realRoot = true;
+				root = new TreeViewItem
+				{
+					Header = dispType.ToString(),
+					Tag = dispType
+				};
+			}
+			var fields = dispType.Fields;
+			for (int i = 0, icnt = fields.Length; i < icnt; ++i)
+			{
+				var fld = fields[i];
+				var node = new TreeViewItem
+				{
+					Header = fld.ToString(),
+					Tag = fld
+				};
+				root.Items.Add(node);
+			}
+
+			var treeView = (TreeView)LogicalTreeHelper.FindLogicalNode(mainGrid, "TypeValueReportTreeView");
+			Debug.Assert(treeView != null);
+			if (realRoot)
+			{
+				treeView.Items.Clear();
+				treeView.Items.Add(root);
+			}
+			root.ExpandSubtree();
+			return treeView;
+		}
+
 		private void DisplayInstanceHierarchyGrid(Tuple<InstanceValue, AncestorDispRecord[]> instanceInfo)
 		{
             var mainGrid = this.TryFindResource("InstanceHierarchyGrid") as Grid;
@@ -429,10 +476,11 @@ namespace MDRDesk
             {
                 SetStartTaskMainWindowState("Getting instance info" + ", please wait...");
                 ulong addr = instValue.Address;
+	            int fldNdx = instValue.FieldIndex;
                 var result = await Task.Run(() =>
                 {
                     string error;
-                    Tuple<InstanceValue, AncestorDispRecord[]> instanceInfo = CurrentMap.GetInstanceInfo(addr, out error);
+                    Tuple<InstanceValue, AncestorDispRecord[]> instanceInfo = CurrentMap.GetInstanceInfo(addr, fldNdx, out error);
                     return Tuple.Create(error, instanceInfo);
                 });
 
@@ -465,7 +513,7 @@ namespace MDRDesk
                 var result = await Task.Run(() =>
                 {
                     string error;
-                    Tuple<InstanceValue, AncestorDispRecord[]> instanceInfo = CurrentMap.GetInstanceInfo(selectedAddress, out error);
+                    Tuple<InstanceValue, AncestorDispRecord[]> instanceInfo = CurrentMap.GetInstanceInfo(selectedAddress, Constants.InvalidIndex, out error);
                     return Tuple.Create(error, instanceInfo);
                 });
 
@@ -667,14 +715,14 @@ namespace MDRDesk
 			expander.IsExpanded = true;
 		}
 
-		private async void ExecuteInstanceHierarchyQuery(string statusMessage, ulong addr)
+		private async void ExecuteInstanceHierarchyQuery(string statusMessage, ulong addr, int fldNdx)
 		{
 			SetStartTaskMainWindowState(statusMessage + ", please wait...");
 
 			var result = await Task.Run(() =>
 			{
 				string error;
-				Tuple<InstanceValue, AncestorDispRecord[]> instanceInfo = CurrentMap.GetInstanceInfo(addr, out error);
+				Tuple<InstanceValue, AncestorDispRecord[]> instanceInfo = CurrentMap.GetInstanceInfo(addr, fldNdx, out error);
 
 				return Tuple.Create(error, instanceInfo);
 			});

@@ -90,6 +90,7 @@ namespace ClrMDRIndex
 
 
 		private IndexCurrentInfo _currentInfo;
+		public IndexCurrentInfo CurrentInfo => _currentInfo;
 
 		#endregion Fields/Properties
 
@@ -924,41 +925,178 @@ namespace ClrMDRIndex
 		//    return lst.ToArray();
 		//}
 
-		public ClrtDisplayableType GetDisplayableType(ClrHeap heap, ulong addr, int typeId, string fieldName, out string error)
+		//public ClrtDisplayableType GetDisplayableType(ClrHeap heap, ulong addr, int typeId, string fieldName, out string error)
+		//{
+		//	error = null;
+		//	try
+		//	{
+		//		var clrType = heap.GetObjectType(addr);
+		//		var category = ValueExtractor.GetTypeCategory(clrType);
+		//		var dispType = new ClrtDisplayableType(typeId, clrType.Name, fieldName, category);
+		//		if (clrType.Fields.Count == 0) return dispType;
+		//		bool internalAddr = ClrtTypes.HasInternalAddresses(clrType);
+		//		for (int i = 0, icnt = clrType.Fields.Count; i < icnt; ++i)
+		//		{
+		//			ClrInstanceField fld = clrType.Fields[i];
+		//			ClrType fldType = null;
+		//			if (fld.IsObjectReference)
+		//			{
+		//				var obj = fld.GetValue(addr, internalAddr, false);
+		//				if (obj == null) // use field type
+		//				{
+		//					fldType = fld.Type;
+		//				}
+		//				else
+		//				{
+		//					fldType = heap.GetObjectType((ulong) obj);
+		//				}
+		//				// var fldTypeId = GetTypeNameAndIdAtAddr() // TODO JRD
+		//			}
+		//			else
+		//			{
+						
+		//			}
+
+		//		}
+
+		//		return dispType;
+		//	}
+		//	catch (Exception ex)
+		//	{
+		//		error = Utils.GetExceptionErrorString(ex);
+		//		return null;
+		//	}
+		//}
+		
+        #endregion Types
+
+        #region Instance Walk
+
+	   // public Tuple<InstanceValue, AncestorDispRecord[]> GetInstanceInfoOld(ulong addr, out string error)
+	   // {
+	   //     error = null;
+	   //     try
+	   //     {
+	   //         var typeInfo = GetTypeNameAndIdAtAddr(addr);
+
+    //            // get ancestors
+    //            //
+	   //         var ancestors = _fieldDependencies[_currentRuntime].GetFieldParents(addr, out error);
+				//AncestorDispRecord[] ancestorInfos = GroupAddressesByTypesForDisplay(ancestors);
+
+    //            // get instance info: fields and values
+    //            //
+    //            var heap = GetFreshHeap();
+	   //         ClrType clrType = heap.GetObjectType(addr);
+		  //      bool hasInternalAddresses = ClrtTypes.HasInternalAddresses(clrType);
+	   //         InstanceValue root;
+	   //         string clrValue = null;
+	   //         if (clrType.HasSimpleValue && !clrType.IsObjectReference)
+	   //         {
+	   //             var obj = clrType.GetValue(addr);
+	   //             clrValue = ValueExtractor.GetPrimitiveValue(obj, clrType);
+    //                root = new InstanceValue(typeInfo.Value,addr,typeInfo.Key,string.Empty,clrValue);
+	   //         }
+	   //         else
+	   //         {
+	   //             if (clrType.IsArray)
+	   //             {
+	   //                 var acnt = clrType.GetArrayLength(addr);
+	   //                 clrValue = "[" + acnt.ToString() + "]";
+    //                    root = new InstanceValue(typeInfo.Value, addr, typeInfo.Key, string.Empty, clrValue);
+    //                }
+    //                else
+	   //             {
+    //                    root = new InstanceValue(typeInfo.Value, addr, typeInfo.Key, string.Empty, Constants.NonValue);
+    //                    for (int i = 0, icnt = clrType.Fields.Count; i < icnt; ++i)
+    //                    {
+    //                        InstanceValue instVal = null;
+    //                        var fld = clrType.Fields[i];
+    //                        clrValue = ValueExtractor.TryGetPrimitiveValue(heap, addr, clrType.Fields[i], hasInternalAddresses);
+    //                        if (Utils.IsNonValue(clrValue))
+    //                        {
+    //                            if (clrType.IsValueClass)
+    //                            {
+    //                                var typeName = fld.Type != null ? fld.Type.Name : Constants.Unknown;
+    //                                var typeId = GetTypeId(typeName);
+    //                                instVal = new InstanceValue(typeId, Constants.InvalidAddress, typeName, fld.Name, clrValue);
+
+    //                            }
+    //                            else
+    //                            {
+				//					ulong typeAddr = Constants.InvalidAddress;
+				//					ulong valAddr = Constants.InvalidAddress;
+				//					object typeAddrObj = null;
+				//					if (fld.Type != null)
+	   //                             {
+		  //                              if (fld.Type.IsValueClass)
+		  //                              {
+			 //                               typeAddr = fld.GetAddress(addr, hasInternalAddresses);
+				//						}
+				//						else
+		  //                              {
+				//							typeAddrObj = fld.GetValue(addr, hasInternalAddresses, false);
+				//							typeAddr = (ulong?)typeAddrObj ?? Constants.InvalidAddress;
+				//						}
+				//					}
+				//					else
+				//					{
+				//						typeAddrObj = fld.GetValue(addr, hasInternalAddresses, false);
+				//						typeAddr = (ulong?)typeAddrObj ?? Constants.InvalidAddress;
+				//					}
+				//					KeyValuePair<string,int> typeInformation = GetTypeNameAndIdAtAddr(typeAddr);
+				//					if (typeAddr == Constants.InvalidAddress)
+	   //                             {
+				//						var typeName = fld.Type != null ? fld.Type.Name : Constants.Unknown;
+		  //                              var typeId = GetTypeId(typeName);
+				//						typeInformation = new KeyValuePair<string, int>(typeName,typeId);
+	   //                             }
+    //                                instVal = new InstanceValue(typeInformation.Value, typeAddr, typeInformation.Key, fld.Name, clrValue);
+    //                            }
+    //                        }
+    //                        else
+    //                        {
+    //                            var typeName = fld.Type != null ? fld.Type.Name : Constants.NullName;
+    //                            var typeId = GetTypeId(typeName);
+    //                            instVal = new InstanceValue(typeId, Constants.InvalidAddress, typeName, fld.Name, clrValue);
+    //                        }
+
+    //                        root.Addvalue(instVal);
+    //                    }
+    //                }
+    //            }
+
+	   //         return new Tuple<InstanceValue, AncestorDispRecord[]>(root,ancestorInfos);
+	   //     }
+	   //     catch (Exception ex)
+	   //     {
+    //            error = Utils.GetExceptionErrorString(ex);
+	   //         return null;
+	   //     }
+	   // }
+
+		/// <summary>
+		/// Get instance information for hierarchy walk.
+		/// </summary>
+		/// <param name="addr">Instance address.</param>
+		/// <param name="fldNdx">Field index, this is used for struct types, in this case addr is of the parent.</param>
+		/// <param name="error">Output error.</param>
+		/// <returns>Instance information, and list of its parents.</returns>
+		public Tuple<InstanceValue, AncestorDispRecord[]> GetInstanceInfo(ulong addr, int fldNdx,  out string error)
 		{
-			error = null;
 			try
 			{
-				var clrType = heap.GetObjectType(addr);
-				var category = ValueExtractor.GetTypeCategory(clrType);
-				var dispType = new ClrtDisplayableType(typeId, clrType.Name, fieldName, category);
-				if (clrType.Fields.Count == 0) return dispType;
-				bool internalAddr = ClrtTypes.HasInternalAddresses(clrType);
-				for (int i = 0, icnt = clrType.Fields.Count; i < icnt; ++i)
-				{
-					ClrInstanceField fld = clrType.Fields[i];
-					ClrType fldType = null;
-					if (fld.IsObjectReference)
-					{
-						var obj = fld.GetValue(addr, internalAddr, false);
-						if (obj == null) // use field type
-						{
-							fldType = fld.Type;
-						}
-						else
-						{
-							fldType = heap.GetObjectType((ulong) obj);
-						}
-						// var fldTypeId = GetTypeNameAndIdAtAddr() // TODO JRD
-					}
-					else
-					{
-						
-					}
+				// get ancestors
+				//
+				var ancestors = _fieldDependencies[_currentRuntime].GetFieldParents(addr, out error);
+				AncestorDispRecord[] ancestorInfos = GroupAddressesByTypesForDisplay(ancestors);
 
-				}
-
-				return dispType;
+				// get instance info: fields and values
+				//
+				var heap = GetFreshHeap();
+				var result = DmpNdxQueries.FQry.getInstanceValue(_currentInfo, heap, addr, fldNdx);
+				error = result.Item1;
+				return new Tuple<InstanceValue, AncestorDispRecord[]>(result.Item2, ancestorInfos);
 			}
 			catch (Exception ex)
 			{
@@ -966,121 +1104,61 @@ namespace ClrMDRIndex
 				return null;
 			}
 		}
-		
-        #endregion Types
 
-        #region Instance Walk
+		#endregion Instance Walk
 
-	    public Tuple<InstanceValue, AncestorDispRecord[]> GetInstanceInfo(ulong addr, out string error)
-	    {
-	        error = null;
-	        try
-	        {
-	            var typeInfo = GetTypeNameAndIdAtAddr(addr);
+		#region Type Value Reports
 
-                // get ancestors
-                //
-	            var ancestors = _fieldDependencies[_currentRuntime].GetFieldParents(addr, out error);
-				AncestorDispRecord[] ancestorInfos = GroupAddressesByTypesForDisplay(ancestors);
+		public ClrtDisplayableType GetTypeDisplayableRecord(int typeId, out string error)
+		{
+			error = null;
+			try
+			{
+				ulong[] instances = GetTypeAddresses(typeId);
+				if (instances == null || instances.Length < 1)
+				{
+					error = "Type instances not found.";
+					return null;
+				}
+				return DmpNdxQueries.FQry.getDisplayableType(_currentInfo, Dump.Heap, instances[0]);
+			}
+			catch (Exception ex)
+			{
+				error = Utils.GetExceptionErrorString(ex);
+				return null;
+			}
 
-                // get instance info: fields and values
-                //
-                var heap = GetFreshHeap();
-	            ClrType clrType = heap.GetObjectType(addr);
-		        bool hasInternalAddresses = ClrtTypes.HasInternalAddresses(clrType);
-	            InstanceValue root;
-	            string clrValue = null;
-	            if (clrType.HasSimpleValue && !clrType.IsObjectReference)
-	            {
-	                var obj = clrType.GetValue(addr);
-	                clrValue = ValueExtractor.GetPrimitiveValue(obj, clrType);
-                    root = new InstanceValue(typeInfo.Value,addr,typeInfo.Key,string.Empty,clrValue);
-	            }
-	            else
-	            {
-	                if (clrType.IsArray)
-	                {
-	                    var acnt = clrType.GetArrayLength(addr);
-	                    clrValue = "[" + acnt.ToString() + "]";
-                        root = new InstanceValue(typeInfo.Value, addr, typeInfo.Key, string.Empty, clrValue);
-                    }
-                    else
-	                {
-                        root = new InstanceValue(typeInfo.Value, addr, typeInfo.Key, string.Empty, Constants.NonValue);
-                        for (int i = 0, icnt = clrType.Fields.Count; i < icnt; ++i)
-                        {
-                            InstanceValue instVal = null;
-                            var fld = clrType.Fields[i];
-                            clrValue = ValueExtractor.TryGetPrimitiveValue(heap, addr, clrType.Fields[i], hasInternalAddresses);
-                            if (Utils.IsNonValue(clrValue))
-                            {
-                                if (clrType.IsValueClass)
-                                {
-                                    var typeName = fld.Type != null ? fld.Type.Name : Constants.Unknown;
-                                    var typeId = GetTypeId(typeName);
-                                    instVal = new InstanceValue(typeId, Constants.InvalidAddress, typeName, fld.Name, clrValue);
+		}
 
-                                }
-                                else
-                                {
-									ulong typeAddr = Constants.InvalidAddress;
-									ulong valAddr = Constants.InvalidAddress;
-									object typeAddrObj = null;
-									if (fld.Type != null)
-	                                {
-		                                if (fld.Type.IsValueClass)
-		                                {
-			                                typeAddr = fld.GetAddress(addr, hasInternalAddresses);
-										}
-										else
-		                                {
-											typeAddrObj = fld.GetValue(addr, hasInternalAddresses, false);
-											typeAddr = (ulong?)typeAddrObj ?? Constants.InvalidAddress;
-										}
-									}
-									else
-									{
-										typeAddrObj = fld.GetValue(addr, hasInternalAddresses, false);
-										typeAddr = (ulong?)typeAddrObj ?? Constants.InvalidAddress;
-									}
-									KeyValuePair<string,int> typeInformation = GetTypeNameAndIdAtAddr(typeAddr);
-									if (typeAddr == Constants.InvalidAddress)
-	                                {
-										var typeName = fld.Type != null ? fld.Type.Name : Constants.Unknown;
-		                                var typeId = GetTypeId(typeName);
-										typeInformation = new KeyValuePair<string, int>(typeName,typeId);
-	                                }
-                                    instVal = new InstanceValue(typeInformation.Value, typeAddr, typeInformation.Key, fld.Name, clrValue);
-                                }
-                            }
-                            else
-                            {
-                                var typeName = fld.Type != null ? fld.Type.Name : Constants.NullName;
-                                var typeId = GetTypeId(typeName);
-                                instVal = new InstanceValue(typeId, Constants.InvalidAddress, typeName, fld.Name, clrValue);
-                            }
+		public ClrtDisplayableType GetTypeDisplayableRecord(ClrtDisplayableType dispType, ClrtDisplayableType dispTypeField, out string error)
+		{
+			error = null;
+			try
+			{
+				ulong[] instances = GetTypeAddresses(dispTypeField.TypeId);
+				if (instances != null && instances.Length > 0)
+					return DmpNdxQueries.FQry.getDisplayableType(_currentInfo, Dump.Heap, instances[0]);
 
-                            root.Addvalue(instVal);
-                        }
-                    }
-                }
+				if (instances == null || instances.Length < 1)
+				{
+					error = "Type instances not found.";
+					return null;
+				}
+				return null;
+			}
+			catch (Exception ex)
+			{
+				error = Utils.GetExceptionErrorString(ex);
+				return null;
+			}
 
-	            return new Tuple<InstanceValue, AncestorDispRecord[]>(root,ancestorInfos);
-	        }
-	        catch (Exception ex)
-	        {
-                error = Utils.GetExceptionErrorString(ex);
-	            return null;
-	        }
-	    }
+		}
 
+		#endregion Type Value Reports
 
-        #endregion Instance Walk
+		#region Field References
 
-
-        #region Field References
-
-        public Tuple<string,triple<string, string, string>[], triple<string, string, string>[]> GetInstanceParentsAndChildren(ulong address, out string error)
+		public Tuple<string,triple<string, string, string>[], triple<string, string, string>[]> GetInstanceParentsAndChildren(ulong address, out string error)
 		{
 			error = null;
 			var parents = _fieldDependencies[_currentRuntime].GetFieldParents(address, out error);

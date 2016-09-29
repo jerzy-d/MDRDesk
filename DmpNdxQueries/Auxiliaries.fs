@@ -47,6 +47,8 @@ module Auxiliaries =
         | SystemObject = 12
         | System__Canon = 13
 
+    type ClrCategory = TypeCategory * TypeCategory
+
     type AddrNameStruct =
         struct
             val public Addr: address
@@ -84,7 +86,7 @@ module Auxiliaries =
         (number + powerOf2 - 1) &&& ~~~(powerOf2 - 1)
 
     /// Convienient categorization of clr types when getting a type instance value.
-    let getTypeCategory (clrType:ClrType) =
+    let getTypeCategory (clrType:ClrType) : ClrCategory =
         if isNull clrType then
             (TypeCategory.Uknown, TypeCategory.Uknown)
         else
@@ -105,7 +107,15 @@ module Auxiliaries =
                     | _ -> (TypeCategory.Struct, TypeCategory.Struct)
                 | _ -> (TypeCategory.Primitive, TypeCategory.Primitive)
 
-    type ClrCategory = TypeCategory * TypeCategory
+
+    let getValueExtractorCategory (cat:TypeCategory) : ValueExtractor.TypeCategory =
+        let catVal = int cat
+        enum<ValueExtractor.TypeCategory>(catVal)
+
+    let convertClrCategoryToValueExtractorPair (cat:ClrCategory) =
+        let key = getValueExtractorCategory (fst cat)
+        let value = getValueExtractorCategory (snd cat)
+        new KeyValuePair<ValueExtractor.TypeCategory,ValueExtractor.TypeCategory>(key,value)
 
     type ClrtValue =
         | Value of string
@@ -121,15 +131,6 @@ module Auxiliaries =
           valFld: ClrInstanceField;
           valType: ClrType;
           valCat: TypeCategory * TypeCategory; }
-
-
-//    /// Format address given unsigned long value.
-//    let getAddrDispStr (addr : uint64) =
-//        "0x" + Convert.ToString((int64 addr),16).ToLower()
-//
-//    /// Format address given boxed unsigned long value.
-//    let getAddrObjDispStr (addr : Object) =
-//        "0x" + Convert.ToString((int64 (unbox<uint64>(addr))),16).ToLower()
 
     let kvStringAddressComparer = new KvStringAddressComparer()
 
@@ -176,6 +177,11 @@ module Auxiliaries =
                 indices.[ndx] <- i
         indices
 
+    let getReferenceFieldAddress (addr:address) (fld:ClrInstanceField) (intern:bool) =
+        let valObj = fld.GetValue(addr,intern,false)
+        match valObj with
+        | null -> Constants.InvalidAddress
+        |_ -> unbox<uint64>(valObj)
 
     (*
         getting selected field values for a selected type

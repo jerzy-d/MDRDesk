@@ -209,11 +209,14 @@ module FQry =
         with
             | exn -> (exn.ToString(),null,null)
 
+    (*
+        Instance hierarchy walk.
+    *)
 
-    let getInstanceStructValue (instInfo:IndexCurrentInfo) (heap:ClrHeap) (addr:address) (fldNdx:int) : string * InstanceValue * ClrType =
+    let getInstanceStructValue (ndxInfo:IndexCurrentInfo) (heap:ClrHeap) (addr:address) (fldNdx:int) : string * InstanceValue * ClrType =
         Debug.Assert(fldNdx <> Constants.InvalidIndex)
         let clrType = heap.GetObjectType(addr)
-        let typeInfo = instInfo.GetTypeNameAndIdAtAddr(addr)
+        let typeInfo = ndxInfo.GetTypeNameAndIdAtAddr(addr)
         let typeCats = getTypeCategory clrType
         Debug.Assert((fst typeCats) = TypeCategory.Struct)
         let mutable getFieldsFlag = false;
@@ -230,9 +233,9 @@ module FQry =
                 Constants.NonValue
         (null, new InstanceValue(typeInfo.Value, addr, typeInfo.Key, fldName, value, fldNdx), if getFieldsFlag then clrType else null)
 
-    let getInstanceClassValue (instInfo:IndexCurrentInfo) (heap:ClrHeap) (addr:address) : string * InstanceValue * ClrType =
+    let getInstanceClassValue (ndxInfo:IndexCurrentInfo) (heap:ClrHeap) (addr:address) : string * InstanceValue * ClrType =
         let clrType = heap.GetObjectType(addr)
-        let typeInfo = instInfo.GetTypeNameAndIdAtAddr(addr)
+        let typeInfo = ndxInfo.GetTypeNameAndIdAtAddr(addr)
         let typeCats = getTypeCategory clrType
         match fst typeCats with
         | TypeCategory.Reference ->
@@ -258,19 +261,15 @@ module FQry =
             (null, new InstanceValue(typeInfo.Value, addr, typeInfo.Key, String.Empty, value), null)
         | _ -> ("Type (first) category not found.", null, null) // should never happen, for testing and debbuging
 
-    let (|TypeIsStruct|FieldTypeNull|FieldTypeIsStruct|Other|) (data: ClrType * ClrInstanceField) =
-        let clrType, fld = data
-        if clrType.IsValueClass then
-            TypeIsStruct
-        elif isNull fld.Type then
+    let (|FieldTypeNull|FieldTypeIsStruct|Other|) (fld:ClrInstanceField) =
+        if isNull fld.Type then
             FieldTypeNull
         elif fld.Type.IsValueClass then
             FieldTypeIsStruct
         else
             Other
-            
 
-    let getInstanceValueFields (instInfo:IndexCurrentInfo) (heap:ClrHeap) (clrType:ClrType) (addr:address) (instVal:InstanceValue): string = 
+    let getInstanceValueFields (ndxInfo:IndexCurrentInfo) (heap:ClrHeap) (clrType:ClrType) (addr:address) (instVal:InstanceValue): string = 
         let fldCount = fieldCount clrType
         let internalAddresses = hasInternalAddresses clrType
         match fldCount with
@@ -281,49 +280,64 @@ module FQry =
                 let clrValue = ValueExtractor.TryGetPrimitiveValue(heap, addr, fld, internalAddresses)
                 match Utils.IsNonValue(clrValue) with
                 | true ->
-
                     match internalAddresses with
                     | true ->
                         let typeName = fieldTypeName fld
-                        let typeId = instInfo.GetTypeId(typeName)
+                        let typeId = ndxInfo.GetTypeId(typeName)
                         instVal.Addvalue(new InstanceValue(typeId, Constants.InvalidAddress, typeName, fld.Name, clrValue))
                     | _ ->
-                        
-                    ()
+                        match fld with
+                        | FieldTypeNull | Other ->
+                            let fldAddr = getReferenceFieldAddress addr fld internalAddresses
+                            let fldTypeInfo = ndxInfo.GetTypeNameAndIdAtAddr(fldAddr)
+                            instVal.Addvalue(new InstanceValue(fldTypeInfo.Value, fldAddr, fldTypeInfo.Key, fld.Name, clrValue))
+                        | FieldTypeIsStruct ->
+                            let fldTypeId = ndxInfo.GetTypeId(fld.Type.Name);
+                            instVal.Addvalue(new InstanceValue(fldTypeId, addr, fld.Type.Name, fld.Name, clrValue, fldNdx))
+                        | _ -> ()
                 | _ ->
                     let typeName = fieldTypeName fld
-                    let typeId = instInfo.GetTypeId(typeName)
+                    let typeId = ndxInfo.GetTypeId(typeName)
                     instVal.Addvalue(new InstanceValue(typeId, Constants.InvalidAddress, typeName, fld.Name, clrValue))
         null
 
-    let getInstanceValue (instInfo:IndexCurrentInfo) (heap:ClrHeap) (addr:address) (fldNdx:int) : string * InstanceValue = 
+    let getInstanceValue (ndxInfo:IndexCurrentInfo) (heap:ClrHeap) (addr:address) (fldNdx:int) : string * InstanceValue = 
         let mutable instVal = null
         let mutable instValResult = (null,null,null);
         match fldNdx with
-        | Constants.InvalidIndex -> instValResult <- getInstanceClassValue instInfo heap addr
-        | _                      -> instValResult <- getInstanceStructValue instInfo heap addr fldNdx
+        | Constants.InvalidIndex -> instValResult <- getInstanceClassValue ndxInfo heap addr
+        | _                      -> instValResult <- getInstanceStructValue ndxInfo heap addr fldNdx
         let mutable error, instVal, clrType = instValResult
         if isNull error then
             match clrType with
             | null  -> ()
-            | _     -> error <- getInstanceValueFields instInfo heap clrType addr instVal
+            | _     -> error <- getInstanceValueFields ndxInfo heap clrType addr instVal
             (error,instVal)
         else
             (error, null)
 
-(*
-    let getDisplayableTypeFields (heap:ClrHeap) (addr: address) (clrType:ClrType) =
-        if clrType.Fields.Count == 0 then
-            dispType
-        else
-            for fld in clrType.Fields do
-                
+    (*
+        Displayable types.
+    *)
 
+    let getDisplayableTypeFields (ndxInfo:IndexCurrentInfo) (heap:ClrHeap) (addr: address) (clrType:ClrType) (dispType:ClrtDisplayableType) =
+        let fldCount = fieldCount clrType
+        match fldCount with
+        | 0 -> ()
+        | _ ->
+            let mutable dispTypes:ClrtDisplayableType[] = Array.create fldCount null
+            for fldNdx in [0..fldCount-1] do
+                let fld = clrType.Fields.[fldNdx]
+                let typeName = fieldTypeName fld
+                let typeId = ndxInfo.GetTypeId(typeName)
+                let cat = getTypeCategory fld.Type |> convertClrCategoryToValueExtractorPair
+                dispTypes.[fldNdx] <- new ClrtDisplayableType(typeId, fldNdx, typeName, fld.Name, cat)
+            dispType.AddFields(dispTypes)
 
-    let getDisplayableType (heap:ClrHeap) (addr: address) (typeId:int) (fieldName:string) =
+    let getDisplayableType (ndxInfo:IndexCurrentInfo) (heap:ClrHeap) (addr: address) =
         let clrType = heap.GetObjectType(addr)
-        let cat = getTypeCategory clrType
-        let dispType = new ClrtDisplayableType(typeId, clrType.Name, fieldName, 
-            new KeyValuePair<ValueExtractor.TypeCategory, ValueExtractor.TypeCategory>(fst cat, snd cat))
-            *)
-            
+        let typeId = ndxInfo.GetTypeIdAtAddr(addr)
+        let cat = getTypeCategory clrType |> convertClrCategoryToValueExtractorPair
+        let dispType = new ClrtDisplayableType(typeId, Constants.InvalidIndex, clrType.Name, String.Empty, cat)
+        getDisplayableTypeFields ndxInfo heap addr clrType dispType
+        dispType
