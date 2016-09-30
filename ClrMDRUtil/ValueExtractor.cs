@@ -29,7 +29,8 @@ namespace ClrMDRIndex
             Exception = 11,
             SystemObject = 12,
             System__Canon = 13,
-        }
+			Interface = 14
+		}
 
 	    public static KeyValuePair<TypeCategory, TypeCategory> GetTypeCategory(ClrType clrType)
 	    {
@@ -47,7 +48,11 @@ namespace ClrMDRIndex
                         return new KeyValuePair<TypeCategory, TypeCategory>(TypeCategory.Reference, TypeCategory.SystemObject);
                     if (Utils.SameStrings(clrType.Name, "System.__Canon"))
                         return new KeyValuePair<TypeCategory, TypeCategory>(TypeCategory.Reference, TypeCategory.System__Canon);
-                    return new KeyValuePair<TypeCategory, TypeCategory>(TypeCategory.Reference, TypeCategory.Reference);
+					if (clrType.IsArray)
+						return new KeyValuePair<TypeCategory, TypeCategory>(TypeCategory.Reference, TypeCategory.Array);
+					if (clrType.IsInterface)
+						return new KeyValuePair<TypeCategory, TypeCategory>(TypeCategory.Reference, TypeCategory.Interface);
+					return new KeyValuePair<TypeCategory, TypeCategory>(TypeCategory.Reference, TypeCategory.Reference);
 	            case ClrElementType.Struct:
                     if (Utils.SameStrings(clrType.Name, "System.Decimal"))
                         return new KeyValuePair<TypeCategory, TypeCategory>(TypeCategory.Struct, TypeCategory.Decimal);
@@ -57,7 +62,9 @@ namespace ClrMDRIndex
                         return new KeyValuePair<TypeCategory, TypeCategory>(TypeCategory.Struct, TypeCategory.TimeSpan);
                     if (Utils.SameStrings(clrType.Name, "System.Guid"))
                         return new KeyValuePair<TypeCategory, TypeCategory>(TypeCategory.Struct, TypeCategory.Guid);
-                    return new KeyValuePair<TypeCategory, TypeCategory>(TypeCategory.Struct, TypeCategory.Struct);
+					if (clrType.IsInterface)
+						return new KeyValuePair<TypeCategory, TypeCategory>(TypeCategory.Struct, TypeCategory.Interface);
+					return new KeyValuePair<TypeCategory, TypeCategory>(TypeCategory.Struct, TypeCategory.Struct);
 	            default:
                     return new KeyValuePair<TypeCategory, TypeCategory>(TypeCategory.Primitive,TypeCategory.Uknown);
 	        }

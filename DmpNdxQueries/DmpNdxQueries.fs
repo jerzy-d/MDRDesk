@@ -346,11 +346,15 @@ module FQry =
         let clrType = heap.GetObjectType(addr)
         let fld = getField clrType fldndx
         if isNull fld then
-            null
+            ("Cannot get type field at index: " + fldndx.ToString(), null)
         else
             let count = fieldCount fld.Type
             match count with
-            | 0 -> Utils.EmptyArray<ClrtDisplayableType>.Value
+            | 0 ->
+                if (isFieldTypeNullOrInterface fld) then
+                    ("Field type is null or interface", null)
+                else
+                    ("Field type does not have fields",null)
             | _ ->
                 let flds = fld.Type.Fields
                 let mutable dispTypes:ClrtDisplayableType[] = Array.create count null
@@ -359,6 +363,5 @@ module FQry =
                     let cat = getTypeCategory clrType |> convertClrCategoryToValueExtractorPair
                     let typeId = ndxInfo.GetTypeId(fld.Type.Name)
                     dispTypes.[fldNdx] <-  new ClrtDisplayableType(typeId, fldNdx, fld.Type.Name, fld.Name, cat)
-                dispTypes
+                (null, dispTypes)
 
- 

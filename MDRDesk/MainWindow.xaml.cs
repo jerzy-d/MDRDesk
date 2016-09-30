@@ -1741,8 +1741,16 @@ namespace MDRDesk
 
 			if (result.Item1 != null)
 			{
-				// TODO JRD
+				if (Utils.IsInformation(result.Item1))
+				{
+					SetEndTaskMainWindowState("Action failed for: '" + dispType.FieldName + "'. " + result.Item1);
+					return;
+				}
+
+				// TODO JRD -- display msg box with error
+
 				SetEndTaskMainWindowState("Getting type details for field: '" + dispType.FieldName + "', failed");
+
 				return;
 			}
 
@@ -1753,11 +1761,13 @@ namespace MDRDesk
 				var fld = fields[i];
 				var node = new TreeViewItem
 				{
+					//FontSize = 14,
 					Header = fld.ToString(),
 					Tag = fld
 				};
 				selItem.Items.Add(node);
 			}
+			selItem.ExpandSubtree();
 
 			SetEndTaskMainWindowState("Getting type details for field: '" + dispType.FieldName + "', done");
 

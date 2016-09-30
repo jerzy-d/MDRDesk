@@ -103,6 +103,18 @@ namespace ClrMDRIndex
 		public const char LeftwardsDoubleArrow = '\u2906'; // ⤆ LEFTWARDS DOUBLE ARROW FROM BAR
 		public const char RightwardsDoubleArrow = '\u2907'; // ⤇ RIGHTWARDS DOUBLE ARROW FROM BAR
 
+
+		public const char StructChar = '\u211C'; // ℜ BLACK-LETTER CAPITAL R
+		public const string StructHeader = " \u211C\u279C "; // ℜ BLACK-LETTER CAPITAL R
+		public const char InterfaceChar = '\u2111'; // ℑ BLACK-LETTER CAPITAL I
+		public const string InterfaceHeader = " \u2111\u279C "; // ℑ BLACK-LETTER CAPITAL I
+		public const char ClassChar = '\u212D'; // ℭ BLACK-LETTER CAPITAL C
+		public const string ClassHeader = " \u212D\u279C "; // ℭ BLACK-LETTER CAPITAL C
+		public const char PrimitiveChar = '\u2119'; // ℙ DOUBLE-STRUCK CAPITAL P
+		public const string PrimitiveHeader = " \u2119\u279C "; // ℙ DOUBLE-STRUCK CAPITAL P
+		public const char ArrayChar = '\u213F'; // ℿ DOUBLE-STRUCK CAPITAL PI
+		public const string ArrayHeader = " \u213F\u279C "; // ℿ DOUBLE-STRUCK CAPITAL PI
+
 		public char[] SubDigits = new[]
 		{
 			'\u2080', // ₀ SUBSCRIPT ZERO

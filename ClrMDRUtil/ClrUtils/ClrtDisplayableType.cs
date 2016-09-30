@@ -32,14 +32,43 @@ namespace ClrMDRIndex
 
 		public void AddFields(ClrtDisplayableType[] fields)
 		{
+			if (fields!=null)
+				Array.Sort(fields,new ClrtDisplayableTypeByFieldCmp());
 			_fields = fields;
+
+		}
+
+		private string TypeHeader()
+		{
+			if (_category.Key == ValueExtractor.TypeCategory.Reference)
+			{
+				return _category.Value == ValueExtractor.TypeCategory.Interface ? Constants.InterfaceHeader : Constants.ClassHeader;
+			}
+			else if (_category.Key == ValueExtractor.TypeCategory.Struct)
+			{
+				return _category.Value == ValueExtractor.TypeCategory.Interface ? Constants.InterfaceHeader : Constants.StructHeader;
+			}
+			return Constants.PrimitiveHeader;
 		}
 
 		public override string ToString()
 		{
 			return string.IsNullOrEmpty(_fieldName)
-				? _typeName
-				: _fieldName + Constants.HeavyRightArrowPadded + _typeName;
+				? TypeHeader() + _typeName
+				: _fieldName + TypeHeader() + _typeName;
+		}
+	}
+
+	public class ClrtDisplayableTypeByFieldCmp : IComparer<ClrtDisplayableType>
+	{
+		public int Compare(ClrtDisplayableType a, ClrtDisplayableType b)
+		{
+			var cmp = string.Compare(a.FieldName, b.FieldName, StringComparison.Ordinal);
+			if (cmp == 0)
+			{
+				cmp = a.FieldIndex < b.FieldIndex ? -1 : (a.FieldIndex > b.FieldIndex ? 1 : 0);
+			}
+			return cmp;
 		}
 	}
 }

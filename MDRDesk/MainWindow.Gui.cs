@@ -362,6 +362,7 @@ namespace MDRDesk
 				var fld = fields[i];
 				var node = new TreeViewItem
 				{
+					//FontSize = 14,
 					Header = fld.ToString(),
 					Tag = fld
 				};
@@ -376,6 +377,7 @@ namespace MDRDesk
 				treeView.Items.Add(root);
 			}
 			root.ExpandSubtree();
+			treeView.UpdateLayout();
 			return treeView;
 		}
 

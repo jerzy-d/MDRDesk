@@ -46,6 +46,7 @@ module Auxiliaries =
         | Exception = 11
         | SystemObject = 12
         | System__Canon = 13
+        | Interface = 14
 
     type ClrCategory = TypeCategory * TypeCategory
 
@@ -97,6 +98,8 @@ module Auxiliaries =
                     if clrType.IsException then (TypeCategory.Reference, TypeCategory.Exception)
                     elif clrType.Name = "System.Object" then (TypeCategory.Reference, TypeCategory.SystemObject)
                     elif clrType.Name = "System.__Canon" then (TypeCategory.Reference, TypeCategory.System__Canon)
+                    elif clrType.IsArray then (TypeCategory.Reference, TypeCategory.Array)
+                    elif clrType.IsInterface then (TypeCategory.Reference, TypeCategory.Interface)
                     else (TypeCategory.Reference, TypeCategory.Reference)
                 | ClrElementType.Struct ->
                     match clrType.Name with
@@ -104,7 +107,9 @@ module Auxiliaries =
                     | "System.DateTime" -> (TypeCategory.Struct, TypeCategory.DateTime)
                     | "System.TimeSpan" -> (TypeCategory.Struct, TypeCategory.TimeSpan)
                     | "System.Guid" -> (TypeCategory.Struct, TypeCategory.Guid)
-                    | _ -> (TypeCategory.Struct, TypeCategory.Struct)
+                    | _ ->
+                        if clrType.IsInterface then (TypeCategory.Struct, TypeCategory.Interface)
+                        else (TypeCategory.Struct, TypeCategory.Struct)
                 | _ -> (TypeCategory.Primitive, TypeCategory.Primitive)
 
 
@@ -146,6 +151,16 @@ module Auxiliaries =
                        clrType.Fields.[ndx].Name
                     else
                         String.Empty
+
+    let isFieldTypeNullOrInterface (field:ClrInstanceField) =
+        Debug.Assert(not (isNull field))
+        if isNull field.Type then
+            true
+        elif field.Type.IsInterface then
+            true
+        else
+            false
+
     let getField (clrType:ClrType) (ndx:int) =
         match clrType with
         | null -> null

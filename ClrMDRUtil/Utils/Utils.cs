@@ -1731,6 +1731,12 @@ namespace ClrMDRIndex
 			return false;
 		}
 
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		public static bool IsInformation(string str)
+		{
+			return !string.IsNullOrEmpty(str) && (str[0]==Constants.InformationSymbol);
+		}
+
 		/// <summary>
 		/// Return an empty array to avoid unnecessary memory allocation.
 		/// </summary>
