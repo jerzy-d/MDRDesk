@@ -341,3 +341,24 @@ module FQry =
         let dispType = new ClrtDisplayableType(typeId, Constants.InvalidIndex, clrType.Name, String.Empty, cat)
         getDisplayableTypeFields ndxInfo heap addr clrType dispType
         dispType
+
+    let getDisplayableFieldType (ndxInfo:IndexCurrentInfo) (heap:ClrHeap) (addr: address) (fldndx:int) =
+        let clrType = heap.GetObjectType(addr)
+        let fld = getField clrType fldndx
+        if isNull fld then
+            null
+        else
+            let count = fieldCount fld.Type
+            match count with
+            | 0 -> Utils.EmptyArray<ClrtDisplayableType>.Value
+            | _ ->
+                let flds = fld.Type.Fields
+                let mutable dispTypes:ClrtDisplayableType[] = Array.create count null
+                for fldNdx in [0..count-1] do
+                    let fld = fld.Type.Fields.[fldNdx]
+                    let cat = getTypeCategory clrType |> convertClrCategoryToValueExtractorPair
+                    let typeId = ndxInfo.GetTypeId(fld.Type.Name)
+                    dispTypes.[fldNdx] <-  new ClrtDisplayableType(typeId, fldNdx, fld.Type.Name, fld.Name, cat)
+                dispTypes
+
+ 

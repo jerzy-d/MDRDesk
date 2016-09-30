@@ -316,7 +316,7 @@
                 <RowDefinition Height="10*"/>
             </Grid.RowDefinitions>
             <TextBox x:Name="TypeValueReportTopTextBox" Grid.Row="0" />
-            <TreeView x:Name="TypeValueReportTreeView" Grid.Row="1" VerticalAlignment="Stretch" HorizontalAlignment="Stretch" Margin="2,2,2,90"  MouseDoubleClick="TypeValueReportTreeViewClicked">
+            <TreeView x:Name="TypeValueReportTreeView" Grid.Row="1" VerticalAlignment="Stretch" HorizontalAlignment="Stretch" Margin="2,2,2,90"  MouseDoubleClick="TypeValueReportTreeViewDoubleClicked">
             </TreeView>
             <GridSplitter Grid.Row="2" VerticalAlignment="Stretch" HorizontalAlignment="Center" Width="5" ShowsPreview="False" Background="DarkGray"></GridSplitter>
             <TextBox x:Name="TypeValueReportBottomTextBox" Grid.Row="3" />

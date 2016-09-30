@@ -146,6 +146,16 @@ module Auxiliaries =
                        clrType.Fields.[ndx].Name
                     else
                         String.Empty
+    let getField (clrType:ClrType) (ndx:int) =
+        match clrType with
+        | null -> null
+        | _ -> 
+            match clrType.Fields with
+            | null -> null
+            | _ -> if clrType.Fields.Count > ndx then
+                       clrType.Fields.[ndx]
+                    else
+                        null
 
     let fieldCount (clrType:ClrType) =
         match clrType.Fields with

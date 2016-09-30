@@ -1707,7 +1707,7 @@ namespace MDRDesk
 			SetEndTaskMainWindowState("Getting type details for: '" + baseTypeName + "', done");
 		}
 
-		private async void TypeValueReportTreeViewClicked(object sender, MouseButtonEventArgs e)
+		private async void TypeValueReportTreeViewDoubleClicked(object sender, MouseButtonEventArgs e)
 		{
 			TreeView tv = sender as TreeView;
 			var selItem = tv.SelectedItem as TreeViewItem;
@@ -1721,12 +1721,19 @@ namespace MDRDesk
 				return;
 			}
 
-			SetStartTaskMainWindowState("Getting type details for field: '" + dispType.FieldName + "', please wait...");
+
+		    var parent = selItem.Parent as TreeViewItem;
+            Debug.Assert(parent!=null);
+            var parentDispType = parent.Tag as ClrtDisplayableType;
+            Debug.Assert(parentDispType!=null);
+
+
+            SetStartTaskMainWindowState("Getting type details for field: '" + dispType.FieldName + "', please wait...");
 
 			var result = await Task.Run(() =>
 			{
 				string error;
-				ClrtDisplayableType fldDispType = CurrentMap.GetTypeDisplayableRecord(dispType.TypeId, out error);
+				ClrtDisplayableType fldDispType = CurrentMap.GetTypeDisplayableRecord(parentDispType, dispType, out error);
 				if (fldDispType == null)
 					return new Tuple<string, ClrtDisplayableType>(error, null);
 				return new Tuple<string, ClrtDisplayableType>(null, fldDispType);

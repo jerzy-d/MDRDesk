@@ -1138,13 +1138,21 @@ namespace ClrMDRIndex
 				ulong[] instances = GetTypeAddresses(dispTypeField.TypeId);
 				if (instances != null && instances.Length > 0)
 					return DmpNdxQueries.FQry.getDisplayableType(_currentInfo, Dump.Heap, instances[0]);
-
-				if (instances == null || instances.Length < 1)
+                instances = GetTypeAddresses(dispType.TypeId);
+                if (instances == null || instances.Length < 1)
 				{
 					error = "Type instances not found.";
 					return null;
 				}
-				return null;
+			    var dispInfos = DmpNdxQueries.FQry.getDisplayableFieldType(_currentInfo, Dump.Heap, instances[0], dispTypeField.FieldIndex);
+			    if (dispInfos != null)
+			    {
+			        dispType.AddFields(dispInfos);
+			        return dispType;
+			    }
+
+
+                return null;
 			}
 			catch (Exception ex)
 			{
