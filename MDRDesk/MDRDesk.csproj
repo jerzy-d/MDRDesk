@@ -140,6 +140,10 @@
     <Compile Include="ReferenceSearchSetup.xaml.cs">
       <DependentUpon>ReferenceSearchSetup.xaml</DependentUpon>
     </Compile>
+    <Compile Include="TypeValueFilterDlg.xaml.cs">
+      <DependentUpon>TypeValueFilterDlg.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="TypeValuesQuery.cs" />
     <Page Include="InputStringDlg.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
@@ -171,6 +175,10 @@
     <Page Include="themes\generic.xaml">
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
+    </Page>
+    <Page Include="TypeValueFilterDlg.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
     </Page>
   </ItemGroup>
   <ItemGroup>
@@ -263,6 +271,9 @@
   </ItemGroup>
   <ItemGroup>
     <Resource Include="TODO.txt" />
+  </ItemGroup>
+  <ItemGroup>
+    <Resource Include="Images\QuestionBlack16.png" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <PropertyGroup>

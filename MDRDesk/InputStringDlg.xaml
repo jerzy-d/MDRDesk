@@ -19,7 +19,7 @@
             <RowDefinition Height="Auto" />
             <RowDefinition Height="Auto" />
         </Grid.RowDefinitions>
-        <Image Source="/Images/QuestionBlack16.png" Width="16" Height="16" Grid.RowSpan="2" Margin="16,0" />
+        <Image Source=".\Images\QuestionBlack16.png" Width="16" Height="16" Grid.RowSpan="2" Margin="16,0" />
 
         <Label Name="lblQuestion" Grid.Column="1">Question:</Label>
         <TextBox Name="txtAnswer" Grid.Column="1" Grid.Row="1" MinWidth="250">Answer</TextBox>

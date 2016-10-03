@@ -73,8 +73,9 @@ namespace ClrMDRIndex
 		public const char UnixNewLineChar = '\u27A6'; // ➦ HEAVY BLACK CURVED UPWARDS AND RIGHTWARDS ARROW
 
 		public const char HeavyCheckMark = '\u2714'; // ✔ HEAVY CHECK MARK
-		public const string HeavyCheckMarkPadded = " \u2714 ";  // ✔ HEAVY CHECK MARK
-		public const char BlackDiamond = '\u2756'; // ❖ BLACK DIAMOND MINUS WHITE X 
+        public const string HeavyCheckMarkPadded = " \u2714 ";  // ✔ HEAVY CHECK MARK
+        public const string HeavyCheckMarkHeader = "\u2714 ";  // ✔ HEAVY CHECK MARK
+        public const char BlackDiamond = '\u2756'; // ❖ BLACK DIAMOND MINUS WHITE X 
 		public const string BlackDiamondPadded = " \u2756 "; // ❖ BLACK DIAMOND MINUS WHITE X 
 		public const char HeavyVerticalBar = '\u275A'; // ❚ HEAVY VERTICAL BAR
 		public const char MediumVerticalBar = '\u2759'; // ❙ MEDIUM VERTICAL BAR
@@ -114,8 +115,11 @@ namespace ClrMDRIndex
 		public const string PrimitiveHeader = " \u2119\u279C "; // ℙ DOUBLE-STRUCK CAPITAL P
 		public const char ArrayChar = '\u213F'; // ℿ DOUBLE-STRUCK CAPITAL PI
 		public const string ArrayHeader = " \u213F\u279C "; // ℿ DOUBLE-STRUCK CAPITAL PI
+        public const char FilterChar = '\u2132'; // Ⅎ TURNED CAPITAL F
+        public const string FilterHeader = " \u2132\u279C "; // Ⅎ TURNED CAPITAL F
 
-		public char[] SubDigits = new[]
+
+        public char[] SubDigits = new[]
 		{
 			'\u2080', // ₀ SUBSCRIPT ZERO
 		};

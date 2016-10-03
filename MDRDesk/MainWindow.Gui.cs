@@ -319,8 +319,9 @@ namespace MDRDesk
 			var grid = this.TryFindResource("TreeViewGrid") as Grid;
 			Debug.Assert(grid != null);
 			grid.Name = "DependencyNodeTreeView__" + Utils.GetNewID();
-			grid.Tag = root;
 			var treeView = (TreeView)LogicalTreeHelper.FindLogicalNode(grid, "treeView");
+            Debug.Assert(treeView!=null);
+		    treeView.Tag = root;
 			Debug.Assert(treeView != null);
 			treeView.Items.Add(tvRoot);
 
@@ -337,7 +338,8 @@ namespace MDRDesk
 			var mainGrid = this.TryFindResource("TypeValueReportSetupGrid") as Grid;
 			Debug.Assert(mainGrid != null);
 			mainGrid.Name = "TypeValueReportSetupGrid__" + Utils.GetNewID();
-			TreeView treeView = UpdateTypeValueSetupGrid(dispType, mainGrid, null);
+            mainGrid.Tag = new TypeValuesQuery();
+            TreeView treeView = UpdateTypeValueSetupGrid(dispType, mainGrid, null);
 			var tab = new CloseableTabItem() { Header = Constants.BlackDiamond + " Type Value Setup", Content = mainGrid, Name = mainGrid.Name + "_tab" };
 			MainTab.Items.Add(tab);
 			MainTab.SelectedItem = tab;
@@ -353,8 +355,8 @@ namespace MDRDesk
 				root = new TreeViewItem
 				{
 					Header = dispType.ToString(),
-					Tag = dispType
-				};
+					Tag = dispType,
+                };
 			}
 			var fields = dispType.Fields;
 			for (int i = 0, icnt = fields.Length; i < icnt; ++i)
@@ -362,7 +364,6 @@ namespace MDRDesk
 				var fld = fields[i];
 				var node = new TreeViewItem
 				{
-					//FontSize = 14,
 					Header = fld.ToString(),
 					Tag = fld
 				};
@@ -381,7 +382,82 @@ namespace MDRDesk
 			return treeView;
 		}
 
-		private void DisplayInstanceHierarchyGrid(Tuple<InstanceValue, AncestorDispRecord[]> instanceInfo)
+        private void TypeValueReportMouseDown(object sender, MouseButtonEventArgs e)
+        {
+            TreeViewItem item = e.Source as TreeViewItem;
+            var grid = GetCurrentTabGrid();
+            if (item != null)
+            {
+                var curSelectionInfo = grid.Tag as TypeValuesQuery;
+                Debug.Assert(curSelectionInfo!=null);
+                curSelectionInfo.SetCurrentTreeViewItem(item);
+            }
+
+        }
+
+        private void TypeValueReportSelectClicked(object sender, RoutedEventArgs e)
+        {
+            var grid = GetCurrentTabGrid();
+            Debug.Assert(grid!=null);
+            var curSelectionInfo = grid.Tag as TypeValuesQuery;
+            Debug.Assert(curSelectionInfo != null);
+            if (curSelectionInfo.CurrentTreeViewItem != null)
+            {
+                string header = curSelectionInfo.CurrentTreeViewItem.Header as string;
+                Debug.Assert(header!=null);
+                curSelectionInfo.CurrentTreeViewItem.Header = (header[0] == Constants.HeavyCheckMark)
+                    ? header.Substring(2)
+                    : Constants.HeavyCheckMarkHeader + header;
+
+            }
+        }
+
+	    private string SetFilterChar(string header, bool set)
+	    {
+	        if (string.IsNullOrEmpty(header)) return header;
+	        if (set)
+	        {
+	            if (set && header[0] == Constants.HeavyCheckMark && header[1] != Constants.FilterChar)
+	            {
+	                header = header[0].ToString() + Constants.FilterHeader + header.Substring(2);
+	            }
+	            else if (header[0] != Constants.FilterChar)
+	            {
+	                header = Constants.FilterHeader + header;
+	            }
+            }
+	        return header;
+	    }
+
+        private void TypeValueReportFilterClicked(object sender, RoutedEventArgs e)
+        {
+            var grid = GetCurrentTabGrid();
+            Debug.Assert(grid != null);
+            var curSelectionInfo = grid.Tag as TypeValuesQuery;
+            Debug.Assert(curSelectionInfo != null);
+            if (curSelectionInfo.CurrentTreeViewItem != null)
+            {
+                var dlg = new TypeValueFilterDlg(curSelectionInfo.CurrentTreeViewItem.Tag as ClrtDisplayableType)
+                {
+                    Owner = this,
+                    
+                };
+                bool? dlgResult = dlg.ShowDialog();
+                if (dlgResult==true)
+                {
+                    string val = dlg.Value;
+                    string header = curSelectionInfo.CurrentTreeViewItem.Header as string;
+                    curSelectionInfo.CurrentTreeViewItem.Header = SetFilterChar(header, true);
+                }
+
+                //Debug.Assert(header != null);
+                //curSelectionInfo.CurrentTreeViewItem.Header = (header[0] == Constants.HeavyCheckMark)
+                //    ? header.Substring(2)
+                //    : Constants.HeavyCheckMarkHeader + header;
+            }
+        }
+
+        private void DisplayInstanceHierarchyGrid(Tuple<InstanceValue, AncestorDispRecord[]> instanceInfo)
 		{
             var mainGrid = this.TryFindResource("InstanceHierarchyGrid") as Grid;
             Debug.Assert(mainGrid != null);

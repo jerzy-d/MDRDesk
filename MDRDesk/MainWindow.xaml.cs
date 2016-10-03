@@ -1715,18 +1715,22 @@ namespace MDRDesk
 			var dispType = selItem.Tag as ClrtDisplayableType;
 			Debug.Assert(dispType!=null);
 
-			if (dispType.FieldIndex == Constants.InvalidIndex)
+		    string msg;
+		    if (!dispType.CanGetFields(out msg))
+		    {
+                MainStatusShowMessage("Action failed for: '" + dispType.FieldName + "'. " + msg);
+		        return;
+		    }
+
+            if (dispType.FieldIndex == Constants.InvalidIndex) // this root type, fields are already displayed
 			{
-				// TODO JRD 
 				return;
 			}
-
 
 		    var parent = selItem.Parent as TreeViewItem;
             Debug.Assert(parent!=null);
             var parentDispType = parent.Tag as ClrtDisplayableType;
             Debug.Assert(parentDispType!=null);
-
 
             SetStartTaskMainWindowState("Getting type details for field: '" + dispType.FieldName + "', please wait...");
 
@@ -1761,7 +1765,6 @@ namespace MDRDesk
 				var fld = fields[i];
 				var node = new TreeViewItem
 				{
-					//FontSize = 14,
 					Header = fld.ToString(),
 					Tag = fld
 				};
@@ -1960,6 +1963,6 @@ namespace MDRDesk
 			}
 		}
 
-
-	}
+ 
+    }
 }

@@ -365,3 +365,39 @@ module FQry =
                     dispTypes.[fldNdx] <-  new ClrtDisplayableType(typeId, fldNdx, fld.Type.Name, fld.Name, cat)
                 (null, dispTypes)
 
+    (*
+        Type values data.
+    *)
+
+    let getTypeFieldValue (ndxInfo:IndexCurrentInfo) (heap:ClrHeap) (addr:address) (clrType:ClrType) (fld:ClrInstanceField) : (address * string) =
+        (0UL,String.Empty)
+
+    let rec getFieldValues (ndxInfo:IndexCurrentInfo) (heap:ClrHeap) (clrType:ClrType) (addr:address) (fields:ResizeArray<FieldValue>) =
+        match fields with
+        | null -> ()
+        | _ ->
+            for fld in fields do
+                let fldAddr, fldValue = getTypeFieldValue ndxInfo heap addr clrType fld.InstField
+                getFieldValues ndxInfo heap fld.ClType fldAddr fld.Fields
+            ()
+
+    let rec acceptFilter (ndxInfo:IndexCurrentInfo) (heap:ClrHeap) (clrType:ClrType) (addr:address) (filters:ResizeArray<FieldFilter>) (accept:bool) =
+        match filters with
+        | null -> accept
+        | _ ->
+            let mutable curAccept = accept
+            for filter in filters do
+                let fldAddr, fldValue = getTypeFieldValue ndxInfo heap addr clrType filter.InstField
+                curAccept <- filter.Accept(fldValue,accept)
+                acceptFilter ndxInfo heap filter.ClType fldAddr filter.Filters curAccept |> ignore
+            curAccept
+
+    let getTypeValuesAtAddresses (ndxInfo:IndexCurrentInfo) (heap:ClrHeap) (clrType:ClrType) (typeValue: TypeValue) (typeFilter:TypeFilter) (addresses:(address array)) =
+        let mutable error:string = null
+        let mutable allWell = true
+        let mutable ndx:int32 = 0
+        let fieldValues = typeValue.Fields
+        for addr in addresses do
+            if acceptFilter ndxInfo heap clrType addr typeFilter.Filters true then
+                getFieldValues ndxInfo heap clrType addr typeValue.Fields
+        ()
