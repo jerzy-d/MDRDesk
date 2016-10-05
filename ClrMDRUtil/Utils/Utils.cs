@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
 using System.IO;
+using System.Linq;
 using System.Resources;
 using System.Runtime;
 using System.Runtime.CompilerServices;
@@ -1660,6 +1661,34 @@ namespace ClrMDRIndex
 			for (; begin < end; ++begin)
 				val = val * 10 + (str[begin] - '0');
 			return val;
+		}
+
+		public static KeyValuePair<string, int>[] GetOrderedByValue(IDictionary<string, int> dct)
+		{
+			var ary = dct.ToArray();
+			Array.Sort(ary,(a,b) => a.Value < b.Value ? -1 : (a.Value > b.Value? 1 : 0));
+			return ary;
+		}
+
+		public static KeyValuePair<ulong, KeyValuePair<string, int>>[] GetOrderedByValue(IDictionary<ulong, KeyValuePair<string, int>> dct)
+		{
+			var ary = dct.ToArray();
+			Array.Sort(ary, (a, b) => a.Value.Value < b.Value.Value ? -1 : (a.Value.Value > b.Value.Value ? 1 : 0));
+			return ary;
+		}
+
+		public static KeyValuePair<string, int>[] GetOrderedByValueDesc(IDictionary<string, int> dct)
+		{
+			var ary = dct.ToArray();
+			Array.Sort(ary, (a, b) => a.Value > b.Value ? -1 : (a.Value < b.Value ? 1 : 0));
+			return ary;
+		}
+
+		public static KeyValuePair<ulong, KeyValuePair<string, int>>[] GetOrderedByValueDesc(IDictionary<ulong, KeyValuePair<string, int>> dct)
+		{
+			var ary = dct.ToArray();
+			Array.Sort(ary, (a, b) => a.Value.Value > b.Value.Value ? -1 : (a.Value.Value < b.Value.Value ? 1 : 0));
+			return ary;
 		}
 
 		#region Errors Formatting

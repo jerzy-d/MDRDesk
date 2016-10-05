@@ -150,7 +150,8 @@ namespace UnitTestMdr
 			List<string> errors = new List<string>();
 			using (map)
 			{
-				ulong[] prefaddresses = map.GetTypeWithPrefixAddresses("System.WeakReference",false);
+				int totalCount;
+				KeyValuePair<int, ulong[]>[] prefaddresses = map.GetTypeWithPrefixAddresses("System.WeakReference",false,out totalCount);
 
 				int typeId = map.GetTypeId("System.WeakReference");
 				ulong[] addresses = map.GetTypeAddresses(typeId);
@@ -171,6 +172,8 @@ namespace UnitTestMdr
 					Assert.IsTrue(false,result.Item1);
 				}
 
+
+
 				string repPath = map.ReportPath + @"\WeakReferenceObjects.txt";
 				StreamWriter sw = null;
 				try
@@ -178,12 +181,22 @@ namespace UnitTestMdr
 					sw = new StreamWriter(repPath);
 					var infos = result.Item2;
 					Array.Sort(infos,new Utils.TripleUlUlStrByStrUl2Cmp());
+
+					sw.WriteLine("### MDRDESK REPORT: WeakReference");
+					sw.WriteLine("### TITLE: WeakReference");
+					sw.WriteLine("### COUNT: " + Utils.LargeNumberString(infos.Length));
+					sw.WriteLine("### COLUMNS: Address|ulong \u271A Object Address|string \u271A Object Type|string");
+					sw.WriteLine("### SEPARATOR:  \u271A ");
+					sw.WriteLine("#### WeakReference count: " + Utils.LargeNumberString(infos.Length));
+
 					sw.WriteLine("#### Total WeakReference instance count: " + infos.Length);
 					sw.WriteLine("#### Clumns: address of WeakReference, address of type pointed to, type name");
 					sw.WriteLine("####");
 					for (int i = 0, icnt = infos.Length; i < icnt; ++i)
 					{
-						sw.WriteLine(Utils.AddressStringHeader(infos[i].First) + Utils.AddressStringHeader(infos[i].Second) + infos[i].Third);
+						sw.Write(Utils.AddressStringHeader(infos[i].First) + Constants.HeavyGreekCrossPadded);
+						sw.Write(Utils.AddressStringHeader(infos[i].Second) + Constants.HeavyGreekCrossPadded);
+						sw.WriteLine(infos[i].Third);
 					}
 				}
 				catch (Exception ex)
@@ -199,6 +212,8 @@ namespace UnitTestMdr
 
 			//Assert.IsNull(error, error);
 		}
+
+
 
 	    [TestMethod]
 	    public void TestStringBuilderContent()
@@ -225,7 +240,21 @@ namespace UnitTestMdr
 	    }
 
 
-        [TestMethod]
+		[TestMethod]
+		public void TestMisc()
+		{
+			System.Collections.Generic.Dictionary<System.String, System.Collections.Generic.IList<System.String>> dct =
+				new Dictionary<string, IList<string>>();
+			var tp = dct.GetType();
+			var niceName = DmpNdxQueries.Auxiliaries.NiceTypeName(tp);
+
+			string s = "aaabbb";
+			var pos = s.IndexOf('`');
+			var s2 = s.Substring(0, pos);
+
+		}
+
+		[TestMethod]
         public void TestConcurrentDictionaryContent()
         {
             var sbTypeName = @"System.Collections.Concurrent.ConcurrentDictionary<System.String,System.Collections.Generic.KeyValuePair<System.String,System.String>>";

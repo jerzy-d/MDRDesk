@@ -10,71 +10,85 @@ using Microsoft.Diagnostics.Runtime;
 
 namespace ClrMDRIndex
 {
-	public class ValueExtractor
+	public enum TypeCategory
 	{
-	    /// Convienient categorization of clr types when getting a type instance value.
-	    public enum TypeCategory
-        {
-	        Uknown = 0,
-            Reference = 1,
-            Struct = 2,
-            Primitive = 3,
-            Enum = 4,
-            String = 5,
-            Array = 6,
-            Decimal = 7,
-            DateTime = 8,
-            TimeSpan = 9,
-            Guid = 10,
-            Exception = 11,
-            SystemObject = 12,
-            System__Canon = 13,
-			Interface = 14
+		Uknown = 0,
+		Reference = 1,
+		Struct = 2,
+		Primitive = 3,
+		Enum = 4,
+		String = 5,
+		Array = 6,
+		Decimal = 7,
+		DateTime = 8,
+		TimeSpan = 9,
+		Guid = 10,
+		Exception = 11,
+		SystemObject = 12,
+		System__Canon = 13,
+		Interface = 14,
+	}
+
+	public struct TypeCategories
+	{
+		public readonly TypeCategory First;
+		public readonly TypeCategory Second;
+		public readonly ClrElementType ClrElement;
+
+		TypeCategories(TypeCategory first, TypeCategory second, ClrElementType clrElement)
+		{
+			First = first;
+			Second = second;
+			ClrElement = clrElement;
 		}
 
-	    public static KeyValuePair<TypeCategory, TypeCategory> GetTypeCategory(ClrType clrType)
-	    {
-	        if (clrType == null) return new KeyValuePair<TypeCategory, TypeCategory>(TypeCategory.Uknown, TypeCategory.Uknown);
-	        switch (clrType.ElementType)
-	        {
-                case ClrElementType.String:
-                    return new KeyValuePair<TypeCategory, TypeCategory>(TypeCategory.Reference, TypeCategory.String);
-	            case ClrElementType.SZArray:
-                    return new KeyValuePair<TypeCategory, TypeCategory>(TypeCategory.Reference, TypeCategory.Array);
-	            case ClrElementType.Object:
-                    if (clrType.IsException)
-                        return new KeyValuePair<TypeCategory, TypeCategory>(TypeCategory.Reference, TypeCategory.Exception);
-                    if (Utils.SameStrings(clrType.Name, "System.Object"))
-                        return new KeyValuePair<TypeCategory, TypeCategory>(TypeCategory.Reference, TypeCategory.SystemObject);
-                    if (Utils.SameStrings(clrType.Name, "System.__Canon"))
-                        return new KeyValuePair<TypeCategory, TypeCategory>(TypeCategory.Reference, TypeCategory.System__Canon);
+		public static TypeCategories GetCategories(ClrType clrType)
+		{
+			if (clrType == null) return new TypeCategories(TypeCategory.Uknown, TypeCategory.Uknown, ClrElementType.Unknown);
+			switch (clrType.ElementType)
+			{
+				case ClrElementType.String:
+					return new TypeCategories(TypeCategory.Reference, TypeCategory.String, clrType.ElementType);
+				case ClrElementType.SZArray:
+					return new TypeCategories(TypeCategory.Reference, TypeCategory.Array, clrType.ElementType);
+				case ClrElementType.Object:
+					if (clrType.IsException)
+						return new TypeCategories(TypeCategory.Reference, TypeCategory.Exception, clrType.ElementType);
+					if (Utils.SameStrings(clrType.Name, "System.Object"))
+						return new TypeCategories(TypeCategory.Reference, TypeCategory.SystemObject, clrType.ElementType);
+					if (Utils.SameStrings(clrType.Name, "System.__Canon"))
+						return new TypeCategories(TypeCategory.Reference, TypeCategory.System__Canon, clrType.ElementType);
 					if (clrType.IsArray)
-						return new KeyValuePair<TypeCategory, TypeCategory>(TypeCategory.Reference, TypeCategory.Array);
+						return new TypeCategories(TypeCategory.Reference, TypeCategory.Array, clrType.ElementType);
 					if (clrType.IsInterface)
-						return new KeyValuePair<TypeCategory, TypeCategory>(TypeCategory.Reference, TypeCategory.Interface);
-					return new KeyValuePair<TypeCategory, TypeCategory>(TypeCategory.Reference, TypeCategory.Reference);
-	            case ClrElementType.Struct:
-                    if (Utils.SameStrings(clrType.Name, "System.Decimal"))
-                        return new KeyValuePair<TypeCategory, TypeCategory>(TypeCategory.Struct, TypeCategory.Decimal);
-                    if (Utils.SameStrings(clrType.Name, "System.DateTime"))
-                        return new KeyValuePair<TypeCategory, TypeCategory>(TypeCategory.Struct, TypeCategory.DateTime);
-                    if (Utils.SameStrings(clrType.Name, "System.TimeSpan"))
-                        return new KeyValuePair<TypeCategory, TypeCategory>(TypeCategory.Struct, TypeCategory.TimeSpan);
-                    if (Utils.SameStrings(clrType.Name, "System.Guid"))
-                        return new KeyValuePair<TypeCategory, TypeCategory>(TypeCategory.Struct, TypeCategory.Guid);
+						return new TypeCategories(TypeCategory.Reference, TypeCategory.Interface, clrType.ElementType);
+					return new TypeCategories(TypeCategory.Reference, TypeCategory.Reference, clrType.ElementType);
+				case ClrElementType.Struct:
+					if (Utils.SameStrings(clrType.Name, "System.Decimal"))
+						return new TypeCategories(TypeCategory.Struct, TypeCategory.Decimal, clrType.ElementType);
+					if (Utils.SameStrings(clrType.Name, "System.DateTime"))
+						return new TypeCategories(TypeCategory.Struct, TypeCategory.DateTime, clrType.ElementType);
+					if (Utils.SameStrings(clrType.Name, "System.TimeSpan"))
+						return new TypeCategories(TypeCategory.Struct, TypeCategory.TimeSpan, clrType.ElementType);
+					if (Utils.SameStrings(clrType.Name, "System.Guid"))
+						return new TypeCategories(TypeCategory.Struct, TypeCategory.Guid, clrType.ElementType);
 					if (clrType.IsInterface)
-						return new KeyValuePair<TypeCategory, TypeCategory>(TypeCategory.Struct, TypeCategory.Interface);
-					return new KeyValuePair<TypeCategory, TypeCategory>(TypeCategory.Struct, TypeCategory.Struct);
-	            default:
-                    return new KeyValuePair<TypeCategory, TypeCategory>(TypeCategory.Primitive,TypeCategory.Uknown);
-	        }
-        }
+						return new TypeCategories(TypeCategory.Struct, TypeCategory.Interface, clrType.ElementType);
+					return new TypeCategories(TypeCategory.Struct, TypeCategory.Struct, clrType.ElementType);
+				default:
+					return new TypeCategories(TypeCategory.Primitive, TypeCategory.Uknown, clrType.ElementType);
+			}
+		}
 
-        //
-        // System.Decimal
-        //
+	}
 
-        public static string GetDecimalValue(ulong parentAddr, ClrInstanceField field)
+	public class ValueExtractor
+	{
+		//
+		// System.Decimal
+		//
+
+		public static string GetDecimalValue(ulong parentAddr, ClrInstanceField field)
 		{
 			var addr = field.GetAddress(parentAddr, true);
 			var flags = (int)field.Type.Fields[0].GetValue(addr);
@@ -114,7 +128,7 @@ namespace ClrMDRIndex
 			if (addr == 0UL) return Constants.NullName;
 			var lenBuf = new byte[4];
 			addr += (ulong)IntPtr.Size;
-			heap.ReadMemory(addr,lenBuf,0,4);
+			heap.ReadMemory(addr, lenBuf, 0, 4);
 			int len = BitConverter.ToInt32(lenBuf, 0) * sizeof(char);
 			var strBuf = new byte[len];
 			heap.ReadMemory(addr + 4, strBuf, 0, len);
@@ -137,24 +151,24 @@ namespace ClrMDRIndex
 			if (length < 1)
 				return Constants.EmptyStringValue;
 
-			var charArray = new char[length+2];
+			var charArray = new char[length + 2];
 
 			ClrInstanceField charInstanceField;
 			int charFieldOffset;
 			clrType.GetFieldForOffset(4, true, out charInstanceField, out charFieldOffset);
 			ulong offset = 0;
 			charArray[0] = '\"';
-			charArray[charArray.Length-1] = '\"';
+			charArray[charArray.Length - 1] = '\"';
 			for (var i = 0; i < length; ++i)
 			{
 				var charObject = charInstanceField.GetValue(addr + offset);
 				var unicodeChar = (char)charObject;
 				if (unicodeChar < 0x0020 || unicodeChar == 0x007F || unicodeChar > 0x1EFF)
 					unicodeChar = '?';
-				charArray[i+1] = unicodeChar;
+				charArray[i + 1] = unicodeChar;
 				offset += 2;
 			}
-			
+
 
 			return new string(charArray);
 		}
@@ -177,7 +191,7 @@ namespace ClrMDRIndex
 		public static string GetDateTimeValue(ulong addr, ClrInstanceField fld, bool internalPtr, string formatSpec = null)
 		{
 			ulong fldAddr = fld.GetAddress(addr, internalPtr);
-			var data = (ulong)fld.Type.Fields[0].GetValue(fldAddr,true);
+			var data = (ulong)fld.Type.Fields[0].GetValue(fldAddr, true);
 			data = data & TicksMask;
 			var dt = DateTime.FromBinary((long)data);
 			return formatSpec == null ? dt.ToString(CultureInfo.InvariantCulture) : dt.ToString(formatSpec);
@@ -237,7 +251,7 @@ namespace ClrMDRIndex
 			Debug.Assert(type.IsException);
 
 			var classNameObj = type.GetFieldByName("_className").GetValue(addr);
-			var classNameVal = classNameObj == null ? Constants.NullName : GetStringAtAddress((ulong)classNameObj,heap);
+			var classNameVal = classNameObj == null ? Constants.NullName : GetStringAtAddress((ulong)classNameObj, heap);
 
 			var messageObj = type.GetFieldByName("_message").GetValue(addr);
 			var messageVal = messageObj == null ? Constants.NullName : GetStringAtAddress((ulong)messageObj, heap);
@@ -370,14 +384,14 @@ namespace ClrMDRIndex
 		public static string GetPrimitiveValue(object obj, ClrElementType elemType)
 		{
 			if (ClrElementType.Float == elemType || ClrElementType.Double == elemType)
-					return string.Format("0.0000", (Double)obj);
+				return string.Format("0.0000", (Double)obj);
 
 			if (ClrElementType.Boolean == elemType)
 				return ((bool)obj).ToString();
 			if (ClrElementType.Char == elemType)
 				return ((char)obj).ToString();
 			if (ClrElementType.Int8 == elemType)
-					return ((Byte)obj).ToString();
+				return ((Byte)obj).ToString();
 			if (ClrElementType.Int16 == elemType)
 				return ((Int16)obj).ToString();
 			if (ClrElementType.Int32 == elemType)
@@ -393,7 +407,7 @@ namespace ClrMDRIndex
 			if (ClrElementType.UInt64 == elemType)
 				return ((UInt64)obj).ToString();
 			if (ClrElementType.Pointer == elemType)
-				return "pointer: " + $"{(UInt64) obj:x14}";
+				return "pointer: " + $"{(UInt64)obj:x14}";
 			if (ClrElementType.NativeInt == elemType)
 				return "native int: " + obj.ToString();
 			if (ClrElementType.NativeUInt == elemType)
@@ -410,61 +424,57 @@ namespace ClrMDRIndex
 		}
 
 
-	    public static string TryGetPrimitiveValue(ClrHeap heap, ulong classAddr, ClrInstanceField field, bool internalAddr)
-	    {
-	        var clrType = field.Type;
-	        var cat = GetTypeCategory(clrType);
-	        object addrObj;
-	        switch (cat.Key)
-	        {
-	            case TypeCategory.Reference:
-	                switch (cat.Value)
-	                {
-	                    case TypeCategory.String:
-	                        addrObj = field.GetValue(classAddr, internalAddr, false);
-	                        if (addrObj == null) return Constants.NullValue;
-	                        return ValueExtractor.GetStringValue(clrType, (ulong) addrObj);
-                        case TypeCategory.Exception:
-                            addrObj = field.GetValue(classAddr, internalAddr, false);
-                            if (addrObj == null) return Constants.NullName;
-	                        return ValueExtractor.GetShortExceptionValue((ulong) addrObj, clrType, heap);
-                        default:
-	                        return Constants.NonValue;
-	                }
-                case TypeCategory.Struct:
-	                switch (cat.Value)
-	                {
-                        case TypeCategory.Decimal:
-                            //addrObj = field.GetValue(classAddr, internalAddr, false);
-                            //if (addrObj == null) return Constants.NullName;
-                            return ValueExtractor.GetDecimalValue(classAddr, field);
-                        case TypeCategory.DateTime:
-                            //addrObj = field.GetValue(classAddr, internalAddr, false);
-                            //if (addrObj == null) return Constants.NullName;
-                            return ValueExtractor.GetDateTimeValue(classAddr, field, internalAddr, null);
-                        case TypeCategory.TimeSpan:
-                            addrObj = field.GetValue(classAddr, internalAddr, false);
-                            if (addrObj == null) return Constants.NullName;
-                            return ValueExtractor.GetTimeSpanValue((ulong)addrObj, clrType);
-                        case TypeCategory.Guid:
-                            addrObj = field.GetValue(classAddr, internalAddr, false);
-                            if (addrObj == null) return Constants.NullName;
-                            return ValueExtractor.GetDecimalValue((ulong)addrObj, clrType, null);
-                        default:
-	                        return Constants.NonValue;
-	                }
-                case TypeCategory.Primitive:
-                    addrObj = field.GetValue(classAddr, internalAddr, false);
-	                return ValueExtractor.GetPrimitiveValue(addrObj, clrType);
-                default:
-	                return Constants.NonValue;
-	        }
-        }
- 
-
-        public static void SetSegmentInterval(List<triple<bool, ulong, ulong>> intervals, ulong addr, ulong sz, bool free)
+		public static string TryGetPrimitiveValue(ClrHeap heap, ulong classAddr, ClrInstanceField field, bool internalAddr)
 		{
-			Debug.Assert(intervals.Count>0 && sz > 0ul);
+			var clrType = field.Type;
+			var cat = TypeCategories.GetCategories(clrType);
+			object addrObj;
+			switch (cat.First)
+			{
+				case TypeCategory.Reference:
+					switch (cat.Second)
+					{
+						case TypeCategory.String:
+							addrObj = field.GetValue(classAddr, internalAddr, false);
+							if (addrObj == null) return Constants.NullValue;
+							return ValueExtractor.GetStringValue(clrType, (ulong)addrObj);
+						case TypeCategory.Exception:
+							addrObj = field.GetValue(classAddr, internalAddr, false);
+							if (addrObj == null) return Constants.NullName;
+							return ValueExtractor.GetShortExceptionValue((ulong)addrObj, clrType, heap);
+						default:
+							return Constants.NonValue;
+					}
+				case TypeCategory.Struct:
+					switch (cat.Second)
+					{
+						case TypeCategory.Decimal:
+							return ValueExtractor.GetDecimalValue(classAddr, field);
+						case TypeCategory.DateTime:
+							return ValueExtractor.GetDateTimeValue(classAddr, field, internalAddr, null);
+						case TypeCategory.TimeSpan:
+							addrObj = field.GetValue(classAddr, internalAddr, false);
+							if (addrObj == null) return Constants.NullName;
+							return ValueExtractor.GetTimeSpanValue((ulong)addrObj, clrType);
+						case TypeCategory.Guid:
+							addrObj = field.GetValue(classAddr, internalAddr, false);
+							if (addrObj == null) return Constants.NullName;
+							return ValueExtractor.GetDecimalValue((ulong)addrObj, clrType, null);
+						default:
+							return Constants.NonValue;
+					}
+				case TypeCategory.Primitive:
+					addrObj = field.GetValue(classAddr, internalAddr, false);
+					return ValueExtractor.GetPrimitiveValue(addrObj, clrType);
+				default:
+					return Constants.NonValue;
+			}
+		}
+
+
+		public static void SetSegmentInterval(List<triple<bool, ulong, ulong>> intervals, ulong addr, ulong sz, bool free)
+		{
+			Debug.Assert(intervals.Count > 0 && sz > 0ul);
 			var lstNdx = intervals.Count - 1;
 			var last = intervals[lstNdx];
 			bool lastFree = last.First;
@@ -472,11 +482,11 @@ namespace ClrMDRIndex
 
 			var curLastAddr = addr + sz;
 			if (curLastAddr <= lastAddr) return; // ?
-			long diff=0L;
+			long diff = 0L;
 			if (addr > lastAddr)
 				diff = (long)addr - (long)lastAddr;
 			else if (addr < lastAddr)
-				diff = (long) lastAddr - (long) addr;
+				diff = (long)lastAddr - (long)addr;
 
 			if (lastFree && free) // append to last
 			{
@@ -489,8 +499,8 @@ namespace ClrMDRIndex
 			{
 				if (diff > 0)
 				{
-					intervals.Add(new triple<bool, ulong, ulong>(true,lastAddr,(ulong)diff));
-					intervals.Add(new triple<bool, ulong, ulong>(false,addr,sz));
+					intervals.Add(new triple<bool, ulong, ulong>(true, lastAddr, (ulong)diff));
+					intervals.Add(new triple<bool, ulong, ulong>(false, addr, sz));
 					return;
 				}
 				last.Third = curLastAddr - last.Second;

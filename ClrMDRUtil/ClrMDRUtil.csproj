@@ -118,6 +118,7 @@
     <Compile Include="Utils\StringCache.cs" />
     <Compile Include="Utils\StringIdDct.cs" />
     <Compile Include="Utils\TypeValue.cs" />
+    <Compile Include="Utils\UndoRedoList.cs" />
     <Compile Include="Utils\ValueString.cs" />
     <Compile Include="Utils\TempArena.cs" />
     <Compile Include="Utils\Tuples.cs" />

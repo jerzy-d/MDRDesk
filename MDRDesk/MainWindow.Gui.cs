@@ -47,6 +47,8 @@ namespace MDRDesk
 		private const string ReportNameTypesWithString = "TypesWithString";
 		private const string ReportTitleSizeInfo = "Type Size Information";
 		private const string ReportNameSizeInfo = "SizesInfo";
+		private const string ReportNameWeakReferenceInfo = "WeakReferenceInfo";
+		private const string ReportTitleWeakReferenceInfo = "WeakReference Information";
 		private const string ReportTitleInstRef = "Instance Refs";
 		private const string ReportNameInstRef = "InstRef";
 		private const string ReportTitleSizeDiffs = "Count;/Size Comp";
@@ -340,11 +342,50 @@ namespace MDRDesk
 			mainGrid.Name = "TypeValueReportSetupGrid__" + Utils.GetNewID();
             mainGrid.Tag = new TypeValuesQuery();
             TreeView treeView = UpdateTypeValueSetupGrid(dispType, mainGrid, null);
+			(treeView.Items[0] as TreeViewItem).BringIntoView();
 			var tab = new CloseableTabItem() { Header = Constants.BlackDiamond + " Type Value Setup", Content = mainGrid, Name = mainGrid.Name + "_tab" };
+			//ScrollViewer scroller = (ScrollViewer)this.FindVisualChildElement(treeView.uxTree, typeof(ScrollViewer));
+			//var scrollViewer = treeView.Template.FindName("_tv_scrollviewer_", treeView) as ScrollViewer;
+			//if (scrollViewer != null)
+			//	scrollViewer.ScrollToHome();
 			MainTab.Items.Add(tab);
 			MainTab.SelectedItem = tab;
 			MainTab.UpdateLayout();
 		}
+
+		//private FrameworkElement FindVisualChildElement(DependencyObject element, Type childType)
+		//{
+		//	int count = VisualTreeHelper.GetChildrenCount(element);
+
+		//	for (int i = 0; i < count; i++)
+		//	{
+		//		var dependencyObject = VisualTreeHelper.GetChild(element, i);
+		//		var fe = (FrameworkElement)dependencyObject;
+
+		//		if (fe.GetType() == childType)
+		//		{
+		//			return fe;
+		//		}
+
+		//		FrameworkElement ret = null;
+
+		//		if (fe.GetType().Equals(typeof(ScrollViewer)))
+		//		{
+		//			ret = FindVisualChildElement((fe as ScrollViewer).Content as FrameworkElement, childType);
+		//		}
+		//		else
+		//		{
+		//			ret = FindVisualChildElement(fe, childType);
+		//		}
+
+		//		if (ret != null)
+		//		{
+		//			return ret;
+		//		}
+		//	}
+
+		//	return null;
+		//}
 
 		private TreeView UpdateTypeValueSetupGrid(ClrtDisplayableType dispType, Grid mainGrid, TreeViewItem root)
 		{
@@ -378,7 +419,8 @@ namespace MDRDesk
 				treeView.Items.Add(root);
 			}
 			root.ExpandSubtree();
-			treeView.UpdateLayout();
+			root.BringIntoView();
+			//treeView.UpdateLayout();
 			return treeView;
 		}
 
@@ -403,11 +445,15 @@ namespace MDRDesk
             Debug.Assert(curSelectionInfo != null);
             if (curSelectionInfo.CurrentTreeViewItem != null)
             {
-                string header = curSelectionInfo.CurrentTreeViewItem.Header as string;
-                Debug.Assert(header!=null);
-                curSelectionInfo.CurrentTreeViewItem.Header = (header[0] == Constants.HeavyCheckMark)
-                    ? header.Substring(2)
-                    : Constants.HeavyCheckMarkHeader + header;
+	            var dispType = curSelectionInfo.CurrentTreeViewItem.Tag as ClrtDisplayableType;
+				Debug.Assert(dispType!=null);
+				dispType.ToggleGetValue();
+				curSelectionInfo.CurrentTreeViewItem.Header = dispType.ToString();
+				//string header = curSelectionInfo.CurrentTreeViewItem.Header as string;
+    //            Debug.Assert(header!=null);
+    //            curSelectionInfo.CurrentTreeViewItem.Header = (header[0] == Constants.HeavyCheckMark)
+    //                ? header.Substring(2)
+    //                : Constants.HeavyCheckMarkHeader + header;
 
             }
         }
@@ -446,8 +492,14 @@ namespace MDRDesk
                 if (dlgResult==true)
                 {
                     string val = dlg.Value;
-                    string header = curSelectionInfo.CurrentTreeViewItem.Header as string;
-                    curSelectionInfo.CurrentTreeViewItem.Header = SetFilterChar(header, true);
+
+					var dispType = curSelectionInfo.CurrentTreeViewItem.Tag as ClrtDisplayableType;
+					Debug.Assert(dispType != null);
+					dispType.SetFilter(new FilterValue(val,true));
+					curSelectionInfo.CurrentTreeViewItem.Header = dispType.ToString();
+
+					//string header = curSelectionInfo.CurrentTreeViewItem.Header as string;
+     //               curSelectionInfo.CurrentTreeViewItem.Header = SetFilterChar(header, true);
                 }
 
                 //Debug.Assert(header != null);

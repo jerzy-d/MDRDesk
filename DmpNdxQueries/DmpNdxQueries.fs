@@ -218,11 +218,11 @@ module FQry =
         let clrType = heap.GetObjectType(addr)
         let typeInfo = ndxInfo.GetTypeNameAndIdAtAddr(addr)
         let typeCats = getTypeCategory clrType
-        Debug.Assert((fst typeCats) = TypeCategory.Struct)
+        Debug.Assert(typeCats.First = TypeCategory.Struct)
         let mutable getFieldsFlag = false;
         let mutable fldName = String.Empty
         let value =
-            match snd typeCats with
+            match typeCats.Second with
             | TypeCategory.Decimal  -> ValueExtractor.GetDecimalValue(addr,clrType,null)
             | TypeCategory.DateTime -> ValueExtractor.GetDateTimeValue(addr,clrType)
             | TypeCategory.TimeSpan -> ValueExtractor.GetTimeSpanValue(addr,clrType)
@@ -236,10 +236,10 @@ module FQry =
     let getInstanceClassValue (ndxInfo:IndexCurrentInfo) (heap:ClrHeap) (addr:address) : string * InstanceValue * ClrType =
         let clrType = heap.GetObjectType(addr)
         let typeInfo = ndxInfo.GetTypeNameAndIdAtAddr(addr)
-        let typeCats = getTypeCategory clrType
-        match fst typeCats with
+        let cats = getTypeCategory clrType
+        match cats.First with
         | TypeCategory.Reference ->
-            match snd typeCats with
+            match cats.Second with
             | TypeCategory.String ->
                 let strVal = ValueExtractor.GetStringValue(clrType,addr)
                 (null, new InstanceValue(typeInfo.Value, addr, typeInfo.Key, String.Empty, strVal), null)
@@ -330,14 +330,14 @@ module FQry =
                 let fld = clrType.Fields.[fldNdx]
                 let typeName = fieldTypeName fld
                 let typeId = ndxInfo.GetTypeId(typeName)
-                let cat = getTypeCategory fld.Type |> convertClrCategoryToValueExtractorPair
+                let cat = getTypeCategory fld.Type
                 dispTypes.[fldNdx] <- new ClrtDisplayableType(typeId, fldNdx, typeName, fld.Name, cat)
             dispType.AddFields(dispTypes)
 
     let getDisplayableType (ndxInfo:IndexCurrentInfo) (heap:ClrHeap) (addr: address) =
         let clrType = heap.GetObjectType(addr)
         let typeId = ndxInfo.GetTypeIdAtAddr(addr)
-        let cat = getTypeCategory clrType |> convertClrCategoryToValueExtractorPair
+        let cat = getTypeCategory clrType
         let dispType = new ClrtDisplayableType(typeId, Constants.InvalidIndex, clrType.Name, String.Empty, cat)
         getDisplayableTypeFields ndxInfo heap addr clrType dispType
         dispType
@@ -360,7 +360,7 @@ module FQry =
                 let mutable dispTypes:ClrtDisplayableType[] = Array.create count null
                 for fldNdx in [0..count-1] do
                     let fld = fld.Type.Fields.[fldNdx]
-                    let cat = getTypeCategory clrType |> convertClrCategoryToValueExtractorPair
+                    let cat = getTypeCategory clrType
                     let typeId = ndxInfo.GetTypeId(fld.Type.Name)
                     dispTypes.[fldNdx] <-  new ClrtDisplayableType(typeId, fldNdx, fld.Type.Name, fld.Name, cat)
                 (null, dispTypes)
@@ -369,35 +369,54 @@ module FQry =
         Type values data.
     *)
 
-    let getTypeFieldValue (ndxInfo:IndexCurrentInfo) (heap:ClrHeap) (addr:address) (clrType:ClrType) (fld:ClrInstanceField) : (address * string) =
-        (0UL,String.Empty)
+    let getTypeFieldValue (ndxInfo:IndexCurrentInfo) (heap:ClrHeap) (addr:address) (clrType:ClrType) (fld:ClrInstanceField) : (address * obj) =
+        (0UL,null)
 
     let rec getFieldValues (ndxInfo:IndexCurrentInfo) (heap:ClrHeap) (clrType:ClrType) (addr:address) (fields:ResizeArray<FieldValue>) =
         match fields with
         | null -> ()
         | _ ->
             for fld in fields do
+                
                 let fldAddr, fldValue = getTypeFieldValue ndxInfo heap addr clrType fld.InstField
                 getFieldValues ndxInfo heap fld.ClType fldAddr fld.Fields
             ()
 
-    let rec acceptFilter (ndxInfo:IndexCurrentInfo) (heap:ClrHeap) (clrType:ClrType) (addr:address) (filters:ResizeArray<FieldFilter>) (accept:bool) =
-        match filters with
+    let rec acceptFilter (ndxInfo:IndexCurrentInfo) (heap:ClrHeap) (clrType:ClrType) (addr:address) (fields:ResizeArray<FieldValue>) (accept:bool) =
+        match fields with
         | null -> accept
         | _ ->
             let mutable curAccept = accept
-            for filter in filters do
-                let fldAddr, fldValue = getTypeFieldValue ndxInfo heap addr clrType filter.InstField
-                curAccept <- filter.Accept(fldValue,accept)
-                acceptFilter ndxInfo heap filter.ClType fldAddr filter.Filters curAccept |> ignore
+            for fld in fields do
+                let fldAddr, fldValue = getTypeFieldValue ndxInfo heap addr clrType fld.InstField
+                curAccept <- fld.Accept(fldValue,accept)
+                acceptFilter ndxInfo heap fld.ClType fldAddr fld.Fields curAccept |> ignore
             curAccept
 
-    let getTypeValuesAtAddresses (ndxInfo:IndexCurrentInfo) (heap:ClrHeap) (clrType:ClrType) (typeValue: TypeValue) (typeFilter:TypeFilter) (addresses:(address array)) =
+    let rec findFilter (fields:ResizeArray<FieldValue>) (found:bool) =
+        match found with 
+        | true -> true
+        | _ -> 
+            let mutable curFound = false
+            for fld in fields do
+                curFound <- if fld.HasFilter() then true else curFound
+                match curFound with
+                | true -> ()
+                | _ -> if fld.HasFields() 
+                           then findFilter fld.Fields curFound |> ignore
+                           else ()
+            curFound
+            
+    let hasFilter' (fields:ResizeArray<FieldValue>) =
+        findFilter fields false
+
+    let getTypeValuesAtAddresses (ndxInfo:IndexCurrentInfo) (heap:ClrHeap) (clrType:ClrType) (typeValue: TypeValue) (addresses:(address array)) =
         let mutable error:string = null
         let mutable allWell = true
         let mutable ndx:int32 = 0
         let fieldValues = typeValue.Fields
+        let hasFilter = hasFilter' fieldValues
         for addr in addresses do
-            if acceptFilter ndxInfo heap clrType addr typeFilter.Filters true then
+            if hasFilter && acceptFilter ndxInfo heap clrType addr typeValue.Fields true then
                 getFieldValues ndxInfo heap clrType addr typeValue.Fields
         ()

@@ -218,10 +218,11 @@
         </Grid>
         <Grid x:Key="ListViewBottomGrid" x:Shared="False">
             <Grid.RowDefinitions>
-                <RowDefinition Height="80*"/>
-                <RowDefinition Height="Auto"/>
-                <RowDefinition Height="Auto"/>
-                <RowDefinition Height="20*"/>
+                <RowDefinition Height="70*"/>
+                <RowDefinition Height="5"/>
+                <RowDefinition Height="5*"/>
+                <RowDefinition Height="5"/>
+                <RowDefinition Height="15*"/>
             </Grid.RowDefinitions>
             <ListView  Name="TopListView" Grid.Row="0" VerticalAlignment="Stretch" HorizontalAlignment="Stretch" Margin="2,2,2,2" GridViewColumnHeader.Click="ListViewBottomGridHeaderClick">
                 <ListView.ItemContainerStyle>
@@ -234,12 +235,13 @@
                     </GridView>
                 </ListView.View>
             </ListView>
-            <Expander x:Name="ExtraDataExpander" Margin="0,7,0,0" DockPanel.Dock="Bottom" Header="..." Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="2">
+            <GridSplitter Grid.Row="1" VerticalAlignment="Center" HorizontalAlignment="Stretch" Height="5" ShowsPreview="False" Background="DarkGray"></GridSplitter>
+            <Expander x:Name="ExtraDataExpander" Margin="0,7,0,0" DockPanel.Dock="Bottom" Header="..." Grid.Row="2" Grid.Column="0" Grid.ColumnSpan="2">
                 <DockPanel x:Name="ExtraDataExpanderPanel" Margin="3" LastChildFill="True">
                 </DockPanel>
             </Expander>
-            <GridSplitter Grid.Row="2" VerticalAlignment="Center" HorizontalAlignment="Stretch" Height="5" ShowsPreview="False" Background="DarkGray"></GridSplitter>
-            <Grid Name="BottomGrid" Row="3" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" Margin="2,2,2,2">
+            <GridSplitter Grid.Row="3" VerticalAlignment="Center" HorizontalAlignment="Stretch" Height="5" ShowsPreview="False" Background="DarkGray"></GridSplitter>
+            <Grid Name="BottomGrid" Row="4" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" Margin="2,2,2,2">
             </Grid>
         </Grid>
         <Grid x:Key="InstanceHierarchyGrid"  x:Shared="False">
@@ -380,6 +382,7 @@
                         <MenuItem x:Name="IndexShowModuleInfos" Header="Show Loaded Modules Infos" Click="IndexShowModuleInfosClicked"/>
                         <MenuItem x:Name="IndexShowFinalizerQueue" Header="Show Finalizer Queue" Click="IndexShowFinalizerQueueClicked"/>
                         <MenuItem x:Name="IndexShowRoots" Header="Show Roots" Click="IndexShowRootsClicked"/>
+                        <MenuItem x:Name="IndexShowWeakReferences" Header="Show WeakReference Instances" Click="IndexShowWeakReferencesClicked"/>
                         <MenuItem x:Name="IndexGetSizeInformation" Header="Type Sizes Information" Click="IndexGetSizeInformationClicked"/>
                         <MenuItem x:Name="IndexStringUsage" Header="String Usage" Click="IndexStringUsageClicked"/>
                         <MenuItem x:Name="IndexStringUsageGen" Header="String Usage with GC Generations" Click="IndexStringUsageClicked"/>
@@ -430,24 +433,7 @@
                 <Label x:Name="LbCurrentAdHocDump" HorizontalAlignment="Right" Width="Auto" VerticalAlignment="Center" Content="{Binding ElementName=CbAdHocDump, Path=SelectedItem}"></Label>
                 -->
              </Menu>
-            <!--Button Name="btnWriteReport" >
-                    <Image Source="/images/WriteToHistory_32x.png" ToolTip="Write detailed report" ToolTipService.HasDropShadow="True" Stretch="None"></Image>
-            </Button-->
             </ToolBar>
-            <!--<ToolBar HorizontalAlignment="Stretch">
-            <Label x:Name="LbCurrentAdHocDump" HorizontalAlignment="Left" Width="Auto" VerticalAlignment="Center" Content="Ad-hoc dump:" FontFamily="Consolas" FontSize="14" FontWeight="Bold" FontStyle="Italic" Foreground="DarkGreen"></Label>
-
-            --><!--<ComboBox x:Name="CbAdHocDump" HorizontalAlignment="Right" Width="Auto"
-                              ItemsSource="{StaticResource RecentDumps}"
-                              Text="{Binding ElementName=CbAdHocDump, Path=SelectedItem}"
-                              SelectedIndex="0"
-                              SelectionChanged="RecentDumpSelectionClicked"
-                              VerticalAlignment="Stretch"
-                              FontFamily="Consolas" FontSize="14"
-                              Style="{StaticResource comboBoxStyle}"
-                              
-                              />--><!--
-            </ToolBar>-->
             <ToolBar HorizontalAlignment="Right">
             <Label x:Name="ProcessMemory" HorizontalAlignment="Right" HorizontalContentAlignment="Right"  VerticalAlignment="Center" Content="Working Set (Memory)" FontFamily="Consolas" FontSize="11" FontWeight="Bold" FontStyle="Italic" Foreground="Brown">
                 <Label.ToolTip>

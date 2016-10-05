@@ -471,8 +471,35 @@ namespace MDRDesk
 
 		private void IndexShowRootsClicked(object sender, RoutedEventArgs e)
 		{
+			if (!IsIndexAvailable("Show Roots")) return;
 
 		}
+
+		private async void IndexShowWeakReferencesClicked(object sender, RoutedEventArgs e)
+		{
+			if (!IsIndexAvailable("Show Weak References")) return;
+
+			SetStartTaskMainWindowState("Getting WeakReference information, please wait...");
+			var result = await Task.Run(() =>
+			{
+				string error;
+				var info = CurrentMap.GetWeakReferenceInfo(out error);
+				return error == null ? info : new ListingInfo(error);
+			});
+
+			SetEndTaskMainWindowState(result.Error == null
+				? "Getting WeakReference information done."
+				: "Getting WeakReference information failed.");
+
+			if (result.Error != null)
+			{
+				MessageBox.Show(result.Error, "Getting WeakReference Information Failed", MessageBoxButton.OK, MessageBoxImage.Error);
+				return;
+			}
+
+			DisplayListViewBottomGrid(result, Constants.BlackDiamond, ReportNameWeakReferenceInfo, ReportTitleWeakReferenceInfo);
+		}
+
 
 		private async void IndexGetSizeInformationClicked(object sender, RoutedEventArgs e)
 		{
@@ -1962,7 +1989,5 @@ namespace MDRDesk
 				return;
 			}
 		}
-
- 
-    }
+	}
 }

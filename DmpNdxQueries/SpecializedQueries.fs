@@ -63,7 +63,7 @@ module SpecializedQueries =
                             elemType
         ary
 
-    (* System.WeakReference *)
+    (*** System.WeakReference *)
 
     /// <summary>
     /// Get all references of WeakReference instances.
@@ -89,7 +89,7 @@ module SpecializedQueries =
         with
             | exn -> (exn.ToString(),null)
 
-    (* System.Text.StringBuilder *)
+    (*** System.Text.StringBuilder *)
 
     let getStringBuilderTypeAndFields (heap:ClrHeap) (addr:address) : (ClrType*ClrInstanceField*ClrInstanceField*ClrInstanceField*ClrInstanceField) =
         let clrType = heap.GetObjectType(addr)
@@ -219,7 +219,7 @@ module SpecializedQueries =
             index <- index + 1
         result
 
-    let rec getConcurrentDictionaryNodeContent (heap:ClrHeap) (addr:address) (clrType:ClrType) (m_next:ClrInstanceField) (m_key:ClrInstanceField) (m_keyCat:ClrCategory) (m_value:ClrInstanceField) (m_valueCat:ClrCategory) (values:ResizeArray<KeyValuePair<string,string>>) =
+    let rec getConcurrentDictionaryNodeContent (heap:ClrHeap) (addr:address) (clrType:ClrType) (m_next:ClrInstanceField) (m_key:ClrInstanceField) (m_keyCat:TypeCategories) (m_value:ClrInstanceField) (m_valueCat:TypeCategories) (values:ResizeArray<KeyValuePair<string,string>>) =
         let m_keyValue = getFieldValue heap m_key m_keyCat addr false
         let m_valueValue = getFieldValue heap m_value m_valueCat addr false
         values.Add(new KeyValuePair<string,string>(m_keyValue,m_valueValue))

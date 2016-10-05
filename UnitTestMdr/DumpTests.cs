@@ -2056,10 +2056,252 @@ namespace UnitTestMdr
 			string typeName = @"ECS.Common.HierarchyCache.Structure.RealPosition";
 			string symbolName = @"4578 JP";
 			string error = null;
-			//using (var clrDump = GetDump(@"D:\Jerzy\WinDbgStuff\dumps\Analytics\Scopia\Eze.Analytics.Svc_160921_134355.dmp"))
+
 			using (var clrDump = GetDump(@"D:\Jerzy\WinDbgStuff\dumps\Analytics\Scopia\Eze.Analytics.Svc_160929_103505.dmp"))
 			{
-				var addrLst = new List<sextuple<ulong, string, string, string, string,string>>(1024);
+				var addrLst = new List<String[]>(1024);
+				try
+				{
+					var runtime = clrDump.Runtimes[0];
+					var heap = runtime.GetHeap();
+					var segs = heap.Segments;
+					for (int i = 0, icnt = segs.Count; i < icnt; ++i)
+					{
+						var seg = segs[i];
+						ulong addr = seg.FirstObject;
+						while (addr != 0ul)
+						{
+							var clrType = heap.GetObjectType(addr);
+							if (clrType == null || !Utils.SameStrings(clrType.Name, typeName)) goto NEXT_OBJECT;
+							string[] data = new string[7];
+							data[0] = Utils.AddressString(addr);
+
+							var fld = clrType.GetFieldByName("posID");
+							if (fld == null) goto NEXT_OBJECT;
+							data[1] = (string)fld.GetValue(addr, false, true);
+							 
+							var prtcd = clrType.GetFieldByName("portcd");
+							data[2] = (string)prtcd.GetValue(addr, false, true);
+
+							fld = clrType.GetFieldByName("sec");
+							object faddrObj = fld.GetValue(addr, false, false);
+							ulong faddr = (ulong?) faddrObj ?? 0UL;
+							string sval;
+							if (faddr == 0UL)
+							{
+								sval = Constants.NullValue;
+							}
+							else
+							{
+								var fld2 = fld.Type.GetFieldByName("securitySimpleState");
+								var faddr2 = (ulong)fld2.GetValue(faddr, false);
+								var fld3 = fld2.Type.GetFieldByName("Symbol");
+								sval = (string)fld3.GetValue(faddr2, false, true);
+							}
+							data[3] = sval;
+
+							fld = clrType.GetFieldByName("filledAmount");
+							faddr = (ulong)fld.GetAddress(addr, true);
+							data[4] = ValueExtractor.GetDecimalValue(faddr, fld.Type, "0,0.00");
+							
+							fld = clrType.GetFieldByName("netcost");
+							faddr = (ulong)fld.GetAddress(addr, true);
+							data[5] = ValueExtractor.GetDecimalValue(faddr, fld.Type, "0,0.00");
+
+							fld = clrType.GetFieldByName("tradeState");
+							data[6] = (string)fld.GetValue(addr, false, true);
+
+							addrLst.Add(data);
+
+							NEXT_OBJECT:
+							addr = seg.NextObject(addr);
+						}
+					}
+
+					StreamWriter wr = null;
+					try
+					{
+						Tuple<string, string> dmpFolders = DumpFileMoniker.GetAndCreateMapFolders(clrDump.DumpPath, out error);
+
+						var path = dmpFolders.Item2 + @"\RealPositions.160929_103505.dmp.txt";
+
+						wr = new StreamWriter(path);
+
+						wr.WriteLine("### MDRDESK REPORT: RealPosition");
+						wr.WriteLine("### TITLE: RealPosition");
+						wr.WriteLine("### COUNT: " + Utils.LargeNumberString(addrLst.Count));
+						wr.WriteLine("### COLUMNS: Address|ulong \u271A posID|string \u271A portcd|string \u271A Symbol|string \u271A filledAmount|string \u271A netcost|string \u271A tradeState|string");
+						wr.WriteLine("### SEPARATOR:  \u271A ");
+						wr.WriteLine("#### RealPosition count: " + Utils.LargeNumberString(addrLst.Count));
+
+						for (int i = 0, icnt = addrLst.Count; i < icnt; ++i)
+						{
+							wr.Write(addrLst[i][0] + Constants.HeavyGreekCrossPadded);
+							wr.Write(addrLst[i][1] + Constants.HeavyGreekCrossPadded);
+							wr.Write(addrLst[i][2] + Constants.HeavyGreekCrossPadded);
+							wr.Write(addrLst[i][3] + Constants.HeavyGreekCrossPadded);
+							wr.Write(addrLst[i][4] + Constants.HeavyGreekCrossPadded);
+							wr.Write(addrLst[i][5] + Constants.HeavyGreekCrossPadded);
+							wr.WriteLine(addrLst[i][6]);
+						}
+						wr.Close();
+						wr = null;
+					}
+					finally
+					{
+						wr?.Close();
+					}
+				}
+				catch (Exception ex)
+				{
+					error = Utils.GetExceptionErrorString(ex);
+					Assert.IsTrue(false, error);
+				}
+			}
+		}
+
+		[TestMethod]
+		public void TestSpecificFilteredType2()
+		{
+			string typeName = @"ECS.Common.HierarchyCache.Structure.CashEffectPosition";
+			ulong searchAddr = 0x005df72795d8;
+			//ulong searchAddr = 0x005df72794e0;
+			string error = null;
+			//using (var clrDump = GetDump(@"D:\Jerzy\WinDbgStuff\dumps\Analytics\Scopia\Eze.Analytics.Svc_160921_134355.dmp"))
+			using (var clrDump = GetDump(@"D:\Jerzy\WinDbgStuff\dumps\Analytics\Scopia\Eze.Analytics.Svc_160929_103505.dmp"))
+			//using (var clrDump = GetDump(@"D:\Jerzy\WinDbgStuff\dumps\Analytics\Scopia\Eze.Analytics.Svc_160929_110751.dmp"))
+			{
+				var addrLst = new List<string[]>(1024);
+				try
+				{
+					var runtime = clrDump.Runtimes[0];
+					var heap = runtime.GetHeap();
+					var segs = heap.Segments;
+					for (int i = 0, icnt = segs.Count; i < icnt; ++i)
+					{
+						var seg = segs[i];
+						ulong addr = seg.FirstObject;
+						while (addr != 0ul)
+						{
+							var clrType = heap.GetObjectType(addr);
+							if (clrType == null || !Utils.SameStrings(clrType.Name, typeName)) goto NEXT_OBJECT;
+
+							string[] data = new string[5];
+							data[0] = Utils.AddressString(addr);
+
+							var fld = clrType.GetFieldByName("positionID");
+							data[1] = (string)fld.GetValue(addr, false, true);
+
+							var prtcd = clrType.GetFieldByName("nonCashPositionID");
+							data[2] = (string)prtcd.GetValue(addr, false, true);
+
+							fld = clrType.GetFieldByName("affectedPosition");
+							object foundAddrObj = fld.GetValue(addr, false, false);
+							ulong foundAddr = foundAddrObj == null ? 0UL : (ulong)foundAddrObj;
+							data[3] = Utils.AddressString(foundAddr);
+
+
+							fld = clrType.GetFieldByName("cashEffectSecurity");
+							foundAddrObj = fld.GetValue(addr, false,false);
+							ulong faddr = foundAddrObj == null ? 0UL : (ulong) foundAddrObj;
+							string sval = Constants.NullValue;
+							if (faddr != 0UL)
+							{
+								var fld2 = fld.Type.GetFieldByName("securitySimpleState");
+								var faddr2 = (ulong)fld2.GetValue(faddr, false);
+								var fld3 = fld2.Type.GetFieldByName("Symbol");
+								sval = (string)fld3.GetValue(faddr2, false, true);
+							}
+							data[4] = sval;
+
+							addrLst.Add(data);
+
+							NEXT_OBJECT:
+							addr = seg.NextObject(addr);
+						}
+					}
+
+					//addrLst.Sort(new SextupleUlongStrStrCmp2());
+					StreamWriter wr = null;
+					try
+					{
+						Tuple<string, string> dmpFolders = DumpFileMoniker.GetAndCreateMapFolders(clrDump.DumpPath, out error);
+
+						var path = dmpFolders.Item2 + @"\CashEffectPosition.160929_110751.dmp.txt";
+
+						wr = new StreamWriter(path);
+
+						wr.WriteLine("### MDRDESK REPORT: CashEffectPosition");
+						wr.WriteLine("### TITLE: CashEffectPosition");
+						wr.WriteLine("### COUNT: " + Utils.LargeNumberString(addrLst.Count));
+						wr.WriteLine("### COLUMNS: Address|ulong \u271A positionID|string \u271A nonCashPositionID|string \u271A affectedPosition|string \u271A cashEffectSecurity|string");
+						wr.WriteLine("### SEPARATOR:  \u271A ");
+						wr.WriteLine("#### CashEffectPosition count: " + Utils.LargeNumberString(addrLst.Count));
+
+						for (int i = 0, icnt = addrLst.Count; i < icnt; ++i)
+						{
+							wr.Write(addrLst[i][0] + Constants.HeavyGreekCrossPadded);
+							wr.Write(addrLst[i][1] + Constants.HeavyGreekCrossPadded);
+							wr.Write(addrLst[i][2] + Constants.HeavyGreekCrossPadded);
+							wr.Write(addrLst[i][3] + Constants.HeavyGreekCrossPadded);
+							wr.WriteLine(addrLst[i][4]);
+						}
+						wr.Close();
+						wr = null;
+					}
+					finally
+					{
+						wr?.Close();
+					}
+				}
+				catch (Exception ex)
+				{
+					error = Utils.GetExceptionErrorString(ex);
+					Assert.IsTrue(false, error);
+				}
+			}
+		}
+
+		[TestMethod]
+		public void TestSpecificFilteredType3()
+		{
+			string typeName = @"ECS.Common.HierarchyCache.Structure.RealPosition";
+			string symbolName = @"4578 JP";
+			string error = null;
+			//using (var clrDump = GetDump(@"D:\Jerzy\WinDbgStuff\dumps\Analytics\Scopia\Eze.Analytics.Svc_160921_134355.dmp"))
+
+			HashSet<string> posIdDct = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
+			{
+				"T150579455",
+				"T150579453",
+				"T150579452",
+				"T150579450",
+				"T150579449",
+				"T150579447",
+				"T150579446",
+				"T150579454",
+				"T150579451",
+				"T150579448",
+				"T150569223",
+				"T150569224",
+				"H150569223",
+				"H150569224",
+"T150579493",
+"T150579490",
+"T150579488",
+"T150579836",
+"T150579845",
+"T150579840",
+"T150579797"
+			};
+
+
+
+
+
+			using (var clrDump = GetDump(@"D:\Jerzy\WinDbgStuff\dumps\Analytics\Scopia\Eze.Analytics.Svc_160929_103505.dmp"))
+			{
+				var addrLst = new List<sextuple<ulong, string, string, string, string, string>>(1024);
 				try
 				{
 					var runtime = clrDump.Runtimes[0];
@@ -2076,7 +2318,7 @@ namespace UnitTestMdr
 							var fld = clrType.GetFieldByName("posID");
 							if (fld == null) goto NEXT_OBJECT;
 							var val = (string)fld.GetValue(addr, false, true);
-							if (val == null || val.Length < 2 || !(val[0] == 'T' && char.IsDigit(val[1]))) goto NEXT_OBJECT;
+							if (val == null || !posIdDct.Contains(val.Trim())) goto NEXT_OBJECT;
 
 							var prtcd = clrType.GetFieldByName("portcd");
 							var prtcdVal = (string)prtcd.GetValue(addr, false, true);
@@ -2088,7 +2330,7 @@ namespace UnitTestMdr
 							var fld3 = fld2.Type.GetFieldByName("Symbol");
 							var sval = (string)fld3.GetValue(faddr2, false, true);
 
-							if (string.Compare(symbolName, sval, StringComparison.OrdinalIgnoreCase) != 0) goto NEXT_OBJECT;
+							//if (string.Compare(symbolName, sval, StringComparison.OrdinalIgnoreCase) != 0) goto NEXT_OBJECT;
 
 							fld = clrType.GetFieldByName("filledAmount");
 							faddr = (ulong)fld.GetAddress(addr, true);
@@ -2103,7 +2345,7 @@ namespace UnitTestMdr
 
 
 
-							addrLst.Add(new sextuple<ulong, string, string, string, string,string>(addr, val, fval, nval, tstate, prtcdVal));
+							addrLst.Add(new sextuple<ulong, string, string, string, string, string>(addr, val, fval, nval, tstate, prtcdVal));
 
 							NEXT_OBJECT:
 							addr = seg.NextObject(addr);
@@ -2116,10 +2358,10 @@ namespace UnitTestMdr
 					{
 						Tuple<string, string> dmpFolders = DumpFileMoniker.GetAndCreateMapFolders(clrDump.DumpPath, out error);
 
-						var path = dmpFolders.Item2 + @"\4578 JP.RealPositions.160929_103505.dmp.txt";
+						var path = dmpFolders.Item2 + @"\SelectedIds.RealPositions.160929_103505.dmp.txt";
 
 						wr = new StreamWriter(path);
-						wr.WriteLine("### " + "4578 JP RealPosition" + " [" + addrLst.Count + "]" + "  ADDRESSES, FILLED AMOUNT, NETCOST, TRADESTATE, PORTFOLIO");
+						wr.WriteLine("### " + "Selected Ids RealPosition" + " [" + addrLst.Count + "]" + "  ADDRESSES, FILLED AMOUNT, NETCOST, TRADESTATE, PORTFOLIO");
 						for (int i = 0, icnt = addrLst.Count; i < icnt; ++i)
 						{
 							wr.Write(Utils.AddressStringHeader(addrLst[i].First));
@@ -2145,6 +2387,111 @@ namespace UnitTestMdr
 			}
 		}
 
+		[TestMethod]
+		public void TestSpecificFilteredType4()
+		{
+			string typeName = @"ECS.Common.HierarchyCache.Structure.CashEffectPosition";
+			string error = null;
+			//using (var clrDump = GetDump(@"D:\Jerzy\WinDbgStuff\dumps\Analytics\Scopia\Eze.Analytics.Svc_160921_134355.dmp"))
+			using (var clrDump = GetDump(@"D:\Jerzy\WinDbgStuff\dumps\Analytics\Scopia\Eze.Analytics.Svc_160929_103505.dmp"))
+			//using (var clrDump = GetDump(@"D:\Jerzy\WinDbgStuff\dumps\Analytics\Scopia\Eze.Analytics.Svc_160929_110751.dmp"))
+			{
+				var addrLst = new List<quintuple<ulong, string, string, string, string>>(1024);
+				try
+				{
+					var runtime = clrDump.Runtimes[0];
+					var heap = runtime.GetHeap();
+					var segs = heap.Segments;
+					for (int i = 0, icnt = segs.Count; i < icnt; ++i)
+					{
+						var seg = segs[i];
+						ulong addr = seg.FirstObject;
+						while (addr != 0ul)
+						{
+							var clrType = heap.GetObjectType(addr);
+							if (clrType == null || !Utils.SameStrings(clrType.Name, typeName)) goto NEXT_OBJECT;
+
+							var fld = clrType.GetFieldByName("cashEffectSecurity");
+							if (fld == null) goto NEXT_OBJECT;
+							var foundObj = fld.GetValue(addr, false, false);
+							ulong foundAddr = foundObj == null ? 0UL : (ulong)foundObj;
+							string foundAddrStr;
+							if (foundAddr == 0UL)
+							{
+								foundAddrStr = Utils.AddressString(foundAddr);
+							}
+							else goto NEXT_OBJECT;
+
+							fld = clrType.GetFieldByName("positionID");
+							if (fld == null) goto NEXT_OBJECT;
+							var val = (string)fld.GetValue(addr, false, true);
+							if (val == null || val.Length < 2 || !(val[0] == 'T' && char.IsDigit(val[1]))) goto NEXT_OBJECT;
+
+							var prtcd = clrType.GetFieldByName("nonCashPositionID");
+							var prtcdVal = (string)prtcd.GetValue(addr, false, true);
+
+							//fld = clrType.GetFieldByName("cashEffectSecurity");
+							//ulong faddr = (ulong)fld.GetValue(addr, false);
+							//var fld2 = fld.Type.GetFieldByName("securitySimpleState");
+							//var faddr2 = (ulong)fld2.GetValue(faddr, false);
+							//var fld3 = fld2.Type.GetFieldByName("Symbol");
+							//var sval = (string)fld3.GetValue(faddr2, false, true);
+
+							////if (string.Compare(symbolName, sval, StringComparison.OrdinalIgnoreCase) != 0) goto NEXT_OBJECT;
+
+							//fld = clrType.GetFieldByName("filledAmount");
+							//faddr = (ulong)fld.GetAddress(addr, true);
+							//var fval = ValueExtractor.GetDecimalValue(faddr, fld.Type, "0,0.00");
+
+							//fld = clrType.GetFieldByName("netcost");
+							//faddr = (ulong)fld.GetAddress(addr, true);
+							//var nval = ValueExtractor.GetDecimalValue(faddr, fld.Type, "0,0.00");
+
+							//fld = clrType.GetFieldByName("tradeState");
+							//var tstate = (string)fld.GetValue(addr, false, true);
+
+
+
+							addrLst.Add(new quintuple<ulong, string, string, string, string>(addr, foundAddrStr, "???", val, prtcdVal));
+
+							NEXT_OBJECT:
+							addr = seg.NextObject(addr);
+						}
+					}
+
+					//addrLst.Sort(new SextupleUlongStrStrCmp2());
+					StreamWriter wr = null;
+					try
+					{
+						Tuple<string, string> dmpFolders = DumpFileMoniker.GetAndCreateMapFolders(clrDump.DumpPath, out error);
+
+						var path = dmpFolders.Item2 + @"\CashEffectPositionWithNull.160929_103505.dmp.txt";
+
+						wr = new StreamWriter(path);
+						wr.WriteLine("### " + "CashEffectPosition" + " [" + addrLst.Count + "]" + "  ADDRESSES, affectedPosition, Symbol, positionID, nonCashPositionID");
+						for (int i = 0, icnt = addrLst.Count; i < icnt; ++i)
+						{
+							wr.Write(Utils.AddressStringHeader(addrLst[i].First));
+							wr.Write(addrLst[i].Second + "  ");
+							wr.Write(addrLst[i].Third + " ");
+							wr.Write(addrLst[i].Forth + " ");
+							wr.WriteLine(addrLst[i].Fifth);
+						}
+						wr.Close();
+						wr = null;
+					}
+					finally
+					{
+						wr?.Close();
+					}
+				}
+				catch (Exception ex)
+				{
+					error = Utils.GetExceptionErrorString(ex);
+					Assert.IsTrue(false, error);
+				}
+			}
+		}
 		public class TripleUlongStrStrCmp2 : IComparer<triple<ulong, string, string>>
 		{
 			public int Compare(triple<ulong, string, string> a, triple<ulong, string, string> b)
