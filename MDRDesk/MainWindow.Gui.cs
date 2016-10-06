@@ -509,13 +509,18 @@ namespace MDRDesk
             }
         }
 
-        private void DisplayInstanceHierarchyGrid(Tuple<InstanceValue, AncestorDispRecord[]> instanceInfo)
+		#region Instance Hierarchy Traversing
+
+		private void DisplayInstanceHierarchyGrid(Tuple<InstanceValue, AncestorDispRecord[]> instanceInfo)
 		{
             var mainGrid = this.TryFindResource("InstanceHierarchyGrid") as Grid;
             Debug.Assert(mainGrid != null);
             mainGrid.Name = "InstanceHierarchyGrid__" + Utils.GetNewID();
+			var undoRedoList = new UndoRedoList<Tuple<InstanceValue, AncestorDispRecord[]>>(new InstanceHierarchyInfoEqCmp());
+			undoRedoList.AddToUndo(instanceInfo);
+			mainGrid.Tag = undoRedoList;
 
-		    var ancestorList = UpdateInstanceHierarchyGrid(instanceInfo, mainGrid);
+			var ancestorList = UpdateInstanceHierarchyGrid(instanceInfo, mainGrid);
 
 			var tab = new CloseableTabItem() { Header = Constants.BlackDiamond + " Instance Hierarchy", Content = mainGrid, Name = "InstanceHierarchyGrid" };
 			MainTab.Items.Add(tab);
@@ -625,6 +630,8 @@ namespace MDRDesk
                 }
 
                 var mainGrid = GetCurrentTabGrid();
+				Debug.Assert(mainGrid.Tag is UndoRedoList<Tuple<InstanceValue, AncestorDispRecord[]>>);
+				((UndoRedoList<Tuple<InstanceValue, AncestorDispRecord[]>>) mainGrid.Tag).AddToUndo(result.Item2);
                 var ancestorList = UpdateInstanceHierarchyGrid(result.Item2, mainGrid);
                 ancestorList.SelectedIndex = 0;
 
@@ -658,7 +665,9 @@ namespace MDRDesk
                 }
 
                 var mainGrid = GetCurrentTabGrid();
-                var ancestorList = UpdateInstanceHierarchyGrid(result.Item2, mainGrid);
+				Debug.Assert(mainGrid.Tag is UndoRedoList<Tuple<InstanceValue, AncestorDispRecord[]>>);
+				((UndoRedoList<Tuple<InstanceValue, AncestorDispRecord[]>>)mainGrid.Tag).AddToUndo(result.Item2);
+				var ancestorList = UpdateInstanceHierarchyGrid(result.Item2, mainGrid);
                 ancestorList.SelectedIndex = 0;
 
                 SetEndTaskMainWindowState("Getting instance info" + ", DONE.");
@@ -666,11 +675,39 @@ namespace MDRDesk
             }
         }
 
-        #endregion Display Grids
+		private void InstHierarchyUndoClicked(object sender, RoutedEventArgs e)
+		{
+			var mainGrid = GetCurrentTabGrid();
+			Debug.Assert(mainGrid.Tag is UndoRedoList<Tuple<InstanceValue, AncestorDispRecord[]>>);
+			bool canUndo;
+			var data = ((UndoRedoList<Tuple<InstanceValue, AncestorDispRecord[]>>)mainGrid.Tag).Undo(out canUndo);
+			if (canUndo)
+			{
+				var ancestorList = UpdateInstanceHierarchyGrid(data, mainGrid);
+				ancestorList.SelectedIndex = 0;
+			}
+		}
 
-        #region MessageBox
+		private void InstHierarchyRedoClicked(object sender, RoutedEventArgs e)
+		{
+			var mainGrid = GetCurrentTabGrid();
+			Debug.Assert(mainGrid.Tag is UndoRedoList<Tuple<InstanceValue, AncestorDispRecord[]>>);
+			bool canRedo;
+			var data = ((UndoRedoList<Tuple<InstanceValue, AncestorDispRecord[]>>)mainGrid.Tag).Redo(out canRedo);
+			if (canRedo)
+			{
+				var ancestorList = UpdateInstanceHierarchyGrid(data, mainGrid);
+				ancestorList.SelectedIndex = 0;
+			}
+		}
 
-        private void ShowInformation(string caption, string header, string text, string details)
+		#endregion Instance Hierarchy Traversing
+
+		#endregion Display Grids
+
+		#region MessageBox
+
+		private void ShowInformation(string caption, string header, string text, string details)
 		{
 			var dialog = new MdrMessageBox()
 			{
@@ -880,7 +917,15 @@ namespace MDRDesk
 
 		public void ClearTabItem(Grid grid)
 		{
-			int a = 0; // TODO JRD -- implement this -- make sure that delegates are removed
+			// TODO JRD -- handle all grid types
+
+			grid.Tag = null;
+			var gridNamePrefix = Utils.GetNameWithoutId(grid.Name);
+			switch (gridNamePrefix)
+			{
+				case "InstanceHierarchyGrid":
+					break;
+			}
 		}
 
 		#endregion TabItem Cleanup
@@ -954,6 +999,20 @@ namespace MDRDesk
 			catch { }
 		}
 		#endregion Utils
+
+	}
+
+	internal class InstanceHierarchyInfoEqCmp : IEqualityComparer<Tuple<InstanceValue, AncestorDispRecord[]>>
+	{
+		public bool Equals(Tuple<InstanceValue, AncestorDispRecord[]> b1, Tuple<InstanceValue, AncestorDispRecord[]> b2)
+		{
+			return b1.Item1.Address == b2.Item1.Address;
+		}
+
+		public int GetHashCode(Tuple<InstanceValue, AncestorDispRecord[]> bx)
+		{
+			return bx.Item1.Address.GetHashCode();
+		}
 
 	}
 }

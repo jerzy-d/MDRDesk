@@ -262,14 +262,14 @@
                     <ColumnDefinition Width="80*"/>
                     <ColumnDefinition Width="10*"/>
                 </Grid.ColumnDefinitions>
-                <Button  x:Name="InstHierarchyRedo" Grid.Column="0" Width="100" Height="40" HorizontalAlignment="Left" VerticalAlignment="Center">
+                <Button  x:Name="InstHierarchyRedo" Grid.Column="0" Width="100" Height="40" HorizontalAlignment="Left" VerticalAlignment="Center" Click="InstHierarchyRedoClicked">
                     <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
                         <Image Source=".\Images\ArrowRightWithAsterisk_18x17.png" Width="18" Height="17" Margin="0,0,10,0"/>
                         <TextBlock FontWeight="Bold" FontSize="12">Redo</TextBlock>
                     </StackPanel>
                 </Button>
                 <Label x:Name="InstHierarchyValueLabel" Grid.Column="1" VerticalAlignment="Center" HorizontalAlignment="Center" FontSize="14" FontWeight="Bold"/>
-                <Button x:Name="InstHierarchyUndo" Grid.Column="2" Width="100" Height="40" HorizontalAlignment="Right" VerticalAlignment="Center">
+                <Button x:Name="InstHierarchyUndo" Grid.Column="2" Width="100" Height="40" HorizontalAlignment="Right" VerticalAlignment="Center" Click="InstHierarchyUndoClicked">
                     <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
                         <Image Source=".\Images\ArrowLeftWithAsterisk_18x17.png" Width="18" Height="17" Margin="0,0,10,0"/>
                         <TextBlock FontWeight="Bold" FontSize="12">Undo</TextBlock>

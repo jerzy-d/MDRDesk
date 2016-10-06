@@ -213,16 +213,14 @@ module FQry =
         Instance hierarchy walk.
     *)
 
-    let getInstanceStructValue (ndxInfo:IndexCurrentInfo) (heap:ClrHeap) (addr:address) (fldNdx:int) : string * InstanceValue * ClrType =
+    let getInstanceStructValue (ndxInfo:IndexCurrentInfo) (heap:ClrHeap) (clrType:ClrType) (cats:TypeCategories) (addr:address) (fldNdx:int) : string * InstanceValue * ClrType =
         Debug.Assert(fldNdx <> Constants.InvalidIndex)
-        let clrType = heap.GetObjectType(addr)
         let typeInfo = ndxInfo.GetTypeNameAndIdAtAddr(addr)
-        let typeCats = getTypeCategory clrType
-        Debug.Assert(typeCats.First = TypeCategory.Struct)
+        Debug.Assert(cats.First = TypeCategory.Struct)
         let mutable getFieldsFlag = false;
         let mutable fldName = String.Empty
         let value =
-            match typeCats.Second with
+            match cats.Second with
             | TypeCategory.Decimal  -> ValueExtractor.GetDecimalValue(addr,clrType,null)
             | TypeCategory.DateTime -> ValueExtractor.GetDateTimeValue(addr,clrType)
             | TypeCategory.TimeSpan -> ValueExtractor.GetTimeSpanValue(addr,clrType)
@@ -233,10 +231,8 @@ module FQry =
                 Constants.NonValue
         (null, new InstanceValue(typeInfo.Value, addr, typeInfo.Key, fldName, value, fldNdx), if getFieldsFlag then clrType else null)
 
-    let getInstanceClassValue (ndxInfo:IndexCurrentInfo) (heap:ClrHeap) (addr:address) : string * InstanceValue * ClrType =
-        let clrType = heap.GetObjectType(addr)
+    let getInstanceClassValue (ndxInfo:IndexCurrentInfo) (heap:ClrHeap) (clrType:ClrType) (cats:TypeCategories) (addr:address) : string * InstanceValue * ClrType =
         let typeInfo = ndxInfo.GetTypeNameAndIdAtAddr(addr)
-        let cats = getTypeCategory clrType
         match cats.First with
         | TypeCategory.Reference ->
             match cats.Second with
@@ -304,17 +300,25 @@ module FQry =
     let getInstanceValue (ndxInfo:IndexCurrentInfo) (heap:ClrHeap) (addr:address) (fldNdx:int) : string * InstanceValue = 
         let mutable instVal = null
         let mutable instValResult = (null,null,null);
-        match fldNdx with
-        | Constants.InvalidIndex -> instValResult <- getInstanceClassValue ndxInfo heap addr
-        | _                      -> instValResult <- getInstanceStructValue ndxInfo heap addr fldNdx
-        let mutable error, instVal, clrType = instValResult
-        if isNull error then
-            match clrType with
-            | null  -> ()
-            | _     -> error <- getInstanceValueFields ndxInfo heap clrType addr instVal
-            (error,instVal)
+        let clrType = heap.GetObjectType(addr)
+        if isNull clrType then
+            ("Unknown type category to handle.",null)
         else
-            (error, null)
+            let cats = getTypeCategory clrType
+            match cats.First with
+            | TypeCategory.Reference
+            | TypeCategory.Primitive -> instValResult <- getInstanceClassValue ndxInfo heap clrType cats addr
+            | TypeCategory.Struct    -> instValResult <- getInstanceStructValue ndxInfo heap clrType cats addr fldNdx
+            | TypeCategory.Uknown    -> instValResult <- ("ClrType category is TypeCategory.Unknown, at address: " + Utils.AddressString(addr),null,null)
+            | _                      -> instValResult <- ("getInstanceValue doesn't know how to handle: " + cats.First.ToString(),null,null)
+            let mutable error, instVal, clrType = instValResult
+            if isNull error then
+                match clrType with
+                | null  -> ()
+                | _     -> error <- getInstanceValueFields ndxInfo heap clrType addr instVal
+                (error,instVal)
+            else
+                (error, null)
 
     (*
         Displayable types.
