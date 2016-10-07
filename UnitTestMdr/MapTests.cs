@@ -258,7 +258,7 @@ namespace UnitTestMdr
         public void TestConcurrentDictionaryContent()
         {
             var sbTypeName = @"System.Collections.Concurrent.ConcurrentDictionary<System.String,System.Collections.Generic.KeyValuePair<System.String,System.String>>";
-            var map = OpenMap(@"C:\WinDbgStuff\Dumps\TestApp\TestApp.exe_160925_181945.map");
+            var map = OpenMap(@"D:\Jerzy\WinDbgStuff\dumps\TestApp\TestApp.exe_160928_083345.map");
             bool found = false;
             using (map)
             {

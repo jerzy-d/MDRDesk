@@ -70,6 +70,10 @@ module Auxiliaries =
     let getTypeCategory (clrType:ClrType) : TypeCategories =
         TypeCategories.GetCategories(clrType)
 
+    type ClrTypeFields =
+        { clrTypes: ClrType array;
+          clrStructs: ClrTypeFields; }
+
     type ClrtValue =
         | Value of string
         | Values of string array
@@ -167,6 +171,34 @@ module Auxiliaries =
         match valObj with
         | null -> Constants.InvalidAddress
         |_ -> unbox<uint64>(valObj)
+
+    let getStructFields (heap:ClrHeap) (addr:address) (fld:ClrInstanceField) (intern:bool) : (ClrType array) =
+        if isNull fld.Type then
+            null
+        else
+            let lst = ResizeArray<ClrType>
+            let fields = fld.Type.Fields
+            for i in [0..fields.Count-1] do
+                let f = fields.[i]
+                    
+
+    let getFieldType (heap:ClrHeap) (addr:address) (fld:ClrInstanceField) (intern:bool) =
+        let cats = getTypeCategory fld.Type
+        match cats.First with
+        | TypeCategory.Uknown -> ("",null,null)
+        | TypeCategory.Reference ->
+            match cats.Second with
+            | TypeCategory.System__Canon | TypeCategory.SystemObject ->
+                let clrTypeAddr = getReferenceFieldAddress addr fld intern
+                let clrType = heap.GetObjectType(clrTypeAddr)
+                (null, clrType, null)
+            | _ -> (null, fld.Type, null)
+        | TypeCategory.Struct ->
+            
+        | TypeCategory.Primitive ->
+            (null,fld.Type,null)
+        | _ -> ("Don't know how to get this field type.",null,null)
+
 
     (*
         getting selected field values for a selected type

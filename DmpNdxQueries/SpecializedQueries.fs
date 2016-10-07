@@ -200,7 +200,7 @@ module SpecializedQueries =
         *)
 
     let getConcurrentDictionaryNodeFields (heap:ClrHeap) (clrType:ClrType) (addr:address) (length:int) =
-        let mutable result:ClrType*ClrInstanceField*ClrInstanceField*ClrInstanceField = (null,null,null,null)
+        let mutable result:address*ClrType*ClrInstanceField*ClrInstanceField*ClrInstanceField = (0UL, null,null,null,null)
         let mutable notDone = true
         let mutable index = 0
 
@@ -217,7 +217,7 @@ module SpecializedQueries =
                         let m_key = clrType.GetFieldByName("m_key")
                         let m_value = clrType.GetFieldByName("m_value")
                         let m_next = clrType.GetFieldByName("m_next")
-                        result <- (clrType,m_next,m_key,m_value)
+                        result <- (nodeAddr,clrType,m_next,m_key,m_value)
                         notDone <- false
                     ()
             index <- index + 1
@@ -246,9 +246,14 @@ module SpecializedQueries =
         let m_bucketsType, m_bucketsAddr, m_locksTypeAry, m_countPerLockAray, m_comparerType = getTablesFieldInfo heap m_tablesType m_tablesAddr
         let m_bucketsAryLength = m_bucketsType.GetArrayLength(m_bucketsAddr)
         let mutable values = ResizeArray<KeyValuePair<string,string>>()
-        let nodeType, m_next, m_key, m_value = getConcurrentDictionaryNodeFields heap m_bucketsType m_bucketsAddr m_bucketsAryLength
+        let nodeAddr, nodeType, m_next, m_key, m_value = getConcurrentDictionaryNodeFields heap m_bucketsType m_bucketsAddr m_bucketsAryLength
+        // check if key and value types are usable
+
+
+
         let m_keyCategory = getTypeCategory m_key.Type
         let m_valueCategory = getTypeCategory m_value.Type
+
         for i in [0..m_bucketsAryLength-1] do
             getConcurrentDictionaryNodeContent heap addr nodeType m_next m_key m_keyCategory m_value m_valueCategory values
         ()
