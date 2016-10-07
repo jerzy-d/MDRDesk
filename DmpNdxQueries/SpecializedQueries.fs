@@ -203,6 +203,7 @@ module SpecializedQueries =
         let mutable result:ClrType*ClrInstanceField*ClrInstanceField*ClrInstanceField = (null,null,null,null)
         let mutable notDone = true
         let mutable index = 0
+
         while index < length && notDone do
             let nodeAddrObj = clrType.GetArrayElementValue(addr,index)
             match nodeAddrObj with
@@ -210,11 +211,14 @@ module SpecializedQueries =
                 | _ ->
                     let nodeAddr = unbox<uint64>(nodeAddrObj)
                     let clrType = heap.GetObjectType(nodeAddr)
-                    let m_key = clrType.GetFieldByName("m_key")
-                    let m_value = clrType.GetFieldByName("m_value")
-                    let m_next = clrType.GetFieldByName("m_next")
-                    result <- (clrType,m_next,m_key,m_value)
-                    notDone <- false
+                    if isNull clrType then
+                        ()
+                    else
+                        let m_key = clrType.GetFieldByName("m_key")
+                        let m_value = clrType.GetFieldByName("m_value")
+                        let m_next = clrType.GetFieldByName("m_next")
+                        result <- (clrType,m_next,m_key,m_value)
+                        notDone <- false
                     ()
             index <- index + 1
         result
@@ -228,8 +232,10 @@ module SpecializedQueries =
         | null -> ()
         | _ ->
             let newAddr = unbox<address>(nextObj)
-            getConcurrentDictionaryNodeContent heap newAddr clrType m_next m_key m_keyCat m_value m_valueCat values
-            ()
+            if newAddr = 0UL then
+                ()
+            else
+                getConcurrentDictionaryNodeContent heap newAddr clrType m_next m_key m_keyCat m_value m_valueCat values
         ()
 
     let getConcurrentDictionaryContent (heap:ClrHeap) (addr:address) =
