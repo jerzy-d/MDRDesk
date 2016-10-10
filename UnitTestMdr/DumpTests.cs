@@ -8,6 +8,7 @@ using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices;
+using System.Security.Cryptography.X509Certificates;
 using System.Text;
 using System.Threading.Tasks;
 using Microsoft.Diagnostics.Runtime;
@@ -1344,6 +1345,19 @@ namespace UnitTestMdr
 			}
 		}
 
+	    [TestMethod]
+	    public void TestGetArrayContent()
+	    {
+
+            var dmp = GetDump(@"C:\WinDbgStuff\Dumps\TestApp\TestApp.exe_161008_080007.dmp");
+	        using (dmp)
+	        {
+	            ulong addr = 0x00015c17a97b80;
+	            DmpNdxQueries.SpecializedQueries.getArrayContent(dmp.Heap, addr);
+	        }
+
+	    }
+        
 		#endregion Strings, Arrays, Dictionaries, etc...
 
 		#region CancellationToken Tests

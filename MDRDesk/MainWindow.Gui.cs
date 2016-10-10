@@ -342,15 +342,13 @@ namespace MDRDesk
 			mainGrid.Name = "TypeValueReportSetupGrid__" + Utils.GetNewID();
             mainGrid.Tag = new TypeValuesQuery();
             TreeView treeView = UpdateTypeValueSetupGrid(dispType, mainGrid, null);
-			(treeView.Items[0] as TreeViewItem).BringIntoView();
+		    TreeViewItem treeViewItem = (treeView.Items[0] as TreeViewItem);
+            if (treeViewItem != null) { treeViewItem.IsSelected = true; treeViewItem.BringIntoView(); }
 			var tab = new CloseableTabItem() { Header = Constants.BlackDiamond + " Type Value Setup", Content = mainGrid, Name = mainGrid.Name + "_tab" };
-			//ScrollViewer scroller = (ScrollViewer)this.FindVisualChildElement(treeView.uxTree, typeof(ScrollViewer));
-			//var scrollViewer = treeView.Template.FindName("_tv_scrollviewer_", treeView) as ScrollViewer;
-			//if (scrollViewer != null)
-			//	scrollViewer.ScrollToHome();
 			MainTab.Items.Add(tab);
 			MainTab.SelectedItem = tab;
 			MainTab.UpdateLayout();
+            //if (treeViewItem != null) treeViewItem.BringIntoView();
 		}
 
 		//private FrameworkElement FindVisualChildElement(DependencyObject element, Type childType)
@@ -519,20 +517,21 @@ namespace MDRDesk
 			var undoRedoList = new UndoRedoList<Tuple<InstanceValue, AncestorDispRecord[]>>(new InstanceHierarchyInfoEqCmp());
 			undoRedoList.AddToUndo(instanceInfo);
 			mainGrid.Tag = undoRedoList;
-
-			var ancestorList = UpdateInstanceHierarchyGrid(instanceInfo, mainGrid);
+		    TreeViewItem root;
+			var ancestorList = UpdateInstanceHierarchyGrid(instanceInfo, mainGrid, out root);
 
 			var tab = new CloseableTabItem() { Header = Constants.BlackDiamond + " Instance Hierarchy", Content = mainGrid, Name = "InstanceHierarchyGrid" };
 			MainTab.Items.Add(tab);
 			MainTab.SelectedItem = tab;
 			MainTab.UpdateLayout();
 		    ancestorList.SelectedIndex = 0;
+            root.BringIntoView();
 		}
 
-        private ListBox UpdateInstanceHierarchyGrid(Tuple<InstanceValue, AncestorDispRecord[]> instanceInfo, Grid mainGrid)
+        private ListBox UpdateInstanceHierarchyGrid(Tuple<InstanceValue, AncestorDispRecord[]> instanceInfo, Grid mainGrid, out TreeViewItem tvRoot)
         {
             InstanceValue instVal = instanceInfo.Item1;
-            var tvRoot = new TreeViewItem
+            tvRoot = new TreeViewItem
             {
                 Header = instVal.ToString(),
                 Tag = instVal
@@ -571,8 +570,10 @@ namespace MDRDesk
             Debug.Assert(treeView != null);
             treeView.Items.Clear();
             treeView.Items.Add(tvRoot);
-            SetSelectedItem(treeView, tvRoot);
+            TreeViewItem treeViewItem = (treeView.Items[0] as TreeViewItem);
             tvRoot.ExpandSubtree();
+            tvRoot.IsSelected = true;
+            tvRoot.BringIntoView();
             var lstAddresses =  (ListBox)LogicalTreeHelper.FindLogicalNode(mainGrid, "InstHierarchyAncestorAddresses");
             lstAddresses.ItemsSource = null;
             return ancestorNameList;
@@ -632,9 +633,10 @@ namespace MDRDesk
                 var mainGrid = GetCurrentTabGrid();
 				Debug.Assert(mainGrid.Tag is UndoRedoList<Tuple<InstanceValue, AncestorDispRecord[]>>);
 				((UndoRedoList<Tuple<InstanceValue, AncestorDispRecord[]>>) mainGrid.Tag).AddToUndo(result.Item2);
-                var ancestorList = UpdateInstanceHierarchyGrid(result.Item2, mainGrid);
+                TreeViewItem tvRoot;
+                var ancestorList = UpdateInstanceHierarchyGrid(result.Item2, mainGrid, out tvRoot);
                 ancestorList.SelectedIndex = 0;
-
+                tvRoot.BringIntoView();
                 SetEndTaskMainWindowState("Getting instance info" + ", DONE.");
             }
         }
@@ -667,8 +669,11 @@ namespace MDRDesk
                 var mainGrid = GetCurrentTabGrid();
 				Debug.Assert(mainGrid.Tag is UndoRedoList<Tuple<InstanceValue, AncestorDispRecord[]>>);
 				((UndoRedoList<Tuple<InstanceValue, AncestorDispRecord[]>>)mainGrid.Tag).AddToUndo(result.Item2);
-				var ancestorList = UpdateInstanceHierarchyGrid(result.Item2, mainGrid);
+                TreeViewItem tvItem;
+				var ancestorList = UpdateInstanceHierarchyGrid(result.Item2, mainGrid, out tvItem);
                 ancestorList.SelectedIndex = 0;
+                tvItem.IsSelected = true;
+                tvItem.BringIntoView();
 
                 SetEndTaskMainWindowState("Getting instance info" + ", DONE.");
 
@@ -683,8 +688,11 @@ namespace MDRDesk
 			var data = ((UndoRedoList<Tuple<InstanceValue, AncestorDispRecord[]>>)mainGrid.Tag).Undo(out canUndo);
 			if (canUndo)
 			{
-				var ancestorList = UpdateInstanceHierarchyGrid(data, mainGrid);
+			    TreeViewItem tvItem;
+				var ancestorList = UpdateInstanceHierarchyGrid(data, mainGrid, out tvItem);
 				ancestorList.SelectedIndex = 0;
+			    tvItem.IsSelected = true;
+                tvItem.BringIntoView();
 			}
 		}
 
@@ -696,18 +704,35 @@ namespace MDRDesk
 			var data = ((UndoRedoList<Tuple<InstanceValue, AncestorDispRecord[]>>)mainGrid.Tag).Redo(out canRedo);
 			if (canRedo)
 			{
-				var ancestorList = UpdateInstanceHierarchyGrid(data, mainGrid);
+			    TreeViewItem tvItem;
+				var ancestorList = UpdateInstanceHierarchyGrid(data, mainGrid, out tvItem);
 				ancestorList.SelectedIndex = 0;
+			    tvItem.IsSelected = true;
+                tvItem.BringIntoView();
 			}
 		}
 
-		#endregion Instance Hierarchy Traversing
+        static void OnTreeViewItemSelected(object sender, RoutedEventArgs e)
+        {
+            // Only react to the Selected event raised by the TreeViewItem
+            // whose IsSelected property was modified. Ignore all ancestors
+            // who are merely reporting that a descendant's Selected fired.
+            if (!Object.ReferenceEquals(sender, e.OriginalSource))
+                return;
 
-		#endregion Display Grids
+            TreeViewItem item = e.OriginalSource as TreeViewItem;
+            if (item != null)
+                item.BringIntoView();
+        }
 
-		#region MessageBox
 
-		private void ShowInformation(string caption, string header, string text, string details)
+        #endregion Instance Hierarchy Traversing
+
+        #endregion Display Grids
+
+        #region MessageBox
+
+        private void ShowInformation(string caption, string header, string text, string details)
 		{
 			var dialog = new MdrMessageBox()
 			{
@@ -982,22 +1007,22 @@ namespace MDRDesk
 			return true;
 		}
 
-		public static void SetSelectedItem(TreeView control, object item)
-		{
-			try
-			{
-				var dObject = control.ItemContainerGenerator.ContainerFromItem(item);
+		//public static void SetSelectedItem(TreeView control, object item)
+		//{
+		//	try
+		//	{
+		//		var dObject = control.ItemContainerGenerator.ContainerFromItem(item);
 
-				//uncomment the following line if UI updates are unnecessary
-				((TreeViewItem)dObject).IsSelected = true;
+		//		//uncomment the following line if UI updates are unnecessary
+		//		((TreeViewItem)dObject).IsSelected = true;
 
-				MethodInfo selectMethod = typeof(TreeViewItem).GetMethod("Select",
-					BindingFlags.NonPublic | BindingFlags.Instance);
+		//		MethodInfo selectMethod = typeof(TreeViewItem).GetMethod("Select",
+		//			BindingFlags.NonPublic | BindingFlags.Instance);
 
-				selectMethod.Invoke(dObject, new object[] { true });
-			}
-			catch { }
-		}
+		//		selectMethod.Invoke(dObject, new object[] { true });
+		//	}
+		//	catch { }
+		//}
 		#endregion Utils
 
 	}

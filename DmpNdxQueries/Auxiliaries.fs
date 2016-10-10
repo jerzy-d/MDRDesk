@@ -172,15 +172,30 @@ module Auxiliaries =
         | null -> Constants.InvalidAddress
         |_ -> unbox<uint64>(valObj)
 
-    let getStructFields (heap:ClrHeap) (addr:address) (fld:ClrInstanceField) (intern:bool) : (ClrType array) =
+    let getFieldClrType (heap:ClrHeap) (addr:address)  (fld:ClrInstanceField) (intern:bool) =
+        let clrAddr = getReferenceFieldAddress addr fld intern
+        match clrAddr with
+        | Constants.InvalidAddress -> null
+        | _ -> heap.GetObjectType(clrAddr)
+
+    let getStructFields (heap:ClrHeap) (addr:address) (fld:ClrInstanceField) : (ClrType array) =
         if isNull fld.Type then
             null
         else
-            let lst = ResizeArray<ClrType>
+            let lst = ResizeArray<ClrType>()
             let fields = fld.Type.Fields
-            for i in [0..fields.Count-1] do
+            for i = 0 to fields.Count-1 do
                 let f = fields.[i]
-                    
+                let cats = getTypeCategory f.Type
+                match cats.First with
+                | TypeCategory.Uknown -> 
+                    ()
+                | TypeCategory.Reference -> 
+                    let clrType = getFieldClrType heap addr fld false
+                    ()
+                | _ ->
+                    ()
+            null
 
     let getFieldType (heap:ClrHeap) (addr:address) (fld:ClrInstanceField) (intern:bool) =
         let cats = getTypeCategory fld.Type
@@ -188,13 +203,13 @@ module Auxiliaries =
         | TypeCategory.Uknown -> ("",null,null)
         | TypeCategory.Reference ->
             match cats.Second with
-            | TypeCategory.System__Canon | TypeCategory.SystemObject ->
+            | TypeCategory.Struct ->
                 let clrTypeAddr = getReferenceFieldAddress addr fld intern
                 let clrType = heap.GetObjectType(clrTypeAddr)
                 (null, clrType, null)
             | _ -> (null, fld.Type, null)
         | TypeCategory.Struct ->
-            
+            ("",null,null)
         | TypeCategory.Primitive ->
             (null,fld.Type,null)
         | _ -> ("Don't know how to get this field type.",null,null)

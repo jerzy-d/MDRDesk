@@ -271,7 +271,7 @@ module FQry =
         match fldCount with
         | 0 -> ()
         | _ ->
-            for fldNdx in [0..fldCount-1] do
+            for fldNdx = 0 to fldCount-1 do
                 let fld = clrType.Fields.[fldNdx]
                 let clrValue = ValueExtractor.TryGetPrimitiveValue(heap, addr, fld, internalAddresses)
                 match Utils.IsNonValue(clrValue) with
@@ -330,7 +330,7 @@ module FQry =
         | 0 -> ()
         | _ ->
             let mutable dispTypes:ClrtDisplayableType[] = Array.create fldCount null
-            for fldNdx in [0..fldCount-1] do
+            for fldNdx = 0 to fldCount-1 do
                 let fld = clrType.Fields.[fldNdx]
                 let typeName = fieldTypeName fld
                 let typeId = ndxInfo.GetTypeId(typeName)
