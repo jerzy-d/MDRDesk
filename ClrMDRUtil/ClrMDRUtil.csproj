@@ -88,6 +88,7 @@
     <Compile Include="ClrUtils\ClrtDump.cs" />
     <Compile Include="ClrUtils\ClrtRoots.cs" />
     <Compile Include="ClrUtils\ClrtSegment.cs" />
+    <Compile Include="ClrUtils\ClrTypeSidekick.cs" />
     <Compile Include="ClrUtils\ClrtThread.cs" />
     <Compile Include="ClrUtils\ClrtTypes.cs" />
     <Compile Include="ClrUtils\DumpFileMoniker.cs" />

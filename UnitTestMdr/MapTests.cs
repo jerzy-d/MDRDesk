@@ -246,7 +246,7 @@ namespace UnitTestMdr
 			System.Collections.Generic.Dictionary<System.String, System.Collections.Generic.IList<System.String>> dct =
 				new Dictionary<string, IList<string>>();
 			var tp = dct.GetType();
-			var niceName = DmpNdxQueries.Auxiliaries.NiceTypeName(tp);
+			var niceName = DmpNdxQueries.Types.NiceTypeName(tp);
 
 			string s = "aaabbb";
 			var pos = s.IndexOf('`');

@@ -364,7 +364,7 @@ namespace ClrMDRIndex
 			{
 				FileStream fstream = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read);
 				return MemoryMappedFile.CreateFromFile(fstream,
-														mapName,
+														null, //mapName,
 														0,
 														MemoryMappedFileAccess.Read,
 														HandleInheritability.None, 

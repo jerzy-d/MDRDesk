@@ -66,10 +66,6 @@ module Auxiliaries =
     let roundupToPowerOf2Boundary (number:int) (powerOf2:int) =
         (number + powerOf2 - 1) &&& ~~~(powerOf2 - 1)
 
-    /// Convienient categorization of clr types when getting a type instance value.
-    let getTypeCategory (clrType:ClrType) : TypeCategories =
-        TypeCategories.GetCategories(clrType)
-
     type ClrTypeFields =
         { clrTypes: ClrType array;
           clrStructs: ClrTypeFields; }
@@ -104,6 +100,10 @@ module Auxiliaries =
     let kvStringAddressComparer = new KvStringAddressComparer()
 
     let hasInternalAddresses (clrType:ClrType) = clrType.IsValueClass
+
+    /// Convienient categorization of clr types when getting a type instance value.
+    let inline getTypeCategory (clrType:ClrType) : TypeCategories =
+        TypeCategories.GetCategories(clrType)
 
     let getFieldName (clrType:ClrType) (ndx:int) =
         match clrType with
@@ -146,13 +146,6 @@ module Auxiliaries =
         | null -> Constants.Unknown
         | _ -> fld.Type.Name
         
-    /// Types which do not tell us much.
-    let isTypeNameVague (name:string) =
-        name = "System.Object" || name = "System.__Canon"
-    
-    /// We get get this one, in good heaps. Why?
-    let isErrorType (clrType: ClrType) =
-        clrType.Name = "ERROR"
 
     let getDispAddress (objAddr: obj) : string =
         if objAddr = null then Constants.ZeroAddressStr else Utils.AddressString(unbox<address>objAddr)
@@ -341,9 +334,7 @@ module Auxiliaries =
 
 
 
-    /// Used when we looking for clearly defined type.
-    let isTypeUnknown (clrType: ClrType) =
-        clrType = null || isErrorType clrType || isTypeNameVague clrType.Name
+
 
     let scanSize = 256
 
@@ -390,45 +381,44 @@ module Auxiliaries =
         else
             null
 
-    let tryGetType (heap:ClrHeap) (clrType:ClrType) (obj:Object) =
-        if isTypeNameVague clrType.Name then
-            try
-                let objAsAddr = unbox<uint64>(obj)
-                let aType =  heap.GetObjectType(objAsAddr)
-                if isNull aType then
-                    clrType
-                else
-                    aType
-            with
-                | exn -> clrType
-        else
-            clrType
-            
-    (*
-        Misc
-    *)
 
-    // Tomas Petricek F# Snippets
-    let NiceTypeName (t:System.Type) : string =
-        let sb = new System.Text.StringBuilder()
-        let rec build (t:System.Type) =
-          if t.IsGenericType then 
-            // Remove the `1 part from generic names
-            let tick = t.Name.IndexOf('`')
-            let name = t.Name.Substring(0, tick) 
-            Printf.bprintf sb "%s" name
-            Printf.bprintf sb "<"
-            // Print generic type arguments recursively
-            let args = t.GetGenericArguments()
-            for i in 0 .. args.Length - 1 do 
-              if i <> 0 then Printf.bprintf sb ", "
-              build args.[i]
-            Printf.bprintf sb ">"
-          else
-            // Print ordiary type name
-            Printf.bprintf sb "%s" t.Name
-        build t
-        sb.ToString()
+
+    let getStructgFields (heap:ClrHeap) (addr:address) (clrs:ClrTypeSidekick) : ClrTypeSidekick =
+        
+        clrs
+
+    let getReferenceFields (heap:ClrHeap) (addr:address) (clrs:ClrTypeSidekick) : ClrTypeSidekick =
+        
+        clrs
+
+    let getObjectType (heap:ClrHeap) (addr:address) = 
+        let clrType = heap.GetObjectType(addr)
+        let cats = getTypeCategory clrType
+        match cats.First with
+        | TypeCategory.Reference ->
+            match cats.Second with
+            | TypeCategory.String 
+            | TypeCategory.Exception
+            | TypeCategory.Array ->
+                new ClrTypeSidekick(clrType,cats,null)
+            | TypeCategory.SystemObject ->
+                new ClrTypeSidekick(clrType,cats,null)
+            | TypeCategory.System__Canon ->
+                new ClrTypeSidekick(clrType,cats,null)
+            | TypeCategory.Reference ->
+                getReferenceFields heap addr (new ClrTypeSidekick(clrType,cats,null))
+            | _ ->
+                EmptyClrTypeSidekick.Value
+        | TypeCategory.Struct ->
+            match cats.Second with
+            | TypeCategory.DateTime | TypeCategory.Guid | TypeCategory.TimeSpan | TypeCategory.Decimal ->
+                new ClrTypeSidekick(clrType,cats,null)
+            | _ -> 
+                getStructgFields heap addr (new ClrTypeSidekick(clrType,cats,null))
+        | _ ->
+            EmptyClrTypeSidekick.Value
+
+            
 
     (*
         Charts

@@ -1578,13 +1578,11 @@ namespace ClrMDRIndex
 						fldRefList.Add(new KeyValuePair<ulong, int>(address, off));
 					});
 
-					bool found = false;
 					bool isArray = clrType.IsArray;
 					for (int j = 0, jcnt = fldRefList.Count; j < jcnt; ++j)
 					{
 						var fldAddr = fldRefList[j].Key;
 						if (Array.BinarySearch(addresses, fldAddr) < 0) continue; // not my string
-						found = true;
 						string fldName = string.Empty;
 						if (!isArray)
 						{
@@ -2583,8 +2581,9 @@ namespace ClrMDRIndex
 							else
 								objTypes.Add(rec.Third, 1);
 						}
+					}
 
-						ColumnInfo[] colInfos = new[]
+					ColumnInfo[] colInfos = new[]
 						{
 						new ColumnInfo("WeakReference Address", ReportFile.ColumnType.UInt64,100,1,true),
 						new ColumnInfo("WeakReference Type", ReportFile.ColumnType.UInt64,300,2,true),
@@ -2594,14 +2593,11 @@ namespace ClrMDRIndex
 
 						Array.Sort(infoAry, ReportFile.GetComparer(colInfos[0]));
 
-						string descr =  "WeakReference Count: " + Utils.CountString(recCount) + Environment.NewLine
+						string descr =  "WeakReference Count: " + Utils.CountString(totalCount) + Environment.NewLine
 										+ "Pointed instances Count: " + Utils.CountString(objects.Count) + Environment.NewLine;
 						return new ListingInfo(null, infoAry, colInfos, descr);
-					}
 
 				}
-
-				return ClrtDump.GetAllTypesSizesInfo(heap, out error);
 			}
 			catch (Exception ex)
 			{

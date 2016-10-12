@@ -1348,12 +1348,17 @@ namespace UnitTestMdr
 	    [TestMethod]
 	    public void TestGetArrayContent()
 	    {
+			var str1 = Utils.AddressString(0);
+			var str2 = Utils.AddressString(427092);
 
-            var dmp = GetDump(@"C:\WinDbgStuff\Dumps\TestApp\TestApp.exe_161008_080007.dmp");
+
+			var dmp = GetDump(@"D:\Jerzy\WinDbgStuff\dumps\TestApp\TestApp.exe_161010_075709.dmp");
 	        using (dmp)
 	        {
-	            ulong addr = 0x00015c17a97b80;
-	            DmpNdxQueries.SpecializedQueries.getArrayContent(dmp.Heap, addr);
+	            ulong addr = 0x00000002cf7ba8;
+		        var clrSidekick = Types.getTypeSidekickAtAddress(dmp.Heap, addr);
+
+	            var aryValuesa = DmpNdxQueries.SpecializedQueries.getArrayContent(dmp.Heap, addr);
 	        }
 
 	    }

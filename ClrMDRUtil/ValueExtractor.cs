@@ -135,6 +135,25 @@ namespace ClrMDRIndex
 			return Encoding.Unicode.GetString(strBuf);
 		}
 
+
+		public static ulong ReadUlongAtAddress(ulong addr, ClrHeap heap)
+		{
+			if (addr == 0UL) return Constants.InvalidAddress;
+			var lenBuf = new byte[8];
+			heap.ReadMemory(addr, lenBuf, 0, 8);
+			ulong val = BitConverter.ToUInt64(lenBuf, 0);
+			return val;
+		}
+
+		public static ulong ReadPointerAtAddress(ulong addr, ClrHeap heap)
+		{
+			if (addr == 0UL) return Constants.InvalidAddress;
+			ulong ptr;
+			if (heap.ReadPointer(addr, out ptr))
+				return ptr;
+			return Constants.InvalidAddress;
+		}
+
 		// TODO JRD -- check this one 
 		public static string GetStringValue(ClrType clrType, ulong addr)
 		{

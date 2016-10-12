@@ -136,6 +136,25 @@ module CollectionContent =
                 else
                     tryGetArrayElemType heap aryAddr aryType (ndx+1) max
 
+    let rec tryGetArrayElementType (heap:ClrHeap) (aryAddr:uint64) (aryType:ClrType) (ndx:int32) (max:int32) =
+        if ndx = max then 
+            null
+        else
+            let elemAddr = aryType.GetArrayElementAddress(aryAddr, ndx)
+            let elemType = heap.GetObjectType(elemAddr)
+            if elemType <> null && not (isTypeUnknown elemType) then
+                elemType
+            else
+                let elemVal = aryType.GetArrayElementValue(aryAddr, ndx)
+                if (elemVal <> null) && (elemVal :? address) then
+                    let elemType = heap.GetObjectType(unbox<address>(elemVal))
+                    if elemType <> null && not (isTypeUnknown elemType) then
+                        elemType
+                    else
+                        tryGetArrayElemType heap aryAddr aryType (ndx+1) max
+                else
+                    tryGetArrayElemType heap aryAddr aryType (ndx+1) max
+
     let getArrayElemType (heap:ClrHeap) (aryAddr:uint64) (clrType:ClrType) (ndx:int32) (max:int32) =
         if clrType.ComponentType <> null && not (isTypeUnknown clrType.ComponentType) then
             clrType.ComponentType

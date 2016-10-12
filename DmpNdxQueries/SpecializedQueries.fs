@@ -81,7 +81,14 @@ module SpecializedQueries =
                 elemVal <- aryType.GetArrayElementValue(aryAddr, ndx)
                 values.Add (getObjectValue heap elemType cats elemAddr false)
             | TypeCategory.Struct ->
-                values.Add("..struct..")
+                let elemValAddr = aryType.GetArrayElementAddress(aryAddr, ndx)
+                let raddr = ValueExtractor.ReadUlongAtAddress(elemValAddr,heap)
+                let paddr = ValueExtractor.ReadPointerAtAddress(elemValAddr,heap)
+
+                let val1 = aryElemType.Fields.[0].GetValue(elemValAddr,true,true)
+                let val2 = aryElemType.Fields.[1].GetValue(elemValAddr,true,false)
+
+                values.Add(val1.ToString() + Constants.HeavyGreekCrossPadded + val2.ToString())
             | _ -> values.Add("..???..")
            
             ndx <- ndx + 1
