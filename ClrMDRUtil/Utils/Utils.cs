@@ -1778,17 +1778,17 @@ namespace ClrMDRIndex
 			public static readonly T[] Value = new T[0];
 		}
 
-        /// <summary>
-        /// Return an empty list to avoid unnecessary memory allocation.
-        /// </summary>
-        /// <typeparam name="T"></typeparam>
-        public static class EmptyList<T>
-		{
-			/// <summary>
-			/// Static empty list of some type.
-			/// </summary>
-			public static readonly List<T> Value = new List<T>(0);
-		}
+  //      /// <summary>
+  //      /// Return an empty list to avoid unnecessary memory allocation.
+  //      /// </summary>
+  //      /// <typeparam name="T"></typeparam>
+  //      public static class EmptyList<T>
+		//{
+		//	/// <summary>
+		//	/// Static empty list of some type.
+		//	/// </summary>
+		//	public static readonly List<T> Value = new List<T>(0);
+		//}
 
 		/// <summary>
 		/// Force gc collection, and compact LOH.

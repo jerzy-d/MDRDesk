@@ -75,8 +75,10 @@ namespace ClrMDRIndex
 					if (clrType.IsInterface)
 						return new TypeCategories(TypeCategory.Struct, TypeCategory.Interface, clrType.ElementType);
 					return new TypeCategories(TypeCategory.Struct, TypeCategory.Struct, clrType.ElementType);
+				case ClrElementType.Unknown:
+					return new TypeCategories(TypeCategory.Uknown, TypeCategory.Uknown, clrType.ElementType);
 				default:
-					return new TypeCategories(TypeCategory.Primitive, TypeCategory.Uknown, clrType.ElementType);
+					return new TypeCategories(TypeCategory.Primitive, TypeCategory.Primitive, clrType.ElementType);
 			}
 		}
 

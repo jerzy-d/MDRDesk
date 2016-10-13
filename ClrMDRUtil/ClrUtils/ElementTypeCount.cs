@@ -18,7 +18,7 @@ namespace ClrMDRIndex
 		{
 			Type = tp;
 			Count = cnt;
-			_typeIds = Utils.EmptyList<int>.Value;
+			_typeIds = new List<int>(0);
 		}
 
 		public static ElementTypeCount[] CreateElemTypeArray(bool emptyListsOnly = false)

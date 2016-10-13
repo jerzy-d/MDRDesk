@@ -7,6 +7,7 @@ using System.Diagnostics;
 using System.Globalization;
 using System.IO;
 using System.Linq;
+using System.Linq.Expressions;
 using System.Net.Configuration;
 using System.Runtime;
 using System.Text;
@@ -271,8 +272,17 @@ namespace ClrMDRIndex
 					}
 					lst[0] = Utils.AddressString(module.ImageBase);
 					lst[1] = Utils.SizeString(module.FileSize);
-					lst[2] = module.IsRuntime ? "T" : "F";
-					lst[3] = module.IsManaged ? "T" : "F";
+
+					//try
+					//{
+					//	lst[2] = module.IsRuntime ? "T" : "F";
+					//	lst[3] = module.IsManaged ? "T" : "F";
+					//}
+					//catch (AccessViolationException)
+					{
+						lst[2] = "?";
+						lst[3] = "?";
+					}
 					lst[4] =  module.Version.ToString();
 					var entry = string.Join(Constants.HeavyGreekCrossPadded, lst);
 					dct.Add(key,entry);

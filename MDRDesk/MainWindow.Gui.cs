@@ -12,6 +12,7 @@ using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Data;
+using System.Windows.Documents;
 using System.Windows.Forms.VisualStyles;
 using System.Windows.Input;
 using System.Windows.Media;
@@ -95,7 +96,34 @@ namespace MDRDesk
 
 			var txtBlock = (TextBlock)LogicalTreeHelper.FindLogicalNode(grid, "GeneralInfoText");
 			Debug.Assert(txtBlock != null);
-			txtBlock.Inlines.Add(info);
+
+			var lines = info.Split(new string[] {Environment.NewLine}, StringSplitOptions.RemoveEmptyEntries);
+			for (int i = 0,  icnt = lines.Length; i < icnt; ++i)
+			{
+				var ln = lines[i];
+				if (ln.StartsWith("RUNTIME"))
+				{
+					txtBlock.Inlines.Add(Environment.NewLine);
+					txtBlock.Inlines.Add(new Run(ln) {FontWeight = FontWeights.Bold, FontSize = 16,});
+					txtBlock.Inlines.Add(Environment.NewLine);
+					continue;
+				}
+				var pos = ln.IndexOf(':');
+				if (pos > 0)
+				{
+					txtBlock.Inlines.Add(new Run(ln.Substring(0,pos+1)) { FontWeight = FontWeights.Bold, FontSize = 12});
+					txtBlock.Inlines.Add("   " + ln.Substring(pos+2));
+					txtBlock.Inlines.Add(Environment.NewLine);
+				}
+				else
+				{
+					txtBlock.Inlines.Add(ln);
+					txtBlock.Inlines.Add(Environment.NewLine);
+				}
+
+			}
+
+			//txtBlock.Inlines.Add(info);
 
 			var generationLabel = (Label)LogicalTreeHelper.FindLogicalNode(grid, "GenerationInfoLabel");
 			Debug.Assert(generationLabel != null);

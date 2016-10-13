@@ -1355,6 +1355,10 @@ namespace UnitTestMdr
 			var dmp = GetDump(@"D:\Jerzy\WinDbgStuff\dumps\TestApp\TestApp.exe_161010_075709.dmp");
 	        using (dmp)
 	        {
+		        var rntm = dmp.Runtime;
+		        var domains = rntm.AppDomains.ToArray();
+
+
 	            ulong addr = 0x00000002cf7ba8;
 		        var clrSidekick = Types.getTypeSidekickAtAddress(dmp.Heap, addr);
 
@@ -1362,7 +1366,24 @@ namespace UnitTestMdr
 	        }
 
 	    }
-        
+
+		[TestMethod]
+		public void TestTypeSidekick()
+		{
+
+			var dmp = GetDump(@"D:\Jerzy\WinDbgStuff\dumps\Analytics\Presentation\Eze.Analytics.Svc.exe_161010_122402.dmp");
+			using (dmp)
+			{
+				var rntm = dmp.Runtime;
+				var domains = rntm.AppDomains.ToArray();
+
+
+				ulong addr = 0x00000080c21010;
+				var clrSidekick = Types.getTypeSidekickAtAddress(dmp.Heap, addr);
+			}
+
+		}
+
 		#endregion Strings, Arrays, Dictionaries, etc...
 
 		#region CancellationToken Tests

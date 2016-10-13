@@ -40,6 +40,31 @@ module Types =
         else
             clrType
 
+    let private getStructTypeFieldSidekick (heap:ClrHeap) (clrs:ClrTypeSidekick) (addr:address) (fld:ClrInstanceField) =
+        let clrType = fld.Type
+        let cats = TypeCategories.GetCategories(fld.Type)
+        if cats.First = TypeCategory.Uknown then
+            ()
+        else
+            match cats.First with
+            | TypeCategory.Reference ->
+                match cats.Second with
+                | TypeCategory.System__Canon | TypeCategory.SystemObject ->
+                    let fldAddr = fld.GetAddress(addr,true)
+                    let paddr = ValueExtractor.ReadPointerAtAddress(fldAddr,heap)
+                    let fldType = heap.GetObjectType(paddr)
+                    let fldCats = getTypeCategory fldType
+                    clrs.AddField(new ClrTypeSidekick(fldType,cats,fld))
+                | _ ->
+                    clrs.AddField(new ClrTypeSidekick(clrType,cats,fld))
+            | TypeCategory.Struct ->
+                ()
+            | _ ->
+                clrs.AddField(new ClrTypeSidekick(clrType,cats,fld))
+                ()
+
+            ()
+
     let getArrayElementAddress (aryType:ClrType) (addr:address) (aryLen:int) =
         let mutable ndx:int = 0
         let mutable elemAddr = 0UL
@@ -90,7 +115,16 @@ module Types =
             | _ ->
                 clrs.AddField(new ClrTypeSidekick(aryCompType,aryCompCats))
         | TypeCategory.Struct ->
-             clrs.AddField(new ClrTypeSidekick(aryCompType,aryCompCats))
+            match aryCompCats.Second with
+            | TypeCategory.DateTime | TypeCategory.Decimal | TypeCategory.Guid | TypeCategory.TimeSpan ->
+                 clrs.AddField(new ClrTypeSidekick(aryCompType,aryCompCats))
+            | _ ->
+                let aryElemAddr = getArrayElementAddress aryType addr aryLen
+                let arySidekick = new ClrTypeSidekick(aryCompType,aryCompCats)
+                clrs.AddField(arySidekick)
+                for i = 0 to aryCompType.Fields.Count - 1 do
+                    let fld = aryCompType.Fields.[i]
+                    getStructTypeFieldSidekick heap arySidekick aryElemAddr fld
         | TypeCategory.Primitive ->
                 clrs.AddField(new ClrTypeSidekick(aryCompType,aryCompCats))
         | _ ->
@@ -103,29 +137,7 @@ module Types =
 
         ()
 
-    let private getStructTypeFieldSidekick (heap:ClrHeap) (clrs:ClrTypeSidekick) (addr:address) (fld:ClrInstanceField) =
-        let clrType = fld.Type
-        let cats = TypeCategories.GetCategories(fld.Type)
-        if cats.First = TypeCategory.Uknown then
-            ()
-        else
-            match cats.First with
-            | TypeCategory.Reference ->
-                match cats.Second with
-                | TypeCategory.System__Canon | TypeCategory.SystemObject ->
-                    let fldAddr = fld.GetAddress(addr,true)
-                    let fldType = heap.GetObjectType(fldAddr)
-                    let fldCats = getTypeCategory fldType
-                    clrs.AddField(new ClrTypeSidekick(fldType,cats))
-                | _ ->
-                    clrs.AddField(new ClrTypeSidekick(clrType,cats))
-            | TypeCategory.Struct ->
-                ()
-            | _ ->
-                clrs.AddField(new ClrTypeSidekick(clrType,cats))
-                ()
 
-            ()
 
     let getTypeSidekick (heap:ClrHeap) (clrType:ClrType) (cats:TypeCategories) (addr:address) =
         Debug.Assert(clrType<>null);
@@ -137,14 +149,14 @@ module Types =
             | TypeCategory.Array ->
                 getArrayElementTypeSidekick heap clrs addr 
             | _ ->
-                for i = 0 to clrType.Fields.Count do
+                for i = 0 to clrType.Fields.Count - 1 do
                     let fld = clrType.Fields.[i]
                     getStructTypeFieldSidekick heap clrs addr fld
         | TypeCategory.Struct ->
             match cats.Second with
             | TypeCategory.DateTime | TypeCategory.TimeSpan | TypeCategory.Decimal | TypeCategory.Guid -> ()
             | _ ->
-                for i = 0 to clrType.Fields.Count do
+                for i = 0 to clrType.Fields.Count - 1 do
                     let fld = clrType.Fields.[i]
                     getStructTypeFieldSidekick heap clrs addr fld
                 ()

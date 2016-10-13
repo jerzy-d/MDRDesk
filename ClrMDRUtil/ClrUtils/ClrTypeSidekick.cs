@@ -26,7 +26,7 @@ namespace ClrMDRIndex
 			ClrType = clrType;
 			InstanceField = instanceField;
 			Categories = TypeCategories.GetCategories(clrType);
-			Fields = Utils.EmptyList<ClrTypeSidekick>.Value;
+			Fields = new List<ClrTypeSidekick>(0);
 			Data = null;
 		}
 
@@ -35,7 +35,7 @@ namespace ClrMDRIndex
 			ClrType = clrType;
 			InstanceField = null;
 			Categories = cats;
-			Fields = Utils.EmptyList<ClrTypeSidekick>.Value;
+			Fields = new List<ClrTypeSidekick>(0);
 			Data = null;
 		}
 
@@ -44,7 +44,7 @@ namespace ClrMDRIndex
 			ClrType = clrType;
 			InstanceField = instanceField;
 			Categories = cats;
-			Fields = Utils.EmptyList<ClrTypeSidekick>.Value;
+			Fields = new List<ClrTypeSidekick>(0);
 			Data = null;
 		}
 
