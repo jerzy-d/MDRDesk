@@ -68,6 +68,11 @@ namespace UnitTestMdr
 
 		#region Misc
 
+		private static string GetFieldTypeKey(ClrType clrType, ClrInstanceField fld)
+		{
+			return fld.Name + Constants.HeavyGreekCross + fld.Type.Name + Constants.HeavyGreekCross + clrType.Name;
+		}
+
 		[TestMethod]
 		public void TestMisc()
 		{
@@ -1371,14 +1376,16 @@ namespace UnitTestMdr
 		public void TestTypeSidekick()
 		{
 
-			var dmp = GetDump(@"D:\Jerzy\WinDbgStuff\dumps\Analytics\Presentation\Eze.Analytics.Svc.exe_161010_122402.dmp");
+			//var dmp = GetDump(@"D:\Jerzy\WinDbgStuff\dumps\Analytics\Presentation\Eze.Analytics.Svc.exe_161010_122402.dmp");
+			var dmp = GetDump(@"D:\Jerzy\WinDbgStuff\dumps\Analytics\ConvergEx\Analytics.dmp");
 			using (dmp)
 			{
 				var rntm = dmp.Runtime;
 				var domains = rntm.AppDomains.ToArray();
 
 
-				ulong addr = 0x00000080c21010;
+				//ulong addr = 0x00000080c21010;
+				ulong addr = 0x00008b6e9f0b08; // 0x00008b5eac3b88;
 				var clrSidekick = Types.getTypeSidekickAtAddress(dmp.Heap, addr);
 			}
 
@@ -3494,6 +3501,7 @@ namespace UnitTestMdr
 		};
 
 
+
 		[TestMethod]
 		public void TestCompareInstances()
 		{
@@ -3998,6 +4006,68 @@ namespace UnitTestMdr
 			}
 		}
 
+		[TestMethod]
+		public void TestFindStringParents()
+		{
+			string error = null;
+			string strContent = "CSUS";
+			var dct = new Dictionary<string, List<KeyValuePair<ulong,ulong>>>(StringComparer.Ordinal);
+			var set = new HashSet<string>(StringComparer.Ordinal);
+			using (var clrDump = GetDump(@"D:\Jerzy\WinDbgStuff\dumps\Analytics\Memory.Usage.OPAM.971\Counters1\Eze.Analytics.Svc.exe_161007_133429.dmp"))
+			{
+				try
+				{
+					var runtime = clrDump.Runtimes[0];
+					var heap = runtime.GetHeap();
+					var segs = heap.Segments;
+					for (int i = 0, icnt = segs.Count; i < icnt; ++i)
+					{
+						var seg = segs[i];
+						ulong addr = seg.FirstObject;
+						while (addr != 0ul)
+						{
+							var clrType = heap.GetObjectType(addr);
+							if (clrType == null) goto NEXT_OBJECT;
+							if (clrType.Fields == null || clrType.Fields.Count < 1) goto NEXT_OBJECT;
+							if (set.Contains(clrType.Name)) goto NEXT_OBJECT;
+							bool hasStrings = false;
+							bool isValueClass = clrType.IsValueClass;
+							for (int j = 0, jcnt = clrType.Fields.Count; j < jcnt; ++j)
+							{
+								var fld = clrType.Fields[i];
+								if (!fld.Type.IsString) continue;
+								hasStrings = true;
+								var str = (string)fld.GetValue(addr, isValueClass, true);
+								if (str == null) continue;
+								if (Utils.SameStrings(strContent, str))
+								{
+									var key = GetFieldTypeKey(clrType, fld);
+									List<KeyValuePair<ulong,ulong>> lst;
+									if (dct.TryGetValue(key, out lst))
+									{
+										var strAddr = (ulong)fld.GetValue(addr, isValueClass, false);
+										lst.Add(new KeyValuePair<ulong, ulong>(strAddr,addr));
+									}
+								}
+							}
+							if (!hasStrings)
+							{
+								set.Add(clrType.Name);
+							}
+							NEXT_OBJECT:
+							addr = seg.NextObject(addr);
+						}
+					}
+				}
+				catch (Exception ex)
+				{
+					error = Utils.GetExceptionErrorString(ex);
+					Assert.IsTrue(false, error);
+				}
+			}
+		}
+
+		
 
 		#endregion Types
 

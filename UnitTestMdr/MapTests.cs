@@ -515,6 +515,9 @@ namespace UnitTestMdr
 
 		//}
 
+
+		#region Types
+
 		[TestMethod]
 		public void TestTypeElemnts()
 		{
@@ -556,18 +559,20 @@ namespace UnitTestMdr
 		public void TestTypeAccess()
 		{
 			const string typeName =
-				"ECS.Common.Threading.Queue.Queues.MessageQueuePriorityPair+CollectionStatistics<Eze.Server.Common.Pulse.Common.Types.IPendingTick>";
+				"System.Collections.Concurrent.ConcurrentDictionary+Tables<System.Int32,System.Collections.Concurrent.ConcurrentDictionary<System.Int32,ECS.Common.Transport.HierarchyCache.IReadOnlyRealtimePrice>>";
 			string error;
-			var map = OpenMap(@"");
+			var map = OpenMap(@"D:\Jerzy\WinDbgStuff\dumps\Analytics\ConvergEx\Analytics.map");
+			using (map)
+			{
+				int totalCount;
+				var result = map.GetTypeWithPrefixAddresses(typeName, true, out totalCount);
 
-			var tname = map.GetTypeName(3);
-			var addresses = map.GetTypeAddresses(3);
+				var id = map.GetTypeId(typeName);
+				var tname = map.GetTypeName(id);
+				Debug.Assert(tname == typeName);
+				var addresses = map.GetTypeAddresses(id);
+			}
 
-			var id = map.GetTypeId(typeName);
-			Assert.IsTrue(IndexValue.IsIndex(id));
-			Assert.IsFalse(IndexValue.IsInvalidIndex(id));
-			var name = map.GetTypeName(id);
-			Assert.IsTrue(typeName==name);
 		}
 
 		[TestMethod]
@@ -681,6 +686,9 @@ namespace UnitTestMdr
 			var ok = map.DumpReversedNames(outFile, out error);
 			Assert.IsTrue(ok,error);
 		}
+
+		#endregion Types
+
 
 		#region Instance References
 
