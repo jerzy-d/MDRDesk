@@ -725,13 +725,66 @@ namespace MDRDesk
             RecentAdhocList.Add(dumpFilePath);
 		}
 
+        private async void AhqTypeCountClicked(object sender, RoutedEventArgs e)
+        {
+            string error;
+            var dumpFilePath = SelectCrashDumpFile();
+            if (dumpFilePath == null) return;
+            var progressHandler = new Progress<string>(MainStatusShowMessage);
+            var progress = progressHandler as IProgress<string>;
+            string typeName;
+            if (!GetDlgString("Get Type Count", "EnterTypeName", " ", out typeName)) return;
+            SetStartTaskMainWindowState("Getting type count. Please wait...");
+            var taskResult = await Task.Run(() =>
+            {
+                var dmp = ClrtDump.OpenDump(dumpFilePath, out error);
+                if (dmp == null)
+                {
+                    return new KeyValuePair<string, int>(error, -1);
+                }
+                using (dmp)
+                {
+                    var heap = dmp.Runtime.GetHeap();
+                    var count = ClrtDump.GetTypeCount(heap, typeName, out error);
+                    return new KeyValuePair<string,int>(error,count);
+                }
+            });
 
-		/// <summary>
-		/// Handle the context menu of ListViewBottomGrid 
-		/// </summary>
-		/// <param name="sender"></param>
-		/// <param name="e"></param>
-		private void ListViewBottomGridClick(object sender, RoutedEventArgs e)
+            string msg;
+            if (taskResult.Key != null)
+            {
+                msg = "Getting type count failed, " + typeName;
+            }
+            else
+            {
+                msg = "Type count: " + taskResult.Value +  ", " + typeName;
+            }
+
+            SetEndTaskMainWindowState(msg);
+            if (taskResult.Key != null)
+                ShowError(taskResult.Key);
+
+        }
+
+        private void AhqCollectionContentArray(object sender, RoutedEventArgs e)
+        {
+            string error;
+            var dumpFilePath = SelectCrashDumpFile();
+            if (dumpFilePath == null) return;
+            ulong addr;
+            if (!GetUserEnteredAddress("Enter an array address.", out addr))
+                return;
+            var progressHandler = new Progress<string>(MainStatusShowMessage);
+            var progress = progressHandler as IProgress<string>;
+
+        }
+
+        /// <summary>
+        /// Handle the context menu of ListViewBottomGrid 
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void ListViewBottomGridClick(object sender, RoutedEventArgs e)
 		{
 			try
 			{
@@ -1989,5 +2042,7 @@ namespace MDRDesk
 				return;
 			}
 		}
-	}
+
+
+    }
 }

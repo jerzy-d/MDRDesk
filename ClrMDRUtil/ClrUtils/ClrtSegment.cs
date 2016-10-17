@@ -114,24 +114,6 @@ namespace ClrMDRIndex
 			return (addr >= FirstAddress && addr <= LastAddress);
 		}
 
-		public int GetGenerationOld(ulong addr)
-		{
-			if (Ephemeral)
-			{
-				if (addr > Gen1Start) return 0;
-				if (addr > Gen2Start) return 1;
-				return 2;
-			}
-			else if (Large)
-			{
-				return 3;
-			}
-			else
-			{
-				return 2;
-			}
-		}
-
 		public Generation GetGeneration(ulong addr)
 		{
 			if (Large) return Generation.Large;
@@ -201,7 +183,7 @@ namespace ClrMDRIndex
 	        for (int i = 0, icnt = segments.Length; i < icnt; ++i)
 	        {
 	            var seg = segments[i];
-	            int genNdx = (int)seg.GetGeneration(seg.FirstAddress);
+	            int genNdx = (int)seg.GetGeneration(seg.LastAddress);
 	            genTotal[genNdx] += seg.InstanceCount;
 	            genSize[genNdx] += seg.InstanceSize;
 	            freeTotal[genNdx] += seg.FreeCount;

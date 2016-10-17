@@ -1160,7 +1160,36 @@ namespace ClrMDRIndex
 			}
 		}
 
-		public static SortedDictionary<string, quadruple<int, ulong, ulong, ulong>> GetTypeSizesInfo(ClrHeap heap, out string error)
+        public static int GetTypeCount(ClrHeap heap, string typeName, out string error)
+        {
+            error = null;
+            int typeCount = 0;
+            try
+            {
+                var segs = heap.Segments;
+                for (int i = 0, icnt = segs.Count; i < icnt; ++i)
+                {
+                    var seg = segs[i];
+                    ulong addr = seg.FirstObject;
+                    while (addr != 0ul)
+                    {
+                        var clrType = heap.GetObjectType(addr);
+                        if (clrType == null || clrType.Name != typeName) goto NEXT_OBJECT;
+                        ++typeCount;
+                        NEXT_OBJECT:
+                        addr = seg.NextObject(addr);
+                    }
+                }
+                return typeCount;
+            }
+            catch (Exception ex)
+            {
+                error = Utils.GetExceptionErrorString(ex);
+                return -1;
+                throw;
+            }
+        }
+        public static SortedDictionary<string, quadruple<int, ulong, ulong, ulong>> GetTypeSizesInfo(ClrHeap heap, out string error)
 		{
 			error = null;
 			try

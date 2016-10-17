@@ -32,6 +32,13 @@
             <Setter Property="FontSize" Value="12" />
             <Setter Property="FontFamily" Value="Segoe UI" />
         </Style>
+        <Style x:Key="ButtonStyle5" TargetType="Button">
+            <Setter Property="Foreground" Value="Black"/>
+            <Setter Property="Background" Value="Green"/>
+            <Setter Property="FontStyle" Value="Italic"/>
+            <Setter Property="FontFamily" Value="Verdana"/>
+            <Setter Property="FontSize" Value="16"/>
+        </Style>
         <ContextMenu x:Key="AddresListContextMenu" x:Shared="False">
             <MenuItem x:Name="AddrLstCopyAddress" Header="Copy Address (clipboard)" Click="CopyAddressSelectionClicked" ></MenuItem>
             <MenuItem x:Name="AddrLstCopyAddressAll" Header="Copy All Addresses (clipboard)" Click="CopyAddressAllClicked"></MenuItem>
@@ -39,6 +46,19 @@
             <MenuItem x:Name="AddrLstGetInstValue" Header="Get Instance Value" Click="LbGetInstValueClicked"/>
             <MenuItem x:Name="AddrLstGetInstHierarchy" Header="Get Instance Hierarchy" Click="LbGetInstHierarchyClicked"/>
         </ContextMenu>
+        <ControlTemplate x:Key="ButtonControlTemplate1" TargetType="Button">
+            <Grid>
+                <Ellipse Margin="8,0,0,0" Stroke="#FF000000" VerticalAlignment="Center" HorizontalAlignment="Center">
+                    <Ellipse.Fill>
+                        <LinearGradientBrush EndPoint="0.5,1" StartPoint="0.5,1">
+                            <GradientStop Color="#FF4292F2"/>
+                            <GradientStop Color="#FFC9EDF7" Offset="1"/>
+                        </LinearGradientBrush>
+                    </Ellipse.Fill>
+                </Ellipse>
+                <TextBlock Margin="1,1,1,1" Text="Run" HorizontalAlignment="Center" VerticalAlignment="Center" TextWrapping="Wrap"/>
+            </Grid>
+        </ControlTemplate>
         <!-- change ulong value to hex string-->
         <local:LongHexConverter x:Key="LongHexConverter" />
         <Grid x:Key="InstanceHierarchyView" Name="InstanceHierarchyView" x:Shared="False">
@@ -327,9 +347,11 @@
                 <RowDefinition Height="5"/>
                 <RowDefinition Height="75*"/>
                 <RowDefinition Height="5"/>
-                <RowDefinition Height="5*"/>
+                <RowDefinition Height="8*"/>
             </Grid.RowDefinitions>
-            <TextBox x:Name="TypeValueReportTopTextBox" Grid.Row="0" Grid.Column="0" Grid.ColumnSpan="3" VerticalAlignment="Stretch" HorizontalAlignment="Stretch" Margin="1,1,1,1"/>
+            <TextBox x:Name="TypeValueReportTopTextBox" Grid.Row="0" Grid.Column="0" Grid.ColumnSpan="2" VerticalAlignment="Stretch" HorizontalAlignment="Stretch" Margin="1,1,1,1"/>
+            <!--<Button x:Name="TypeValueReportRunBottom" Grid.Row="0" Grid.Column="2" Margin="1,1,1,1" Height="36" Width="80" Content="Button" Template="{StaticResource ButtonControlTemplate1}"/>-->
+            <Button Grid.Row="0" Grid.Column="2" Style="{StaticResource ButtonStyle5}" Width="115" Margin="0,2,0,2" Content="Run"/>
             <GridSplitter Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="3" VerticalAlignment="Center" HorizontalAlignment="Stretch" Height="5" ShowsPreview="False" Background="DarkGray"></GridSplitter>
             <TreeView x:Name="TypeValueReportTreeView" Grid.Row="2" Grid.Column="0" VerticalAlignment="Stretch" HorizontalAlignment="Stretch" Margin="20,1,1,1" 
                        MouseDoubleClick="TypeValueReportTreeViewDoubleClicked"  MouseRightButtonDown="TypeValueReportMouseDown"  FontSize="14" >
@@ -411,7 +433,11 @@
                         <MenuItem x:Name="RecentIndexMenuItem" Header="Recent Indices" Click="RecentIndicesClicked"/>
                     </MenuItem>
                 <MenuItem x:Name="AdhocQueries" Header="Ad-hoc Queries" Background="LightBlue" VerticalAlignment="Center">
-                        <MenuItem x:Name="StringUsage" Header="String Usage..." Click="StringUsageClicked"/>
+                        <MenuItem x:Name="AhqStringUsage" Header="String Usage..." Click="StringUsageClicked"/>
+                        <MenuItem x:Name="AhqTypeCount" Header="Type Count..." Click="AhqTypeCountClicked"/>
+                        <MenuItem x:Name="AhqCollectionContent" Header="Collection Content">
+                            <MenuItem x:Name="AhqArray" Header="Array..." Click="AhqCollectionContentArray"/>
+                        </MenuItem>
                         <!--
                     <MenuItem Header="{Binding ElementName=CbAdHocDump, Path=SelectedItem}" >
                     </MenuItem>

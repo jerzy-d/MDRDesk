@@ -687,91 +687,125 @@ namespace UnitTestMdr
 			Assert.IsTrue(ok,error);
 		}
 
-		#endregion Types
+        #endregion Types
 
 
-		#region Instance References
+        #region Instance References
 
-		//[TestMethod]
-		//public void TestFindInstanceParents()
-		//{
-		//	string error = null;
+        //[TestMethod]
+        //public void TestFindInstanceParents()
+        //{
+        //	string error = null;
 
-		//	ulong addr = 0x000000027ff968;
+        //	ulong addr = 0x000000027ff968;
 
-		//	using (var map = OpenMap(@"D:\Jerzy\WinDbgStuff\dumps\DumpSearch\DumpSearch.exe_160711_121816.map"))
-		//	{
-		//		try
-		//		{
-		//			var result = map.GetFieldReferences(addr, out error);
-		//			InstanceTypeNode rootNode = map.GetParentReferences(addr, out error);
-
-
-		//		}
-		//		catch (Exception ex)
-		//		{
-		//			error = Utils.GetExceptionErrorString(ex);
-		//			Assert.IsTrue(false, error);
-		//		}
-		//	}
-		//}
-
-		#endregion Instance References
+        //	using (var map = OpenMap(@"D:\Jerzy\WinDbgStuff\dumps\DumpSearch\DumpSearch.exe_160711_121816.map"))
+        //	{
+        //		try
+        //		{
+        //			var result = map.GetFieldReferences(addr, out error);
+        //			InstanceTypeNode rootNode = map.GetParentReferences(addr, out error);
 
 
-		//[TestMethod]
-		//public void TestFindInstanceParent()
-		//{
-		//	const string typeName = "System.EventHandler";
-		//	string[] typePrefixes = new string[] { "ECS.", "Eze." };
-		//	string error = null;
-		//	Queue<InstanceTypeNode> que = new Queue<InstanceTypeNode>();
-		//	List<InstanceTypeNode> lst = new List<InstanceTypeNode>(32);
-		//	SortedDictionary<string, List<ulong>> dct = new SortedDictionary<string, List<ulong>>();
+        //		}
+        //		catch (Exception ex)
+        //		{
+        //			error = Utils.GetExceptionErrorString(ex);
+        //			Assert.IsTrue(false, error);
+        //		}
+        //	}
+        //}
 
-		//	using (var map = OpenMap(@"D:\Jerzy\WinDbgStuff\dumps\OMS\AustralianSuper\EzeOMSFrozen07272016.map"))
-		//	{
-		//		try
-		//		{
+        [TestMethod]
+        public void TestGetTypeAddresses()
+        {
+            string error = null;
 
-		//			var id = map.GetTypeId(typeName);
-		//			Assert.IsTrue(IndexValue.IsIndex(id));
-		//			Assert.IsFalse(IndexValue.IsInvalidIndex(id));
-		//			var addresses = map.GetTypeAddresses(id);
-		//			for (int i = 0, icnt = addresses.Length; i < icnt; ++i)
-		//			{
-		//				lst.Clear();
-		//				que.Clear();
-		//				var addr = addresses[i];
-		//				var node = map.GetParentReferences(addr, out error, 3);
-		//				node.GetNodeList(que, lst, false);
-		//				for (int j = 0, jcnt = lst.Count; j < jcnt; ++j)
-		//				{
-		//					if (Utils.StartsWithPrefix(lst[j].TypeName, typePrefixes))
-		//					{
-		//						List<ulong> alst;
-		//						if (dct.TryGetValue(lst[j].TypeName, out alst))
-		//						{
-		//							alst.Add(lst[j].Address);
-		//						}
-		//						else
-		//						{
-		//							dct.Add(lst[j].TypeName,new List<ulong>() { lst[j].Address });
-		//						}
-		//					}
-		//				}
+            string typeName = "System.ServiceModel.Channels.BindingElement[]";
 
-		//			}
-		//		}
-		//		catch (Exception ex)
-		//		{
-		//			error = Utils.GetExceptionErrorString(ex);
-		//			Assert.IsTrue(false, error);
-		//		}
-		//	}
-		//}
+            using (var map = OpenMap(@"C:\WinDbgStuff\Dumps\Analytics\ConvergeEx\Analytics.map"))
+            {
+                try
+                {
+                    var typeId = map.GetTypeId(typeName);
+                    var mapTypeName = map.GetTypeName(typeId);
+                    var addresses = map.GetTypeAddresses(typeId);
+                    var instanceTypes = map.InstanceTypeIds;
+                    var instances = map.Instances;
+                    List<ulong> list = new List<ulong>(100000);
+                    for (int i = 0, icnt = instanceTypes.Length; i < icnt; ++i)
+                    {
+                        if (instanceTypes[i] == typeId)
+                        {
+                            list.Add(instances[i]);
+                        }
+                    }
 
-		[TestMethod]
+                }
+                catch (Exception ex)
+                {
+                    error = Utils.GetExceptionErrorString(ex);
+                    Assert.IsTrue(false, error);
+                }
+            }
+        }
+
+        #endregion Instance References
+
+
+        //[TestMethod]
+        //public void TestFindInstanceParent()
+        //{
+        //	const string typeName = "System.EventHandler";
+        //	string[] typePrefixes = new string[] { "ECS.", "Eze." };
+        //	string error = null;
+        //	Queue<InstanceTypeNode> que = new Queue<InstanceTypeNode>();
+        //	List<InstanceTypeNode> lst = new List<InstanceTypeNode>(32);
+        //	SortedDictionary<string, List<ulong>> dct = new SortedDictionary<string, List<ulong>>();
+
+        //	using (var map = OpenMap(@"D:\Jerzy\WinDbgStuff\dumps\OMS\AustralianSuper\EzeOMSFrozen07272016.map"))
+        //	{
+        //		try
+        //		{
+
+        //			var id = map.GetTypeId(typeName);
+        //			Assert.IsTrue(IndexValue.IsIndex(id));
+        //			Assert.IsFalse(IndexValue.IsInvalidIndex(id));
+        //			var addresses = map.GetTypeAddresses(id);
+        //			for (int i = 0, icnt = addresses.Length; i < icnt; ++i)
+        //			{
+        //				lst.Clear();
+        //				que.Clear();
+        //				var addr = addresses[i];
+        //				var node = map.GetParentReferences(addr, out error, 3);
+        //				node.GetNodeList(que, lst, false);
+        //				for (int j = 0, jcnt = lst.Count; j < jcnt; ++j)
+        //				{
+        //					if (Utils.StartsWithPrefix(lst[j].TypeName, typePrefixes))
+        //					{
+        //						List<ulong> alst;
+        //						if (dct.TryGetValue(lst[j].TypeName, out alst))
+        //						{
+        //							alst.Add(lst[j].Address);
+        //						}
+        //						else
+        //						{
+        //							dct.Add(lst[j].TypeName,new List<ulong>() { lst[j].Address });
+        //						}
+        //					}
+        //				}
+
+        //			}
+        //		}
+        //		catch (Exception ex)
+        //		{
+        //			error = Utils.GetExceptionErrorString(ex);
+        //			Assert.IsTrue(false, error);
+        //		}
+        //	}
+        //}
+
+        [TestMethod]
 		public void TestTypeParents()
 		{
 			const string typeName = "System.Threading.CancellationTokenRegistration[]";
