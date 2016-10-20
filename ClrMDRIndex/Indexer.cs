@@ -1,4 +1,5 @@
 ﻿//#define CODETEST
+#define TEST__INDEXING
 using System;
 using System.Collections.Generic;
 using System.Collections.Concurrent;
@@ -328,16 +329,15 @@ namespace ClrMDRIndex
 			return domains;
 		}
 
-		private static ClrType AddTypeGetBase(string key, ClrType clrType, SortedDictionary<string, ClrtType> typeDct)
+		private static int AddTypeGetBase(string key, ClrType clrType, SortedDictionary<string, ClrtType> typeDct)
 		{
 			var name = clrType.Name;
 			var mthdTbl = clrType.MethodTable;
 			var elem = clrType.ElementType;
 			var baseName = clrType.BaseType?.Name ?? Constants.NullTypeName;
-
-
-			typeDct.Add(key, new ClrtType(name, mthdTbl, elem, baseName));
-			return clrType.BaseType;
+			var id = typeDct.Count;
+			typeDct.Add(key, new ClrtType(name, mthdTbl, elem, baseName, id));
+			return id;
 		}
 
 		public static Tuple<ClrtTypes[], ClrtRoots[]> GetTypeInfos(ClrtDump clrtDump,
@@ -370,7 +370,7 @@ namespace ClrMDRIndex
 				{
 					TempArena<ulong> instanceArena = new TempArena<ulong>(10000000, 10);
 					TempArena<uint> sizeArena = new TempArena<uint>(10000000, 10);
-					TempArena<ulong> mthdtbls = new TempArena<ulong>(10000000, 10);
+					TempArena<int> mthdtbls = new TempArena<int>(10000000, 10);
 					var clrRuntime = clrtDump.Runtimes[r];
 					clrRuntime.Flush();
 					ClrHeap heap = clrRuntime.GetHeap();
@@ -378,7 +378,7 @@ namespace ClrMDRIndex
 					{
 						{
 							ClrtType.GetKey(Constants.NullTypeName, Constants.InvalidAddress),
-							new ClrtType(Constants.NullTypeName, Constants.InvalidAddress, ClrElementType.Unknown, Constants.NullTypeName)
+							new ClrtType(Constants.NullTypeName, Constants.InvalidAddress, ClrElementType.Unknown, Constants.NullTypeName,0)
 						}
 					};
 					duplicates[r] = new List<string>();
@@ -386,15 +386,17 @@ namespace ClrMDRIndex
 					int segIndex = 0;
 					var segs = heap.Segments;
 					ClrtSegment[] mysegs = new ClrtSegment[segs.Count];
+
 					for (int i = 0, icnt = segs.Count; i < icnt; ++i)
 					{
 						progress?.Report("[Indexer.GetTypeInfos] Runtime: " + r + ", processing segment: " + i + "/" + icnt);
 
 						var seg = segs[i];
-						int segInstCount = 0;
-						int segFreeCount = 0;
-						ulong segInstSize = 0;
-						ulong segFreeSize = 0;
+
+						var genCounts = new int[3];
+						var genSizes = new ulong[3];
+						var genFreeCounts = new int[3];
+						var genFreeSizes = new ulong[3];
 
 						ulong addr = seg.FirstObject;
 						while (addr != 0ul)
@@ -403,41 +405,45 @@ namespace ClrMDRIndex
 							var clrType = heap.GetObjectType(addr);
 							if (clrType == null)
 							{
-								mthdtbls.Add(Constants.InvalidAddress);
+								mthdtbls.Add(0);
 								sizeArena.Add(0u);
 								goto NEXT_OBJECT;
 							}
+							var isFree = Utils.SameStrings(clrType.Name, Constants.Free);
 							var sz = clrType.GetSize(addr);
 							if (sz > (ulong)UInt32.MaxValue) sz = (ulong)UInt32.MaxValue;
 							sizeArena.Add((uint)sz);
 
-							if (Utils.SameStrings(clrType.Name, Constants.Free))
+							// get generation stats
+							//
+							if (isFree)
+								ClrtSegment.SetGenerationStats(seg, addr, sz, genFreeCounts, genFreeSizes);
+							else
+								ClrtSegment.SetGenerationStats(seg, addr, sz, genCounts, genSizes);
+
+							var clrTypeName = clrType.Name;
+							ulong mt = 0UL;
+
+							mt = clrType.MethodTable;
+							string key = ClrtType.GetKey(clrTypeName, mt);
+							ClrtType clTp;
+							if (!typeDct.TryGetValue(key,out clTp))
 							{
-								++segFreeCount;
-								segFreeSize += sz;
+								var id = AddTypeGetBase(key, clrType, typeDct);
+								mthdtbls.Add(id);
 							}
 							else
 							{
-								++segInstCount;
-								segInstSize += sz;
+								mthdtbls.Add(clTp.Id);
 							}
-
-
-							mthdtbls.Add(clrType.MethodTable);
-							string key = ClrtType.GetKey(clrType.Name, clrType.MethodTable);
-							if (!typeDct.ContainsKey(key))
-							{
-								var baseType = AddTypeGetBase(key, clrType, typeDct);
-							}
-
 							NEXT_OBJECT:
 							addr = seg.NextObject(addr);
 						}
 						var instanceCount = instanceArena.Count();
 						mysegs[i] = new ClrtSegment(heap.Segments[i], instanceArena.GetItemAt(segIndex), instanceArena.LastItem(),
-							segIndex, instanceCount - 1,
-							segInstCount, segInstSize, segFreeCount, segFreeSize);
+							segIndex, instanceCount - 1);
 						segIndex = instanceCount;
+						mysegs[i].SetGenerationStats(genCounts, genSizes, genFreeCounts, genFreeSizes);
 					}
 
 					// refresh heap
@@ -464,6 +470,10 @@ namespace ClrMDRIndex
 					sizes[r] = sizeArena.GetArrayAndClear();
 					sizeArena = null;
 					Utils.ForceGcWithCompaction();
+
+					int[] instanceTps = mthdtbls.GetArrayAndClear();
+					mthdtbls = null;
+
 
 					// get fresh heap
 					//
@@ -554,6 +564,7 @@ namespace ClrMDRIndex
 					int[][] staticFieldTypeIds = new int[typeCount][];
 					int[][] staticFieldNameIds = new int[typeCount][];
 					ulong[][] staticFieldMts = new ulong[typeCount][];
+					int[] tempIds = new int[typeCount];
 
 					int ndx = 0;
 					foreach (var kv in typeDct)
@@ -567,6 +578,7 @@ namespace ClrMDRIndex
 						staticFieldTypeIds[ndx] = new int[kv.Value.StaticFieldMts.Length];
 						staticFieldNameIds[ndx] = kv.Value.StaticFieldNameIds;
 						staticFieldMts[ndx] = kv.Value.StaticFieldMts;
+						tempIds[ndx] = kv.Value.Id;
 						++ndx;
 					}
 
@@ -607,17 +619,16 @@ namespace ClrMDRIndex
 					staticFieldTypeIds = null;
 					staticFieldNameIds = null;
 					staticFieldMts = null;
-
-					ulong[] instanceTps = mthdtbls.GetArrayAndClear();
 					mthdtbls = null;
-
 
 					Utils.ForceGcWithCompaction();
 
+					var tempIdMap = Utils.Iota(tempIds.Length);
+					Array.Sort(tempIds, tempIdMap);
 					int[] tps = new int[instanceTps.Length];
 					for (int j = 0, jcnt = tps.Length; j < jcnt; ++j)
 					{
-						tps[j] = types.GetTypeId(instanceTps[j]);
+						tps[j] = tempIdMap[instanceTps[j]];
 					}
 					instanceTps = null;
 					instanceTypes[r] = tps;
@@ -705,6 +716,18 @@ namespace ClrMDRIndex
 							que,
 							workerErrors
 						));
+
+					//// TODO JRD - remove
+					//var testTypeId = allTypes[0].GetTypeId("System.ServiceModel.Channels.BindingElement[]");
+					//var types = allInstanceTypes[0];
+					//int testTypeCnt = 0;
+					//for (int i = 0, icnt = instances.Length; i < icnt; ++i)
+					//{
+					//	if (types[i] == testTypeId)
+					//		++testTypeCnt;
+					//}
+
+					//// TODO JRD -- remove above
 
 					for (int i = 0, icnt = instances.Length; i < icnt; ++i)
 					{

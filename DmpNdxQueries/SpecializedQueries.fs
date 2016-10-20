@@ -94,23 +94,23 @@ module SpecializedQueries =
             ndx <- ndx + 1
         values
 
-    let getArrayContentImpl (heap:ClrHeap) (addr:uint64) (aryType:ClrType) : string * string * int32 * string array =
-        let count = aryType.GetArrayLength(addr)
-        let aryElemType = getArrayElemType heap addr aryType 0 count
-        if aryElemType = null then
-            ("Getting type at : " + Utils.AddressString(addr) + " failed, null was returned.", null, count, null)
-        else
-            let values = getArrayValues heap addr aryType aryType.ComponentType aryElemType count
-            (null, aryElemType.Name,count,values.ToArray())
-
-    let getArrayContent (heap:ClrHeap) (addr:uint64) : string * string * int32 * string array =
-        let clrType = heap.GetObjectType(addr)
-        if (clrType = null) then 
-            ("Getting type at : " + Utils.AddressString(addr) + " failed, null was returned.", null, 0, null)
-        elif (not clrType.IsArray) then
-            ("Type at : " +  Utils.AddressString(addr) + " is not an array.", null, 0, emptyStringArray)
-        else
-            getArrayContentImpl heap addr clrType 
+//    let getArrayContentImpl (heap:ClrHeap) (addr:uint64) (aryType:ClrType) : string * string * int32 * string array =
+//        let count = aryType.GetArrayLength(addr)
+//        let aryElemType = getArrayElemType heap addr aryType 0 count
+//        if aryElemType = null then
+//            ("Getting type at : " + Utils.AddressString(addr) + " failed, null was returned.", null, count, null)
+//        else
+//            let values = getArrayValues heap addr aryType aryType.ComponentType aryElemType count
+//            (null, aryElemType.Name,count,values.ToArray())
+//
+//    let getArrayContent (heap:ClrHeap) (addr:uint64) : string * string * int32 * string array =
+//        let clrType = heap.GetObjectType(addr)
+//        if (clrType = null) then 
+//            ("Getting type at : " + Utils.AddressString(addr) + " failed, null was returned.", null, 0, null)
+//        elif (not clrType.IsArray) then
+//            ("Type at : " +  Utils.AddressString(addr) + " is not an array.", null, 0, emptyStringArray)
+//        else
+//            getArrayContentImpl heap addr clrType 
 
     (*** System.WeakReference *)
 

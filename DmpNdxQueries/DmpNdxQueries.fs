@@ -36,6 +36,25 @@ module FQry =
         with
             | exn -> (exn.ToString(),nullTypes.ToArray())
 
+    let getTypeAddresses (heap:ClrHeap) (typeName:string): (string * KeyValuePair<address,uint64> array) =
+        let types = ResizeArray<KeyValuePair<address,uint64>>(1024)
+        try
+            let mutable ndx:int32 = 0            
+            while ndx < heap.Segments.Count do
+                let seg = heap.Segments.[ndx]
+                let mutable addr = seg.FirstObject;
+                while addr <> 0UL do
+                    let clrtype = heap.GetObjectType(addr)
+                    if isNull clrtype then ()
+                    elif Utils.SameStrings(typeName, clrtype.Name) then
+                        types.Add(new KeyValuePair<address,uint64>(addr,clrtype.MethodTable))
+                    else ()
+                    addr <- seg.NextObject(addr)
+                ndx <- ndx + 1
+            (null, types.ToArray())
+        with
+            | exn -> (exn.ToString(),types.ToArray())
+
     let getHeapAddresses (heap:ClrHeap) : (string * address array * address array) =
         let nullTypes = ResizeArray<address>()
         let instances = ResizeArray<address>(10000000)

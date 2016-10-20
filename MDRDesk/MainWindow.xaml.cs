@@ -1,31 +1,23 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.ComponentModel;
-using System.Data.SqlClient;
 using System.Diagnostics;
 using System.Globalization;
 using System.IO;
-using System.Linq;
 using System.Reflection;
-using System.Runtime;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Data;
-using System.Windows.Forms.VisualStyles;
 using System.Windows.Input;
-using System.Windows.Media;
 using System.Windows.Threading;
-using Microsoft.Diagnostics.Runtime;
 using ClrMDRIndex;
-using DmpNdxQueries;
 using Application = System.Windows.Application;
 using Binding = System.Windows.Data.Binding;
 using Clipboard = System.Windows.Clipboard;
 using Cursors = System.Windows.Input.Cursors;
 using HorizontalAlignment = System.Windows.HorizontalAlignment;
-using Label = System.Windows.Controls.Label;
 using ListBox = System.Windows.Controls.ListBox;
 using ListView = System.Windows.Controls.ListView;
 using MessageBox = System.Windows.MessageBox;
@@ -1689,7 +1681,7 @@ namespace MDRDesk
 			{
 				string error;
 				var nodes = CurrentMap.GetAddressesDescendants(typeId, typeAddresses, level, out error);
-				return new Tuple<string, DependencyNode, int>(error, nodes.Item1, nodes.Item2);
+				return new Tuple<string, DependencyNode, int>(error, nodes?.Item1, nodes?.Item2 ?? -1);
 			});
 
 			bool actionFailed = result.Item1 != null && !Utils.IsInformationString(result.Item1);

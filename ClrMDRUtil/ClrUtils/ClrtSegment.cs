@@ -46,16 +46,37 @@ namespace ClrMDRIndex
 		public ulong FirstAddress, LastAddress;
 		public int FirstIndex, EndIndex;
 
-		public int InstanceCount; // free instances are not included
-		public ulong InstanceSize; // sizes of free instances are not included
-		public int FreeCount;
-		public ulong FreeSize;
+		private int _gen0Count;
+		public int Gen0Count => _gen0Count;
+		private int _gen1Count;
+		public int Gen1Count => _gen1Count;
+		private int _gen2Count;
+		public int Gen2Count => _gen2Count;
 
+		private ulong _gen0Size;
+		public ulong Gen0Size => _gen0Size;
+		private ulong _gen1Size;
+		public ulong Gen1Size => _gen1Size;
+		private ulong _gen2Size;
+		public ulong Gen2Size => _gen2Size;
+
+		private int _gen0FreeCount;
+		public int Gen0FreeCount => _gen0FreeCount;
+		private int _gen1FreeCount;
+		public int Gen1FreeCount => _gen1FreeCount;
+		private int _gen2FreeCount;
+		public int Gen2FreeCount => _gen2FreeCount;
+
+		private ulong _gen0FreeSize;
+		public ulong Gen0FreeSize => _gen0FreeSize;
+		private ulong _gen1FreeSize;
+		public ulong Gen1FreeSize => _gen1FreeSize;
+		private ulong _gen2FreeSize;
+		public ulong Gen2FreeSize => _gen2FreeSize;
 
 		private ClrtSegment() { }
 
-		public ClrtSegment(ClrSegment seg, ulong firstAddr, ulong lastAddr, int firstNdx, int endNdx,
-			int instCount, ulong instSize, int freeCount, ulong freeSize)
+		public ClrtSegment(ClrSegment seg, ulong firstAddr, ulong lastAddr, int firstNdx, int endNdx)
 		{
 			CommittedEnd = seg.CommittedEnd;
 			ReservedEnd = seg.ReservedEnd;
@@ -75,15 +96,46 @@ namespace ClrMDRIndex
 			LastAddress = lastAddr;
 			FirstIndex = firstNdx;
 			EndIndex = endNdx;
-			InstanceCount = instCount;
-			InstanceSize = instSize;
-			FreeCount = freeCount;
-			FreeSize = freeSize;
 		}
 
 		public int Count()
 		{
 			return EndIndex - FirstIndex;
+		}
+
+		public static void SetGenerationStats(ClrSegment clrSeg, ulong addr, ulong size, int[] cnts, ulong[] sizes)
+		{
+			if (clrSeg.IsLarge)
+			{
+				cnts[0] += 1;
+				sizes[0] += size;
+			}
+			else
+			{
+				var gen = clrSeg.GetGeneration(addr);
+				if (gen >= 0)
+				{
+					cnts[gen] += 1;
+					sizes[gen] += size;
+				}
+			}
+		}
+
+		public void SetGenerationStats(int[] cnts, ulong[] sizes, int[] freeCnts, ulong[] freeSizes)
+		{
+			_gen0Count = cnts[0];
+			_gen1Count = cnts[1];
+			_gen2Count = cnts[2];
+			_gen0Size = sizes[0];
+			_gen1Size = sizes[1];
+			_gen2Size = sizes[2];
+
+			_gen0FreeCount = freeCnts[0];
+			_gen1FreeCount = freeCnts[1];
+			_gen2FreeCount = freeCnts[2];
+			_gen0FreeSize = freeSizes[0];
+			_gen1FreeSize = freeSizes[1];
+			_gen2FreeSize = freeSizes[2];
 		}
 
 		public void ToShortString(StringBuilder sb)
@@ -175,21 +227,39 @@ namespace ClrMDRIndex
 
 	    public static Tuple<int[],ulong[],int[],ulong[]> GetTotalGenerationDistributions(ClrtSegment[] segments)
 	    {
-	        var genTotal = new int[4];
-	        var genSize = new ulong[4];
-	        var freeTotal = new int[4];
-	        var freeSize = new ulong[4];
+	        var genTotalCount = new int[4];
+	        var genTotalSize = new ulong[4];
+	        var freeTotalGenCount = new int[4];
+	        var freeTotalGenSize = new ulong[4];
 
 	        for (int i = 0, icnt = segments.Length; i < icnt; ++i)
 	        {
 	            var seg = segments[i];
-	            int genNdx = (int)seg.GetGeneration(seg.LastAddress);
-	            genTotal[genNdx] += seg.InstanceCount;
-	            genSize[genNdx] += seg.InstanceSize;
-	            freeTotal[genNdx] += seg.FreeCount;
-	            freeSize[genNdx] += seg.FreeSize;
-	        }
-	        return Tuple.Create(genTotal, genSize, freeTotal, freeSize);
+		        if (seg.Large)
+		        {
+			        genTotalCount[(int) Generation.Large] += seg.Gen0Count;
+			        genTotalSize[(int) Generation.Large] += seg.Gen0Size;
+			        freeTotalGenCount[(int) Generation.Large] += seg.Gen0FreeCount;
+			        freeTotalGenSize[(int) Generation.Large] += seg.Gen0FreeSize;
+					continue;
+		        }
+				genTotalCount[(int)Generation.Gen0] += seg.Gen0Count;
+				genTotalSize[(int)Generation.Gen0] += seg.Gen0Size;
+				freeTotalGenCount[(int)Generation.Gen0] += seg.Gen0FreeCount;
+				freeTotalGenSize[(int)Generation.Gen0] += seg.Gen0FreeSize;
+
+				genTotalCount[(int)Generation.Gen1] += seg.Gen1Count;
+				genTotalSize[(int)Generation.Gen1] += seg.Gen1Size;
+				freeTotalGenCount[(int)Generation.Gen1] += seg.Gen1FreeCount;
+				freeTotalGenSize[(int)Generation.Gen1] += seg.Gen1FreeSize;
+
+				genTotalCount[(int)Generation.Gen2] += seg.Gen2Count;
+				genTotalSize[(int)Generation.Gen2] += seg.Gen2Size;
+				freeTotalGenCount[(int)Generation.Gen2] += seg.Gen2FreeCount;
+				freeTotalGenSize[(int)Generation.Gen2] += seg.Gen2FreeSize;
+			}
+
+	        return Tuple.Create(genTotalCount, genTotalSize, freeTotalGenCount, freeTotalGenSize);
 	    }
 
         public static string GetGenerationHistogramSimpleString(int[] histogram)
@@ -246,10 +316,21 @@ namespace ClrMDRIndex
 			writer.Write(Ephemeral);
 			writer.Write(Large);
 
-			writer.Write(InstanceCount);
-			writer.Write(InstanceSize);
-			writer.Write(FreeCount);
-			writer.Write(FreeSize);
+			writer.Write(_gen0Count);
+			writer.Write(_gen1Count);
+			writer.Write(_gen2Count);
+
+			writer.Write(_gen0Size);
+			writer.Write(_gen1Size);
+			writer.Write(_gen2Size);
+
+			writer.Write(_gen0FreeCount);
+			writer.Write(_gen1FreeCount);
+			writer.Write(_gen2FreeCount);
+
+			writer.Write(_gen0FreeSize);
+			writer.Write(_gen1FreeSize);
+			writer.Write(_gen2FreeSize);
 		}
 
 		private static ClrtSegment Read(BinaryReader reader)
@@ -277,10 +358,22 @@ namespace ClrMDRIndex
 				Ephemeral = reader.ReadBoolean(),
 				Large = reader.ReadBoolean(),
 
-				InstanceCount = reader.ReadInt32(),
-				InstanceSize = reader.ReadUInt64(),
-				FreeCount = reader.ReadInt32(),
-				FreeSize = reader.ReadUInt64(),
+				_gen0Count = reader.ReadInt32(),
+				_gen1Count = reader.ReadInt32(),
+				_gen2Count = reader.ReadInt32(),
+
+				_gen0Size = reader.ReadUInt64(),
+				_gen1Size = reader.ReadUInt64(),
+				_gen2Size = reader.ReadUInt64(),
+
+				_gen0FreeCount = reader.ReadInt32(),
+				_gen1FreeCount = reader.ReadInt32(),
+				_gen2FreeCount = reader.ReadInt32(),
+
+				_gen0FreeSize = reader.ReadUInt64(),
+				_gen1FreeSize = reader.ReadUInt64(),
+				_gen2FreeSize = reader.ReadUInt64(),
+
 			};
 			return seg;
 		}

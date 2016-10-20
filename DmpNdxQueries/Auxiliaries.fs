@@ -23,7 +23,8 @@ module Auxiliaries =
     let nullName = "{null}"
     let nonValue = "\u2734"
 
-    let addressString (addr:address) = String.Format("0x{0:x14}", addr)
+    let addressString (addr:address) = Utils.AddressString(addr)
+    let addressMarkupString (addr:address) = "{" + Constants.FancyKleeneStar.ToString() + Utils.AddressString(addr) + "}"
     let fullAddressString (addr:address) = String.Format("0x{0:x16}", addr)
     let sortableLengthString (len:address) = String.Format("{0,14:0#,###,###,###}", len)
 

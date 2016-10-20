@@ -10,6 +10,52 @@ module CollectionContent =
     open FSharp.Charting.ChartTypes
     open Microsoft.Diagnostics.Runtime
     open ClrMDRIndex
+
+    (*
+        System.Collections.Generic.Dictionary<TKey,TValue>
+    *)
+
+    let getDictionaryCount (heap:ClrHeap) (addr:address) =
+        let clrType = heap.GetObjectType(addr)
+        if (isNull clrType) then
+            ("Cannot get type at address: " + Utils.AddressString(addr), -1)
+        else
+            let fld = clrType.GetFieldByName("count")
+            let count = fld.GetValue(addr,false,false)
+            (null,unbox<int>(count))
+
+    let getDictionaryEntries (heap:ClrHeap) (addr:address) : string * address * ClrType =
+         let dctType = heap.GetObjectType(addr)
+         let fld = dctType.GetFieldByName("entries")
+         let entrAddr = unbox<address>(fld.GetValue(addr,false,false))
+         let entrType = heap.GetObjectType(entrAddr)
+         (null,entrAddr,entrType)
+
+    let getDictionaryStringKeys (heap:ClrHeap) (addr:address) (entrAryType:ClrType): string array =
+         let count = entrAryType.GetArrayLength(addr)
+         let lst = new ResizeArray<string>()
+         for i = 0 to count - 1 do
+            let elemAddr = entrAryType.GetArrayElementAddress(addr,i)
+            let raddr = ValueExtractor.ReadUlongAtAddress(elemAddr,heap)
+            if (raddr <> Constants.InvalidAddress) then
+                let sval = ValueExtractor.GetStringAtAddress(raddr,heap)
+                lst.Add(sval)
+            else ()
+         lst.ToArray()
+
+    let getEntryStringKeys (heap:ClrHeap) (addr:address) : string array =
+         let entrAryType = heap.GetObjectType(addr)
+         let count = entrAryType.GetArrayLength(addr)
+         let lst = new ResizeArray<string>()
+         for i = 0 to count - 1 do
+            let elemAddr = entrAryType.GetArrayElementAddress(addr,i)
+            let raddr = ValueExtractor.ReadUlongAtAddress(elemAddr,heap)
+            if (raddr <> Constants.InvalidAddress) then
+                let sval = ValueExtractor.GetStringAtAddress(raddr,heap)
+                lst.Add(sval)
+            else ()
+         lst.ToArray()
+
     
     (*
         System.Collections.Generic.SortedDictionary<TKey,TValue>
@@ -94,90 +140,182 @@ module CollectionContent =
         Arrays.
     *)
 
-    let getArrayValues (heap:ClrHeap) (aryAddr:uint64) (aryType:ClrType) (aryElemType:ClrType) (elemType:ClrType) (count: int32) =
+
+
+//    let getArrayValues (heap:ClrHeap) (aryAddr:uint64) (aryType:ClrType) (aryElemType:ClrType) (elemType:ClrType) (count: int32) =
+//        let mutable ndx:int32 = 0
+//        let mutable elemAddr:Object = null
+//        let mutable elemVal:Object = null
+//        let mutable value:string = null
+//        let values = new ResizeArray<string>(count)
+//        let cats = getTypeCategory elemType
+//        while ndx < count do
+//            if aryElemType.IsObjectReference then
+//                elemAddr <- aryType.GetArrayElementValue(aryAddr, ndx)
+//                elemVal <- elemType.GetValue(unbox<address>(elemAddr))
+//                value <- getObjectValue heap elemType cats elemVal false
+//                values.Add (value.ToString())
+//            else if aryElemType.IsPrimitive then
+//                elemVal <- aryType.GetArrayElementValue(aryAddr, ndx)
+//                value <- getObjectValue heap elemType cats elemVal false
+//                values.Add (value.ToString())
+//            else
+//                values.Add("..???..")
+//            
+//            ndx <- ndx + 1
+//        values
+//
+//    let rec tryGetArrayElemType (heap:ClrHeap) (aryAddr:uint64) (aryType:ClrType) (ndx:int32) (max:int32) =
+//        if ndx = max then 
+//            null
+//        else
+//            let elemAddr = aryType.GetArrayElementAddress(aryAddr, ndx)
+//            let elemType = heap.GetObjectType(elemAddr)
+//            if elemType <> null && not (isTypeUnknown elemType) then
+//                elemType
+//            else
+//                let elemVal = aryType.GetArrayElementValue(aryAddr, ndx)
+//                if (elemVal <> null) && (elemVal :? address) then
+//                    let elemType = heap.GetObjectType(unbox<address>(elemVal))
+//                    if elemType <> null && not (isTypeUnknown elemType) then
+//                        elemType
+//                    else
+//                        tryGetArrayElemType heap aryAddr aryType (ndx+1) max
+//                else
+//                    tryGetArrayElemType heap aryAddr aryType (ndx+1) max
+//
+//    let rec tryGetArrayElementType (heap:ClrHeap) (aryAddr:uint64) (aryType:ClrType) (ndx:int32) (max:int32) =
+//        if ndx = max then 
+//            null
+//        else
+//            let elemAddr = aryType.GetArrayElementAddress(aryAddr, ndx)
+//            let elemType = heap.GetObjectType(elemAddr)
+//            if elemType <> null && not (isTypeUnknown elemType) then
+//                elemType
+//            else
+//                let elemVal = aryType.GetArrayElementValue(aryAddr, ndx)
+//                if (elemVal <> null) && (elemVal :? address) then
+//                    let elemType = heap.GetObjectType(unbox<address>(elemVal))
+//                    if elemType <> null && not (isTypeUnknown elemType) then
+//                        elemType
+//                    else
+//                        tryGetArrayElemType heap aryAddr aryType (ndx+1) max
+//                else
+//                    tryGetArrayElemType heap aryAddr aryType (ndx+1) max
+//
+//    let getArrayElemType (heap:ClrHeap) (aryAddr:uint64) (clrType:ClrType) (ndx:int32) (max:int32) =
+//        if clrType.ComponentType <> null && not (isTypeUnknown clrType.ComponentType) then
+//            clrType.ComponentType
+//        else 
+//            tryGetArrayElemType heap aryAddr clrType ndx max
+//
+//    
+//
+//    let getArrayContentImpl (heap:ClrHeap) (addr:uint64) (aryType:ClrType) : string * string * int32 * string array =
+//        let count = aryType.GetArrayLength(addr)
+//        let aryElemType = getArrayElemType heap addr aryType 0 count
+//        if aryElemType = null then
+//            ("Getting type at : " + Utils.AddressString(addr) + " failed, null was returned.", null, count, emptyStringArray)
+//        else
+//            let values = getArrayValues heap addr aryType aryType.ComponentType aryElemType count
+//            (null, aryElemType.Name,count,values.ToArray())
+
+    let getArrayStringElem (heap:ClrHeap) (addr:address) (aryType:ClrType) (ndx:int) =
+        let elemAddr = aryType.GetArrayElementAddress(addr,ndx)
+        if elemAddr = Constants.InvalidAddress then
+            Constants.NullValue
+        else
+            let raddr = ValueExtractor.ReadUlongAtAddress(elemAddr,heap)
+            ValueExtractor.GetStringAtAddress(raddr,heap)
+
+    let getArrayExceptionElem (heap:ClrHeap) (addr:address) (aryType:ClrType) (elemType:ClrType) (ndx:int) =
+        let elemAddr = aryType.GetArrayElementAddress(addr,ndx)
+        if elemAddr = Constants.InvalidAddress then
+            Constants.NullValue
+        else
+            let raddr = ValueExtractor.ReadUlongAtAddress(elemAddr,heap)
+            (addressMarkupString raddr) + " " + ValueExtractor.GetExceptionValue(raddr, elemType, heap)
+
+    let getArrayReferenceElem (heap:ClrHeap) (addr:address) (aryType:ClrType) (elemType:ClrType) (ndx:int) =
+        let elemAddr = aryType.GetArrayElementAddress(addr,ndx)
+        if elemAddr = Constants.InvalidAddress then
+            Constants.NullValue
+        else
+            let raddr = ValueExtractor.ReadUlongAtAddress(elemAddr,heap)
+            (addressMarkupString raddr) + " " + elemType.Name
+
+    let getArrayKnownStructElem (heap:ClrHeap) (addr:address) (aryType:ClrType) (elemType:ClrType) (cat:TypeCategory) (ndx:int) =
+        let elemAddr = aryType.GetArrayElementAddress(addr,ndx)
+        if elemAddr = Constants.InvalidAddress then
+            Constants.NullValue
+        else
+            let raddr = ValueExtractor.ReadUlongAtAddress(elemAddr,heap)
+            match cat with
+                | TypeCategory.DateTime ->
+                    ValueExtractor.GetDateTimeValue( raddr, elemType, null)
+                | TypeCategory.TimeSpan ->
+                    ValueExtractor.GetTimeSpanValue( raddr, elemType)
+                | TypeCategory.Decimal ->
+                    ValueExtractor.GetDecimalValue( raddr, elemType, null)
+                | TypeCategory.Guid ->
+                    ValueExtractor.GetGuidValue( raddr, elemType)
+                | _ -> "Don't know how to get value of " + elemType.Name
+
+    let getArrayValues (heap:ClrHeap) (addr:address) (ary:ClrTypeSidekick) : string * int32 * string array =
         let mutable ndx:int32 = 0
-        let mutable elemAddr:Object = null
-        let mutable elemVal:Object = null
+        let aryClrType = ary.ClrType
+        let count = aryClrType.GetArrayLength(addr)
+        let elemInfo = ary.GetField(0); // for arrays first field is element type info
         let mutable value:string = null
         let values = new ResizeArray<string>(count)
-        let cats = getTypeCategory elemType
+        let elemType = elemInfo.ClrType
+        let elemCats = elemInfo.Categories
         while ndx < count do
-            if aryElemType.IsObjectReference then
-                elemAddr <- aryType.GetArrayElementValue(aryAddr, ndx)
-                elemVal <- elemType.GetValue(unbox<address>(elemAddr))
-                value <- getObjectValue heap elemType cats elemVal false
-                values.Add (value.ToString())
-            else if aryElemType.IsPrimitive then
-                elemVal <- aryType.GetArrayElementValue(aryAddr, ndx)
-                value <- getObjectValue heap elemType cats elemVal false
-                values.Add (value.ToString())
-            else
-                values.Add("..???..")
-            
+            match elemCats.First with
+            | TypeCategory.Reference ->
+                match elemCats.Second with
+                | TypeCategory.String ->
+                    value <- getArrayStringElem heap addr aryClrType ndx
+                | TypeCategory.Exception ->
+                    value <- getArrayExceptionElem heap addr aryClrType elemType ndx
+                | _ ->
+                    value <- getArrayReferenceElem heap addr aryClrType elemType ndx
+            | TypeCategory.Struct ->
+                match elemCats.Second with
+                | TypeCategory.DateTime ->
+                    value <- getArrayReferenceElem heap addr aryClrType elemType ndx
+                | TypeCategory.TimeSpan -> ()
+                | TypeCategory.Decimal -> ()
+                | TypeCategory.Guid -> ()
+                | _ ->
+                    if elemType.Name.StartsWith("System.Collections.Generic.Dictionary+Entry") then
+                        let elemAddr = aryClrType.GetArrayElementAddress(addr,ndx)
+                        let raddr = ValueExtractor.ReadUlongAtAddress(elemAddr,heap)
+                        let sval = ValueExtractor.GetStringAtAddress(raddr,heap)
+
+                        let elemFld2Addr = elemAddr + (uint64)elemType.Fields.[1].Offset;
+                        let raddr2 = ValueExtractor.ReadUlongAtAddress(elemFld2Addr,heap)
+                        let tp = heap.GetObjectType(raddr2)
+                        let name = if (isNull tp) then Constants.NullTypeName else tp.Name
+                        if (tp<>null) && tp.IsString then
+                            let vstr = ValueExtractor.GetStringAtAddress(raddr2,heap)
+                            value <- sval.ToString() + Constants.HeavyGreekCrossPadded + name + Constants.HeavyGreekCrossPadded + vstr
+                        else
+                            value <- sval.ToString() + Constants.HeavyGreekCrossPadded + name
+                
+            | _ ->
+                let elemObj = aryClrType.GetArrayElementValue(addr, ndx)
+                value <- ValueExtractor.GetPrimitiveValue(elemObj,elemType.ElementType)
+            values.Add(value)
             ndx <- ndx + 1
-        values
+        (elemType.Name, count, values.ToArray())
 
-    let rec tryGetArrayElemType (heap:ClrHeap) (aryAddr:uint64) (aryType:ClrType) (ndx:int32) (max:int32) =
-        if ndx = max then 
-            null
-        else
-            let elemAddr = aryType.GetArrayElementAddress(aryAddr, ndx)
-            let elemType = heap.GetObjectType(elemAddr)
-            if elemType <> null && not (isTypeUnknown elemType) then
-                elemType
-            else
-                let elemVal = aryType.GetArrayElementValue(aryAddr, ndx)
-                if (elemVal <> null) && (elemVal :? address) then
-                    let elemType = heap.GetObjectType(unbox<address>(elemVal))
-                    if elemType <> null && not (isTypeUnknown elemType) then
-                        elemType
-                    else
-                        tryGetArrayElemType heap aryAddr aryType (ndx+1) max
-                else
-                    tryGetArrayElemType heap aryAddr aryType (ndx+1) max
-
-    let rec tryGetArrayElementType (heap:ClrHeap) (aryAddr:uint64) (aryType:ClrType) (ndx:int32) (max:int32) =
-        if ndx = max then 
-            null
-        else
-            let elemAddr = aryType.GetArrayElementAddress(aryAddr, ndx)
-            let elemType = heap.GetObjectType(elemAddr)
-            if elemType <> null && not (isTypeUnknown elemType) then
-                elemType
-            else
-                let elemVal = aryType.GetArrayElementValue(aryAddr, ndx)
-                if (elemVal <> null) && (elemVal :? address) then
-                    let elemType = heap.GetObjectType(unbox<address>(elemVal))
-                    if elemType <> null && not (isTypeUnknown elemType) then
-                        elemType
-                    else
-                        tryGetArrayElemType heap aryAddr aryType (ndx+1) max
-                else
-                    tryGetArrayElemType heap aryAddr aryType (ndx+1) max
-
-    let getArrayElemType (heap:ClrHeap) (aryAddr:uint64) (clrType:ClrType) (ndx:int32) (max:int32) =
-        if clrType.ComponentType <> null && not (isTypeUnknown clrType.ComponentType) then
-            clrType.ComponentType
-        else 
-            tryGetArrayElemType heap aryAddr clrType ndx max
-
-
-    let getArrayContentImpl (runtime:ClrRuntime) (addr:uint64) (aryType:ClrType) : string * string * int32 * string array =
-        let heap = runtime.GetHeap()
-        let count = aryType.GetArrayLength(addr)
-        let aryElemType = getArrayElemType heap addr aryType 0 count
-        if aryElemType = null then
-            ("Getting type at : " + Utils.AddressString(addr) + " failed, null was returned.", null, count, emptyStringArray)
-        else
-            let values = getArrayValues heap addr aryType aryType.ComponentType aryElemType count
-            (null, aryElemType.Name,count,values.ToArray())
-
-    let getArrayContent (runtime:ClrRuntime) (addr:uint64) : string * string * int32 * string array =
-        let heap = runtime.GetHeap()
-        let clrType = heap.GetObjectType(addr)
-        if (clrType = null) then 
-            ("Getting type at : " + Utils.AddressString(addr) + " failed, null was returned.", null, 0, emptyStringArray)
-        elif (not clrType.IsArray) then
+    let getArrayContent (heap:ClrHeap) (addr:uint64) : string * string * int32 * string array =
+        let error, clrSidekick = Types.getTypeSidekickAtAddress heap  addr
+        if error <> null then 
+            ("Getting type info at : " + Utils.AddressString(addr) + " failed.", null, 0, emptyStringArray)
+        elif (not clrSidekick.IsArray) then
             ("Type at : " + Utils.AddressString(addr) + " is not an array.", null, 0, emptyStringArray)
         else
-            getArrayContentImpl runtime addr clrType 
+            let elemName, aryCount, values = getArrayValues heap addr clrSidekick
+            (null, elemName, aryCount, values) 

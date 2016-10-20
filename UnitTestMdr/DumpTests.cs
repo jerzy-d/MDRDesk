@@ -1357,17 +1357,19 @@ namespace UnitTestMdr
 			var str2 = Utils.AddressString(427092);
 
 
-			var dmp = GetDump(@"D:\Jerzy\WinDbgStuff\dumps\TestApp\TestApp.exe_161010_075709.dmp");
-	        using (dmp)
+			var dmp = GetDump(@"D:\Jerzy\WinDbgStuff\dumps\Analytics\Lou\Eze.Analytics.App_161018_173251.dmp");
+			//var dmp = GetDump(@"D:\Jerzy\WinDbgStuff\dumps\TestApp\TestApp.exe_161010_075709.dmp");
+			using (dmp)
 	        {
 		        var rntm = dmp.Runtime;
 		        var domains = rntm.AppDomains.ToArray();
+				
+				//ulong addr = 0x00000002cf7ba8;
+				ulong addr = 0x00000013379d80;
 
+				var clrSidekick = Types.getTypeSidekickAtAddress(dmp.Heap, addr);
 
-	            ulong addr = 0x00000002cf7ba8;
-		        var clrSidekick = Types.getTypeSidekickAtAddress(dmp.Heap, addr);
-
-	            var aryValuesa = DmpNdxQueries.SpecializedQueries.getArrayContent(dmp.Heap, addr);
+	            var aryValuesa = DmpNdxQueries.CollectionContent.getArrayContent(dmp.Heap, addr);
 	        }
 
 	    }
@@ -1799,7 +1801,7 @@ namespace UnitTestMdr
 		{
 			string error = null;
 			var blkObjTypeNames = new SortedSet<string>();
-			using (var clrDump = GetDump())
+			using (var clrDump = GetDump(@"D:\Jerzy\WinDbgStuff\dumps\Analytics\ConvergEx\Analytics2.dmp"))
 			{
 				try
 				{

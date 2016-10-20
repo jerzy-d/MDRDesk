@@ -1,8 +1,42 @@
 ﻿0001 05/19/16 
 *** Get rid of _finalizerObjectAddresses, LoadFinalizerObjectAddresses from map and WriteFinalizerObjectAddresses from Indexer.
+
 0002 07/18/16
 *** Add instance sizes to the index.
+
 0003 09/27/16
 When indexing again the same dump, delete all previous index files.
+
 0004 09/27/16
-Field/Parent map => cannot open MemoryMappedFile in two processes.
+*** Field/Parent map => cannot open MemoryMappedFile in two processes.
+
+0005 10/18/16
+*** Fix total generation
+From: D:\Jerzy\WinDbgStuff\dumps\Analytics\ConvergEx\Analytics2.dmp
+
+0:000> !HeapStat -iu
+The version of SOS does not match the version of CLR you are debugging.  Please
+load the matching version of SOS for the version of CLR you are debugging.
+CLR Version: 4.0.30319.36366
+SOS Version: 4.6.1076.0
+Heap             Gen0         Gen1         Gen2          LOH
+Heap0         3352936      3118584   1460995576    192897400
+Heap1         5079752      2817224   1411547440    142225632
+Heap2         4734776      4846136   1689421736    160817640
+Heap3         9854456      1753616   1580420096    113114736
+Total        23,021,920     12,535,560   6,142,384,848    609,055,408
+			 22,467,884		12,131,565	 6,136,948,358	  609,054,758 => last MDR version
+
+Free space:                                                 Percentage
+Heap0           22032           24     14120208    120078288 SOH:  0% LOH: 62%
+Heap1         3818056           24     10794224    105511864 SOH:  1% LOH: 74%
+Heap2           20008           24     43292616     94636632 SOH:  2% LOH: 58%
+Heap3         2684432           24     18179944     62082136 SOH:  1% LOH: 54%
+Total         6544528           96     86386992    382308920
+
+Unrooted objects:                                           Percentage
+Heap0         3236200      1871856      1030520      3214536SOH:  0% LOH:  1%
+Heap1         1150976      1050928       292384       517680SOH:  0% LOH:  0%
+Heap2         4472528      3014880      1373152      3829416SOH:  0% LOH:  2%
+Heap3         6715160       860344      1158640      3635016SOH:  0% LOH:  3%
+Total        15574864      6798008      3854696     11196648

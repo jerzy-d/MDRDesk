@@ -1159,6 +1159,11 @@ namespace ClrMDRIndex
 
 		#region Field References
 
+		public KeyValuePair<ulong, int>[] GetParents(ulong addr, out string error)
+		{
+			return _fieldDependencies[_currentRuntime].GetFieldParents(addr, out error);
+		}
+
 		public Tuple<string,triple<string, string, string>[], triple<string, string, string>[]> GetInstanceParentsAndChildren(ulong address, out string error)
 		{
 			error = null;

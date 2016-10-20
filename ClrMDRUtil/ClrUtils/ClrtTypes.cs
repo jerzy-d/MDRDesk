@@ -488,6 +488,7 @@ namespace ClrMDRIndex
 	{
 		public string Name;
 		public ulong MthdTbl;
+		public int Id;
 		public ClrElementType Element;
 		public string BaseName;
         public string[] FieldTypeNames;
@@ -498,10 +499,11 @@ namespace ClrMDRIndex
         public int[] StaticFieldNameIds;
 		public int[] InterfaceNameIds;
 
-		public ClrtType(string name, ulong mthdTbl, ClrElementType elem, string baseName)
+		public ClrtType(string name, ulong mthdTbl, ClrElementType elem, string baseName, int id)
 		{
 			Name = name;
 			MthdTbl = mthdTbl;
+			Id = id;
 			Element = elem;
 			BaseName = baseName;
 			FieldTypeNames = StaticFieldTypeNames = null;

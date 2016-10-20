@@ -863,6 +863,13 @@ namespace MDRDesk
 			else
 				expander = (Expander)LogicalTreeHelper.FindLogicalNode(grid, @"ExtraDataExpander");
 
+			if (expander == null)
+			{
+				var genStr = ClrtSegment.GetGenerationHistogramSimpleString(result);
+				SetEndTaskMainWindowState("Object generation at address(s): " + genStr);
+				return;
+			}
+
 			System.Windows.Forms.Integration.WindowsFormsHost host = new System.Windows.Forms.Integration.WindowsFormsHost();
 
 			host.Child = DmpNdxQueries.Auxiliaries.getColumnChart(ClrtSegment.GetGenerationHistogramTuples(result));

@@ -404,6 +404,7 @@ namespace ClrMDRIndex
 
 		public static string GetPrimitiveValue(object obj, ClrElementType elemType)
 		{
+			if (obj == null) return Constants.NullValue;
 			if (ClrElementType.Float == elemType || ClrElementType.Double == elemType)
 				return string.Format("0.0000", (Double)obj);
 

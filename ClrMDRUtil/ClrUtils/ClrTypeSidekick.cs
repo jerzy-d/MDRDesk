@@ -16,6 +16,15 @@ namespace ClrMDRIndex
 		public List<ClrTypeSidekick> Fields { get; }
 		public object Data { get; private set; }
 
+		public bool IsInvalid => ClrType == null;
+
+		public bool IsArray => Categories.First == TypeCategory.Reference && Categories.Second == TypeCategory.Array;
+
+		public ClrTypeSidekick GetField(int ndx)
+		{
+			return Fields.Count > ndx ? Fields[ndx] : null;
+		}
+
 		/// <summary>
 		/// 
 		/// </summary>
