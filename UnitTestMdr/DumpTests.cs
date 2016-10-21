@@ -1375,6 +1375,39 @@ namespace UnitTestMdr
 	    }
 
 		[TestMethod]
+		public void TestGetArrayContent2()
+		{
+			var str1 = Utils.AddressString(0);
+			var str2 = Utils.AddressString(427092);
+
+
+			//var dmp = GetDump(@"D:\Jerzy\WinDbgStuff\dumps\TestApp\TestApp.exe_161021_104608.dmp");
+			//var dmp = GetDump(@"D:\Jerzy\WinDbgStuff\dumps\TestApp\TestApp.exe_161010_075709.dmp");
+			var dmp = GetDump(@"D:\Jerzy\WinDbgStuff\dumps\TestApp\TestApp.exe_161021_104608.dmp");
+			using (dmp)
+			{
+				ulong dateTimeAryAddr = 0x29fe980;
+				var clrSidekick1 = Types.getTypeSidekickAtAddress(dmp.Heap, dateTimeAryAddr);
+				var aryValues1 = DmpNdxQueries.CollectionContent.getArrayContent(dmp.Heap, dateTimeAryAddr);
+
+				ulong decimalAryAddr = 0x29feab8;
+				var clrSidekick2 = Types.getTypeSidekickAtAddress(dmp.Heap, decimalAryAddr);
+				var aryValues2 = DmpNdxQueries.CollectionContent.getArrayContent(dmp.Heap, decimalAryAddr);
+
+				ulong guidAryAddr = 0x29fe9f0;
+				var clrSidekick3 = Types.getTypeSidekickAtAddress(dmp.Heap, guidAryAddr);
+				var aryValues3 = DmpNdxQueries.CollectionContent.getArrayContent(dmp.Heap, guidAryAddr);
+
+				ulong timeSpanAryAddr = 0x29fe910;
+				var clrSidekick4 = Types.getTypeSidekickAtAddress(dmp.Heap, timeSpanAryAddr);
+				var aryValues4 = DmpNdxQueries.CollectionContent.getArrayContent(dmp.Heap, timeSpanAryAddr);
+
+			}
+
+		}
+
+
+		[TestMethod]
 		public void TestTypeSidekick()
 		{
 

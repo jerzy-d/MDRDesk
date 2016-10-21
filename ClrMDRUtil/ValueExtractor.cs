@@ -112,10 +112,10 @@ namespace ClrMDRIndex
 
 		public static decimal GetDecimalValue(ulong addr, ClrType type)
 		{
-			var flags = (int)type.Fields[0].GetValue(addr, false);
-			var hi = (int)type.Fields[1].GetValue(addr, false);
-			var lo = (int)type.Fields[2].GetValue(addr, false);
-			var mid = (int)type.Fields[3].GetValue(addr, false);
+			var flags = (int)type.Fields[0].GetValue(addr, true);
+			var hi = (int)type.Fields[1].GetValue(addr, true);
+			var lo = (int)type.Fields[2].GetValue(addr, true);
+			var mid = (int)type.Fields[3].GetValue(addr, true);
 
 			int[] bits = { lo, mid, hi, flags };
 			return new decimal(bits);

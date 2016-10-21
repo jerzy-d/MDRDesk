@@ -167,9 +167,10 @@
                 <ColumnDefinition Width="5"/>
                 <ColumnDefinition Width="16*"/>
             </Grid.ColumnDefinitions>
-            <ToolBarTray Grid.Row="0" Grid.Column="0" Margin="4,0,4,0" Grid.ColumnSpan="5" >
+            <ToolBarTray Grid.Row="0" Grid.Column="0" Margin="4,0,4,0">
                 
             </ToolBarTray>
+            <Label Name="lbTpNsTypeInfo" Margin="4,0,4,0" Grid.Row="0" Grid.Column="2" FontWeight="Bold" FontSize="14" Foreground="Black" Background="DarkGray" VerticalAlignment="Center"/>
             <ListBox Grid.Row="1" Grid.Column="0" Margin="4,4,4,4" Name="lbTpNamespaces"  HorizontalAlignment="Stretch" SelectionChanged="lbTpNamespacesSelectionChange" SelectionMode="Single" DisplayMemberPath="Key">
             </ListBox>
             <GridSplitter Grid.Row="1"  Grid.Column="1" VerticalAlignment="Stretch" HorizontalAlignment="Center" Width="5" ShowsPreview="False" Background="DarkGray"></GridSplitter>
@@ -196,9 +197,9 @@
                 </DataTemplate>
             </ListBox.ItemTemplate>
             </ListBox>
-            <Label Name="lTpNsCount" Margin="4,0,4,0" Grid.Row="2" Grid.Column="0" FontWeight="Bold" FontSize="16" Foreground="DarkSlateGray" VerticalAlignment="Top"/>
-            <Label Name="lTpClassCount" Margin="4,0,4,0" Grid.Row="2" Grid.Column="2" FontWeight="Bold" FontSize="16" Foreground="DarkSlateGray" VerticalAlignment="Top"/>
-            <Label Name="lTpAddressCount" Margin="4,0,4,0" Grid.Row="2" Grid.Column="4" FontWeight="Bold" FontSize="16" Foreground="DarkSlateGray" VerticalAlignment="Top"/>
+            <Label Name="lTpNsCount" Margin="4,0,4,0" Grid.Row="2" Grid.Column="0" FontWeight="Bold" FontSize="14" Foreground="DarkSlateGray" VerticalAlignment="Top"/>
+            <Label Name="lTpClassCount" Margin="4,0,4,0" Grid.Row="2" Grid.Column="2" FontWeight="Bold" FontSize="14" Foreground="DarkSlateGray" VerticalAlignment="Top"/>
+            <Label Name="lTpAddressCount" Margin="4,0,4,0" Grid.Row="2" Grid.Column="4" FontWeight="Bold" FontSize="14" Foreground="DarkSlateGray" VerticalAlignment="Top"/>
             <Expander x:Name="TypeViewExpander" Margin="0,7,0,0" DockPanel.Dock="Bottom" Header="..." Grid.Row="3" Grid.Column="0" Grid.ColumnSpan="5">
                 <!--<DockPanel x:Name="TypeViewDataExpanderPanel" Margin="3" LastChildFill="True">
                 </DockPanel>-->

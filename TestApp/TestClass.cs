@@ -17,7 +17,14 @@ namespace TestApp
         private Dictionary<int, string> _dictionary;
 	    private TestStruct _testStruct;
 
-        public TestClass(int processId)
+		private TimeSpan[] _timeSpanArray;
+		private DateTime[] _dateTimeArray;
+		private Guid[] _guidArray;
+	    private Decimal[] _decimalArray;
+
+	    private int StructArrayLen = 11;
+
+		public TestClass(int processId)
         {
             _processId = processId;
 	        var name = "From TestClass_" + processId;
@@ -26,7 +33,22 @@ namespace TestApp
 				new KeyValuePair<string, KeyValuePair<DateTime, TestStructClass>>(name + "key",new KeyValuePair<DateTime, TestStructClass>(DateTime.Now, testStructClass));
 			_testStruct = new TestStruct(name + "_fromTestClass",20,kvPair);
 
-
+			_timeSpanArray = new TimeSpan[StructArrayLen];
+			_dateTimeArray = new DateTime[StructArrayLen];
+			_guidArray = new Guid[StructArrayLen];
+			_decimalArray = new decimal[StructArrayLen];
+			var tmDelta = new TimeSpan(0,0,1,0);
+			DateTime dt = DateTime.Now;
+			decimal dec = 0.5m;
+			for (int i = 0; i < StructArrayLen; ++i)
+			{
+				_timeSpanArray[i] = new TimeSpan(1,1,1,i);
+				dt = dt + tmDelta;
+				_dateTimeArray[i] = dt;
+				_guidArray[i] = Guid.NewGuid();
+				dec = dec + 0.5m;
+				_decimalArray[i] = dec;
+			}
 		}
 
         public void Init()

@@ -249,16 +249,15 @@ module CollectionContent =
         if elemAddr = Constants.InvalidAddress then
             Constants.NullValue
         else
-            let raddr = ValueExtractor.ReadUlongAtAddress(elemAddr,heap)
-            match cat with
+             match cat with
                 | TypeCategory.DateTime ->
-                    ValueExtractor.GetDateTimeValue( raddr, elemType, null)
+                    ValueExtractor.GetDateTimeValue( elemAddr, elemType, null)
                 | TypeCategory.TimeSpan ->
-                    ValueExtractor.GetTimeSpanValue( raddr, elemType)
+                    ValueExtractor.GetTimeSpanValue( elemAddr, elemType)
                 | TypeCategory.Decimal ->
-                    ValueExtractor.GetDecimalValue( raddr, elemType, null)
+                    ValueExtractor.GetDecimalValue( elemAddr, elemType,null)
                 | TypeCategory.Guid ->
-                    ValueExtractor.GetGuidValue( raddr, elemType)
+                    ValueExtractor.GetGuidValue( elemAddr, elemType)
                 | _ -> "Don't know how to get value of " + elemType.Name
 
     let getArrayValues (heap:ClrHeap) (addr:address) (ary:ClrTypeSidekick) : string * int32 * string array =
@@ -282,11 +281,8 @@ module CollectionContent =
                     value <- getArrayReferenceElem heap addr aryClrType elemType ndx
             | TypeCategory.Struct ->
                 match elemCats.Second with
-                | TypeCategory.DateTime ->
-                    value <- getArrayReferenceElem heap addr aryClrType elemType ndx
-                | TypeCategory.TimeSpan -> ()
-                | TypeCategory.Decimal -> ()
-                | TypeCategory.Guid -> ()
+                | TypeCategory.DateTime | TypeCategory.TimeSpan | TypeCategory.Decimal | TypeCategory.Guid ->
+                    value <- getArrayKnownStructElem heap addr aryClrType elemType elemCats.Second ndx
                 | _ ->
                     if elemType.Name.StartsWith("System.Collections.Generic.Dictionary+Entry") then
                         let elemAddr = aryClrType.GetArrayElementAddress(addr,ndx)
