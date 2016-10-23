@@ -22,7 +22,9 @@ namespace ClrMDRIndex
 		public string FieldName => _fieldName;
 
 		private TypeCategories _category;
-		private ClrtDisplayableType[] _fields;
+        public TypeCategories Category => _category;
+
+        private ClrtDisplayableType[] _fields;
 		public ClrtDisplayableType[] Fields => _fields;
 
 		public ClrtDisplayableType(int typeId, int fieldIndex, string typeName, string fieldName, TypeCategories category)
@@ -92,7 +94,7 @@ namespace ClrMDRIndex
 			return " " + Constants.LeftCurlyBracket.ToString() + filterValue.ValueStr + Constants.RightCurlyBracket.ToString() + " ";
 		}
 
-		private string SelectionStr()
+		public string SelectionStr()
 		{
 			if (_getValue && HasFilter())
 				return Constants.HeavyCheckMark.ToString() + Constants.FilterHeader;

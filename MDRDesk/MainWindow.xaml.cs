@@ -47,9 +47,12 @@ namespace MDRDesk
 		public static string BaseTitle;
 		private static Version _myVersion;
 
-		#region Ctors/Initialization
+        //ResourceDictionary myresourcedictionary;
 
-		public MainWindow()
+
+        #region Ctors/Initialization
+
+        public MainWindow()
 		{
 
             InitializeComponent();
@@ -101,6 +104,9 @@ namespace MDRDesk
                         break;
 
                 }
+                //myresourcedictionary = new ResourceDictionary();
+                //myresourcedictionary.Source = new Uri("/MDRDesk;component/Resources/MDRDeskResourceDct.xaml",
+                //UriKind.RelativeOrAbsolute);
                 return result;
 			}
 			catch (Exception ex)
@@ -301,9 +307,10 @@ namespace MDRDesk
 			var result = await Task.Run(() =>
 			{
 				string error;
+                string indexPath;
 				var indexer = new Indexer(path);
-				var ok = indexer.Index(_myVersion, progress, out error);
-				return new Tuple<bool, string>(ok, error);
+				var ok = indexer.Index(_myVersion, progress, out indexPath, out error);
+				return new Tuple<bool, string,string>(ok, error, indexPath);
 			});
 
 			Utils.ForceGcWithCompaction();
@@ -316,13 +323,13 @@ namespace MDRDesk
 				ShowError(result.Item2);
 			    return;
 			}
-            RecentIndexList.Add(path);
+            Dispatcher.CurrentDispatcher.InvokeAsync(() => DoOpenDumpIndex(result.Item3));
         }
 
 		private async void OpenDumpIndexClicked(object sender, RoutedEventArgs e)
 		{
 			string path = null;
-			if (sender is MenuItem)
+			if (sender != null && sender is MenuItem)
 			{
 				var menuItem = sender as MenuItem;
 				if (menuItem.HasHeader && menuItem.Header is string && (menuItem.Header as string)== "Recent Indices")
@@ -333,46 +340,103 @@ namespace MDRDesk
 			if (path == null) path = GetFolderPath(Setup.MapFolder);
 
 			if (path == null) return;
+
+            DoOpenDumpIndex(path);
+
+   //         var progressHandler = new Progress<string>(MainStatusShowMessage);
+   //         var progress = progressHandler as IProgress<string>;
+   //         SetStartTaskMainWindowState("Opening index: " + Utils.GetPathLastFolder(path) + ", please wait...");
+
+			//var result = await Task.Run(() =>
+			//{
+			//	string error;
+			//	ClrMDRIndex.Map map = Map.OpenMap(_myVersion, path, out error, progress);
+			//    KeyValuePair<string, KeyValuePair<string, int>[]>[] namespaces=null;
+
+   //             if (error == null && map != null)
+			//    {
+			//        namespaces = map.GetNamespaceDisplay();
+			//    }
+			//	return new Tuple<string, Map, KeyValuePair<string, KeyValuePair<string, int>[]>[]>(error, map, namespaces);
+			//});
+
+			//SetEndTaskMainWindowState("Index: '" + DumpFileMoniker.GetMapName(path) + (result.Item1 == null ? "' is open." : "' open failed."));
+
+			//if (result.Item1 != null)
+			//{
+			//	ShowError(result.Item1);
+			//	return;
+			//}
+			//if (CurrentMap != null)
+			//{
+			//	CurrentMap.Dispose();
+			//	CurrentMap = null;
+			//	Utils.ForceGcWithCompaction();
+			//}
+			//CurrentMap = result.Item2;
+
+		 //   var genInfo = CurrentMap.GetGenerationTotals();
+		 //   DisplayGeneralInfoGrid(CurrentMap.DumpInfo, genInfo);
+		 //   if ((TypeDisplayNamespaceClass.IsChecked ?? (bool)TypeDisplayNamespaceClass.IsChecked) && result.Item3 != null)
+		 //   {
+   //             DisplayNamespaceGrid(result.Item3);
+   //         }
+		 //   else
+		 //   {
+   //             if ((TypeDisplayClass.IsChecked ?? (bool)TypeDisplayNamespaceClass.IsChecked))
+   //                 DisplayTypesGrid(true);
+   //             else
+   //                 DisplayTypesGrid(false);
+   //         }
+
+   //         this.Title = BaseTitle + Constants.BlackDiamondPadded + CurrentMap.DumpBaseName;
+   //         RecentIndexList.Add(path);
+        }
+
+
+        private async void DoOpenDumpIndex(string path)
+        {
+            if (path == null) return;
             var progressHandler = new Progress<string>(MainStatusShowMessage);
             var progress = progressHandler as IProgress<string>;
             SetStartTaskMainWindowState("Opening index: " + Utils.GetPathLastFolder(path) + ", please wait...");
 
-			var result = await Task.Run(() =>
-			{
-				string error;
-				ClrMDRIndex.Map map = Map.OpenMap(_myVersion, path, out error, progress);
-			    KeyValuePair<string, KeyValuePair<string, int>[]>[] namespaces=null;
+            var result = await Task.Run(() =>
+            {
+                string error;
+                ClrMDRIndex.Map map = Map.OpenMap(_myVersion, path, out error, progress);
+                KeyValuePair<string, KeyValuePair<string, int>[]>[] namespaces = null;
 
                 if (error == null && map != null)
-			    {
-			        namespaces = map.GetNamespaceDisplay();
-			    }
-				return new Tuple<string, Map, KeyValuePair<string, KeyValuePair<string, int>[]>[]>(error, map, namespaces);
-			});
+                {
+                    namespaces = map.GetNamespaceDisplay();
+                }
+                return new Tuple<string, Map, KeyValuePair<string, KeyValuePair<string, int>[]>[]>(error, map, namespaces);
+            });
 
-			SetEndTaskMainWindowState("Index: '" + DumpFileMoniker.GetMapName(path) + (result.Item1 == null ? "' is open." : "' open failed."));
+            SetEndTaskMainWindowState("Index: '" + DumpFileMoniker.GetMapName(path) + (result.Item1 == null ? "' is open." : "' open failed."));
 
-			if (result.Item1 != null)
-			{
-				ShowError(result.Item1);
-				return;
-			}
-			if (CurrentMap != null)
-			{
-				CurrentMap.Dispose();
-				CurrentMap = null;
-				Utils.ForceGcWithCompaction();
-			}
-			CurrentMap = result.Item2;
+            if (result.Item1 != null)
+            {
+                ShowError(result.Item1);
+                return;
+            }
+            if (CurrentMap != null)
+            {
+                CurrentMap.Dispose();
+                CurrentMap = null;
+                Utils.ForceGcWithCompaction();
+            }
+            CurrentMap = result.Item2;
 
-		    var genInfo = CurrentMap.GetGenerationTotals();
-		    DisplayGeneralInfoGrid(CurrentMap.DumpInfo, genInfo);
-		    if ((TypeDisplayNamespaceClass.IsChecked ?? (bool)TypeDisplayNamespaceClass.IsChecked) && result.Item3 != null)
-		    {
+            var genInfo = CurrentMap.GetGenerationTotals();
+            DisplayGeneralInfoGrid(CurrentMap.DumpInfo, genInfo);
+            if ((TypeDisplayNamespaceClass.IsChecked ?? (bool)TypeDisplayNamespaceClass.IsChecked) && result.Item3 != null)
+            {
                 DisplayNamespaceGrid(result.Item3);
             }
-		    else
-		    {
+            else
+            {
                 if ((TypeDisplayClass.IsChecked ?? (bool)TypeDisplayNamespaceClass.IsChecked))
                     DisplayTypesGrid(true);
                 else
@@ -383,7 +447,9 @@ namespace MDRDesk
             RecentIndexList.Add(path);
         }
 
-		private void IndexShowModuleInfosClicked(object sender, RoutedEventArgs e)
+
+
+        private void IndexShowModuleInfosClicked(object sender, RoutedEventArgs e)
 		{
 			if (!IsIndexAvailable("Show Loaded Modules Infos")) return;
 			var path = CurrentMap.MapFolder + Path.DirectorySeparatorChar + CurrentMap.DumpBaseName + Constants.TxtTargetModulesPostfix;
@@ -1835,11 +1901,7 @@ namespace MDRDesk
 			for (int i = 0, icnt = fields.Length; i < icnt; ++i)
 			{
 				var fld = fields[i];
-				var node = new TreeViewItem
-				{
-					Header = fld.ToString(),
-					Tag = fld
-				};
+                var node = GetTypeValueSetupTreeViewItem(fld);
 				selItem.Items.Add(node);
 			}
 			selItem.ExpandSubtree();

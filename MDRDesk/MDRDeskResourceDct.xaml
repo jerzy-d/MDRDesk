@@ -1,0 +1,9 @@
+﻿<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:local="clr-namespace:MDRDesk">
+    <Image x:Key="ClassPng" Source="./Images/Class_16x.png"/>
+    <Image x:Key="StructPng" Source="./Images/Structure_grey_16x.png"/>
+    <Image x:Key="InterfacePng" Source="./Images/Interface_16x.png"/>
+    <Image x:Key="PrimitivePng" Source="./Images/data_number_on_16x.png"/>
+    <Image x:Key="ArrayPng" Source="./Images/Arrange_16x.png"/>
+</ResourceDictionary>

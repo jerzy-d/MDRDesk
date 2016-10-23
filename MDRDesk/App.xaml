@@ -6,6 +6,6 @@
              Startup="Application_Startup"
              DispatcherUnhandledException="Application_DispatcherUnhandledException">
     <Application.Resources>
-         
+        <ResourceDictionary Source="MDRDeskResourceDct.xaml" />
     </Application.Resources>
 </Application>

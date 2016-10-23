@@ -96,8 +96,9 @@ namespace ClrMDRIndex
 
 		#region Indexing
 
-		public bool Index(Version version, IProgress<string> progress, out string error)
+		public bool Index(Version version, IProgress<string> progress, out string indexPath, out string error)
 		{
+            indexPath = null;
 			var clrDump = new ClrtDump(DumpFilePath);
 			if (!clrDump.Init(out error)) return false;
 			using (clrDump)
@@ -105,10 +106,10 @@ namespace ClrMDRIndex
 				try
 				{
 					if (DumpFileMoniker.GetAndCreateMapFolders(DumpFilePath, out error) == null) return false;
-
-					// collection data
-					//
-					_errors = new ConcurrentBag<string>[clrDump.RuntimeCount];
+                    indexPath = MapOutputFolder;
+                    // collection data
+                    //
+                    _errors = new ConcurrentBag<string>[clrDump.RuntimeCount];
 					_typeNameIdDcts = new TypeIdDct[clrDump.RuntimeCount];
 
 					// indexing

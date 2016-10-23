@@ -93,6 +93,7 @@
     <CodeAnalysisRuleSet>MinimumRecommendedRules.ruleset</CodeAnalysisRuleSet>
     <Prefer32Bit>true</Prefer32Bit>
   </PropertyGroup>
+  <PropertyGroup />
   <ItemGroup>
     <Reference Include="DmpNdxQueries, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
@@ -164,6 +165,10 @@
       <DependentUpon>MainWindow.xaml</DependentUpon>
       <SubType>Code</SubType>
     </Compile>
+    <Page Include="MDRDeskResourceDct.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
     <Page Include="MdrMessageBox.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
@@ -274,6 +279,15 @@
   </ItemGroup>
   <ItemGroup>
     <Resource Include="Images\QuestionBlack16.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <Resource Include="Images\Class_16x.png" />
+    <Resource Include="Images\data_number_on_16x.png" />
+    <Resource Include="Images\Interface_16x.png" />
+    <Resource Include="Images\Structure_grey_16x.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <Resource Include="Images\Arrange_16x.png" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <PropertyGroup>

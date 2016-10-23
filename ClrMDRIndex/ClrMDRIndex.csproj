@@ -69,7 +69,7 @@
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="DmpNdxQueries">
-      <HintPath>..\DmpNdxQueries\bin\DmpNdxQueries.dll</HintPath>
+      <HintPath>..\DmpNdxQueries\bin\Debug\DmpNdxQueries.dll</HintPath>
     </Reference>
     <Reference Include="Microsoft.Diagnostics.Runtime">
       <HintPath>..\ClrMd\32\Microsoft.Diagnostics.Runtime.dll</HintPath>

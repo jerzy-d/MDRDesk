@@ -20,6 +20,7 @@ namespace ClrMDRIndex
 		public ulong Address => _address;
 		public string TypeName => _typeName;
 		public string FieldName => _fieldName;
+        public ValueString Value => _value;
 		public List<InstanceValue> Values => _values;
 
 		public InstanceValue(int typeId, ulong addr, string typeName, string fldName, string value, int fldNdx = Constants.InvalidIndex)
