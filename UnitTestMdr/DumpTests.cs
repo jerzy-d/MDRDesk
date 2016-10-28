@@ -524,6 +524,64 @@ namespace UnitTestMdr
 
 		#endregion Misc
 
+		[TestMethod]
+		public void TestRootedInfo()
+		{
+			Stopwatch stopWatch = new Stopwatch();
+			//string dmpPath = @"D:\Jerzy\WinDbgStuff\dumps\TestApp\TestApp.exe_161021_104608.dmp";
+			string dmpPath = @"D:\Jerzy\WinDbgStuff\dumps\Analytics\ConvergEx\Analytics_Post.dmp";
+
+			string error = null;
+			using (var clrDump = GetDump(dmpPath))
+			{
+				try
+				{
+					stopWatch.Start();
+					var runtime = clrDump.Runtimes[0];
+					var heap = runtime.GetHeap();
+					stopWatch.Stop();
+					var duration0 = Utils.DurationString(stopWatch.Elapsed);
+
+					stopWatch.Start();
+					var addrCount = Indexer.GetHeapAddressCount(heap);
+					stopWatch.Stop();
+					var duration1 = Utils.DurationString(stopWatch.Elapsed);
+
+					stopWatch.Start();
+					ulong[] addresses = new ulong[addrCount];
+					var rootArys = ClrtRoots.GetRootAddresses(heap);
+					stopWatch.Stop();
+					var duration2 = Utils.DurationString(stopWatch.Elapsed);
+
+					stopWatch.Start();
+					var segs = heap.Segments;
+					for (int i = 0, icnt = segs.Count; i < icnt; ++i)
+					{
+						var seg = segs[i];
+						ulong addr = seg.FirstObject;
+						while (addr != 0ul)
+						{
+							var clrType = heap.GetObjectType(addr);
+							if (clrType == null) goto NEXT_OBJECT;
+
+
+							NEXT_OBJECT:
+							addr = seg.NextObject(addr);
+						}
+					}
+
+					stopWatch.Stop();
+					var duration3 = Utils.DurationString(stopWatch.Elapsed);
+				}
+				catch (Exception ex)
+				{
+					error = Utils.GetExceptionErrorString(ex);
+					Assert.IsTrue(false, error);
+				}
+			}
+		}
+
+
 		#region Memory
 
 		[TestMethod]

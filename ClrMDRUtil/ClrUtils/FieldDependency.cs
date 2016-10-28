@@ -475,7 +475,6 @@ namespace ClrMDRIndex
 		/// <summary>
 		/// Get parent addresses from mapped file..
 		/// </summary>
-		/// <param name="mmf">Parent list mapped file.</param>
 		/// <param name="offBegin">Starting offset of parents.</param>
 		/// <param name="offEnd">First offset past parents data.</param>
 		/// <param name="error"></param>

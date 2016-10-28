@@ -50,6 +50,8 @@ namespace ClrMDRIndex
 		private int[][] _instTypeOffsets; // to speed up type addresses lookup 
 		private FieldDependency[] _fieldDependencies;
 		public FieldDependency FieldDependencies => _fieldDependencies[_currentRuntime];
+		private ulong[][] _unrooted;
+		public ulong[] Unrooted => _unrooted[_currentRuntime];
 
 		private ClrtSegment[][] _segments; // segment infos, for instances generation histograms
 
@@ -188,56 +190,6 @@ namespace ClrMDRIndex
 			}
 		}
 
-
-		//private bool LoadTypeFields(out string error)
-		//{
-		//	error = null;
-		//	BinaryReader br = null;
-		//	try
-		//	{
-		//		_typeFieldIndices = new KeyValuePair<int, int>[_runtimeCount][];
-		//		_typeFieldInfos = new KeyValuePair<int, string>[_runtimeCount][];
-		//		for (int r = 0, rcnt = _runtimeCount; r < rcnt; ++r)
-		//		{
-		//			var ndxPath = Utils.GetFilePath(r, MapFolder, DumpBaseName, Constants.MapTypeFieldIndexFilePostfix);
-		//			br = new BinaryReader(File.Open(ndxPath, FileMode.Open));
-		//			var cnt = br.ReadInt32();
-		//			_typeFieldIndices[r] = new KeyValuePair<int, int>[cnt];
-		//			for (int i = 0; i < cnt; ++i)
-		//			{
-		//				var key = br.ReadInt32();
-		//				var val = br.ReadInt32();
-		//				_typeFieldIndices[r][i] = new KeyValuePair<int, int>(key, val);
-		//			}
-		//			br.Close();
-		//			br = null;
-
-		//			var fldPath = Utils.GetFilePath(r, MapFolder, DumpBaseName, Constants.MapFieldTypeMapFilePostfix);
-		//			br = new BinaryReader(File.Open(fldPath, FileMode.Open));
-		//			cnt = br.ReadInt32();
-		//			_typeFieldInfos[r] = new KeyValuePair<int, string>[cnt];
-		//			for (int i = 0; i < cnt; ++i)
-		//			{
-		//				var fldTypeId = br.ReadInt32();
-		//				var fldNameId = br.ReadInt32();
-		//				_typeFieldInfos[r][i] = new KeyValuePair<int, string>(fldTypeId, _stringIds[r][fldNameId]);
-		//			}
-		//			br.Close();
-		//			br = null;
-		//		}
-		//		return true;
-		//	}
-		//	catch (Exception ex)
-		//	{
-		//		error = Utils.GetExceptionErrorString(ex);
-		//		return false;
-		//	}
-		//	finally
-		//	{
-		//		br?.Close();
-		//	}
-		//}
-
 		private bool Load(out string error, IProgress<string> progress)
 		{
 			error = null;
@@ -254,6 +206,7 @@ namespace ClrMDRIndex
 				_instTypeOffsets = new int[_runtimeCount][];
 				_segments = new ClrtSegment[_runtimeCount][];
 				_fieldDependencies = new FieldDependency[_runtimeCount];
+				_unrooted = new ulong[_runtimeCount][];
 
 				for (int r = 0, rcnt = _runtimeCount; r < rcnt; ++r)
 				{
@@ -277,6 +230,11 @@ namespace ClrMDRIndex
 						);
 
 					_fieldDependencies[r].Init(out error); // TODO JRD handle this error
+
+					// unrooted lookup
+					//
+					string unrootedPath = Utils.GetFilePath(r, MapFolder, DumpBaseName, Constants.MapUnrootedAddressesFilePostfix);
+					_unrooted[r] = GetUnrooted(unrootedPath, out error);
 
 					//_typeNames[r] = Utils.GetStringListFromFile(Utils.GetFilePath(r, MapFolder, DumpBaseName, Constants.TxtTypeFilePostfix), out error);
 					//_typeReversedNamesOrdered[r] = Utils.GetStringListFromFile(Utils.GetFilePath(r, MapFolder, DumpBaseName, Constants.TxtReversedTypeNameFilePostfix), out error);
@@ -315,26 +273,118 @@ namespace ClrMDRIndex
 			}
 		}
 
-		//private bool LoadFinalizerObjectAddresses(out string error)
-		//{
-		//	error = null;
-		//	try
-		//	{
-		//		_finalizerObjectAddresses = new ulong[_runtimeCount][];
-		//		for (int r = 0, rcnt = _runtimeCount; r < rcnt; ++r)
-		//		{
-		//			var path = Utils.GetFilePath(r, MapFolder, DumpBaseName, Constants.MapFinalizerFilePostfix);
-		//			_finalizerObjectAddresses[r] = Utils.ReadUlongArray(path, out error);
-		//			if (error != null) return false;
-		//		}
-		//		return true;
-		//	}
-		//	catch (Exception ex)
-		//	{
-		//		error = Utils.GetExceptionErrorString(ex);
-		//		return false;
-		//	}
-		//}
+		private ulong[] GetUnrooted(string path, out string error)
+		{
+			try
+			{
+				if (!File.Exists(path))
+					return CreateUnrooted(path, out error);
+				return ReadUnrooted(path, out error);
+			}
+			catch (Exception ex)
+			{
+				error = Utils.GetExceptionErrorString(ex);
+				return null;
+			}
+		}
+
+		private ulong[] ReadUnrooted(string path, out string error)
+		{
+			error = null;
+			BinaryReader br = null;
+			try
+			{
+				Debug.Assert(File.Exists(path));
+				br = new BinaryReader(File.Open(path, FileMode.Open, FileAccess.Read, FileShare.Read));
+				int cnt = br.ReadInt32();
+				ulong[] unrooted = new ulong[cnt];
+				for (int i = 0; i < cnt; ++i)
+				{
+					unrooted[i] = br.ReadUInt64();
+				}
+				return unrooted;
+			}
+			catch (Exception ex)
+			{
+				error = Utils.GetExceptionErrorString(ex);
+				return null;
+			}
+			finally
+			{
+				br?.Close();
+			}
+		}
+
+
+		private ulong[] CreateUnrooted(string path, out string error)
+		{
+			error = null;
+			BinaryWriter bw = null;
+			try
+			{
+				Debug.Assert(!File.Exists(path));
+				ulong[] fields = FieldDependencies.ParentOffsets.Item1;
+				ulong[] instances = Instances;
+				var roots = Roots;
+				int offNdx = 0;
+				int instNdx = 0;
+				int offCnt = fields.Length-1; // last one is dummy
+				int instCnt = instances.Length;
+				Debug.Assert(instCnt >= offCnt);
+
+				List<ulong> unrooted = new List<ulong>(instCnt - offCnt);
+
+				while (instNdx < instCnt && offNdx < offCnt)
+				{
+					var instAddr = instances[instNdx];
+					var fldAddr = fields[offNdx];
+					if (instAddr == fldAddr)
+					{
+						++instNdx;
+						++offNdx;
+						continue;
+					}
+					if (instAddr < fldAddr)
+					{
+						if (!roots.IsRootedOutsideFinalization(instAddr))
+						{
+							unrooted.Add(instAddr);
+						}
+						++instNdx;
+						continue;
+					}
+					if (instAddr > fldAddr) // should not happen
+					{
+						Debug.Assert(false,"Should not happen: instAddr > fldAddr");
+					}
+
+
+				}
+				for (; instNdx < instCnt; ++instNdx)
+					unrooted.Add(instances[instNdx]);
+				ulong[] unrootedArray = unrooted.ToArray();
+				unrooted.Clear();
+				unrooted = null;
+				bw = new BinaryWriter(File.Open(path, FileMode.Create, FileAccess.Write, FileShare.None));
+				bw.Write(unrootedArray.Length);
+				for (int i = 0, icnt = unrootedArray.Length; i < icnt; ++i)
+				{
+					bw.Write(unrootedArray[i]);
+				}
+				bw.Close();
+				bw = null;
+				return unrootedArray;
+			}
+			catch (Exception ex)
+			{
+				error = Utils.GetExceptionErrorString(ex);
+				return null;
+			}
+			finally
+			{
+				bw?.Close();
+			}
+		}
 
 		//private bool LoadXs(out string error)
 		//{
@@ -347,65 +397,6 @@ namespace ClrMDRIndex
 		//	{
 		//		error = Utils.GetExceptionErrorString(ex);
 		//		return false;
-		//	}
-		//}
-
-		//private bool LoadInstancesAndReferences(out string error)
-		//{
-		//	error = null;
-		//	BinaryReader br = null;
-		//	try
-		//	{
-		//		_instances = new ulong[_runtimeCount][];
-		//		_sizes = new ulong[_runtimeCount][];
-		//		_instTypes = new int[_runtimeCount][];
-		//		_instTypesOrdered = new int[_runtimeCount][];
-		//		_instTypesOrderedMap = new int[_runtimeCount][];
-		//		_parents = new int[_runtimeCount][];
-		//		_multiParents = new Multiparents[_runtimeCount];
-		//		_arrays = new Arrays[_runtimeCount];
-
-		//		for (int r = 0, rcnt = _runtimeCount; r < rcnt; ++r)
-		//		{
-		//			br = new BinaryReader(File.Open(Utils.GetFilePath(r, _mapFolder, _dumpBaseName, Constants.MapInstanceFilePostfix),
-		//												FileMode.Open));
-		//			var cnt = br.ReadInt32();
-		//			_instances[r] = new ulong[cnt];
-		//			_sizes[r] = new ulong[cnt];
-		//			_instTypes[r] = new int[cnt];
-		//			_parents[r] = new int[cnt];
-		//			for (int i = 0; i < cnt; ++i)
-		//			{
-		//				_instances[r][i] = br.ReadUInt64();
-		//				_sizes[r][i] = br.ReadUInt64();
-		//				_instTypes[r][i] = br.ReadInt32();
-		//				_parents[r][i] = br.ReadInt32();
-		//			}
-		//			br.Close();
-		//			br = null;
-
-		//			_multiParents[r] = new Multiparents(_instances[r],_parents[r]);
-		//			if (!_multiParents[r].LoadMultiparents(r, _mapFolder, _dumpBaseName, out error)) return false;
-
-		//			_instTypesOrdered[r] = Utils.CloneIntArray(_instTypes[r]);
-		//			_instTypesOrderedMap[r] = Utils.SortAndGetMap(_instTypesOrdered[r]);
-
-		//			br = new BinaryReader(File.Open(Utils.GetFilePath(r, _mapFolder, _dumpBaseName, Constants.MapArrayInstanceFilePostfix),
-		//							FileMode.Open));
-		//			_arrays[r] = Arrays.Load(br);
-		//			br.Close();
-		//			br = null;
-		//		}
-		//		return true;
-		//	}
-		//	catch (Exception ex)
-		//	{
-		//		error = Utils.GetExceptionErrorString(ex);
-		//		return false;
-		//	}
-		//	finally
-		//	{
-		//		br?.Close();
 		//	}
 		//}
 
@@ -1660,22 +1651,21 @@ namespace ClrMDRIndex
 
 		public ulong[] FinalizerQueue => _roots[_currentRuntime].FinalizerQue;
 
-		public Tuple<KeyValuePair<string, string>[], KeyValuePair<string, string>[]> GetDisplayableFinalizationQueue(bool sortByTypeNames = false)
+		public Tuple<triple<string, string, string>[], KeyValuePair<string, string>[]> GetDisplayableFinalizationQueue(bool sortByTypeNames = false)
 		{
-			var que = _roots[_currentRuntime].GetDisplayableFinalizationQueue(_instTypes[_currentRuntime],
-				_clrtTypes[_currentRuntime].Names);
+			var que = _roots[_currentRuntime].GetDisplayableFinalizationQueue(InstanceTypeIds, Types.Names, Unrooted);
 			if (que == null || que.Length < 1)
-				return new Tuple<KeyValuePair<string, string>[], KeyValuePair<string, string>[]>
-									(Utils.EmptyArray<KeyValuePair<string, string>>.Value, Utils.EmptyArray<KeyValuePair<string, string>>.Value);
+				return new Tuple<triple<string, string, string>[], KeyValuePair<string, string>[]>
+									(Utils.EmptyArray<triple<string, string, string>>.Value, Utils.EmptyArray<KeyValuePair<string, string>>.Value);
 			if (sortByTypeNames)
 			{
-				Array.Sort(que, new Utils.KVStrStrCmp());
+				Array.Sort(que, new Utils.TripleStrStrStrCmp(3));
 			}
 
 			SortedDictionary<string, int> dct = new SortedDictionary<string, int>(StringComparer.Ordinal);
 			for (int i = 1, icnt = que.Length; i < icnt; ++i)
 			{
-				string typeName = que[i].Value;
+				string typeName = que[i].Third;
 				int cnt;
 				if (dct.TryGetValue(typeName, out cnt))
 				{
@@ -1692,7 +1682,7 @@ namespace ClrMDRIndex
 			{
 				histogram[i + 1] = new KeyValuePair<string, string>(Utils.SizeString(hist[i].Key), hist[i].Value);
 			}
-			return new Tuple<KeyValuePair<string, string>[], KeyValuePair<string, string>[]>(que, histogram);
+			return new Tuple<triple<string, string, string>[], KeyValuePair<string, string>[]>(que, histogram);
 		}
 
 		//		public Tuple<ulong[], ulong[]> GetNotRooted(ulong[] addreses)
@@ -2426,10 +2416,13 @@ namespace ClrMDRIndex
 			data.Add(str);
 		}
 
+
+
 		public SortedDictionary<string, quadruple<int, ulong, ulong, ulong>> GetTypeSizesInfo(string path, out string error)
 		{
 			try
 			{
+
 				var dump = ClrtDump.OpenDump(path, out error);
 				if (dump == null) return null;
 				return ClrtDump.GetTypeSizesInfo(dump.Runtime.GetHeap(), out error);
@@ -2444,6 +2437,7 @@ namespace ClrMDRIndex
 				Dump?.Dispose();
 			}
 		}
+
 
 		public ListingInfo GetAllTypesSizesInfo(out string error)
 		{

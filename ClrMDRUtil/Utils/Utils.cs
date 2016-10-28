@@ -14,6 +14,73 @@ namespace ClrMDRIndex
 {
 	public class Utils
 	{
+		#region Address Handling
+
+		public enum RootBits : ulong
+		{
+			RootMask = 0xFF00000000000000,
+			AddressMask = 0x00FFFFFFFFFFFFFF,
+			Root = 0x8000000000000000,
+			RootPointee = 0x4000000000000000,
+			Rooted = 0x2000000000000000,
+		}
+
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		public static bool IsRooted(ulong addr)
+		{
+			return (addr & (ulong)RootBits.RootMask) > 0;
+		}
+
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		public static bool IsNotRooted(ulong addr)
+		{
+			return (addr & (ulong)RootBits.RootMask) == 0;
+		}
+
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		public static ulong SetAsRoot(ulong addr)
+		{
+			return addr |= (ulong)RootBits.Root;
+		}
+
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		public static ulong SetAsRootPointee(ulong addr)
+		{
+			return addr |= (ulong)RootBits.RootPointee;
+		}
+
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		public static ulong SetAsRooted(ulong addr)
+		{
+			return addr |= (ulong)RootBits.Rooted;
+		}
+
+		/// <summary>
+		/// Binary search to find an index of the address in a ulong array.
+		/// </summary>
+		/// <param name="addresses">Array of ulongs.</param>
+		/// <param name="addr">Address to look for.</param>
+		/// <param name="lhs">An index to start the search, (left hand side).</param>
+		/// <param name="rhs">The last index included in the search range, (right hand side).</param>
+		/// <returns>Index of the item if found, invalid index (-1) otherwise.</returns>
+		static int AddressSearch(ulong[] addresses, ulong addr, int lhs, int rhs)
+		{
+			while (lhs <= rhs)
+			{
+				int mid = lhs + (rhs - lhs)/2;
+				ulong midAddr = addresses[mid];
+				if (midAddr == addr)
+					return mid;
+				if (midAddr < addr)
+					lhs = mid + 1;
+				else
+					rhs = mid - 1;
+			}
+			return Constants.InvalidIndex;
+		}
+
+		#endregion Address Handling
+
 		#region IO
 
 		public static char[] DirSeps = new char[] {Path.DirectorySeparatorChar,Path.AltDirectorySeparatorChar};
@@ -1016,6 +1083,29 @@ namespace ClrMDRIndex
 					return b.Second < a.Second ? -1 : (b.Second > a.Second ? 1 : 0);
 				}
 				return b.First < a.First ? -1 : (b.First > a.First ? 1 : 0);
+			}
+		}
+
+		public class TripleStrStrStrCmp : IComparer<triple<string,string,string>>
+		{
+			private int _ndx;
+
+			public TripleStrStrStrCmp(int ndx)
+			{
+				_ndx = ndx;
+			}
+
+			public int Compare(triple<string, string, string> a, triple<string, string, string> b)
+			{
+				switch (_ndx)
+				{
+					case 0:
+						return string.Compare(a.First, b.First, StringComparison.Ordinal);
+					case 1:
+						return string.Compare(a.Second, b.Second, StringComparison.Ordinal);
+					default:
+						return string.Compare(a.Third, b.Third, StringComparison.Ordinal);
+				}
 			}
 		}
 

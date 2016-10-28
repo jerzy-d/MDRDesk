@@ -410,7 +410,7 @@ namespace ClrMDRIndex
 								sizeArena.Add(0u);
 								goto NEXT_OBJECT;
 							}
-							var isFree = Utils.SameStrings(clrType.Name, Constants.Free);
+							var isFree = Utils.SameStrings(clrType.Name, Constants.FreeTypeName);
 							var sz = clrType.GetSize(addr);
 							if (sz > (ulong)UInt32.MaxValue) sz = (ulong)UInt32.MaxValue;
 							sizeArena.Add((uint)sz);
@@ -635,7 +635,7 @@ namespace ClrMDRIndex
 					instanceTypes[r] = tps;
 
 					progress?.Report("Runtime: " + r + ", getting roots.");
-					clrtRoots[r] = ClrtRoots.GetRoots(clrRuntime, instances[r], instanceTypes[r], stringIds[r]);
+					clrtRoots[r] = ClrtRoots.GetRoots(clrRuntime.GetHeap(), instances[r], instanceTypes[r], stringIds[r]);
 					Utils.ForceGcWithCompaction();
 
 				}
@@ -814,6 +814,23 @@ namespace ClrMDRIndex
 		}
 
 
+		public static int GetHeapAddressCount(ClrHeap heap)
+		{
+			int count = 0;
+			var segs = heap.Segments;
+			for (int i = 0, icnt = segs.Count; i < icnt; ++i)
+			{
+				var seg = segs[i];
+				ulong addr = seg.FirstObject;
+				while (addr != 0ul)
+				{
+					++count;
+					addr = seg.NextObject(addr);
+				}
+			}
+			return count;
+		}
+
 		public bool GetArraysInfo(out string error)
 		{
 			error = null;
@@ -838,7 +855,7 @@ namespace ClrMDRIndex
 			error = null;
 			var heap = runtime.GetHeap();
 			var dct = new StringIdDct();
-			dct.AddKey(Constants.Free);
+			dct.AddKey(Constants.FreeTypeName);
 			dct.AddKey(Constants.ErrorStr);
 			dct.AddKey(Constants.NullName);
 
@@ -851,7 +868,7 @@ namespace ClrMDRIndex
 					while (addr != 0UL)
 					{
 						var clrType = heap.GetObjectType(addr);
-						if (clrType == null || clrType.Name == null || Utils.SameStrings(clrType.Name, Constants.Free)) goto NEXT_OBJECT;
+						if (clrType == null || clrType.Name == null || Utils.SameStrings(clrType.Name, Constants.FreeTypeName)) goto NEXT_OBJECT;
 						dct.JustGetId(clrType.Name);
 						NEXT_OBJECT:
 						addr = seg.NextObject(addr);
@@ -1223,22 +1240,27 @@ namespace ClrMDRIndex
 
 		#region Indexing Helpers
 
-		public static void AddStandardStringIds(TypeIdDct dct)
+		public static TypeIdDct GetStandardTypeIdDctDct()
 		{
-			dct.AddKey(Constants.NullName);
-			dct.AddKey(Constants.ErrorStr);
-			dct.AddKey(Constants.Free);
+			var dct = new TypeIdDct();
+			dct.AddKey(Constants.NullTypeName);
+			dct.AddKey(Constants.ErrorTypeName);
+			dct.AddKey(Constants.FreeTypeName);
 			dct.AddKey(Constants.SystemObject);
 			dct.AddKey(Constants.System__Canon);
+			return dct;
 		}
 
-		public static void AddStandardStringIds(StringIdDct dct)
+		public static StringIdDct GetStandardStringIdDct()
 		{
+			var dct = new StringIdDct();
 			dct.AddKey(Constants.NullName);
+			dct.AddKey(Constants.NullTypeName);
 			dct.AddKey(Constants.ErrorStr);
-			dct.AddKey(Constants.Free);
+			dct.AddKey(Constants.FreeTypeName);
 			dct.AddKey(Constants.SystemObject);
 			dct.AddKey(Constants.System__Canon);
+			return dct;
 		}
 
 		private static ulong[][] GetDataFromArena(Arena<triple<ulong, int, ulong>>[] data, out int[][] ints, out ulong[][] sizes)

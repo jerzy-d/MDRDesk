@@ -51,9 +51,25 @@ namespace ClrMDRIndex
 			
 		}
 
-		public static ClrtRoots GetRoots(ClrRuntime runtime, ulong[] instances, int[] types, StringIdDct idDct)
+		public static KeyValuePair<ulong[],ulong[]> GetRootAddresses(ClrHeap heap)
 		{
-			var heap = runtime.GetHeap();
+			var roots = heap.EnumerateRoots(true);
+			HashSet<ulong> addrSet = new HashSet<ulong>();
+			HashSet<ulong> objSet = new HashSet<ulong>();
+			foreach (var root in roots)
+			{
+				addrSet.Add(root.Address);
+				objSet.Add(root.Address);
+			}
+			var addrAry = addrSet.ToArray();
+			var objAry = objSet.ToArray();
+			Array.Sort(addrAry);
+			Array.Sort(objAry);
+			return new KeyValuePair<ulong[], ulong[]>(addrAry,objAry);
+		}
+
+		public static ClrtRoots GetRoots(ClrHeap heap, ulong[] instances, int[] types, StringIdDct idDct)
+		{
 			var rootDct = new SortedDictionary<ulong, List<ClrtRoot>>();
 			var finalizeQue = new List<ulong>(1024 * 1024);
 			var finalizeQueInstIds = new List<int>(1024 * 1024);
@@ -351,19 +367,25 @@ namespace ClrMDRIndex
 			return ndx >= 0;
 		}
 
-		public KeyValuePair<string, string>[] GetDisplayableFinalizationQueue(int[] instTypes, string[] typeNames)
+		public triple<string, string, string>[] GetDisplayableFinalizationQueue(int[] instTypes, string[] typeNames, ulong[] unrooted)
 		{
-			var que = new KeyValuePair<string, string>[_finalizerQue.Length];
+			var que = new triple<string, string, string>[_finalizerQue.Length];
 			for (int i = 0, icnt = _finalizerQue.Length; i < icnt; ++i)
 			{
 				var addrStr = Utils.AddressString(_finalizerQue[i]);
 				var typeId = _finalizerQueInstanceIds[i];
+				var notRooted = IsRooted(_finalizerQue[i], unrooted) ? string.Empty : Constants.HeavyCheckMarkHeader;
 				string typeName = typeId != Constants.InvalidIndex ? typeNames[instTypes[typeId]] : Constants.UnknownName;
-				que[i] = new KeyValuePair<string, string>(addrStr,typeName);
+				que[i] = new triple<string, string, string>(addrStr,notRooted,typeName);
 
 
 			}
 			return que;
+		}
+
+		public bool IsRooted(ulong addr, ulong[] unrooted)
+		{
+			return Array.BinarySearch(unrooted, addr) < 0;
 		}
 
 		#endregion Queries

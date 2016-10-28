@@ -38,28 +38,28 @@ namespace MDRDesk
 	{
 		private DispatcherTimer _dispatcherTimer; // to update some stuff periodically
 
-        private RecentFileList RecentDumpList;
-        private RecentFileList RecentIndexList;
-	    private RecentFileList RecentAdhocList;
+		private RecentFileList RecentDumpList;
+		private RecentFileList RecentIndexList;
+		private RecentFileList RecentAdhocList;
 
-        public static Map CurrentMap;
+		public static Map CurrentMap;
 		public static ClrtDump CurrentAdhocDump;
 		public static string BaseTitle;
 		private static Version _myVersion;
 
-        //ResourceDictionary myresourcedictionary;
+		//ResourceDictionary myresourcedictionary;
 
 
-        #region Ctors/Initialization
+		#region Ctors/Initialization
 
-        public MainWindow()
+		public MainWindow()
 		{
 
-            InitializeComponent();
+			InitializeComponent();
 			string error;
 			if (!Init(out error))
 			{
-                Dispatcher.CurrentDispatcher.InvokeAsync(() => MessageBoxShowError(error));
+				Dispatcher.CurrentDispatcher.InvokeAsync(() => MessageBoxShowError(error));
 			}
 		}
 
@@ -79,35 +79,35 @@ namespace MDRDesk
 				this.AddHandler(CloseableTabItem.CloseTabEvent, new RoutedEventHandler(this.CloseTab));
 
 				var result = Setup.GetConfigSettings(out error);
-			    if (!result) return false;
-                RecentDumpList = new RecentFileList(RecentDumpsMenuItem, (int)Setup.RecentFiles.MaxCount);
-                RecentDumpList.Add(Setup.RecentDumpList);
-                RecentIndexList = new RecentFileList(RecentIndexMenuItem, (int)Setup.RecentFiles.MaxCount);
-                RecentIndexList.Add(Setup.RecentIndexList);
-                RecentAdhocList = new RecentFileList(RecentAdhocMenuItem, (int)Setup.RecentFiles.MaxCount);
-                RecentAdhocList.Add(Setup.RecentAdhocList);
-                SetupDispatcherTimer();
- 
-                switch (Setup.TypesDisplayMode)
-			    {
-                    case "namespaces":
-                        TypeDisplayNamespaceClass.IsChecked = true;
-                        break;
-                    case "types":
-                        TypeDisplayClass.IsChecked = true;
-                        break;
-                    case "fulltypenames":
-                        TypeDisplayNamespace.IsChecked = true;
-                        break;
-                    default:
-                        TypeDisplayNamespace.IsChecked = true;
-                        break;
+				if (!result) return false;
+				RecentDumpList = new RecentFileList(RecentDumpsMenuItem, (int)Setup.RecentFiles.MaxCount);
+				RecentDumpList.Add(Setup.RecentDumpList);
+				RecentIndexList = new RecentFileList(RecentIndexMenuItem, (int)Setup.RecentFiles.MaxCount);
+				RecentIndexList.Add(Setup.RecentIndexList);
+				RecentAdhocList = new RecentFileList(RecentAdhocMenuItem, (int)Setup.RecentFiles.MaxCount);
+				RecentAdhocList.Add(Setup.RecentAdhocList);
+				SetupDispatcherTimer();
 
-                }
-                //myresourcedictionary = new ResourceDictionary();
-                //myresourcedictionary.Source = new Uri("/MDRDesk;component/Resources/MDRDeskResourceDct.xaml",
-                //UriKind.RelativeOrAbsolute);
-                return result;
+				switch (Setup.TypesDisplayMode)
+				{
+					case "namespaces":
+						TypeDisplayNamespaceClass.IsChecked = true;
+						break;
+					case "types":
+						TypeDisplayClass.IsChecked = true;
+						break;
+					case "fulltypenames":
+						TypeDisplayNamespace.IsChecked = true;
+						break;
+					default:
+						TypeDisplayNamespace.IsChecked = true;
+						break;
+
+				}
+				//myresourcedictionary = new ResourceDictionary();
+				//myresourcedictionary.Source = new Uri("/MDRDesk;component/Resources/MDRDeskResourceDct.xaml",
+				//UriKind.RelativeOrAbsolute);
+				return result;
 			}
 			catch (Exception ex)
 			{
@@ -153,7 +153,7 @@ namespace MDRDesk
 					MessageBoxImage.Exclamation);
 				return;
 			}
-			DisplayListViewBottomGrid(result, Constants.AdhocQuerySymbol, "ReportFile", (string.IsNullOrWhiteSpace(title) ? "Report" : title),null,path);
+			DisplayListViewBottomGrid(result, Constants.AdhocQuerySymbol, "ReportFile", (string.IsNullOrWhiteSpace(title) ? "Report" : title), null, path);
 		}
 
 		private void ExitClicked(object sender, RoutedEventArgs e)
@@ -163,11 +163,11 @@ namespace MDRDesk
 
 		public void MainWindow_Closing(object sender, CancelEventArgs e)
 		{
-		    string error;
-            if (RecentDumpList!=null) Setup.ResetRecentFileList(RecentDumpList.GetPaths(), Setup.RecentFiles.Dump);
-            if (RecentIndexList != null) Setup.ResetRecentFileList(RecentIndexList.GetPaths(), Setup.RecentFiles.Map);
-            if (RecentAdhocList != null) Setup.ResetRecentFileList(RecentAdhocList.GetPaths(), Setup.RecentFiles.Adhoc);
-            Setup.SaveConfigSettings(out error);
+			string error;
+			if (RecentDumpList != null) Setup.ResetRecentFileList(RecentDumpList.GetPaths(), Setup.RecentFiles.Dump);
+			if (RecentIndexList != null) Setup.ResetRecentFileList(RecentIndexList.GetPaths(), Setup.RecentFiles.Map);
+			if (RecentAdhocList != null) Setup.ResetRecentFileList(RecentAdhocList.GetPaths(), Setup.RecentFiles.Adhoc);
+			Setup.SaveConfigSettings(out error);
 			var task = Task.Factory.StartNew(() =>
 			{
 				CurrentMap?.Dispose();
@@ -202,8 +202,8 @@ namespace MDRDesk
 				return;
 			}
 			SW.Clipboard.SetText(dacFile);
-            RecentDumpList.Add(path);
-            ShowInformation("Required Dac File", dacFile, "Dac file name (shown above) is copied to Clipboard.", string.Empty);
+			RecentDumpList.Add(path);
+			ShowInformation("Required Dac File", dacFile, "Dac file name (shown above) is copied to Clipboard.", string.Empty);
 		}
 
 		private void AddDacFileClicked(object sender, RoutedEventArgs e)
@@ -216,86 +216,86 @@ namespace MDRDesk
 
 		}
 
-        #endregion Dump
+		#endregion Dump
 
-        #region Index
+		#region Index
 
 		private void ToggleButton_OnChecked(object sender, RoutedEventArgs e)
-        {
-            RadioButton button = sender as RadioButton;
-            string buttonName = button.Name;
-            if (!IsIndexAvailable())
-		    {
-                switch (buttonName)
-                {
-                    case "TypeDisplayNamespaceClass":
-                        Setup.SetTypesDisplayMode("namespaces");
-                        break;
-                    case "TypeDisplayClass":
-                        Setup.SetTypesDisplayMode("types");
-                        break;
-                    case "TypeDisplayNamespace":
-                        Setup.SetTypesDisplayMode("fulltypenames");
-                        break;
-                }
-                return;
-		    }
+		{
+			RadioButton button = sender as RadioButton;
+			string buttonName = button.Name;
+			if (!IsIndexAvailable())
+			{
+				switch (buttonName)
+				{
+					case "TypeDisplayNamespaceClass":
+						Setup.SetTypesDisplayMode("namespaces");
+						break;
+					case "TypeDisplayClass":
+						Setup.SetTypesDisplayMode("types");
+						break;
+					case "TypeDisplayNamespace":
+						Setup.SetTypesDisplayMode("fulltypenames");
+						break;
+				}
+				return;
+			}
 
-            bool openNewTab = true;
-            List<string> lst = new List<string>(3);
-            foreach (TabItem tabItem in MainTab.Items)
-            {
-                if (tabItem.Content is Grid)
-                {
-                    var grid = tabItem.Content as Grid;
-                    if (grid.Name.StartsWith("ReversedHeapIndexTypeView"))
-                    {
-                        if (buttonName == "TypeDisplayClass")
-                        {
-                            openNewTab = false;
-                            break;
-                        }
-                    }
-                    if (grid.Name.StartsWith("NamespaceTypeView"))
-                    {
-                        if (buttonName == "TypeDisplayNamespaceClass")
-                        {
-                            openNewTab = false;
-                            break;
-                        }
-                    }
-                    if (grid.Name.StartsWith("HeapIndexTypeView"))
-                    {
-                        if (buttonName == "TypeDisplayNamespace")
-                        {
-                            openNewTab = false;
-                            break;
-                        }
-                    }
-                }
-            }
-            if (openNewTab)
-            {
-                switch (buttonName)
-                {
-                    case "TypeDisplayNamespaceClass":
-                        Setup.SetTypesDisplayMode("namespaces");
-                        var namespaces = CurrentMap.GetNamespaceDisplay();
-                        DisplayNamespaceGrid(namespaces);
-                        break;
-                    case "TypeDisplayClass":
-                        Setup.SetTypesDisplayMode("types");
-                        DisplayTypesGrid(true);
-                        break;
-                    case "TypeDisplayNamespace":
-                        Setup.SetTypesDisplayMode("fulltypenames");
-                        DisplayTypesGrid(false);
-                        break;
-                }
-            }
-        }
+			bool openNewTab = true;
+			List<string> lst = new List<string>(3);
+			foreach (TabItem tabItem in MainTab.Items)
+			{
+				if (tabItem.Content is Grid)
+				{
+					var grid = tabItem.Content as Grid;
+					if (grid.Name.StartsWith("ReversedHeapIndexTypeView"))
+					{
+						if (buttonName == "TypeDisplayClass")
+						{
+							openNewTab = false;
+							break;
+						}
+					}
+					if (grid.Name.StartsWith("NamespaceTypeView"))
+					{
+						if (buttonName == "TypeDisplayNamespaceClass")
+						{
+							openNewTab = false;
+							break;
+						}
+					}
+					if (grid.Name.StartsWith("HeapIndexTypeView"))
+					{
+						if (buttonName == "TypeDisplayNamespace")
+						{
+							openNewTab = false;
+							break;
+						}
+					}
+				}
+			}
+			if (openNewTab)
+			{
+				switch (buttonName)
+				{
+					case "TypeDisplayNamespaceClass":
+						Setup.SetTypesDisplayMode("namespaces");
+						var namespaces = CurrentMap.GetNamespaceDisplay();
+						DisplayNamespaceGrid(namespaces);
+						break;
+					case "TypeDisplayClass":
+						Setup.SetTypesDisplayMode("types");
+						DisplayTypesGrid(true);
+						break;
+					case "TypeDisplayNamespace":
+						Setup.SetTypesDisplayMode("fulltypenames");
+						DisplayTypesGrid(false);
+						break;
+				}
+			}
+		}
 
-        private async void CreateDumpIndexClicked(object sender, RoutedEventArgs e)
+		private async void CreateDumpIndexClicked(object sender, RoutedEventArgs e)
 		{
 			var path = SelectCrashDumpFile();
 			if (path == null) return;
@@ -307,10 +307,10 @@ namespace MDRDesk
 			var result = await Task.Run(() =>
 			{
 				string error;
-                string indexPath;
+				string indexPath;
 				var indexer = new Indexer(path);
 				var ok = indexer.Index(_myVersion, progress, out indexPath, out error);
-				return new Tuple<bool, string,string>(ok, error, indexPath);
+				return new Tuple<bool, string, string>(ok, error, indexPath);
 			});
 
 			Utils.ForceGcWithCompaction();
@@ -321,10 +321,10 @@ namespace MDRDesk
 			if (!result.Item1)
 			{
 				ShowError(result.Item2);
-			    return;
+				return;
 			}
-            Dispatcher.CurrentDispatcher.InvokeAsync(() => DoOpenDumpIndex(result.Item3));
-        }
+			Dispatcher.CurrentDispatcher.InvokeAsync(() => DoOpenDumpIndex(result.Item3));
+		}
 
 		private async void OpenDumpIndexClicked(object sender, RoutedEventArgs e)
 		{
@@ -332,7 +332,7 @@ namespace MDRDesk
 			if (sender != null && sender is MenuItem)
 			{
 				var menuItem = sender as MenuItem;
-				if (menuItem.HasHeader && menuItem.Header is string && (menuItem.Header as string)== "Recent Indices")
+				if (menuItem.HasHeader && menuItem.Header is string && (menuItem.Header as string) == "Recent Indices")
 				{
 					path = e.OriginalSource as string;
 				}
@@ -341,11 +341,11 @@ namespace MDRDesk
 
 			if (path == null) return;
 
-            DoOpenDumpIndex(path);
+			DoOpenDumpIndex(path);
 
-   //         var progressHandler = new Progress<string>(MainStatusShowMessage);
-   //         var progress = progressHandler as IProgress<string>;
-   //         SetStartTaskMainWindowState("Opening index: " + Utils.GetPathLastFolder(path) + ", please wait...");
+			//         var progressHandler = new Progress<string>(MainStatusShowMessage);
+			//         var progress = progressHandler as IProgress<string>;
+			//         SetStartTaskMainWindowState("Opening index: " + Utils.GetPathLastFolder(path) + ", please wait...");
 
 			//var result = await Task.Run(() =>
 			//{
@@ -353,7 +353,7 @@ namespace MDRDesk
 			//	ClrMDRIndex.Map map = Map.OpenMap(_myVersion, path, out error, progress);
 			//    KeyValuePair<string, KeyValuePair<string, int>[]>[] namespaces=null;
 
-   //             if (error == null && map != null)
+			//             if (error == null && map != null)
 			//    {
 			//        namespaces = map.GetNamespaceDisplay();
 			//    }
@@ -375,81 +375,78 @@ namespace MDRDesk
 			//}
 			//CurrentMap = result.Item2;
 
-		 //   var genInfo = CurrentMap.GetGenerationTotals();
-		 //   DisplayGeneralInfoGrid(CurrentMap.DumpInfo, genInfo);
-		 //   if ((TypeDisplayNamespaceClass.IsChecked ?? (bool)TypeDisplayNamespaceClass.IsChecked) && result.Item3 != null)
-		 //   {
-   //             DisplayNamespaceGrid(result.Item3);
-   //         }
-		 //   else
-		 //   {
-   //             if ((TypeDisplayClass.IsChecked ?? (bool)TypeDisplayNamespaceClass.IsChecked))
-   //                 DisplayTypesGrid(true);
-   //             else
-   //                 DisplayTypesGrid(false);
-   //         }
+			//   var genInfo = CurrentMap.GetGenerationTotals();
+			//   DisplayGeneralInfoGrid(CurrentMap.DumpInfo, genInfo);
+			//   if ((TypeDisplayNamespaceClass.IsChecked ?? (bool)TypeDisplayNamespaceClass.IsChecked) && result.Item3 != null)
+			//   {
+			//             DisplayNamespaceGrid(result.Item3);
+			//         }
+			//   else
+			//   {
+			//             if ((TypeDisplayClass.IsChecked ?? (bool)TypeDisplayNamespaceClass.IsChecked))
+			//                 DisplayTypesGrid(true);
+			//             else
+			//                 DisplayTypesGrid(false);
+			//         }
 
-   //         this.Title = BaseTitle + Constants.BlackDiamondPadded + CurrentMap.DumpBaseName;
-   //         RecentIndexList.Add(path);
-        }
+			//         this.Title = BaseTitle + Constants.BlackDiamondPadded + CurrentMap.DumpBaseName;
+			//         RecentIndexList.Add(path);
+		}
 
+		private async void DoOpenDumpIndex(string path)
+		{
+			if (path == null) return;
+			var progressHandler = new Progress<string>(MainStatusShowMessage);
+			var progress = progressHandler as IProgress<string>;
+			SetStartTaskMainWindowState("Opening index: " + Utils.GetPathLastFolder(path) + ", please wait...");
 
-        private async void DoOpenDumpIndex(string path)
-        {
-            if (path == null) return;
-            var progressHandler = new Progress<string>(MainStatusShowMessage);
-            var progress = progressHandler as IProgress<string>;
-            SetStartTaskMainWindowState("Opening index: " + Utils.GetPathLastFolder(path) + ", please wait...");
+			var result = await Task.Run(() =>
+			{
+				string error;
+				ClrMDRIndex.Map map = Map.OpenMap(_myVersion, path, out error, progress);
+				KeyValuePair<string, KeyValuePair<string, int>[]>[] namespaces = null;
 
-            var result = await Task.Run(() =>
-            {
-                string error;
-                ClrMDRIndex.Map map = Map.OpenMap(_myVersion, path, out error, progress);
-                KeyValuePair<string, KeyValuePair<string, int>[]>[] namespaces = null;
+				if (error == null && map != null)
+				{
+					namespaces = map.GetNamespaceDisplay();
+				}
+				return new Tuple<string, Map, KeyValuePair<string, KeyValuePair<string, int>[]>[]>(error, map, namespaces);
+			});
 
-                if (error == null && map != null)
-                {
-                    namespaces = map.GetNamespaceDisplay();
-                }
-                return new Tuple<string, Map, KeyValuePair<string, KeyValuePair<string, int>[]>[]>(error, map, namespaces);
-            });
+			SetEndTaskMainWindowState("Index: '" + DumpFileMoniker.GetMapName(path) + (result.Item1 == null ? "' is open." : "' open failed."));
 
-            SetEndTaskMainWindowState("Index: '" + DumpFileMoniker.GetMapName(path) + (result.Item1 == null ? "' is open." : "' open failed."));
+			if (result.Item1 != null)
+			{
+				ShowError(result.Item1);
+				return;
+			}
+			if (CurrentMap != null)
+			{
+				CurrentMap.Dispose();
+				CurrentMap = null;
+				Utils.ForceGcWithCompaction();
+			}
+			CurrentMap = result.Item2;
 
-            if (result.Item1 != null)
-            {
-                ShowError(result.Item1);
-                return;
-            }
-            if (CurrentMap != null)
-            {
-                CurrentMap.Dispose();
-                CurrentMap = null;
-                Utils.ForceGcWithCompaction();
-            }
-            CurrentMap = result.Item2;
+			var genInfo = CurrentMap.GetGenerationTotals();
+			DisplayGeneralInfoGrid(CurrentMap.DumpInfo, genInfo);
+			if ((TypeDisplayNamespaceClass.IsChecked ?? (bool)TypeDisplayNamespaceClass.IsChecked) && result.Item3 != null)
+			{
+				DisplayNamespaceGrid(result.Item3);
+			}
+			else
+			{
+				if ((TypeDisplayClass.IsChecked ?? (bool)TypeDisplayNamespaceClass.IsChecked))
+					DisplayTypesGrid(true);
+				else
+					DisplayTypesGrid(false);
+			}
 
-            var genInfo = CurrentMap.GetGenerationTotals();
-            DisplayGeneralInfoGrid(CurrentMap.DumpInfo, genInfo);
-            if ((TypeDisplayNamespaceClass.IsChecked ?? (bool)TypeDisplayNamespaceClass.IsChecked) && result.Item3 != null)
-            {
-                DisplayNamespaceGrid(result.Item3);
-            }
-            else
-            {
-                if ((TypeDisplayClass.IsChecked ?? (bool)TypeDisplayNamespaceClass.IsChecked))
-                    DisplayTypesGrid(true);
-                else
-                    DisplayTypesGrid(false);
-            }
+			this.Title = BaseTitle + Constants.BlackDiamondPadded + CurrentMap.DumpBaseName;
+			RecentIndexList.Add(path);
+		}
 
-            this.Title = BaseTitle + Constants.BlackDiamondPadded + CurrentMap.DumpBaseName;
-            RecentIndexList.Add(path);
-        }
-
-
-
-        private void IndexShowModuleInfosClicked(object sender, RoutedEventArgs e)
+		private void IndexShowModuleInfosClicked(object sender, RoutedEventArgs e)
 		{
 			if (!IsIndexAvailable("Show Loaded Modules Infos")) return;
 			var path = CurrentMap.MapFolder + Path.DirectorySeparatorChar + CurrentMap.DumpBaseName + Constants.TxtTargetModulesPostfix;
@@ -485,13 +482,19 @@ namespace MDRDesk
 			gridView.Columns.Add(new GridViewColumn
 			{
 				Header = "Address",
-				DisplayMemberBinding = new Binding("Key"),
+				DisplayMemberBinding = new Binding("PFirst"),
 				Width = 200,
 			});
 			gridView.Columns.Add(new GridViewColumn
 			{
+				Header = "Not Rooted",
+				DisplayMemberBinding = new Binding("PSecond"),
+				Width = 100,
+			});
+			gridView.Columns.Add(new GridViewColumn
+			{
 				Header = "Type",
-				DisplayMemberBinding = new Binding("Value"),
+				DisplayMemberBinding = new Binding("PThird"),
 				Width = 500,
 			});
 
@@ -591,7 +594,7 @@ namespace MDRDesk
 
 			bool addGenerationInfo = false;
 			MenuItem menuItem = sender as MenuItem;
-			Debug.Assert(menuItem!=null);
+			Debug.Assert(menuItem != null);
 			if ((menuItem.Header as string).Contains("Generations")) addGenerationInfo = true;
 
 			GetUserEnteredNumber("Minimum String Reference Count", "Enter number, hex format not allowed:", out _minStringUsage);
@@ -653,7 +656,7 @@ namespace MDRDesk
 					Dispatcher.CurrentDispatcher.InvokeAsync(() => ExecuteReferenceQuery("Getting instance references", addr, null, (int)refLevel));
 					break;
 				case "ALL PARENTS REFERENCE":
-					Dispatcher.CurrentDispatcher.InvokeAsync(() => ExecuteReferenceQuery("Getting instance references", addr, null,Int32.MaxValue));
+					Dispatcher.CurrentDispatcher.InvokeAsync(() => ExecuteReferenceQuery("Getting instance references", addr, null, Int32.MaxValue));
 					break;
 				case "GENERATION HISTOGRAM":
 					var grid = GetCurrentTabGrid();
@@ -712,7 +715,7 @@ namespace MDRDesk
 		private void RecentIndicesClicked(object sender, RoutedEventArgs e)
 		{
 			var menuItem = sender as MenuItem;
-			Debug.Assert(menuItem!=null);
+			Debug.Assert(menuItem != null);
 			if (menuItem.Items != null && menuItem.Items.Count > 0 && menuItem.Items.CurrentItem != null)
 			{
 				var fileInfo = menuItem.Items.CurrentItem as FileInfo;
@@ -780,69 +783,69 @@ namespace MDRDesk
 				new SWC.MenuItem { Header = "Get References of String Prefix" }
 			};
 			DisplayListViewBottomGrid(taskResult, Constants.BlackDiamond, ReportNameStringUsage, ReportTitleStringUsage, menuItems);
-            RecentAdhocList.Add(dumpFilePath);
+			RecentAdhocList.Add(dumpFilePath);
 		}
 
-        private async void AhqTypeCountClicked(object sender, RoutedEventArgs e)
-        {
-            string error;
-            var dumpFilePath = SelectCrashDumpFile();
-            if (dumpFilePath == null) return;
-            var progressHandler = new Progress<string>(MainStatusShowMessage);
-            var progress = progressHandler as IProgress<string>;
-            string typeName;
-            if (!GetDlgString("Get Type Count", "EnterTypeName", " ", out typeName)) return;
-            SetStartTaskMainWindowState("Getting type count. Please wait...");
-            var taskResult = await Task.Run(() =>
-            {
-                var dmp = ClrtDump.OpenDump(dumpFilePath, out error);
-                if (dmp == null)
-                {
-                    return new KeyValuePair<string, int>(error, -1);
-                }
-                using (dmp)
-                {
-                    var heap = dmp.Runtime.GetHeap();
-                    var count = ClrtDump.GetTypeCount(heap, typeName, out error);
-                    return new KeyValuePair<string,int>(error,count);
-                }
-            });
+		private async void AhqTypeCountClicked(object sender, RoutedEventArgs e)
+		{
+			string error;
+			var dumpFilePath = SelectCrashDumpFile();
+			if (dumpFilePath == null) return;
+			var progressHandler = new Progress<string>(MainStatusShowMessage);
+			var progress = progressHandler as IProgress<string>;
+			string typeName;
+			if (!GetDlgString("Get Type Count", "EnterTypeName", " ", out typeName)) return;
+			SetStartTaskMainWindowState("Getting type count. Please wait...");
+			var taskResult = await Task.Run(() =>
+			{
+				var dmp = ClrtDump.OpenDump(dumpFilePath, out error);
+				if (dmp == null)
+				{
+					return new KeyValuePair<string, int>(error, -1);
+				}
+				using (dmp)
+				{
+					var heap = dmp.Runtime.GetHeap();
+					var count = ClrtDump.GetTypeCount(heap, typeName, out error);
+					return new KeyValuePair<string, int>(error, count);
+				}
+			});
 
-            string msg;
-            if (taskResult.Key != null)
-            {
-                msg = "Getting type count failed, " + typeName;
-            }
-            else
-            {
-                msg = "Type count: " + taskResult.Value +  ", " + typeName;
-            }
+			string msg;
+			if (taskResult.Key != null)
+			{
+				msg = "Getting type count failed, " + typeName;
+			}
+			else
+			{
+				msg = "Type count: " + taskResult.Value + ", " + typeName;
+			}
 
-            SetEndTaskMainWindowState(msg);
-            if (taskResult.Key != null)
-                ShowError(taskResult.Key);
+			SetEndTaskMainWindowState(msg);
+			if (taskResult.Key != null)
+				ShowError(taskResult.Key);
 
-        }
+		}
 
-        private void AhqCollectionContentArray(object sender, RoutedEventArgs e)
-        {
-            string error;
-            var dumpFilePath = SelectCrashDumpFile();
-            if (dumpFilePath == null) return;
-            ulong addr;
-            if (!GetUserEnteredAddress("Enter an array address.", out addr))
-                return;
-            var progressHandler = new Progress<string>(MainStatusShowMessage);
-            var progress = progressHandler as IProgress<string>;
+		private void AhqCollectionContentArray(object sender, RoutedEventArgs e)
+		{
+			string error;
+			var dumpFilePath = SelectCrashDumpFile();
+			if (dumpFilePath == null) return;
+			ulong addr;
+			if (!GetUserEnteredAddress("Enter an array address.", out addr))
+				return;
+			var progressHandler = new Progress<string>(MainStatusShowMessage);
+			var progress = progressHandler as IProgress<string>;
 
-        }
+		}
 
-        /// <summary>
-        /// Handle the context menu of ListViewBottomGrid 
-        /// </summary>
-        /// <param name="sender"></param>
-        /// <param name="e"></param>
-        private void ListViewBottomGridClick(object sender, RoutedEventArgs e)
+		/// <summary>
+		/// Handle the context menu of ListViewBottomGrid 
+		/// </summary>
+		/// <param name="sender"></param>
+		/// <param name="e"></param>
+		private void ListViewBottomGridClick(object sender, RoutedEventArgs e)
 		{
 			try
 			{
@@ -898,13 +901,13 @@ namespace MDRDesk
 									: "Searching for instances with string field failed.");
 								if (task.Result.Error != null)
 								{
-								    if (task.Result.Error == ListingInfo.EmptyList)
-								    {
-                                        Dispatcher.CurrentDispatcher.InvokeAsync(() => 
-                                        ShowInformation("Empty List", "Search for string references failed", "References not found for string: " + selStr, null))
-								        ;
-                                        return;
-								    }
+									if (task.Result.Error == ListingInfo.EmptyList)
+									{
+										Dispatcher.CurrentDispatcher.InvokeAsync(() =>
+										ShowInformation("Empty List", "Search for string references failed", "References not found for string: " + selStr, null))
+										;
+										return;
+									}
 									Dispatcher.CurrentDispatcher.InvokeAsync(() => ShowError(task.Result.Error));
 									return;
 								}
@@ -1219,9 +1222,9 @@ namespace MDRDesk
 					listView = (ListView)LogicalTreeHelper.FindLogicalNode(grid, "TopListView");
 					Debug.Assert(listView != null);
 					var listingInfo = listView.Tag as Tuple<ListingInfo, string>;
-					Debug.Assert(listingInfo!=null);
+					Debug.Assert(listingInfo != null);
 					var outPath = pathInfo.Item2.GetPathAppendingToFileName(".ShortReport.txt");
-					ListingInfo.DumpListing(outPath, listingInfo.Item1,pathInfo.Item1,  out error, 100);
+					ListingInfo.DumpListing(outPath, listingInfo.Item1, pathInfo.Item1, out error, 100);
 					break;
 			}
 		}
@@ -1237,33 +1240,33 @@ namespace MDRDesk
 		}
 
 
-        #endregion File Reports
+		#endregion File Reports
 
-        #region Settings
-        private void SettingsClicked(object sender, RoutedEventArgs e)
-        {
+		#region Settings
+		private void SettingsClicked(object sender, RoutedEventArgs e)
+		{
 
-        }
+		}
 
-        #endregion Settings
+		#endregion Settings
 
-        #region Force GC
-        private void ForceGCClicked(object sender, RoutedEventArgs e)
-        {
-            long totMem = GC.GetTotalMemory(false);
-            SetStartTaskMainWindowState("Forcing GC collection, total memory: " + Utils.SizeString(totMem) + ", please wait.");
-            Utils.ForceGcWithCompaction();
-            long totMemAfter = GC.GetTotalMemory(true);
-            SetEndTaskMainWindowState("GC collection done, total memory: " + Utils.SizeString(totMemAfter) + ", before/after diff: " + Utils.SizeString(totMem - totMemAfter));
-        }
+		#region Force GC
+		private void ForceGCClicked(object sender, RoutedEventArgs e)
+		{
+			long totMem = GC.GetTotalMemory(false);
+			SetStartTaskMainWindowState("Forcing GC collection, total memory: " + Utils.SizeString(totMem) + ", please wait.");
+			Utils.ForceGcWithCompaction();
+			long totMemAfter = GC.GetTotalMemory(true);
+			SetEndTaskMainWindowState("GC collection done, total memory: " + Utils.SizeString(totMemAfter) + ", before/after diff: " + Utils.SizeString(totMem - totMemAfter));
+		}
 
-        #endregion Force GC
+		#endregion Force GC
 
-        #endregion Menu
+		#endregion Menu
 
-        #region File/Folder Selection
+		#region File/Folder Selection
 
-        private string SelectCrashDumpFile()
+		private string SelectCrashDumpFile()
 		{
 			return SelectFile(string.Format("*.{0}", Constants.CrashDumpFileExt),
 							string.Format("Dump Map Files|*.{0}|All Files|*.*", Constants.CrashDumpFileExt));
@@ -1429,7 +1432,7 @@ namespace MDRDesk
 			if (!GetDlgString(title, "Enter number:", " ", out str)) return false;
 			str = str.Trim();
 
-			if (!Int32.TryParse(str,NumberStyles.AllowThousands, CultureInfo.InvariantCulture, out value))
+			if (!Int32.TryParse(str, NumberStyles.AllowThousands, CultureInfo.InvariantCulture, out value))
 			{
 				MessageBox.Show("Not valid number string: " + str + ".", "INVALID INPUT", MessageBoxButton.OK,
 					MessageBoxImage.Error);
@@ -1445,16 +1448,16 @@ namespace MDRDesk
 			int a = 0;
 		}
 
-        private ListBox GetTypeNamesListBox(object sender)
-        {
-            MenuItem menuItem = sender as MenuItem;
-            Debug.Assert(menuItem != null);
-            var grid = GetCurrentTabGrid();
-            string listName = menuItem.Name.StartsWith("Ns") ? "lbTpNames" : "lbTypeNames";
-            var lbAddresses = (ListBox)LogicalTreeHelper.FindLogicalNode(grid, listName);
-            Debug.Assert(lbAddresses != null);
-            return lbAddresses;
-        }
+		private ListBox GetTypeNamesListBox(object sender)
+		{
+			MenuItem menuItem = sender as MenuItem;
+			Debug.Assert(menuItem != null);
+			var grid = GetCurrentTabGrid();
+			string listName = menuItem.Name.StartsWith("Ns") ? "lbTpNames" : "lbTypeNames";
+			var lbAddresses = (ListBox)LogicalTreeHelper.FindLogicalNode(grid, listName);
+			Debug.Assert(lbAddresses != null);
+			return lbAddresses;
+		}
 
 		private string GetTypeNameFromSelection(object sel, out int typeId)
 		{
@@ -1473,13 +1476,13 @@ namespace MDRDesk
 			return typeName;
 		}
 
-        private void CopyTypeNameClicked(object sender, RoutedEventArgs e)
+		private void CopyTypeNameClicked(object sender, RoutedEventArgs e)
 		{
-            var lbNames = GetTypeNamesListBox(sender);
-            if (lbNames != null && lbNames.SelectedItems.Count > 0)
-            {
+			var lbNames = GetTypeNamesListBox(sender);
+			if (lbNames != null && lbNames.SelectedItems.Count > 0)
+			{
 				var sel = lbNames.SelectedItems[0];
-	            int typeId;
+				int typeId;
 				string typeName = GetTypeNameFromSelection(sel, out typeId);
 				Clipboard.SetText(typeName);
 				MainStatusShowMessage("Copied to Clipboard: " + sel);
@@ -1490,8 +1493,8 @@ namespace MDRDesk
 
 		private void GenerationDistributionClicked(object sender, RoutedEventArgs e)
 		{
-            var lbNames = GetTypeNamesListBox(sender);
-            if (lbNames != null && lbNames.SelectedItems.Count > 0)
+			var lbNames = GetTypeNamesListBox(sender);
+			if (lbNames != null && lbNames.SelectedItems.Count > 0)
 			{
 				string error;
 				var sel = lbNames.SelectedItems[0];
@@ -1518,9 +1521,9 @@ namespace MDRDesk
 		private async void GetTotalHeapSizeClicked(object sender, RoutedEventArgs e)
 		{
 
-		    var lbAddresses = GetTypeAddressesListBox(sender);
+			var lbAddresses = GetTypeAddressesListBox(sender);
 			var addresses = lbAddresses.ItemsSource as ulong[];
-            var lbNames = GetTypeNamesListBox(sender);
+			var lbNames = GetTypeNamesListBox(sender);
 			string typeName = null;
 			if (lbNames != null && lbNames.SelectedItems.Count > 0)
 			{
@@ -1561,13 +1564,13 @@ namespace MDRDesk
 		{
 			var grid = GetCurrentTabGrid();
 			var lbAddresses = GetTypeAddressesListBox(sender);
-            var addresses = lbAddresses.ItemsSource as ulong[];
-            var lbNames = GetTypeNamesListBox(sender);
+			var addresses = lbAddresses.ItemsSource as ulong[];
+			var lbNames = GetTypeNamesListBox(sender);
 			string typeName = null;
 			if (lbNames != null && lbNames.SelectedItems.Count > 0)
 			{
 				int typeId;
-				typeName = GetTypeNameFromSelection(lbNames.SelectedItems[0],out typeId);
+				typeName = GetTypeNameFromSelection(lbNames.SelectedItems[0], out typeId);
 			}
 			if (typeName == null)
 			{
@@ -1604,11 +1607,11 @@ namespace MDRDesk
 
 			if (lbAddresses == null)
 			{
-				ShowInformation("Copy Address Command", "ACTION FAILED", "Grid's ListBox control not found.",null);
+				ShowInformation("Copy Address Command", "ACTION FAILED", "Grid's ListBox control not found.", null);
 				return;
 			}
 
-            var sb = StringBuilderCache.Acquire(512);
+			var sb = StringBuilderCache.Acquire(512);
 			int cnt = 0;
 			foreach (var item in lbAddresses.SelectedItems)
 			{
@@ -1670,25 +1673,25 @@ namespace MDRDesk
 		}
 
 		private ListBox GetTypeAddressesListBox(object sender)
-	    {
-            var grid = GetCurrentTabGrid();
+		{
+			var grid = GetCurrentTabGrid();
 			string gridName = Utils.GetNameWithoutId(grid.Name);
-		    string listName = null;
-		    switch (gridName)
-		    {
+			string listName = null;
+			switch (gridName)
+			{
 				case GridNameFullNameTypeView:
 				case GridNameClassTypeView:
-				    listName = "lbTypeAddresses";
+					listName = "lbTypeAddresses";
 					break;
 				case GridNameNamespaceTypeView:
-				    listName = "lbTpAddresses";
-				    break;
-		    }
-		    if (listName == null) return null;
-            var lbAddresses = (ListBox)LogicalTreeHelper.FindLogicalNode(grid, listName);
-            Debug.Assert(lbAddresses != null);
-	        return lbAddresses;
-	    }
+					listName = "lbTpAddresses";
+					break;
+			}
+			if (listName == null) return null;
+			var lbAddresses = (ListBox)LogicalTreeHelper.FindLogicalNode(grid, listName);
+			Debug.Assert(lbAddresses != null);
+			return lbAddresses;
+		}
 
 		private ListBox GetTypeNameListBox(object sender)
 		{
@@ -1729,14 +1732,14 @@ namespace MDRDesk
 
 			if (selectedItem is KeyValuePair<string, int>) // namespace display
 			{
-				typeId = ((KeyValuePair<string, int>) selectedItem).Value;
-				typeName = ((KeyValuePair<string, int>) selectedItem).Key;
+				typeId = ((KeyValuePair<string, int>)selectedItem).Value;
+				typeName = ((KeyValuePair<string, int>)selectedItem).Key;
 				typeAddresses = CurrentMap.GetTypeAddresses(typeId);
 			}
 
 
 
-			ReferenceSearchSetup dlg = new ReferenceSearchSetup(typeName + ", instance count: " + typeAddresses.Length) {Owner = this};
+			ReferenceSearchSetup dlg = new ReferenceSearchSetup(typeName + ", instance count: " + typeAddresses.Length) { Owner = this };
 			dlg.ShowDialog();
 			if (dlg.Cancelled) return;
 			int level = dlg.GetAllReferences ? Int32.MaxValue : dlg.SearchDepthLevel;
@@ -1793,9 +1796,9 @@ namespace MDRDesk
 				string error;
 				var info = CurrentMap.GetTypeSizeDetails(typeId, out error);
 				if (info == null)
-					return new Tuple<string, string, string> (error,null,null);
+					return new Tuple<string, string, string>(error, null, null);
 
-				var rep = Reports.DumpTypeSizeDetails(CurrentMap.ReportPath, typeName, info.Item1, info.Item2, info.Item3, info.Item4,info.Item5,
+				var rep = Reports.DumpTypeSizeDetails(CurrentMap.ReportPath, typeName, info.Item1, info.Item2, info.Item3, info.Item4, info.Item5,
 					out error);
 
 				return new Tuple<string, string, string>(null, rep.Item1, rep.Item2);
@@ -1849,28 +1852,28 @@ namespace MDRDesk
 		{
 			TreeView tv = sender as TreeView;
 			var selItem = tv.SelectedItem as TreeViewItem;
-			Debug.Assert(selItem!=null);
+			Debug.Assert(selItem != null);
 			var dispType = selItem.Tag as ClrtDisplayableType;
-			Debug.Assert(dispType!=null);
+			Debug.Assert(dispType != null);
 
-		    string msg;
-		    if (!dispType.CanGetFields(out msg))
-		    {
-                MainStatusShowMessage("Action failed for: '" + dispType.FieldName + "'. " + msg);
-		        return;
-		    }
+			string msg;
+			if (!dispType.CanGetFields(out msg))
+			{
+				MainStatusShowMessage("Action failed for: '" + dispType.FieldName + "'. " + msg);
+				return;
+			}
 
-            if (dispType.FieldIndex == Constants.InvalidIndex) // this root type, fields are already displayed
+			if (dispType.FieldIndex == Constants.InvalidIndex) // this root type, fields are already displayed
 			{
 				return;
 			}
 
-		    var parent = selItem.Parent as TreeViewItem;
-            Debug.Assert(parent!=null);
-            var parentDispType = parent.Tag as ClrtDisplayableType;
-            Debug.Assert(parentDispType!=null);
+			var parent = selItem.Parent as TreeViewItem;
+			Debug.Assert(parent != null);
+			var parentDispType = parent.Tag as ClrtDisplayableType;
+			Debug.Assert(parentDispType != null);
 
-            SetStartTaskMainWindowState("Getting type details for field: '" + dispType.FieldName + "', please wait...");
+			SetStartTaskMainWindowState("Getting type details for field: '" + dispType.FieldName + "', please wait...");
 
 			var result = await Task.Run(() =>
 			{
@@ -1901,7 +1904,7 @@ namespace MDRDesk
 			for (int i = 0, icnt = fields.Length; i < icnt; ++i)
 			{
 				var fld = fields[i];
-                var node = GetTypeValueSetupTreeViewItem(fld);
+				var node = GetTypeValueSetupTreeViewItem(fld);
 				selItem.Items.Add(node);
 			}
 			selItem.ExpandSubtree();
@@ -1913,7 +1916,7 @@ namespace MDRDesk
 
 		private void LbGetInstImmediateRefsClicked(object sender, RoutedEventArgs e)
 		{
-		    var lbAddresses = GetTypeAddressesListBox(sender);
+			var lbAddresses = GetTypeAddressesListBox(sender);
 			if (lbAddresses.SelectedItems.Count < 1)
 			{
 				MessageBox.Show("No address is selected!", "Action Aborted", MessageBoxButton.OK, MessageBoxImage.Exclamation);
@@ -1921,19 +1924,19 @@ namespace MDRDesk
 			}
 			string error;
 			var addr = (ulong)lbAddresses.SelectedItems[0];
-            var report = CurrentMap.GetFieldReferencesReport(addr, 1);
-            if (report.Error != null)
-            {
-                MessageBox.Show(report.Error, "Action Aborted", MessageBoxButton.OK, MessageBoxImage.Exclamation);
-                return;
-            }
-            DisplayListViewBottomGrid(report, Constants.BlackDiamond, ReportNameInstRef, ReportTitleInstRef);
+			var report = CurrentMap.GetFieldReferencesReport(addr, 1);
+			if (report.Error != null)
+			{
+				MessageBox.Show(report.Error, "Action Aborted", MessageBoxButton.OK, MessageBoxImage.Exclamation);
+				return;
+			}
+			DisplayListViewBottomGrid(report, Constants.BlackDiamond, ReportNameInstRef, ReportTitleInstRef);
 
-        }
+		}
 
 		private async void GetInstImmediateRefsClicked(object sender, RoutedEventArgs e)
 		{
-			
+
 		}
 
 
@@ -1941,8 +1944,8 @@ namespace MDRDesk
 		{
 			int level;
 
-            var lbAddresses = GetTypeAddressesListBox(sender);
-            if (lbAddresses.SelectedItems.Count < 1)
+			var lbAddresses = GetTypeAddressesListBox(sender);
+			if (lbAddresses.SelectedItems.Count < 1)
 			{
 				MessageBox.Show("No address is selected!", "Action Aborted", MessageBoxButton.OK, MessageBoxImage.Exclamation);
 				return;
@@ -1951,34 +1954,34 @@ namespace MDRDesk
 			if (!GetUserEnteredInteger("Set reference level", out level)) return;
 			string error;
 			var addr = (ulong)lbAddresses.SelectedItems[0];
-		    var report = CurrentMap.GetFieldReferencesReport(addr, level);
-            if (report.Error != null)
+			var report = CurrentMap.GetFieldReferencesReport(addr, level);
+			if (report.Error != null)
 			{
-                MessageBox.Show(report.Error, "Action Aborted", MessageBoxButton.OK, MessageBoxImage.Exclamation);
-                return;
+				MessageBox.Show(report.Error, "Action Aborted", MessageBoxButton.OK, MessageBoxImage.Exclamation);
+				return;
 			}
-            DisplayListViewBottomGrid(report,Constants.BlackDiamond, ReportNameInstRef, ReportTitleInstRef);
+			DisplayListViewBottomGrid(report, Constants.BlackDiamond, ReportNameInstRef, ReportTitleInstRef);
 
-		    //DisplayInstanceReferenceTree(rootNode);
+			//DisplayInstanceReferenceTree(rootNode);
 		}
 
 		private void LbGetInstAllRefsClicked(object sender, RoutedEventArgs e)
 		{
-            var lbAddresses = GetTypeAddressesListBox(sender);
-            if (lbAddresses.SelectedItems.Count < 1)
+			var lbAddresses = GetTypeAddressesListBox(sender);
+			if (lbAddresses.SelectedItems.Count < 1)
 			{
 				MessageBox.Show("No address is selected!", "Action Aborted", MessageBoxButton.OK, MessageBoxImage.Exclamation);
 				return;
 			}
 			string error;
 			var addr = (ulong)lbAddresses.SelectedItems[0];
-            var report = CurrentMap.GetFieldReferencesReport(addr);
-            if (report.Error != null)
-            {
-                MessageBox.Show(report.Error, "Action Aborted", MessageBoxButton.OK, MessageBoxImage.Exclamation);
-                return;
-            }
-            DisplayListViewBottomGrid(report, Constants.BlackDiamond, ReportNameInstRef, Utils.AddressString(addr));
+			var report = CurrentMap.GetFieldReferencesReport(addr);
+			if (report.Error != null)
+			{
+				MessageBox.Show(report.Error, "Action Aborted", MessageBoxButton.OK, MessageBoxImage.Exclamation);
+				return;
+			}
+			DisplayListViewBottomGrid(report, Constants.BlackDiamond, ReportNameInstRef, Utils.AddressString(addr));
 		}
 
 
@@ -2004,16 +2007,16 @@ namespace MDRDesk
 				return;
 			}
 			var addr = (ulong)lbAddresses.SelectedItems[0];
-            Dispatcher.CurrentDispatcher.InvokeAsync(() => ExecuteInstanceHierarchyQuery("Get instance hierarchy " + Utils.AddressStringHeader(addr), addr, Constants.InvalidIndex));
+			Dispatcher.CurrentDispatcher.InvokeAsync(() => ExecuteInstanceHierarchyQuery("Get instance hierarchy " + Utils.AddressStringHeader(addr), addr, Constants.InvalidIndex));
 
-        }
+		}
 
 
-        /// <summary>
-        /// TODO JRD -- thsi is Alex instance walker
-        /// </summary>
-        /// <param name="rootNode"></param>
-        private void DisplayInstanceReferenceTree(InstanceTypeNode rootNode)
+		/// <summary>
+		/// TODO JRD -- thsi is Alex instance walker
+		/// </summary>
+		/// <param name="rootNode"></param>
+		private void DisplayInstanceReferenceTree(InstanceTypeNode rootNode)
 		{
 			var grid = this.TryFindResource("TreeViewGrid") as Grid;
 			Debug.Assert(grid != null);
@@ -2045,7 +2048,7 @@ namespace MDRDesk
 		{
 			if (CurrentMap == null)
 			{
-			    if (caption == null) return false;
+				if (caption == null) return false;
 				ShowInformation(caption, "No Index Available", "There's no opened index" + Environment.NewLine + "Please open one. Dump indices folders have extension: '.map'.", null);
 				return false;
 			}
@@ -2098,5 +2101,5 @@ namespace MDRDesk
 		}
 
 
-    }
+	}
 }

@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Data;
 using System.Diagnostics;
 using System.Globalization;
 using System.Threading.Tasks;
@@ -357,52 +358,23 @@ namespace MDRDesk
             var mainGrid = this.TryFindResource("TypeValueReportSetupGrid") as Grid;
             Debug.Assert(mainGrid != null);
             mainGrid.Name = "TypeValueReportSetupGrid__" + Utils.GetNewID();
-            mainGrid.Tag = new TypeValuesQuery();
+			var typeValQry = new TypeValuesQuery();
+	        mainGrid.Tag = typeValQry;
             TreeView treeView = UpdateTypeValueSetupGrid(dispType, mainGrid, null);
             TreeViewItem treeViewItem = (treeView.Items[0] as TreeViewItem);
-            if (treeViewItem != null) { treeViewItem.IsSelected = true; treeViewItem.BringIntoView(); }
+			typeValQry.SetCurrentTreeViewItem(treeViewItem);
             var tab = new CloseableTabItem() { Header = Constants.BlackDiamond + " Type Value Setup", Content = mainGrid, Name = mainGrid.Name + "_tab" };
             MainTab.Items.Add(tab);
             MainTab.SelectedItem = tab;
-            MainTab.UpdateLayout();
-            //if (treeViewItem != null) treeViewItem.BringIntoView();
-        }
+	        if (treeViewItem != null)
+	        {
+		        treeViewItem.IsSelected = true;
+	        }
 
-        //private FrameworkElement FindVisualChildElement(DependencyObject element, Type childType)
-        //{
-        //	int count = VisualTreeHelper.GetChildrenCount(element);
+			MainTab.UpdateLayout();
+		}
 
-        //	for (int i = 0; i < count; i++)
-        //	{
-        //		var dependencyObject = VisualTreeHelper.GetChild(element, i);
-        //		var fe = (FrameworkElement)dependencyObject;
-
-        //		if (fe.GetType() == childType)
-        //		{
-        //			return fe;
-        //		}
-
-        //		FrameworkElement ret = null;
-
-        //		if (fe.GetType().Equals(typeof(ScrollViewer)))
-        //		{
-        //			ret = FindVisualChildElement((fe as ScrollViewer).Content as FrameworkElement, childType);
-        //		}
-        //		else
-        //		{
-        //			ret = FindVisualChildElement(fe, childType);
-        //		}
-
-        //		if (ret != null)
-        //		{
-        //			return ret;
-        //		}
-        //	}
-
-        //	return null;
-        //}
-
-        private TreeViewItem GetTypeValueSetupTreeViewItem(ClrtDisplayableType dispType)
+		private TreeViewItem GetTypeValueSetupTreeViewItem(ClrtDisplayableType dispType)
         {
             var txtBlk = GetClrtDisplayableTypeStackPanel(dispType);
             var node = new TreeViewItem
@@ -414,8 +386,15 @@ namespace MDRDesk
             return node;
         }
 
+		private void UpdateTypeValueSetupTreeViewItem(TreeViewItem node, ClrtDisplayableType dispType)
+		{
+			var txtBlk = GetClrtDisplayableTypeStackPanel(dispType);
+			node.Header = txtBlk;
+			node.Tag = dispType;
+			txtBlk.Tag = node;
+		}
 
-        private TreeView UpdateTypeValueSetupGrid(ClrtDisplayableType dispType, Grid mainGrid, TreeViewItem root)
+		private TreeView UpdateTypeValueSetupGrid(ClrtDisplayableType dispType, Grid mainGrid, TreeViewItem root)
         {
             bool realRoot = false;
             if (root == null)
@@ -473,7 +452,6 @@ namespace MDRDesk
         {
             var grid = GetCurrentTabGrid();
             Debug.Assert(grid != null);
-            var treeView = (TreeView)LogicalTreeHelper.FindLogicalNode(grid, "TypeValueReportTreeView");
             var curSelectionInfo = grid.Tag as TypeValuesQuery;
             Debug.Assert(curSelectionInfo != null);
             if (curSelectionInfo.CurrentTreeViewItem != null)
@@ -481,17 +459,26 @@ namespace MDRDesk
                 var dispType = curSelectionInfo.CurrentTreeViewItem.Tag as ClrtDisplayableType;
                 Debug.Assert(dispType != null);
                 dispType.ToggleGetValue();
-                curSelectionInfo.CurrentTreeViewItem.Header = dispType.ToString();
-                //string header = curSelectionInfo.CurrentTreeViewItem.Header as string;
-                //            Debug.Assert(header!=null);
-                //            curSelectionInfo.CurrentTreeViewItem.Header = (header[0] == Constants.HeavyCheckMark)
-                //                ? header.Substring(2)
-                //                : Constants.HeavyCheckMarkHeader + header;
-
+	            UpdateTypeValueSetupTreeViewItem(curSelectionInfo.CurrentTreeViewItem, dispType);
             }
         }
 
-        private string SetFilterChar(string header, bool set)
+		private void TypeValueReportMouseOnSelectedItemChanged(object sender, RoutedPropertyChangedEventArgs<object> e)
+		{
+			var item = e.NewValue as TreeViewItem;
+			if (item != null)
+			{
+				var grid = GetCurrentTabGrid();
+				Debug.Assert(grid != null);
+				var curSelectionInfo = grid.Tag as TypeValuesQuery;
+				Debug.Assert(curSelectionInfo != null);
+				curSelectionInfo.SetCurrentTreeViewItem(item);
+				item.BringIntoView();
+			}
+
+		}
+
+		private string SetFilterChar(string header, bool set)
         {
             if (string.IsNullOrEmpty(header)) return header;
             if (set)
@@ -1105,13 +1092,13 @@ namespace MDRDesk
         private TextBlock GetClrtDisplayableTypeTextBlock(ClrtDisplayableType val)
         {
             var txtBlk = new TextBlock();
-
+			txtBlk.Inlines.Add("   ");
             var selection = val.SelectionStr();
             if (!string.IsNullOrEmpty(selection))
-                txtBlk.Inlines.Add(new Bold(new Run(selection + " ")));
+                txtBlk.Inlines.Add(new Bold(new Run(selection + "  ")) {Foreground = Brushes.DarkGreen});
             if (!string.IsNullOrEmpty(val.FieldName))
-                txtBlk.Inlines.Add(new Italic(new Run(val.FieldName + "   ")));
-            txtBlk.Inlines.Add(new Run("   " + val.TypeName));
+                txtBlk.Inlines.Add(new Italic(new Run(val.FieldName + "  ") {Foreground = Brushes.DarkRed}));
+            txtBlk.Inlines.Add(new Run("  " + val.TypeName));
             return txtBlk;
     //        return string.IsNullOrEmpty(_fieldName)
     //? TypeHeader() + _typeName
@@ -1132,7 +1119,7 @@ namespace MDRDesk
         {
             var txtBlk = new TextBlock();
             if (!string.IsNullOrWhiteSpace(val.FieldName))
-                txtBlk.Inlines.Add(new Italic(new Run(val.FieldName + "   ")));
+                txtBlk.Inlines.Add(new Italic(new Run(val.FieldName + "   ") { Foreground = Brushes.DarkRed }));
             txtBlk.Inlines.Add(new Bold(new Run(InstanceValueValueString(val))));
             txtBlk.Inlines.Add(new Run("   " + val.TypeName));
             return txtBlk;

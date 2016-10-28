@@ -28,15 +28,19 @@ namespace ClrMDRIndex
 		public const string NullName = "{null}";
 		public const string NullValue = "null";
 		public const int NullNameId = 0;
+
+		public const string NullTypeName = "!!!NullType";
+		public const string FreeTypeName = "Free";
+		public const string ErrorTypeName = "ERROR";
+
 		public const string ErrorStr = "ERROR";
 		public const int ErrorStrId = 1;
-		public const string Free = "Free";
+		//public const string Free = "Free";
 		public const int FreeId = 2;
 		public const string SystemObject = "System.Object";
 		public const int SystemObjectId = 3;
 		public const string System__Canon = "System.__Canon";
 		public const int System__CanonId = 4;
-		public const string NullTypeName = "____";
 		public const string SpcPipeNlSep = " ||\r\n";
 
 		// sorts names
@@ -100,6 +104,7 @@ namespace ClrMDRIndex
 														// 2474  ⑴  Parenthesized Digit One
 		public const string HeavyLeftAngleBracketPadded = " \u2770 "; // ❰ HEAVY LEFT-POINTING ANGLE BRACKET
 		public const string HeavyRightAngleBracketPadded = " \u2771 "; // ❱ HEAVY RIGHT-POINTING ANGLE BRACKET
+		public const string HeavyBallotX = " \u2718 "; // ✘ HEAVY BALLOT X
 
 		public const char LeftwardsDoubleArrow = '\u2906'; // ⤆ LEFTWARDS DOUBLE ARROW FROM BAR
 		public const char RightwardsDoubleArrow = '\u2907'; // ⤇ RIGHTWARDS DOUBLE ARROW FROM BAR
@@ -195,7 +200,7 @@ namespace ClrMDRIndex
 		public const string MapRootsFilePostfix = ".ROOTS[0].map"; // ClrtRoot structures
 		public const string MapRootAddressesFilePostfix = ".ROOTADDRESSES[0].map"; // root addresses and their map to ClrtRoot array
 		public const string MapRootObjectsFilePostfix = ".ROOTOBJECTS[0].map"; // root objects and their map to ClrtRoot array
-
+		public const string MapUnrootedAddressesFilePostfix = ".UNROOTEDADDRESSES[0].map"; // addresses with no reference
 
 		public const string MapTypeBaseAndElementFilePostfix = ".TYPEBASEANDELEMENTFILE[0].map";
 		public const string MapTypeFieldCountsFilePostfix = ".TYPEFIELDCOUNTS[0].map";

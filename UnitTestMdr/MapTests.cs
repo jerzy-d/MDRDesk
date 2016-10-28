@@ -83,12 +83,93 @@ namespace UnitTestMdr
 			List<string> errors = new List<string>();
 			using (map)
 	        {
+
 				//KeyValuePair<ulong, KeyValuePair<ulong, int>[]>[] parentInfos = map.FieldDependencies.GetMultiFieldParents(new ulong[]{ 0x000000031eb5c8 }, errors);
 				KeyValuePair<ulong, KeyValuePair<ulong, int>[]>[] parentInfos = map.FieldDependencies.GetMultiFieldParents(new ulong[] { 0x0032bcdd8 }, errors);
 			}
 
 			//Assert.IsNull(error, error);
 		}
+
+		[TestMethod]
+		public void TestFieldDependencyNonrooted()
+		{
+			string error;
+//			var map = OpenMap(@"D:\Jerzy\WinDbgStuff\dumps\TestApp\TestApp.exe_161021_104608.map");
+			var map = OpenMap(@"D:\Jerzy\WinDbgStuff\dumps\Analytics\ConvergEx\Analytics_Post.map");
+			Assert.IsNotNull(map);
+			List<string> errors = new List<string>();
+			using (map)
+			{
+				BinaryReader fieldOffsets = null;
+				try
+				{
+					var path = Utils.GetFilePath(map.CurrentRuntime, map.MapFolder, map.DumpBaseName,
+						Constants.MapFieldParentOffsetsFilePostfix);
+					fieldOffsets = new BinaryReader(File.Open(path, FileMode.Open, FileAccess.Read, FileShare.Read));
+					var cnt = fieldOffsets.ReadInt32()-1; // last offset address is invalid
+					ulong[] fieldAddresses = new ulong[cnt];
+					for (int i = 0; i < cnt; ++i)
+					{
+						fieldAddresses[i] = fieldOffsets.ReadUInt64();
+						var offs = fieldOffsets.ReadInt64();
+					}
+
+					
+
+					Assert.IsTrue(Utils.IsSorted(fieldAddresses));
+					var instances = map.Instances;
+					var roots = map.Roots;
+					int offNdx = 0;
+					int instNdx = 0;
+					int offCnt = fieldAddresses.Length;
+					int instCnt = instances.Length;
+					Assert.IsTrue(instCnt>=offCnt);
+					List<ulong> unrooted = new List<ulong>(instCnt - offCnt);
+					List<ulong> rooted = new List<ulong>(1024);
+					while (instNdx < instCnt && offNdx < offCnt)
+					{
+						var instAddr = instances[instNdx];
+						var fldAddr = fieldAddresses[offNdx];
+						if (instAddr == fldAddr)
+						{
+							++instNdx;
+							++offNdx;
+							continue;
+						}
+						if (instAddr < fldAddr)
+						{
+							if (roots.IsRootedOutsideFinalization(instAddr))
+								rooted.Add(instAddr);
+							else
+								unrooted.Add(instAddr);
+							++instNdx;
+							continue;
+						}
+						if (instAddr > fldAddr) // should not happen
+						{
+							Assert.Fail("Shoul not happen: instAddr > fldAddr");
+						}
+						
+							
+					}
+					for (; instNdx < instCnt; ++instNdx)
+						unrooted.Add(instances[instNdx]);
+					Assert.IsTrue(unrooted.Count == instCnt - offCnt - rooted.Count);
+				}
+				catch (Exception ex)
+				{
+					Assert.IsTrue(false, ex.ToString());
+				}
+				finally
+				{
+					fieldOffsets?.Close();
+				}
+			}
+
+			//Assert.IsNull(error, error);
+		}
+
 
 		#endregion Instance Dependencies
 

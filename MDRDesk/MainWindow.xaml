@@ -354,8 +354,9 @@
             <!--<Button x:Name="TypeValueReportRunBottom" Grid.Row="0" Grid.Column="2" Margin="1,1,1,1" Height="36" Width="80" Content="Button" Template="{StaticResource ButtonControlTemplate1}"/>-->
             <Button Grid.Row="0" Grid.Column="2" Style="{StaticResource ButtonStyle5}" Width="115" Margin="0,2,0,2" Content="Run"/>
             <GridSplitter Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="3" VerticalAlignment="Center" HorizontalAlignment="Stretch" Height="5" ShowsPreview="False" Background="DarkGray"></GridSplitter>
-            <TreeView x:Name="TypeValueReportTreeView" Grid.Row="2" Grid.Column="0" VerticalAlignment="Stretch" HorizontalAlignment="Stretch" Margin="20,1,1,1" 
-                       MouseDoubleClick="TypeValueReportTreeViewDoubleClicked"  MouseRightButtonDown="TypeValueReportMouseDown"  FontSize="14" >
+            <TreeView x:Name="TypeValueReportTreeView" Grid.Row="2" Grid.Column="0" VerticalAlignment="Stretch" HorizontalAlignment="Stretch" Margin="20,1,1,1" SelectedItemChanged="TypeValueReportMouseOnSelectedItemChanged"
+                       MouseDoubleClick="TypeValueReportTreeViewDoubleClicked"  FontSize="14" >
+                <!--MouseDoubleClick="TypeValueReportTreeViewDoubleClicked"  MouseRightButtonDown="TypeValueReportMouseDown"  FontSize="14" >-->
                 <TreeView.ContextMenu>
                     <ContextMenu>
                         <MenuItem x:Name="TypeValueReportSelectMenuitem" Header="Select/unselect to get value." Click="TypeValueReportSelectClicked"></MenuItem>

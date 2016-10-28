@@ -95,10 +95,6 @@
   </PropertyGroup>
   <PropertyGroup />
   <ItemGroup>
-    <Reference Include="DmpNdxQueries, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
-      <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\DmpNdxQueries\bin\DmpNdxQueries.dll</HintPath>
-    </Reference>
     <Reference Include="FSharp.Charting">
       <HintPath>..\packages\FSharp.Charting.0.90.14\lib\net40\FSharp.Charting.dll</HintPath>
     </Reference>
@@ -224,6 +220,10 @@
     <ProjectReference Include="..\ClrMDRUtil\ClrMDRUtil.csproj">
       <Project>{7b01ccc0-8c10-4aa1-8154-4b55160e322b}</Project>
       <Name>ClrMDRUtil</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\DmpNdxQueries\DmpNdxQueries.fsproj">
+      <Project>{edc2770a-abb6-482e-a78f-a8d5d5c40d86}</Project>
+      <Name>DmpNdxQueries</Name>
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>
