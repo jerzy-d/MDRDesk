@@ -68,7 +68,7 @@ namespace ClrMDRIndex
 			return new KeyValuePair<ulong[], ulong[]>(addrAry,objAry);
 		}
 
-		public static ClrtRoots GetRoots(ClrHeap heap, ulong[] instances, int[] types, StringIdDct idDct)
+		public static ClrtRoots GetRoots(ClrHeap heap, ulong[] instances, int[] types, StringIdAsyncDct idDct)
 		{
 			var rootDct = new SortedDictionary<ulong, List<ClrtRoot>>();
 			var finalizeQue = new List<ulong>(1024 * 1024);

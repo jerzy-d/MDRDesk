@@ -92,7 +92,7 @@ namespace ClrMDRIndex
 			ApplicationBaseId = Constants.InvalidIndex;
 		}
 
-		public ClrtAppDomain(ClrAppDomain appDomain, StringIdDct dct)
+		public ClrtAppDomain(ClrAppDomain appDomain, StringIdAsyncDct dct)
 		{
 			Address = appDomain.Address;
 			Id = appDomain.Id;

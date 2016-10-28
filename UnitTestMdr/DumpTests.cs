@@ -13,9 +13,9 @@ using System.Text;
 using System.Threading.Tasks;
 using Microsoft.Diagnostics.Runtime;
 using ClrMDRIndex;
+using ClrMDRUtil.Utils;
 using DmpNdxQueries;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
-using StringIdDct = ClrMDRIndex.StringIdDct;
 
 
 namespace UnitTestMdr
@@ -539,21 +539,18 @@ namespace UnitTestMdr
 					stopWatch.Start();
 					var runtime = clrDump.Runtimes[0];
 					var heap = runtime.GetHeap();
-					stopWatch.Stop();
-					var duration0 = Utils.DurationString(stopWatch.Elapsed);
+					var duration0 = Utils.StopAndGetDurationString(stopWatch);
 
-					stopWatch.Start();
+					stopWatch.Restart();
 					var addrCount = Indexer.GetHeapAddressCount(heap);
-					stopWatch.Stop();
-					var duration1 = Utils.DurationString(stopWatch.Elapsed);
+					var duration1 = Utils.StopAndGetDurationString(stopWatch);
 
-					stopWatch.Start();
+					stopWatch.Restart();
 					ulong[] addresses = new ulong[addrCount];
 					var rootArys = ClrtRoots.GetRootAddresses(heap);
-					stopWatch.Stop();
-					var duration2 = Utils.DurationString(stopWatch.Elapsed);
+					var duration2 = Utils.StopAndGetDurationString(stopWatch);
 
-					stopWatch.Start();
+					stopWatch.Restart();
 					var segs = heap.Segments;
 					for (int i = 0, icnt = segs.Count; i < icnt; ++i)
 					{
@@ -570,8 +567,48 @@ namespace UnitTestMdr
 						}
 					}
 
-					stopWatch.Stop();
-					var duration3 = Utils.DurationString(stopWatch.Elapsed);
+					var durationtraverseHeap = Utils.StopAndGetDurationString(stopWatch);
+
+					string[] typeNames = null;
+					int tpCount = 0;
+					int tpNameKeysSetCnt = 0;
+					int tpNamesSetCnt = 0;
+					stopWatch.Restart();
+					{
+						List<string> tpNamesLst = new List<string>(10000);
+						SortedSet<string> tpNameKeysSet = new SortedSet<string>(StringComparer.Ordinal);
+						SortedSet<string> tpNamesSet = new SortedSet<string>(StringComparer.Ordinal);
+						var typeLst = heap.EnumerateTypes();
+						foreach (var tp in typeLst)
+						{
+							string key = ClrtType.GetKey(tp.Name, tp.MethodTable);
+							++tpCount;
+							tpNameKeysSet.Add(key);
+							tpNamesSet.Add(tp.Name);
+							tpNamesLst.Add(key);
+						}
+						tpNamesSetCnt = tpNamesSet.Count;
+						tpNameKeysSetCnt = tpNameKeysSet.Count;
+						typeNames = tpNamesLst.ToArray();
+						Array.Sort(typeNames,StringComparer.Ordinal);
+						var path = DumpFileMoniker.GetAndCreateOutFolder(clrDump.DumpPath, out error) + Path.DirectorySeparatorChar + "ClrHeap.EnumerateTypes.txt";
+						Utils.WriteStringListToFile(path, typeNames, out error);
+					}
+					var duration3 = Utils.StopAndGetDurationString(stopWatch);
+
+
+
+					TestContext.WriteLine("open dump:        " + duration0);
+					TestContext.WriteLine("address count:    " + duration1);
+					TestContext.WriteLine("root addresses:   " + duration2);
+					TestContext.WriteLine("type names:       " + duration3);
+					TestContext.WriteLine("get object types: " + durationtraverseHeap);
+					TestContext.WriteLine(" type counts:");
+					TestContext.WriteLine(" typeNames:        " + typeNames.Length);
+					TestContext.WriteLine(" tpCount:          " + tpCount);
+					TestContext.WriteLine(" tpNameKeysSetCnt: " + tpNameKeysSetCnt);
+					TestContext.WriteLine(" tpNamesSetCnt:    " + tpNamesSetCnt);
+
 				}
 				catch (Exception ex)
 				{
@@ -581,6 +618,200 @@ namespace UnitTestMdr
 			}
 		}
 
+		[TestMethod]
+		public void TestRootedInfo2()
+		{
+			Stopwatch stopWatch = new Stopwatch();
+			string dmpPath = @"D:\Jerzy\WinDbgStuff\dumps\TestApp\TestApp.exe_161021_104608.dmp";
+			//string dmpPath = @"D:\Jerzy\WinDbgStuff\dumps\Analytics\ConvergEx\Analytics_Post.dmp";
+
+			string error = null;
+			using (var clrDump = GetDump(dmpPath))
+			{
+				try
+				{
+					stopWatch.Start();
+					var runtime = clrDump.Runtimes[0];
+					var heap = runtime.GetHeap();
+					var duration0 = Utils.StopAndGetDurationString(stopWatch);
+
+					stopWatch.Restart();
+					var addrCount = Indexer.GetHeapAddressCount(heap);
+					var duration1 = Utils.StopAndGetDurationString(stopWatch);
+
+					stopWatch.Restart();
+					var rootArys = ClrtRoots.GetRootAddresses(heap);
+					var roots = rootArys.Key;
+					var objects = rootArys.Value;
+					var duration2 = Utils.StopAndGetDurationString(stopWatch);
+
+					string[] typeNames = null;
+					stopWatch.Restart();
+					{
+						List<string> tpNamesLst = new List<string>(35000);
+						tpNamesLst.Add(ClrtType.GetKey(Constants.NullTypeName,0));
+						var typeLst = heap.EnumerateTypes();
+						foreach (var tp in typeLst)
+						{
+							string key = ClrtType.GetKey(tp.Name, tp.MethodTable);
+							tpNamesLst.Add(key);
+						}
+						typeNames = tpNamesLst.ToArray();
+						Array.Sort(typeNames, StringComparer.Ordinal);
+						var path = DumpFileMoniker.GetAndCreateOutFolder(clrDump.DumpPath, out error) + Path.DirectorySeparatorChar + "TestRootedInfo2.ClrHeap.EnumerateTypes.txt";
+						Utils.WriteStringListToFile(path, typeNames, out error);
+					}
+					var duration3 = Utils.StopAndGetDurationString(stopWatch);
+
+					// get addresses and set roots
+					//
+					stopWatch.Restart();
+					ulong[] addresses = new ulong[addrCount];
+					int[] typeIds = new int[addrCount];
+					var segs = heap.Segments;
+					var rootsLastNdx = roots.Length - 1;
+					var objectsLastNdx = objects.Length - 1;
+					int addrNdx = 0;
+					for (int segNdx = 0, icnt = segs.Count; segNdx < icnt; ++segNdx)
+					{
+						var seg = segs[segNdx];
+						ulong addr = seg.FirstObject;
+						while (addr != 0ul)
+						{
+							var clrType = heap.GetObjectType(addr);
+
+							var typeNameKey = clrType == null ? ClrtType.GetKey(Constants.NullTypeName, 0) : ClrtType.GetKey(clrType.Name,clrType.MethodTable);
+							typeIds[addrNdx] = Array.BinarySearch(typeNames, typeNameKey, StringComparer.Ordinal);
+							if (clrType == null) goto NEXT_OBJECT;
+
+							var isRoot = Utils.AddressSearch(roots, addr, 0, rootsLastNdx) >= 0;
+							var isPointee = Utils.AddressSearch(objects, addr, 0, objectsLastNdx) >= 0;
+							addresses[addrNdx] = Utils.SetRooted(addr,isRoot,isPointee);
+
+							NEXT_OBJECT:
+							addr = seg.NextObject(addr);
+							++addrNdx;
+						}
+					}
+					var durationtraverseHeap = Utils.StopAndGetDurationString(stopWatch);
+
+					// field dependencies
+					//
+					var strIdDct = new StringIdDct();
+					var fldRefList = new List<KeyValuePair<ulong, int>>(64);
+					var fldRefIdNameLst = new List<KeyValuePair<int, int>>(32);
+					var addressesLastNdx = addresses.Length - 1;
+					var fieldsArrays = new int[addresses.Length][];
+
+					for (int i = 0, icnt = addresses.Length; i < icnt; ++i)
+					{
+						var addr = addresses[i];
+						var cleanAddr = Utils.CleanAddress(addr);
+
+						var clrType = heap.GetObjectType(cleanAddr);
+						if (clrType == null || clrType.IsString || clrType.Fields == null) continue;
+
+						if (clrType.IsArray)
+						{
+							fldRefIdNameLst.Clear();
+							fldRefList.Clear();
+							int fldNameId = strIdDct.JustGetId("[]");
+							clrType.EnumerateRefsOfObjectCarefully(cleanAddr, (address, off) =>
+							{
+								fldRefList.Add(new KeyValuePair<ulong, int>(address, off));
+							});
+
+							for (int k = 0, kcnt = fldRefList.Count; k < kcnt; ++k)
+							{
+								var fldAddr = fldRefList[k].Key;
+								var addrnx = Utils.AddressSearch(addresses, fldAddr, 0, addressesLastNdx);
+								if (fldAddr == 0) continue;
+								fldRefIdNameLst.Add(new KeyValuePair<int, int>(addrnx, fldNameId));
+							}
+						}
+
+						if (clrType.Fields.Count < 1) continue;
+
+						//fldRefIdNameLst.Clear();
+						//fldRefList.Clear();
+						//clrType.EnumerateRefsOfObjectCarefully(addr, (address, off) =>
+						//{
+						//	fldRefList.Add(new KeyValuePair<ulong, int>(address, off));
+						//});
+
+						//for (int k = 0, kcnt = fldRefList.Count; k < kcnt; ++k)
+						//{
+						//	var fldAddr = fldRefList[k].Key;
+						//	var addrnx = Utils.AddressSearch(addresses, fldAddr, 0, addressesLastNdx);
+						//	int fldNameId = strIdDct.JustGetId("[]");
+						//	if (fldAddr == 0) continue;
+						//	fldRefIdNameLst.Add(new KeyValuePair<int, int>(addrnx, fldNameId));
+						//}
+
+						fldRefIdNameLst.Clear();
+						for (int j = 0, jcnt = clrType.Fields.Count; j < jcnt; ++j)
+						{
+							var fld = clrType.Fields[j];
+							if (!fld.IsObjectReference) continue;
+
+							object fVal = fld.GetValue(addr, false, false);
+							if (fVal == null) continue;
+							ulong fAddr = 0;
+							try
+							{
+								fAddr = (ulong)fVal;
+							}
+							catch (Exception ex)
+							{
+								int a = 1;
+							}
+							int fldNameId = strIdDct.JustGetId(fld.Name);
+							var addrnx = Utils.AddressSearch(addresses, fAddr, 0, addressesLastNdx);
+							fldRefIdNameLst.Add(new KeyValuePair<int, int>(addrnx, fldNameId));
+						}
+
+						if (fldRefIdNameLst.Count > 0)
+						{
+							fieldsArrays[i] = new int[fldRefIdNameLst.Count];
+							for (int j = 0; j < fldRefIdNameLst.Count; j++)
+							{
+								fieldsArrays[i][j] = fldRefIdNameLst[j].Key;
+							}
+						}
+					}
+
+
+
+					HashSet<int> usedTypes = new HashSet<int>();
+					int unknownTypeCnt = 0;
+					for (int i = 0, icnt = typeIds.Length; i < icnt; ++i)
+					{
+						var typeId = typeIds[i];
+						if (typeId < 0) ++unknownTypeCnt;
+						else usedTypes.Add(typeId);
+
+					}
+
+
+
+					TestContext.WriteLine("open dump:        " + duration0);
+					TestContext.WriteLine("address count:    " + duration1);
+					TestContext.WriteLine("root addresses:   " + duration2);
+					TestContext.WriteLine("type names:       " + duration3);
+					TestContext.WriteLine("get object types, and addresses: " + durationtraverseHeap);
+					TestContext.WriteLine("####  type counts:");
+					TestContext.WriteLine("typeNames:        " + typeNames.Length);
+					TestContext.WriteLine("unknown types:    " + unknownTypeCnt);
+					TestContext.WriteLine("used types:       " + usedTypes.Count);
+
+				}
+				catch (Exception ex)
+				{
+					error = Utils.GetExceptionErrorString(ex);
+					Assert.IsTrue(false, error);
+				}
+			}
+		}
 
 		#region Memory
 
@@ -1047,7 +1278,7 @@ namespace UnitTestMdr
 			byte[] lenBytes = new byte[4];
 			int notFoundOnHeapCnt = 0;
 			int valueClassOnHeapCnt = 0;
-			StringIdDct idDct = new StringIdDct();
+			StringIdAsyncDct idDct = new StringIdAsyncDct();
 			using (clrDump)
 			{
 				try
@@ -1055,7 +1286,7 @@ namespace UnitTestMdr
 					ulong[][] instances;
 					uint[][] sizes;
 					int[][] instanceTypes;
-					StringIdDct[] stringIds = StringIdDct.GetArrayOfDictionaries(clrDump.RuntimeCount);
+					StringIdAsyncDct[] stringIds = StringIdAsyncDct.GetArrayOfDictionaries(clrDump.RuntimeCount);
 					ConcurrentBag<string>[] errors = new ConcurrentBag<string>[clrDump.RuntimeCount];
 					for (int i = 0; i < clrDump.RuntimeCount; ++i)
 						errors[i] = new ConcurrentBag<string>();
@@ -3338,7 +3569,7 @@ namespace UnitTestMdr
 					ulong[][] instances;
 					uint[][] sizes;
 					int[][] instanceTypes;
-					StringIdDct[] stringIds = StringIdDct.GetArrayOfDictionaries(clrDump.RuntimeCount);
+					StringIdAsyncDct[] stringIds = StringIdAsyncDct.GetArrayOfDictionaries(clrDump.RuntimeCount);
 					ConcurrentBag<string>[] errors = new ConcurrentBag<string>[clrDump.RuntimeCount];
 					for (int i = 0; i < clrDump.RuntimeCount; ++i)
 						errors[i] = new ConcurrentBag<string>();
@@ -3403,7 +3634,7 @@ namespace UnitTestMdr
 					ulong[][] instances;
 					uint[][] sizes;
 					int[][] instanceTypes;
-					StringIdDct[] stringIds = StringIdDct.GetArrayOfDictionaries(clrDump.RuntimeCount);
+					StringIdAsyncDct[] stringIds = StringIdAsyncDct.GetArrayOfDictionaries(clrDump.RuntimeCount);
 					ConcurrentBag<string>[] errors = new ConcurrentBag<string>[clrDump.RuntimeCount];
 					for (int i = 0; i < clrDump.RuntimeCount; ++i)
 						errors[i] = new ConcurrentBag<string>();

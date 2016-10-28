@@ -48,6 +48,26 @@ namespace ClrMDRIndex
 			}
 		}
 
+		public static string GetAndCreateOutFolder(string dmpFilePath, out string error)
+		{
+			error = null;
+			try
+			{
+				var dumpFile = System.IO.Path.GetFileNameWithoutExtension(dmpFilePath);
+				var dumpDir = System.IO.Path.GetDirectoryName(dmpFilePath);
+				var mapDir = dumpDir + System.IO.Path.DirectorySeparatorChar + dumpFile + ".map";
+				if (!Directory.Exists(mapDir)) Directory.CreateDirectory(mapDir);
+				var adHocQueryDir = mapDir + System.IO.Path.DirectorySeparatorChar + "ad-hoc.queries";
+				if (!Directory.Exists(adHocQueryDir)) Directory.CreateDirectory(adHocQueryDir);
+				return adHocQueryDir;
+			}
+			catch (Exception ex)
+			{
+				Utils.GetExceptionErrorString(ex);
+				return null;
+			}
+		}
+
 		public string GetPathReplacingFileName(string newFileName)
 		{
 			var folder = System.IO.Path.GetDirectoryName(_path);

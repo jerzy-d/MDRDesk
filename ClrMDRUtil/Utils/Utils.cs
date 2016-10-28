@@ -26,6 +26,14 @@ namespace ClrMDRIndex
 		}
 
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		public static ulong SetRooted(ulong addr, bool isRoot, bool isPointee)
+		{
+			if (isRoot) addr |= (ulong)RootBits.Root;
+			if (isPointee) addr |= (ulong)RootBits.RootPointee;
+			return addr;
+		}
+
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		public static bool IsRooted(ulong addr)
 		{
 			return (addr & (ulong)RootBits.RootMask) > 0;
@@ -55,6 +63,12 @@ namespace ClrMDRIndex
 			return addr |= (ulong)RootBits.Rooted;
 		}
 
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		public static ulong CleanAddress(ulong addr)
+		{
+			return addr & (ulong)RootBits.AddressMask;
+		}
+
 		/// <summary>
 		/// Binary search to find an index of the address in a ulong array.
 		/// </summary>
@@ -63,12 +77,13 @@ namespace ClrMDRIndex
 		/// <param name="lhs">An index to start the search, (left hand side).</param>
 		/// <param name="rhs">The last index included in the search range, (right hand side).</param>
 		/// <returns>Index of the item if found, invalid index (-1) otherwise.</returns>
-		static int AddressSearch(ulong[] addresses, ulong addr, int lhs, int rhs)
+		public static int AddressSearch(ulong[] addresses, ulong addr, int lhs, int rhs)
 		{
+			var cleanAddr = CleanAddress(addr);
 			while (lhs <= rhs)
 			{
 				int mid = lhs + (rhs - lhs)/2;
-				ulong midAddr = addresses[mid];
+				ulong midAddr = CleanAddress(addresses[mid]);
 				if (midAddr == addr)
 					return mid;
 				if (midAddr < addr)
@@ -1326,7 +1341,14 @@ namespace ClrMDRIndex
             return string.Format(" {0:00}:{1:00}:{2:00}.{3:00}", ts.Hours, ts.Minutes, ts.Seconds, ts.Milliseconds / 10);
         }
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		public static string StopAndGetDurationString(Stopwatch stopWatch)
+		{
+			stopWatch.Stop();
+			return DurationString(stopWatch.Elapsed);
+		}
+
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static string SortableLengthString(ulong len)
         {
             return len == 0 ? "             O" : string.Format("{0,14:0#,###,###,###}", len);

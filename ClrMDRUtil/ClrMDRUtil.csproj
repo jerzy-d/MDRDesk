@@ -117,6 +117,7 @@
     <Compile Include="Utils\Reports.cs" />
     <Compile Include="Utils\StringBuilderCache.cs" />
     <Compile Include="Utils\StringCache.cs" />
+    <Compile Include="Utils\StringIdAsyncDct.cs" />
     <Compile Include="Utils\StringIdDct.cs" />
     <Compile Include="Utils\TypeValue.cs" />
     <Compile Include="Utils\UndoRedoList.cs" />

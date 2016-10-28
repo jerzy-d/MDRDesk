@@ -46,6 +46,17 @@ namespace ClrMDRIndex
 			}
 		}
 
+		public void JustAddKey(string s)
+		{
+			s = s?.Trim() ?? Constants.NullName;
+			lock (_lock)
+			{
+				if (_dct.ContainsKey(s)) return;
+				var id = _dct.Count;
+				_dct.Add(s, id);
+			}
+		}
+
 		public int AddKey(string key)
 		{
 			bool newId;
@@ -107,6 +118,20 @@ namespace ClrMDRIndex
 		public bool DumpTypeInstanceCounts(string path, out string error)
 		{
 			return Utils.WriteIntArray(path, _instanceCounts, out error);
+		}
+
+		public string[] GetKeys()
+		{
+			lock (_lock)
+			{
+				var sary = new string[_dct.Count];
+				int ndx = 0;
+				foreach (var entry in _dct)
+				{
+					sary[ndx++] = entry.Key;
+				}
+				return sary;
+			}
 		}
 
 		public string[] GetNamesSortedById()

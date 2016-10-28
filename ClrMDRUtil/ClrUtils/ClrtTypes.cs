@@ -86,7 +86,7 @@ namespace ClrMDRIndex
             MethodTablesMap = methdMap;
             Array.Sort(ReversedNames, ReversedNamesMap, StringComparer.Ordinal);
         }
-        public void GenerateNamespaceOrdering(StringIdDct ids)
+        public void GenerateNamespaceOrdering(StringIdAsyncDct ids)
         {
             SortedDictionary<int,List<KeyValuePair<int,int>>> dct = new SortedDictionary<int, List<KeyValuePair<int, int>>>();
             string[] splitter = new[] {Constants.NamespaceSepPadded};

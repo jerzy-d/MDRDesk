@@ -51,7 +51,7 @@ namespace ClrMDRIndex
 		/// <summary>
 		/// List of the unique field names.
 		/// </summary>
-		private StringIdDct[] _stringIdDcts;
+		private StringIdAsyncDct[] _stringIdDcts;
 
 		/// <summary>
 		/// Addresses of all heap instances, for each runtime.
@@ -221,19 +221,19 @@ namespace ClrMDRIndex
 		/// <param name="progress">Report progress if this is not null.</param>
 		/// <param name="error">Output exception error.</param>
 		/// <returns>True if successful.</returns>
-		public bool GetPrerequisites(ClrtDump clrtDump, IProgress<string> progress, out StringIdDct[] strIds, out string error)
+		public bool GetPrerequisites(ClrtDump clrtDump, IProgress<string> progress, out StringIdAsyncDct[] strIds, out string error)
 		{
 			error = null;
 			strIds = null;
 			progress?.Report(Utils.TimeString(DateTime.Now) + " Getting prerequisites...");
 			try
 			{
-				strIds = new StringIdDct[clrtDump.RuntimeCount];
+				strIds = new StringIdAsyncDct[clrtDump.RuntimeCount];
 				_clrtAppDomains = new ClrtAppDomains[clrtDump.RuntimeCount];
 				for (int r = 0, rcnt = clrtDump.Runtimes.Length; r < rcnt; ++r)
 				{
 					_errors[r] = new ConcurrentBag<string>();
-					_stringIdDcts[r] = new StringIdDct();
+					_stringIdDcts[r] = new StringIdAsyncDct();
 					_stringIdDcts[r].AddKey("[]");
 					_stringIdDcts[r].AddKey(Constants.Unknown);
 					var clrRuntime = clrtDump.Runtimes[r];
@@ -311,7 +311,7 @@ namespace ClrMDRIndex
 		/// <param name="idDct">String cache.</param>
 		/// <returns>Doamins information.</returns>
 		/// <remarks>It is public and static for unit tests.</remarks>
-		public static ClrtAppDomains GetAppDomains(ClrRuntime runtime, StringIdDct idDct)
+		public static ClrtAppDomains GetAppDomains(ClrRuntime runtime, StringIdAsyncDct idDct)
 		{
 			var systenDomain = runtime.SystemDomain == null
 				? new ClrtAppDomain()
@@ -343,7 +343,7 @@ namespace ClrMDRIndex
 
 		public static Tuple<ClrtTypes[], ClrtRoots[]> GetTypeInfos(ClrtDump clrtDump,
 			IProgress<string> progress,
-			StringIdDct[] stringIds,
+			StringIdAsyncDct[] stringIds,
 			ConcurrentBag<string>[] errors,
 			out ulong[][] instances,
 			out uint[][] sizes,
@@ -684,7 +684,7 @@ namespace ClrMDRIndex
 											IProgress<string> progress,
 											ClrtTypes[] allTypes, ulong[][] allInstances,
 											int[][] allInstanceTypes,
-											StringIdDct[] stringIds,
+											StringIdAsyncDct[] stringIds,
 											out int[] fldNotFoundCnt,
 											out string error)
 		{
@@ -850,11 +850,11 @@ namespace ClrMDRIndex
 		/// Used for testing only.
 		/// </summary>
 		/// <returns></returns>
-		public static StringIdDct ConstructTypeIdDictionary(ClrRuntime runtime, out string error)
+		public static StringIdAsyncDct ConstructTypeIdDictionary(ClrRuntime runtime, out string error)
 		{
 			error = null;
 			var heap = runtime.GetHeap();
-			var dct = new StringIdDct();
+			var dct = new StringIdAsyncDct();
 			dct.AddKey(Constants.FreeTypeName);
 			dct.AddKey(Constants.ErrorStr);
 			dct.AddKey(Constants.NullName);
@@ -1251,9 +1251,10 @@ namespace ClrMDRIndex
 			return dct;
 		}
 
-		public static StringIdDct GetStandardStringIdDct()
+
+		public static StringIdAsyncDct GetStandardStringIdDct()
 		{
-			var dct = new StringIdDct();
+			var dct = new StringIdAsyncDct();
 			dct.AddKey(Constants.NullName);
 			dct.AddKey(Constants.NullTypeName);
 			dct.AddKey(Constants.ErrorStr);
