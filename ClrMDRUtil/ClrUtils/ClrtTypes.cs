@@ -534,8 +534,9 @@ namespace ClrMDRIndex
 
 	public static string GetKey(string name, ulong mthdTbl)
 		{
-			return name + "!" + mthdTbl;
-		}
+//            return name + "!" + mthdTbl;
+            return name;
+        }
 
-	}
+    }
 }

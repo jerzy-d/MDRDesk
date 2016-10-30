@@ -51,7 +51,7 @@ namespace ClrMDRIndex
 			
 		}
 
-		public static KeyValuePair<ulong[],ulong[]> GetRootAddresses(ClrHeap heap)
+		public static KeyValuePair<ulong[],ulong[]> GetRootAddresses(ClrHeap heap, string[] typeNames)
 		{
 			var roots = heap.EnumerateRoots(true);
 			HashSet<ulong> addrSet = new HashSet<ulong>();
@@ -59,13 +59,50 @@ namespace ClrMDRIndex
 			foreach (var root in roots)
 			{
 				addrSet.Add(root.Address);
-				objSet.Add(root.Address);
+				objSet.Add(root.Object);
+			    ClrType clrType = heap.GetObjectType(root.Object);
+			    if (clrType == null)
+			    {
+			        int a = 1;
+                    continue;
+			    }
+			    string key = ClrtType.GetKey(clrType.Name, clrType.MethodTable);
+			    if (Array.BinarySearch(typeNames, key,StringComparer.Ordinal) < 0)
+			    {
+			        int b = 1;
+			    }
+
 			}
 			var addrAry = addrSet.ToArray();
 			var objAry = objSet.ToArray();
 			Array.Sort(addrAry);
 			Array.Sort(objAry);
-			return new KeyValuePair<ulong[], ulong[]>(addrAry,objAry);
+            int ndx = 0;
+            int cnt = Math.Min(addrAry.Length, objAry.Length);
+            while (ndx < cnt)
+            {
+                Utils.SetAsRoot(addrAry[ndx]);
+                Utils.SetAsRootPointee(objAry[ndx]);
+                ++ndx;
+            }
+            if (ndx < addrAry.Length)
+            {
+                while (ndx < cnt)
+                {
+                    Utils.SetAsRoot(addrAry[ndx]);
+                    ++ndx;
+                }
+            }
+            if (ndx < objAry.Length)
+            {
+                while (ndx < cnt)
+                {
+                    Utils.SetAsRootPointee(objAry[ndx]);
+                    ++ndx;
+                }
+            }
+
+            return new KeyValuePair<ulong[], ulong[]>(addrAry,objAry);
 		}
 
 		public static ClrtRoots GetRoots(ClrHeap heap, ulong[] instances, int[] types, StringIdAsyncDct idDct)

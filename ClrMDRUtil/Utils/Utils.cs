@@ -25,7 +25,25 @@ namespace ClrMDRIndex
 			Rooted = 0x2000000000000000,
 		}
 
-		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static string AddressString(ulong addr)
+        {
+            ulong realAddr = CleanAddress(addr);
+            return IsRooted(addr)
+                ? string.Format("0x{0:x14}", realAddr)
+                : string.Format("0\u2714{0:x14}", realAddr);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static string AddressStringHeader(ulong addr)
+        {
+            ulong realAddr = CleanAddress(addr);
+            return IsRooted(addr)
+                ? string.Format("0x{0:x14} ", realAddr)
+                : string.Format("0\u2714{0:x14} ", realAddr);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
 		public static ulong SetRooted(ulong addr, bool isRoot, bool isPointee)
 		{
 			if (isRoot) addr |= (ulong)RootBits.Root;
@@ -1316,18 +1334,6 @@ namespace ClrMDRIndex
         #endregion Comparers
 
         #region Formatting
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static string AddressString(ulong addr)
-        {
-            return string.Format("0x{0:x14}", addr);
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static string AddressStringHeader(ulong addr)
-        {
-            return string.Format("[0x{0:x14}] ", addr);
-        }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static string UintHexStringHeader(uint num)
