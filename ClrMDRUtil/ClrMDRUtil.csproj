@@ -95,6 +95,7 @@
     <Compile Include="ClrUtils\ElementTypeCount.cs" />
     <Compile Include="ClrUtils\FieldDependency.cs" />
     <Compile Include="ClrUtils\IndexCurrentInfo.cs" />
+    <Compile Include="ClrUtils\InstanceReferences.cs" />
     <Compile Include="ClrUtils\StringStats.cs" />
     <Compile Include="ClrUtils\ThreadBlockMap.cs" />
     <Compile Include="Graph\DepthFirstOrder.cs" />

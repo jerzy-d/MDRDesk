@@ -155,6 +155,27 @@ namespace ClrMDRIndex
 		public const string MapFieldParentOffsetsFilePostfix = ".FIELDPARENTOFFSETS[0].map";
 		public const string MapFieldParentInstancesPostfix = ".FIELDPARENTINSTANCES[0].map";
 
+		// TODO JRD -- new below, delete old field refs files above
+
+		// new stuff ////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+		// types
+		//
+		public const string TxtTypeNamesFilePostfix = ".`TYPENAMES[0].txt";
+
+		// instance addresses and types
+		//
+		public const string MapInstancesFilePostfix = ".`INSTANCES[0].bin"; // instance addresses and corresponding type ids
+		public const string MapInstanceTypesFilePostfix = ".`INSTANCETYPES[0].bin"; // instance addresses and corresponding type ids
+
+		// instance references
+		//
+		public const string MapFieldRefInstancesPostfix = ".`FIELDREFINSTANCES[0].bin";
+		public const string MapFieldRefOffsetsFilePostfix = ".`FIELDREFOFFSETS[0].bin";
+		public const string MapFieldParentsPostfix = ".`FIELDPARENTS[0].bin";
+
+		// end of new stuff ///////////////////////////////////////////////////////////////////////////////////////////////////////
+		
 		public const string TxtDumpStringsPostfix = ".DUMPSTRINGS[0].txt"; // list of all strings in dump, ordered by StringComparer.Ordinal
 		public const string MapDumpStringsInfoPostfix = ".DUMPSTRINGSINFO[0].map"; // information about dump strings: addresses, sizes, etc
 

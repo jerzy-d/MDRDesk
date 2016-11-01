@@ -102,9 +102,28 @@ namespace ClrMDRIndex
 			{
 				int mid = lhs + (rhs - lhs)/2;
 				ulong midAddr = CleanAddress(addresses[mid]);
-				if (midAddr == addr)
+				if (midAddr == cleanAddr)
 					return mid;
-				if (midAddr < addr)
+				if (midAddr < cleanAddr)
+					lhs = mid + 1;
+				else
+					rhs = mid - 1;
+			}
+			return Constants.InvalidIndex;
+		}
+
+		public static int AddressSearch(ulong[] addresses, ulong addr)
+		{
+			int lhs = 0;
+			int rhs = addresses.Length - 1;
+			var cleanAddr = CleanAddress(addr);
+			while (lhs <= rhs)
+			{
+				int mid = lhs + (rhs - lhs) / 2;
+				ulong midAddr = CleanAddress(addresses[mid]);
+				if (midAddr == cleanAddr)
+					return mid;
+				if (midAddr < cleanAddr)
 					lhs = mid + 1;
 				else
 					rhs = mid - 1;
@@ -627,6 +646,23 @@ namespace ClrMDRIndex
 			s = null;
 		}
 
+
+		public static void DeleteFiles(IList<string> paths, out string error)
+		{
+			error = null;
+			try
+			{
+				for (int i = 0, icnt = paths.Count; i < icnt; ++i)
+				{
+					File.Delete(paths[i]);
+				}
+			}
+			catch (Exception ex)
+			{
+				error = Utils.GetExceptionErrorString(ex);
+			}
+		}
+
 		#endregion IO
 
 		#region Dac File Search
@@ -1018,13 +1054,25 @@ namespace ClrMDRIndex
 			}
 		}
 
+
+		public class NumericKvCmp<T1,T2> : IComparer<KeyValuePair<T1, T2>>
+		{
+			public int Compare(KeyValuePair<T1, T2> a, KeyValuePair<T1, T2> b)
+			{
+				int cmp = Comparer<T1>.Default.Compare(a.Key, b.Key);
+				if (cmp == 0)
+					cmp = Comparer<T2>.Default.Compare(a.Value, b.Value);
+				return cmp;
+			}
+		}
+
 		public class KVIntIntCmp : IComparer<KeyValuePair<int, int>>
         {
             public int Compare(KeyValuePair<int, int> a, KeyValuePair<int, int> b)
             {
                 if (a.Key == b.Key)
                     return a.Value < b.Value ? -1 : (a.Value > b.Value ? 1 : 0);
-                return a.Key < b.Key ? -1 : (a.Key > b.Key ? 1 : 0);
+                return a.Key < b.Key ? -1 : 1;
             }
         }
 
@@ -1331,11 +1379,17 @@ namespace ClrMDRIndex
                 return cmp;
             }
         }
-        #endregion Comparers
+		#endregion Comparers
 
-        #region Formatting
+		#region Formatting
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		public static string RuntimeStringHeader(int index)
+		{
+			return string.Format("RT[{0}] ",index);
+		}
+
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static string UintHexStringHeader(uint num)
         {
             return string.Format("[0x{0:x8}] ", num);
@@ -1873,7 +1927,7 @@ namespace ClrMDRIndex
 			int ndxVerValue;
 			if (Int32.TryParse(verStr.Substring(verPrefix.Length, pos - verPrefix.Length),out ndxVerValue))
 			{
-				if (VersionValue(version) <= ndxVerValue) return true; // it should be equal but less is added for unit tests
+				if (VersionValue(version) == ndxVerValue) return true; // it should be less or equal but we cannot yet guarantee backward compability
 			}
 			return false;
 		}

@@ -532,11 +532,10 @@ namespace ClrMDRIndex
 			return Element == ClrElementType.Array;
 		}
 
-	public static string GetKey(string name, ulong mthdTbl)
+		public static string GetKey(string name, ulong mthdTbl)
 		{
-//            return name + "!" + mthdTbl;
-            return name;
-        }
+				return name + "!" + mthdTbl;
+		}
 
     }
 }

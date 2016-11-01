@@ -39,13 +39,16 @@ namespace MDRDesk
 		private DispatcherTimer _dispatcherTimer; // to update some stuff periodically
 
 		private RecentFileList RecentDumpList;
+
 		private RecentFileList RecentIndexList;
 		private RecentFileList RecentAdhocList;
 
 		public static Map CurrentMap;
 		public static ClrtDump CurrentAdhocDump;
+		public static DumpIndex CurrentAdhocIndex;
 		public static string BaseTitle;
 		private static Version _myVersion;
+
 
 		//ResourceDictionary myresourcedictionary;
 
@@ -172,6 +175,7 @@ namespace MDRDesk
 			{
 				CurrentMap?.Dispose();
 				CurrentAdhocDump?.Dispose();
+				CurrentAdhocIndex?.Dispose();
 			});
 			task.Wait();
 		}
@@ -840,6 +844,78 @@ namespace MDRDesk
 
 		}
 
+		private async void AhqCreateInstanceRefsClicked(object sender, RoutedEventArgs e)
+		{
+			var dumpFilePath = SelectCrashDumpFile();
+			if (dumpFilePath == null) return;
+
+			var progressHandler = new Progress<string>(MainStatusShowMessage);
+			var progress = progressHandler as IProgress<string>;
+			var dmpFileName = Path.GetFileName(dumpFilePath);
+			SetStartTaskMainWindowState("Indexing: " + dmpFileName + ", please wait.");
+
+			var result = await Task.Run(() =>
+			{
+				string error;
+				string indexPath;
+				var indexer = new Indexer(dumpFilePath);
+				//var ok = indexer.Index(_myVersion, progress, out indexPath, out error);
+				var ok = indexer.CreateDumpMap(_myVersion, progress, Indexer.IndexingArguments.JustInstanceRefs, out indexPath, out error);
+				return new Tuple<bool, string, string>(ok, error, indexPath);
+			});
+
+			Utils.ForceGcWithCompaction();
+			SetEndTaskMainWindowState(result.Item1
+				? "Indexing: " + dmpFileName + " done."
+				: "Indexing: " + dmpFileName + " failed.");
+
+			if (!result.Item1)
+			{
+				ShowError(result.Item2);
+				return;
+			}
+
+		}
+
+		private async void AhqOpenInstanceRefsClicked(object sender, RoutedEventArgs e)
+		{
+			var dumpFilePath = SelectCrashDumpFile();
+			if (dumpFilePath == null) return;
+
+			var progressHandler = new Progress<string>(MainStatusShowMessage);
+			var progress = progressHandler as IProgress<string>;
+			var dmpFileName = Path.GetFileName(dumpFilePath);
+			SetStartTaskMainWindowState("Indexing: " + dmpFileName + ", please wait.");
+
+			var result = await Task.Run(() =>
+			{
+				string error;
+				var index = DumpIndex.OpenIndexInstanceReferences(_myVersion, dumpFilePath, 0, out error, progress);
+				if (index != null)
+				{
+					if (CurrentAdhocIndex != null)
+					{
+						CurrentAdhocIndex.Dispose();
+					}
+					CurrentAdhocIndex = index;
+				}
+				return new Tuple<bool, string>(index!=null, error);
+			});
+
+			Utils.ForceGcWithCompaction();
+			SetEndTaskMainWindowState(result.Item1
+				? "Indexing: " + dmpFileName + " done."
+				: "Indexing: " + dmpFileName + " failed.");
+
+			if (!result.Item1)
+			{
+				ShowError(result.Item2);
+				return;
+			}
+
+		}
+
+
 		/// <summary>
 		/// Handle the context menu of ListViewBottomGrid 
 		/// </summary>
@@ -1354,7 +1430,7 @@ namespace MDRDesk
 		private static Stopwatch _taskDurationStopwatch = new Stopwatch();
 		private void SetStartTaskMainWindowState(string message)
 		{
-			_taskDurationStopwatch.Start();
+			_taskDurationStopwatch.Restart();
 			MainStatusShowMessage(message);
 			MainToolbarTray.IsEnabled = false;
 			Mouse.OverrideCursor = Cursors.Wait;
@@ -1363,8 +1439,7 @@ namespace MDRDesk
 
 		private void SetEndTaskMainWindowState(string message)
 		{
-			_taskDurationStopwatch.Stop();
-			MainStatusShowMessage(message + Utils.DurationString(_taskDurationStopwatch.Elapsed));
+			MainStatusShowMessage(message + Utils.StopAndGetDurationString(_taskDurationStopwatch));
 			MainToolbarTray.IsEnabled = true;
 			Mouse.OverrideCursor = null;
 			MainStatusProgressBar.Visibility = Visibility.Hidden;
@@ -2099,7 +2174,6 @@ namespace MDRDesk
 				return;
 			}
 		}
-
 
 	}
 }

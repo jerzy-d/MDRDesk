@@ -29,8 +29,16 @@ namespace ClrMDRIndex
 		public ClrInfo[] ClrInfos => _clrInfos;
 
 		public int RuntimeCount => _runtimes.Length;
+		public int CurrentRuntimeIndex => _curRuntimeIndex;
 		public ClrRuntime Runtime => _runtimes[_curRuntimeIndex];
 		public ClrHeap Heap => Runtime.GetHeap();
+
+		public int SetRuntime(int index)
+		{
+			if (index >= 0 && index < _runtimes.Length)
+				_curRuntimeIndex = index;
+			return _curRuntimeIndex;
+		}
 
 		#endregion Fields/Properties
 
@@ -189,6 +197,7 @@ namespace ClrMDRIndex
 			runtime.Flush();
 			return runtime.GetHeap();
 		}
+
 
 		#endregion Ctors/Initializations
 

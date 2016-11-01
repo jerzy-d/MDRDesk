@@ -1,10 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.IO;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+using System.Runtime.CompilerServices;
 using Microsoft.Diagnostics.Runtime;
 
 namespace ClrMDRIndex
@@ -46,63 +44,61 @@ namespace ClrMDRIndex
 			_finalizerQueInstanceIds = finalizeQueInstIds;
 		}
 
-		private ClrtRoots()
-		{
-			
-		}
-
-		public static KeyValuePair<ulong[],ulong[]> GetRootAddresses(ClrHeap heap, string[] typeNames)
+		public static KeyValuePair<ulong[], ulong[]> GetRootAddresses(ClrHeap heap, string[] typeNames)
 		{
 			var roots = heap.EnumerateRoots(true);
 			HashSet<ulong> addrSet = new HashSet<ulong>();
 			HashSet<ulong> objSet = new HashSet<ulong>();
+			var nullTypes = new List<KeyValuePair<string,ulong>>();
+			var unknownTypes = new List<triple<string, string, ulong>>();
+
 			foreach (var root in roots)
 			{
 				addrSet.Add(root.Address);
-				objSet.Add(root.Object);
-			    ClrType clrType = heap.GetObjectType(root.Object);
-			    if (clrType == null)
-			    {
-			        int a = 1;
-                    continue;
-			    }
-			    string key = ClrtType.GetKey(clrType.Name, clrType.MethodTable);
-			    if (Array.BinarySearch(typeNames, key,StringComparer.Ordinal) < 0)
-			    {
-			        int b = 1;
-			    }
-
+				ulong objAddr = root.Object;
+				objSet.Add(objAddr);
+				var clrType = heap.GetObjectType(objAddr);
+				if (clrType == null)
+				{
+					nullTypes.Add(new KeyValuePair<string, ulong>(root.Name,objAddr));
+					continue;
+				}
+				if (Array.BinarySearch(typeNames, clrType.Name, StringComparer.Ordinal) < 0)
+				{
+					unknownTypes.Add(new triple<string, string, ulong>(root.Name, clrType.Name, objAddr));
+				}
 			}
+
 			var addrAry = addrSet.ToArray();
 			var objAry = objSet.ToArray();
 			Array.Sort(addrAry);
 			Array.Sort(objAry);
-            int ndx = 0;
-            int cnt = Math.Min(addrAry.Length, objAry.Length);
-            while (ndx < cnt)
-            {
-                Utils.SetAsRoot(addrAry[ndx]);
-                Utils.SetAsRootPointee(objAry[ndx]);
-                ++ndx;
-            }
-            if (ndx < addrAry.Length)
-            {
-                while (ndx < cnt)
-                {
-                    Utils.SetAsRoot(addrAry[ndx]);
-                    ++ndx;
-                }
-            }
-            if (ndx < objAry.Length)
-            {
-                while (ndx < cnt)
-                {
-                    Utils.SetAsRootPointee(objAry[ndx]);
-                    ++ndx;
-                }
-            }
+			int ndx = 0;
+			int cnt = Math.Min(addrAry.Length, objAry.Length);
+			while (ndx < cnt)
+			{
+				Utils.SetAsRoot(addrAry[ndx]);
+				Utils.SetAsRootPointee(objAry[ndx]);
+				++ndx;
+			}
+			if (ndx < addrAry.Length)
+			{
+				while (ndx < cnt)
+				{
+					Utils.SetAsRoot(addrAry[ndx]);
+					++ndx;
+				}
+			}
+			if (ndx < objAry.Length)
+			{
+				while (ndx < cnt)
+				{
+					Utils.SetAsRootPointee(objAry[ndx]);
+					++ndx;
+				}
+			}
 
-            return new KeyValuePair<ulong[], ulong[]>(addrAry,objAry);
+			return new KeyValuePair<ulong[], ulong[]>(addrAry, objAry);
 		}
 
 		public static ClrtRoots GetRoots(ClrHeap heap, ulong[] instances, int[] types, StringIdAsyncDct idDct)
@@ -169,11 +165,11 @@ namespace ClrMDRIndex
 			int[] objMap;
 			ulong[] sortedAddrs;
 			int[] addrMap;
-			ClrtRoots.SortRoots(rootAry, out kindOffsets, out sortedAddrs, out addrMap, out sortedObjs, out objMap);
+			SortRoots(rootAry, out kindOffsets, out sortedAddrs, out addrMap, out sortedObjs, out objMap);
 
 			var finQueAry = finalizeQue.ToArray();
 			var finQueInstIdsAry = finalizeQueInstIds.ToArray();
-			Array.Sort(finQueAry,finQueInstIdsAry);
+			Array.Sort(finQueAry, finQueInstIdsAry);
 
 			return new ClrtRoots(rootAry, kindOffsets, sortedAddrs, addrMap, sortedObjs, objMap, finQueAry, finQueInstIdsAry);
 		}
@@ -185,11 +181,9 @@ namespace ClrMDRIndex
 			kindOffsets = Utils.EmptyArray<int>.Value;
 			addresses = objects;
 			addressMap = objectMap;
-			Debug.Assert(roots != null && roots.Length > 0);
 			if (roots == null || roots.Length < 1) return;
 			Array.Sort(roots, new ClrtRootKindCmp());
 
-			int off = 0;
 			List<int> offs = new List<int>(16) { 0 };
 			ClrtRoot.Kinds pkind = ClrtRoot.GetGCRootKindPart(roots[0].RootKind);
 			objects = new ulong[roots.Length];
@@ -332,9 +326,6 @@ namespace ClrMDRIndex
 			{
 				br?.Close();
 			}
-
-
-			return null; // TODO JRD
 		}
 
 		#endregion Dump/Load
@@ -386,18 +377,18 @@ namespace ClrMDRIndex
 			return GetRootInfoByAddress(addr, out info);
 		}
 
-	    public ClrtRoot[] GetRootInfoByType(int typeId)
-        {
-            List<ClrtRoot> lst = new List<ClrtRoot>(64);
-            for (int i = 0, icnt = _clrtRoots.Length; i < icnt; ++i)
-            {
-                if (_clrtRoots[i].TypeId==typeId)
-                    lst.Add(_clrtRoots[i]);
-            }
-            return lst.ToArray();
-        }
+		public ClrtRoot[] GetRootInfoByType(int typeId)
+		{
+			List<ClrtRoot> lst = new List<ClrtRoot>(64);
+			for (int i = 0, icnt = _clrtRoots.Length; i < icnt; ++i)
+			{
+				if (_clrtRoots[i].TypeId == typeId)
+					lst.Add(_clrtRoots[i]);
+			}
+			return lst.ToArray();
+		}
 
-        public bool GetFinilizerItemInstanceId(ulong addr, out int instId )
+		public bool GetFinilizerItemInstanceId(ulong addr, out int instId)
 		{
 			var ndx = Array.BinarySearch(_finalizerQue, addr);
 			instId = ndx < 0 ? Constants.InvalidIndex : _finalizerQueInstanceIds[ndx];
@@ -413,7 +404,7 @@ namespace ClrMDRIndex
 				var typeId = _finalizerQueInstanceIds[i];
 				var notRooted = IsRooted(_finalizerQue[i], unrooted) ? string.Empty : Constants.HeavyCheckMarkHeader;
 				string typeName = typeId != Constants.InvalidIndex ? typeNames[instTypes[typeId]] : Constants.UnknownName;
-				que[i] = new triple<string, string, string>(addrStr,notRooted,typeName);
+				que[i] = new triple<string, string, string>(addrStr, notRooted, typeName);
 
 
 			}
@@ -444,14 +435,14 @@ namespace ClrMDRIndex
 		public override string ToString()
 		{
 			return Utils.AddressString(_root.Address) + "->" + Utils.AddressString(_root.Object) + " " + _root.GetKindString() +
-			       (_inFinalizerQueue ? " FQ" : String.Empty);
+				   (_inFinalizerQueue ? " FQ" : String.Empty);
 		}
 	}
 
 	public struct ClrtRoot
 	{
 		[Flags]
-		public enum Kinds : int
+		public enum Kinds
 		{
 			None = 0,
 
@@ -464,46 +455,50 @@ namespace ClrMDRIndex
 			/// <summary>
 			/// The root "pins" the object, preventing the GC from relocating it.
 			/// </summary>
-			Pinned = 1<<1,
+			Pinned = 1 << 1,
 
 			/// <summary>
 			/// Unfortunately some versions of the APIs we consume do not give us perfect information.  If
 			/// this property is true it means we used a heuristic to find the value, and it might not
 			/// actually be considered a root by the GC.
 			/// </summary>
-			PossibleFalsePositive = 1<<2,
+			PossibleFalsePositive = 1 << 2,
 
 
-			StaticVar = 1<<4,
-			ThreadStaticVar = 1<<5,
-			LocalVar = 1<<6,
-			Strong = 1<<7,
-			Weak = 1<<8,
-			Pinning = 1<<9,
-			Finalizer = 1<<10,
-			AsyncPinning = 1<<11,
-			Max = 1<<11,
+			StaticVar = 1 << 4,
+			ThreadStaticVar = 1 << 5,
+			LocalVar = 1 << 6,
+			Strong = 1 << 7,
+			Weak = 1 << 8,
+			Pinning = 1 << 9,
+			Finalizer = 1 << 10,
+			AsyncPinning = 1 << 11,
+			Max = 1 << 11,
 		}
 
-		static public Kinds Convert(GCRootKind kind)
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		public static Kinds Convert(GCRootKind kind)
 		{
 			return (Kinds)(1 << (4 + (int)kind));
 		}
 
-		static public Kinds GetGCRootKindPart(Kinds kind)
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		public static Kinds GetGCRootKindPart(Kinds kind)
 		{
-			return (Kinds)((uint)kind & (uint)0xFFFFFE00);
+			return (Kinds)((uint)kind & 0xFFFFFE00);
 		}
 
-		static public GCRootKind GetGCRootKind(Kinds kind)
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		public static GCRootKind GetGCRootKind(Kinds kind)
 		{
 			return (GCRootKind)((uint)kind >> 4);
 		}
 
-	    public string GetKindString()
-	    {
-	        return GetGCRootKind(RootKind).ToString();
-	    }
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		public string GetKindString()
+		{
+			return GetGCRootKind(RootKind).ToString();
+		}
 
 		public ulong Address;
 		public ulong Object;
@@ -516,12 +511,12 @@ namespace ClrMDRIndex
 
 		public int ManagedThreadId; // if the root does not have a thread associated with it, this will be Constant.InvalidIndex
 
-		public static ClrtRoot EmptyClrtRoot = new ClrtRoot(Constants.InvalidAddress,Constants.InvalidAddress,Constants.InvalidIndex,Constants.InvalidIndex,Constants.InvalidIndex,Constants.InvalidThreadId,Constants.InvalidIndex,Kinds.None);
+		public static ClrtRoot EmptyClrtRoot = new ClrtRoot(Constants.InvalidAddress, Constants.InvalidAddress, Constants.InvalidIndex, Constants.InvalidIndex, Constants.InvalidIndex, Constants.InvalidThreadId, Constants.InvalidIndex, Kinds.None);
 
-	    public static bool IsDummyRoot(ClrtRoot root)
-	    {
-	        return root.Address == Constants.InvalidAddress &&  root.Object == Constants.InvalidAddress;
-	    }
+		public static bool IsDummyRoot(ClrtRoot root)
+		{
+			return root.Address == Constants.InvalidAddress && root.Object == Constants.InvalidAddress;
+		}
 
 		public ClrtRoot(ClrRoot root, int typeId, int nameId, int domainId, uint osthreadId, int managedThrdId)
 		{
@@ -573,7 +568,7 @@ namespace ClrMDRIndex
 			int domainId = br.ReadInt32();
 			uint osThreadId = br.ReadUInt32();
 			int managedThreadId = br.ReadInt32();
-			Kinds rootTraits = (Kinds) br.ReadInt32();
+			Kinds rootTraits = (Kinds)br.ReadInt32();
 			return new ClrtRoot(address, @object, typeId, nameId, domainId, osThreadId, managedThreadId, rootTraits);
 		}
 	}

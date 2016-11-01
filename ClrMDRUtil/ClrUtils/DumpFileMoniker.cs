@@ -23,10 +23,23 @@ namespace ClrMDRIndex
 		                              + System.IO.Path.DirectorySeparatorChar
 		                              + "ad-hoc.queries";
 
+		public string MapFolder => System.IO.Path.GetDirectoryName(_path) // dump file directory
+		                           + System.IO.Path.DirectorySeparatorChar
+		                           + System.IO.Path.GetFileNameWithoutExtension(_path) + ".map"; // dummp file name with extension changed tp ".map"
+
 		public DumpFileMoniker(string path)
 		{
 			_path = path;
 		}
+
+		public string GetFilePath(int runtimeIndex, string pathPostfix)
+		{
+			string postfix = runtimeIndex > 0 && pathPostfix.IndexOf("[0]", StringComparison.Ordinal) > 0
+				? pathPostfix.Replace("[0]", "[" + runtimeIndex + "]")
+				: pathPostfix;
+			return MapFolder + System.IO.Path.DirectorySeparatorChar + FileNameNoExt + postfix;
+		}
+
 
 		public static Tuple<string, string> GetAndCreateMapFolders(string dmpFilePath, out string error)
 		{

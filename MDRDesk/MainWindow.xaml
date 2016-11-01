@@ -435,12 +435,17 @@
                         <MenuItem x:Name="RecentIndexMenuItem" Header="Recent Indices" Click="RecentIndicesClicked"/>
                     </MenuItem>
                 <MenuItem x:Name="AdhocQueries" Header="Ad-hoc Queries" Background="LightBlue" VerticalAlignment="Center">
-                        <MenuItem x:Name="AhqStringUsage" Header="String Usage..." Click="StringUsageClicked"/>
-                        <MenuItem x:Name="AhqTypeCount" Header="Type Count..." Click="AhqTypeCountClicked"/>
-                        <MenuItem x:Name="AhqCollectionContent" Header="Collection Content">
-                            <MenuItem x:Name="AhqArray" Header="Array..." Click="AhqCollectionContentArray"/>
-                        </MenuItem>
-                        <!--
+                    <MenuItem x:Name="AhqStringUsage" Header="String Usage..." Click="StringUsageClicked"/>
+                    <MenuItem x:Name="AhqTypeCount" Header="Type Count..." Click="AhqTypeCountClicked"/>
+                    <MenuItem x:Name="AhqCollectionContent" Header="Collection Content">
+                        <MenuItem x:Name="AhqArray" Header="Array..." Click="AhqCollectionContentArray"/>
+                    </MenuItem>
+                    <Separator></Separator>
+                    <MenuItem x:Name="AhqInstanceRefs" Header="Instance Reference Map">
+                            <MenuItem x:Name="AhqCreateInstanceRefs" Header="Create Instance Reference Map..." Click="AhqCreateInstanceRefsClicked"/>
+                            <MenuItem x:Name="AhqOpenInstanceRefs" Header="Open Instance Reference Map..." Click="AhqOpenInstanceRefsClicked"/>
+                    </MenuItem>
+                    <!--
                     <MenuItem Header="{Binding ElementName=CbAdHocDump, Path=SelectedItem}" >
                     </MenuItem>
                     -->
