@@ -108,6 +108,7 @@
     <Compile Include="Utils\Arena.cs" />
     <Compile Include="Utils\BinaryHeap.cs" />
     <Compile Include="Utils\DependencyNode.cs" />
+    <Compile Include="Utils\IndexNode.cs" />
     <Compile Include="Utils\IndexValue.cs" />
     <Compile Include="Utils\InstanceNode.cs" />
     <Compile Include="Utils\InstanceSizeNode.cs" />

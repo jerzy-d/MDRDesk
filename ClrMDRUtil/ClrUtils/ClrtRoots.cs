@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Runtime.CompilerServices;
+using ClrMDRUtil.Utils;
 using Microsoft.Diagnostics.Runtime;
 
 namespace ClrMDRIndex
@@ -101,6 +102,7 @@ namespace ClrMDRIndex
 			return new KeyValuePair<ulong[], ulong[]>(addrAry, objAry);
 		}
 
+		// TODO JRD -- delete later
 		public static ClrtRoots GetRoots(ClrHeap heap, ulong[] instances, int[] types, StringIdAsyncDct idDct)
 		{
 			var rootDct = new SortedDictionary<ulong, List<ClrtRoot>>();
@@ -174,6 +176,87 @@ namespace ClrMDRIndex
 			return new ClrtRoots(rootAry, kindOffsets, sortedAddrs, addrMap, sortedObjs, objMap, finQueAry, finQueInstIdsAry);
 		}
 
+
+		/// <summary>
+		/// Collect roots information.
+		/// </summary>
+		/// <param name="heap">Clr heap of current runtime.</param>
+		/// <param name="instances">Instance addresses.</param>
+		/// <param name="types">Instance types.</param>
+		/// <param name="idDct">String id dictionary.</param>
+		/// <returns>Roots info, <see cref="ClrtRoots"/></returns>
+		public static ClrtRoots GetRootInfos(ClrHeap heap, ulong[] instances, int[] types, StringIdDct idDct)
+		{
+			var rootDct = new SortedDictionary<ulong, List<ClrtRoot>>();
+			var finalizeQue = new List<ulong>(1024 * 1024);
+			var finalizeQueInstIds = new List<int>(1024 * 1024);
+
+			List<ClrRoot> lstNotFoundObject = new List<ClrRoot>();
+			List<ClrtRoot> lstRoots = new List<ClrtRoot>(1024 * 64);
+
+			foreach (var root in heap.EnumerateRoots())
+			{
+				var rootObj = root.Object;
+				if (root.Kind == GCRootKind.Finalizer)
+				{
+					finalizeQue.Add(rootObj);
+					var obj = Utils.AddressSearch(instances, rootObj);
+					finalizeQueInstIds.Add(obj);
+					continue;
+				}
+				var rootAddr = root.Address;
+				List<ClrtRoot> lst;
+				if (rootDct.TryGetValue(rootAddr, out lst))
+				{
+					int i = 0;
+					int icnt = lst.Count;
+					var rkind = root.Kind;
+					for (; i < icnt; ++i)
+					{
+						if (rootObj == lst[i].Object && rkind == ClrtRoot.GetGCRootKind(lst[i].RootKind)) break;
+					}
+					if (i == icnt)
+					{
+						var rname = root.Name ?? Constants.NullName;
+						var rnameId = idDct.JustGetId(rname);
+						var obj = Utils.AddressSearch(instances, rootObj);
+						if (obj < 0) { lstNotFoundObject.Add(root); }
+						var typeId = obj < 0 ? Constants.InvalidIndex : types[obj];
+						var clrtRoot = new ClrtRoot(root, typeId, rnameId, Constants.InvalidIndex, Constants.InvalidThreadId, Constants.InvalidIndex);
+						lst.Add(clrtRoot);
+						lstRoots.Add(clrtRoot);
+					}
+				}
+				else
+				{
+					var rname = root.Name ?? Constants.NullName;
+					var rnameId = idDct.JustGetId(rname);
+					var obj = Utils.AddressSearch(instances, rootObj);
+					if (obj < 0) { lstNotFoundObject.Add(root); }
+					var typeId = obj < 0 ? Constants.InvalidIndex : types[obj];
+					var clrtRoot = new ClrtRoot(root, typeId, rnameId, Constants.InvalidIndex, Constants.InvalidThreadId, Constants.InvalidIndex);
+					rootDct.Add(rootAddr, new List<ClrtRoot>() { clrtRoot });
+					lstRoots.Add(clrtRoot);
+				}
+			}
+
+			var rootAry = lstRoots.ToArray();
+			lstRoots.Clear();
+			lstRoots = null;
+			ulong[] sortedObjs;
+			int[] kindOffsets;
+			int[] objMap;
+			ulong[] sortedAddrs;
+			int[] addrMap;
+			SortRoots(rootAry, out kindOffsets, out sortedAddrs, out addrMap, out sortedObjs, out objMap);
+
+			var finQueAry = finalizeQue.ToArray();
+			var finQueInstIdsAry = finalizeQueInstIds.ToArray();
+			Array.Sort(finQueAry, finQueInstIdsAry);
+
+			return new ClrtRoots(rootAry, kindOffsets, sortedAddrs, addrMap, sortedObjs, objMap, finQueAry, finQueInstIdsAry);
+		}
+
 		public static void SortRoots(ClrtRoot[] roots, out int[] kindOffsets, out ulong[] addresses, out int[] addressMap, out ulong[] objects, out int[] objectMap)
 		{
 			objects = Utils.EmptyArray<ulong>.Value;
@@ -217,6 +300,8 @@ namespace ClrMDRIndex
 
 		#region Dump/Load
 
+
+		// TODO JRD -- delete later
 		public bool Dump(int r, string indexFolder, string dumpName, out string error)
 		{
 			error = null;
@@ -271,6 +356,7 @@ namespace ClrMDRIndex
 			}
 		}
 
+		// TODO JRD -- delete later
 		public static ClrtRoots Load(int r, string indexFolder, string dumpName, out string error)
 		{
 			error = null;
@@ -327,6 +413,125 @@ namespace ClrMDRIndex
 				br?.Close();
 			}
 		}
+
+		public static ClrtRoots LoadRoots(int r, DumpFileMoniker fileMoniker, out string error)
+		{
+			error = null;
+			BinaryReader br = null;
+			try
+			{
+				// get root infos
+				//
+				var path = fileMoniker.GetFilePath(r, Constants.MapRootsInfoFilePostfix);
+				br = new BinaryReader(File.Open(path, FileMode.Open));
+				int cnt = br.ReadInt32(); // kind offsets first
+				int[] kindOffsets = new int[cnt];
+				for (int i = 0; i < cnt; ++i)
+				{
+					kindOffsets[i] = br.ReadInt32();
+				}
+				cnt = br.ReadInt32(); // root infos
+				ClrtRoot[] rootInfos = new ClrtRoot[cnt];
+				for (int i = 0; i < cnt; ++i)
+				{
+					rootInfos[i] = ClrtRoot.Load(br);
+				}
+
+				// get finalizer queue
+				//
+				path = fileMoniker.GetFilePath(r, Constants.MapRootsFinalizerFilePostfix);
+				ulong[] finQue;
+				int[] finQueInstIds;
+				if (!Utils.ReadUlongIntArrays(path, out finQue, out finQueInstIds, out error)) return null;
+
+				// get root addresses array and its map
+				//
+				path = fileMoniker.GetFilePath(r, Constants.MapRootsAddressesFilePostfix);
+				ulong[] addresses;
+				int[] addrMap;
+				if (!Utils.ReadUlongIntArrays(path, out addresses, out addrMap, out error)) return null;
+
+				// get root addresses array and its map
+				//
+				path = fileMoniker.GetFilePath(r, Constants.MapRootsObjectsFilePostfix);
+				ulong[] objects;
+				int[] objMap;
+				if (!Utils.ReadUlongIntArrays(path, out objects, out objMap, out error)) return null;
+
+				return new ClrtRoots(rootInfos, kindOffsets, addresses, addrMap, objects, objMap, finQue, finQueInstIds);
+			}
+			catch (Exception ex)
+			{
+				error = Utils.GetExceptionErrorString(ex);
+				return null;
+			}
+			finally
+			{
+				br?.Close();
+			}
+		}
+
+		/// <summary>
+		/// Save root indexing data.
+		/// </summary>
+		/// <param name="r">Current runtime index.</param>
+		/// <param name="fileMoniker">Dump path information.</param>
+		/// <param name="error">Error message if any.</param>
+		/// <returns>False if failed, true otherwise.</returns>
+		public bool PersitRootInfos(int r, DumpFileMoniker fileMoniker, out string error)
+		{
+			error = null;
+			BinaryWriter bw = null;
+			try
+			{
+				// dump ClrtRoot array
+				//
+				var path = fileMoniker.GetFilePath(r, Constants.MapRootsInfoFilePostfix);
+				bw = new BinaryWriter(File.Open(path, FileMode.Create));
+				int cnt = _rootKindOffsets.Length; // offsets first
+				bw.Write(cnt);
+				for (int i = 0; i < cnt; ++i)
+				{
+					bw.Write(_rootKindOffsets[i]);
+				}
+				cnt = _clrtRoots.Length; // root infos next
+				bw.Write(cnt);
+				for (int i = 0; i < cnt; ++i)
+				{
+					_clrtRoots[i].Dump(bw);
+				}
+				bw.Close();
+				bw = null;
+
+				// dump finalizer array
+				//
+				path = fileMoniker.GetFilePath(r, Constants.MapRootsFinalizerFilePostfix);
+				if (!Utils.WriteUlongIntArrays(path, _finalizerQue, _finalizerQueInstanceIds, out error)) return false;
+
+				// dump root addresses array and its map
+				//
+				path = fileMoniker.GetFilePath(r, Constants.MapRootsAddressesFilePostfix);
+				if (!Utils.WriteUlongIntArrays(path, _rootAddresses, _rootAddressMap, out error)) return false;
+
+				// dump object addresses array and its map
+				//
+				path = fileMoniker.GetFilePath(r, Constants.MapRootsObjectsFilePostfix);
+				if (!Utils.WriteUlongIntArrays(path, _objectAddresses, _objectAddressMap, out error)) return false;
+
+				return true;
+
+			}
+			catch (Exception ex)
+			{
+				error = Utils.GetExceptionErrorString(ex);
+				return false;
+			}
+			finally
+			{
+				bw?.Close();
+			}
+		}
+
 
 		#endregion Dump/Load
 

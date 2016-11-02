@@ -5,6 +5,7 @@ using System.Diagnostics;
 using System.Globalization;
 using System.IO;
 using System.Linq;
+using System.Reflection;
 using System.Text;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using ClrMDRIndex;
@@ -35,6 +36,30 @@ namespace UnitTestMdr
 				testContextInstance = value;
 			}
 		}
+
+		#region (new) types and instances
+
+		[TestMethod]
+		public void TypeInstancesMapTest()
+		{
+			string path = @"D:\Jerzy\WinDbgStuff\dumps\TestApp\TestApp.exe_161031_093521.map";
+			string typeName = "System.Text.EncoderReplacementFallback";
+
+			DumpIndex index = OpenIndex(path);
+			Assert.IsNotNull(index);
+
+			var typeId = index.GetTypeId(typeName);
+			Assert.AreNotEqual(Constants.InvalidIndex,typeId);
+			var ndxTypeName = index.GetTypeName(typeId);
+			Assert.IsTrue(Utils.SameStrings(typeName,ndxTypeName));
+			var addresses = index.GetTypeInstances(typeId);
+
+
+		}
+
+		#endregion (new) types and instances
+
+
 
 		#region Instance Dependencies
 
@@ -2260,6 +2285,15 @@ namespace UnitTestMdr
 			var map = Map.OpenMap(new Version(1,0,0), mapPath, out error);
 			Assert.IsTrue(map != null, error);
 			return map;
+		}
+
+		public static DumpIndex OpenIndex(string mapPath)
+		{
+			string error;
+			var version = Assembly.GetExecutingAssembly().GetName().Version;
+			var index = DumpIndex.OpenIndexInstanceReferences(version, mapPath, 0, out error);
+			Assert.IsTrue(index != null, error);
+			return index;
 		}
 
 		#endregion OpenMap

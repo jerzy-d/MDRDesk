@@ -9,7 +9,7 @@ namespace ClrMDRIndex
 {
 	public class DumpFileMoniker
 	{
-		private string _path;
+		private readonly string _path;
 
 		public string Path => _path;
 

@@ -17,12 +17,7 @@ namespace ClrMDRIndex
 {
 	public class Indexer
 	{
-		[Flags]
-		public enum IndexingArguments
-		{
-			All = 0xFFFFFFF,
-			JustInstanceRefs = 1,
-		}
+
 
 		#region Fields/Properties
 
@@ -228,247 +223,6 @@ namespace ClrMDRIndex
 			}
 		}
 
-		public bool CreateDumpMap(Version version, IProgress<string> progress, IndexingArguments indexArguments, out string indexPath, out string error)
-		{
-			error = null;
-			indexPath = null;
-			var clrDump = new ClrtDump(DumpFilePath);
-			if (!clrDump.Init(out error)) return false;
-			Stopwatch stopWatch = new Stopwatch();
-			string durationStr = string.Empty;
-			_errors = new ConcurrentBag<string>[clrDump.RuntimeCount];
-			int runtimeIndex = 0;
-
-			using (clrDump)
-			{
-				try
-				{
-					if (DumpFileMoniker.GetAndCreateMapFolders(DumpFilePath, out error) == null) return false;
-					indexPath = MapOutputFolder;
-					// indexing
-					//
-					if (!GetPrerequisites(clrDump, progress, out _stringIdDcts, out error)) return false;
-					DumpFileMoniker fileMoniker = new DumpFileMoniker(DumpFilePath);
-
-					for (int r = 0, rcnt = clrDump.RuntimeCount; r < rcnt; ++r)
-					{
-						runtimeIndex = r;
-						string runtimeIndexHeader = Utils.RuntimeStringHeader(r);
-						clrDump.SetRuntime(r);
-						ClrRuntime runtime = clrDump.Runtime;
-						ClrHeap heap = runtime.GetHeap();
-						ConcurrentBag<string> errors = new ConcurrentBag<string>();
-						_errors[r] = errors;
-
-
-						string[] typeNames = null;
-						ulong[] roots = null;
-						ulong[] objects = null;
-						ulong[] addresses = null;
-						int[] typeIds = null;
-
-						if ((indexArguments & IndexingArguments.JustInstanceRefs) > 0)
-						{
-
-							// get heap address count
-							//
-							progress?.Report(runtimeIndexHeader + "Getting instance count...");
-							stopWatch.Restart();
-							var addrCount = Indexer.GetHeapAddressCount(heap);
-							durationStr = Utils.StopAndGetDurationString(stopWatch);
-
-							// get type names
-							//
-							progress?.Report(runtimeIndexHeader + "Getting type names... Previous action duration: " + durationStr);
-							stopWatch.Restart();
-							typeNames = Indexer.GetTypeNames(heap, out error);
-							Debug.Assert(error == null);
-							durationStr = Utils.StopAndGetDurationString(stopWatch);
-
-							// get roots
-							//
-							progress?.Report(runtimeIndexHeader + "Getting roots... Previous action duration: " + durationStr);
-							stopWatch.Restart();
-							var rootArys = ClrtRoots.GetRootAddresses(heap, typeNames);
-							roots = rootArys.Key;
-							objects = rootArys.Value;
-							durationStr = Utils.StopAndGetDurationString(stopWatch);
-
-							// get addresses and set roots
-							//
-							progress?.Report(runtimeIndexHeader + "Getting addresses and setting roots... Previous action duration: " + durationStr);
-							stopWatch.Restart();
-							addresses = new ulong[addrCount];
-							typeIds = new int[addrCount];
-							if (!GetAddressesSetRoots(heap, addresses, typeIds, typeNames, roots, objects, out error))
-							{
-								return false;
-							}
-							durationStr = Utils.StopAndGetDurationString(stopWatch);
-
-
-							// field dependencies
-							//
-							stopWatch.Restart();
-							progress?.Report(runtimeIndexHeader + "Getting field dependecies... Previous action duration: " + durationStr);
-
-							var instanceFldRefs = fileMoniker.GetFilePath(0, Constants.MapFieldRefInstancesPostfix);
-							var fldRefQue = new BlockingCollection<KeyValuePair<int, int[]>>();
-							var fldRefErrors = new List<string>(0);
-							var threadFldRefPersister = Indexer.StartFieldRefInfoPersiter(instanceFldRefs, fldRefQue, fldRefErrors);
-
-							var fldRefList = new List<KeyValuePair<ulong, int>>(64);
-							var addressesLastNdx = addresses.Length - 1;
-							var fieldsArrays = new int[addresses.Length][];
-							var fldRefs = new HashSet<int>();
-
-							for (int i = 0, icnt = addresses.Length; i < icnt; ++i)
-							{
-								var addr = addresses[i];
-								var cleanAddr = Utils.CleanAddress(addr);
-								var isRooted = Utils.IsRooted(addr);
-								if (cleanAddr == 0x0000000002a1ac10)
-								{
-									int a = 0;
-								}
-
-								var clrType = heap.GetObjectType(cleanAddr);
-								if (clrType == null || clrType.IsString || clrType.Fields == null) continue;
-
-								var isArray = clrType.IsArray;
-								fldRefs.Clear();
-								fldRefList.Clear();
-								clrType.EnumerateRefsOfObjectCarefully(cleanAddr, (address, off) =>
-								{
-									fldRefList.Add(new KeyValuePair<ulong, int>(address, off));
-								});
-
-								if (fldRefList.Count > 0)
-								{
-									for (int k = 0, kcnt = fldRefList.Count; k < kcnt; ++k)
-									{
-										if (isArray && kcnt > 100)
-										{
-											int a = 1;
-										}
-										var fldAddr = fldRefList[k].Key;
-										var addrnx = Utils.AddressSearch(addresses, fldAddr, 0, addressesLastNdx);
-										if (fldAddr == 0UL || fldRefs.Contains(addrnx)) continue;
-										if (addrnx < 0)
-										{
-											int a = 1;
-										}
-										fldRefs.Add(addrnx);
-										if (isRooted)
-										{
-											Indexer.MarkAsRooted(fldAddr, addrnx, addresses, fieldsArrays);
-										}
-									}
-								}
-
-								if (fldRefs.Count > 0)
-								{
-									var refAry = fldRefs.ToArray();
-									Array.Sort(refAry);
-									fieldsArrays[i] = refAry;
-									fldRefQue.Add(new KeyValuePair<int, int[]>(i, refAry));
-								}
-							}
-
-							fldRefQue.Add(new KeyValuePair<int, int[]>(-1, null));
-							threadFldRefPersister.Join();
-							durationStr = Utils.StopAndGetDurationString(stopWatch);
-
-
-							// build instance reference map
-							//
-							stopWatch.Restart();
-							progress?.Report(runtimeIndexHeader + "Building instance reference map... Previous action duration: " + durationStr);
-
-							InstanceReferences.InvertFieldRefs(new Tuple<int, DumpFileMoniker, ConcurrentBag<string>, IProgress<string>>(0, fileMoniker, errors, null));
-
-							string path = fileMoniker.GetFilePath(0, Constants.MapInstancesFilePostfix);
-							Utils.WriteUlongArray(path, addresses, out error);
-							path = fileMoniker.GetFilePath(0, Constants.MapInstanceTypesFilePostfix);
-							Utils.WriteIntArray(path, typeIds, out error);
-							path = fileMoniker.GetFilePath(0, Constants.TxtTypeNamesFilePostfix);
-							Utils.WriteStringList(path, typeNames, out error);
-							durationStr = Utils.StopAndGetDurationString(stopWatch);
-							progress?.Report(runtimeIndexHeader + "Building instance reference map duration: " + durationStr);
-
-							if (indexArguments == IndexingArguments.JustInstanceRefs) return true; // we only want instance refs
-						}
-
-						runtime.Flush();
-						heap = null;
-					}
-					return true;
-				}
-				catch (Exception ex)
-				{
-					error = Utils.GetExceptionErrorString(ex);
-					_errors[runtimeIndex].Add(error);
-					return false;
-				}
-				finally
-				{
-					DumpErrors();
-					GCSettings.LargeObjectHeapCompactionMode = GCLargeObjectHeapCompactionMode.CompactOnce;
-					GC.Collect();
-				}
-			}
-		}
-
-		public bool GetAddressesSetRoots(ClrHeap heap, ulong[] addresses, int[] typeIds, string[] typeNames, ulong[] roots, ulong[] objects, out string error)
-		{
-			error = null;
-			try
-			{
-				var segs = heap.Segments;
-				var rootsLastNdx = roots.Length - 1;
-				var objectsLastNdx = objects.Length - 1;
-				int addrNdx = 0;
-				for (int segNdx = 0, icnt = segs.Count; segNdx < icnt; ++segNdx)
-				{
-					var seg = segs[segNdx];
-					ulong addr = seg.FirstObject;
-					while (addr != 0ul)
-					{
-						var clrType = heap.GetObjectType(addr);
-
-						var typeNameKey = clrType == null ? Constants.NullTypeName : clrType.Name;
-						int typeId = Array.BinarySearch(typeNames, typeNameKey, StringComparer.Ordinal);
-						if (typeId < 0)
-						{
-							int a = 0;
-						}
-						typeIds[addrNdx] = typeId;
-						if (clrType == null) goto NEXT_OBJECT;
-
-						var isRoot = Utils.AddressSearch(roots, addr, 0, rootsLastNdx) >= 0;
-						var isPointee = Utils.AddressSearch(objects, addr, 0, objectsLastNdx) >= 0;
-						if (isRoot || isPointee)
-						{
-							addresses[addrNdx] = Utils.SetRooted(addr, isRoot, isPointee);
-						}
-						else
-						{
-							addresses[addrNdx] = addr;
-						}
-
-						NEXT_OBJECT:
-						addr = seg.NextObject(addr);
-						++addrNdx;
-					}
-				}
-				return true;
-			}
-			catch (Exception ex)
-			{
-				error = Utils.GetExceptionErrorString(ex);
-				return false;
-			}
-		} 
 
 
 		/// <summary>
@@ -1086,22 +840,7 @@ namespace ClrMDRIndex
 		}
 
 
-		public static int GetHeapAddressCount(ClrHeap heap)
-		{
-			int count = 0;
-			var segs = heap.Segments;
-			for (int i = 0, icnt = segs.Count; i < icnt; ++i)
-			{
-				var seg = segs[i];
-				ulong addr = seg.FirstObject;
-				while (addr != 0ul)
-				{
-					++count;
-					addr = seg.NextObject(addr);
-				}
-			}
-			return count;
-		}
+
 
 		public bool GetArraysInfo(out string error)
 		{
@@ -1546,49 +1285,49 @@ namespace ClrMDRIndex
 
 		#region Indexing Helpers
 
-		public static void MarkAsRooted(ulong addr, int addrNdx, ulong[] instances, int[][] references)
-		{
-			if (Utils.IsRooted(addr)) return;
-			instances[addrNdx] = Utils.SetAsRooted(addr);
-			if (references[addrNdx] == null) return;
-			for (int i = 0, icnt = references[addrNdx].Length; i < icnt; ++i)
-			{
-				var refr = references[addrNdx][i];
-				var address = instances[refr];
-				if (Utils.IsNotRooted(address))
-					if (address != 0UL)
-					{
-						instances[refr] = Utils.SetAsRooted(address);
-						MarkAsRooted(address, refr, instances, references);
-					}
-			}
-		}
+		//public static void MarkAsRooted(ulong addr, int addrNdx, ulong[] instances, int[][] references)
+		//{
+		//	if (Utils.IsRooted(addr)) return;
+		//	instances[addrNdx] = Utils.SetAsRooted(addr);
+		//	if (references[addrNdx] == null) return;
+		//	for (int i = 0, icnt = references[addrNdx].Length; i < icnt; ++i)
+		//	{
+		//		var refr = references[addrNdx][i];
+		//		var address = instances[refr];
+		//		if (Utils.IsNotRooted(address))
+		//			if (address != 0UL)
+		//			{
+		//				instances[refr] = Utils.SetAsRooted(address);
+		//				MarkAsRooted(address, refr, instances, references);
+		//			}
+		//	}
+		//}
 
-		public static string[] GetTypeNames(ClrHeap heap, out string error)
-		{
-			error = null;
-			try
-			{
-				List<string> typeNames = new List<string>(35000);
-				AddStandardTypeNames(typeNames);
-				var typeList = heap.EnumerateTypes();
-				typeNames.AddRange(typeList.Select(clrType => clrType.Name));
-				typeNames.Sort(StringComparer.Ordinal);
-				string[] names = typeNames.Distinct().ToArray();
-				return names;
-			}
-			catch (Exception ex)
-			{
-				error = Utils.GetExceptionErrorString(ex);
-				return null;
-			}
-		}
+		//public static string[] GetTypeNames(ClrHeap heap, out string error)
+		//{
+		//	error = null;
+		//	try
+		//	{
+		//		List<string> typeNames = new List<string>(35000);
+		//		AddStandardTypeNames(typeNames);
+		//		var typeList = heap.EnumerateTypes();
+		//		typeNames.AddRange(typeList.Select(clrType => clrType.Name));
+		//		typeNames.Sort(StringComparer.Ordinal);
+		//		string[] names = typeNames.Distinct().ToArray();
+		//		return names;
+		//	}
+		//	catch (Exception ex)
+		//	{
+		//		error = Utils.GetExceptionErrorString(ex);
+		//		return null;
+		//	}
+		//}
 
-		public static void AddStandardTypeNames(List<string> typeNames)
-		{
-			typeNames.Add(ClrtType.GetKey(Constants.NullTypeName, 0));
-			typeNames.Add(ClrtType.GetKey(Constants.UnknownTypeName, 0));
-		}
+		//public static void AddStandardTypeNames(List<string> typeNames)
+		//{
+		//	typeNames.Add(ClrtType.GetKey(Constants.NullTypeName, 0));
+		//	typeNames.Add(ClrtType.GetKey(Constants.UnknownTypeName, 0));
+		//}
 
 		private void AddError(int rtNdx, string error)
 		{

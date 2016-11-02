@@ -119,8 +119,20 @@ namespace ClrMDRIndex
 				return Utils.EmptyArray<int>.Value;
 			}
 
-			int parentCnt = (int)((_parentOffsets[offsetNdx + 1] - _parentOffsets[offsetNdx])/sizeof(long));
+			//int parentCnt = (int)((_parentOffsets[offsetNdx + 1] - _parentOffsets[offsetNdx])/sizeof(long));
 
+			return ReadFieldParents(_parentOffsets[offsetNdx], _parentOffsets[offsetNdx + 1], out error);
+		}
+
+		public int[] GetFieldParents(int instanceNdx, out string error)
+		{
+			Debug.Assert(instanceNdx >= 0);
+			var offsetNdx = Array.BinarySearch(_fieldInstances, instanceNdx);
+			if (offsetNdx < 0)
+			{
+				error = Constants.InformationSymbolHeader + "Parents of object at index: [" + instanceNdx + "], not found.";
+				return Utils.EmptyArray<int>.Value;
+			}
 			return ReadFieldParents(_parentOffsets[offsetNdx], _parentOffsets[offsetNdx + 1], out error);
 		}
 

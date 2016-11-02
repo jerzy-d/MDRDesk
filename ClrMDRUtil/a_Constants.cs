@@ -163,10 +163,28 @@ namespace ClrMDRIndex
 		//
 		public const string TxtTypeNamesFilePostfix = ".`TYPENAMES[0].txt";
 
+		// segmnents, generation info
+		//
+		public const string MapSegmentInfoFilePostfix = ".`SEGMENTS[0].bin";
+
+		// roots
+		//
+		public const string MapRootsInfoFilePostfix = ".`ROOTS[0].bin"; // ClrtRoot structures
+		public const string MapRootsAddressesFilePostfix = ".`ROOTADDRESSES[0].bin"; // root addresses and their map to ClrtRoot array
+		public const string MapRootsObjectsFilePostfix = ".`ROOTOBJECTS[0].bin"; // root objects and their map to ClrtRoot array
+		public const string MapRootsFinalizerFilePostfix = ".`FINALIZER[0].bin"; // list of instance addresses
+
+
 		// instance addresses and types
 		//
 		public const string MapInstancesFilePostfix = ".`INSTANCES[0].bin"; // instance addresses and corresponding type ids
 		public const string MapInstanceTypesFilePostfix = ".`INSTANCETYPES[0].bin"; // instance addresses and corresponding type ids
+		public const string MapInstanceSizesFilePostfix = ".`INSTANCESIZES[0].bin"; // instance addresses and corresponding type ids
+		public const string MapInstanceBaseSizesFilePostfix = ".`INSTANCEBASESIZES[0].bin"; // instance addresses and corresponding type ids
+
+		public const string MapTypeInstanceOffsetsFilePostfix = ".`TYPEINSTANCEOFFSETS[0].bin"; // instance addresses and corresponding type ids
+		public const string MapTypeInstanceMapFilePostfix = ".`TYPEINSTANCEMAP[0].bin"; // instance addresses and corresponding type ids
+
 
 		// instance references
 		//

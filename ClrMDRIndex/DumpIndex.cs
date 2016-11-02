@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 
 namespace ClrMDRIndex
 {
-	public class DumpIndex : IDisposable
+	public sealed class DumpIndex : IDisposable
 	{
 		[Flags]
 		public enum IndexType
@@ -19,41 +19,56 @@ namespace ClrMDRIndex
 
 		#region fields/properties
 
+		public static KvIntIntKeyCmp kvIntIntKeyCmp = new KvIntIntKeyCmp();
+
 		const int MaxNodes = 10000;
 
 		public IndexType Type { get; private set; }
-
-		private DumpFileMoniker _fileMoniker;
 		public static bool Is64Bit;
 
-
+		private DumpFileMoniker _fileMoniker;
+		public string AdhocFolder => _fileMoniker.OutputFolder;
+		public string OutputFolder => AdhocFolder;
+		public string IndexFolder => _fileMoniker.MapFolder;
+		public string DumpPath => _fileMoniker.Path;
+		public string DumpFileName => _fileMoniker.FileName;
+		public string DumpName => _fileMoniker.FileNameNoExt;
 
 		private int _runtimeCount;
 		private int _currentRuntimeIndex;
 
 		private ulong[] _instances;
+		public ulong[] Instances => _instances;
 		private int[] _instanceTypes;
+		public int[] InstanceTypes => _instanceTypes;
 		private string[] _typeNames;
+		public string[] TypeNames;
+		private int[] _typeInstanceMap;
+		private KeyValuePair<int, int>[] _typeInstanceOffsets;
+
 		private InstanceReferences _instanceReferences;
 
 
 		private ClrtDump _clrtDump;
 		public ClrtDump Dump => _clrtDump;
-
+		
 		#endregion fields/properties
 
 		#region ctors/initialization
 
-		private DumpIndex(string dumpPath, int runtimeIndex, IndexType type = IndexType.All)
+		private DumpIndex(string dumpOrIndexPath, int runtimeIndex, IndexType type = IndexType.All)
 		{
 			Type = IndexType.All;
-			_fileMoniker = new DumpFileMoniker(dumpPath);
+			if (dumpOrIndexPath.EndsWith(".map", StringComparison.OrdinalIgnoreCase))
+			{
+				dumpOrIndexPath = dumpOrIndexPath.Substring(0, dumpOrIndexPath.Length - 3) + "dmp";
+			}
+			_fileMoniker = new DumpFileMoniker(dumpOrIndexPath);
 			Is64Bit = Environment.Is64BitOperatingSystem;
 			_currentRuntimeIndex = runtimeIndex;
 		}
 
-		public static DumpIndex OpenIndexInstanceReferences(Version version, string dumpPath, int runtimeNdx, out string error,
-			IProgress<string> progress = null)
+		public static DumpIndex OpenIndexInstanceReferences(Version version, string dumpPath, int runtimeNdx, out string error, IProgress<string> progress = null)
 		{
 			error = null;
 			try
@@ -84,6 +99,13 @@ namespace ClrMDRIndex
 				_typeNames = Utils.GetStringListFromFile(path, out error);
 				if (error != null) return false;
 
+				path = _fileMoniker.GetFilePath(_currentRuntimeIndex, Constants.MapTypeInstanceMapFilePostfix);
+				_typeInstanceMap = Utils.ReadIntArray(path, out error);
+				if (error != null) return false;
+				path = _fileMoniker.GetFilePath(_currentRuntimeIndex, Constants.MapTypeInstanceOffsetsFilePostfix);
+				_typeInstanceOffsets = Utils.ReadKvIntIntArray(path,out error);
+				if (error != null) return false;
+
 				_instanceReferences = new InstanceReferences(_fileMoniker.Path,_currentRuntimeIndex,_instances,_instanceTypes,_typeNames);
 				_instanceReferences.Init(out error);
 				if (error != null) return false;
@@ -111,6 +133,7 @@ namespace ClrMDRIndex
 		#region queries
 
 
+		#region types
 
 		public string GetTypeName(ulong address)
 		{
@@ -119,6 +142,33 @@ namespace ClrMDRIndex
 				? Constants.UnknownTypeName
 				: _typeNames[_instanceTypes[instanceIndex]];
 		}
+
+		public string GetTypeName(int id)
+		{
+			return (id >= 0 && id < _typeNames.Length) ? _typeNames[id] : Constants.UnknownTypeName;
+		}
+
+		public int GetTypeId(string typeName)
+		{
+			var id = Array.BinarySearch(_typeNames, typeName, StringComparer.Ordinal);
+			return id < 0 ? Constants.InvalidIndex : id;
+		}
+
+		public ulong[] GetTypeInstances(int typeId)
+		{
+			var offNdx = Array.BinarySearch(_typeInstanceOffsets, new KeyValuePair<int, int>(typeId, 0), kvIntIntKeyCmp);
+			if (offNdx < 0) return Utils.EmptyArray<ulong>.Value;
+			var count = _typeInstanceOffsets[offNdx+1].Value - _typeInstanceOffsets[offNdx].Value;
+			ulong[] addresses = new ulong[count];
+			int mapIndex = _typeInstanceOffsets[offNdx].Value;
+			for (int i = 0; i < count; ++i)
+			{
+				addresses[i] = _instances[_typeInstanceMap[mapIndex++]];
+			}
+			return addresses;
+		}
+
+		#endregion types
 
 		#region instance references
 
@@ -157,71 +207,64 @@ namespace ClrMDRIndex
 			return result.ToArray();
 		}
 
-		public Tuple<InstanceNode, int, KeyValuePair<ulong, ulong>[]> GetFieldReferences(ulong address, out string error, int maxLevel = Int32.MaxValue)
+
+		/// <summary>
+		/// Get parents of an instance, all or up to given maxlevel.
+		/// </summary>
+		/// <param name="address">Instance address</param>
+		/// <param name="error">Error message if any.</param>
+		/// <param name="maxLevel">Output tree height limit. </param>
+		/// <returns>Tuple of: (IndexNode tree, node count, back reference list).</returns>
+		public Tuple<IndexNode, int, int[]> GetFieldReferences(ulong address, out string error, int maxLevel = Int32.MaxValue)
 		{
-
 			error = null;
-			
-			if (error != null) return null;
-
-			int level = 0;
-			var instAddr = address;
-			var rootNode = new InstanceNode(instAddr, 0); // we at level 0
-			var uniqueAddrSet = new HashSet<ulong>();
-			var que = new Queue<InstanceNode>(256);
-			var nodeLst = new List<InstanceNode>(64);
-			var errorLst = new List<string>();
-			var backReferences = new List<KeyValuePair<ulong, ulong>>();
-			var extraInfoQue = new BlockingCollection<InstanceNode>();
-
-			//var extraTask =
-			//	Task.Factory.StartNew(
-			//		() =>
-			//			GetInstanceNodeExtraInfo(new Tuple<ulong[], ClrtRoots, BlockingCollection<InstanceNode>>(instances, roots,
-			//				extraInfoQue)));
-
-			que.Enqueue(rootNode);
-			uniqueAddrSet.Add(instAddr);
-			int nodeCount = 0;
-			while (que.Count > 0)
+			try
 			{
-				nodeLst.Clear();
-				var curNode = que.Dequeue();
-				++nodeCount;
-				extraInfoQue.Add(curNode);
-				if (curNode.Level >= maxLevel || nodeCount > MaxNodes) continue;
-				var parents = _instanceReferences.GetFieldParents(curNode.Address, out error);
-
-				var parents = fieldDependencies.GetFieldParents(curNode.Address, out error);
-				if (parents == null)
+				var addrNdx = GetInstanceIndex(address);
+				if (addrNdx < 0)
 				{
-					errorLst.Add(Constants.FailureSymbolHeader + "GetFieldParents for " + curNode.Address + Environment.NewLine + error);
-					continue;
+					error = "No object found at: " + Utils.AddressString(address);
+					return null;
 				}
-
-				for (int i = 0, icnt = parents.Length; i < icnt; ++i)
+				var rootNode = new IndexNode(addrNdx, 0); // we at level 0
+				var uniqueSet = new HashSet<int>();
+				var que = new Queue<IndexNode>(256);
+				var backReferences = new List<int>();
+				que.Enqueue(rootNode);
+				uniqueSet.Add(addrNdx);
+				int nodeCount = 0; // do not count root node
+				while (que.Count > 0)
 				{
-					var info = parents[i];
-					if (!uniqueAddrSet.Add(info.Key))
+					var curNode = que.Dequeue();
+					++nodeCount;
+					if (curNode.Level >= maxLevel || nodeCount > MaxNodes) continue;
+					var parents = _instanceReferences.GetFieldParents(curNode.Index, out error);
+					if (parents.Length > 0)
 					{
-						backReferences.Add(new KeyValuePair<ulong, ulong>(curNode.Address, info.Key));
-						continue;
+						var nodes = new IndexNode[parents.Length];
+						curNode.AddNodes(nodes);
+						for (int i = 0, icnt = parents.Length; i < icnt; ++i)
+						{
+							var parentNdx = parents[i];
+							var cnode = new IndexNode(parentNdx, curNode.Level + 1);
+							nodes[i] = cnode;
+							if (!uniqueSet.Add(parentNdx))
+							{
+								backReferences.Add(parentNdx);
+								++nodeCount;
+								continue;
+							}
+							que.Enqueue(cnode);
+						}
 					}
-					var cnode = new InstanceNode(info.Value, info.Key, curNode.Level + 1);
-					nodeLst.Add(cnode);
-					que.Enqueue(cnode);
 				}
-
-				if (nodeLst.Count > 0)
-				{
-					curNode.SetNodes(nodeLst.ToArray());
-				}
-
+				return Tuple.Create(rootNode, nodeCount, backReferences.ToArray());
 			}
-			extraInfoQue.Add(null);
-			extraTask.Wait();
-
-			return Tuple.Create(rootNode, nodeCount, backReferences.ToArray());
+			catch (Exception ex)
+			{
+				error = Utils.GetExceptionErrorString(ex);
+				return null;
+			}
 		}
 
 		private void GetInstanceNodeExtraInfo(object data)
@@ -261,7 +304,7 @@ namespace ClrMDRIndex
 			GC.SuppressFinalize(this);
 		}
 
-		protected virtual void Dispose(bool disposing)
+		protected void Dispose(bool disposing)
 		{
 			if (_disposed)
 				return;
@@ -285,5 +328,13 @@ namespace ClrMDRIndex
 
 		#endregion Dispose
 
+	}
+
+	public class KvIntIntKeyCmp : IComparer<KeyValuePair<int, int>>
+	{
+		public int Compare(KeyValuePair<int, int> a, KeyValuePair<int, int> b)
+		{
+			return a.Key < b.Key ? -1 : (a.Key > b.Key ? 1 : 0);
+		}
 	}
 }

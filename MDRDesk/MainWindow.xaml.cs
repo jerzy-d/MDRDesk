@@ -43,15 +43,12 @@ namespace MDRDesk
 		private RecentFileList RecentIndexList;
 		private RecentFileList RecentAdhocList;
 
-		public static Map CurrentMap;
+		public static string BaseTitle;
+		public static Map CurrentMap; // TODO JRD to be removed
+		public static DumpIndex CurrentIndex;
 		public static ClrtDump CurrentAdhocDump;
 		public static DumpIndex CurrentAdhocIndex;
-		public static string BaseTitle;
 		private static Version _myVersion;
-
-
-		//ResourceDictionary myresourcedictionary;
-
 
 		#region Ctors/Initialization
 
@@ -346,55 +343,6 @@ namespace MDRDesk
 			if (path == null) return;
 
 			DoOpenDumpIndex(path);
-
-			//         var progressHandler = new Progress<string>(MainStatusShowMessage);
-			//         var progress = progressHandler as IProgress<string>;
-			//         SetStartTaskMainWindowState("Opening index: " + Utils.GetPathLastFolder(path) + ", please wait...");
-
-			//var result = await Task.Run(() =>
-			//{
-			//	string error;
-			//	ClrMDRIndex.Map map = Map.OpenMap(_myVersion, path, out error, progress);
-			//    KeyValuePair<string, KeyValuePair<string, int>[]>[] namespaces=null;
-
-			//             if (error == null && map != null)
-			//    {
-			//        namespaces = map.GetNamespaceDisplay();
-			//    }
-			//	return new Tuple<string, Map, KeyValuePair<string, KeyValuePair<string, int>[]>[]>(error, map, namespaces);
-			//});
-
-			//SetEndTaskMainWindowState("Index: '" + DumpFileMoniker.GetMapName(path) + (result.Item1 == null ? "' is open." : "' open failed."));
-
-			//if (result.Item1 != null)
-			//{
-			//	ShowError(result.Item1);
-			//	return;
-			//}
-			//if (CurrentMap != null)
-			//{
-			//	CurrentMap.Dispose();
-			//	CurrentMap = null;
-			//	Utils.ForceGcWithCompaction();
-			//}
-			//CurrentMap = result.Item2;
-
-			//   var genInfo = CurrentMap.GetGenerationTotals();
-			//   DisplayGeneralInfoGrid(CurrentMap.DumpInfo, genInfo);
-			//   if ((TypeDisplayNamespaceClass.IsChecked ?? (bool)TypeDisplayNamespaceClass.IsChecked) && result.Item3 != null)
-			//   {
-			//             DisplayNamespaceGrid(result.Item3);
-			//         }
-			//   else
-			//   {
-			//             if ((TypeDisplayClass.IsChecked ?? (bool)TypeDisplayNamespaceClass.IsChecked))
-			//                 DisplayTypesGrid(true);
-			//             else
-			//                 DisplayTypesGrid(false);
-			//         }
-
-			//         this.Title = BaseTitle + Constants.BlackDiamondPadded + CurrentMap.DumpBaseName;
-			//         RecentIndexList.Add(path);
 		}
 
 		private async void DoOpenDumpIndex(string path)
@@ -858,9 +806,9 @@ namespace MDRDesk
 			{
 				string error;
 				string indexPath;
-				var indexer = new Indexer(dumpFilePath);
+				var indexer = new DumpIndexer(dumpFilePath);
 				//var ok = indexer.Index(_myVersion, progress, out indexPath, out error);
-				var ok = indexer.CreateDumpMap(_myVersion, progress, Indexer.IndexingArguments.JustInstanceRefs, out indexPath, out error);
+				var ok = indexer.CreateDumpIndex(_myVersion, progress, DumpIndexer.IndexingArguments.JustInstanceRefs, out indexPath, out error);
 				return new Tuple<bool, string, string>(ok, error, indexPath);
 			});
 

@@ -1,21 +1,16 @@
 ﻿using System;
-using System.CodeDom;
 using System.Collections;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Diagnostics.Eventing.Reader;
 using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Reflection;
-using System.Runtime.InteropServices;
-using System.Security.Cryptography.X509Certificates;
 using System.Text;
 using System.Threading.Tasks;
 using Microsoft.Diagnostics.Runtime;
 using ClrMDRIndex;
-using ClrMDRUtil.Utils;
 using DmpNdxQueries;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 
@@ -555,13 +550,13 @@ namespace UnitTestMdr
 					// get heap address count
 					//
 					stopWatch.Restart();
-					var addrCount = Indexer.GetHeapAddressCount(heap);
+					var addrCount = DumpIndexer.GetHeapAddressCount(heap);
 					var getAddressCountDuration = Utils.StopAndGetDurationString(stopWatch);
 
 					// get type names
 					//
 					stopWatch.Restart();
-					string[] typeNames = Indexer.GetTypeNames(heap, out error);
+					string[] typeNames = DumpIndexer.GetTypeNames(heap, out error);
 					Assert.IsTrue(error == null, error);
 					var getTypeDuration = Utils.StopAndGetDurationString(stopWatch);
 
@@ -669,7 +664,7 @@ namespace UnitTestMdr
 								fldRefs.Add(addrnx);
 								if (isRooted)
 								{
-									Indexer.MarkAsRooted(fldAddr, addrnx, addresses, fieldsArrays);
+									DumpIndexer.MarkAsRooted(fldAddr, addrnx, addresses, fieldsArrays);
 								}
 							}
 						}
@@ -831,11 +826,29 @@ namespace UnitTestMdr
 				var typeName2 = index.GetTypeName(addr2);
 				var result2 = index.GetParents(addr2, out error);
 				var details = index.GetParentDetails(addr2, out error);
-
-
+				var refrences = index.GetFieldReferences(addr2, out error);
 			}
-
 		}
+
+		[TestMethod]
+		public void TestInstanceAddresses()
+		{
+			string error;
+			var version = Assembly.GetExecutingAssembly().GetName().Version;
+			Stopwatch stopWatch = new Stopwatch();
+			string dmpPath = @"D:\Jerzy\WinDbgStuff\dumps\TestApp\TestApp.exe_161031_093521.dmp";
+			//string dmpPath = @"D:\Jerzy\WinDbgStuff\dumps\Analytics\ConvergEx\Analytics_Post.dmp";
+			var index = DumpIndex.OpenIndexInstanceReferences(version, dmpPath, 0, out error);
+			Assert.IsNotNull(index);
+
+			using (index)
+			{
+				var instances = index.Instances;
+				Utils.WriteAddressAsStringArray(index.AdhocFolder + Path.DirectorySeparatorChar + "AddressList.txt", instances,
+					out error);
+			}
+		}
+
 
 		#region Memory
 

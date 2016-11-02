@@ -136,6 +136,7 @@ namespace ClrMDRIndex
 		#region IO
 
 		public static char[] DirSeps = new char[] {Path.DirectorySeparatorChar,Path.AltDirectorySeparatorChar};
+
 		public static string GetPathLastFolder(string path)
 		{
 			if (string.IsNullOrWhiteSpace(path) || path.Length < 1) return string.Empty;
@@ -154,7 +155,6 @@ namespace ClrMDRIndex
 			var dumpDir = Path.GetDirectoryName(dmpFilePath);
 			return dumpDir + Path.DirectorySeparatorChar + dumpFile + ".map";
 		}
-
 
 		public static string GetFilePath(int runtimeIndex, string outFolder, string dmpName, string pathPostfix)
 		{
@@ -312,6 +312,34 @@ namespace ClrMDRIndex
 			}
 		}
 
+		public static KeyValuePair<int, int>[] ReadKvIntIntArray(string path, out string error)
+		{
+			error = null;
+			BinaryReader br = null;
+			try
+			{
+				br = new BinaryReader(File.Open(path, FileMode.Open));
+				var cnt = br.ReadInt32();
+				var ary = new KeyValuePair<int,int>[cnt];
+				for (int i = 0; i < cnt; ++i)
+				{
+					var key = br.ReadInt32();
+					var value = br.ReadInt32();
+					ary[i] = new KeyValuePair<int, int>(key,value);
+				}
+				return ary;
+			}
+			catch (Exception ex)
+			{
+				error = GetExceptionErrorString(ex);
+				return null;
+			}
+			finally
+			{
+				br?.Close();
+			}
+		}
+
 		public static bool WriteStringList(string filePath, IList<string> lst,out string error)
 		{
 			error = null;
@@ -363,7 +391,33 @@ namespace ClrMDRIndex
 			}
 		}
 
-        public static bool WriteUlongIntArrays(string path, IList<ulong> lst1, IList<int> lst2, out string error)
+		public static bool WriteAddressAsStringArray(string path, IList<ulong> lst, out string error)
+		{
+			error = null;
+			StreamWriter bw = null;
+			try
+			{
+				bw = new StreamWriter(path);
+				var cnt = lst.Count;
+				bw.WriteLine("#### " + Utils.LargeNumberString(cnt));
+				for (int i = 0; i < cnt; ++i)
+				{
+					bw.WriteLine(Utils.AddressString(lst[i]));
+				}
+				return true;
+			}
+			catch (Exception ex)
+			{
+				error = GetExceptionErrorString(ex);
+				return false;
+			}
+			finally
+			{
+				bw?.Close();
+			}
+		}
+
+		public static bool WriteUlongIntArrays(string path, IList<ulong> lst1, IList<int> lst2, out string error)
         {
             Debug.Assert(lst1.Count == lst2.Count);
             error = null;
@@ -570,7 +624,6 @@ namespace ClrMDRIndex
 			}
 		}
 
-
 		public static bool WriteUintArray(string path, IList<uint> lst, out string error)
 		{
 			error = null;
@@ -640,12 +693,12 @@ namespace ClrMDRIndex
 			s?.Close();
 			s = null;
 		}
+
 		public static void CloseStream(ref BinaryReader s)
 		{
 			s?.Close();
 			s = null;
 		}
-
 
 		public static void DeleteFiles(IList<string> paths, out string error)
 		{
