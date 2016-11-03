@@ -4,10 +4,13 @@
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:MDRDesk"
+        xmlns:v4="http://schemas.microsoft.com/netfx/2009/xaml/presentation"
         xmlns:mdr="clr-namespace:ClrMDRIndex;assembly=ClrMDRIndex"
         xmlns:wf="clr-namespace:System.Windows.Forms;assembly=System.Windows.Forms"
+        xmlns:collgen="System.Collections.Generic;assembly=mscorlib"
         xmlns:system="clr-namespace:System;assembly=mscorlib"
         xmlns:objectModel="clr-namespace:System.Collections.ObjectModel;assembly=mscorlib"
+        xmlns:generic="clr-namespace:System.Collections.Generic;assembly=mscorlib"
         mc:Ignorable="d"
         Title="MainWindow" Height="750" Width="1200"  Background="#FF43626C"
         Icon="Images/appbar.list.gear.ico"
@@ -99,7 +102,7 @@
             </Grid>
         </Grid>
         <!-- display non-static instances -->
-        <Grid x:Key="HeapIndexTypeView" Name="HeapIndexTypeView" x:Shared="False">
+        <Grid x:Key="NameTypeView" x:Shared="False">
             <Grid.RowDefinitions>
                 <RowDefinition Height="30"/>
                 <RowDefinition Height="18*"/>
@@ -113,7 +116,7 @@
             <ToolBarTray Grid.Row="0" Grid.Column="0" Margin="4,0,4,0">
                 <ToolBar></ToolBar>
             </ToolBarTray>
-            <ListBox Grid.Row="1" Grid.Column="0" Margin="4,4,4,4" Name="lbTypeNames" HorizontalAlignment="Stretch" SelectionChanged="lbTypeNamesSelectionChange">
+            <ListBox Grid.Row="1" Grid.Column="0" Margin="4,4,4,4" Name="lbTypeNames" HorizontalAlignment="Stretch" SelectionChanged="lbTypeNamesSelectionChange" DisplayMemberPath="Key" FontFamily="Consolas" FontSize="12">
                 <ListBox.ContextMenu>
                     <ContextMenu>
                         <MenuItem x:Name="CopyTypeName" Header="Copy Type Name" Click="CopyTypeNameClicked"></MenuItem>
@@ -125,8 +128,8 @@
                     </ContextMenu>
                 </ListBox.ContextMenu>
             </ListBox>
-            <ListBox Grid.Row="1" Grid.Column="1" Margin="4,4,4,4" Name="lbTypeAddresses" HorizontalAlignment="Stretch" SelectionMode="Single" SelectionChanged="Selector_OnSelectionChanged">
-                 <ListBox.ContextMenu>
+            <ListBox Grid.Row="1" Grid.Column="1" Margin="4,4,4,4" Name="lbTypeAddresses" HorizontalAlignment="Stretch" SelectionMode="Single" SelectionChanged="Selector_OnSelectionChanged" FontFamily="Consolas" FontSize="12" ContextMenu="{StaticResource AddresListContextMenu}" >
+                 <!--<ListBox.ContextMenu>
                     <ContextMenu>
                         <MenuItem x:Name="CopyAddressSelection" Header="Copy Selected (clipboard)" Click="CopyAddressSelectionClicked"></MenuItem>
                         <MenuItem x:Name="CopyAddressAll" Header="Copy All (clipboard)" Click="CopyAddressAllClicked"></MenuItem>
@@ -138,7 +141,7 @@
                         <MenuItem x:Name="LbGetInstAllRefsGroupedByType" Header="Get Instance All References (Grouped byType)" Click="LbGetInstAllRefsClicked"/>
                         <MenuItem x:Name="LbGetInstValue" Header="Get Instance Value" Click="LbGetInstValueClicked"/>
                     </ContextMenu>
-                </ListBox.ContextMenu>
+                </ListBox.ContextMenu>-->
                 <ListBox.ItemTemplate>
                     <DataTemplate>
                         <TextBlock Text="{Binding Converter={StaticResource LongHexConverter}}"/>
@@ -153,7 +156,7 @@
                 </DockPanel>-->
             </Expander>
         </Grid>
-        <Grid x:Key="NamespaceTypeView" Name="NamespaceTypeView" x:Shared="False">
+        <Grid x:Key="NamespaceTypeView" x:Shared="False">
             <Grid.RowDefinitions>
                 <RowDefinition Height="30"/>
                 <RowDefinition Height="18*"/>
@@ -171,10 +174,10 @@
                 
             </ToolBarTray>
             <Label Name="lbTpNsTypeInfo" Margin="4,0,4,0" Grid.Row="0" Grid.Column="2" FontWeight="Bold" FontSize="14" Foreground="Black" Background="DarkGray" VerticalAlignment="Center"/>
-            <ListBox Grid.Row="1" Grid.Column="0" Margin="4,4,4,4" Name="lbTpNamespaces"  HorizontalAlignment="Stretch" SelectionChanged="lbTpNamespacesSelectionChange" SelectionMode="Single" DisplayMemberPath="Key">
+            <ListBox Grid.Row="1" Grid.Column="0" Margin="4,4,4,4" Name="lbTpNamespaces"  HorizontalAlignment="Stretch" SelectionChanged="lbTpNamespacesSelectionChange" SelectionMode="Single" DisplayMemberPath="Key"  FontFamily="Consolas" FontSize="12">
             </ListBox>
             <GridSplitter Grid.Row="1"  Grid.Column="1" VerticalAlignment="Stretch" HorizontalAlignment="Center" Width="5" ShowsPreview="False" Background="DarkGray"></GridSplitter>
-            <ListBox Grid.Row="1" Grid.Column="2" Margin="4,4,4,4" Name="lbTpNames" HorizontalAlignment="Stretch" SelectionMode="Single" SelectionChanged="lbTpNamesSelectionChange" DisplayMemberPath="Key">
+            <ListBox Grid.Row="1" Grid.Column="2" Margin="4,4,4,4" Name="lbTpNames" HorizontalAlignment="Stretch" SelectionMode="Single" SelectionChanged="lbTpNamesSelectionChange" DisplayMemberPath="Key" FontFamily="Consolas" FontSize="12">
                 <ListBox.ContextMenu>
                     <ContextMenu>
                         <MenuItem x:Name="NsCopyTypeName" Header="Copy Type Name" Click="CopyTypeNameClicked"></MenuItem>
@@ -190,7 +193,7 @@
                 </ListBox.ContextMenu>
             </ListBox>
             <GridSplitter Grid.Row="1"  Grid.Column="3" VerticalAlignment="Stretch" HorizontalAlignment="Center" Width="5" ShowsPreview="False" Background="DarkGray"></GridSplitter>
-            <ListBox Grid.Row="1" Grid.Column="4" Margin="4,4,4,4" Name="lbTpAddresses" HorizontalAlignment="Stretch" SelectionMode="Single" ContextMenu="{StaticResource AddresListContextMenu}">
+            <ListBox Grid.Row="1" Grid.Column="4" Margin="4,4,4,4" Name="lbTpAddresses" HorizontalAlignment="Stretch" SelectionMode="Single" ContextMenu="{StaticResource AddresListContextMenu}"  FontFamily="Consolas" FontSize="12">
                 <ListBox.ItemTemplate>
                 <DataTemplate>
                     <TextBlock Text="{Binding Converter={StaticResource LongHexConverter}}"/>

@@ -149,37 +149,6 @@ namespace ClrMDRIndex
 			return Path.GetFileName(path);
 		}
 
-		public static string GetMapFolder(string dmpFilePath)
-		{
-			var dumpFile = Path.GetFileNameWithoutExtension(dmpFilePath);
-			var dumpDir = Path.GetDirectoryName(dmpFilePath);
-			return dumpDir + Path.DirectorySeparatorChar + dumpFile + ".map";
-		}
-
-		public static string GetFilePath(int runtimeIndex, string outFolder, string dmpName, string pathPostfix)
-		{
-			string postfix = runtimeIndex > 0 && pathPostfix.IndexOf("[0]", StringComparison.Ordinal) > 0
-				? pathPostfix.Replace("[0]", "[" + runtimeIndex + "]")
-				: pathPostfix;
-			return outFolder + Path.DirectorySeparatorChar + dmpName + postfix;
-		}
-
-		public static string GetDumpBaseName(string mapFolder)
-		{
-			if (string.IsNullOrWhiteSpace(mapFolder)) return null;
-			var pos = mapFolder.LastIndexOf(Path.DirectorySeparatorChar);
-			if (pos >= 0 && (pos + 2) < mapFolder.Length)
-			{
-				var s = mapFolder.Substring(pos + 1);
-				if (s.EndsWith(".map"))
-				{
-					s = s.Substring(0, s.Length - ".map".Length);
-				}
-				return s;
-			}
-			return null;
-		}
-
 		public static string[] GetStringListFromFile(string filePath, out string error)
 		{
 			error = null;
@@ -763,6 +732,17 @@ namespace ClrMDRIndex
 		#endregion Dac File Search
 
 		#region String Utils
+
+		public static string[] ReverseTypeNames(string[] names)
+		{
+			if (names == null || names.Length < 1) return EmptyArray<string>.Value;
+			string[] rnames = new string[names.Length];
+			for (int i = 0, icnt = names.Length; i < icnt; ++i)
+			{
+				rnames[i] = ReverseTypeName(names[i]);
+			}
+			return rnames;
+		}
 
 		public static string ReverseTypeName(string name)
 		{
@@ -1581,6 +1561,15 @@ namespace ClrMDRIndex
         #endregion Formatting
 
         #region Misc
+
+		public static string GetCachedString(string str, Dictionary<string, string> cache)
+		{
+			string cachedStr;
+			if (cache.TryGetValue(str, out cachedStr))
+				return cachedStr;
+			cache.Add(str,str);
+			return str;
+		}
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool IsNonValue(string val)

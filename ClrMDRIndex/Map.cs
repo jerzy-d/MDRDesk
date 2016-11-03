@@ -101,7 +101,7 @@ namespace ClrMDRIndex
 		public Map(string mapFolder)
 		{
 			_mapFolder = mapFolder;
-			_dumpBaseName = Utils.GetDumpBaseName(mapFolder);
+			_dumpBaseName = DumpFileMoniker.GetDumpBaseName(mapFolder);
 			Is64Bit = Environment.Is64BitOperatingSystem;
 		}
 
@@ -211,21 +211,21 @@ namespace ClrMDRIndex
 				for (int r = 0, rcnt = _runtimeCount; r < rcnt; ++r)
 				{
 					_stringIds[r] =
-						Utils.GetStringListFromFile(Utils.GetFilePath(r, MapFolder, DumpBaseName, Constants.TxtStringIdsPostfix),
+						Utils.GetStringListFromFile(DumpFileMoniker.GetFilePath(r, MapFolder, DumpBaseName, Constants.TxtStringIdsPostfix),
 							out error);
-					_clrtTypes[r] = ClrtTypes.Load(Utils.GetFilePath(r, MapFolder, DumpBaseName, Constants.MapTypeInfosFilePostfix),
+					_clrtTypes[r] = ClrtTypes.Load(DumpFileMoniker.GetFilePath(r, MapFolder, DumpBaseName, Constants.MapTypeInfosFilePostfix),
 						out error);
-					Utils.ReadUlongUintIntArrays(Utils.GetFilePath(r, MapFolder, DumpBaseName, Constants.MapInstanceFilePostfix),
+					Utils.ReadUlongUintIntArrays(DumpFileMoniker.GetFilePath(r, MapFolder, DumpBaseName, Constants.MapInstanceFilePostfix),
 						out _instances[r], out _sizes[r], out _instTypes[r], out error);
-					Utils.ReadIntArrays(Utils.GetFilePath(r, MapFolder, DumpBaseName, Constants.MapTypeInstancesFilePostfix),
+					Utils.ReadIntArrays(DumpFileMoniker.GetFilePath(r, MapFolder, DumpBaseName, Constants.MapTypeInstancesFilePostfix),
 						out _instSortedByTypes[r], out _instTypeOffsets[r], out error);
 					_segments[r] =
-						ClrtSegment.ReadSegments(Utils.GetFilePath(r, MapFolder, DumpBaseName, Constants.MapSegmentFilePostfix), out error);
+						ClrtSegment.ReadSegments(DumpFileMoniker.GetFilePath(r, MapFolder, DumpBaseName, Constants.MapSegmentFilePostfix), out error);
 					_roots[r] = ClrtRoots.Load(r, MapFolder, DumpBaseName, out error);
 
 					_fieldDependencies[r] = new FieldDependency(
-									Utils.GetFilePath(r, MapFolder, DumpBaseName, Constants.MapFieldParentOffsetsFilePostfix),
-									Utils.GetFilePath(r, MapFolder, DumpBaseName, Constants.MapFieldParentInstancesPostfix),
+									DumpFileMoniker.GetFilePath(r, MapFolder, DumpBaseName, Constants.MapFieldParentOffsetsFilePostfix),
+									DumpFileMoniker.GetFilePath(r, MapFolder, DumpBaseName, Constants.MapFieldParentInstancesPostfix),
 									FieldDependency.MappedFileName(Utils.GetValidName(DumpBaseName))
 						);
 
@@ -233,7 +233,7 @@ namespace ClrMDRIndex
 
 					// unrooted lookup
 					//
-					string unrootedPath = Utils.GetFilePath(r, MapFolder, DumpBaseName, Constants.MapUnrootedAddressesFilePostfix);
+					string unrootedPath = DumpFileMoniker.GetFilePath(r, MapFolder, DumpBaseName, Constants.MapUnrootedAddressesFilePostfix);
 					_unrooted[r] = GetUnrooted(unrootedPath, out error);
 
 					//_typeNames[r] = Utils.GetStringListFromFile(Utils.GetFilePath(r, MapFolder, DumpBaseName, Constants.TxtTypeFilePostfix), out error);
@@ -1950,7 +1950,7 @@ namespace ClrMDRIndex
 			BinaryReader br = null;
 			try
 			{
-				var path = Utils.GetFilePath(runtimeIndex, _mapFolder, _dumpBaseName, Constants.MapHeapFreeFilePostfix);
+				var path = DumpFileMoniker.GetFilePath(runtimeIndex, _mapFolder, _dumpBaseName, Constants.MapHeapFreeFilePostfix);
 				br = new BinaryReader(File.Open(path, FileMode.Open));
 				var count = br.ReadInt32();
 				var frees = new KeyValuePair<ulong, ulong>[count];

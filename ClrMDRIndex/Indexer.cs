@@ -89,7 +89,7 @@ namespace ClrMDRIndex
 		{
 			DumpFilePath = dmpPath;
 			DumpFileName = Path.GetFileNameWithoutExtension(dmpPath);
-			MapOutputFolder = Utils.GetMapFolder(dmpPath);
+			MapOutputFolder = DumpFileMoniker.GetMapFolder(dmpPath);
 		}
 
 		#endregion Ctors/Initialization
@@ -145,7 +145,7 @@ namespace ClrMDRIndex
 					for (int r = 0, rcnt = clrDump.RuntimeCount; r < rcnt; ++r)
 					{
 						_types[r].Dump(
-							Utils.GetFilePath(r, MapOutputFolder, DumpFileName, Constants.MapTypeInfosFilePostfix),
+							DumpFileMoniker.GetFilePath(r, MapOutputFolder, DumpFileName, Constants.MapTypeInfosFilePostfix),
 							out error);
 					}
 
@@ -157,7 +157,7 @@ namespace ClrMDRIndex
 					for (int r = 0, rcnt = clrDump.RuntimeCount; r < rcnt; ++r)
 					{
 						Utils.WriteUlongUintIntArrays(
-							Utils.GetFilePath(r, MapOutputFolder, DumpFileName, Constants.MapInstanceFilePostfix),
+							DumpFileMoniker.GetFilePath(r, MapOutputFolder, DumpFileName, Constants.MapInstanceFilePostfix),
 							_instances[r], _sizes[r],
 							_typeIds[r], out error);
 						// get types map
@@ -165,7 +165,7 @@ namespace ClrMDRIndex
 						int[] offsets;
 						var typeMap = Utils.GetIntArrayMapping(_typeIds[r], out offsets);
 						Utils.WriteIntArrays(
-							Utils.GetFilePath(r, MapOutputFolder, DumpFileName, Constants.MapTypeInstancesFilePostfix),
+							DumpFileMoniker.GetFilePath(r, MapOutputFolder, DumpFileName, Constants.MapTypeInstancesFilePostfix),
 							typeMap,
 							offsets, out error);
 					}
@@ -193,10 +193,10 @@ namespace ClrMDRIndex
 						List<string> errors = new List<string>(0);
 						FieldDependency.SortFieldDependencies(
 							new Tuple<string, string, string, List<string>, IProgress<string>>(
-								Utils.GetFilePath(r, MapOutputFolder, DumpFileName, Constants.MapFieldInstancesPostfix),
-								Utils.GetFilePath(r, MapOutputFolder, DumpFileName,
+								DumpFileMoniker.GetFilePath(r, MapOutputFolder, DumpFileName, Constants.MapFieldInstancesPostfix),
+								DumpFileMoniker.GetFilePath(r, MapOutputFolder, DumpFileName,
 									Constants.MapFieldParentOffsetsFilePostfix),
-								Utils.GetFilePath(r, MapOutputFolder, DumpFileName,
+								DumpFileMoniker.GetFilePath(r, MapOutputFolder, DumpFileName,
 									Constants.MapFieldParentInstancesPostfix),
 								errors,
 								progress
@@ -471,7 +471,7 @@ namespace ClrMDRIndex
 					//
 					if (
 						!ClrtSegment.DumpSegments(
-							Utils.GetFilePath(r, Utils.GetMapFolder(clrtDump.DumpPath), clrtDump.DumpFileNameNoExt,
+							DumpFileMoniker.GetFilePath(r, DumpFileMoniker.GetMapFolder(clrtDump.DumpPath), clrtDump.DumpFileNameNoExt,
 								Constants.MapSegmentFilePostfix), mysegs, out error))
 					{
 						errors[r].Add("DumpSegments failed." + Environment.NewLine + error);
@@ -732,9 +732,9 @@ namespace ClrMDRIndex
 					thread.Start(new Tuple
 					<string, string, BlockingCollection<KeyValuePair<ulong, KeyValuePair<ulong, int>[]>>,
 						List<string>>(
-						Utils.GetFilePath(r, Utils.GetMapFolder(clrtDump.DumpPath), clrtDump.DumpFileNameNoExt,
+						DumpFileMoniker.GetFilePath(r, DumpFileMoniker.GetMapFolder(clrtDump.DumpPath), clrtDump.DumpFileNameNoExt,
 							Constants.MapFieldOffsetsFilePostfix),
-						Utils.GetFilePath(r, Utils.GetMapFolder(clrtDump.DumpPath), clrtDump.DumpFileNameNoExt,
+						DumpFileMoniker.GetFilePath(r, DumpFileMoniker.GetMapFolder(clrtDump.DumpPath), clrtDump.DumpFileNameNoExt,
 							Constants.MapFieldInstancesPostfix),
 						que,
 						workerErrors
@@ -1146,7 +1146,7 @@ namespace ClrMDRIndex
 			{
 				for (int r = 0; r < _stringIdDcts.Length; ++r)
 				{
-					var path = Utils.GetFilePath(r, MapOutputFolder, DumpFileName, Constants.TxtStringIdsPostfix);
+					var path = DumpFileMoniker.GetFilePath(r, MapOutputFolder, DumpFileName, Constants.TxtStringIdsPostfix);
 					var fldNames = _stringIdDcts[r].GetNamesSortedById();
 					if (!Utils.WriteStringList(path, fldNames, out error)) return false;
 				}
@@ -1168,7 +1168,7 @@ namespace ClrMDRIndex
 				{
 					var ary = dump.Runtimes[r].EnumerateFinalizerQueueObjectAddresses().ToArray();
 
-					var path = Utils.GetFilePath(r, MapOutputFolder, DumpFileName, Constants.MapFinalizerFilePostfix);
+					var path = DumpFileMoniker.GetFilePath(r, MapOutputFolder, DumpFileName, Constants.MapFinalizerFilePostfix);
 					if (!Utils.WriteUlongArray(path, ary, out error)) return false;
 				}
 				return true;
@@ -1214,7 +1214,7 @@ namespace ClrMDRIndex
 			{
 				for (int r = 0; r < _errors.Length; ++r)
 				{
-					var path = Utils.GetFilePath(r, MapOutputFolder, DumpFileName, Constants.TxtIndexErrorsFilePostfix);
+					var path = DumpFileMoniker.GetFilePath(r, MapOutputFolder, DumpFileName, Constants.TxtIndexErrorsFilePostfix);
 					errWriter = new StreamWriter(path);
 					errWriter.WriteLine("ERROR COUNT: " + _errors[r].Count);
 					errWriter.WriteLine();

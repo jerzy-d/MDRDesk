@@ -129,7 +129,7 @@ namespace UnitTestMdr
 				BinaryReader fieldOffsets = null;
 				try
 				{
-					var path = Utils.GetFilePath(map.CurrentRuntime, map.MapFolder, map.DumpBaseName,
+					var path = DumpFileMoniker.GetFilePath(map.CurrentRuntime, map.MapFolder, map.DumpBaseName,
 						Constants.MapFieldParentOffsetsFilePostfix);
 					fieldOffsets = new BinaryReader(File.Open(path, FileMode.Open, FileAccess.Read, FileShare.Read));
 					var cnt = fieldOffsets.ReadInt32()-1; // last offset address is invalid

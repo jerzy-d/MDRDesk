@@ -136,6 +136,32 @@ namespace ClrMDRIndex
 			return ReadFieldParents(_parentOffsets[offsetNdx], _parentOffsets[offsetNdx + 1], out error);
 		}
 
+
+		public KeyValuePair<int, int[]>[] GetMultiFieldParents(ulong[] addresses, List<string> errors)
+		{
+			try
+			{
+				string error;
+				var lst = new List<KeyValuePair<int, int[]>>(addresses.Length);
+				for (int i = 0, icnt = addresses.Length; i < icnt; ++i)
+				{
+					int[] parents = GetFieldParents(addresses[i], out error);
+					if (parents != null && parents.Length > 0)
+					{
+						var addrIndex = Utils.AddressSearch(_instances, addresses[i]);
+						lst.Add(new KeyValuePair<int, int[]>(addrIndex, parents));
+					}
+					if (error != null && error[0] != Constants.InformationSymbol) errors.Add(error);
+				}
+
+				return lst.ToArray();
+			}
+			catch (Exception ex)
+			{
+				errors.Add(Utils.GetExceptionErrorString(ex));
+				return null;
+			}
+		}
 		/// <summary>
 		/// Get parent addresses from mapped file..
 		/// </summary>

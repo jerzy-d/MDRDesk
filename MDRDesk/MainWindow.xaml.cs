@@ -249,7 +249,7 @@ namespace MDRDesk
 				if (tabItem.Content is Grid)
 				{
 					var grid = tabItem.Content as Grid;
-					if (grid.Name.StartsWith("ReversedHeapIndexTypeView"))
+					if (grid.Name.StartsWith(GridReversedNameTypeView))
 					{
 						if (buttonName == "TypeDisplayClass")
 						{
@@ -257,7 +257,7 @@ namespace MDRDesk
 							break;
 						}
 					}
-					if (grid.Name.StartsWith("NamespaceTypeView"))
+					if (grid.Name.StartsWith(GridNameNamespaceTypeView))
 					{
 						if (buttonName == "TypeDisplayNamespaceClass")
 						{
@@ -265,7 +265,7 @@ namespace MDRDesk
 							break;
 						}
 					}
-					if (grid.Name.StartsWith("HeapIndexTypeView"))
+					if (grid.Name.StartsWith(GridKeyNameTypeView))
 					{
 						if (buttonName == "TypeDisplayNamespace")
 						{
@@ -281,7 +281,7 @@ namespace MDRDesk
 				{
 					case "TypeDisplayNamespaceClass":
 						Setup.SetTypesDisplayMode("namespaces");
-						var namespaces = CurrentMap.GetNamespaceDisplay();
+						var namespaces = CurrentIndex.GetNamespaceDisplay();
 						DisplayNamespaceGrid(namespaces);
 						break;
 					case "TypeDisplayClass":
@@ -309,8 +309,10 @@ namespace MDRDesk
 			{
 				string error;
 				string indexPath;
-				var indexer = new Indexer(path);
-				var ok = indexer.Index(_myVersion, progress, out indexPath, out error);
+				//var indexer = new Indexer(path);
+				//var ok = indexer.Index(_myVersion, progress, out indexPath, out error);
+				var indexer = new DumpIndexer(path);
+				var ok = indexer.CreateDumpIndex(_myVersion, progress, DumpIndexer.IndexingArguments.All, out indexPath, out error);
 				return new Tuple<bool, string, string>(ok, error, indexPath);
 			});
 
@@ -324,7 +326,7 @@ namespace MDRDesk
 				ShowError(result.Item2);
 				return;
 			}
-			Dispatcher.CurrentDispatcher.InvokeAsync(() => DoOpenDumpIndex(result.Item3));
+			Dispatcher.CurrentDispatcher.InvokeAsync(() => DoOpenDumpIndex(0, result.Item3));
 		}
 
 		private async void OpenDumpIndexClicked(object sender, RoutedEventArgs e)
@@ -342,10 +344,10 @@ namespace MDRDesk
 
 			if (path == null) return;
 
-			DoOpenDumpIndex(path);
+			DoOpenDumpIndex(0, path);
 		}
 
-		private async void DoOpenDumpIndex(string path)
+		private async void DoOpenDumpIndex(int runtimeIndex, string path)
 		{
 			if (path == null) return;
 			var progressHandler = new Progress<string>(MainStatusShowMessage);
@@ -355,14 +357,14 @@ namespace MDRDesk
 			var result = await Task.Run(() =>
 			{
 				string error;
-				ClrMDRIndex.Map map = Map.OpenMap(_myVersion, path, out error, progress);
+				DumpIndex index = DumpIndex.OpenIndexInstanceReferences(_myVersion, path, runtimeIndex,  out error, progress);
 				KeyValuePair<string, KeyValuePair<string, int>[]>[] namespaces = null;
 
-				if (error == null && map != null)
+				if (error == null && index != null)
 				{
-					namespaces = map.GetNamespaceDisplay();
+					namespaces = index.GetNamespaceDisplay();
 				}
-				return new Tuple<string, Map, KeyValuePair<string, KeyValuePair<string, int>[]>[]>(error, map, namespaces);
+				return new Tuple<string, DumpIndex, KeyValuePair<string, KeyValuePair<string, int>[]>[]>(error, index, namespaces);
 			});
 
 			SetEndTaskMainWindowState("Index: '" + DumpFileMoniker.GetMapName(path) + (result.Item1 == null ? "' is open." : "' open failed."));
@@ -378,10 +380,10 @@ namespace MDRDesk
 				CurrentMap = null;
 				Utils.ForceGcWithCompaction();
 			}
-			CurrentMap = result.Item2;
+			CurrentIndex = result.Item2;
 
-			var genInfo = CurrentMap.GetGenerationTotals();
-			DisplayGeneralInfoGrid(CurrentMap.DumpInfo, genInfo);
+			var genInfo = CurrentIndex.GetGenerationTotals();
+			DisplayGeneralInfoGrid(CurrentIndex.DumpInfo, genInfo);
 			if ((TypeDisplayNamespaceClass.IsChecked ?? (bool)TypeDisplayNamespaceClass.IsChecked) && result.Item3 != null)
 			{
 				DisplayNamespaceGrid(result.Item3);
@@ -394,7 +396,7 @@ namespace MDRDesk
 					DisplayTypesGrid(false);
 			}
 
-			this.Title = BaseTitle + Constants.BlackDiamondPadded + CurrentMap.DumpBaseName;
+			this.Title = BaseTitle + Constants.BlackDiamondPadded + CurrentIndex.DumpFileName;
 			RecentIndexList.Add(path);
 		}
 
@@ -1121,8 +1123,8 @@ namespace MDRDesk
 					Debug.Assert(dataAry != null);
 					var sortBy = listView.Tag as string;
 					Debug.Assert(sortBy != null);
-					var reportPath = info.Item1.OutputFolder + System.IO.Path.DirectorySeparatorChar + info.Item1.FileNameNoExt +
-									 "TYPESIZES." + sortBy + ".txt";
+					var reportPath = info.Item1.OutputFolder + System.IO.Path.DirectorySeparatorChar + info.Item1.DumpFileName +
+									 ".TYPESIZES." + sortBy + ".txt";
 					break;
 				case "IndexStringUsage":
 					var dmpInf = grid.Tag as DumpFileMoniker;
@@ -1197,8 +1199,8 @@ namespace MDRDesk
 					Debug.Assert(dataAry != null);
 					var sortBy = listView.Tag as string;
 					Debug.Assert(sortBy != null);
-					var reportPath = info.Item1.OutputFolder + System.IO.Path.DirectorySeparatorChar + info.Item1.FileNameNoExt +
-									 "TYPESIZES.TOP64." + sortBy + ".txt";
+					var reportPath = info.Item1.OutputFolder + System.IO.Path.DirectorySeparatorChar + info.Item1.DumpFileName +
+									 ".TYPESIZES.TOP64." + sortBy + ".txt";
 					StreamWriter sw = null;
 					try
 					{
@@ -1702,8 +1704,8 @@ namespace MDRDesk
 			string listName = null;
 			switch (gridName)
 			{
-				case GridNameFullNameTypeView:
-				case GridNameClassTypeView:
+				case GridNameTypeView:
+				case GridReversedNameTypeView:
 					listName = "lbTypeAddresses";
 					break;
 				case GridNameNamespaceTypeView:
@@ -1723,8 +1725,8 @@ namespace MDRDesk
 			string listName = null;
 			switch (gridName)
 			{
-				case GridNameFullNameTypeView:
-				case GridNameClassTypeView:
+				case GridNameTypeView:
+				case GridReversedNameTypeView:
 					listName = "lbTypeNames";
 					break;
 				case GridNameNamespaceTypeView:
@@ -2069,7 +2071,7 @@ namespace MDRDesk
 
 		private bool IsIndexAvailable(string caption = null)
 		{
-			if (CurrentMap == null)
+			if (CurrentIndex == null)
 			{
 				if (caption == null) return false;
 				ShowInformation(caption, "No Index Available", "There's no opened index" + Environment.NewLine + "Please open one. Dump indices folders have extension: '.map'.", null);

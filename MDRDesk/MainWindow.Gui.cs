@@ -43,11 +43,16 @@ namespace MDRDesk
         private const string ReportTitleSizeDiffs = "Count;/Size Comp";
         private const string ReportNameSizeDiffs = "SizesDiff";
 
-        private const string GridNameNamespaceTypeView = "NamespaceTypeView";
-        private const string GridNameFullNameTypeView = "HeapIndexTypeView";
-        private const string GridNameClassTypeView = "ReversedHeapIndexTypeView";
+		// type display grids
+		//
+		private const string GridKeyNamespaceTypeView = "NamespaceTypeView";
+		private const string GridKeyNameTypeView = "NameTypeView";
 
-        private string GetReportTitle(ListView lst)
+		private const string GridNameNamespaceTypeView = "NamespaceTypeView";
+		private const string GridNameTypeView = "NameTypeView";
+		private const string GridReversedNameTypeView = "ReversedNameTypeView";
+
+		private string GetReportTitle(ListView lst)
         {
             if (lst.Tag is Tuple<ListingInfo, string>)
             {
@@ -152,15 +157,15 @@ namespace MDRDesk
 
         private void DisplayNamespaceGrid(KeyValuePair<string, KeyValuePair<string, int>[]>[] namespaces)
         {
-            var grid = this.TryFindResource(GridNameNamespaceTypeView) as Grid;
+            var grid = this.TryFindResource(GridKeyNamespaceTypeView) as Grid;
             Debug.Assert(grid != null);
-            //grid.Name = "NamespaceTypeView__" + Utils.GetNewID();
-            grid.Name = grid.Name + "__" + Utils.GetNewID();
+            grid.Name = GridNameNamespaceTypeView + "__" + Utils.GetNewID();
             grid.Tag = namespaces;
             var lb = (ListBox)LogicalTreeHelper.FindLogicalNode(grid, "lbTpNamespaces");
             Debug.Assert(lb != null);
             lb.ItemsSource = namespaces;
             var nsCountLabel = (Label)LogicalTreeHelper.FindLogicalNode(grid, @"lTpNsCount");
+			Debug.Assert(nsCountLabel!=null);
             nsCountLabel.Content = Utils.LargeNumberString(namespaces.Length);
             var tab = new CloseableTabItem() { Header = Constants.BlackDiamond + " Types", Content = grid, Name = "HeapIndexTypeViewTab" };
             MainTab.Items.Add(tab);
@@ -171,7 +176,8 @@ namespace MDRDesk
 
         private void lbTpNamespacesSelectionChange(object sender, SelectionChangedEventArgs e)
         {
-            var grid = GetCurrentTabGrid();
+			Debug.Assert(CurrentIndex != null);
+			var grid = GetCurrentTabGrid();
             var lb = sender as ListBox;
             var lbTpNames = (ListBox)LogicalTreeHelper.FindLogicalNode(grid, @"lbTpNames");
             var selndx = lb.SelectedIndex;
@@ -186,15 +192,14 @@ namespace MDRDesk
 
         private void lbTpNamesSelectionChange(object sender, SelectionChangedEventArgs e)
         {
+			Debug.Assert(CurrentIndex!=null);
             var grid = GetCurrentTabGrid();
             var lbTpNames = (ListBox)LogicalTreeHelper.FindLogicalNode(grid, @"lbTpNames");
             var selndx = lbTpNames.SelectedIndex;
             if (selndx < 0) return;
 
             var data = lbTpNames.ItemsSource as KeyValuePair<string, int>[];
-
-            ClrElementType elem;
-            var addresses = CurrentMap.GetTypeAddressesFromSortedIndex(data[selndx].Value, out elem);
+            var addresses = CurrentIndex.GetTypeInstances(data[selndx].Value);
             var lbTpNsTypeInfo = (Label)LogicalTreeHelper.FindLogicalNode(grid, @"lbTpNsTypeInfo");
             lbTpNsTypeInfo.Content = data[selndx].Value.ToString();
             var lbTpAddresses = (ListBox)LogicalTreeHelper.FindLogicalNode(grid, @"lbTpAddresses");
@@ -206,19 +211,19 @@ namespace MDRDesk
 
         private void DisplayTypesGrid(bool reversedTypeNames)
         {
-            var grid = this.TryFindResource(GridNameFullNameTypeView) as Grid;
+			Debug.Assert(CurrentIndex != null);
+			var grid = this.TryFindResource(GridKeyNameTypeView) as Grid;
             Debug.Assert(grid != null);
-            //grid.Name = (reversedTypeNames ? "Reversed" : string.Empty) + "HeapIndexTypeView__" + Utils.GetNewID();
-            grid.Name = (reversedTypeNames ? GridNameClassTypeView : GridNameFullNameTypeView) + "__" + Utils.GetNewID();
+            grid.Name = (reversedTypeNames ? GridReversedNameTypeView : GridNameTypeView) + "__" + Utils.GetNewID();
             var lb = (ListBox)LogicalTreeHelper.FindLogicalNode(grid, "lbTypeNames");
             Debug.Assert(lb != null);
             if (reversedTypeNames)
-                lb.ItemsSource = CurrentMap.ReversedTypeNames;
+                lb.ItemsSource = CurrentIndex.ReversedTypeNames;
             else
-                lb.ItemsSource = CurrentMap.TypeNames;
+                lb.ItemsSource = CurrentIndex.DisplayableTypeNames;
             var lab = (Label)LogicalTreeHelper.FindLogicalNode(grid, "lTypeCount");
             Debug.Assert(lab != null);
-            lab.Content = "type count: " + string.Format("{0:#,###}", CurrentMap.TypeCount());
+            lab.Content = "type count: " + string.Format("{0:#,###}", CurrentIndex.UsedTypeCount);
             var tab = new CloseableTabItem() { Header = Constants.BlackDiamond + " Types", Content = grid, Name = "HeapIndexTypeViewTab" };
             MainTab.Items.Add(tab);
             MainTab.SelectedItem = tab;
@@ -227,23 +232,20 @@ namespace MDRDesk
 
         private void lbTypeNamesSelectionChange(object sender, SelectionChangedEventArgs e)
         {
-            Debug.Assert(sender is ListBox);
+			Debug.Assert(CurrentIndex != null);
+			Debug.Assert(sender is ListBox);
             var grid = ((ListBox)sender).Parent as Grid;
             var lbNames = (ListBox)LogicalTreeHelper.FindLogicalNode(grid, @"lbTypeNames");
-            var lbAddresses = (ListBox)LogicalTreeHelper.FindLogicalNode(grid, @"lbTypeAddresses");
+			Debug.Assert(lbNames != null);
+			var lbAddresses = (ListBox)LogicalTreeHelper.FindLogicalNode(grid, @"lbTypeAddresses");
             Debug.Assert(lbAddresses != null);
-            ClrElementType elem;
-            ulong[] addresses;
-            if (grid.Name.StartsWith("Reversed"))
-                addresses = CurrentMap.GetTypeAddressesFromReversedNameIndex(lbNames.SelectedIndex, out elem);
-            else
-                addresses = CurrentMap.GetTypeAddressesFromSortedIndex(lbNames.SelectedIndex, out elem);
+			var selndx = lbNames.SelectedIndex;
+			if (selndx < 0) return;
+			var data = lbNames.ItemsSource as KeyValuePair<string, int>[];
+			var addresses = CurrentIndex.GetTypeInstances(data[selndx].Value);
             var lab = (Label)LogicalTreeHelper.FindLogicalNode(grid, @"lAddressCount");
             Debug.Assert(lab != null);
             lab.Content = Utils.LargeNumberString(addresses.Length);
-            var lelem = (Label)LogicalTreeHelper.FindLogicalNode(grid, @"lElementType");
-            Debug.Assert(lelem != null);
-            lelem.Content = elem;
             lbAddresses.ItemsSource = addresses;
             lbAddresses.SelectedIndex = 0;
         }

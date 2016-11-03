@@ -15,17 +15,17 @@ namespace ClrMDRIndex
 
 		public string FileName => System.IO.Path.GetFileName(_path);
 
-		public string FileNameNoExt => System.IO.Path.GetFileNameWithoutExtension(_path);
-		 
+		public string DumpFileName => System.IO.Path.GetFileName(_path);
+
 		public string OutputFolder => System.IO.Path.GetDirectoryName(_path) // dump file directory
 		                              + System.IO.Path.DirectorySeparatorChar
-		                              + System.IO.Path.GetFileNameWithoutExtension(_path) + ".map" // dummp file name with extension changed tp ".map"
+		                              + System.IO.Path.GetFileName(_path) + ".map" // dummp file name
 		                              + System.IO.Path.DirectorySeparatorChar
 		                              + "ad-hoc.queries";
 
 		public string MapFolder => System.IO.Path.GetDirectoryName(_path) // dump file directory
 		                           + System.IO.Path.DirectorySeparatorChar
-		                           + System.IO.Path.GetFileNameWithoutExtension(_path) + ".map"; // dummp file name with extension changed tp ".map"
+		                           + System.IO.Path.GetFileName(_path) + ".map";
 
 		public DumpFileMoniker(string path)
 		{
@@ -37,16 +37,23 @@ namespace ClrMDRIndex
 			string postfix = runtimeIndex > 0 && pathPostfix.IndexOf("[0]", StringComparison.Ordinal) > 0
 				? pathPostfix.Replace("[0]", "[" + runtimeIndex + "]")
 				: pathPostfix;
-			return MapFolder + System.IO.Path.DirectorySeparatorChar + FileNameNoExt + postfix;
+			return MapFolder + System.IO.Path.DirectorySeparatorChar + DumpFileName + postfix;
 		}
 
+		public static string GetFilePath(int runtimeIndex, string outFolder, string dmpName, string pathPostfix)
+		{
+			string postfix = runtimeIndex > 0 && pathPostfix.IndexOf("[0]", StringComparison.Ordinal) > 0
+				? pathPostfix.Replace("[0]", "[" + runtimeIndex + "]")
+				: pathPostfix;
+			return outFolder + System.IO.Path.DirectorySeparatorChar + dmpName + postfix;
+		}
 
 		public static Tuple<string, string> GetAndCreateMapFolders(string dmpFilePath, out string error)
 		{
 			error = null;
 			try
 			{
-				var dumpFile = System.IO.Path.GetFileNameWithoutExtension(dmpFilePath);
+				var dumpFile = System.IO.Path.GetFileName(dmpFilePath);
 				var dumpDir = System.IO.Path.GetDirectoryName(dmpFilePath);
 				var mapDir = dumpDir + System.IO.Path.DirectorySeparatorChar + dumpFile + ".map";
 				if (!Directory.Exists(mapDir)) Directory.CreateDirectory(mapDir);
@@ -61,12 +68,13 @@ namespace ClrMDRIndex
 			}
 		}
 
+
 		public static string GetAndCreateOutFolder(string dmpFilePath, out string error)
 		{
 			error = null;
 			try
 			{
-				var dumpFile = System.IO.Path.GetFileNameWithoutExtension(dmpFilePath);
+				var dumpFile = System.IO.Path.GetFileName(dmpFilePath);
 				var dumpDir = System.IO.Path.GetDirectoryName(dmpFilePath);
 				var mapDir = dumpDir + System.IO.Path.DirectorySeparatorChar + dumpFile + ".map";
 				if (!Directory.Exists(mapDir)) Directory.CreateDirectory(mapDir);
@@ -79,6 +87,22 @@ namespace ClrMDRIndex
 				Utils.GetExceptionErrorString(ex);
 				return null;
 			}
+		}
+
+		public static string GetDumpBaseName(string mapFolder)
+		{
+			if (string.IsNullOrWhiteSpace(mapFolder)) return null;
+			var pos = mapFolder.LastIndexOf(System.IO.Path.DirectorySeparatorChar);
+			if (pos >= 0 && (pos + 2) < mapFolder.Length)
+			{
+				var s = mapFolder.Substring(pos + 1);
+				if (s.EndsWith(".map"))
+				{
+					s = s.Substring(0, s.Length - ".map".Length);
+				}
+				return s;
+			}
+			return null;
 		}
 
 		public string GetPathReplacingFileName(string newFileName)
@@ -102,13 +126,13 @@ namespace ClrMDRIndex
 			string postfix = runtimeIndex > 0 && pathPostfix.IndexOf("[0]", StringComparison.Ordinal) > 0
 				? pathPostfix.Replace("[0]", "[" + runtimeIndex + "]")
 				: pathPostfix;
-			return System.IO.Path.GetFileNameWithoutExtension(dumpPath) + postfix;
+			return System.IO.Path.GetFileName(dumpPath) + postfix;
 		}
 
 
 		public static string GetMapFolder(string dmpFilePath)
 		{
-			var dumpFile = System.IO.Path.GetFileNameWithoutExtension(dmpFilePath);
+			var dumpFile = System.IO.Path.GetFileName(dmpFilePath);
 			var dumpDir = System.IO.Path.GetDirectoryName(dmpFilePath);
 			return dumpDir + System.IO.Path.DirectorySeparatorChar + dumpFile + ".map";
 		}
@@ -118,7 +142,7 @@ namespace ClrMDRIndex
 		{
 		 return System.IO.Path.GetDirectoryName(dmpPath) // dump file directory
 									  + System.IO.Path.DirectorySeparatorChar
-									  + System.IO.Path.GetFileNameWithoutExtension(dmpPath) + ".map" // dummp file name with extension changed tp ".map"
+									  + System.IO.Path.GetFileName(dmpPath) + ".map" // dummp file name with extension changed tp ".map"
 									  + System.IO.Path.DirectorySeparatorChar
 									  + "ad-hoc.queries";
 		}
@@ -149,7 +173,7 @@ namespace ClrMDRIndex
 		public static string GetMapName(string path)
 		{
 			if (string.IsNullOrWhiteSpace(path)) return string.Empty;
-			return System.IO.Path.GetFileNameWithoutExtension(path) + ".map";
+			return System.IO.Path.GetFileName(path) + ".map";
 		}
 	}
 }

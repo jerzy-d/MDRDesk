@@ -28,7 +28,6 @@ namespace ClrMDRIndex
 		public string IndexFolder => _fileMoniker.MapFolder;
 		public string DumpPath => _fileMoniker.Path;
 		public string DumpFileName => _fileMoniker.FileName;
-		public string DumpName => _fileMoniker.FileNameNoExt;
 
 		/// <summary>
 		/// Indexing errors, they all are written to the error file in the index folder.
@@ -54,7 +53,7 @@ namespace ClrMDRIndex
 		public bool CreateDumpIndex(Version version, IProgress<string> progress, IndexingArguments indexArguments, out string indexPath, out string error)
 		{
 			error = null;
-			indexPath = null;
+			indexPath = _fileMoniker.MapFolder;
 			var clrtDump = new ClrtDump(DumpPath);
 			if (!clrtDump.Init(out error)) return false;
 			Stopwatch stopWatch = new Stopwatch();
@@ -214,6 +213,7 @@ namespace ClrMDRIndex
 								AddError(r, "BuildTypeInstanceMap failed." + Environment.NewLine + error);
 								return false;
 							}
+							durationStr = Utils.StopAndGetDurationString(stopWatch);
 
 							// build instance reference map
 							//
@@ -222,16 +222,26 @@ namespace ClrMDRIndex
 
 							InstanceReferences.InvertFieldRefs(new Tuple<int, DumpFileMoniker, ConcurrentBag<string>, IProgress<string>>(r, _fileMoniker, errors, null));
 
+							durationStr = Utils.StopAndGetDurationString(stopWatch);
+							stopWatch.Restart();
+							progress?.Report(runtimeIndexHeader + "Saving index data... Previous action duration: " + durationStr);
+
 							string path = _fileMoniker.GetFilePath(r, Constants.MapInstancesFilePostfix);
 							Utils.WriteUlongArray(path, addresses, out error);
 							path = _fileMoniker.GetFilePath(r, Constants.MapInstanceTypesFilePostfix);
 							Utils.WriteIntArray(path, typeIds, out error);
+							// save type names
 							path = _fileMoniker.GetFilePath(r, Constants.TxtTypeNamesFilePostfix);
 							Utils.WriteStringList(path, typeNames, out error);
-							durationStr = Utils.StopAndGetDurationString(stopWatch);
-							progress?.Report(runtimeIndexHeader + "Building instance reference map duration: " + durationStr);
+							{
+								var reversedNames = Utils.ReverseTypeNames(typeNames);
+								path = _fileMoniker.GetFilePath(r, Constants.TxtReversedTypeNamesFilePostfix);
+								Utils.WriteStringList(path, reversedNames, out error);
+							}
 
-							if (indexArguments == IndexingArguments.JustInstanceRefs) return true; // we only want instance refs
+
+
+							//if (indexArguments == IndexingArguments.JustInstanceRefs) return true; // we only want instance refs
 						}
 
 
@@ -588,11 +598,12 @@ namespace ClrMDRIndex
 			}
 			finally
 			{
-				if (txtWriter != null)
-				{
-					txtWriter.Close();
-					File.SetAttributes(path, File.GetAttributes(path) | FileAttributes.ReadOnly);
-				}
+				txtWriter?.Close();
+				//if (txtWriter != null)
+				//{
+				//	txtWriter.Close();
+				//	File.SetAttributes(path, File.GetAttributes(path) | FileAttributes.ReadOnly);
+				//}
 			}
 		}
 

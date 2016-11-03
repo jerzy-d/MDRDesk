@@ -162,6 +162,7 @@ namespace ClrMDRIndex
 		// types
 		//
 		public const string TxtTypeNamesFilePostfix = ".`TYPENAMES[0].txt";
+		public const string TxtReversedTypeNamesFilePostfix = ".`REVERSEDTYPENAMES[0].txt";
 
 		// segmnents, generation info
 		//

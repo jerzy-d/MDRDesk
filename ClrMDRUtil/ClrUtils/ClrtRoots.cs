@@ -310,7 +310,7 @@ namespace ClrMDRIndex
 			{
 				// dump ClrtRoot array
 				//
-				var path = Utils.GetFilePath(r, indexFolder, dumpName, Constants.MapRootsFilePostfix);
+				var path = DumpFileMoniker.GetFilePath(r, indexFolder, dumpName, Constants.MapRootsFilePostfix);
 				bw = new BinaryWriter(File.Open(path, FileMode.Create));
 				int cnt = _rootKindOffsets.Length; // offsets first
 				bw.Write(cnt);
@@ -329,17 +329,17 @@ namespace ClrMDRIndex
 
 				// dump finalizer array
 				//
-				path = Utils.GetFilePath(r, indexFolder, dumpName, Constants.MapFinalizerFilePostfix);
+				path = DumpFileMoniker.GetFilePath(r, indexFolder, dumpName, Constants.MapFinalizerFilePostfix);
 				if (!Utils.WriteUlongIntArrays(path, _finalizerQue, _finalizerQueInstanceIds, out error)) return false;
 
 				// dump root addresses array and its map
 				//
-				path = Utils.GetFilePath(r, indexFolder, dumpName, Constants.MapRootAddressesFilePostfix);
+				path = DumpFileMoniker.GetFilePath(r, indexFolder, dumpName, Constants.MapRootAddressesFilePostfix);
 				if (!Utils.WriteUlongIntArrays(path, _rootAddresses, _rootAddressMap, out error)) return false;
 
 				// dump object addresses array and its map
 				//
-				path = Utils.GetFilePath(r, indexFolder, dumpName, Constants.MapRootObjectsFilePostfix);
+				path = DumpFileMoniker.GetFilePath(r, indexFolder, dumpName, Constants.MapRootObjectsFilePostfix);
 				if (!Utils.WriteUlongIntArrays(path, _objectAddresses, _objectAddressMap, out error)) return false;
 
 				return true;
@@ -365,7 +365,7 @@ namespace ClrMDRIndex
 			{
 				// get root infos
 				//
-				var path = Utils.GetFilePath(r, indexFolder, dumpName, Constants.MapRootsFilePostfix);
+				var path = DumpFileMoniker.GetFilePath(r, indexFolder, dumpName, Constants.MapRootsFilePostfix);
 				br = new BinaryReader(File.Open(path, FileMode.Open));
 				int cnt = br.ReadInt32(); // kind offsets first
 				int[] kindOffsets = new int[cnt];
@@ -382,21 +382,21 @@ namespace ClrMDRIndex
 
 				// get finalizer queue
 				//
-				path = Utils.GetFilePath(r, indexFolder, dumpName, Constants.MapFinalizerFilePostfix);
+				path = DumpFileMoniker.GetFilePath(r, indexFolder, dumpName, Constants.MapFinalizerFilePostfix);
 				ulong[] finQue;
 				int[] finQueInstIds;
 				if (!Utils.ReadUlongIntArrays(path, out finQue, out finQueInstIds, out error)) return null;
 
 				// get root addresses array and its map
 				//
-				path = Utils.GetFilePath(r, indexFolder, dumpName, Constants.MapRootAddressesFilePostfix);
+				path = DumpFileMoniker.GetFilePath(r, indexFolder, dumpName, Constants.MapRootAddressesFilePostfix);
 				ulong[] addresses;
 				int[] addrMap;
 				if (!Utils.ReadUlongIntArrays(path, out addresses, out addrMap, out error)) return null;
 
 				// get root addresses array and its map
 				//
-				path = Utils.GetFilePath(r, indexFolder, dumpName, Constants.MapRootObjectsFilePostfix);
+				path = DumpFileMoniker.GetFilePath(r, indexFolder, dumpName, Constants.MapRootObjectsFilePostfix);
 				ulong[] objects;
 				int[] objMap;
 				if (!Utils.ReadUlongIntArrays(path, out objects, out objMap, out error)) return null;
