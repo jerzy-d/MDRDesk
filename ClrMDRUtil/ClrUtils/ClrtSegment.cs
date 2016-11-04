@@ -105,6 +105,7 @@ namespace ClrMDRIndex
 
 		public static void SetGenerationStats(ClrSegment clrSeg, ulong addr, ulong size, int[] cnts, ulong[] sizes)
 		{
+			addr = Utils.RealAddress(addr);
 			if (clrSeg.IsLarge)
 			{
 				cnts[0] += 1;
@@ -163,6 +164,8 @@ namespace ClrMDRIndex
 
 		public bool IsInSegment(ulong addr)
 		{
+
+			addr = Utils.RealAddress(addr);
 			return (addr >= FirstAddress && addr <= LastAddress);
 		}
 
@@ -170,6 +173,7 @@ namespace ClrMDRIndex
 		{
 			if (Large) return Generation.Large;
 
+			addr = Utils.RealAddress(addr);
 			if (Gen0Start <= addr && addr < (Gen0Start + Gen0Length))
 			{
 				return Generation.Gen0;
@@ -194,7 +198,7 @@ namespace ClrMDRIndex
 			int segLen = segments.Length;
 			for (int i = 0, icnt = addresses.Count; i < icnt; ++i)
 			{
-				var addr = addresses[i];
+				var addr = Utils.RealAddress(addresses[i]);
 				bool found = false;
 				for (var j = 0; j < segLen; ++j)
 				{
@@ -217,6 +221,7 @@ namespace ClrMDRIndex
 
 		public static int FindSegment(ClrtSegment[] segments, ulong addr)
 		{
+			addr = Utils.RealAddress(addr);
 			for (var i = 0; i < segments.Length; ++i)
 			{
 				if (segments[i].IsInSegment(addr)) return i;

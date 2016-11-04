@@ -1473,158 +1473,11 @@ namespace MDRDesk
 			int a = 0;
 		}
 
-		private ListBox GetTypeNamesListBox(object sender)
-		{
-			MenuItem menuItem = sender as MenuItem;
-			Debug.Assert(menuItem != null);
-			var grid = GetCurrentTabGrid();
-			string listName = menuItem.Name.StartsWith("Ns") ? "lbTpNames" : "lbTypeNames";
-			var lbAddresses = (ListBox)LogicalTreeHelper.FindLogicalNode(grid, listName);
-			Debug.Assert(lbAddresses != null);
-			return lbAddresses;
-		}
 
-		private string GetTypeNameFromSelection(object sel, out int typeId)
-		{
-			typeId = Constants.InvalidIndex;
-			string typeName = string.Empty;
-			if (sel is KeyValuePair<string, int>)
-			{
-				KeyValuePair<string, int> kv = (KeyValuePair<string, int>)sel;
-				typeName = CurrentMap.GetTypeName(kv.Value);
-				typeId = kv.Value;
-			}
-			else
-			{
-				typeName = sel.ToString();
-			}
-			return typeName;
-		}
 
-		private void CopyTypeNameClicked(object sender, RoutedEventArgs e)
-		{
-			var lbNames = GetTypeNamesListBox(sender);
-			if (lbNames != null && lbNames.SelectedItems.Count > 0)
-			{
-				var sel = lbNames.SelectedItems[0];
-				int typeId;
-				string typeName = GetTypeNameFromSelection(sel, out typeId);
-				Clipboard.SetText(typeName);
-				MainStatusShowMessage("Copied to Clipboard: " + sel);
-				return;
-			}
-			MainStatusShowMessage("Copy type name failed, no item selected.");
-		}
 
-		private void GenerationDistributionClicked(object sender, RoutedEventArgs e)
-		{
-			var lbNames = GetTypeNamesListBox(sender);
-			if (lbNames != null && lbNames.SelectedItems.Count > 0)
-			{
-				string error;
-				var sel = lbNames.SelectedItems[0];
-				int typeId;
-				string typeName = GetTypeNameFromSelection(sel, out typeId);
-				var genHistogram = CurrentMap.GetTypeGcGenerationHistogram(typeName, out error);
-				if (error != null)
-				{
-					MessageBox.Show(error, "Action Aborted", MessageBoxButton.OK, MessageBoxImage.Exclamation);
-					return;
-				}
-				var histStr = ClrtSegment.GetGenerationHistogramSimpleString(genHistogram);
-				MainStatusShowMessage(typeName + ": " + histStr);
-				return;
-			}
-			MainStatusShowMessage("Getting generation distribution failed, no item selected.");
-		}
 
-		private void GetFieldValuesClicked(object sender, RoutedEventArgs e)
-		{
 
-		}
-
-		private async void GetTotalHeapSizeClicked(object sender, RoutedEventArgs e)
-		{
-
-			var lbAddresses = GetTypeAddressesListBox(sender);
-			var addresses = lbAddresses.ItemsSource as ulong[];
-			var lbNames = GetTypeNamesListBox(sender);
-			string typeName = null;
-			if (lbNames != null && lbNames.SelectedItems.Count > 0)
-			{
-				int typeId;
-				typeName = GetTypeNameFromSelection(lbNames.SelectedItems[0], out typeId);
-			}
-
-			if (typeName == null)
-			{
-				MessageBox.Show("No type is selected!", "Action Aborted", MessageBoxButton.OK, MessageBoxImage.Exclamation);
-				return;
-			}
-
-			MainStatusShowMessage("Getting total size, please wait...");
-			MainToolbarTray.IsEnabled = false;
-			Mouse.OverrideCursor = Cursors.Wait;
-			var result = await Task.Run(() =>
-			{
-				string error;
-				HashSet<ulong> done = new HashSet<ulong>();
-				var tuple = ClrtDump.GetTotalSize(CurrentMap.GetFreshHeap(), addresses, done, out error);
-				return new Tuple<string, ulong, ulong[]>(error, tuple.Item1, tuple.Item2);
-			});
-			Mouse.OverrideCursor = null;
-			MainToolbarTray.IsEnabled = true;
-
-			if (result.Item1 != null)
-			{
-				MainStatusShowMessage("Getting type total size failed.");
-				MessageBox.Show(result.Item1, "Getting total size failed", MessageBoxButton.OK, MessageBoxImage.Error);
-				return;
-			}
-
-			MainStatusShowMessage(Utils.BaseTypeName(typeName.ToString()) + " total heap size: " + Utils.SizeString(result.Item2));
-		}
-
-		private async void GetHeapBaseSizeClicked(object sender, RoutedEventArgs e)
-		{
-			var grid = GetCurrentTabGrid();
-			var lbAddresses = GetTypeAddressesListBox(sender);
-			var addresses = lbAddresses.ItemsSource as ulong[];
-			var lbNames = GetTypeNamesListBox(sender);
-			string typeName = null;
-			if (lbNames != null && lbNames.SelectedItems.Count > 0)
-			{
-				int typeId;
-				typeName = GetTypeNameFromSelection(lbNames.SelectedItems[0], out typeId);
-			}
-			if (typeName == null)
-			{
-				MessageBox.Show("No type is selected!", "Action Aborted", MessageBoxButton.OK, MessageBoxImage.Exclamation);
-				return;
-			}
-
-			MainStatusShowMessage("Getting total size, please wait...");
-			MainToolbarTray.IsEnabled = false;
-			Mouse.OverrideCursor = Cursors.Wait;
-			var result = await Task.Run(() =>
-			{
-				string error;
-				HashSet<ulong> done = new HashSet<ulong>();
-				var tuple = ClrtDump.GetTotalSize(CurrentMap.GetFreshHeap(), addresses, done, out error, true);
-				return new Tuple<string, ulong, ulong[]>(error, tuple.Item1, tuple.Item2);
-			});
-			Mouse.OverrideCursor = null;
-			MainToolbarTray.IsEnabled = true;
-
-			if (result.Item1 != null)
-			{
-				MainStatusShowMessage("Getting type total size failed.");
-				MessageBox.Show(result.Item1, "Getting total size failed", MessageBoxButton.OK, MessageBoxImage.Error);
-				return;
-			}
-
-			MainStatusShowMessage(Utils.BaseTypeName(typeName.ToString()) + " total base size: " + Utils.SizeString(result.Item2));
-		}
 
 		private void CopyAddressSelectionClicked(object sender, RoutedEventArgs e)
 		{
@@ -1706,10 +1559,10 @@ namespace MDRDesk
 			{
 				case GridNameTypeView:
 				case GridReversedNameTypeView:
-					listName = "lbTypeAddresses";
+					listName = "lbTypeNameAddresses";
 					break;
 				case GridNameNamespaceTypeView:
-					listName = "lbTpAddresses";
+					listName = "lbTypeNamespaceAddresses";
 					break;
 			}
 			if (listName == null) return null;
@@ -1727,10 +1580,10 @@ namespace MDRDesk
 			{
 				case GridNameTypeView:
 				case GridReversedNameTypeView:
-					listName = "lbTypeNames";
+					listName = "lbTypeViewTypeNames";
 					break;
 				case GridNameNamespaceTypeView:
-					listName = "lbTpNames";
+					listName = "lbNamespaceViewTypeNames";
 					break;
 			}
 			if (listName == null) return null;
@@ -1939,24 +1792,27 @@ namespace MDRDesk
 
 		}
 
-		private void LbGetInstImmediateRefsClicked(object sender, RoutedEventArgs e)
+		private void LbInstanceParentsClicked(object sender, RoutedEventArgs e)
 		{
+			if (!IsIndexAvailable("No index is loaded")) return;
 			var lbAddresses = GetTypeAddressesListBox(sender);
 			if (lbAddresses.SelectedItems.Count < 1)
 			{
 				MessageBox.Show("No address is selected!", "Action Aborted", MessageBoxButton.OK, MessageBoxImage.Exclamation);
 				return;
 			}
-			string error;
 			var addr = (ulong)lbAddresses.SelectedItems[0];
-			var report = CurrentMap.GetFieldReferencesReport(addr, 1);
+			ReferenceSearchSetup dlg = new ReferenceSearchSetup("Get parents of instance: " + Utils.RealAddressString(addr)) { Owner = this };
+			dlg.ShowDialog();
+			if (dlg.Cancelled) return;
+			int level = dlg.GetAllReferences ? Int32.MaxValue : dlg.SearchDepthLevel;
+			var report = CurrentIndex.GetParentReferencesReport(addr, level);
 			if (report.Error != null)
 			{
 				MessageBox.Show(report.Error, "Action Aborted", MessageBoxButton.OK, MessageBoxImage.Exclamation);
 				return;
 			}
 			DisplayListViewBottomGrid(report, Constants.BlackDiamond, ReportNameInstRef, ReportTitleInstRef);
-
 		}
 
 		private async void GetInstImmediateRefsClicked(object sender, RoutedEventArgs e)
@@ -2124,6 +1980,7 @@ namespace MDRDesk
 				return;
 			}
 		}
+
 
 	}
 }

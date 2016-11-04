@@ -631,7 +631,7 @@ namespace UnitTestMdr
 					for (int i = 0, icnt = addresses.Length; i < icnt; ++i)
 					{
 						var addr = addresses[i];
-						var cleanAddr = Utils.CleanAddress(addr);
+						var cleanAddr = Utils.RealAddress(addr);
 						var isRooted = Utils.IsRooted(addr);
 
 						var clrType = heap.GetObjectType(cleanAddr);
@@ -826,7 +826,7 @@ namespace UnitTestMdr
 				var typeName2 = index.GetTypeName(addr2);
 				var result2 = index.GetParents(addr2, out error);
 				var details = index.GetParentDetails(addr2, out error);
-				var refrences = index.GetFieldReferences(addr2, out error);
+				var refrences = index.GetParentReferences(addr2, out error);
 			}
 		}
 

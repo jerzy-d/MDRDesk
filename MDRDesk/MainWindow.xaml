@@ -45,9 +45,24 @@
         <ContextMenu x:Key="AddresListContextMenu" x:Shared="False">
             <MenuItem x:Name="AddrLstCopyAddress" Header="Copy Address (clipboard)" Click="CopyAddressSelectionClicked" ></MenuItem>
             <MenuItem x:Name="AddrLstCopyAddressAll" Header="Copy All Addresses (clipboard)" Click="CopyAddressAllClicked"></MenuItem>
-            <MenuItem x:Name="AddrLstGetParentRefs" Header="Get Instance References" Click="LbGetInstImmediateRefsClicked"/>
+            <MenuItem x:Name="AddrLstGetParentRefs" Header="Get Instance References" Click="LbInstanceParentsClicked"/>
             <MenuItem x:Name="AddrLstGetInstValue" Header="Get Instance Value" Click="LbGetInstValueClicked"/>
             <MenuItem x:Name="AddrLstGetInstHierarchy" Header="Get Instance Hierarchy" Click="LbGetInstHierarchyClicked"/>
+        </ContextMenu>
+        <ContextMenu x:Key="TypeListContextMenu" x:Shared="False">
+            <MenuItem x:Name="TypeListCopyTypeName" Header="Copy Type Name" Click="CopyTypeNameClicked"></MenuItem>
+            <MenuItem x:Name="TypeListGenerationDistribution" Header="Generation Ditribution" Click="GenerationDistributionClicked"></MenuItem>
+            <MenuItem x:Name="TypeListGetFieldValues" Header="Get Field Values" Click="GetFieldValuesClicked"></MenuItem>
+            <Separator></Separator>
+            <MenuItem x:Name="TypeListGetTotalHeapSize" Header="Get Type Total Heap Size" Click="GetTotalHeapSizeClicked"></MenuItem>
+            <MenuItem x:Name="TypeListGetTotalHeapSizeReport" Header="Get Type Total Heap Size Report" Click="GetTotalHeapSizeReportClicked"></MenuItem>
+            <MenuItem x:Name="TypeListGetBaseHeapSize" Header="Get Type Heap Base Size" Click="GetHeapBaseSizeClicked"></MenuItem>
+            <MenuItem x:Name="TypeListGetBaseHeapSizeReport" Header="Get Type Heap Base Size Report" Click="GetHeapBaseSizeReportClicked"></MenuItem>
+            <Separator></Separator>
+            <MenuItem x:Name="TypeListGetStringUsage" Header="Get String Usage" Click="GetTypeStringUsage"></MenuItem>
+            <MenuItem x:Name="TypeListGetParentReferences" Header="Get Parent References" Click="GetParentReferences"></MenuItem>
+            <MenuItem x:Name="TypeListGenerateSizeDetailsReport" Header="Generate Size Details Report" Click="GenerateSizeDetailsReport"></MenuItem>
+            <MenuItem x:Name="TypeListGetTypeValuesReport" Header="Type Values Report" Click="GetTypeValuesReportClicked"></MenuItem>
         </ContextMenu>
         <ControlTemplate x:Key="ButtonControlTemplate1" TargetType="Button">
             <Grid>
@@ -116,8 +131,8 @@
             <ToolBarTray Grid.Row="0" Grid.Column="0" Margin="4,0,4,0">
                 <ToolBar></ToolBar>
             </ToolBarTray>
-            <ListBox Grid.Row="1" Grid.Column="0" Margin="4,4,4,4" Name="lbTypeNames" HorizontalAlignment="Stretch" SelectionChanged="lbTypeNamesSelectionChange" DisplayMemberPath="Key" FontFamily="Consolas" FontSize="12">
-                <ListBox.ContextMenu>
+            <ListBox Grid.Row="1" Grid.Column="0" Margin="4,4,4,4" Name="lbTypeViewTypeNames" HorizontalAlignment="Stretch" SelectionChanged="lbTypeNamesSelectionChange" DisplayMemberPath="Key" FontFamily="Consolas" FontSize="12" ContextMenu="{StaticResource TypeListContextMenu}" >
+                <!--<ListBox.ContextMenu>
                     <ContextMenu>
                         <MenuItem x:Name="CopyTypeName" Header="Copy Type Name" Click="CopyTypeNameClicked"></MenuItem>
                         <MenuItem x:Name="GenerationDistribution" Header="Generation Ditribution" Click="GenerationDistributionClicked"></MenuItem>
@@ -126,22 +141,9 @@
                         <MenuItem x:Name="GetBaseHeapSize" Header="Get Type Heap Base Size" Click="GetHeapBaseSizeClicked"></MenuItem>
                         <MenuItem x:Name="GetParentReferences" Header="Get Parent References" Click="GetParentReferences"></MenuItem>
                     </ContextMenu>
-                </ListBox.ContextMenu>
-            </ListBox>
-            <ListBox Grid.Row="1" Grid.Column="1" Margin="4,4,4,4" Name="lbTypeAddresses" HorizontalAlignment="Stretch" SelectionMode="Single" SelectionChanged="Selector_OnSelectionChanged" FontFamily="Consolas" FontSize="12" ContextMenu="{StaticResource AddresListContextMenu}" >
-                 <!--<ListBox.ContextMenu>
-                    <ContextMenu>
-                        <MenuItem x:Name="CopyAddressSelection" Header="Copy Selected (clipboard)" Click="CopyAddressSelectionClicked"></MenuItem>
-                        <MenuItem x:Name="CopyAddressAll" Header="Copy All (clipboard)" Click="CopyAddressAllClicked"></MenuItem>
-                        <MenuItem x:Name="LbGetInstImmediateRefs" Header="Get Instance Immediate References" Click="LbGetInstImmediateRefsClicked"/>
-                        <MenuItem x:Name="LbGetNLevelRefs" Header="Get Instance N-level References" Click="LbGetNLevelRefsClicked"/>
-                        <MenuItem x:Name="LbGetInstAllRefs" Header="Get Instance All References" Click="LbGetInstAllRefsClicked"/>
-                        <MenuItem x:Name="LbGetInstImmediateRefsGroupedByType" Header="Get Instance Immediate References (Grouped byType)" Click="LbGetInstImmediateRefsClicked"/>
-                        <MenuItem x:Name="LbGetNLevelRefsGroupedByType" Header="Get Instance N-level References (Grouped byType)" Click="LbGetNLevelRefsClicked"/>
-                        <MenuItem x:Name="LbGetInstAllRefsGroupedByType" Header="Get Instance All References (Grouped byType)" Click="LbGetInstAllRefsClicked"/>
-                        <MenuItem x:Name="LbGetInstValue" Header="Get Instance Value" Click="LbGetInstValueClicked"/>
-                    </ContextMenu>
                 </ListBox.ContextMenu>-->
+            </ListBox>
+            <ListBox Grid.Row="1" Grid.Column="1" Margin="4,4,4,4" Name="lbTypeNameAddresses" HorizontalAlignment="Stretch" SelectionMode="Single" SelectionChanged="Selector_OnSelectionChanged" FontFamily="Consolas" FontSize="12" ContextMenu="{StaticResource AddresListContextMenu}" >
                 <ListBox.ItemTemplate>
                     <DataTemplate>
                         <TextBlock Text="{Binding Converter={StaticResource LongHexConverter}}"/>
@@ -177,8 +179,8 @@
             <ListBox Grid.Row="1" Grid.Column="0" Margin="4,4,4,4" Name="lbTpNamespaces"  HorizontalAlignment="Stretch" SelectionChanged="lbTpNamespacesSelectionChange" SelectionMode="Single" DisplayMemberPath="Key"  FontFamily="Consolas" FontSize="12">
             </ListBox>
             <GridSplitter Grid.Row="1"  Grid.Column="1" VerticalAlignment="Stretch" HorizontalAlignment="Center" Width="5" ShowsPreview="False" Background="DarkGray"></GridSplitter>
-            <ListBox Grid.Row="1" Grid.Column="2" Margin="4,4,4,4" Name="lbTpNames" HorizontalAlignment="Stretch" SelectionMode="Single" SelectionChanged="lbTpNamesSelectionChange" DisplayMemberPath="Key" FontFamily="Consolas" FontSize="12">
-                <ListBox.ContextMenu>
+            <ListBox Grid.Row="1" Grid.Column="2" Margin="4,4,4,4" Name="lbNamespaceViewTypeNames" HorizontalAlignment="Stretch" SelectionMode="Single" SelectionChanged="lbTpNamesSelectionChange" DisplayMemberPath="Key" FontFamily="Consolas" FontSize="12" ContextMenu="{StaticResource TypeListContextMenu}">
+                <!--<ListBox.ContextMenu>
                     <ContextMenu>
                         <MenuItem x:Name="NsCopyTypeName" Header="Copy Type Name" Click="CopyTypeNameClicked"></MenuItem>
                         <MenuItem x:Name="NsGenerationDistribution" Header="Generation Ditribution" Click="GenerationDistributionClicked"></MenuItem>
@@ -190,10 +192,10 @@
                         <MenuItem x:Name="NsGenerateSizeDetailsReport" Header="Generate Size Details Report" Click="GenerateSizeDetailsReport"></MenuItem>
                         <MenuItem x:Name="NsGetTypeValuesReport" Header="Type Values Report" Click="GetTypeValuesReportClicked"></MenuItem>
                     </ContextMenu>
-                </ListBox.ContextMenu>
+                </ListBox.ContextMenu>-->
             </ListBox>
             <GridSplitter Grid.Row="1"  Grid.Column="3" VerticalAlignment="Stretch" HorizontalAlignment="Center" Width="5" ShowsPreview="False" Background="DarkGray"></GridSplitter>
-            <ListBox Grid.Row="1" Grid.Column="4" Margin="4,4,4,4" Name="lbTpAddresses" HorizontalAlignment="Stretch" SelectionMode="Single" ContextMenu="{StaticResource AddresListContextMenu}"  FontFamily="Consolas" FontSize="12">
+            <ListBox Grid.Row="1" Grid.Column="4" Margin="4,4,4,4" Name="lbTypeNamespaceAddresses" HorizontalAlignment="Stretch" SelectionMode="Single" ContextMenu="{StaticResource AddresListContextMenu}"  FontFamily="Consolas" FontSize="12">
                 <ListBox.ItemTemplate>
                 <DataTemplate>
                     <TextBlock Text="{Binding Converter={StaticResource LongHexConverter}}"/>

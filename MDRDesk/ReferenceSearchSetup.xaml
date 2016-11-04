@@ -24,10 +24,10 @@
                 <ColumnDefinition Width="20*"/>
                 <ColumnDefinition Width="20*"/>
             </Grid.ColumnDefinitions>
-            <Label Grid.Column="0" HorizontalAlignment="Left" VerticalAlignment="Center" FontWeight="Bold" Margin="8,0,0,0">Display Result Mode:</Label>
+            <Label Grid.Column="0" HorizontalAlignment="Left" VerticalAlignment="Center" FontFamily="Consolas" FontWeight="Bold" Margin="8,0,0,0">Display Result Mode:</Label>
             <RadioButton x:Name ="RefSearchDisplayList" GroupName="RefSearchDisplayMode" Grid.Column="1" HorizontalAlignment="Left" VerticalAlignment="Center" Margin="4,0,4,0" FontWeight="Bold" >List</RadioButton>
             <RadioButton x:Name ="RefSearchDisplayTree" GroupName="RefSearchDisplayMode" Grid.Column="2" HorizontalAlignment="Left" VerticalAlignment="Center" Margin="4,0,4,0" FontWeight="Bold">Tree</RadioButton>
-            <RadioButton x:Name ="RefSearchDisplayGraph" GroupName="RefSearchDisplayMode" Grid.Column="3" HorizontalAlignment="Left" VerticalAlignment="Center" Margin="4,0,4,0" FontWeight="Bold">Graph</RadioButton>
+            <RadioButton x:Name ="RefSearchDisplayGraph" GroupName="RefSearchDisplayMode" Grid.Column="3" HorizontalAlignment="Left" VerticalAlignment="Center" Margin="4,0,4,0" FontWeight="Bold" IsEnabled="False">Graph</RadioButton>
         </Grid>
         <Grid Grid.Row="2">
             <Grid.ColumnDefinitions>
@@ -35,11 +35,11 @@
                 <ColumnDefinition Width="20*"/>
                 <ColumnDefinition Width="20*"/>
             </Grid.ColumnDefinitions>
-            <CheckBox x:Name="RefSearchAll" Grid.Column="0" HorizontalAlignment="Left" VerticalAlignment="Center" Margin="16,0,0,0">Search All Levels</CheckBox>
-            <Label Grid.Column="1" VerticalAlignment="Center">Enter Search Depth Level:</Label>
-            <TextBox x:Name="RefSearchLevel" Grid.Column="2" Margin="2,2,2,2" HorizontalAlignment="Stretch" VerticalAlignment="Stretch"></TextBox>
+            <CheckBox x:Name="RefSearchAll" Grid.Column="0" HorizontalAlignment="Left" VerticalAlignment="Center" FontFamily="Consolas" FontSize="11" Margin="16,0,0,0">Search All Levels</CheckBox>
+            <Label Grid.Column="1" VerticalAlignment="Center" FontFamily="Consolas" FontSize="11" FontWeight="DemiBold">Enter Search Depth Level:</Label>
+            <TextBox x:Name="RefSearchLevel" Grid.Column="2" Margin="16,8,4,8" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" Background="Azure"></TextBox>
         </Grid>
-        <TextBlock Grid.Row="3" Margin="2,2,2,2" ></TextBlock>
+        <TextBlock Grid.Row="3" Margin="2,2,2,2" Background="LightGray"></TextBlock>
         <WrapPanel Grid.Row="4" HorizontalAlignment="Right" VerticalAlignment="Center" Margin="2,2,2,2">
                 <Button IsDefault="True" Name="btnDialogOk" Click="DialogOkClicked" MinWidth="60" Margin="0,0,10,0">_Ok</Button>
                 <Button IsCancel="True" MinWidth="60" HorizontalAlignment="Right">_Cancel</Button>

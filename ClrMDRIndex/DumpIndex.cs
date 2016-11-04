@@ -65,6 +65,9 @@ namespace ClrMDRIndex
 		private InstanceReferences _instanceReferences;
 
 		public WeakReference<StringStats> _stringStats;
+		public WeakReference<uint[]> _sizes;
+		public WeakReference<uint[]> _baseSizes;
+
 		private ClrtSegment[] _segments; // segment infos, for instances generation histograms
 
 		private ClrtDump _clrtDump;
@@ -142,8 +145,8 @@ namespace ClrMDRIndex
 					_displayableTypeNames = dispNames.Item1;
 					_reversedTypeNames = dispNames.Item2;
 					if (error != null) return false;
+					Array.Sort(_reversedTypeNames, new KvStrIntKeyCmp());
 					_typeNamespaces = GetTypeNamespaceOrdering(_reversedTypeNames);
-					Array.Sort(_reversedTypeNames,new KvStrIntKeyCmp());
 				}
 
 				_instanceReferences = new InstanceReferences(_fileMoniker.Path,_currentRuntimeIndex,_instances,_instanceTypes,_typeNames);
@@ -203,6 +206,7 @@ namespace ClrMDRIndex
 			Debug.Assert(reversedNames != null && reversedNames.Length > 0);
 			string[] splitter = new[] { Constants.NamespaceSepPadded };
 			Dictionary<string, string> strCache = new Dictionary<string, string>(StringComparer.Ordinal);
+			var resultDct = new SortedDictionary<string, List<KeyValuePair<string, int>>>(StringComparer.Ordinal);
 
 			string[] items = reversedNames[0].Key.Split(splitter, StringSplitOptions.RemoveEmptyEntries);
 			Debug.Assert(items.Length>0);
@@ -217,20 +221,25 @@ namespace ClrMDRIndex
 				Debug.Assert(items.Length > 0);
 				name = Utils.GetCachedString(items[0], strCache);
 				string namesp = items.Length > 1 ? Utils.GetCachedString(items[1],strCache) : string.Empty;
-				if (!Utils.SameStrings(prevNamesp, namesp))
+				List<KeyValuePair<string, int>> lst;
+				if (resultDct.TryGetValue(namesp, out lst))
 				{
-					namespInfos.Add(new KeyValuePair<string, KeyValuePair<string, int>[]>(prevNamesp,names.ToArray()));
-					prevNamesp = namesp;
-					names.Clear();
+					lst.Add(new KeyValuePair<string, int>(name,reversedNameInfo.Value));
+					continue;
 				}
-				names.Add(new KeyValuePair<string, int>(name,reversedNameInfo.Value));
+				resultDct.Add(namesp,new List<KeyValuePair<string, int>>() {new KeyValuePair<string, int>(name,reversedNameInfo.Value)});
 			}
-			if (names.Count > 0)
+			var result = new KeyValuePair<string, KeyValuePair<string, int>[]>[resultDct.Count];
+			int ndx = 0;
+			foreach (var kv in resultDct)
 			{
-				namespInfos.Add(new KeyValuePair<string, KeyValuePair<string, int>[]>(prevNamesp, names.ToArray()));
+				result[ndx++] = new KeyValuePair<string, KeyValuePair<string, int>[]>(
+					kv.Key,
+					kv.Value.ToArray()
+					);
 			}
 
-			return namespInfos.ToArray();
+			return result;
 		}
 
 	
@@ -269,6 +278,14 @@ namespace ClrMDRIndex
 
 		#region queries
 
+		#region heap
+
+		public ClrHeap GetFreshHeap()
+		{
+			return Dump.GetFreshHeap();
+		}
+
+		#endregion heap
 
 		#region types
 
@@ -303,6 +320,20 @@ namespace ClrMDRIndex
 				addresses[i] = _instances[_typeInstanceMap[mapIndex++]];
 			}
 			return addresses;
+		}
+
+		public int[] GetTypeInstanceIndices(int typeId)
+		{
+			var offNdx = Array.BinarySearch(_typeInstanceOffsets, new KeyValuePair<int, int>(typeId, 0), kvIntIntKeyCmp);
+			if (offNdx < 0) return Utils.EmptyArray<int>.Value;
+			var count = _typeInstanceOffsets[offNdx + 1].Value - _typeInstanceOffsets[offNdx].Value;
+			int[] indices = new int[count];
+			int mapIndex = _typeInstanceOffsets[offNdx].Value;
+			for (int i = 0; i < count; ++i)
+			{
+				indices[i] = _typeInstanceMap[mapIndex++];
+			}
+			return indices;
 		}
 
 		public KeyValuePair<string, KeyValuePair<string, int>[]>[] GetNamespaceDisplay()
@@ -357,7 +388,7 @@ namespace ClrMDRIndex
 		/// <param name="error">Error message if any.</param>
 		/// <param name="maxLevel">Output tree height limit. </param>
 		/// <returns>Tuple of: (IndexNode tree, node count, back reference list).</returns>
-		public Tuple<IndexNode, int, int[]> GetFieldReferences(ulong address, out string error, int maxLevel = Int32.MaxValue)
+		public Tuple<IndexNode, int, int[]> GetParentReferences(ulong address, out string error, int maxLevel = Int32.MaxValue)
 		{
 			error = null;
 			try
@@ -431,6 +462,78 @@ namespace ClrMDRIndex
 			}
 		}
 
+		public ListingInfo GetParentReferencesReport(ulong addr, int level = Int32.MaxValue)
+		{
+			string error;
+			Tuple<IndexNode, int, int[]> result = GetParentReferences(addr, out error, level);
+			if (!string.IsNullOrEmpty(error) && error[0] != Constants.InformationSymbol)
+			{
+				return new ListingInfo(error);
+			}
+			return OneInstanceParentsReport(result.Item1, result.Item2);
+		}
+
+		public ListingInfo OneInstanceParentsReport(IndexNode rootNode, int nodeCnt)
+		{
+			const int ColumnCount = 4;
+			string[] data = new string[nodeCnt * ColumnCount];
+			listing<string>[] items = new listing<string>[nodeCnt];
+			var que = new Queue<IndexNode>();
+			que.Enqueue(rootNode);
+			int dataNdx = 0;
+			int itemNdx = 0;
+			while (que.Count > 0)
+			{
+				var node = que.Dequeue();
+				int instNdx = node.Index;
+				ulong address = _instances[instNdx];
+				string typeName = _typeNames[_instanceTypes[instNdx]];
+				string rootInfo = Utils.IsRooted(address) ? string.Empty : "not rooted";
+				
+				items[itemNdx++] = new listing<string>(data, dataNdx, ColumnCount);
+				data[dataNdx++] = node.Level.ToString();
+				data[dataNdx++] = Utils.AddressString(address);
+				data[dataNdx++] = rootInfo;
+				data[dataNdx++] = typeName;
+				for (int i = 0, icnt = node.Nodes.Length; i < icnt; ++i)
+				{
+					que.Enqueue(node.Nodes[i]);
+				}
+			}
+
+			ColumnInfo[] colInfos = new[]
+			{
+				new ColumnInfo("Tree Level", ReportFile.ColumnType.Int32,150,1,true),
+				new ColumnInfo("Address", ReportFile.ColumnType.String,150,2,true),
+				new ColumnInfo("Root Info", ReportFile.ColumnType.String,300,4,true),
+				new ColumnInfo("Type", ReportFile.ColumnType.String,700,5,true),
+			};
+
+			var sb = new StringBuilder(256);
+			sb.Append(ReportFile.DescrPrefix).Append("Parents of ").Append(items[0].Forth).AppendLine();
+			sb.Append(ReportFile.DescrPrefix).Append("Instance at address: ").Append(items[0].Second).AppendLine();
+			sb.Append(ReportFile.DescrPrefix).Append("Total reference count: ").Append(Utils.LargeNumberString(nodeCnt)).AppendLine();
+			sb.Append(ReportFile.DescrPrefix).Append("NOTE. The queried instance is displayed in the row where BF and DF orders are '0'").AppendLine();
+			//var backReferences = result.Item3;
+			//if (backReferences != null && backReferences.Length > 0)
+			//{
+			//	sb.Append(ReportFile.DescrPrefix).Append("Back references found: ");
+			//	for (int i = 0, icnt = backReferences.Length; i < icnt; ++i)
+			//	{
+			//		sb.Append(Utils.AddressString(backReferences[i].Key))
+			//			.Append(Constants.HeavyRightArrowPadded)
+			//			.Append(Utils.AddressString(backReferences[i].Value));
+			//		if (i > 0 && (i % 10) == 0) sb.AppendLine();
+			//		else sb.Append(" ");
+			//	}
+			//}
+			//else
+			//{
+			//	sb.Append(ReportFile.DescrPrefix).Append("Back references not found").AppendLine();
+			//}
+
+			return new ListingInfo(null, items, colInfos, sb.ToString());
+		}
 
 		#endregion instance references
 
@@ -727,7 +830,7 @@ namespace ClrMDRIndex
 
 		#endregion Strings
 
-		#region segments/generations
+		#region segments/generations/sizes
 
 		public Tuple<string, long>[][] GetGenerationTotals()
 		{
@@ -781,15 +884,8 @@ namespace ClrMDRIndex
 			return ClrtSegment.GetGenerationHistogram(_segments, addresses);
 		}
 
-		public int[] GetTypeGcGenerationHistogram(string typeName, out string error)
+		public int[] GetTypeGcGenerationHistogram(int typeId)
 		{
-			error = null;
-			var typeId = GetTypeId(typeName);
-			if (typeId == Constants.InvalidIndex)
-			{
-				error = "Cannot find type: " + typeName;
-				return null;
-			}
 			ulong[] addresses = GetTypeInstances(typeId);
 			return ClrtSegment.GetGenerationHistogram(_segments, addresses);
 		}
@@ -868,11 +964,114 @@ namespace ClrMDRIndex
 			}
 		}
 
-		#endregion Segments/Generations
+		private uint[] GetSizeArray(bool baseSize, out string error)
+		{
+			error = null;
+			try
+			{
+				uint[] sizes = null;
+				if (baseSize)
+				{
+					if (_baseSizes == null || !_baseSizes.TryGetTarget(out sizes))
+					{
+						sizes = Utils.ReadUintArray(_fileMoniker.GetFilePath(_currentRuntimeIndex, Constants.MapInstanceBaseSizesFilePostfix),
+							out error);
+						if (sizes == null) return null;
+						if (_baseSizes == null)
+							_baseSizes = new WeakReference<uint[]>(sizes);
+						else
+							_baseSizes.SetTarget(sizes);
+					}
+				}
+				else
+				{
+					if (_sizes == null || !_sizes.TryGetTarget(out sizes))
+					{
+						sizes = Utils.ReadUintArray(_fileMoniker.GetFilePath(_currentRuntimeIndex, Constants.MapInstanceSizesFilePostfix),
+							out error);
+						if (sizes == null) return null;
+						if (_sizes == null)
+							_sizes = new WeakReference<uint[]>(sizes);
+						else
+							_sizes.SetTarget(sizes);
+					}
+				}
+				return sizes;
+			}
+			catch (Exception ex)
+			{
+				error = Utils.GetExceptionErrorString(ex);
+				return null;
+			}
+		}
+
+		public Tuple<ulong,KeyValuePair<uint,ulong>[]> GetTypeTotalSizes(int typeId, bool baseSizes, out string error)
+		{
+			error = null;
+			try
+			{
+				uint[] sizes = GetSizeArray(baseSizes, out error);
+				int[] instIndices = GetTypeInstanceIndices(typeId);
+				ulong totalSize = 0UL;
+				var sizeInfos = new KeyValuePair<uint,ulong>[instIndices.Length];
+				for (int i = 0, icnt = instIndices.Length; i < icnt; ++i)
+				{
+					var ndx = instIndices[i];
+					var sz = sizes[ndx];
+					totalSize += sz;
+					sizeInfos[i] = new KeyValuePair<uint, ulong>(sz, _instances[ndx]);
+				}
+				return new Tuple<ulong, KeyValuePair<uint, ulong>[]>(totalSize,sizeInfos);
+			}
+			catch (Exception ex)
+			{
+				error = Utils.GetExceptionErrorString(ex);
+				return null;
+			}
+		}
+
+		public Tuple<ulong, KeyValuePair<uint, ulong>[]> GetTypeBaseSizes(int typeId, out string error)
+		{
+			error = null;
+			try
+			{
+				uint[] sizes = null;
+				if (_baseSizes == null || !_baseSizes.TryGetTarget(out sizes))
+				{
+					sizes = Utils.ReadUintArray(_fileMoniker.GetFilePath(_currentRuntimeIndex, Constants.MapInstanceBaseSizesFilePostfix),
+						out error);
+					if (sizes == null) return null;
+					if (_baseSizes == null)
+						_baseSizes = new WeakReference<uint[]>(sizes);
+					else
+						_baseSizes.SetTarget(sizes);
+				}
+
+				int[] instIndices = GetTypeInstanceIndices(typeId);
+				ulong totalSize = 0UL;
+				var sizeInfos = new KeyValuePair<uint, ulong>[instIndices.Length];
+				for (int i = 0, icnt = instIndices.Length; i < icnt; ++i)
+				{
+					var ndx = instIndices[i];
+					var sz = sizes[ndx];
+					totalSize += sz;
+					sizeInfos[i] = new KeyValuePair<uint, ulong>(sz, _instances[ndx]);
+				}
+				return new Tuple<ulong, KeyValuePair<uint, ulong>[]>(totalSize, sizeInfos);
+			}
+			catch (Exception ex)
+			{
+				error = Utils.GetExceptionErrorString(ex);
+				return null;
+			}
+		}
+
+		#endregion segments/generations/sizes
 
 		#region Dispose
 
-		volatile bool _disposed = false;
+		volatile
+			bool _disposed = false;
 
 		public void Dispose()
 		{

@@ -28,16 +28,23 @@ namespace ClrMDRIndex
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static string AddressString(ulong addr)
         {
-            ulong realAddr = CleanAddress(addr);
+            ulong realAddr = RealAddress(addr);
             return IsRooted(addr)
                 ? string.Format("0x{0:x14}", realAddr)
                 : string.Format("0\u2714{0:x14}", realAddr);
         }
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		public static string RealAddressString(ulong addr)
+		{
+			ulong realAddr = RealAddress(addr);
+			return string.Format("0x{0:x14}", realAddr);
+		}
+
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static string AddressStringHeader(ulong addr)
         {
-            ulong realAddr = CleanAddress(addr);
+            ulong realAddr = RealAddress(addr);
             return IsRooted(addr)
                 ? string.Format("0x{0:x14} ", realAddr)
                 : string.Format("0\u2714{0:x14} ", realAddr);
@@ -82,7 +89,7 @@ namespace ClrMDRIndex
 		}
 
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
-		public static ulong CleanAddress(ulong addr)
+		public static ulong RealAddress(ulong addr)
 		{
 			return addr & (ulong)RootBits.AddressMask;
 		}
@@ -97,11 +104,11 @@ namespace ClrMDRIndex
 		/// <returns>Index of the item if found, invalid index (-1) otherwise.</returns>
 		public static int AddressSearch(ulong[] addresses, ulong addr, int lhs, int rhs)
 		{
-			var cleanAddr = CleanAddress(addr);
+			var cleanAddr = RealAddress(addr);
 			while (lhs <= rhs)
 			{
 				int mid = lhs + (rhs - lhs)/2;
-				ulong midAddr = CleanAddress(addresses[mid]);
+				ulong midAddr = RealAddress(addresses[mid]);
 				if (midAddr == cleanAddr)
 					return mid;
 				if (midAddr < cleanAddr)
@@ -116,11 +123,11 @@ namespace ClrMDRIndex
 		{
 			int lhs = 0;
 			int rhs = addresses.Length - 1;
-			var cleanAddr = CleanAddress(addr);
+			var cleanAddr = RealAddress(addr);
 			while (lhs <= rhs)
 			{
 				int mid = lhs + (rhs - lhs) / 2;
-				ulong midAddr = CleanAddress(addresses[mid]);
+				ulong midAddr = RealAddress(addresses[mid]);
 				if (midAddr == cleanAddr)
 					return mid;
 				if (midAddr < cleanAddr)
@@ -746,6 +753,7 @@ namespace ClrMDRIndex
 
 		public static string ReverseTypeName(string name)
 		{
+			if (string.IsNullOrWhiteSpace(name)) return string.Empty;
 			var plusPos = name.IndexOf('+');
 			var bracketPos = name.IndexOf('<');
 			var lastDotPos = name.LastIndexOf('.');
@@ -766,6 +774,7 @@ namespace ClrMDRIndex
 			else if (plusPos < 0)
 			{
 				var pos = name.LastIndexOf('.', bracketPos, bracketPos - 1);
+				if (pos <= 0) return name;
 				return name.Substring(pos + 1) + Constants.NamespaceSepPadded + name.Substring(0, pos);
 
 			}

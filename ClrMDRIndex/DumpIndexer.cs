@@ -145,7 +145,7 @@ namespace ClrMDRIndex
 							for (int i = 0, icnt = addresses.Length; i < icnt; ++i)
 							{
 								var addr = addresses[i];
-								var cleanAddr = Utils.CleanAddress(addr);
+								var cleanAddr = Utils.RealAddress(addr);
 								var isRooted = Utils.IsRooted(addr);
 
 								var clrType = heap.GetObjectType(cleanAddr);

@@ -155,7 +155,9 @@ namespace MDRDesk
             MainTab.UpdateLayout();
         }
 
-        private void DisplayNamespaceGrid(KeyValuePair<string, KeyValuePair<string, int>[]>[] namespaces)
+		#region types main displays
+
+		private void DisplayNamespaceGrid(KeyValuePair<string, KeyValuePair<string, int>[]>[] namespaces)
         {
             var grid = this.TryFindResource(GridKeyNamespaceTypeView) as Grid;
             Debug.Assert(grid != null);
@@ -179,14 +181,14 @@ namespace MDRDesk
 			Debug.Assert(CurrentIndex != null);
 			var grid = GetCurrentTabGrid();
             var lb = sender as ListBox;
-            var lbTpNames = (ListBox)LogicalTreeHelper.FindLogicalNode(grid, @"lbTpNames");
+            var lbNamespaceViewTypeNames = (ListBox)LogicalTreeHelper.FindLogicalNode(grid, @"lbNamespaceViewTypeNames");
             var selndx = lb.SelectedIndex;
             if (selndx < 0) return;
             var data = lb.ItemsSource as KeyValuePair<string, KeyValuePair<string, int>[]>[];
-            Debug.Assert(lbTpNames != null);
+            Debug.Assert(lbNamespaceViewTypeNames != null);
             var classCountLabel = (Label)LogicalTreeHelper.FindLogicalNode(grid, @"lTpClassCount");
-            lbTpNames.ItemsSource = data[selndx].Value;
-            lbTpNames.SelectedIndex = 0;
+            lbNamespaceViewTypeNames.ItemsSource = data[selndx].Value;
+            lbNamespaceViewTypeNames.SelectedIndex = 0;
             classCountLabel.Content = Utils.LargeNumberString(data[selndx].Value.Length);
         }
 
@@ -194,15 +196,15 @@ namespace MDRDesk
         {
 			Debug.Assert(CurrentIndex!=null);
             var grid = GetCurrentTabGrid();
-            var lbTpNames = (ListBox)LogicalTreeHelper.FindLogicalNode(grid, @"lbTpNames");
-            var selndx = lbTpNames.SelectedIndex;
+            var lbNamespaceViewTypeNames = (ListBox)LogicalTreeHelper.FindLogicalNode(grid, @"lbNamespaceViewTypeNames");
+            var selndx = lbNamespaceViewTypeNames.SelectedIndex;
             if (selndx < 0) return;
 
-            var data = lbTpNames.ItemsSource as KeyValuePair<string, int>[];
+            var data = lbNamespaceViewTypeNames.ItemsSource as KeyValuePair<string, int>[];
             var addresses = CurrentIndex.GetTypeInstances(data[selndx].Value);
             var lbTpNsTypeInfo = (Label)LogicalTreeHelper.FindLogicalNode(grid, @"lbTpNsTypeInfo");
             lbTpNsTypeInfo.Content = data[selndx].Value.ToString();
-            var lbTpAddresses = (ListBox)LogicalTreeHelper.FindLogicalNode(grid, @"lbTpAddresses");
+            var lbTpAddresses = (ListBox)LogicalTreeHelper.FindLogicalNode(grid, @"lbTypeNamespaceAddresses");
             var addrCountLabel = (Label)LogicalTreeHelper.FindLogicalNode(grid, @"lTpAddressCount");
             addrCountLabel.Content = Utils.LargeNumberString(addresses.Length);
             lbTpAddresses.ItemsSource = addresses;
@@ -215,7 +217,7 @@ namespace MDRDesk
 			var grid = this.TryFindResource(GridKeyNameTypeView) as Grid;
             Debug.Assert(grid != null);
             grid.Name = (reversedTypeNames ? GridReversedNameTypeView : GridNameTypeView) + "__" + Utils.GetNewID();
-            var lb = (ListBox)LogicalTreeHelper.FindLogicalNode(grid, "lbTypeNames");
+            var lb = (ListBox)LogicalTreeHelper.FindLogicalNode(grid, "lbTypeViewTypeNames");
             Debug.Assert(lb != null);
             if (reversedTypeNames)
                 lb.ItemsSource = CurrentIndex.ReversedTypeNames;
@@ -235,9 +237,9 @@ namespace MDRDesk
 			Debug.Assert(CurrentIndex != null);
 			Debug.Assert(sender is ListBox);
             var grid = ((ListBox)sender).Parent as Grid;
-            var lbNames = (ListBox)LogicalTreeHelper.FindLogicalNode(grid, @"lbTypeNames");
+            var lbNames = (ListBox)LogicalTreeHelper.FindLogicalNode(grid, @"lbTypeViewTypeNames");
 			Debug.Assert(lbNames != null);
-			var lbAddresses = (ListBox)LogicalTreeHelper.FindLogicalNode(grid, @"lbTypeAddresses");
+			var lbAddresses = (ListBox)LogicalTreeHelper.FindLogicalNode(grid, @"lbTypeNameAddresses");
             Debug.Assert(lbAddresses != null);
 			var selndx = lbNames.SelectedIndex;
 			if (selndx < 0) return;
@@ -250,7 +252,128 @@ namespace MDRDesk
             lbAddresses.SelectedIndex = 0;
         }
 
-        private void DisplayListViewBottomGrid(ListingInfo info, char prefix, string name, string reportTitle, SWC.MenuItem[] menuItems = null, string filePath = null)
+		private ListBox GetTypeNamesListBox(object sender)
+		{
+			var grid = GetCurrentTabGrid();
+			string listName = grid.Name.StartsWith(GridNameNamespaceTypeView, StringComparison.Ordinal) ? "lbNamespaceViewTypeNames" : "lbTypeViewTypeNames";
+			var lbNames = (ListBox)LogicalTreeHelper.FindLogicalNode(grid, listName);
+			Debug.Assert(lbNames != null);
+			return lbNames;
+		}
+
+		private string GetTypeNameFromSelection(object sel, out int typeId)
+		{
+			typeId = Constants.InvalidIndex;
+			string typeName = string.Empty;
+			if (sel is KeyValuePair<string, int>)
+			{
+				KeyValuePair<string, int> kv = (KeyValuePair<string, int>)sel;
+				typeName = CurrentIndex.GetTypeName(kv.Value);
+				typeId = kv.Value;
+			}
+			else
+			{
+				typeName = sel.ToString();
+			}
+			return typeName;
+		}
+
+	    private KeyValuePair<string, int> GetTypeNameInfo(object obj)
+	    {
+			Debug.Assert(obj is KeyValuePair<string, int>);
+			return (KeyValuePair<string, int>)obj;
+		}
+
+	    private bool GetTypeNameInfo(object sender, out string typeName, out int typeId)
+	    {
+		    typeName = null;
+		    typeId = Constants.InvalidIndex;
+			var lbNames = GetTypeNamesListBox(sender);
+			if (lbNames == null || lbNames.SelectedItems.Count < 1)
+			{
+				MessageBox.Show("No type is selected!", "Action Aborted", MessageBoxButton.OK, MessageBoxImage.Exclamation);
+				return false;
+			}
+			var kv = GetTypeNameInfo(lbNames.SelectedItems[0]);
+		    typeName = kv.Key;
+		    typeId = kv.Value;
+			return true;
+	    }
+
+		private void CopyTypeNameClicked(object sender, RoutedEventArgs e)
+		{
+			string typeName;
+			int typeId;
+			if (!GetTypeNameInfo(sender, out typeName, out typeId)) return;
+			Clipboard.SetText(typeName);
+			MainStatusShowMessage("Copied to Clipboard: " + typeName);
+		}
+
+		private void GenerationDistributionClicked(object sender, RoutedEventArgs e)
+		{
+			string typeName;
+			int typeId;
+			if (!GetTypeNameInfo(sender, out typeName, out typeId)) return;
+			var genHistogram = CurrentIndex.GetTypeGcGenerationHistogram(typeId);
+			var histStr = ClrtSegment.GetGenerationHistogramSimpleString(genHistogram);
+			MainStatusShowMessage(typeName + ": " + histStr);
+		}
+
+		private void GetFieldValuesClicked(object sender, RoutedEventArgs e)
+		{
+			MessageBox.Show("Not implemented yet.", "Get Field Values", MessageBoxButton.OK, MessageBoxImage.Information);
+		}
+
+		private async void GetInstancesHeapSizeClicked(object sender, bool baseSizes)
+		{
+			string typeName;
+			int typeId;
+			if (!GetTypeNameInfo(sender, out typeName, out typeId)) return;
+			string prefix = baseSizes ? "[BASE SIZE} " : "[TOTAL SIZE} ";
+			SetStartTaskMainWindowState(prefix + "getting size, please wait...");
+			var result = await Task.Run(() =>
+			{
+				string error;
+				var tuple = CurrentIndex.GetTypeTotalSizes(typeId, baseSizes, out error);
+				return new Tuple<string, ulong, KeyValuePair<uint, ulong>[]>(error, tuple.Item1, tuple.Item2);
+			});
+			string msg;
+			if (result.Item1 != null)
+			{
+				msg = prefix + "getting size failed.";
+				MessageBox.Show(result.Item1, msg, MessageBoxButton.OK, MessageBoxImage.Error);
+			}
+			else
+			{
+				msg = prefix + Utils.BaseTypeName(typeName) + " size = " + Utils.SizeString(result.Item2);
+			}
+			SetEndTaskMainWindowState(msg);
+		}
+
+		private void GetTotalHeapSizeClicked(object sender, RoutedEventArgs e)
+		{
+			GetInstancesHeapSizeClicked(sender, false);
+		}
+
+		private void GetTotalHeapSizeReportClicked(object sender, RoutedEventArgs e)
+		{
+			MessageBox.Show("Not implemented yet.", "Get Type Total Heap Size Report", MessageBoxButton.OK, MessageBoxImage.Information);
+		}
+
+		private void GetHeapBaseSizeClicked(object sender, RoutedEventArgs e)
+		{
+			GetInstancesHeapSizeClicked(sender, true);
+		}
+
+		private void GetHeapBaseSizeReportClicked(object sender, RoutedEventArgs e)
+		{
+			MessageBox.Show("Not implemented yet.", "Get Type Heap Base Size Report", MessageBoxButton.OK, MessageBoxImage.Information);
+		}
+
+		#endregion types main displays
+
+
+		private void DisplayListViewBottomGrid(ListingInfo info, char prefix, string name, string reportTitle, SWC.MenuItem[] menuItems = null, string filePath = null)
         {
             var grid = this.TryFindResource("ListViewBottomGrid") as Grid;
             grid.Name = name + "__" + Utils.GetNewID();
