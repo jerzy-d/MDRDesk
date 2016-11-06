@@ -370,10 +370,92 @@ namespace MDRDesk
 			MessageBox.Show("Not implemented yet.", "Get Type Heap Base Size Report", MessageBoxButton.OK, MessageBoxImage.Information);
 		}
 
-		#endregion types main displays
+        private async void GetParentReferences(object sender, RoutedEventArgs e)
+        {
+            if (!IsIndexAvailable("No index is loaded")) return;
+            string typeName;
+            int typeId;
+            if (!GetTypeNameInfo(sender, out typeName, out typeId)) return;
+
+            int instCount = CurrentIndex.GetTypeInstanceCount(typeId);
+
+            ReferenceSearchSetup dlg = new ReferenceSearchSetup(typeName + ", instance count: " + instCount) { Owner = this };
+            dlg.ShowDialog();
+            if (dlg.Cancelled) return;
+            int level = dlg.GetAllReferences ? Int32.MaxValue : dlg.SearchDepthLevel;
+            var dispMode = dlg.DisplayMode;
+
+            if (dispMode == ReferenceSearchSetup.DispMode.List)
+            {
+                SetStartTaskMainWindowState("Getting parent references for: '" + typeName + "', please wait...");
+                var report = await Task.Run(() => CurrentIndex.GetParentReferencesReport(typeId, level));
+
+                if (report.Error != null)
+                {
+                    MessageBox.Show(report.Error, "Action Aborted", MessageBoxButton.OK, MessageBoxImage.Exclamation);
+                    SetEndTaskMainWindowState("Getting parent references for: '" + Utils.BaseTypeName(typeName) + "', failed.");
+                    return;
+                }
+                SetEndTaskMainWindowState("Getting parent references for: '" + Utils.BaseTypeName(typeName) + "', done.");
+                DisplayListViewBottomGrid(report, Constants.BlackDiamond, ReportNameInstRef, ReportTitleInstRef);
+            }
+            if (dispMode == ReferenceSearchSetup.DispMode.Tree)
+            {
+                SetStartTaskMainWindowState("Getting parent references for: '" + typeName + "', please wait...");
+                var report = await Task.Run(() => CurrentIndex.GetParentTree(typeId, level));
+
+                if (report.Item1 != null)
+                {
+                    MessageBox.Show(report.Item1, "Action Aborted", MessageBoxButton.OK, MessageBoxImage.Exclamation);
+                    SetEndTaskMainWindowState("Getting parent references for: '" + Utils.BaseTypeName(typeName) + "', failed.");
+                    return;
+                }
+                SetEndTaskMainWindowState("Getting parent references for: '" + Utils.BaseTypeName(typeName) + "', done.");
+                DisplayTypeAncestorsGrid(report.Item2);
+            }
+
+        }
+        private async void LbInstanceParentsClicked(object sender, RoutedEventArgs e)
+        {
+            if (!IsIndexAvailable("No index is loaded")) return;
+
+            // get the address
+            //
+            var lbAddresses = GetTypeAddressesListBox(sender);
+            if (lbAddresses.SelectedItems.Count < 1)
+            {
+                MessageBox.Show("No address is selected!", "Action Aborted", MessageBoxButton.OK, MessageBoxImage.Exclamation);
+                return;
+            }
+            var addr = (ulong)lbAddresses.SelectedItems[0];
+
+            // get reference search info
+            //
+            ReferenceSearchSetup dlg = new ReferenceSearchSetup("Get parents of instance: " + Utils.RealAddressString(addr)) { Owner = this };
+            dlg.ShowDialog();
+            if (dlg.Cancelled) return;
+            int level = dlg.GetAllReferences ? Int32.MaxValue : dlg.SearchDepthLevel;
+            var dispMode = dlg.DisplayMode;
 
 
-		private void DisplayListViewBottomGrid(ListingInfo info, char prefix, string name, string reportTitle, SWC.MenuItem[] menuItems = null, string filePath = null)
+            if (dispMode == ReferenceSearchSetup.DispMode.List)
+            {
+                SetStartTaskMainWindowState("Getting parent references for: '" + Utils.RealAddressString(addr) + "', please wait...");
+                var report = await Task.Run(() => CurrentIndex.GetParentReferencesReport(addr, level));
+                if (report.Error != null)
+                {
+                    MessageBox.Show(report.Error, "Action Aborted", MessageBoxButton.OK, MessageBoxImage.Exclamation);
+                    return;
+                }
+                DisplayListViewBottomGrid(report, Constants.BlackDiamond, ReportNameInstRef, ReportTitleInstRef);
+            }
+
+        }
+
+        #endregion types main displays
+
+
+        private void DisplayListViewBottomGrid(ListingInfo info, char prefix, string name, string reportTitle, SWC.MenuItem[] menuItems = null, string filePath = null)
         {
             var grid = this.TryFindResource("ListViewBottomGrid") as Grid;
             grid.Name = name + "__" + Utils.GetNewID();
@@ -477,6 +559,48 @@ namespace MDRDesk
             MainTab.SelectedItem = tab;
             MainTab.UpdateLayout();
         }
+
+        private void DisplayTypeAncestorsGrid(AncestorNode root)
+        {
+            TreeViewItem tvRoot = new TreeViewItem();
+            tvRoot.Header = root.ToString();
+            tvRoot.Tag = root;
+            var que = new Queue<KeyValuePair<AncestorNode, TreeViewItem>>();
+            que.Enqueue(new KeyValuePair<AncestorNode, TreeViewItem>(root, tvRoot));
+            while (que.Count > 0)
+            {
+                var info = que.Dequeue();
+                AncestorNode parentNode = info.Key;
+                TreeViewItem tvParentNode = info.Value;
+                AncestorNode[] descendants = parentNode.Ancestors;
+                for (int i = 0, icount = descendants.Length; i < icount; ++i)
+                {
+                    var descNode = descendants[i];
+                    TreeViewItem tvNode = new TreeViewItem();
+                    tvNode.Header = descNode.ToString();
+                    tvNode.Tag = descNode;
+                    tvParentNode.Items.Add(tvNode);
+                    que.Enqueue(new KeyValuePair<AncestorNode, TreeViewItem>(descNode, tvNode));
+                }
+            }
+
+            var grid = this.TryFindResource("TreeViewGrid") as Grid;
+            Debug.Assert(grid != null);
+            grid.Name = "AncestorsTreeView__" + Utils.GetNewID();
+            var treeView = (TreeView)LogicalTreeHelper.FindLogicalNode(grid, "treeView");
+            Debug.Assert(treeView != null);
+            treeView.Tag = root;
+            Debug.Assert(treeView != null);
+            treeView.Items.Add(tvRoot);
+
+            tvRoot.ExpandSubtree();
+
+            var tab = new CloseableTabItem() { Header = Constants.BlackDiamond + " Type References", Content = grid, Name = "HeapIndexTypeViewTab" };
+            MainTab.Items.Add(tab);
+            MainTab.SelectedItem = tab;
+            MainTab.UpdateLayout();
+        }
+
 
         private void DisplayTypeValueSetupGrid(ClrtDisplayableType dispType)
         {

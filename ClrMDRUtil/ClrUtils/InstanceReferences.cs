@@ -124,7 +124,7 @@ namespace ClrMDRIndex
 			return ReadFieldParents(_parentOffsets[offsetNdx], _parentOffsets[offsetNdx + 1], out error);
 		}
 
-		public int[] GetFieldParents(int instanceNdx, out string error)
+        public int[] GetFieldParents(int instanceNdx, out string error)
 		{
 			Debug.Assert(instanceNdx >= 0);
 			var offsetNdx = Array.BinarySearch(_fieldInstances, instanceNdx);

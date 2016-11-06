@@ -179,6 +179,11 @@ namespace ClrMDRIndex
 			_count = other._count;
 		}
 
+	    public T Item(int i)
+	    {
+	        return _ary[_offset + i];
+	    }
+
 		public T First	=> _ary[_offset];
 		public T Second => _ary[_offset + 1];
 		public T Third	=> _ary[_offset + 2];

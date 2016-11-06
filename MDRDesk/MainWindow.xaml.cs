@@ -309,8 +309,6 @@ namespace MDRDesk
 			{
 				string error;
 				string indexPath;
-				//var indexer = new Indexer(path);
-				//var ok = indexer.Index(_myVersion, progress, out indexPath, out error);
 				var indexer = new DumpIndexer(path);
 				var ok = indexer.CreateDumpIndex(_myVersion, progress, DumpIndexer.IndexingArguments.All, out indexPath, out error);
 				return new Tuple<bool, string, string>(ok, error, indexPath);
@@ -1593,62 +1591,9 @@ namespace MDRDesk
 		}
 
 
-		private async void GetParentReferences(object sender, RoutedEventArgs e)
-		{
-
-			var lbTypeNames = GetTypeNameListBox(sender);
-			var selectedItem = lbTypeNames.SelectedItems[0];
-
-			if (selectedItem == null)
-			{
-				return; // TODO JRD -- display message
-			}
-
-			ulong[] typeAddresses = null;
-			string typeName = null;
-			int typeId = Constants.InvalidIndex;
-
-			if (selectedItem is KeyValuePair<string, int>) // namespace display
-			{
-				typeId = ((KeyValuePair<string, int>)selectedItem).Value;
-				typeName = ((KeyValuePair<string, int>)selectedItem).Key;
-				typeAddresses = CurrentMap.GetTypeAddresses(typeId);
-			}
 
 
-
-			ReferenceSearchSetup dlg = new ReferenceSearchSetup(typeName + ", instance count: " + typeAddresses.Length) { Owner = this };
-			dlg.ShowDialog();
-			if (dlg.Cancelled) return;
-			int level = dlg.GetAllReferences ? Int32.MaxValue : dlg.SearchDepthLevel;
-
-			SetStartTaskMainWindowState("Getting parent references for: '" + typeName + "', please wait...");
-
-			var result = await Task.Run(() =>
-			{
-				string error;
-				var nodes = CurrentMap.GetAddressesDescendants(typeId, typeAddresses, level, out error);
-				return new Tuple<string, DependencyNode, int>(error, nodes?.Item1, nodes?.Item2 ?? -1);
-			});
-
-			bool actionFailed = result.Item1 != null && !Utils.IsInformationString(result.Item1);
-
-			SetEndTaskMainWindowState("Getting parent references for: '" + typeName + (!actionFailed ? "' succeeded." : "' failed."));
-
-			if (actionFailed)
-			{
-				if (!Utils.IsInformationString(result.Item1))
-				{
-					ShowError(result.Item1);
-					return;
-				}
-			}
-
-			DisplayDependencyNodeGrid(result.Item2);
-
-		}
-
-		private async void GenerateSizeDetailsReport(object sender, RoutedEventArgs e) // TODO JRD -- display as ListView (listing)
+        private async void GenerateSizeDetailsReport(object sender, RoutedEventArgs e) // TODO JRD -- display as ListView (listing)
 		{
 			var lbTypeNames = GetTypeNameListBox(sender);
 			var selectedItem = lbTypeNames.SelectedItems[0];
@@ -1790,79 +1735,6 @@ namespace MDRDesk
 			SetEndTaskMainWindowState("Getting type details for field: '" + dispType.FieldName + "', done");
 
 
-		}
-
-		private void LbInstanceParentsClicked(object sender, RoutedEventArgs e)
-		{
-			if (!IsIndexAvailable("No index is loaded")) return;
-			var lbAddresses = GetTypeAddressesListBox(sender);
-			if (lbAddresses.SelectedItems.Count < 1)
-			{
-				MessageBox.Show("No address is selected!", "Action Aborted", MessageBoxButton.OK, MessageBoxImage.Exclamation);
-				return;
-			}
-			var addr = (ulong)lbAddresses.SelectedItems[0];
-			ReferenceSearchSetup dlg = new ReferenceSearchSetup("Get parents of instance: " + Utils.RealAddressString(addr)) { Owner = this };
-			dlg.ShowDialog();
-			if (dlg.Cancelled) return;
-			int level = dlg.GetAllReferences ? Int32.MaxValue : dlg.SearchDepthLevel;
-			var report = CurrentIndex.GetParentReferencesReport(addr, level);
-			if (report.Error != null)
-			{
-				MessageBox.Show(report.Error, "Action Aborted", MessageBoxButton.OK, MessageBoxImage.Exclamation);
-				return;
-			}
-			DisplayListViewBottomGrid(report, Constants.BlackDiamond, ReportNameInstRef, ReportTitleInstRef);
-		}
-
-		private async void GetInstImmediateRefsClicked(object sender, RoutedEventArgs e)
-		{
-
-		}
-
-
-		private void LbGetNLevelRefsClicked(object sender, RoutedEventArgs e)
-		{
-			int level;
-
-			var lbAddresses = GetTypeAddressesListBox(sender);
-			if (lbAddresses.SelectedItems.Count < 1)
-			{
-				MessageBox.Show("No address is selected!", "Action Aborted", MessageBoxButton.OK, MessageBoxImage.Exclamation);
-				return;
-			}
-
-			if (!GetUserEnteredInteger("Set reference level", out level)) return;
-			string error;
-			var addr = (ulong)lbAddresses.SelectedItems[0];
-			var report = CurrentMap.GetFieldReferencesReport(addr, level);
-			if (report.Error != null)
-			{
-				MessageBox.Show(report.Error, "Action Aborted", MessageBoxButton.OK, MessageBoxImage.Exclamation);
-				return;
-			}
-			DisplayListViewBottomGrid(report, Constants.BlackDiamond, ReportNameInstRef, ReportTitleInstRef);
-
-			//DisplayInstanceReferenceTree(rootNode);
-		}
-
-		private void LbGetInstAllRefsClicked(object sender, RoutedEventArgs e)
-		{
-			var lbAddresses = GetTypeAddressesListBox(sender);
-			if (lbAddresses.SelectedItems.Count < 1)
-			{
-				MessageBox.Show("No address is selected!", "Action Aborted", MessageBoxButton.OK, MessageBoxImage.Exclamation);
-				return;
-			}
-			string error;
-			var addr = (ulong)lbAddresses.SelectedItems[0];
-			var report = CurrentMap.GetFieldReferencesReport(addr);
-			if (report.Error != null)
-			{
-				MessageBox.Show(report.Error, "Action Aborted", MessageBoxButton.OK, MessageBoxImage.Exclamation);
-				return;
-			}
-			DisplayListViewBottomGrid(report, Constants.BlackDiamond, ReportNameInstRef, Utils.AddressString(addr));
 		}
 
 

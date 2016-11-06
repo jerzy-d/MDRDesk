@@ -22,7 +22,8 @@ namespace ClrMDRIndex
 			Int64 = 2,
 			UInt32 = 4,
 			UInt64 = 8,
-			String = 16
+			String = 16,
+            Address = 32
 		}
 
 		public static ListingStrCmp1Asc ListingStrCmp1AscInstance = new ListingStrCmp1Asc();
@@ -283,7 +284,35 @@ namespace ClrMDRIndex
 
 		public static void SortListingStringArray(ColumnInfo colInfo, listing<string>[] ary)
 		{
-			Array.Sort(ary, ReportFile.GetComparer(colInfo));
+			//Array.Sort(ary, ReportFile.GetComparer(colInfo));
+		    if (colInfo.Ascending)
+		    {
+		        switch (colInfo.ColumnType)
+		        {
+                    case ColumnType.String:
+                        var ascCmpStr = new ListingStrCmpAsc(colInfo.ColumnIndex - 1);
+                        Array.Sort(ary, ascCmpStr);
+                        return;
+                    default:
+		                var ascCmpNum = new ListingNumCmpAsc(colInfo.ColumnIndex - 1);
+                        Array.Sort(ary,ascCmpNum);
+                        return;
+                }
+            }
+		    else
+		    {
+                switch (colInfo.ColumnType)
+                {
+                    case ColumnType.String:
+                        var descCmpStr = new ListingStrCmpDesc(colInfo.ColumnIndex - 1);
+                        Array.Sort(ary, descCmpStr);
+                        return;
+                    default:
+                        var descCmpNum = new ListingNumCmpDesc(colInfo.ColumnIndex - 1);
+                        Array.Sort(ary, descCmpNum);
+                        return;
+                }
+            }
 		}
 
 		public static bool ParseReportLine(string ln, string[] sep, ColumnType[] cols, List<string> lst)
@@ -591,7 +620,66 @@ namespace ClrMDRIndex
 		}
 	}
 
-	public class ListingStrCmp1Asc : IComparer<listing<string>>
+    public class ListingStrCmpAsc : IComparer<listing<string>>
+    {
+        private int _ndx;
+
+        public ListingStrCmpAsc(int ndx)
+        {
+            _ndx = ndx;
+        }
+        public int Compare(listing<string> a, listing<string> b)
+        {
+            return string.Compare(a.Item(_ndx), b.Item(_ndx), StringComparison.Ordinal);
+        }
+    }
+
+    public class ListingStrCmpDesc : IComparer<listing<string>>
+    {
+        private int _ndx;
+
+        public ListingStrCmpDesc(int ndx)
+        {
+            _ndx = ndx;
+        }
+        public int Compare(listing<string> a, listing<string> b)
+        {
+            return string.Compare(b.Item(_ndx), a.Item(_ndx), StringComparison.Ordinal);
+        }
+    }
+
+    public class ListingNumCmpAsc : IComparer<listing<string>>
+    {
+        private int _ndx;
+
+        public ListingNumCmpAsc(int ndx)
+        {
+            _ndx = ndx;
+        }
+
+        public int Compare(listing<string> a, listing<string> b)
+        {
+            return Utils.NumStrAscComparer.Compare(a.Item(_ndx), b.Item(_ndx));
+        }
+    }
+
+    public class ListingNumCmpDesc : IComparer<listing<string>>
+    {
+        private int _ndx;
+
+        public ListingNumCmpDesc(int ndx)
+        {
+            _ndx = ndx;
+        }
+
+        public int Compare(listing<string> a, listing<string> b)
+        {
+            return Utils.NumStrAscComparer.Compare(b.Item(_ndx), a.Item(_ndx));
+        }
+    }
+
+
+    public class ListingStrCmp1Asc : IComparer<listing<string>>
 	{
 		public int Compare(listing<string> a, listing<string> b)
 		{
