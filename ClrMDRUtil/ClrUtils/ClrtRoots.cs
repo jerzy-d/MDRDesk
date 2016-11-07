@@ -45,61 +45,51 @@ namespace ClrMDRIndex
 			_finalizerQueInstanceIds = finalizeQueInstIds;
 		}
 
-		public static KeyValuePair<ulong[], ulong[]> GetRootAddresses(ClrHeap heap, string[] typeNames)
+		public static ulong[] GetRootAddresses(ClrHeap heap)
 		{
 			var roots = heap.EnumerateRoots(true);
-			HashSet<ulong> addrSet = new HashSet<ulong>();
-			HashSet<ulong> objSet = new HashSet<ulong>();
-			var nullTypes = new List<KeyValuePair<string,ulong>>();
-			var unknownTypes = new List<triple<string, string, ulong>>();
+			var dct = new Dictionary<ulong, ulong>();
 
 			foreach (var root in roots)
 			{
-				addrSet.Add(root.Address);
+				ulong rootAddr = root.Address;
 				ulong objAddr = root.Object;
-				objSet.Add(objAddr);
-				var clrType = heap.GetObjectType(objAddr);
-				if (clrType == null)
+				if (rootAddr != 0Ul)
 				{
-					nullTypes.Add(new KeyValuePair<string, ulong>(root.Name,objAddr));
-					continue;
+					rootAddr = Utils.SetAsRoot(root.Address);
+					ulong addr;
+					if (dct.TryGetValue(root.Address, out addr))
+					{
+						dct[root.Address] = rootAddr | addr;
+					}
+					else
+					{
+						dct.Add(root.Address,rootAddr);
+					}
 				}
-				if (Array.BinarySearch(typeNames, clrType.Name, StringComparer.Ordinal) < 0)
+				if (objAddr != 0UL)
 				{
-					unknownTypes.Add(new triple<string, string, ulong>(root.Name, clrType.Name, objAddr));
-				}
-			}
-
-			var addrAry = addrSet.ToArray();
-			var objAry = objSet.ToArray();
-			Array.Sort(addrAry);
-			Array.Sort(objAry);
-			int ndx = 0;
-			int cnt = Math.Min(addrAry.Length, objAry.Length);
-			while (ndx < cnt)
-			{
-				Utils.SetAsRoot(addrAry[ndx]);
-				Utils.SetAsRootPointee(objAry[ndx]);
-				++ndx;
-			}
-			if (ndx < addrAry.Length)
-			{
-				while (ndx < cnt)
-				{
-					Utils.SetAsRoot(addrAry[ndx]);
-					++ndx;
-				}
-			}
-			if (ndx < objAry.Length)
-			{
-				while (ndx < cnt)
-				{
-					Utils.SetAsRootPointee(objAry[ndx]);
-					++ndx;
+					if (root.Kind == GCRootKind.Finalizer)
+					{
+						objAddr = Utils.SetAsFinalizer(root.Object);
+					}
+					objAddr = Utils.SetAsRoot(objAddr);
+					ulong addr;
+					if (dct.TryGetValue(root.Object, out addr))
+					{
+						dct[root.Object] = addr | objAddr;
+					}
+					else
+					{
+						dct.Add(root.Object,objAddr);
+					}
 				}
 			}
 
-			return new KeyValuePair<ulong[], ulong[]>(addrAry, objAry);
+			var addrAry = dct.Values.ToArray();
+			var cmp = new Utils.AddressCmpAcs();
+			Array.Sort(addrAry,cmp);
+			return addrAry;
 		}
 
 		// TODO JRD -- delete later
@@ -185,7 +175,7 @@ namespace ClrMDRIndex
 		/// <param name="types">Instance types.</param>
 		/// <param name="idDct">String id dictionary.</param>
 		/// <returns>Roots info, <see cref="ClrtRoots"/></returns>
-		public static ClrtRoots GetRootInfos(ClrHeap heap, ulong[] instances, int[] types, StringIdDct idDct)
+		public static ClrtRoots GetRootInfos(ClrHeap heap, ulong[] instances, int[] types, ulong[] rootAddresses, StringIdDct idDct)
 		{
 			var rootDct = new SortedDictionary<ulong, List<ClrtRoot>>();
 			var finalizeQue = new List<ulong>(1024 * 1024);
@@ -194,7 +184,7 @@ namespace ClrMDRIndex
 			List<ClrRoot> lstNotFoundObject = new List<ClrRoot>();
 			List<ClrtRoot> lstRoots = new List<ClrtRoot>(1024 * 64);
 
-			foreach (var root in heap.EnumerateRoots())
+			foreach (var root in heap.EnumerateRoots(true))
 			{
 				var rootObj = root.Object;
 				if (root.Kind == GCRootKind.Finalizer)

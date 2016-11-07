@@ -38,8 +38,10 @@ namespace MDRDesk
 	{
 		private DispatcherTimer _dispatcherTimer; // to update some stuff periodically
 
+        /// <summary>
+        /// List of recent files.
+        /// </summary>
 		private RecentFileList RecentDumpList;
-
 		private RecentFileList RecentIndexList;
 		private RecentFileList RecentAdhocList;
 
@@ -300,7 +302,7 @@ namespace MDRDesk
 		{
 			var path = SelectCrashDumpFile();
 			if (path == null) return;
-			var dmpFileName = System.IO.Path.GetFileNameWithoutExtension(path);
+			var dmpFileName = Path.GetFileNameWithoutExtension(path);
 			var progressHandler = new Progress<string>(MainStatusShowMessage);
 			var progress = progressHandler as IProgress<string>;
 			SetStartTaskMainWindowState("Indexing: " + dmpFileName + ", please wait.");
@@ -372,10 +374,10 @@ namespace MDRDesk
 				ShowError(result.Item1);
 				return;
 			}
-			if (CurrentMap != null)
+			if (CurrentIndex != null)
 			{
-				CurrentMap.Dispose();
-				CurrentMap = null;
+				CurrentIndex.Dispose();
+				CurrentIndex = null;
 				Utils.ForceGcWithCompaction();
 			}
 			CurrentIndex = result.Item2;
@@ -401,7 +403,7 @@ namespace MDRDesk
 		private void IndexShowModuleInfosClicked(object sender, RoutedEventArgs e)
 		{
 			if (!IsIndexAvailable("Show Loaded Modules Infos")) return;
-			var path = CurrentMap.MapFolder + Path.DirectorySeparatorChar + CurrentMap.DumpBaseName + Constants.TxtTargetModulesPostfix;
+			var path = CurrentIndex.GetFilePath(-1, Constants.TxtTargetModulesPostfix);
 
 			string error, title;
 			var result = ReportFile.ReadReportFile(path, out title, out error);

@@ -22,10 +22,11 @@ namespace ClrMDRIndex
 			AddressMask = 0x00FFFFFFFFFFFFFF,
 			Root = 0x8000000000000000,
 			RootPointee = 0x4000000000000000,
-			Rooted = 0x2000000000000000,
+			Finalizer = 0x2000000000000000,
+			Rooted = 0x1000000000000000,
 		}
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static string AddressString(ulong addr)
         {
             ulong realAddr = RealAddress(addr);
@@ -59,6 +60,12 @@ namespace ClrMDRIndex
 		}
 
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		public static bool IsFinalizer(ulong addr)
+		{
+			return (addr & (ulong)RootBits.Finalizer) > 0;
+		}
+
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		public static bool IsRooted(ulong addr)
 		{
 			return (addr & (ulong)RootBits.RootMask) > 0;
@@ -83,6 +90,12 @@ namespace ClrMDRIndex
 		}
 
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		public static ulong SetAsFinalizer(ulong addr)
+		{
+			return addr |= (ulong)RootBits.Finalizer;
+		}
+
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		public static ulong SetAsRooted(ulong addr)
 		{
 			return addr |= (ulong)RootBits.Rooted;
@@ -94,15 +107,21 @@ namespace ClrMDRIndex
 			return addr & (ulong)RootBits.AddressMask;
 		}
 
-		/// <summary>
-		/// Binary search to find an index of the address in a ulong array.
-		/// </summary>
-		/// <param name="addresses">Array of ulongs.</param>
-		/// <param name="addr">Address to look for.</param>
-		/// <param name="lhs">An index to start the search, (left hand side).</param>
-		/// <param name="rhs">The last index included in the search range, (right hand side).</param>
-		/// <returns>Index of the item if found, invalid index (-1) otherwise.</returns>
-		public static int AddressSearch(ulong[] addresses, ulong addr, int lhs, int rhs)
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static void SortAddresses(ulong[] addresses)
+        {
+            Array.Sort(addresses, new AddressCmpAcs());
+        }
+
+        /// <summary>
+        /// Binary search to find an index of the address in a ulong array.
+        /// </summary>
+        /// <param name="addresses">Array of ulongs.</param>
+        /// <param name="addr">Address to look for.</param>
+        /// <param name="lhs">An index to start the search, (left hand side).</param>
+        /// <param name="rhs">The last index included in the search range, (right hand side).</param>
+        /// <returns>Index of the item if found, invalid index (-1) otherwise.</returns>
+        public static int AddressSearch(ulong[] addresses, ulong addr, int lhs, int rhs)
 		{
 			var cleanAddr = RealAddress(addr);
 			while (lhs <= rhs)
@@ -1025,11 +1044,27 @@ namespace ClrMDRIndex
 			return StringBuilderCache.GetStringAndRelease(sb);
 		}
 
-		#endregion String Utils
+        #endregion String Utils
 
-		#region Comparers
+        #region Comparers
 
-		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public class AddressCmpDesc : IComparer<ulong>
+        {
+            public int Compare(ulong a, ulong b)
+            {
+                return RealAddress(a) < RealAddress(b) ? 1 : (RealAddress(a) > RealAddress(b) ? -1 : 0);
+            }
+        }
+
+        public class AddressCmpAcs : IComparer<ulong>
+        {
+            public int Compare(ulong a, ulong b)
+            {
+                return RealAddress(a) < RealAddress(b) ? -1 : (RealAddress(a) > RealAddress(b) ? 1 : 0);
+            }
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
 		public static bool SameStrings(string s1, string s2)
 		{
 			return string.Compare(s1, s2, StringComparison.Ordinal) == 0;

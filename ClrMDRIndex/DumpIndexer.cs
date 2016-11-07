@@ -66,11 +66,13 @@ namespace ClrMDRIndex
 				{
 					if (DumpFileMoniker.GetAndCreateMapFolders(DumpPath, out error) == null) return false;
 					indexPath = IndexFolder;
+
 					// indexing
 					//
 					if (!GetPrerequisites(clrtDump, progress, out _stringIdDcts, out error)) return false;
+				    if (!GetTargetModuleInfos(clrtDump, progress, out error)) return false;
 
-					for (int r = 0, rcnt = clrtDump.RuntimeCount; r < rcnt; ++r)
+                    for (int r = 0, rcnt = clrtDump.RuntimeCount; r < rcnt; ++r)
 					{
 						_currentRuntimeIndex = r;
 						string runtimeIndexHeader = Utils.RuntimeStringHeader(r);
@@ -109,9 +111,7 @@ namespace ClrMDRIndex
 							//
 							progress?.Report(runtimeIndexHeader + "Getting roots... Previous action duration: " + durationStr);
 							stopWatch.Restart();
-							var rootArys = ClrtRoots.GetRootAddresses(heap, typeNames);
-							roots = rootArys.Key;
-							objects = rootArys.Value;
+							var rootAddresses = ClrtRootInfo.GetRootAddresses(heap);
 							durationStr = Utils.StopAndGetDurationString(stopWatch);
 
 							// get addresses and set roots
@@ -120,7 +120,7 @@ namespace ClrMDRIndex
 							stopWatch.Restart();
 							addresses = new ulong[addrCount];
 							typeIds = new int[addrCount];
-							if (!GetAddressesSetRoots(heap, addresses, typeIds, typeNames, roots, objects, out error))
+							if (!GetAddressesSetRoots(heap, addresses, typeIds, typeNames, rootAddresses, out error))
 							{
 								return false;
 							}
@@ -198,7 +198,7 @@ namespace ClrMDRIndex
 							// get roots info
 							//
 							{
-								var rootInfos = ClrtRoots.GetRootInfos(heap, addresses, typeIds, _stringIdDcts[r]);
+								var rootInfos = ClrtRoots.GetRootInfos(heap, addresses, typeIds, rootAddresses, _stringIdDcts[r]);
 								if (!rootInfos.PersitRootInfos(r, _fileMoniker, out error))
 								{
 									AddError(r, "PersitRootInfos failed." + Environment.NewLine + error);
@@ -340,14 +340,13 @@ namespace ClrMDRIndex
 			return count;
 		}
 
-		public bool GetAddressesSetRoots(ClrHeap heap, ulong[] addresses, int[] typeIds, string[] typeNames, ulong[] roots, ulong[] objects, out string error)
+		public bool GetAddressesSetRoots(ClrHeap heap, ulong[] addresses, int[] typeIds, string[] typeNames, ulong[] roots, out string error)
 		{
 			error = null;
 			try
 			{
 				var segs = heap.Segments;
 				var rootsLastNdx = roots.Length - 1;
-				var objectsLastNdx = objects.Length - 1;
 				int addrNdx = 0;
 				int segIndex = 0;
 				uint[] sizes = new uint[addresses.Length];
@@ -373,15 +372,14 @@ namespace ClrMDRIndex
 						typeIds[addrNdx] = typeId;
 						if (clrType == null) goto NEXT_OBJECT;
 
-						var isRoot = Utils.AddressSearch(roots, addr, 0, rootsLastNdx) >= 0;
-						var isPointee = Utils.AddressSearch(objects, addr, 0, objectsLastNdx) >= 0;
-						if (isRoot || isPointee)
+						int rootNdx = Utils.AddressSearch(roots, addr, 0, rootsLastNdx);
+						if (rootNdx < 0)
 						{
-							addresses[addrNdx] = Utils.SetRooted(addr, isRoot, isPointee);
+							addresses[addrNdx] = addr;
 						}
 						else
 						{
-							addresses[addrNdx] = addr;
+							addresses[addrNdx] = roots[rootNdx];
 						}
 						var isFree = Utils.SameStrings(clrType.Name, Constants.FreeTypeName);
 						var baseSize = clrType.BaseSize;
@@ -474,33 +472,122 @@ namespace ClrMDRIndex
 			}
 		}
 
-		///// <summary>
-		///// Getting domains info.
-		///// </summary>
-		///// <param name="runtime">A dump runtime.</param>
-		///// <param name="idDct">String cache.</param>
-		///// <returns>Doamins information.</returns>
-		///// <remarks>It is public and static for unit tests.</remarks>
-		//public static ClrtAppDomains GetAppDomains(ClrRuntime runtime, StringIdDct idDct)
-		//{
-		//	var systenDomain = runtime.SystemDomain == null
-		//		? new ClrtAppDomain()
-		//		: new ClrtAppDomain(runtime.SystemDomain, idDct);
-		//	var sharedDomain = runtime.SharedDomain == null
-		//		? new ClrtAppDomain()
-		//		: new ClrtAppDomain(runtime.SharedDomain, idDct);
-		//	var domains = new ClrtAppDomains(systenDomain, sharedDomain);
-		//	var appDomainCnt = runtime.AppDomains.Count;
-		//	ClrtAppDomain[] appDomains = new ClrtAppDomain[appDomainCnt];
-		//	for (int i = 0; i < appDomainCnt; ++i)
-		//	{
-		//		appDomains[i] = new ClrtAppDomain(runtime.AppDomains[i], idDct);
-		//	}
-		//	domains.AddAppDomains(appDomains);
-		//	return domains;
-		//}
+        public bool GetTargetModuleInfos(ClrtDump clrtDump, IProgress<string> progress, out string error)
+        {
+            error = null;
+            progress?.Report(Utils.TimeString(DateTime.Now) + " Getting target module infos...");
+            try
+            {
+                var target = clrtDump.DataTarget;
+                var modules = target.EnumerateModules().ToArray();
+                var dct = new SortedDictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+                var lst = new string[3];
+                for (int i = 0, icnt = modules.Length; i < icnt; ++i)
+                {
+                    var module = modules[i];
+                    var moduleName = Path.GetFileName(module.FileName);
+                    var key = moduleName + Constants.HeavyGreekCrossPadded + module.FileName;
+                    int nameNdx = 1;
+                    while (dct.ContainsKey(key))
+                    {
+                        moduleName = moduleName + "(" + nameNdx + ")";
+                        key = moduleName + Constants.HeavyGreekCrossPadded + module.FileName;
+                        ++nameNdx;
+                    }
+                    lst[0] = Utils.AddressString(module.ImageBase);
+                    lst[1] = Utils.SizeString(module.FileSize);
+                    lst[2] = module.Version.ToString();
+                    var entry = string.Join(Constants.HeavyGreekCrossPadded, lst);
+                    if (!dct.ContainsKey(key)) // just in case
+                        dct.Add(key, entry);
+                    else
+                        AddError(0, "DataTarget.EnumerateModules return duplicate modules: " + key);
+                }
+                string[] extraInfos = new[]
+                {
+                    _fileMoniker.Path,
+                    "Module Count: " + Utils.CountString(dct.Count)
+                };
+                DumpModuleInfos(dct, extraInfos);
+                return true;
+            }
+            catch (Exception ex)
+            {
+                error = Utils.GetExceptionErrorString(ex);
+                return false;
+            }
+        }
 
-		private void DumpErrors()
+        private void DumpModuleInfos(SortedDictionary<string, string> dct, IList<string> extraInfos)
+        {
+            var path = _fileMoniker.GetFilePath(-1, Constants.TxtTargetModulesPostfix);
+            StreamWriter txtWriter = null;
+            try
+            {
+                ResetReadOnlyAttribute(path);
+                txtWriter = new StreamWriter(path);
+                txtWriter.WriteLine("### MDRDESK REPORT: Target Module Infos");
+                txtWriter.WriteLine("### TITLE: Target Modules");
+                txtWriter.WriteLine("### COUNT: " + Utils.LargeNumberString(dct.Count));
+                txtWriter.WriteLine("### COLUMNS: Image Base|uint64"
+                                    + Constants.HeavyGreekCrossPadded + "File Size|uint32"
+                                    + Constants.HeavyGreekCrossPadded + "Version|string"
+                                    + Constants.HeavyGreekCrossPadded + "File Name|string" +
+                                    Constants.HeavyGreekCrossPadded + "Path|string");
+                txtWriter.WriteLine("### SEPARATOR: " + Constants.HeavyGreekCrossPadded);
+
+                for (int i = 0, icnt = extraInfos.Count; i < icnt; ++i)
+                {
+                    txtWriter.WriteLine(ReportFile.DescrPrefix + extraInfos[i]);
+                }
+                foreach (var kv in dct)
+                {
+                    txtWriter.Write(kv.Value);
+                    txtWriter.Write(Constants.HeavyGreekCrossPadded);
+                    txtWriter.WriteLine(kv.Key);
+                }
+            }
+            catch (Exception ex)
+            {
+                AddError(-1, "[Indexer.DumpModuleInfos]" + Environment.NewLine + Utils.GetExceptionErrorString(ex));
+            }
+            finally
+            {
+                if (txtWriter != null)
+                {
+                    txtWriter.Close();
+                    File.SetAttributes(path, File.GetAttributes(path) | FileAttributes.ReadOnly);
+                }
+            }
+        }
+
+        ///// <summary>
+        ///// Getting domains info.
+        ///// </summary>
+        ///// <param name="runtime">A dump runtime.</param>
+        ///// <param name="idDct">String cache.</param>
+        ///// <returns>Doamins information.</returns>
+        ///// <remarks>It is public and static for unit tests.</remarks>
+        //public static ClrtAppDomains GetAppDomains(ClrRuntime runtime, StringIdDct idDct)
+        //{
+        //	var systenDomain = runtime.SystemDomain == null
+        //		? new ClrtAppDomain()
+        //		: new ClrtAppDomain(runtime.SystemDomain, idDct);
+        //	var sharedDomain = runtime.SharedDomain == null
+        //		? new ClrtAppDomain()
+        //		: new ClrtAppDomain(runtime.SharedDomain, idDct);
+        //	var domains = new ClrtAppDomains(systenDomain, sharedDomain);
+        //	var appDomainCnt = runtime.AppDomains.Count;
+        //	ClrtAppDomain[] appDomains = new ClrtAppDomain[appDomainCnt];
+        //	for (int i = 0; i < appDomainCnt; ++i)
+        //	{
+        //		appDomains[i] = new ClrtAppDomain(runtime.AppDomains[i], idDct);
+        //	}
+        //	domains.AddAppDomains(appDomains);
+        //	return domains;
+        //}
+
+        private void DumpErrors()
 		{
 			StreamWriter errWriter = null;
 			try

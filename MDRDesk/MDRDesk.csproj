@@ -289,6 +289,9 @@
   <ItemGroup>
     <Resource Include="Images\Arrange_16x.png" />
   </ItemGroup>
+  <ItemGroup>
+    <Resource Include="Comparison.1101.0200.txt" />
+  </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <PropertyGroup>
     <PostBuildEvent>

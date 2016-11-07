@@ -20,6 +20,9 @@ namespace UnitTestMdr
 		private const string _mapPath = @"D:\Jerzy\WinDbgStuff\dumps\Analytics\Scopia\noDeleteMsgs.map";
 		private const string _typeName = @"ECS.Common.HierarchyCache.Structure.RealPosition";
 
+		private const string _indexPath = @"C:\WinDbgStuff\Dumps\TestApp\TestApp.exe_161022_103226.dmp.map";
+
+
 		private TestContext testContextInstance;
 		/// <summary>
 		///Gets or sets the test context which provides
@@ -198,8 +201,18 @@ namespace UnitTestMdr
 
 		#endregion Instance Dependencies
 
+	    [TestMethod]
+	    public void Conversions()
+	    {
+            TimeSpan ts1 = new TimeSpan(0, 1, 34, 57);
+            TimeSpan ts2 = new TimeSpan(0, 0, 3, 29);
 
-		[TestMethod]
+	        double gain = 100 * ((ts1.TotalMilliseconds - ts2.TotalMilliseconds)/ts2.TotalMilliseconds);
+
+
+	    }
+
+        [TestMethod]
 		public void TestBuildTestUnitIssues()
 		{
 			const string typeName = @"Microsoft.VisualStudio.TestTools.TestTypes.Unit.UnitTestResult";
@@ -895,6 +908,18 @@ namespace UnitTestMdr
 
         #endregion Types
 
+		[TestMethod]
+		public void TextFinalizationQueue()
+		{
+			string error = null;
+			var index = OpenIndex(_indexPath);
+			Assert.IsNotNull(index);
+			using (index)
+			{
+				var roots = index.GetRoots(out error);
+				Assert.IsNull(error,error);
+			}
+		}
 
         #region Instance References
 

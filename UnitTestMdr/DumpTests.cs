@@ -525,9 +525,10 @@ namespace UnitTestMdr
 		public void TestRootedInfo2()
 		{
 			Stopwatch stopWatch = new Stopwatch();
-			string dmpPath = @"D:\Jerzy\WinDbgStuff\dumps\TestApp\TestApp.exe_161031_093521.dmp";
-			//string dmpPath = @"D:\Jerzy\WinDbgStuff\dumps\Analytics\ConvergEx\Analytics_Post.dmp";
-
+			//string dmpPath = @"D:\Jerzy\WinDbgStuff\dumps\TestApp\TestApp.exe_161031_093521.dmp";
+			//string dmpPath = @"C:\WinDbgStuff\dumps\Analytics\ConvergeEx\Analytics_Post.dmp";
+			string dmpPath = @"C:\WinDbgStuff\Dumps\Analytics\Highline\analyticsdump111.dmp";
+			
 			string error = null;
 			var errors = new ConcurrentBag<string>();
 			string outPath = null;
@@ -547,6 +548,7 @@ namespace UnitTestMdr
 
 					DumpFileMoniker fileMoniker = new DumpFileMoniker(clrtDump.DumpPath);
 
+					var rfinQue = runtime.EnumerateFinalizerQueueObjectAddresses().ToArray();
 					// get heap address count
 					//
 					stopWatch.Restart();
@@ -563,239 +565,34 @@ namespace UnitTestMdr
 					// get roots
 					//
 					stopWatch.Restart();
-					var rootArys = ClrtRoots.GetRootAddresses(heap, typeNames);
-					var roots = rootArys.Key;
-					var objects = rootArys.Value;
-					var getRootsduration = Utils.StopAndGetDurationString(stopWatch);
-
-					// get addresses and set roots
-					//
-					stopWatch.Restart();
-					ulong[] addresses = new ulong[addrCount];
-					int[] typeIds = new int[addrCount];
-					var segs = heap.Segments;
-					var rootsLastNdx = roots.Length - 1;
-					var objectsLastNdx = objects.Length - 1;
-					int addrNdx = 0;
-					for (int segNdx = 0, icnt = segs.Count; segNdx < icnt; ++segNdx)
+					var rootArys = ClrtRoots.GetRootAddresses(heap);
+					var finQue = ClrtDump.GetFinalizeQue(heap, out error);
+					Assert.IsNull(error,error);
+					int notFound = 0;
+					for (int i = 0, icnt = finQue.Length; i < icnt; ++i)
 					{
-						var seg = segs[segNdx];
-						ulong addr = seg.FirstObject;
-						while (addr != 0ul)
+						var ndx = Utils.AddressSearch(rootArys, finQue[i]);
+						if (ndx < 0)
 						{
-							var clrType = heap.GetObjectType(addr);
-
-							var typeNameKey = clrType == null ? Constants.NullTypeName : clrType.Name;
-							int typeId = Array.BinarySearch(typeNames, typeNameKey, StringComparer.Ordinal);
-							if (typeId < 0)
-							{
-								int a = 0;
-							}
-							typeIds[addrNdx] = typeId;
-							if (clrType == null) goto NEXT_OBJECT;
-
-							var isRoot = Utils.AddressSearch(roots, addr, 0, rootsLastNdx) >= 0;
-							var isPointee = Utils.AddressSearch(objects, addr, 0, objectsLastNdx) >= 0;
-							//var isRoot = Array.BinarySearch(roots, addr) >= 0;
-							//var isPointee = Array.BinarySearch(objects, addr) >= 0;
-							if (isRoot || isPointee)
-							{
-								addresses[addrNdx] = Utils.SetRooted(addr, isRoot, isPointee);
-							}
-							else
-							{
-								addresses[addrNdx] = addr;
-							}
-
-							NEXT_OBJECT:
-							addr = seg.NextObject(addr);
-							++addrNdx;
+							++notFound;
 						}
 					}
-					var durationtraverseHeap = Utils.StopAndGetDurationString(stopWatch);
-
-					// field dependencies
-					//
-					stopWatch.Restart();
-
-					var instanceFldRefs = fileMoniker.GetFilePath(0, Constants.MapFieldRefInstancesPostfix);
-					var fldRefQue = new BlockingCollection<KeyValuePair<int, int[]>>();
-					var fldRefErrors = new List<string>(0);
-					var threadFldRefPersister = Indexer.StartFieldRefInfoPersiter(instanceFldRefs, fldRefQue, fldRefErrors);
-
-					var fldRefList = new List<KeyValuePair<ulong, int>>(64);
-					var addressesLastNdx = addresses.Length - 1;
-					var fieldsArrays = new int[addresses.Length][];
-					var fldRefs = new HashSet<int>();
-
-					for (int i = 0, icnt = addresses.Length; i < icnt; ++i)
+					int finCnt = 0;
+					for (int i = 0, icnt = rootArys.Length; i < icnt; ++i)
 					{
-						var addr = addresses[i];
-						var cleanAddr = Utils.RealAddress(addr);
-						var isRooted = Utils.IsRooted(addr);
-
-						var clrType = heap.GetObjectType(cleanAddr);
-						if (clrType == null || clrType.IsString || clrType.Fields == null) continue;
-
-						var isArray = clrType.IsArray;
-						fldRefList.Clear();
-						clrType.EnumerateRefsOfObjectCarefully(cleanAddr, (address, off) =>
+						if (Utils.IsFinalizer(rootArys[i]))
 						{
-							fldRefList.Add(new KeyValuePair<ulong, int>(address, off));
-						});
-
-						if (fldRefList.Count > 0)
-						{
-							fldRefs.Clear();
-
-							for (int k = 0, kcnt = fldRefList.Count; k < kcnt; ++k)
-							{
-								if (isArray && kcnt > 100)
-								{
-									int a = 1;
-								}
-								var fldAddr = fldRefList[k].Key;
-								var addrnx = Utils.AddressSearch(addresses, fldAddr, 0, addressesLastNdx);
-								if (fldAddr == 0UL || fldRefs.Contains(addrnx)) continue;
-								if (addrnx < 0)
-								{
-									int a = 1;
-								}
-								fldRefs.Add(addrnx);
-								if (isRooted)
-								{
-									DumpIndexer.MarkAsRooted(fldAddr, addrnx, addresses, fieldsArrays);
-								}
-							}
-						}
-
-						if (fldRefs.Count > 0)
-						{
-							var refAry = fldRefs.ToArray();
-							Array.Sort(refAry);
-							fieldsArrays[i] = refAry;
-							fldRefQue.Add(new KeyValuePair<int, int[]>(i,refAry));
+							++finCnt;
 						}
 					}
-
-					fldRefQue.Add(new KeyValuePair<int, int[]>(-1, null));
-					threadFldRefPersister.Join();
-
-					InstanceReferences.InvertFieldRefs(new Tuple<int, DumpFileMoniker, ConcurrentBag<string>, IProgress<string>>(0,fileMoniker,errors,null));
-
-					string path = fileMoniker.GetFilePath(0, Constants.MapInstancesFilePostfix);
-					Utils.WriteUlongArray(path, addresses, out error);
-					path = fileMoniker.GetFilePath(0, Constants.MapInstanceTypesFilePostfix);
-					Utils.WriteIntArray(path, typeIds, out error);
-					path = fileMoniker.GetFilePath(0, Constants.TxtTypeNamesFilePostfix);
-					Utils.WriteStringList(path, typeNames, out error);
-
-					var getTypeRefsDuration = Utils.StopAndGetDurationString(stopWatch);
-
-					//if (true)
-					//{
-					//	StreamWriter sw = null;
-					//	outPath = DumpFileMoniker.GetAndCreateOutFolder(clrtDump.DumpPath, out error) +
-					//			  Path.DirectorySeparatorChar + "Test2.Instances.txt";
-					//	try
-					//	{
-					//		sw = new StreamWriter(outPath);
-					//		sw.WriteLine(addresses.Length);
-					//		for (int i = 0, icnt = addresses.Length; i < icnt; ++i)
-					//		{
-					//			sw.Write(Utils.AddressStringHeader(addresses[i]));
-					//			if (typeIds[i] < 0 || typeIds[i] >= typeNames.Length)
-					//			{
-					//				int a = 1;
-					//			}
-					//			sw.WriteLine(typeNames[typeIds[i]]);
-					//			if (fieldsArrays[i] != null)
-					//			{
-					//				for (int j = 0, jcnt = fieldsArrays[i].Length; j < jcnt; ++j)
-					//				{
-					//					sw.Write("   ");
-					//					var aNdx = fieldsArrays[i][j];
-					//					sw.Write(Utils.AddressStringHeader(addresses[aNdx]));
-					//					if (typeIds[aNdx] < 0 || typeIds[aNdx] >= typeNames.Length)
-					//					{
-					//						int a = 1;
-					//					}
-					//					sw.WriteLine(typeNames[typeIds[aNdx]]);
-					//				}
-					//			}
-					//		}
-					//	}
-					//	catch (Exception ex)
-					//	{
-					//		Assert.IsTrue(false, ex.ToString());
-					//	}
-					//	finally
-					//	{
-					//		sw?.Close();
-					//	}
-					//}
-
-					BitArray usedTypes = new BitArray(typeNames.Length);
-					int unknownTypeCnt = 0;
-					for (int i = 0, icnt = typeIds.Length; i < icnt; ++i)
-					{
-						var typeId = typeIds[i];
-						if (typeId < 0) ++unknownTypeCnt;
-						else usedTypes.Set(typeId, true);
-					}
-					int usedCnt = usedTypes.Count;
-					int unknownRoots = 0;
-					int nullRoots = 0;
-					for (int i = 0, icnt = roots.Length; i < icnt; ++i)
-					{
-						var cType = heap.GetObjectType(roots[i]);
-						if (cType == null)
-						{
-							++nullRoots;
-							continue;
-						}
-						var typeId = Array.BinarySearch(typeNames, cType.Name, StringComparer.Ordinal);
-						if (typeId < 0)
-						{
-							++unknownRoots;
-							continue;
-						}
-						usedTypes.Set(typeId, true);
-					}
-
-					int unknownObjs = 0;
-					int nullObjs = 0;
-					for (int i = 0, icnt = objects.Length; i < icnt; ++i)
-					{
-						var cType = heap.GetObjectType(objects[i]);
-						if (cType == null)
-						{
-							++nullObjs;
-							continue;
-						}
-						var typeId = Array.BinarySearch(typeNames, cType.Name, StringComparer.Ordinal);
-						if (typeId < 0)
-						{
-							++unknownObjs;
-							continue;
-						}
-						usedTypes.Set(typeId, true);
-					}
-
-
 
 					TestContext.WriteLine("open dump:        " + getOpenDumpDuration);
 					TestContext.WriteLine("address count:    " + getAddressCountDuration);
-					TestContext.WriteLine("root addresses:   " + getRootsduration);
 					TestContext.WriteLine("type names:       " + getTypeDuration);
-					TestContext.WriteLine("get object types, and addresses: " + durationtraverseHeap);
-					TestContext.WriteLine("get object references: " + getTypeRefsDuration);
 
 
 					TestContext.WriteLine("####  type counts:");
 					TestContext.WriteLine("typeNames:        " + typeNames.Length);
-					TestContext.WriteLine("unknown types:    " + unknownTypeCnt);
-					TestContext.WriteLine("used types:       " + usedTypes.Count);
 
 				}
 				catch (Exception ex)

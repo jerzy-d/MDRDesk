@@ -415,6 +415,12 @@ namespace MDRDesk
             }
 
         }
+
+        /// <summary>
+        /// Get parents of a selected single instance.
+        /// </summary>
+        /// <param name="sender">Delegate invoker.</param>
+        /// <param name="e">Delegate argument, not used.</param>
         private async void LbInstanceParentsClicked(object sender, RoutedEventArgs e)
         {
             if (!IsIndexAvailable("No index is loaded")) return;
@@ -437,19 +443,33 @@ namespace MDRDesk
             int level = dlg.GetAllReferences ? Int32.MaxValue : dlg.SearchDepthLevel;
             var dispMode = dlg.DisplayMode;
 
-
+            string msg = "Getting parent references for: '" + Utils.RealAddressString(addr) + "', ";
             if (dispMode == ReferenceSearchSetup.DispMode.List)
             {
-                SetStartTaskMainWindowState("Getting parent references for: '" + Utils.RealAddressString(addr) + "', please wait...");
+                SetStartTaskMainWindowState(msg + "please wait...");
                 var report = await Task.Run(() => CurrentIndex.GetParentReferencesReport(addr, level));
                 if (report.Error != null)
                 {
+                    SetEndTaskMainWindowState(msg + "failed.");
                     MessageBox.Show(report.Error, "Action Aborted", MessageBoxButton.OK, MessageBoxImage.Exclamation);
                     return;
                 }
+                SetEndTaskMainWindowState(msg + "done.");
                 DisplayListViewBottomGrid(report, Constants.BlackDiamond, ReportNameInstRef, ReportTitleInstRef);
             }
-
+            if (dispMode == ReferenceSearchSetup.DispMode.Tree)
+            {
+                SetStartTaskMainWindowState(msg + "please wait...");
+                var report = await Task.Run(() => CurrentIndex.GetParentTree(addr, level));
+                if (report.Item1 != null)
+                {
+                    SetEndTaskMainWindowState(msg + "failed.");
+                    MessageBox.Show(report.Item1, "Action Aborted", MessageBoxButton.OK, MessageBoxImage.Exclamation);
+                    return;
+                }
+                SetEndTaskMainWindowState(msg + "done.");
+                DisplayTypeAncestorsGrid(report.Item2);
+            }
         }
 
         #endregion types main displays
