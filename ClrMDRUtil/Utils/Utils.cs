@@ -18,16 +18,17 @@ namespace ClrMDRIndex
 
 		public enum RootBits : ulong
 		{
-			RootMask = 0xFF00000000000000,
+			Mask =        0xFF00000000000000,
+			RootedMask =  0xF000000000000000,
 			AddressMask = 0x00FFFFFFFFFFFFFF,
-			Root = 0x8000000000000000,
+			Root =        0x8000000000000000,
 			RootPointee = 0x4000000000000000,
-			Finalizer = 0x2000000000000000,
-			Rooted = 0x1000000000000000,
+			Rooted =      0x2000000000000000,
+			Finalizer =   0x08000000000000000,
 		}
 
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static string AddressString(ulong addr)
+		public static string AddressString(ulong addr)
         {
             ulong realAddr = RealAddress(addr);
             return IsRooted(addr)
@@ -68,13 +69,13 @@ namespace ClrMDRIndex
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		public static bool IsRooted(ulong addr)
 		{
-			return (addr & (ulong)RootBits.RootMask) > 0;
+			return (addr & (ulong)RootBits.RootedMask) > 0;
 		}
 
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		public static bool IsNotRooted(ulong addr)
 		{
-			return (addr & (ulong)RootBits.RootMask) == 0;
+			return (addr & (ulong)RootBits.RootedMask) == 0;
 		}
 
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]

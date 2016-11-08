@@ -78,7 +78,7 @@ namespace ClrMDRIndex
 		private string[] _stringIds; // ordered by string ids TODO JRD
 		public string[] StringIds => _stringIds;
 
-		private ClrtRoots _roots;
+		private ClrtRootInfo _roots;
 
 		#endregion fields/properties
 
@@ -138,6 +138,11 @@ namespace ClrMDRIndex
 				//
 				path = _fileMoniker.GetFilePath(_currentRuntimeIndex, Constants.MapSegmentInfoFilePostfix);
 				_segments = ClrtSegment.ReadSegments(path, out error);
+
+				// roots
+				//
+				_roots = ClrtRootInfo.Load(_currentRuntimeIndex,_fileMoniker,out error);
+				if (error != null) return false;
 
 				// typenames
 				//
@@ -868,14 +873,14 @@ namespace ClrMDRIndex
 
 		#region roots
 
-		public ClrtRoots GetRoots(out string error)
+		public ClrtRootInfo GetRoots(out string error)
 		{
 			error = null;
 			if (_roots == null)
 			{
 				try
 				{
-					_roots = ClrtRoots.LoadRoots(_currentRuntimeIndex,_fileMoniker,out error);
+					_roots = ClrtRootInfo.Load(_currentRuntimeIndex,_fileMoniker,out error);
 					if (error != null) return null;
 				}
 				catch (Exception ex)

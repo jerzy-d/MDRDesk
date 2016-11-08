@@ -193,8 +193,11 @@ namespace ClrMDRIndex
 		public const string MapFieldRefOffsetsFilePostfix = ".`FIELDREFOFFSETS[0].bin";
 		public const string MapFieldParentsPostfix = ".`FIELDPARENTS[0].bin";
 
+		public const string TxtCommonStringIdsPostfix = ".`STRINGIDS[0].txt"; // list of strings, ordered by ids
+
+
 		// end of new stuff ///////////////////////////////////////////////////////////////////////////////////////////////////////
-		
+
 		public const string TxtDumpStringsPostfix = ".DUMPSTRINGS[0].txt"; // list of all strings in dump, ordered by StringComparer.Ordinal
 		public const string MapDumpStringsInfoPostfix = ".DUMPSTRINGSINFO[0].map"; // information about dump strings: addresses, sizes, etc
 

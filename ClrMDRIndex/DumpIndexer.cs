@@ -81,6 +81,7 @@ namespace ClrMDRIndex
 						ClrHeap heap = runtime.GetHeap();
 						ConcurrentBag<string> errors = new ConcurrentBag<string>();
 						_errors[r] = errors;
+						var strIds = _stringIdDcts[r];
 
 
 						string[] typeNames = null;
@@ -111,7 +112,8 @@ namespace ClrMDRIndex
 							//
 							progress?.Report(runtimeIndexHeader + "Getting roots... Previous action duration: " + durationStr);
 							stopWatch.Restart();
-							var rootAddresses = ClrtRootInfo.GetRootAddresses(heap);
+							var rootAddrInfo = ClrtRootInfo.GetRootAddresses(r, heap, typeNames, strIds,_fileMoniker,out error);
+							Debug.Assert(error == null);
 							durationStr = Utils.StopAndGetDurationString(stopWatch);
 
 							// get addresses and set roots
@@ -120,7 +122,7 @@ namespace ClrMDRIndex
 							stopWatch.Restart();
 							addresses = new ulong[addrCount];
 							typeIds = new int[addrCount];
-							if (!GetAddressesSetRoots(heap, addresses, typeIds, typeNames, rootAddresses, out error))
+							if (!GetAddressesSetRoots(heap, addresses, typeIds, typeNames, rootAddrInfo.Item1, out error))
 							{
 								return false;
 							}
@@ -195,16 +197,16 @@ namespace ClrMDRIndex
 							threadFldRefPersister.Join();
 							durationStr = Utils.StopAndGetDurationString(stopWatch);
 
-							// get roots info
-							//
-							{
-								var rootInfos = ClrtRoots.GetRootInfos(heap, addresses, typeIds, rootAddresses, _stringIdDcts[r]);
-								if (!rootInfos.PersitRootInfos(r, _fileMoniker, out error))
-								{
-									AddError(r, "PersitRootInfos failed." + Environment.NewLine + error);
-									return false;
-								}
-							}
+							//// get roots info
+							////
+							//{
+							//	var rootInfos = ClrtRoots.GetRootInfos(heap, addresses, typeIds, rootAddresses, _stringIdDcts[r]);
+							//	if (!rootInfos.PersitRootInfos(r, _fileMoniker, out error))
+							//	{
+							//		AddError(r, "PersitRootInfos failed." + Environment.NewLine + error);
+							//		return false;
+							//	}
+							//}
 
 							// build type/instance map
 							//
@@ -238,8 +240,14 @@ namespace ClrMDRIndex
 								path = _fileMoniker.GetFilePath(r, Constants.TxtReversedTypeNamesFilePostfix);
 								Utils.WriteStringList(path, reversedNames, out error);
 							}
-
-
+							// save string ids
+							//
+							path = _fileMoniker.GetFilePath(r, Constants.TxtCommonStringIdsPostfix);
+							if (!strIds.DumpInIdOrder(path, out error))
+							{
+								AddError(_currentRuntimeIndex, "StringIdDct.DumpInIdOrder failed." + Environment.NewLine + error);
+								return false;
+							}
 
 							//if (indexArguments == IndexingArguments.JustInstanceRefs) return true; // we only want instance refs
 						}

@@ -397,7 +397,7 @@ namespace MDRDesk
 			}
 
 			this.Title = BaseTitle + Constants.BlackDiamondPadded + CurrentIndex.DumpFileName;
-			RecentIndexList.Add(path);
+			RecentIndexList.Add(CurrentIndex.IndexFolder);
 		}
 
 		private void IndexShowModuleInfosClicked(object sender, RoutedEventArgs e)

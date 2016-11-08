@@ -11,6 +11,7 @@ using System.Text;
 using System.Threading.Tasks;
 using Microsoft.Diagnostics.Runtime;
 using ClrMDRIndex;
+using ClrMDRUtil.Utils;
 using DmpNdxQueries;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 
@@ -526,8 +527,8 @@ namespace UnitTestMdr
 		{
 			Stopwatch stopWatch = new Stopwatch();
 			//string dmpPath = @"D:\Jerzy\WinDbgStuff\dumps\TestApp\TestApp.exe_161031_093521.dmp";
-			//string dmpPath = @"C:\WinDbgStuff\dumps\Analytics\ConvergeEx\Analytics_Post.dmp";
-			string dmpPath = @"C:\WinDbgStuff\Dumps\Analytics\Highline\analyticsdump111.dmp";
+			string dmpPath = @"C:\WinDbgStuff\dumps\Analytics\ConvergeEx\Analytics_Post.dmp";
+			//string dmpPath = @"C:\WinDbgStuff\Dumps\Analytics\Highline\analyticsdump111.dmp";
 			
 			string error = null;
 			var errors = new ConcurrentBag<string>();
@@ -548,7 +549,6 @@ namespace UnitTestMdr
 
 					DumpFileMoniker fileMoniker = new DumpFileMoniker(clrtDump.DumpPath);
 
-					var rfinQue = runtime.EnumerateFinalizerQueueObjectAddresses().ToArray();
 					// get heap address count
 					//
 					stopWatch.Restart();
@@ -562,37 +562,52 @@ namespace UnitTestMdr
 					Assert.IsTrue(error == null, error);
 					var getTypeDuration = Utils.StopAndGetDurationString(stopWatch);
 
+					stopWatch.Restart();
+					var rtmFinQue = runtime.EnumerateFinalizerQueueObjectAddresses().ToArray();
+					Assert.IsNull(error, error);
+					var getRunTmFinQueDuration = Utils.StopAndGetDurationString(stopWatch);
+
+					stopWatch.Restart();
+					var finalizableScan = ClrtDump.GetFinalizableInstances(heap, out error);
+					Assert.IsNull(error, error);
+					var getFinalizableDuration = Utils.StopAndGetDurationString(stopWatch);
+
 					// get roots
 					//
+					StringIdDct strIds = new StringIdDct();
 					stopWatch.Restart();
-					var rootArys = ClrtRoots.GetRootAddresses(heap);
+					var rootAddresses = ClrtRootInfo.GetRootAddresses(0, heap, typeNames, strIds, fileMoniker, out error);
+					Assert.IsNull(error, error);
+					ClrtRootInfo clrtRootInfo = ClrtRootInfo.Load(0,fileMoniker,out error);
+					Assert.IsNull(error, error);
+					var getRootsDuration = Utils.StopAndGetDurationString(stopWatch);
+
+					// get heap finalize queue
+					//
+					stopWatch.Restart();
 					var finQue = ClrtDump.GetFinalizeQue(heap, out error);
-					Assert.IsNull(error,error);
-					int notFound = 0;
-					for (int i = 0, icnt = finQue.Length; i < icnt; ++i)
-					{
-						var ndx = Utils.AddressSearch(rootArys, finQue[i]);
-						if (ndx < 0)
-						{
-							++notFound;
-						}
-					}
-					int finCnt = 0;
-					for (int i = 0, icnt = rootArys.Length; i < icnt; ++i)
-					{
-						if (Utils.IsFinalizer(rootArys[i]))
-						{
-							++finCnt;
-						}
-					}
-
-					TestContext.WriteLine("open dump:        " + getOpenDumpDuration);
-					TestContext.WriteLine("address count:    " + getAddressCountDuration);
-					TestContext.WriteLine("type names:       " + getTypeDuration);
+					var getHeapFinQueDuration = Utils.StopAndGetDurationString(stopWatch);
 
 
-					TestContext.WriteLine("####  type counts:");
-					TestContext.WriteLine("typeNames:        " + typeNames.Length);
+					TestContext.WriteLine("#### DUMP: " + fileMoniker.DumpFileName);
+					TestContext.WriteLine("#### DURATIONS:");
+					TestContext.WriteLine("open dump:         " + getOpenDumpDuration);
+					TestContext.WriteLine("address count:     " + getAddressCountDuration);
+					TestContext.WriteLine("type names:        " + getTypeDuration);
+					TestContext.WriteLine("runtime fin queue: " + getRunTmFinQueDuration);
+					TestContext.WriteLine("finalizable:       " + getFinalizableDuration);
+					TestContext.WriteLine("roots:             " + getRootsDuration);
+					TestContext.WriteLine("heap fin queue:    " + getHeapFinQueDuration);
+
+
+					TestContext.WriteLine("#### COUNTS:");
+					TestContext.WriteLine("instances:              " + Utils.CountString(addrCount));
+					TestContext.WriteLine("typeNames:              " + Utils.CountString(typeNames.Length));
+					TestContext.WriteLine("rtm fin. queue:         " + Utils.CountString(rtmFinQue.Length));
+					TestContext.WriteLine("finalizable total:      " + Utils.CountString(finalizableScan.Item1.Length));
+					TestContext.WriteLine("finalizable suppressed: " + Utils.CountString(finalizableScan.Item2.Length));
+					TestContext.WriteLine("roots unique address:   " + Utils.CountString(rootAddresses.Item1.Length));
+					TestContext.WriteLine("heap fin queue:         " + Utils.CountString(finQue.Length));
 
 				}
 				catch (Exception ex)
