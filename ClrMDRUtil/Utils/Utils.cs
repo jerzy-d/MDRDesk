@@ -9,6 +9,7 @@ using System.Runtime;
 using System.Runtime.CompilerServices;
 using System.Text;
 using System.Threading;
+using Microsoft.Diagnostics.Runtime;
 
 namespace ClrMDRIndex
 {
@@ -24,7 +25,7 @@ namespace ClrMDRIndex
 			Root =        0x8000000000000000,
 			RootPointee = 0x4000000000000000,
 			Rooted =      0x2000000000000000,
-			Finalizer =   0x08000000000000000,
+			Finalizer =   0x0800000000000000,
 		}
 
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -32,9 +33,9 @@ namespace ClrMDRIndex
         {
             ulong realAddr = RealAddress(addr);
             return IsRooted(addr)
-                ? string.Format("0x{0:x14}", realAddr)
-                : string.Format("0\u2714{0:x14}", realAddr);
-        }
+				? (IsFinalizer(addr) ? string.Format("0x\u2718{0:x13}", realAddr) : string.Format("0x{0:x14} ", realAddr))
+				: (IsFinalizer(addr) ? string.Format("0\u2714\u2718{0:x13}", realAddr) : string.Format("0\u2714{0:x14} ", realAddr));
+		}
 
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		public static string RealAddressString(ulong addr)
@@ -48,8 +49,8 @@ namespace ClrMDRIndex
         {
             ulong realAddr = RealAddress(addr);
             return IsRooted(addr)
-                ? string.Format("0x{0:x14} ", realAddr)
-                : string.Format("0\u2714{0:x14} ", realAddr);
+                ? (IsFinalizer(addr) ? string.Format("0x\u2718{0:x13} ", realAddr) : string.Format("0x{0:x14} ", realAddr))
+                : (IsFinalizer(addr) ? string.Format("0\u2714\u2718{0:x13} ", realAddr) : string.Format("0\u2714{0:x14} ", realAddr));
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -282,6 +283,31 @@ namespace ClrMDRIndex
 			}
 		}
 
+		public static ClrElementType[] ReadClrElementTypeArray(string path, out string error)
+		{
+			error = null;
+			BinaryReader br = null;
+			try
+			{
+				br = new BinaryReader(File.Open(path, FileMode.Open));
+				var cnt = br.ReadInt32();
+				var ary = new ClrElementType[cnt];
+				for (int i = 0; i < cnt; ++i)
+				{
+					ary[i] = (ClrElementType)br.ReadInt32();
+				}
+				return ary;
+			}
+			catch (Exception ex)
+			{
+				error = GetExceptionErrorString(ex);
+				return null;
+			}
+			finally
+			{
+				br?.Close();
+			}
+		}
 		public static int[] ReadIntArray(string path, out string error)
 		{
 			error = null;
@@ -296,6 +322,34 @@ namespace ClrMDRIndex
 					ary[i] = br.ReadInt32();
 				}
 				return ary;
+			}
+			catch (Exception ex)
+			{
+				error = GetExceptionErrorString(ex);
+				return null;
+			}
+			finally
+			{
+				br?.Close();
+			}
+		}
+
+		public static Tuple<int[],int[]> ReadKvIntIntArrayAsTwoArrays(string path, out string error)
+		{
+			error = null;
+			BinaryReader br = null;
+			try
+			{
+				br = new BinaryReader(File.Open(path, FileMode.Open));
+				var cnt = br.ReadInt32();
+				int[] ary1 = new int[cnt];
+				int[] ary2 = new int[cnt];
+				for (int i = 0; i < cnt; ++i)
+				{
+					ary1[i] = br.ReadInt32();
+					ary2[i] = br.ReadInt32();
+				}
+				return new Tuple<int[], int[]>(ary1,ary2);
 			}
 			catch (Exception ex)
 			{
@@ -336,6 +390,32 @@ namespace ClrMDRIndex
 			}
 		}
 
+		public static bool WriteKvIntIntArray(string path, IList<KeyValuePair<int, int>> lst, out string error)
+		{
+			error = null;
+			BinaryWriter br = null;
+			try
+			{
+				br = new BinaryWriter(File.Open(path, FileMode.Create));
+				br.Write(lst.Count);
+				for (int i = 0, icnt = lst.Count; i < icnt; ++i)
+				{
+					var kv = lst[i];
+					br.Write(kv.Key);
+					br.Write(kv.Value);
+				}
+				return true;
+			}
+			catch (Exception ex)
+			{
+				error = GetExceptionErrorString(ex);
+				return false;
+			}
+			finally
+			{
+				br?.Close();
+			}
+		}
 		public static bool WriteStringList(string filePath, IList<string> lst,out string error)
 		{
 			error = null;
@@ -1457,6 +1537,17 @@ namespace ClrMDRIndex
                 return cmp;
             }
         }
+
+		public class KvIntStr : IComparer<KeyValuePair<int, string>>
+		{
+			public int Compare(KeyValuePair<int, string> a, KeyValuePair<int, string> b)
+			{
+				if (a.Key == b.Key)
+					return string.Compare(a.Value, b.Value, StringComparison.Ordinal);
+				return a.Key < b.Key ? -1 : 1;
+			}
+		}
+
 		#endregion Comparers
 
 		#region Formatting

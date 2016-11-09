@@ -14,17 +14,17 @@ Index
 	*Create Dump Index...
 	*Open Dump Index...
 	*Show Loaded Modules Infos
-	IndexShowFinalizerQueue
+	*IndexShowFinalizerQueue
 	Show Roots
-	Show WeakReference Instances
-	Type Sizes Information
-	String Usage
-	String Usage with GC Generations
+	*Show WeakReference Instances
+	*Type Sizes Information
+	*String Usage
+	*String Usage with GC Generations
 	Get Instance Information
-		Immediate Parent Reference -- replace with Parent References
-		N Parents Reference -- replace with Parent References
-		All Parents Reference -- replace with Parent References
-		Generation Histogram
+		*Immediate Parent Reference -- replace with Parent References
+		*N Parents Reference -- replace with Parent References
+		*All Parents Reference -- replace with Parent References
+		*Generation Histogram
 		Instance Hierarchy Walk
 	Type Sizes Comparison (with other dump)...
 	Strings Comparison (with other dump)...
@@ -34,9 +34,9 @@ Ad-hoc Queries
 	Type Count...
 	Collection Content
 		Array...
-	Instance Reference Map -- remove
-		Create Instance Reference Map... -- remove
-		Open Instance Reference Map..." -- remove
+	*Instance Reference Map -- remove
+		*Create Instance Reference Map... -- remove
+		*Open Instance Reference Map..." -- remove
 	Recent Dumps
 FileReport
 FileReportShort
@@ -50,5 +50,7 @@ PERFORMANCE
 ------------------------------------------------------------------------------
 Getting type parents tree:         00:01:34:57      00:00:03:29       2625.84%
 Getting instance parents list:              ??               ??       significant gain, as above, cannot get actual time spans
-																	  
+Getting all types size information 00:02:38:19      00:00:03.02       5119.23%
+
+
 

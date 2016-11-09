@@ -46,6 +46,7 @@ namespace ClrMDRIndex
 
 		private int _runtimeCount;
 		private int _currentRuntimeIndex;
+		public int CurrentRuntimeIndex => _currentRuntimeIndex;
 
 		private ulong[] _instances;
 		public ulong[] Instances => _instances;
@@ -69,6 +70,8 @@ namespace ClrMDRIndex
 		public WeakReference<StringStats> _stringStats;
 		public WeakReference<uint[]> _sizes;
 		public WeakReference<uint[]> _baseSizes;
+		public WeakReference<ClrElementType[]> _elementTypes;
+		public WeakReference<Tuple<int[],int[]>> _arraySizes;
 
 		private ClrtSegment[] _segments; // segment infos, for instances generation histograms
 
@@ -79,6 +82,9 @@ namespace ClrMDRIndex
 		public string[] StringIds => _stringIds;
 
 		private ClrtRootInfo _roots;
+
+		private IndexProxy _indexProxy;
+		public IndexProxy IndexProxy => _indexProxy;
 
 		#endregion fields/properties
 
@@ -104,7 +110,10 @@ namespace ClrMDRIndex
 			{
 				var index = new DumpIndex(dumpPath, runtimeNdx, IndexType.InstanceRefrences);
 				index._dumpInfo = index.LoadDumpInfo(out error);
-				return !index.LoadInstanceReferences(out error) ? null : index;
+				if (!index.LoadInstanceReferences(out error)) return null;
+				if (!index.InitDump(out error, progress)) return null;
+				index._indexProxy = new IndexProxy(index.Dump, index._instances, index._instanceTypes,index._typeNames);
+				return index;
 			}
 			catch (Exception ex)
 			{
@@ -141,7 +150,7 @@ namespace ClrMDRIndex
 
 				// roots
 				//
-				_roots = ClrtRootInfo.Load(_currentRuntimeIndex,_fileMoniker,out error);
+				_roots = ClrtRootInfo.Load(_currentRuntimeIndex, _fileMoniker, out error);
 				if (error != null) return false;
 
 				// typenames
@@ -354,6 +363,22 @@ namespace ClrMDRIndex
 			return addresses;
 		}
 
+
+		public ulong[] GetTypeRealAddresses(int typeId)
+		{
+			var offNdx = Array.BinarySearch(_typeInstanceOffsets, new KeyValuePair<int, int>(typeId, 0), kvIntIntKeyCmp);
+			if (offNdx < 0) return Utils.EmptyArray<ulong>.Value;
+			var count = _typeInstanceOffsets[offNdx + 1].Value - _typeInstanceOffsets[offNdx].Value;
+			ulong[] addresses = new ulong[count];
+			int mapIndex = _typeInstanceOffsets[offNdx].Value;
+			for (int i = 0; i < count; ++i)
+			{
+				addresses[i] = Utils.RealAddress(_instances[_typeInstanceMap[mapIndex++]]);
+			}
+			Utils.SortAddresses(addresses);
+			return addresses;
+		}
+
 		public int[] GetTypeInstanceIndices(int typeId)
 		{
 			var offNdx = Array.BinarySearch(_typeInstanceOffsets, new KeyValuePair<int, int>(typeId, 0), kvIntIntKeyCmp);
@@ -381,6 +406,235 @@ namespace ClrMDRIndex
 			return _typeNamespaces;
 		}
 
+		public int[] GetTypeIds(string prefix, bool includeArrays)
+		{
+			List<int> lst = new List<int>();
+			int id = Array.BinarySearch(_typeNames, prefix, StringComparer.Ordinal);
+			if (id < 0) id = ~id;
+			for (int i = id; i >= 0 && i < _typeNames.Length; --i)
+			{
+				string typeName = _typeNames[i];
+				if (typeName.StartsWith(prefix, StringComparison.Ordinal))
+				{
+					if (!includeArrays && typeName.EndsWith("[]",StringComparison.Ordinal))
+						continue;
+					lst.Add(i);
+				}
+				else break;
+			}
+			for (int i = id + 1; i < _typeNames.Length; ++i)
+			{
+				string typeName = _typeNames[i];
+				if (typeName.StartsWith(prefix, StringComparison.Ordinal))
+				{
+					if (!includeArrays && typeName.EndsWith("[]", StringComparison.Ordinal))
+						continue;
+					lst.Add(i);
+				}
+				else break;
+			}
+			lst.Sort();
+			return lst.Count > 0 ? lst.ToArray() : Utils.EmptyArray<int>.Value;
+		}
+
+		public KeyValuePair<int, ulong[]>[] GetTypeAddresses(int[] typeIds, out int totalCount)
+		{
+			totalCount = 0;
+			KeyValuePair<int, ulong[]>[] result = new KeyValuePair<int, ulong[]>[typeIds.Length];
+			for (int i = 0, icnt = typeIds.Length; i < icnt; ++i)
+			{
+				var addrAry = GetTypeInstances(typeIds[i]);
+				totalCount += addrAry.Length;
+				result[i] = new KeyValuePair<int, ulong[]>(typeIds[i], addrAry);
+			}
+			return result;
+		}
+
+		public KeyValuePair<int, ulong[]>[] GetTypeRealAddresses(int[] typeIds, out int totalCount)
+		{
+			totalCount = 0;
+			KeyValuePair<int, ulong[]>[] result = new KeyValuePair<int, ulong[]>[typeIds.Length];
+			for (int i = 0, icnt = typeIds.Length; i < icnt; ++i)
+			{
+				var addrAry = GetTypeRealAddresses(typeIds[i]);
+				totalCount += addrAry.Length;
+				result[i] = new KeyValuePair<int, ulong[]>(typeIds[i], addrAry);
+			}
+			return result;
+		}
+		//private int[] RemoveArrayType(int[] typeIds)
+		//{
+		//	int cntToRemove = 0;
+		//	for (int i = 0, icnt = typeIds.Length; i < icnt; ++i)
+		//	{
+		//		if (Types.IsArray(typeIds[i]))
+		//		{
+		//			typeIds[i] = Int32.MaxValue;
+		//			++cntToRemove;
+		//		}
+		//	}
+		//	if (cntToRemove > 0)
+		//	{
+		//		int[] newAry = new int[typeIds.Length - cntToRemove];
+		//		int ndx = 0;
+		//		for (int i = 0, icnt = typeIds.Length; i < icnt; ++i)
+		//		{
+		//			if (typeIds[i] != Int32.MaxValue)
+		//				newAry[ndx++] = typeIds[i];
+		//		}
+		//		return newAry;
+		//	}
+		//	return typeIds;
+		//}
+
+		public ListingInfo GetAllTypesSizesInfo(bool baseSize)
+		{
+			string error = null;
+			try
+			{
+				uint[] sizes = GetSizeArray(baseSize, out error);
+				if (error != null) return new ListingInfo(error);
+				Debug.Assert(sizes.Length == _instances.Length);
+
+				ulong grandTotal = 0UL;
+				var typeDct = new SortedDictionary<string, quadruple<int, ulong, ulong, ulong>>(StringComparer.Ordinal);
+
+				for (int i = 0, icnt = sizes.Length; i < icnt; ++i)
+				{
+					var sz = sizes[i];
+					var typeName = _typeNames[_instanceTypes[i]];
+					grandTotal += sz;
+					quadruple<int, ulong, ulong, ulong> info;
+					if (typeDct.TryGetValue(typeName, out info))
+					{
+						var maxSz = info.Third < sz ? sz : info.Third;
+						var minSz = info.Third > sz ? sz : info.Third;
+						typeDct[typeName] = new quadruple<int, ulong, ulong, ulong>(
+							info.First + 1,
+							info.Second + sz,
+							maxSz,
+							minSz
+						);
+					}
+					else
+					{
+						typeDct.Add(typeName, new quadruple<int, ulong, ulong, ulong>(1, sz, sz, sz));
+					}
+
+				}
+				var dataAry = new string[typeDct.Count * 6];
+				var infoAry = new listing<string>[typeDct.Count];
+				int off = 0;
+				int ndx = 0;
+				foreach (var kv in typeDct)
+				{
+					infoAry[ndx++] = new listing<string>(dataAry, off, 6);
+					int cnt = kv.Value.First;
+					ulong totSz = kv.Value.Second;
+					ulong maxSz = kv.Value.Third;
+					ulong minSz = kv.Value.Forth;
+					double avg = (double)totSz / (double)(cnt);
+					ulong uavg = Convert.ToUInt64(avg);
+
+					dataAry[off++] = Utils.LargeNumberString(cnt);
+					dataAry[off++] = Utils.LargeNumberString(totSz);
+					dataAry[off++] = Utils.LargeNumberString(maxSz);
+					dataAry[off++] = Utils.LargeNumberString(minSz);
+					dataAry[off++] = Utils.LargeNumberString(uavg);
+					dataAry[off++] = kv.Key;
+				}
+
+				ColumnInfo[] colInfos = new[]
+				{
+					new ColumnInfo("Count", ReportFile.ColumnType.Int32, 150, 1, true),
+					new ColumnInfo("Total Size", ReportFile.ColumnType.UInt64, 150, 2, true),
+					new ColumnInfo("Max Size", ReportFile.ColumnType.UInt64, 150, 3, true),
+					new ColumnInfo("Min Size", ReportFile.ColumnType.UInt64, 150, 4, true),
+					new ColumnInfo("Avg Size", ReportFile.ColumnType.UInt64, 150, 5, true),
+					new ColumnInfo("Type", ReportFile.ColumnType.String, 500, 6, true),
+				};
+				Array.Sort(infoAry, ReportFile.GetComparer(colInfos[0]));
+
+				string descr = "Type Count: " + Utils.CountString(typeDct.Count) + Environment.NewLine
+							   + "Instance Count: " + Utils.CountString(_instances.Length) + Environment.NewLine
+							   + "Grand Total Size: " + Utils.LargeNumberString(grandTotal) + Environment.NewLine;
+
+				return new ListingInfo(null, infoAry, colInfos, descr);
+
+
+			}
+			catch (Exception ex)
+			{
+				error = Utils.GetExceptionErrorString(ex);
+				return new ListingInfo(error);
+			}
+		}
+
+		public int GetArraySize(int instanceId, Tuple<int[], int[]> arySizes)
+		{
+			var ndx = Array.BinarySearch(arySizes.Item1, instanceId);
+			if (ndx < 0) return 0;
+			return arySizes.Item2[ndx];
+		}
+
+		/// <summary>
+		/// 
+		/// </summary>
+		/// <param name="error"></param>
+		/// <returns>
+		/// Tuple (total array count, list of 
+		/// </returns>
+		public Tuple<int, triple<string, int, pair<ulong, int>[]>[]> GetArrayCounts(bool skipFree, out string error)
+		{
+			error = null;
+			try
+			{
+				ClrElementType[] elems = GetElementTypeArray(out error);
+				if (error != null) return null;
+				Tuple<int[], int[]> arySizes = GetArraySizes(out error);
+				if (error != null) return null;
+				Debug.Assert(elems.Length == _instances.Length);
+				SortedDictionary<int, List<pair<ulong, int>>> dct = new SortedDictionary<int, List<pair<ulong, int>>>();
+
+				for (int i = 0, icnt = _instances.Length; i < icnt; ++i)
+				{
+					var elemType = elems[i];
+					if (elemType != ClrElementType.SZArray && elemType != ClrElementType.Array) continue;
+					var typeId = _instanceTypes[i];
+					var addr = _instances[i];
+					var typeName = _typeNames[typeId];
+					if (skipFree && Utils.SameStrings(typeName, "Free")) continue;
+
+					var aryCnt = GetArraySize(i, arySizes);
+					List<pair<ulong, int>> lst;
+					if (dct.TryGetValue(typeId, out lst))
+					{
+						lst.Add(new pair<ulong, int>(addr, aryCnt));
+					}
+					else
+					{
+						dct.Add(typeId, new List<pair<ulong, int>>(32) { new pair<ulong, int>(addr, aryCnt) });
+					}
+				}
+
+				var result = new triple<string, int, pair<ulong, int>[]>[dct.Count];
+				int ndx = 0;
+				int totalAryCnt = 0;
+				foreach (var kv in dct)
+				{
+					var typeName = _typeNames[kv.Key];
+					var ary = kv.Value.ToArray();
+					totalAryCnt += ary.Length;
+					result[ndx++] = new triple<string, int, pair<ulong, int>[]>(typeName, kv.Key, ary);
+				}
+				return Tuple.Create(totalAryCnt, result);
+			}
+			catch (Exception ex)
+			{
+				error = Utils.GetExceptionErrorString(ex);
+				return null;
+			}
+		}
 		#endregion types
 
 		#region instance references
@@ -867,7 +1121,126 @@ namespace ClrMDRIndex
 
 		#endregion instance references
 
+		#region instance hierarchy 
 
+		/// <summary>
+		/// Get instance information for hierarchy walk.
+		/// </summary>
+		/// <param name="addr">Instance address.</param>
+		/// <param name="fldNdx">Field index, this is used for struct types, in this case addr is of the parent.</param>
+		/// <param name="error">Output error.</param>
+		/// <returns>Instance information, and list of its parents.</returns>
+		public Tuple<InstanceValue, AncestorDispRecord[]> GetInstanceInfo(ulong addr, int fldNdx, out string error)
+		{
+			try
+			{
+				// get ancestors
+				//
+				var ancestors = _instanceReferences.GetFieldParents(addr, out error);
+				if (error != null) return null;
+				AncestorDispRecord[] ancestorInfos = GroupAddressesByTypesForDisplay(ancestors);
+
+				// get instance info: fields and values
+				//
+				var heap = GetFreshHeap();
+				var result = DmpNdxQueries.FQry.getInstanceValue(_indexProxy, heap, addr, fldNdx);
+				error = result.Item1;
+				result.Item2?.SortByFieldName();
+				return new Tuple<InstanceValue, AncestorDispRecord[]>(result.Item2, ancestorInfos);
+			}
+			catch (Exception ex)
+			{
+				error = Utils.GetExceptionErrorString(ex);
+				return null;
+			}
+		}
+
+		public AncestorDispRecord[] GroupAddressesByTypesForDisplay(int[] parents)
+		{
+			var dct = new SortedDictionary<KeyValuePair<int,string>, List<ulong>>(new Utils.KvIntStr());
+			for (int i = 0, icnt = parents.Length; i < icnt; ++i)
+			{
+				var addr = _instances[parents[i]];
+				var typeId = _instanceTypes[parents[i]];
+				var typeName = _typeNames[typeId];
+				var key = new KeyValuePair<int, string>(typeId, typeName);
+				List<ulong> lst;
+				if (dct.TryGetValue(key, out lst))
+				{
+					lst.Add(addr);
+				}
+				else
+				{
+					dct.Add(key, new List<ulong>(8) { addr });
+				}
+			}
+			var ary = new AncestorDispRecord[dct.Count];
+			int ndx = 0;
+			foreach (var kv in dct)
+			{
+				ary[ndx++] = new AncestorDispRecord(kv.Key.Key, kv.Key.Value, kv.Value.ToArray());
+			}
+			Array.Sort(ary, new AncestorDispRecordCmp());
+			return ary;
+		}
+
+		#endregion instance hierarchy 
+
+		#region Type Value Reports
+
+		public ClrtDisplayableType GetTypeDisplayableRecord(int typeId, out string error)
+		{
+			error = null;
+			try
+			{
+				ulong[] instances = GetTypeRealAddresses(typeId);
+				if (instances == null || instances.Length < 1)
+				{
+					error = "Type instances not found.";
+					return null;
+				}
+				return DmpNdxQueries.FQry.getDisplayableType(_indexProxy, Dump.Heap, instances[0]);
+			}
+			catch (Exception ex)
+			{
+				error = Utils.GetExceptionErrorString(ex);
+				return null;
+			}
+
+		}
+
+		public ClrtDisplayableType GetTypeDisplayableRecord(ClrtDisplayableType dispType, ClrtDisplayableType dispTypeField, out string error)
+		{
+			error = null;
+			try
+			{
+				ulong[] instances = GetTypeRealAddresses(dispTypeField.TypeId);
+				if (instances != null && instances.Length > 0)
+					return DmpNdxQueries.FQry.getDisplayableType(_indexProxy, Dump.Heap, instances[0]);
+				instances = GetTypeRealAddresses(dispType.TypeId);
+				if (instances == null || instances.Length < 1)
+				{
+					error = "Type instances not found.";
+					return null;
+				}
+
+				var result = DmpNdxQueries.FQry.getDisplayableFieldType(_indexProxy, Dump.Heap, instances[0], dispTypeField.FieldIndex);
+				if (result.Item1 != null)
+				{
+					error = Constants.InformationSymbolHeader + result.Item1;
+					return null;
+				}
+				dispType.AddFields(result.Item2);
+				return dispType;
+			}
+			catch (Exception ex)
+			{
+				error = Utils.GetExceptionErrorString(ex);
+				return null;
+			}
+
+		}
+		#endregion Type Value Reports
 
 		#endregion queries
 
@@ -880,7 +1253,7 @@ namespace ClrMDRIndex
 			{
 				try
 				{
-					_roots = ClrtRootInfo.Load(_currentRuntimeIndex,_fileMoniker,out error);
+					_roots = ClrtRootInfo.Load(_currentRuntimeIndex, _fileMoniker, out error);
 					if (error != null) return null;
 				}
 				catch (Exception ex)
@@ -892,7 +1265,183 @@ namespace ClrMDRIndex
 			return _roots;
 		}
 
+		public Tuple<string,DisplayableFinalizerQueue> GetDisplayableFinalizationQueue()
+		{
+			string error = null;
+			try
+			{
+				var dispFinlQue = FinalizerQueueDisplayableItem.GetDisplayableFinalizerQueue(_roots.GetFinalizerItems(), _instances, _typeNames,
+					_fileMoniker);
+				return new Tuple<string, DisplayableFinalizerQueue>(error,dispFinlQue);
+			}
+			catch (Exception ex)
+			{
+				error = Utils.GetExceptionErrorString(ex);
+				return null;
+			}
+		}
+
 		#endregion roots
+
+		#region weakreferences
+
+		public ListingInfo GetWeakReferenceInfo(out string error)
+		{
+			error = null;
+			try
+			{
+
+				int totalCount;
+				KeyValuePair<int, ulong[]>[] weakReferenceAddresses = GetTypeWithPrefixAddresses("System.WeakReference", false, out totalCount);
+				KeyValuePair<int, triple<ulong, ulong, string>[]>[] results = new KeyValuePair<int, triple<ulong, ulong, string>[]>[weakReferenceAddresses.Length];
+
+				var heap = Dump.GetFreshHeap();
+				for (int i = 0, icnt = weakReferenceAddresses.Length; i < icnt; ++i)
+				{
+					var addresses = weakReferenceAddresses[i].Value;
+					ClrType weakReferenceType = heap.GetObjectType(addresses[0]); // System.WeakReference or System.WeakReference<T>
+					
+					ClrInstanceField m_handleField = weakReferenceType.Fields[0];
+					object m_handleValue = m_handleField.GetValue(addresses[0], false, false);
+					ClrType m_handleType = m_handleField.Type; //  System.IntPtr
+					ClrInstanceField m_valueField = m_handleType.Fields[0];
+					ulong m_valueValue = (ulong)m_valueField.GetValue((ulong)(long)m_handleValue, true, false);
+					ClrType eeferencedType = heap.GetObjectType(m_valueValue); // type this WeakReference points to
+					var result = DmpNdxQueries.SpecializedQueries.getWeakReferenceInfos(heap, addresses, m_handleField, m_valueField);
+					results[i] = new KeyValuePair<int, triple<ulong, ulong, string>[]>(weakReferenceAddresses[i].Key, result.Item2);
+				}
+
+				HashSet<ulong> objects = new HashSet<ulong>();
+				var objTypes = new SortedDictionary<string, int>(StringComparer.Ordinal);
+				var objDups = new SortedDictionary<ulong, KeyValuePair<string, int>>();
+
+				if (weakReferenceAddresses.Length == 1) // only one type of WeakReference
+				{
+					var typeName = GetTypeName(weakReferenceAddresses[0].Key);
+					int recCount = results[0].Value.Length;
+					var dataAry = new string[recCount * 3];
+					var infoAry = new listing<string>[recCount];
+					int off = 0;
+					for (int i = 0; i < recCount; ++i)
+					{
+						var rec = results[0].Value[i];
+						infoAry[i] = new listing<string>(dataAry, off, 3);
+						dataAry[off++] = Utils.AddressString(rec.First);
+						dataAry[off++] = Utils.AddressString(rec.Second);
+						dataAry[off++] = rec.Third;
+
+						// get some stats
+						objects.Add(rec.Second);
+						KeyValuePair<string, int> kv;
+						if (objDups.TryGetValue(rec.Second, out kv))
+							objDups[rec.Second] = new KeyValuePair<string, int>(kv.Key, kv.Value + 1);
+						else
+							objDups.Add(rec.Second, new KeyValuePair<string, int>(rec.Third, 1));
+						int objCnt;
+						if (objTypes.TryGetValue(rec.Third, out objCnt))
+							objTypes[rec.Third] = objCnt + 1;
+						else
+							objTypes.Add(rec.Third, 1);
+					}
+
+					ColumnInfo[] colInfos = new[]
+					{
+						new ColumnInfo("WeakReference Address", ReportFile.ColumnType.UInt64,150,1,true),
+						new ColumnInfo("Object Address", ReportFile.ColumnType.UInt64,150,2,true),
+						new ColumnInfo("Object Type", ReportFile.ColumnType.UInt64,400,3,true),
+					};
+
+					Array.Sort(infoAry, ReportFile.GetComparer(colInfos[0]));
+
+					var objCountAry = Utils.GetOrderedByValueDesc(objTypes);
+					var objDupCountAry = Utils.GetOrderedByValueDesc(objDups);
+
+					StringBuilder sb = StringBuilderCache.Acquire(StringBuilderCache.MaxCapacity);
+					sb.AppendLine("WeakReference type: " + typeName)
+						.AppendLine("WeakReference Count: " + Utils.CountString(recCount))
+						.AppendLine("Pointed instances Count: " + Utils.CountString(objects.Count));
+					sb.AppendLine("Types top 50");
+					for (int i = 0, icnt = Math.Min(50, objCountAry.Length); i < icnt; ++i)
+					{
+						sb.Append(Utils.CountStringHeader(objCountAry[i].Value));
+						sb.AppendLine(objCountAry[i].Key);
+					}
+
+					sb.AppendLine("Instances duplicates, top 50");
+					for (int i = 0, icnt = Math.Min(50, objDupCountAry.Length); i < icnt; ++i)
+					{
+						sb.Append(Utils.AddressStringHeader(objDupCountAry[i].Key));
+						sb.Append(Utils.CountStringHeader(objDupCountAry[i].Value.Value));
+						sb.AppendLine(objDupCountAry[i].Value.Key);
+					}
+
+					string descr = StringBuilderCache.GetStringAndRelease(sb);
+
+					return new ListingInfo(null, infoAry, colInfos, descr);
+				}
+				else
+				{
+					var dataAry = new string[totalCount * 4];
+					var infoAry = new listing<string>[totalCount];
+					for (int i = 0, icnt = weakReferenceAddresses.Length; i < icnt; ++i)
+					{
+						var typeName = GetTypeName(weakReferenceAddresses[i].Key);
+						int recCount = results[i].Value.Length;
+						int off = 0;
+						for (int j = 0; j < recCount; ++j)
+						{
+							var rec = results[i].Value[j];
+							infoAry[i] = new listing<string>(dataAry, off, 4);
+							dataAry[off++] = Utils.AddressString(rec.First);
+							dataAry[off++] = typeName;
+							dataAry[off++] = Utils.AddressString(rec.Second);
+							dataAry[off++] = rec.Third;
+
+							// get some stats
+							objects.Add(rec.Second);
+							KeyValuePair<string, int> kv;
+							if (objDups.TryGetValue(rec.Second, out kv))
+								objDups[rec.Second] = new KeyValuePair<string, int>(kv.Key, kv.Value + 1);
+							else
+								objDups.Add(rec.Second, new KeyValuePair<string, int>(rec.Third, 1));
+							int objCnt;
+							if (objTypes.TryGetValue(rec.Third, out objCnt))
+								objTypes[rec.Third] = objCnt + 1;
+							else
+								objTypes.Add(rec.Third, 1);
+						}
+					}
+
+					ColumnInfo[] colInfos = new[]
+						{
+						new ColumnInfo("WeakReference Address", ReportFile.ColumnType.UInt64,100,1,true),
+						new ColumnInfo("WeakReference Type", ReportFile.ColumnType.UInt64,300,2,true),
+						new ColumnInfo("Object Address", ReportFile.ColumnType.UInt64,100,3,true),
+						new ColumnInfo("Object Type", ReportFile.ColumnType.UInt64,400,4,true),
+						};
+
+					Array.Sort(infoAry, ReportFile.GetComparer(colInfos[0]));
+
+					string descr = "WeakReference Count: " + Utils.CountString(totalCount) + Environment.NewLine
+									+ "Pointed instances Count: " + Utils.CountString(objects.Count) + Environment.NewLine;
+					return new ListingInfo(null, infoAry, colInfos, descr);
+
+				}
+			}
+			catch (Exception ex)
+			{
+				error = Utils.GetExceptionErrorString(ex);
+				return null;
+			}
+		}
+
+		public KeyValuePair<int, ulong[]>[] GetTypeWithPrefixAddresses(string prefix, bool includeArrays, out int totalCount)
+		{
+			int[] ids = GetTypeIds(prefix, includeArrays);
+			return GetTypeRealAddresses(ids, out totalCount);
+		}
+
+		#endregion weakreferences
 
 		#region strings
 
@@ -929,14 +1478,166 @@ namespace ClrMDRIndex
 			}
 		}
 
+		public ListingInfo CompareStringsWithOther(string otherDumpPath)
+		{
+			string error;
+
+			const int ColumnCount = 7;
+
+			StringStats myStrStats = GetStringStats(out error);
+			if (error != null) return new ListingInfo(error);
+
+			long otherTotalSize, otherTotalUniqueSize;
+			int otherTotalCount;
+			SortedDictionary<string, KeyValuePair<int, uint>> otherInfo = GetStringsSizesInfo(otherDumpPath, out otherTotalSize, out otherTotalUniqueSize, out otherTotalCount, out error);
+			if (error != null) return new ListingInfo(error);
+
+			string[] otStrings = new string[otherInfo.Count];
+			int[] otCounts = new int[otherInfo.Count];
+			uint[] otSizes = new uint[otherInfo.Count];
+
+			int ndx = 0;
+			foreach (var kv in otherInfo)
+			{
+				otStrings[ndx] = kv.Key;
+				otCounts[ndx] = kv.Value.Key;
+				otSizes[ndx] = kv.Value.Value;
+				++ndx;
+			}
+			otherInfo.Clear();
+			otherInfo = null;
+
+			var maxCnt = Math.Max(otStrings.Length, myStrStats.Count);
+			int myNdx = 0;
+			int myCnt = myStrStats.Count;
+			int otherNdx = 0;
+			int otherCnt = otStrings.Length;
+
+			var myStrings = myStrStats.Strings;
+			var myCounts = myStrStats.Counts;
+			var mySizes = myStrStats.Sizes;
+
+
+			List<string> data = new List<string>(100000);
+			while (true)
+			{
+				if (myNdx < myCnt && otherNdx < otherCnt)
+				{
+					var cmp = string.Compare(myStrings[myNdx], otStrings[otherNdx], StringComparison.Ordinal);
+					if (cmp == 0)
+					{
+						var myCount = myCounts[myNdx];
+						var otCount = otCounts[otherNdx];
+						var mySize = mySizes[myNdx];
+						GetStringsDiffLine(myStrings[myNdx], myCount, otCount, mySize, data);
+						++myNdx;
+						++otherNdx;
+					}
+					else if (cmp < 0)
+					{
+						var myCount = myCounts[myNdx];
+						var mySize = mySizes[myNdx];
+						GetStringsDiffLine(myStrings[myNdx], myCount, 0, mySize, data);
+						++myNdx;
+					}
+					else
+					{
+						Debug.Assert(cmp > 0);
+						var otCount = otCounts[otherNdx];
+						var otSize = otSizes[otherNdx];
+						GetStringsDiffLine(otStrings[otherNdx], 0, otCount, otSize, data);
+						++otherNdx;
+					}
+				}
+				else if (myNdx < myCnt)
+				{
+					var myCount = myCounts[myNdx];
+					var mySize = mySizes[myNdx];
+					GetStringsDiffLine(myStrings[myNdx], myCount, 0, mySize, data);
+					++myNdx;
+				}
+				else if (otherNdx < otherCnt)
+				{
+					var otCount = otCounts[otherNdx];
+					var otSize = otSizes[otherNdx];
+					GetStringsDiffLine(otStrings[otherNdx], 0, otCount, otSize, data);
+					++otherNdx;
+				}
+				else
+				{
+					break;
+				}
+			}
+
+			string[] dataAry = data.ToArray();
+			listing<string>[] listing = new listing<string>[dataAry.Length / ColumnCount];
+			Debug.Assert((dataAry.Length % ColumnCount) == 0);
+
+			data.Clear();
+			data = null;
+			int dataNdx = 0;
+			for (int i = 0, icnt = listing.Length; i < icnt; ++i)
+			{
+				listing[i] = new listing<string>(dataAry, dataNdx, 6);
+				dataNdx += ColumnCount;
+			}
+
+			ColumnInfo[] colInfos = new[]
+			{
+				new ColumnInfo(Constants.BlackDiamond + " Count", ReportFile.ColumnType.Int32,150,1,true),
+				new ColumnInfo(Constants.AdhocQuerySymbol + " Count", ReportFile.ColumnType.Int32,150,2,true),
+				new ColumnInfo(Constants.BlackDiamond + " Count Diff", ReportFile.ColumnType.Int32,150,3,true),
+				new ColumnInfo(Constants.BlackDiamond + " Total Size", ReportFile.ColumnType.UInt64,150,4,true),
+				new ColumnInfo(Constants.AdhocQuerySymbol + " Total Size", ReportFile.ColumnType.UInt64,150,5,true),
+				new ColumnInfo("Size", ReportFile.ColumnType.UInt32,150,6,true),
+				new ColumnInfo("Type", ReportFile.ColumnType.String,500,7,true),
+			};
+
+			//Array.Sort(dataListing, ReportFile.GetComparer(colInfos[6]));
+
+			var otherDmpName = Path.GetFileName(otherDumpPath);
+			StringBuilder sb = new StringBuilder(512);
+			sb.Append(Constants.BlackDiamond).Append(" Index Dump: ").Append(_fileMoniker.DumpFileName).AppendLine();
+			sb.Append(Constants.AdhocQuerySymbol).Append(" Adhoc Dump: ").Append(otherDmpName).AppendLine();
+
+			sb.Append(Constants.BlackDiamond).Append(" Total String Count: ").Append(Utils.LargeNumberString(myStrStats.TotalCount))
+				.Append(", Unique String Count: ").Append(Utils.LargeNumberString(myStrings.Length)).AppendLine();
+			sb.Append(Constants.AdhocQuerySymbol).Append(" Total String Count: ").Append(Utils.LargeNumberString(otherTotalCount))
+				.Append(", Unique String Count: ").Append(otherCnt).AppendLine();
+
+			sb.Append(Constants.BlackDiamond).Append(" Total Size: ").Append(Utils.LargeNumberString(myStrStats.TotalSize))
+				.Append(" Unique Total Size: ").Append(Utils.LargeNumberString(myStrStats.TotalUniqueSize)).AppendLine();
+			sb.Append(Constants.AdhocQuerySymbol).Append(" Total Size: ").Append(Utils.LargeNumberString(otherTotalSize))
+				.Append(" Unique Total Size: ").Append(Utils.LargeNumberString(otherTotalUniqueSize)).AppendLine();
+
+			return new ListingInfo(null, listing, colInfos, sb.ToString());
+		}
+
+		private void GetStringsDiffLine(string str, int myCount, int otCount, uint size, List<string> data)
+		{
+
+			var myCountStr = Utils.LargeNumberString(myCount);
+			var otCntStr = Utils.LargeNumberString(otCount);
+			var cntDiffStr = Utils.LargeNumberString(myCount - otCount);
+			var myTotSizeStr = Utils.LargeNumberString((ulong)myCount * (ulong)size);
+			var otTotSizeStr = Utils.LargeNumberString((ulong)otCount * (ulong)size);
+			var mySizeStr = Utils.LargeNumberString(size);
+			data.Add(myCountStr);
+			data.Add(otCntStr);
+			data.Add(cntDiffStr);
+			data.Add(myTotSizeStr);
+			data.Add(otTotSizeStr);
+			data.Add(mySizeStr);
+			data.Add(str);
+		}
 
 		/// <summary>
 		/// 
 		/// </summary>
 		/// <param name="error"></param>
-		public ListingInfo GetStringStats(int minReferenceCount, out string error, bool includeGenerations = false)
+		public ListingInfo GetStringStats(int minReferenceCount, bool includeGenerations = false)
 		{
-			error = null;
+			string error = null;
 			try
 			{
 				if (AreStringDataFilesAvailable())
@@ -963,14 +1664,14 @@ namespace ClrMDRIndex
 
 				var strTypeId = GetTypeId("System.String");
 				Debug.Assert(strTypeId != Constants.InvalidIndex);
-				ulong[] addresses = GetTypeInstances(strTypeId);
+				ulong[] addresses = GetTypeRealAddresses(strTypeId);
 				var runtime = Dump.Runtime;
 				runtime.Flush();
 				var heap = runtime.GetHeap();
 
 
 				var stats = ClrtDump.GetStringStats(heap, addresses, DumpPath, out error);
-				if (stats == null) return null;
+				if (stats == null) return new ListingInfo(error);
 				ListingInfo lstData = null;
 				if (includeGenerations)
 					lstData = stats.GetGridData(minReferenceCount, _segments, out error);
@@ -1030,8 +1731,7 @@ namespace ClrMDRIndex
 				return null;
 			}
 		}
-
-
+		
 		public StringStats GetCurrentStringStats(out string error)
 		{
 			error = null;
@@ -1182,6 +1882,26 @@ namespace ClrMDRIndex
 			}
 		}
 
+		//public static ulong[] GetStringAddresses(ClrHeap heap, string str, ulong[] addresses, out string error)
+		//{
+		//	error = null;
+		//	try
+		//	{
+		//		List<ulong> lst = new List<ulong>(10 * 1024);
+		//		for (int i = 0, icnt = addresses.Length; i < icnt; ++i)
+		//		{
+		//			var heapStr = ValueExtractor.GetStringAtAddress(addresses[i], heap);
+		//			if (Utils.SameStrings(str, heapStr))
+		//				lst.Add(addresses[i]);
+		//		}
+		//		return lst.ToArray();
+		//	}
+		//	catch (Exception ex)
+		//	{
+		//		error = Utils.GetExceptionErrorString(ex);
+		//		return null;
+		//	}
+		//}
 
 		#endregion strings
 
@@ -1238,6 +1958,21 @@ namespace ClrMDRIndex
 			if (error != null) return null;
 			return ClrtSegment.GetGenerationHistogram(_segments, addresses);
 		}
+
+		public int[] GetTypeGcGenerationHistogram(string typeName, out string error)
+		{
+			error = null;
+			var typeId = Array.BinarySearch(_typeNames,typeName,StringComparer.Ordinal);
+			if (typeId < 0)
+			{
+				error = "cannot find type: " + typeName;
+				return null;
+			}
+			return GetTypeGcGenerationHistogram(typeId);
+		}
+
+
+		
 
 		public int[] GetTypeGcGenerationHistogram(int typeId)
 		{
@@ -1360,6 +2095,55 @@ namespace ClrMDRIndex
 			}
 		}
 
+		private ClrElementType[] GetElementTypeArray(out string error)
+		{
+			error = null;
+			try
+			{
+				ClrElementType[] elems = null;
+				if (_elementTypes == null || !_elementTypes.TryGetTarget(out elems))
+					{
+						elems = Utils.ReadClrElementTypeArray(_fileMoniker.GetFilePath(_currentRuntimeIndex, Constants.MapInstanceBaseSizesFilePostfix),
+							out error);
+						if (elems == null) return null;
+						if (_elementTypes == null)
+							_elementTypes = new WeakReference<ClrElementType[]>(elems);
+						else
+							_elementTypes.SetTarget(elems);
+					}
+				return elems;
+			}
+			catch (Exception ex)
+			{
+				error = Utils.GetExceptionErrorString(ex);
+				return null;
+			}
+		}
+
+		private Tuple<int[],int[]> GetArraySizes(out string error)
+		{
+			error = null;
+			try
+			{
+				Tuple <int[],int[]> arySizes = null;
+				if (_arraySizes == null || !_arraySizes.TryGetTarget(out arySizes))
+				{
+					arySizes = Utils.ReadKvIntIntArrayAsTwoArrays(_fileMoniker.GetFilePath(_currentRuntimeIndex, Constants.MapInstanceBaseSizesFilePostfix),
+						out error);
+					if (arySizes == null) return null;
+					if (_arraySizes == null)
+						_arraySizes = new WeakReference<Tuple<int[], int[]>>(arySizes);
+					else
+						_arraySizes.SetTarget(arySizes);
+				}
+				return arySizes;
+			}
+			catch (Exception ex)
+			{
+				error = Utils.GetExceptionErrorString(ex);
+				return null;
+			}
+		}
 		public Tuple<ulong, KeyValuePair<uint, ulong>[]> GetTypeTotalSizes(int typeId, bool baseSizes, out string error)
 		{
 			error = null;
@@ -1421,7 +2205,189 @@ namespace ClrMDRIndex
 			}
 		}
 
+		public SortedDictionary<string, quadruple<int, ulong, ulong, ulong>> GetTypeSizesInfo(out string error)
+		{
+			error = null;
+			try
+			{
+				ulong grandTotal = 0ul;
+				int instanceCount = 0;
+				var typeDct = new SortedDictionary<string, quadruple<int, ulong, ulong, ulong>>(StringComparer.Ordinal);
+				uint[] sizes = GetSizeArray(false, out error);
+
+				for (int i = 0, icnt = sizes.Length; i < icnt; ++i)
+				{
+					++instanceCount;
+					var sz = sizes[i];
+					grandTotal += sz;
+					var typeName = _typeNames[_instanceTypes[i]];
+					quadruple<int, ulong, ulong, ulong> info;
+					if (typeDct.TryGetValue(typeName, out info))
+					{
+						var maxSz = info.Third < sz ? sz : info.Third;
+						var minSz = info.Third > sz ? sz : info.Third;
+						typeDct[typeName] = new quadruple<int, ulong, ulong, ulong>(
+							info.First + 1,
+							info.Second + sz,
+							maxSz,
+							minSz
+						);
+					}
+					else
+					{
+						typeDct.Add(typeName, new quadruple<int, ulong, ulong, ulong>(1, sz, sz, sz));
+					}
+				}
+				return typeDct;
+			}
+			catch (Exception ex)
+			{
+				error = Utils.GetExceptionErrorString(ex);
+				return null;
+			}
+		}
+
+		/// <summary>
+		/// TODO JRD -- redo this
+		/// </summary>
+		/// <param name="typeId"></param>
+		/// <param name="error"></param>
+		/// <returns></returns>
+		public Tuple<ulong, ulong[], SortedDictionary<string, KeyValuePair<int, ulong>>, SortedDictionary<string, List<int>>, triple<int, ulong, string>[]> GetTypeSizeDetails(int typeId, out string error)
+		{
+			ulong[] addresses = GetTypeRealAddresses(typeId);
+			return ClrtDump.GetTotalSizeDetail(Dump, addresses, out error);
+		}
+
+
+		public ListingInfo CompareTypesWithOther(string otherDumpPath)
+		{
+			const int ColumnCount = 6;
+			string error;
+			var runtime = Dump.Runtime;
+			runtime.Flush();
+			var heap = runtime.GetHeap();
+			var myTypeDCT = GetTypeSizesInfo(out error);
+			if (error != null) return new ListingInfo(error);
+			var otherTypeDct = GetTypeSizesInfo(otherDumpPath, out error);
+			if (error != null) return new ListingInfo(error);
+			// merge dictionaries
+			HashSet<string> set = new HashSet<string>(myTypeDCT.Keys);
+			set.UnionWith(otherTypeDct.Keys);
+			listing<string>[] dataListing = new listing<string>[set.Count];
+			string[] data = new string[set.Count * ColumnCount];
+			int totalCount0 = 0;
+			ulong grandTotalSize0 = 0UL;
+			int totalCount1 = 0;
+			ulong grandTotalSize1 = 0UL;
+
+			int listNdx = 0;
+			int dataNdx = 0;
+			foreach (var str in set)
+			{
+				int count0 = 0;
+				int count1 = 0;
+				ulong totSize0 = 0UL;
+				ulong totSize1 = 0UL;
+				quadruple<int, ulong, ulong, ulong> info0;
+				if (myTypeDCT.TryGetValue(str, out info0))
+				{
+					count0 = info0.First;
+					totSize0 = info0.Second;
+					totalCount0 += count0;
+					grandTotalSize0 += totSize0;
+				}
+				quadruple<int, ulong, ulong, ulong> info1;
+				if (otherTypeDct.TryGetValue(str, out info1))
+				{
+					count1 = info1.First;
+					totSize1 = info1.Second;
+					totalCount1 += count1;
+					grandTotalSize1 += totSize1;
+				}
+				dataListing[listNdx++] = new listing<string>(data, dataNdx, ColumnCount);
+				data[dataNdx++] = Utils.LargeNumberString(count0);
+				data[dataNdx++] = Utils.LargeNumberString(count1);
+				data[dataNdx++] = Utils.LargeNumberString(count0 - count1);
+				data[dataNdx++] = Utils.LargeNumberString(totSize0);
+				data[dataNdx++] = Utils.LargeNumberString(totSize1);
+				data[dataNdx++] = str;
+			}
+
+			myTypeDCT.Clear();
+			myTypeDCT = null;
+			otherTypeDct.Clear();
+			otherTypeDct = null;
+			set.Clear();
+			set = null;
+			Utils.ForceGcWithCompaction();
+
+			ColumnInfo[] colInfos = new[]
+			{
+				new ColumnInfo(Constants.BlackDiamond + " Count", ReportFile.ColumnType.Int32,150,1,true),
+				new ColumnInfo(Constants.AdhocQuerySymbol + " Count", ReportFile.ColumnType.Int32,150,2,true),
+				new ColumnInfo(Constants.BlackDiamond + " Count Diff", ReportFile.ColumnType.Int32,150,3,true),
+				new ColumnInfo(Constants.BlackDiamond + " Total Size", ReportFile.ColumnType.UInt64,150,4,true),
+				new ColumnInfo(Constants.AdhocQuerySymbol + " Total Size", ReportFile.ColumnType.UInt64,150,5,true),
+				new ColumnInfo("Type", ReportFile.ColumnType.String,500,6,true),
+			};
+
+			Array.Sort(dataListing, ReportFile.GetComparer(colInfos[4]));
+
+			var otherDmpName = Path.GetFileName(otherDumpPath);
+			StringBuilder sb = new StringBuilder(512);
+			sb.Append(Constants.BlackDiamond).Append(" Index Dump: ").Append(_fileMoniker.DumpFileName).AppendLine();
+			sb.Append(Constants.AdhocQuerySymbol).Append(" Adhoc Dump: ").Append(otherDmpName).AppendLine();
+			sb.Append(Constants.BlackDiamond).Append(" Total Instance Count: ").Append(Utils.LargeNumberString(totalCount0)).AppendLine();
+			sb.Append(Constants.AdhocQuerySymbol).Append(" Total Instance Count: ").Append(Utils.LargeNumberString(totalCount1)).AppendLine();
+			sb.Append(Constants.BlackDiamond).Append(" Total Instance Size: ").Append(Utils.LargeNumberString(grandTotalSize0)).AppendLine();
+			sb.Append(Constants.AdhocQuerySymbol).Append(" Total Instance Size: ").Append(Utils.LargeNumberString(grandTotalSize1)).AppendLine();
+
+			return new ListingInfo(null, dataListing, colInfos, sb.ToString());
+		}
+
+		public SortedDictionary<string, quadruple<int, ulong, ulong, ulong>> GetTypeSizesInfo(string path, out string error)
+		{
+			try
+			{
+
+				var dump = ClrtDump.OpenDump(path, out error);
+				if (dump == null) return null;
+				using (dump)
+				{
+					return ClrtDump.GetTypeSizesInfo(dump.Runtime.GetHeap(), out error);
+				}
+			}
+			catch (Exception ex)
+			{
+				error = Utils.GetExceptionErrorString(ex);
+				return null;
+			}
+			finally
+			{
+				Dump?.Dispose();
+			}
+		}
 		#endregion segments/generations/sizes
+
+		#region dump
+
+		private bool InitDump(out string error, IProgress<string> progress)
+		{
+			error = null;
+			try
+			{
+				_clrtDump = new ClrtDump(DumpPath);
+				return _clrtDump.Init(out error);
+			}
+			catch (Exception ex)
+			{
+				error = Utils.GetExceptionErrorString(ex);
+				return false;
+			}
+		}
+
+		#endregion dump
 
 		#region dispose
 

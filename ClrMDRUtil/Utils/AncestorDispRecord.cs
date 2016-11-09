@@ -25,11 +25,18 @@ namespace ClrMDRIndex
 			_fieldName = fieldName;
 			_instances = instances;
 		}
-		
+
+		public AncestorDispRecord(int typeId, string typeName, ulong[] instances)
+		{
+			_typeId = typeId;
+			_typeName = typeName;
+			_fieldName = string.Empty;
+			_instances = instances;
+		}
 
 		public override string ToString()
 		{
-			return "(" + _fieldName + ") " + _typeName;
+			return _typeName;
 		}
 	}
 
@@ -37,14 +44,14 @@ namespace ClrMDRIndex
 	{
 		public int Compare(AncestorDispRecord a, AncestorDispRecord b)
 		{
-			if (Utils.SameStrings(a.TypeName,b.TypeName))
-			{
-				if (Utils.SameStrings(a.FieldName, b.FieldName))
-				{
-					return a.TypeId < b.TypeId ? -1 : (a.TypeId > b.TypeId ? 1 : 0);
-				}
-				return string.Compare(a.FieldName, b.FieldName, StringComparison.Ordinal);
-			}
+			//if (Utils.SameStrings(a.TypeName,b.TypeName))
+			//{
+			//	if (Utils.SameStrings(a.FieldName, b.FieldName))
+			//	{
+			//		return a.TypeId < b.TypeId ? -1 : (a.TypeId > b.TypeId ? 1 : 0);
+			//	}
+			//	return string.Compare(a.FieldName, b.FieldName, StringComparison.Ordinal);
+			//}
 			return string.Compare(a.TypeName, b.TypeName, StringComparison.Ordinal);
 		}
 	}

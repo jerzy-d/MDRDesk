@@ -66,137 +66,119 @@ namespace UnitTestMdr
 
 		#region Instance Dependencies
 
-		[TestMethod]
-		public void TestFieldDependencyFields()
-		{
-		    string error;
-            //var map = OpenMap(@"D:\Jerzy\WinDbgStuff\Dumps\DumpTest\DumpTest.exe_160820_073947.map");
-            var map = OpenMap(@"D:\Jerzy\WinDbgStuff\dumps\Analytics\Memory.Usage.OPAM.971\DupCacheIssue\A2_noDF.map");
-            var outPath = map.ReportPath + Path.DirectorySeparatorChar + "FIELD_DEPENDENCIES.txt";
-		    using (map)
-		    {
-                map.DebugFieldDependencyDump(outPath, out error);
-            }
+		//[TestMethod]
+		//public void TestFieldDependencyFields()
+		//{
+		//    string error;
+  //          //var map = OpenMap(@"D:\Jerzy\WinDbgStuff\Dumps\DumpTest\DumpTest.exe_160820_073947.map");
+  //          var map = OpenMap(@"D:\Jerzy\WinDbgStuff\dumps\Analytics\Memory.Usage.OPAM.971\DupCacheIssue\A2_noDF.map");
+  //          var outPath = map.ReportPath + Path.DirectorySeparatorChar + "FIELD_DEPENDENCIES.txt";
+		//    using (map)
+		//    {
+  //              map.DebugFieldDependencyDump(outPath, out error);
+  //          }
 
-            Assert.IsNull(error,error);
-		}
+  //          Assert.IsNull(error,error);
+		//}
 
-        [TestMethod]
-        public void TestDependencyTree()
-        {
-            const string typeName = @"ECS.Common.Collections.Common.EzeBitVector";
-            string error;
-			//var map = OpenMap(@"D:\Jerzy\WinDbgStuff\Dumps\DumpTest\DumpTest.exe_160820_073947.map");
+   //     [TestMethod]
+   //     public void TestDependencyTree()
+   //     {
+   //         const string typeName = @"ECS.Common.Collections.Common.EzeBitVector";
+   //         string error;
+			////var map = OpenMap(@"D:\Jerzy\WinDbgStuff\Dumps\DumpTest\DumpTest.exe_160820_073947.map");
+			////var map = OpenMap(@"D:\Jerzy\WinDbgStuff\dumps\Analytics\Memory.Usage.OPAM.971\DupCacheIssue\A2_noDF.map");
 			//var map = OpenMap(@"D:\Jerzy\WinDbgStuff\dumps\Analytics\Memory.Usage.OPAM.971\DupCacheIssue\A2_noDF.map");
-			var map = OpenMap(@"D:\Jerzy\WinDbgStuff\dumps\Analytics\Memory.Usage.OPAM.971\DupCacheIssue\A2_noDF.map");
-			using (map)
-            {
-                int typeId = map.GetTypeId(typeName);
-                ulong[] typeAddresses = map.GetTypeAddresses(typeId);
-				Tuple<DependencyNode, int> result = map.GetAddressesDescendants(typeId, typeAddresses, 6, out error);
-	            var count = result.Item2;
-            }
+			//using (map)
+   //         {
+   //             int typeId = map.GetTypeId(typeName);
+   //             ulong[] typeAddresses = map.GetTypeRealAddresses(typeId);
+			//	Tuple<DependencyNode, int> result = map.GetAddressesDescendants(typeId, typeAddresses, 6, out error);
+	  //          var count = result.Item2;
+   //         }
 
-            Assert.IsNull(error, error);
-        }
+   //         Assert.IsNull(error, error);
+   //     }
 
 
-        [TestMethod]
-        public void TestFieldDependencyFields2()
-        {
-            string error;
-            //var map = OpenMap(@"D:\Jerzy\WinDbgStuff\Dumps\DumpTest\DumpTest.exe_160820_073947.map");
-            var map = OpenMap(@"D:\Jerzy\WinDbgStuff\dumps\Analytics\Memory.Usage.OPAM.971\DupCacheIssue\A2_noDF.map");
-			Assert.IsNotNull(map);
-			List<string> errors = new List<string>();
-			using (map)
-	        {
-
-				//KeyValuePair<ulong, KeyValuePair<ulong, int>[]>[] parentInfos = map.FieldDependencies.GetMultiFieldParents(new ulong[]{ 0x000000031eb5c8 }, errors);
-				KeyValuePair<ulong, KeyValuePair<ulong, int>[]>[] parentInfos = map.FieldDependencies.GetMultiFieldParents(new ulong[] { 0x0032bcdd8 }, errors);
-			}
-
-			//Assert.IsNull(error, error);
-		}
-
-		[TestMethod]
-		public void TestFieldDependencyNonrooted()
-		{
-			string error;
-//			var map = OpenMap(@"D:\Jerzy\WinDbgStuff\dumps\TestApp\TestApp.exe_161021_104608.map");
-			var map = OpenMap(@"D:\Jerzy\WinDbgStuff\dumps\Analytics\ConvergEx\Analytics_Post.map");
-			Assert.IsNotNull(map);
-			List<string> errors = new List<string>();
-			using (map)
-			{
-				BinaryReader fieldOffsets = null;
-				try
-				{
-					var path = DumpFileMoniker.GetFilePath(map.CurrentRuntime, map.MapFolder, map.DumpBaseName,
-						Constants.MapFieldParentOffsetsFilePostfix);
-					fieldOffsets = new BinaryReader(File.Open(path, FileMode.Open, FileAccess.Read, FileShare.Read));
-					var cnt = fieldOffsets.ReadInt32()-1; // last offset address is invalid
-					ulong[] fieldAddresses = new ulong[cnt];
-					for (int i = 0; i < cnt; ++i)
-					{
-						fieldAddresses[i] = fieldOffsets.ReadUInt64();
-						var offs = fieldOffsets.ReadInt64();
-					}
+//		[TestMethod]
+//		public void TestFieldDependencyNonrooted()
+//		{
+//			string error;
+////			var map = OpenMap(@"D:\Jerzy\WinDbgStuff\dumps\TestApp\TestApp.exe_161021_104608.map");
+//			var map = OpenMap(@"D:\Jerzy\WinDbgStuff\dumps\Analytics\ConvergEx\Analytics_Post.map");
+//			Assert.IsNotNull(map);
+//			List<string> errors = new List<string>();
+//			using (map)
+//			{
+//				BinaryReader fieldOffsets = null;
+//				try
+//				{
+//					var path = DumpFileMoniker.GetFilePath(map.CurrentRuntimeIndex, map.IndexFolder, map.DumpFileName,
+//						Constants.MapFieldParentOffsetsFilePostfix);
+//					fieldOffsets = new BinaryReader(File.Open(path, FileMode.Open, FileAccess.Read, FileShare.Read));
+//					var cnt = fieldOffsets.ReadInt32()-1; // last offset address is invalid
+//					ulong[] fieldAddresses = new ulong[cnt];
+//					for (int i = 0; i < cnt; ++i)
+//					{
+//						fieldAddresses[i] = fieldOffsets.ReadUInt64();
+//						var offs = fieldOffsets.ReadInt64();
+//					}
 
 					
 
-					Assert.IsTrue(Utils.IsSorted(fieldAddresses));
-					var instances = map.Instances;
-					var roots = map.Roots;
-					int offNdx = 0;
-					int instNdx = 0;
-					int offCnt = fieldAddresses.Length;
-					int instCnt = instances.Length;
-					Assert.IsTrue(instCnt>=offCnt);
-					List<ulong> unrooted = new List<ulong>(instCnt - offCnt);
-					List<ulong> rooted = new List<ulong>(1024);
-					while (instNdx < instCnt && offNdx < offCnt)
-					{
-						var instAddr = instances[instNdx];
-						var fldAddr = fieldAddresses[offNdx];
-						if (instAddr == fldAddr)
-						{
-							++instNdx;
-							++offNdx;
-							continue;
-						}
-						if (instAddr < fldAddr)
-						{
-							if (roots.IsRootedOutsideFinalization(instAddr))
-								rooted.Add(instAddr);
-							else
-								unrooted.Add(instAddr);
-							++instNdx;
-							continue;
-						}
-						if (instAddr > fldAddr) // should not happen
-						{
-							Assert.Fail("Shoul not happen: instAddr > fldAddr");
-						}
+//					Assert.IsTrue(Utils.IsSorted(fieldAddresses));
+//					var instances = map.Instances;
+//					var roots = map.Roots;
+//					int offNdx = 0;
+//					int instNdx = 0;
+//					int offCnt = fieldAddresses.Length;
+//					int instCnt = instances.Length;
+//					Assert.IsTrue(instCnt>=offCnt);
+//					List<ulong> unrooted = new List<ulong>(instCnt - offCnt);
+//					List<ulong> rooted = new List<ulong>(1024);
+//					while (instNdx < instCnt && offNdx < offCnt)
+//					{
+//						var instAddr = instances[instNdx];
+//						var fldAddr = fieldAddresses[offNdx];
+//						if (instAddr == fldAddr)
+//						{
+//							++instNdx;
+//							++offNdx;
+//							continue;
+//						}
+//						if (instAddr < fldAddr)
+//						{
+//							if (roots.IsRootedOutsideFinalization(instAddr))
+//								rooted.Add(instAddr);
+//							else
+//								unrooted.Add(instAddr);
+//							++instNdx;
+//							continue;
+//						}
+//						if (instAddr > fldAddr) // should not happen
+//						{
+//							Assert.Fail("Shoul not happen: instAddr > fldAddr");
+//						}
 						
 							
-					}
-					for (; instNdx < instCnt; ++instNdx)
-						unrooted.Add(instances[instNdx]);
-					Assert.IsTrue(unrooted.Count == instCnt - offCnt - rooted.Count);
-				}
-				catch (Exception ex)
-				{
-					Assert.IsTrue(false, ex.ToString());
-				}
-				finally
-				{
-					fieldOffsets?.Close();
-				}
-			}
+//					}
+//					for (; instNdx < instCnt; ++instNdx)
+//						unrooted.Add(instances[instNdx]);
+//					Assert.IsTrue(unrooted.Count == instCnt - offCnt - rooted.Count);
+//				}
+//				catch (Exception ex)
+//				{
+//					Assert.IsTrue(false, ex.ToString());
+//				}
+//				finally
+//				{
+//					fieldOffsets?.Close();
+//				}
+//			}
 
-			//Assert.IsNull(error, error);
-		}
+//			//Assert.IsNull(error, error);
+//		}
 
 
 		#endregion Instance Dependencies
@@ -204,10 +186,12 @@ namespace UnitTestMdr
 	    [TestMethod]
 	    public void Conversions()
 	    {
-            TimeSpan ts1 = new TimeSpan(0, 1, 34, 57);
-            TimeSpan ts2 = new TimeSpan(0, 0, 3, 29);
+			//TimeSpan ts1 = new TimeSpan(0, 1, 34, 57);
+			//TimeSpan ts2 = new TimeSpan(0, 0, 3, 29);
+			TimeSpan ts1 = new TimeSpan(0, 2, 38, 19);
+			TimeSpan ts2 = new TimeSpan(0, 0, 3, 02);
 
-	        double gain = 100 * ((ts1.TotalMilliseconds - ts2.TotalMilliseconds)/ts2.TotalMilliseconds);
+			double gain = 100 * ((ts1.TotalMilliseconds - ts2.TotalMilliseconds)/ts2.TotalMilliseconds);
 
 
 	    }
@@ -223,7 +207,7 @@ namespace UnitTestMdr
 			using (map)
 			{
 				int typeId = map.GetTypeId(typeName);
-				ulong[] typeAddresses = map.GetTypeAddresses(typeId);
+				ulong[] typeAddresses = map.GetTypeRealAddresses(typeId);
 				var heap = map.GetFreshHeap();
 				ClrType clrType = null;
 				ClrInstanceField m_timerResults = null;
@@ -273,7 +257,7 @@ namespace UnitTestMdr
 				KeyValuePair<int, ulong[]>[] prefaddresses = map.GetTypeWithPrefixAddresses("System.WeakReference",false,out totalCount);
 
 				int typeId = map.GetTypeId("System.WeakReference");
-				ulong[] addresses = map.GetTypeAddresses(typeId);
+				ulong[] addresses = map.GetTypeRealAddresses(typeId);
 
 				var heap = map.GetFreshHeap();
 				ClrType weakReferenceType = heap.GetObjectType(address); // System.WeakReference
@@ -293,7 +277,7 @@ namespace UnitTestMdr
 
 
 
-				string repPath = map.ReportPath + @"\WeakReferenceObjects.txt";
+				string repPath = map.AdhocFolder + @"\WeakReferenceObjects.txt";
 				StreamWriter sw = null;
 				try
 				{
@@ -346,7 +330,7 @@ namespace UnitTestMdr
  			{
  			    var typeId = map.GetTypeId(sbTypeName);
                 Assert.IsFalse(typeId==Constants.InvalidIndex);
- 			    ulong[] typeAddresses = map.GetTypeAddresses(typeId);
+ 			    ulong[] typeAddresses = map.GetTypeRealAddresses(typeId);
                 Assert.IsTrue(typeAddresses!=null && typeAddresses.Length>0);
  			    for (int i = 0, icnt = typeAddresses.Length; i < icnt; ++i)
  			    {
@@ -383,7 +367,7 @@ namespace UnitTestMdr
             {
                 var typeId = map.GetTypeId(sbTypeName);
                 Assert.IsFalse(typeId == Constants.InvalidIndex);
-                ulong[] typeAddresses = map.GetTypeAddresses(typeId);
+                ulong[] typeAddresses = map.GetTypeRealAddresses(typeId);
                 Assert.IsTrue(typeAddresses != null && typeAddresses.Length > 0);
                 for (int i = 0, icnt = typeAddresses.Length; i < icnt; ++i)
                 {
@@ -412,7 +396,7 @@ namespace UnitTestMdr
 
 				var typeName = "System.Collections.Generic.Dictionary<System.String,System.Object>";
 				var typeId = map.GetTypeId(typeName);
-				ulong[] addresses = map.GetTypeAddresses(typeId);
+				ulong[] addresses = map.GetTypeRealAddresses(typeId);
 				int[] counts = new int[addresses.Length];
 				var heap = map.GetFreshHeap();
 				for (int i = 0, icnt = addresses.Length; i < icnt; ++i)
@@ -456,7 +440,7 @@ namespace UnitTestMdr
 
 				var typeName = "System.Collections.Generic.Dictionary+Entry<System.String,System.Object>[]";
 				var typeId = map.GetTypeId(typeName);
-				ulong[] addresses = map.GetTypeAddresses(typeId);
+				ulong[] addresses = map.GetTypeRealAddresses(typeId);
 				int[] counts = new int[addresses.Length];
 				var heap = map.GetFreshHeap();
 				var keyLst = new List<KeyValuePair<ulong, string[]>>();
@@ -491,15 +475,15 @@ namespace UnitTestMdr
 
 				string error;
 
-				HashSet<ulong> parents = new HashSet<ulong>();
-				for (int i = 0, icnt = specKeyAryAddr.Length; i < icnt; ++i)
-				{
-					var pars = map.GetParents(specKeyAryAddr[i], out error);
-					for (int j = 0, jcnt = pars.Length; j < jcnt; ++j)
-					{
-						parents.Add(pars[j].Key);
-					}
-				}
+				//HashSet<ulong> parents = new HashSet<ulong>();
+				//for (int i = 0, icnt = specKeyAryAddr.Length; i < icnt; ++i)
+				//{
+				//	var pars = map.GetParents(specKeyAryAddr[i], out error);
+				//	for (int j = 0, jcnt = pars.Length; j < jcnt; ++j)
+				//	{
+				//		parents.Add(pars[j].Key);
+				//	}
+				//}
 
 			}
 		}
@@ -518,7 +502,7 @@ namespace UnitTestMdr
 				Assert.IsTrue(IndexValue.IsIndex(typeId));
 				Assert.IsFalse(IndexValue.IsInvalidIndex(typeId));
 
-				var typeAddresses = map.GetTypeAddresses(typeId);
+				var typeAddresses = map.GetTypeRealAddresses(typeId);
 
 				var heap = map.GetFreshHeap();
 				ClrInstanceField[] fields=null;
@@ -526,7 +510,7 @@ namespace UnitTestMdr
 				StreamWriter sw = null;
 				try
 				{
-					sw = new StreamWriter(map.ReportPath + Path.DirectorySeparatorChar + typeName + ".txt");
+					sw = new StreamWriter(map.AdhocFolder + Path.DirectorySeparatorChar + typeName + ".txt");
 					for (int i = 0, icnt = typeAddresses.Length; i < icnt; ++i)
 					{
 						ulong addr = typeAddresses[i];
@@ -619,7 +603,7 @@ namespace UnitTestMdr
 		//		Assert.IsFalse(IndexValue.IsInvalidIndex(id));
 		//		Assert.IsTrue(IndexValue.IsIndex(id));
 
-		//		var addresses = map.GetTypeAddresses(id);
+		//		var addresses = map.GetTypeRealAddresses(id);
 		//		var icnt = addresses.Length; //Math.Min(addresses.Length, 10);
 		//		var resultLst = new List<KeyValuePair<ulong, string>[]>(addresses.Length);
 		//		var orphans = new List<ulong>(256);
@@ -737,42 +721,42 @@ namespace UnitTestMdr
 
 		#region Types
 
-		[TestMethod]
-		public void TestTypeElemnts()
-		{
-			string error;
-			var map = OpenMap(@"");
+		//[TestMethod]
+		//public void TestTypeElemnts()
+		//{
+		//	string error;
+		//	var map = OpenMap(@"");
 
-			var ets0 = map.GetElementTypes(ClrElementType.Struct);
+		//	var ets0 = map.GetElementTypes(ClrElementType.Struct);
 
-			var sb = StringBuilderCache.Acquire(StringBuilderCache.MaxCapacity);
-			List<string> lst = new List<string>(ets0.Length);
-			for (int i = 0, icnt = ets0.Length; i < icnt; ++i)
-			{
-				var tp = ets0[i];
-				var fldInfo = map.GetFieldNamesAndTypes(tp.Key);
-				sb.Clear();
-				sb.Append(tp.Value).Append("  ").AppendLine(Utils.SmallIdHeader(tp.Key));
+		//	var sb = StringBuilderCache.Acquire(StringBuilderCache.MaxCapacity);
+		//	List<string> lst = new List<string>(ets0.Length);
+		//	for (int i = 0, icnt = ets0.Length; i < icnt; ++i)
+		//	{
+		//		var tp = ets0[i];
+		//		var fldInfo = map.GetFieldNamesAndTypes(tp.Key);
+		//		sb.Clear();
+		//		sb.Append(tp.Value).Append("  ").AppendLine(Utils.SmallIdHeader(tp.Key));
 
-				for (int j = 0, jcnt = fldInfo.Length; j < jcnt; ++j)
-				{
-					var fld = fldInfo[j];
-					sb.Append("   ").Append(Utils.SmallIdHeader(fld.First)).Append(fld.Second).Append("  ").AppendLine(fld.Third);
-				}
-				lst.Add(sb.ToString());
-			}
-			StringBuilderCache.Release(sb);
+		//		for (int j = 0, jcnt = fldInfo.Length; j < jcnt; ++j)
+		//		{
+		//			var fld = fldInfo[j];
+		//			sb.Append("   ").Append(Utils.SmallIdHeader(fld.First)).Append(fld.Second).Append("  ").AppendLine(fld.Third);
+		//		}
+		//		lst.Add(sb.ToString());
+		//	}
+		//	StringBuilderCache.Release(sb);
 
-			lst.Sort(StringComparer.Ordinal);
-			var path = TestConfiguration.OutPath0 + map.DumpBaseName + ".STRUCTURES.txt";
-			Utils.WriteStringList(path, lst, out error);
-			Assert.IsNull(error,error);
+		//	lst.Sort(StringComparer.Ordinal);
+		//	var path = TestConfiguration.OutPath0 + map.DumpBaseName + ".STRUCTURES.txt";
+		//	Utils.WriteStringList(path, lst, out error);
+		//	Assert.IsNull(error,error);
 
-			var ets1 = map.GetElementTypes(ClrElementType.Unknown);
-			Assert.IsTrue(ets1.Length==0);
-			var nonEmptys = map.GetNonemptyElementTypes();
-			var ets2 = map.GetElementTypes(ClrElementType.Array);
-		}
+		//	var ets1 = map.GetElementTypes(ClrElementType.Unknown);
+		//	Assert.IsTrue(ets1.Length==0);
+		//	var nonEmptys = map.GetNonemptyElementTypes();
+		//	var ets2 = map.GetElementTypes(ClrElementType.Array);
+		//}
 
 		[TestMethod]
 		public void TestTypeAccess()
@@ -789,7 +773,7 @@ namespace UnitTestMdr
 				var id = map.GetTypeId(typeName);
 				var tname = map.GetTypeName(id);
 				Debug.Assert(tname == typeName);
-				var addresses = map.GetTypeAddresses(id);
+				var addresses = map.GetTypeRealAddresses(id);
 			}
 
 		}
@@ -803,12 +787,12 @@ namespace UnitTestMdr
 			var did = map.GetTypeId("Eze.Server.Common.Pulse.Common.Types.PositionCalcGroupToRowDeltaApplicationInfo");
 			Assert.IsTrue(IndexValue.IsIndex(did));
 			Assert.IsFalse(IndexValue.IsInvalidIndex(did));
-			var daddresses = map.GetTypeAddresses(did);
+			var daddresses = map.GetTypeRealAddresses(did);
 
 			var rid = map.GetTypeId("Eze.Server.Common.Pulse.CalculationCache.RowCache");
 			Assert.IsTrue(IndexValue.IsIndex(rid));
 			Assert.IsFalse(IndexValue.IsInvalidIndex(rid));
-			var raddresses = map.GetTypeAddresses(rid);
+			var raddresses = map.GetTypeRealAddresses(rid);
 
 
 
@@ -874,7 +858,7 @@ namespace UnitTestMdr
 				}
 			}
 
-			Assert.IsNotNull(daddresses, "Map.GetTypeAddresses returned null.");
+			Assert.IsNotNull(daddresses, "Map.GetTypeRealAddresses returned null.");
 		}
 
 		bool AreArraysTheSame(IList<ulong[]> lst)
@@ -895,16 +879,16 @@ namespace UnitTestMdr
 			return true;
 		}
 
-		[TestMethod]
-		public void TestDumpReversedTypeName()
-		{
-			var map = OpenMap(@"");
-			Assert.IsNotNull(map);
-			var outFile = DumpFileMoniker.GetOuputFolder(map.DumpPath) + Path.DirectorySeparatorChar + "REVERSEDNAMES.txt";
-			string error;
-			var ok = map.DumpReversedNames(outFile, out error);
-			Assert.IsTrue(ok,error);
-		}
+		//[TestMethod]
+		//public void TestDumpReversedTypeName()
+		//{
+		//	var map = OpenMap(@"");
+		//	Assert.IsNotNull(map);
+		//	var outFile = DumpFileMoniker.GetOuputFolder(map.DumpPath) + Path.DirectorySeparatorChar + "REVERSEDNAMES.txt";
+		//	string error;
+		//	var ok = map.DumpReversedNames(outFile, out error);
+		//	Assert.IsTrue(ok,error);
+		//}
 
         #endregion Types
 
@@ -922,81 +906,6 @@ namespace UnitTestMdr
 		}
 
         #region Instance References
-
-        //[TestMethod]
-        //public void TestFindInstanceParents()
-        //{
-        //	string error = null;
-
-        //	ulong addr = 0x000000027ff968;
-
-        //	using (var map = OpenMap(@"D:\Jerzy\WinDbgStuff\dumps\DumpSearch\DumpSearch.exe_160711_121816.map"))
-        //	{
-        //		try
-        //		{
-        //			var result = map.GetFieldReferences(addr, out error);
-        //			InstanceTypeNode rootNode = map.GetParentReferences(addr, out error);
-
-
-        //		}
-        //		catch (Exception ex)
-        //		{
-        //			error = Utils.GetExceptionErrorString(ex);
-        //			Assert.IsTrue(false, error);
-        //		}
-        //	}
-        //}
-
-        [TestMethod]
-        public void TestGetTypeAddresses()
-        {
-            string error = null;
-
-            string typeName = "System.ServiceModel.Channels.BindingElement[]";
-
-            using (var map = OpenMap(@"D:\Jerzy\WinDbgStuff\dumps\Analytics\ConvergEx\Analytics.map"))
-            {
-                try
-                {
-                    var typeId = map.GetTypeId(typeName);
-                    var mapTypeName = map.GetTypeName(typeId);
-					Assert.IsTrue(Utils.SameStrings(typeName,mapTypeName));
-                    var addresses = map.GetTypeAddresses(typeId);
-                    var instanceTypes = map.InstanceTypeIds;
-                    var instances = map.Instances;
-                    List<ulong> list = new List<ulong>(100000);
-                    for (int i = 0, icnt = instanceTypes.Length; i < icnt; ++i)
-                    {
-                        if (instanceTypes[i] == typeId)
-                        {
-                            list.Add(instances[i]);
-                        }
-                    }
-	                var heap = map.Dump.GetFreshHeap();
-	                var addrMts = DmpNdxQueries.FQry.getTypeAddresses(heap, typeName);
-					Assert.IsTrue(addrMts.Item1==null && addrMts.Item2.Length>0);
-	                ulong mt = addrMts.Item2[0].Value;
-	                bool allMtsSame = true;
-	                ulong addr = Constants.InvalidAddress;
-	                for (int i = 0, icnt=addrMts.Item2.Length; i < icnt; ++i)
-	                {
-		                if (addrMts.Item2[i].Value != mt)
-		                {
-			                allMtsSame = false;
-			                addr = addrMts.Item2[i].Key;
-							break;
-		                }
-	                }
-					Assert.IsTrue(allMtsSame);
-
-                }
-                catch (Exception ex)
-                {
-                    error = Utils.GetExceptionErrorString(ex);
-                    Assert.IsTrue(false, error);
-                }
-            }
-        }
 
         #endregion Instance References
 
@@ -1019,7 +928,7 @@ namespace UnitTestMdr
         //			var id = map.GetTypeId(typeName);
         //			Assert.IsTrue(IndexValue.IsIndex(id));
         //			Assert.IsFalse(IndexValue.IsInvalidIndex(id));
-        //			var addresses = map.GetTypeAddresses(id);
+        //			var addresses = map.GetTypeRealAddresses(id);
         //			for (int i = 0, icnt = addresses.Length; i < icnt; ++i)
         //			{
         //				lst.Clear();
@@ -1063,8 +972,8 @@ namespace UnitTestMdr
 			Assert.IsTrue(IndexValue.IsIndex(id));
 			Assert.IsFalse(IndexValue.IsInvalidIndex(id));
 
-			var addresses = map.GetTypeAddresses(id);
-			Assert.IsNotNull(addresses, "Map.GetTypeAddresses returned null.");
+			var addresses = map.GetTypeRealAddresses(id);
+			Assert.IsNotNull(addresses, "Map.GetTypeRealAddresses returned null.");
 		}
 
 		[TestMethod]
@@ -1093,8 +1002,8 @@ namespace UnitTestMdr
 			Assert.IsTrue(IndexValue.IsIndex(id));
 			Assert.IsFalse(IndexValue.IsInvalidIndex(id));
 
-			var addresses = map.GetTypeAddresses(id);
-			Assert.IsNotNull(addresses, "Map.GetTypeAddresses returned null.");
+			var addresses = map.GetTypeRealAddresses(id);
+			Assert.IsNotNull(addresses, "Map.GetTypeRealAddresses returned null.");
 		}
 
 
@@ -1112,8 +1021,8 @@ namespace UnitTestMdr
 		//	Assert.IsTrue(IndexValue.IsIndex(id));
 		//	Assert.IsFalse(IndexValue.IsInvalidIndex(id));
 
-		//	var addresses = map.GetTypeAddresses(id);
-		//	Assert.IsNotNull(addresses, "Map.GetTypeAddresses returned null.");
+		//	var addresses = map.GetTypeRealAddresses(id);
+		//	Assert.IsNotNull(addresses, "Map.GetTypeRealAddresses returned null.");
 		//	string error;
 		//	List<ulong> addrLst = new List<ulong>(1024);
 		//	List<InstanceTypeNode> nodeLst = new List<InstanceTypeNode>(1024);
@@ -1134,203 +1043,6 @@ namespace UnitTestMdr
 		//	}
 		//}
 
-
-		private ulong[] addressesToCheck = new ulong[]
-		{
-			 0x000000307e3948
-,0x000000349b2c48
-,0x00000048164730
-,0x000000482419a8
-,0x0000004824bce0
-,0x00000048250030
-,0x00000048254378
-,0x000000482586c0
-,0x0000004825ca08
-,0x00000048260d30
-,0x00000048265050
-,0x00000048269380
-,0x0000004826d688
-,0x00000048271988
-,0x00000048277cd0
-,0x0000004827c018
-,0x00000048280360
-,0x000000482846b0
-,0x0000004828c938
-,0x00000048290e98
-,0x000000482951e0
-,0x00000048299508
-,0x0000004829f870
-,0x000000482a3bc0
-,0x000000482a7ef0
-,0x000000482ac238
-,0x000000482b0580
-,0x000000482b48a0
-,0x000000482b8be8
-,0x000000482bcf18
-,0x000000482c1268
-,0x000000482c55b0
-,0x000000482c98f8
-,0x000000482cdc40
-,0x000000482d1f88
-,0x000000482d62d8
-,0x00000048411a50
-,0x000000484178f0
-,0x0000004841e970
-,0x00000048422ac0
-,0x00000048426c20
-,0x0000004842add8
-,0x000000484353f0
-,0x00000048439540
-,0x0000004843d6a8
-,0x000000484418a0
-,0x00000048445a08
-,0x00000048449b70
-,0x0000004844e6b0
-,0x000000484527d0
-,0x00000048463c88
-,0x00000048467db0
-,0x0000004846c058
-,0x000000484704c8
-,0x000000484747d0
-,0x00000048478ad8
-,0x0000004847ce28
-,0x00000048481130
-,0x00000048485460
-,0x000000484897b0
-,0x0000004848daf0
-,0x00000048491df0
-,0x00000048496150
-,0x0000004849a498
-,0x0000004849e7c8
-,0x000000484a2ac8
-,0x000000484a6e18
-,0x000000484ab148
-,0x000000484b33b0
-,0x000000484b78f0
-,0x000000484bbc20
-,0x000000484bff20
-,0x000000484c4228
-,0x000000484c8550
-,0x000000484cc8a0
-,0x000000484d0bf0
-,0x000000484d4f20
-,0x000000484d9238
-,0x000000484dd580
-,0x000000484e18c8
-,0x000000484e5c10
-,0x000000484e9f58
-,0x000000484ee2a0
-,0x000000484f25c8
-,0x000000484f6910
-,0x000000484fac38
-		};
-
-		[TestMethod]
-		public void TestAddressesParents()
-		{
-			string typeName =
-				"System.Collections.Concurrent.ConcurrentDictionary+Node<System.String,ECS.Common.Collections.Common.triple<System.String,System.Int32,System.Int32>>";
-			string error = null;
-			int parentsPresentCnt = 0;
-			KeyValuePair<ulong, int>[][] parents = new KeyValuePair<ulong, int>[addressesToCheck.Length][];
-			//using (var map = OpenMap(@"D:\Jerzy\WinDbgStuff\dumps\Analytics\Memory.Usage.OPAM.971\afterJerzy.map"))
-			//using (var map = OpenMap(@"D:\Jerzy\ezeprojects\OPAMS\1008 - Remove Duplicate Strings\CacheTest.vshost.exe_160823_110843.map"))
-			//using (var map = OpenMap(@"D:\Jerzy\ezeprojects\OPAMS\1008 - Remove Duplicate Strings\CacheTest.vshost.exe_160823_113610.map"))
-			//using (var map = OpenMap(@"D:\Jerzy\ezeprojects\OPAMS\1008 - Remove Duplicate Strings\CacheTest.vshost.exe_160823_161542.map"))
-			//using (var map = OpenMap(@"D:\Jerzy\ezeprojects\OPAMS\1008 - Remove Duplicate Strings\CacheTest.vshost.exe_160823_165954.map"))
-			using (var map = OpenMap(@"D:\Jerzy\WinDbgStuff\dumps\Analytics\Memory.Usage.OPAM.971\Eze.Analytics.O971_160824_095212.FC.dupcache8a.map"))
-			{
-				var fldDnpd = map.FieldDependencies;
-				//for (int i = 0, icnt = addressesToCheck.Length; i < icnt; ++i)
-				//{
-				//	parents[i] = fldDnpd.GetFieldParents(addressesToCheck[i], out error);
-				//	if (error != null && error[0] == Constants.InformationSymbol) error = null;
-				//	if (parents[i].Length > 0)
-				//	{
-				//		++parentsPresentCnt;
-				//	}
-
-				//}
-				var dct = new SortedDictionary<string, KeyValuePair<List<ulong>,int>>(StringComparer.Ordinal);
-				int typeId = map.GetTypeId(typeName);
-				ulong[] taddresses = map.GetTypeAddresses(typeId);
-				var heap = map.Dump.GetFreshHeap();
-				for (int i = 0, icnt = taddresses.Length; i < icnt; ++i)
-				{
-					var paddrs = fldDnpd.GetFieldParents(taddresses[i], out error);
-					if (error != null && error[0] == Constants.InformationSymbol) error = null;
-					var clrType = heap.GetObjectType(taddresses[i]);
-					Assert.IsNotNull(clrType);
-					ClrInstanceField fld1 = clrType.GetFieldByName("m_key");
-					var keyVal = (ulong)fld1.GetValue(taddresses[i], clrType.IsValueClass);
-					var keyStr = ValueExtractor.GetStringAtAddress(keyVal, heap);
-					KeyValuePair<List<ulong>, int> kv;
-					if (dct.TryGetValue(keyStr, out kv))
-					{
-						var lst = kv.Key;
-						for (int j = 0, jcnt = paddrs.Length; j < jcnt; ++j)
-							lst.Add(paddrs[j].Key);
-						var cnt = kv.Value + 1;
-						dct[keyStr] = new KeyValuePair<List<ulong>, int>(lst,cnt);
-					}
-					else
-					{
-						var lst = new List<ulong>(paddrs.Length);
-						for (int j = 0, jcnt = paddrs.Length; j < jcnt; ++j)
-							lst.Add(paddrs[j].Key);
-						dct.Add(keyStr,new KeyValuePair<List<ulong>, int>(lst,1));
-					}
-				}
-
-				List<KeyValuePair<string, int>> freeList = new List<KeyValuePair<string, int>>(128);
-				List<KeyValuePair<string, int>> orphanList = new List<KeyValuePair<string, int>>(128);
-				List<KeyValuePair<string, int>> onelingList = new List<KeyValuePair<string, int>>(128);
-				int totalFreeCount = 0;
-				foreach (var ent in dct)
-				{
-					var kvVal = ent.Value;
-					if (kvVal.Key.Count == 0)
-					{
-						orphanList.Add(new KeyValuePair<string, int>(ent.Key, kvVal.Value));
-					}
-					else if (kvVal.Key.Count < kvVal.Value)
-					{
-						int cnt = kvVal.Value - kvVal.Key.Count;
-						totalFreeCount += cnt;
-						freeList.Add(new KeyValuePair<string, int>(ent.Key,cnt));
-					}
-					else if (kvVal.Key.Count == 1 && kvVal.Value == 1)
-					{
-						onelingList.Add(new KeyValuePair<string, int>(ent.Key, 1));
-					}
-				}
-
-
-
-				Assert.IsNull(error);
-			}
-		}
-
-		[TestMethod]
-	    public void TestGetTypeWithStringField2()
-	    {
-            var fldRefList = new List<KeyValuePair<ulong, int>>(64);
-			const string str = "SomeClassName_SomeClassA_0";
-			string error = null;
-			using (var map = OpenMap(@"C:\WinDbgStuff\Dumps\DumpSearch\DumpSearch.exe_160813_062931.map"))
-			{
-				//var dct = map.GetTypesWithSpecificStringField(str, out error);
-                //Assert.IsNotNull(dct);
-                var strStats =map.GetCurrentStringStats(out error);
-                var addresses = strStats.GetStringAddresses(str, out error);
-			    var fldDpnds = map.FieldDependencies;
-			    List<string> lst=new List<string>();
-			    var parents = fldDpnds.GetMultiFieldParents(addresses, lst);
-
-			}
-        }
-
-
 		[TestMethod]
 		public void TestGetTypeGroupedContent()
 		{
@@ -1345,7 +1057,7 @@ namespace UnitTestMdr
 					ClrInstanceField bitwiseCurrentPositionToggleState = null;
 					ClrInstanceField indexIntoPositionIndexToFieldNumberConversionSet = null;
 					int typeId = map.GetTypeId(str);
-					ulong[] addresses = map.GetTypeAddresses(typeId);
+					ulong[] addresses = map.GetTypeRealAddresses(typeId);
 					var heap = map.Dump.GetFreshHeap();
 					for (int i = 0, icnt = addresses.Length; i < icnt; ++i)
 					{
@@ -1404,7 +1116,7 @@ namespace UnitTestMdr
 					ClrInstanceField bits = null;
 					ulong aryAddr = 0;
 					int typeId = map.GetTypeId(str);
-					ulong[] addresses = map.GetTypeAddresses(typeId);
+					ulong[] addresses = map.GetTypeRealAddresses(typeId);
 					var heap = map.Dump.GetFreshHeap();
 					for (int i = 0, icnt = addresses.Length; i < icnt; ++i)
 					{
@@ -1452,7 +1164,7 @@ namespace UnitTestMdr
 					try
 					{
 
-						sw = new StreamWriter(map.ReportPath + Path.DirectorySeparatorChar + "EzeBitVector.txt");
+						sw = new StreamWriter(map.AdhocFolder + Path.DirectorySeparatorChar + "EzeBitVector.txt");
 						sw.WriteLine("#### Total EzeBitVector Instance Count: " + Utils.SizeString(addresses.Length));
 						sw.WriteLine("#### Total EzeBitVector Unique Count: " + Utils.SizeString(dct.Count));
 						sw.WriteLine("#### Columns: duplicate count, ulong[] size, vector content");
@@ -1496,7 +1208,7 @@ namespace UnitTestMdr
 				{
 					int typeId = map.GetTypeId(typeName);
 					result = map.GetTypeSizeDetails(typeId, out error);
-					reportPath = map.ReportPath + Path.DirectorySeparatorChar + Utils.BaseTypeName(typeName) + ".SIZE.DETAILS.txt";
+					reportPath = map.AdhocFolder + Path.DirectorySeparatorChar + Utils.BaseTypeName(typeName) + ".SIZE.DETAILS.txt";
 				}
 
 				Assert.IsNotNull(result,error);
@@ -1803,10 +1515,10 @@ namespace UnitTestMdr
 					Assert.IsTrue(IndexValue.IsIndex(strTypeId));
 					Assert.IsFalse(IndexValue.IsInvalidIndex(strTypeId));
 
-					ulong[] strAddresses = map.GetTypeAddresses(strTypeId);
+					ulong[] strAddresses = map.GetTypeRealAddresses(strTypeId);
 					Assert.IsNotNull(strAddresses);
 					Assert.IsTrue(Utils.IsSorted(strAddresses));
-					ulong[] myStrAddrs = Map.GetStringAddresses(heap, str, strAddresses, out error);
+					ulong[] myStrAddrs = DumpIndex.GetStringAddresses(heap, str, strAddresses, out error);
 					Assert.IsNull(error);
 					Assert.IsNotNull(myStrAddrs);
 					Assert.IsTrue(Utils.IsSorted(myStrAddrs));
@@ -1890,76 +1602,76 @@ namespace UnitTestMdr
 		//	TestContext.WriteLine("Not Found Count: " + notRootedInfo.Item2.Length);
 		//}
 
-		[TestMethod]
-		public void CompareDumpsTypeInstances()
-		{
-			var map0 = OpenMap(@"");
-			var map1 = OpenMap(@"");
-			Map.MapsDiff(map0,map1);
-		}
+		//[TestMethod]
+		//public void CompareDumpsTypeInstances()
+		//{
+		//	var map0 = OpenMap(@"");
+		//	var map1 = OpenMap(@"");
+		//	Map.MapsDiff(map0,map1);
+		//}
 
-		[TestMethod]
-		public void ArraysScanTest()
-		{
-			var map = OpenMap(@"");
-			using (map)
-			{
-				var stopWatch = new Stopwatch();
-				stopWatch.Start();
+		//[TestMethod]
+		//public void ArraysScanTest()
+		//{
+		//	var map = OpenMap(@"");
+		//	using (map)
+		//	{
+		//		var stopWatch = new Stopwatch();
+		//		stopWatch.Start();
 
-				var lst = map.GetElementTypeTypes(ClrElementType.SZArray);
+		//		var lst = map.GetElementTypeTypes(ClrElementType.SZArray);
 
-				int instanceCount = 0;
-				int maxTypeInstanceCount = 0;
-				int minTypeInstanceCount = Int32.MaxValue;
-				int maxInstanceId = -1;
-				int minInstanceId = -1;
+		//		int instanceCount = 0;
+		//		int maxTypeInstanceCount = 0;
+		//		int minTypeInstanceCount = Int32.MaxValue;
+		//		int maxInstanceId = -1;
+		//		int minInstanceId = -1;
 
-				for (int i = 0, icnt = lst.Count; i < icnt; ++i)
-				{
-					try
-					{
-						var addresses = map.GetTypeAddresses(lst[i]);
-						Assert.IsNotNull(addresses, "Map.GetTypeAddresses returned null.");
-						instanceCount += addresses.Length;
-						if (maxTypeInstanceCount < addresses.Length)
-						{
-							maxTypeInstanceCount = addresses.Length;
-							maxInstanceId = lst[i];
-						}
-						if (minTypeInstanceCount > addresses.Length)
-						{
-							minTypeInstanceCount = addresses.Length;
-							minInstanceId = lst[i];
-						}
-					}
-					catch (Exception ex)
-					{
-						var id = lst[i];
-						var typeName = "Type id is outside id range.";
-						if (id >= 0 && id < map.TypeCount())
-							typeName = map.GetTypeName(id);
-						Assert.Fail(
-							Environment.NewLine + "Map.GetTypeAddresses failed, for type id: " + id + Environment.NewLine
-							+ "Type: " + typeName + Environment.NewLine
-							+ ex.ToString()
-							);
-					}
-				}
+		//		for (int i = 0, icnt = lst.Count; i < icnt; ++i)
+		//		{
+		//			try
+		//			{
+		//				var addresses = map.GetTypeRealAddresses(lst[i]);
+		//				Assert.IsNotNull(addresses, "Map.GetTypeRealAddresses returned null.");
+		//				instanceCount += addresses.Length;
+		//				if (maxTypeInstanceCount < addresses.Length)
+		//				{
+		//					maxTypeInstanceCount = addresses.Length;
+		//					maxInstanceId = lst[i];
+		//				}
+		//				if (minTypeInstanceCount > addresses.Length)
+		//				{
+		//					minTypeInstanceCount = addresses.Length;
+		//					minInstanceId = lst[i];
+		//				}
+		//			}
+		//			catch (Exception ex)
+		//			{
+		//				var id = lst[i];
+		//				var typeName = "Type id is outside id range.";
+		//				if (id >= 0 && id < map.TypeCount())
+		//					typeName = map.GetTypeName(id);
+		//				Assert.Fail(
+		//					Environment.NewLine + "Map.GetTypeRealAddresses failed, for type id: " + id + Environment.NewLine
+		//					+ "Type: " + typeName + Environment.NewLine
+		//					+ ex.ToString()
+		//					);
+		//			}
+		//		}
 
-				stopWatch.Stop();
-				var duration = Utils.DurationString(stopWatch.Elapsed);
+		//		stopWatch.Stop();
+		//		var duration = Utils.DurationString(stopWatch.Elapsed);
 
-				var maxInstanceName = map.GetTypeName(maxInstanceId);
-				var minInstanceName = map.GetTypeName(minInstanceId);
-				TestContext.WriteLine("Scanning arrays duration: " + duration + Environment.NewLine
-										+ "Type count: " + Utils.LargeNumberString(lst.Count) + Environment.NewLine
-										+ "Instance count: " + Utils.LargeNumberString(instanceCount) + Environment.NewLine
-										+ "Max instances type: [" + Utils.LargeNumberString(maxTypeInstanceCount) + "] " + maxInstanceName + Environment.NewLine
-										+ "Min instances type: [" + Utils.LargeNumberString(minTypeInstanceCount) + "] " + minInstanceName);
+		//		var maxInstanceName = map.GetTypeName(maxInstanceId);
+		//		var minInstanceName = map.GetTypeName(minInstanceId);
+		//		TestContext.WriteLine("Scanning arrays duration: " + duration + Environment.NewLine
+		//								+ "Type count: " + Utils.LargeNumberString(lst.Count) + Environment.NewLine
+		//								+ "Instance count: " + Utils.LargeNumberString(instanceCount) + Environment.NewLine
+		//								+ "Max instances type: [" + Utils.LargeNumberString(maxTypeInstanceCount) + "] " + maxInstanceName + Environment.NewLine
+		//								+ "Min instances type: [" + Utils.LargeNumberString(minTypeInstanceCount) + "] " + minInstanceName);
 
-			}
-		}
+		//	}
+		//}
 
 		#region Field Parents / Dependencies
 
@@ -1988,32 +1700,6 @@ namespace UnitTestMdr
 		}
 
 		#endregion Field Parents / Dependencies
-
-		#region Type Value Reports
-
-		[TestMethod]
-		public void TestTypeValueReports()
-		{
-			string error = null;
-			using (var map = OpenMap(_mapPath))
-			{
-				try
-				{
-					var typeId = map.GetTypeId(_typeName);
-					var addresses = map.GetTypeAddresses(typeId);
-					Assert.IsTrue(addresses != null && addresses.Length > 0);
-					var dispType = DmpNdxQueries.FQry.getDisplayableType(map.CurrentInfo, map.GetFreshHeap(), addresses[0]);
-
-				}
-				catch (Exception ex)
-				{
-					Assert.IsTrue(false,ex.ToString());
-				}
-			}
-		}
-
-
-		#endregion Type Value Reports
 
 		#region Object Sizes
 
@@ -2060,7 +1746,7 @@ namespace UnitTestMdr
 					if (id != Constants.InvalidIndex)
 					{
 						typeNameLst.Add(requestedTypeNames[i]);
-						var addrAry = map.GetTypeAddresses(id);
+						var addrAry = map.GetTypeRealAddresses(id);
 						addressesLst.Add(addrAry);
 						len += addrAry.Length;
 					}
@@ -2146,14 +1832,14 @@ namespace UnitTestMdr
 
 			var typeId = map.GetTypeId("ECS.Common.HierarchyCache.MarketData.FastSmartWeakEvent<System.EventHandler>");
 			Assert.AreNotEqual(Constants.InvalidIndex,typeId);
-			var allAddresses = map.GetTypeAddresses(typeId);
+			var allAddresses = map.GetTypeRealAddresses(typeId);
 			addresses = allAddresses;
 			//addresses = new ulong[1000];
 			//Array.Copy(allAddresses,addresses,addresses.Length);
 
 			HashSet<ulong> done = new HashSet<ulong>();
 			var result = ClrtDump.GetTotalSize(map.GetFreshHeap(), addresses, done, out error);
-			var typeName = map.GetTypeNameAtAddr(addresses[0]);
+			var typeName = map.GetTypeName(addresses[0]);
 			var totalSize = result.Item1;
 			var notFoundTypes = result.Item2;
 
@@ -2304,10 +1990,10 @@ namespace UnitTestMdr
 
 		#region Open Map
 
-		public static Map OpenMap(string mapPath)
+		public static DumpIndex OpenMap(string mapPath)
 		{
 			string error;
-			var map = Map.OpenMap(new Version(1,0,0), mapPath, out error);
+			var map = DumpIndex.OpenIndexInstanceReferences(new Version(1,0,0), mapPath, 0, out error);
 			Assert.IsTrue(map != null, error);
 			return map;
 		}

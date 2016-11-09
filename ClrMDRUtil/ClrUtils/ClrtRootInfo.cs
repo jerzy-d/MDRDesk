@@ -45,12 +45,7 @@ namespace ClrMDRIndex
 				{
 					ulong rootAddr = root.Address;
 					ulong objAddr = root.Object;
-					if (objAddr == 0x000000008009b3e0)
-					{
-						int a = 0;
-					}
 					int typeId;
-
 					string typeName;
 					if (root.Type == null)
 					{
@@ -83,19 +78,30 @@ namespace ClrMDRIndex
 					}
 					if (objAddr != 0UL)
 					{
+						ulong addr;
 						if (root.Kind == GCRootKind.Finalizer)
 						{
 							objAddr = Utils.SetAsFinalizer(objAddr);
-						}
-						objAddr = Utils.SetAsRoot(objAddr);
-						ulong addr;
-						if (addrDct.TryGetValue(root.Object, out addr))
-						{
-							addrDct[root.Object] = addr | objAddr;
+							if (finlDct.TryGetValue(root.Object,out addr))
+							{
+								finlDct[root.Object] = objAddr | objAddr;
+							}
+							else
+							{
+								finlDct.Add(root.Object,objAddr);
+							}
 						}
 						else
 						{
-							addrDct.Add(root.Object, objAddr);
+							objAddr = Utils.SetAsRoot(objAddr);
+							if (addrDct.TryGetValue(root.Object, out addr))
+							{
+								addrDct[root.Object] = addr | objAddr;
+							}
+							else
+							{
+								addrDct.Add(root.Object, objAddr);
+							}
 						}
 					}
 				}
@@ -253,6 +259,11 @@ namespace ClrMDRIndex
 
 
 			}
+		}
+
+		public ClrtRoot[] GetFinalizerItems()
+		{
+			return _roots[(int) GCRootKind.Finalizer];
 		}
 	}
 

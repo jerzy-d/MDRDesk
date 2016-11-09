@@ -219,6 +219,37 @@
             </DataGrid>
             <TextBox x:Name="DataViewGridInfo" Margin="2,1,2,2" Grid.Row="1" Grid.Column="0" FontFamily="Consolas" FontSize="12" />
         </Grid>
+        <Grid x:Key="FinalizerQueueGrid" x:Shared="False">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="80*"/>
+                <RowDefinition Height="5"/>
+                <RowDefinition Height="15*"/>
+            </Grid.RowDefinitions>
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="80*"/>
+                <ColumnDefinition Width="5"/>
+                <ColumnDefinition Width="15*"/>
+            </Grid.ColumnDefinitions>
+            <ListView x:Name="FinalizerQueueListView" Grid.Row="0" v4:Grid.Column="0" SelectionMode="Single" ItemsSource="{Binding}">
+                <ListView.View>
+                <GridView>
+                    <GridViewColumn DisplayMemberBinding="{Binding Path=TotalCount}" Header="Total Count" Width="150"/>
+                    <GridViewColumn DisplayMemberBinding="{Binding Path=NotRootedCount}" Header="Unrooted Count" Width="150"/>
+                    <GridViewColumn DisplayMemberBinding="{Binding Path=TypeName}" Header="Type Name" Width="150"/>
+                </GridView>
+                </ListView.View>
+            </ListView>
+            <GridSplitter Grid.Row="0" v4:Grid.Column="1" VerticalAlignment="Center" HorizontalAlignment="Stretch" Height="5" ShowsPreview="False" Background="DarkGray"></GridSplitter>
+            <ListBox Grid.Row="0" Grid.Column="2" Margin="4,4,4,4" Name="FinalizerQueAddresses" HorizontalAlignment="Stretch" SelectionMode="Single" ContextMenu="{StaticResource AddresListContextMenu}"  FontFamily="Consolas" FontSize="12">
+                <ListBox.ItemTemplate>
+                    <DataTemplate>
+                        <TextBlock Text="{Binding Converter={StaticResource LongHexConverter}}"/>
+                    </DataTemplate>
+                </ListBox.ItemTemplate>
+            </ListBox>
+            <GridSplitter Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="3" VerticalAlignment="Center" HorizontalAlignment="Stretch" Height="5" ShowsPreview="False" Background="DarkGray"></GridSplitter>
+            <TextBox x:Name="FinalizerQueTextBox" Grid.Row="2" Grid.Column="0" Grid.ColumnSpan="3" VerticalAlignment="Stretch" HorizontalAlignment="Stretch" Margin="1,1,1,1"/>
+        </Grid>
         <Grid x:Key="ListViewBottomGrid" x:Shared="False">
             <Grid.RowDefinitions>
                 <RowDefinition Height="70*"/>
@@ -400,13 +431,14 @@
                         <MenuItem x:Name="IndexShowRoots" Header="Show Roots" Click="IndexShowRootsClicked"/>
                         <MenuItem x:Name="IndexShowWeakReferences" Header="Show WeakReference Instances" Click="IndexShowWeakReferencesClicked"/>
                         <MenuItem x:Name="IndexGetSizeInformation" Header="Type Sizes Information" Click="IndexGetSizeInformationClicked"/>
+                        <MenuItem x:Name="IndexGetBaseSizeInformation" Header="Type Base Sizes Information" Click="IndexGetBaseSizeInformationClicked"/>
                         <MenuItem x:Name="IndexStringUsage" Header="String Usage" Click="IndexStringUsageClicked"/>
                         <MenuItem x:Name="IndexStringUsageGen" Header="String Usage with GC Generations" Click="IndexStringUsageClicked"/>
                         <Separator></Separator>
                     <MenuItem x:Name="InstanceInfo" Header="Get Instance Information">
-                        <MenuItem x:Name="InstImmediateReference" Header="Immediate Parent Reference" Click="InstReferenceClicked"/>
-                        <MenuItem x:Name="InstNLevelReferences" Header="N Parents Reference" Click="InstReferenceClicked"/>
-                        <MenuItem x:Name="InstAllReferences" Header="All Parents Reference" Click="InstReferenceClicked"/>
+                        <MenuItem x:Name="InstImmediateReference" Header="Parent References" Click="InstReferenceClicked"/>
+                        <!--<MenuItem x:Name="InstNLevelReferences" Header="N Parents Reference" Click="InstReferenceClicked"/>
+                        <MenuItem x:Name="InstAllReferences" Header="All Parents Reference" Click="InstReferenceClicked"/>-->
                         <MenuItem x:Name="InstGenDistribution" Header="Generation Histogram" Click="InstReferenceClicked"/>
                         <MenuItem x:Name="InstHierarchyWalk" Header="Instance Hierarchy Walk" Click="InstReferenceClicked"/>
                     </MenuItem>
@@ -422,11 +454,11 @@
                     <MenuItem x:Name="AhqCollectionContent" Header="Collection Content">
                         <MenuItem x:Name="AhqArray" Header="Array..." Click="AhqCollectionContentArray"/>
                     </MenuItem>
-                    <Separator></Separator>
+                    <!--<Separator></Separator>
                     <MenuItem x:Name="AhqInstanceRefs" Header="Instance Reference Map">
                             <MenuItem x:Name="AhqCreateInstanceRefs" Header="Create Instance Reference Map..." Click="AhqCreateInstanceRefsClicked"/>
                             <MenuItem x:Name="AhqOpenInstanceRefs" Header="Open Instance Reference Map..." Click="AhqOpenInstanceRefsClicked"/>
-                    </MenuItem>
+                    </MenuItem>-->
                     <!--
                     <MenuItem Header="{Binding ElementName=CbAdHocDump, Path=SelectedItem}" >
                     </MenuItem>

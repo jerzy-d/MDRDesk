@@ -5,9 +5,6 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Runtime;
-using System.Text;
-using System.Threading.Tasks;
-using System.Threading;
 using ClrMDRUtil.Utils;
 using Microsoft.Diagnostics.Runtime;
 
@@ -122,7 +119,7 @@ namespace ClrMDRIndex
 							stopWatch.Restart();
 							addresses = new ulong[addrCount];
 							typeIds = new int[addrCount];
-							if (!GetAddressesSetRoots(heap, addresses, typeIds, typeNames, rootAddrInfo.Item1, out error))
+							if (!GetAddressesSetRoots(heap, addresses, typeIds, typeNames, rootAddrInfo, out error))
 							{
 								return false;
 							}
@@ -165,17 +162,9 @@ namespace ClrMDRIndex
 								{
 									for (int k = 0, kcnt = fldRefList.Count; k < kcnt; ++k)
 									{
-										if (isArray && kcnt > 100)
-										{
-											int a = 1;
-										}
 										var fldAddr = fldRefList[k].Key;
 										var addrnx = Utils.AddressSearch(addresses, fldAddr, 0, addressesLastNdx);
 										if (fldAddr == 0UL || fldRefs.Contains(addrnx)) continue;
-										if (addrnx < 0)
-										{
-											int a = 1;
-										}
 										fldRefs.Add(addrnx);
 										if (isRooted)
 										{
@@ -196,17 +185,6 @@ namespace ClrMDRIndex
 							fldRefQue.Add(new KeyValuePair<int, int[]>(-1, null));
 							threadFldRefPersister.Join();
 							durationStr = Utils.StopAndGetDurationString(stopWatch);
-
-							//// get roots info
-							////
-							//{
-							//	var rootInfos = ClrtRoots.GetRootInfos(heap, addresses, typeIds, rootAddresses, _stringIdDcts[r]);
-							//	if (!rootInfos.PersitRootInfos(r, _fileMoniker, out error))
-							//	{
-							//		AddError(r, "PersitRootInfos failed." + Environment.NewLine + error);
-							//		return false;
-							//	}
-							//}
 
 							// build type/instance map
 							//
@@ -348,9 +326,11 @@ namespace ClrMDRIndex
 			return count;
 		}
 
-		public bool GetAddressesSetRoots(ClrHeap heap, ulong[] addresses, int[] typeIds, string[] typeNames, ulong[] roots, out string error)
+		public bool GetAddressesSetRoots(ClrHeap heap, ulong[] addresses, int[] typeIds, string[] typeNames, Tuple<ulong[],ulong[]> rootInfos, out string error)
 		{
 			error = null;
+			var roots = rootInfos.Item1;
+			var finalizers = rootInfos.Item2;
 			try
 			{
 				var segs = heap.Segments;
@@ -359,6 +339,8 @@ namespace ClrMDRIndex
 				int segIndex = 0;
 				uint[] sizes = new uint[addresses.Length];
 				uint[] baseSizes = new uint[addresses.Length];
+				int[] elemetTypes = new int[addresses.Length];
+				var arraySizes = new List<KeyValuePair<int,int>>(addresses.Length/25);
 				ClrtSegment[] mysegs = new ClrtSegment[segs.Count];
 
 				for (int segNdx = 0, icnt = segs.Count; segNdx < icnt; ++segNdx)
@@ -378,16 +360,30 @@ namespace ClrMDRIndex
 						var typeNameKey = clrType == null ? Constants.NullTypeName : clrType.Name;
 						int typeId = Array.BinarySearch(typeNames, typeNameKey, StringComparer.Ordinal);
 						typeIds[addrNdx] = typeId;
+						elemetTypes[addrNdx] = clrType == null ? (int)ClrElementType.Unknown : (int)clrType.ElementType;
 						if (clrType == null) goto NEXT_OBJECT;
 
-						int rootNdx = Utils.AddressSearch(roots, addr, 0, rootsLastNdx);
-						if (rootNdx < 0)
+						if (addr == 0x000000388786b98)
+						{
+							int a = 1;
+						}
+
+						int rootNdx = Utils.AddressSearch(roots, addr);
+						int finlNdx = Utils.AddressSearch(finalizers, addr);
+						if (rootNdx < 0 && finlNdx < 0)
 						{
 							addresses[addrNdx] = addr;
 						}
+						else if (rootNdx >= 0 && finlNdx >= 0)
+						{
+							addresses[addrNdx] = Utils.SetAsFinalizer(roots[rootNdx]);
+						}
 						else
 						{
-							addresses[addrNdx] = roots[rootNdx];
+							if (rootNdx >= 0)
+								addresses[addrNdx] = roots[rootNdx];
+							else
+								addresses[addrNdx] = Utils.SetAsFinalizer(addr);
 						}
 						var isFree = Utils.SameStrings(clrType.Name, Constants.FreeTypeName);
 						var baseSize = clrType.BaseSize;
@@ -402,7 +398,11 @@ namespace ClrMDRIndex
 							ClrtSegment.SetGenerationStats(seg, addr, size, genFreeCounts, genFreeSizes);
 						else
 							ClrtSegment.SetGenerationStats(seg, addr, size, genCounts, genSizes);
-
+						if (clrType.IsArray)
+						{
+							int asz = clrType.GetArrayLength(addr);
+							arraySizes.Add(new KeyValuePair<int, int>(addrNdx,asz));
+						}
 
 						NEXT_OBJECT:
 						lastAddr = addr;
@@ -432,6 +432,14 @@ namespace ClrMDRIndex
 				if (!Utils.WriteUintArray(_fileMoniker.GetFilePath(_currentRuntimeIndex, Constants.MapInstanceBaseSizesFilePostfix), baseSizes, out error))
 				{
 					_errors[_currentRuntimeIndex].Add("Dumping base sizes failed." + Environment.NewLine + error);
+				}
+				if (!Utils.WriteIntArray(_fileMoniker.GetFilePath(_currentRuntimeIndex, Constants.MapInstanceElemTypesFilePostfix), elemetTypes, out error))
+				{
+					_errors[_currentRuntimeIndex].Add("Dumping element types failed." + Environment.NewLine + error);
+				}
+				if (!Utils.WriteKvIntIntArray(_fileMoniker.GetFilePath(_currentRuntimeIndex, Constants.MapArraySizesFilePostfix), arraySizes, out error))
+				{
+					_errors[_currentRuntimeIndex].Add("Dumping array sizes failed." + Environment.NewLine + error);
 				}
 
 				return true;

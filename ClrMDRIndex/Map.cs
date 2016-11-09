@@ -15,7 +15,7 @@ using DumpParamType = System.Tuple<string, System.Collections.Concurrent.Blockin
 
 namespace ClrMDRIndex
 {
-	public class Map : IDisposable
+	public class MapOld : IDisposable
 	{
 		#region Fields/Properties
 
@@ -98,19 +98,19 @@ namespace ClrMDRIndex
 
 		#region Ctors/Dtors/Initialization
 
-		public Map(string mapFolder)
+		public MapOld(string mapFolder)
 		{
 			_mapFolder = mapFolder;
 			_dumpBaseName = DumpFileMoniker.GetDumpBaseName(mapFolder);
 			Is64Bit = Environment.Is64BitOperatingSystem;
 		}
 
-		public static Map OpenMap(Version version, string mapFolder, out string error, IProgress<string> progress=null)
+		public static MapOld OpenMap(Version version, string mapFolder, out string error, IProgress<string> progress=null)
 		{
 			error = null;
 			try
 			{
-				var map = new Map(mapFolder);
+				var map = new MapOld(mapFolder);
 
 				map._dumpInfo = map.LoadDumpInfo(out error);
 				if (map._dumpInfo == null)
@@ -1065,86 +1065,86 @@ namespace ClrMDRIndex
 		/// <param name="fldNdx">Field index, this is used for struct types, in this case addr is of the parent.</param>
 		/// <param name="error">Output error.</param>
 		/// <returns>Instance information, and list of its parents.</returns>
-		public Tuple<InstanceValue, AncestorDispRecord[]> GetInstanceInfo(ulong addr, int fldNdx,  out string error)
-		{
-			try
-			{
-				// get ancestors
-				//
-				var ancestors = _fieldDependencies[_currentRuntime].GetFieldParents(addr, out error);
-				AncestorDispRecord[] ancestorInfos = GroupAddressesByTypesForDisplay(ancestors);
+		//public Tuple<InstanceValue, AncestorDispRecord[]> GetInstanceInfo(ulong addr, int fldNdx,  out string error)
+		//{
+		//	try
+		//	{
+		//		// get ancestors
+		//		//
+		//		var ancestors = _fieldDependencies[_currentRuntime].GetFieldParents(addr, out error);
+		//		AncestorDispRecord[] ancestorInfos = GroupAddressesByTypesForDisplay(ancestors);
 
-				// get instance info: fields and values
-				//
-				var heap = GetFreshHeap();
-				var result = DmpNdxQueries.FQry.getInstanceValue(_currentInfo, heap, addr, fldNdx);
-				error = result.Item1;
-				result.Item2?.SortByFieldName();
-				return new Tuple<InstanceValue, AncestorDispRecord[]>(result.Item2, ancestorInfos);
-			}
-			catch (Exception ex)
-			{
-				error = Utils.GetExceptionErrorString(ex);
-				return null;
-			}
-		}
+		//		// get instance info: fields and values
+		//		//
+		//		var heap = GetFreshHeap();
+		//		var result = DmpNdxQueries.FQry.getInstanceValue(_currentInfo, heap, addr, fldNdx);
+		//		error = result.Item1;
+		//		result.Item2?.SortByFieldName();
+		//		return new Tuple<InstanceValue, AncestorDispRecord[]>(result.Item2, ancestorInfos);
+		//	}
+		//	catch (Exception ex)
+		//	{
+		//		error = Utils.GetExceptionErrorString(ex);
+		//		return null;
+		//	}
+		//}
 
 		#endregion Instance Walk
 
 		#region Type Value Reports
 
-		public ClrtDisplayableType GetTypeDisplayableRecord(int typeId, out string error)
-		{
-			error = null;
-			try
-			{
-				ulong[] instances = GetTypeAddresses(typeId);
-				if (instances == null || instances.Length < 1)
-				{
-					error = "Type instances not found.";
-					return null;
-				}
-				return DmpNdxQueries.FQry.getDisplayableType(_currentInfo, Dump.Heap, instances[0]);
-			}
-			catch (Exception ex)
-			{
-				error = Utils.GetExceptionErrorString(ex);
-				return null;
-			}
+		//public ClrtDisplayableType GetTypeDisplayableRecord(int typeId, out string error)
+		//{
+		//	error = null;
+		//	try
+		//	{
+		//		ulong[] instances = GetTypeAddresses(typeId);
+		//		if (instances == null || instances.Length < 1)
+		//		{
+		//			error = "Type instances not found.";
+		//			return null;
+		//		}
+		//		return DmpNdxQueries.FQry.getDisplayableType(_currentInfo, Dump.Heap, instances[0]);
+		//	}
+		//	catch (Exception ex)
+		//	{
+		//		error = Utils.GetExceptionErrorString(ex);
+		//		return null;
+		//	}
 
-		}
+		//}
 
-		public ClrtDisplayableType GetTypeDisplayableRecord(ClrtDisplayableType dispType, ClrtDisplayableType dispTypeField, out string error)
-		{
-			error = null;
-			try
-			{
-				ulong[] instances = GetTypeAddresses(dispTypeField.TypeId);
-				if (instances != null && instances.Length > 0)
-					return DmpNdxQueries.FQry.getDisplayableType(_currentInfo, Dump.Heap, instances[0]);
-				instances = GetTypeAddresses(dispType.TypeId);
-				if (instances == null || instances.Length < 1)
-				{
-					error = "Type instances not found.";
-					return null;
-				}
+		//public ClrtDisplayableType GetTypeDisplayableRecord(ClrtDisplayableType dispType, ClrtDisplayableType dispTypeField, out string error)
+		//{
+		//	error = null;
+		//	try
+		//	{
+		//		ulong[] instances = GetTypeAddresses(dispTypeField.TypeId);
+		//		if (instances != null && instances.Length > 0)
+		//			return DmpNdxQueries.FQry.getDisplayableType(_currentInfo, Dump.Heap, instances[0]);
+		//		instances = GetTypeAddresses(dispType.TypeId);
+		//		if (instances == null || instances.Length < 1)
+		//		{
+		//			error = "Type instances not found.";
+		//			return null;
+		//		}
 
-				var result = DmpNdxQueries.FQry.getDisplayableFieldType(_currentInfo, Dump.Heap, instances[0], dispTypeField.FieldIndex);
-			    if (result.Item1 != null)
-			    {
-				    error = Constants.InformationSymbolHeader + result.Item1;
-			        return null;
-			    }
-				dispType.AddFields(result.Item2);
-				return dispType;
-			}
-			catch (Exception ex)
-			{
-				error = Utils.GetExceptionErrorString(ex);
-				return null;
-			}
+		//		var result = DmpNdxQueries.FQry.getDisplayableFieldType(_currentInfo, Dump.Heap, instances[0], dispTypeField.FieldIndex);
+		//	    if (result.Item1 != null)
+		//	    {
+		//		    error = Constants.InformationSymbolHeader + result.Item1;
+		//	        return null;
+		//	    }
+		//		dispType.AddFields(result.Item2);
+		//		return dispType;
+		//	}
+		//	catch (Exception ex)
+		//	{
+		//		error = Utils.GetExceptionErrorString(ex);
+		//		return null;
+		//	}
 
-		}
+		//}
 
 		#endregion Type Value Reports
 
@@ -1760,7 +1760,7 @@ namespace ClrMDRIndex
 
 		#endregion Roots/Finalization
 
-		public static void MapsDiff(Map map0, Map map1)
+		public static void MapsDiff(MapOld map0, MapOld map1)
 		{
 			var instCntDiff = map0._instances[map0._currentRuntime].Length - map1._instances.Length;
 		}
@@ -2848,7 +2848,7 @@ namespace ClrMDRIndex
 			_disposed = true;
 		}
 
-		~Map()
+		~MapOld()
 		{
 			Dispose(false);
 		}

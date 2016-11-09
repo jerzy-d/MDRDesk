@@ -354,17 +354,6 @@ namespace ClrMDRIndex
 						var totSizeResult = GetTotalSize(heap, new[] {fldObjAddr}, done, out error);
 						totSize += totSizeResult.Item1;
 
-
-						//totSize += (ulong)Constants.PointerSize;
-						//var val = fldType.IsException
-						//	? ValueExtractor.GetExceptionValue(fldObjAddr, fldType, heap)
-						//	: Utils.AddressString(fldObjAddr);
-
-						if (error != null)
-						{
-							int a = 1;
-						}
-
 						var node = new InstanceSizeNode(nodeId++, fldTypeName, fld.ElementType, fldName, Utils.AddressString(fldObjAddr),
 							totSizeResult.Item1);
 						fldLst.Add(node);
@@ -973,7 +962,7 @@ namespace ClrMDRIndex
 				byte[] lenBytes = new byte[4];
 				for (int i = 0, icnt = addresses.Length; i < icnt; ++i)
 				{
-					var addr = addresses[i];
+					var addr = Utils.RealAddress(addresses[i]);
 					var clrType = heap.GetObjectType(addr);
 					var hsz = clrType.GetSize(addr);
 					if (hsz > (ulong) UInt32.MaxValue) hsz = (ulong) UInt32.MaxValue; // to be safe

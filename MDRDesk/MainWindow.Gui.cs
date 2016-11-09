@@ -28,20 +28,26 @@ namespace MDRDesk
 {
     public partial class MainWindow : Window
     {
-        #region Reports
+        #region reports
 
         private const string ReportTitleStringUsage = "String Usage";
         private const string ReportNameStringUsage = "StringUsage";
         private const string ReportTitleSTypesWithString = "Types With String";
         private const string ReportNameTypesWithString = "TypesWithString";
-        private const string ReportTitleSizeInfo = "Type Size Information";
-        private const string ReportNameSizeInfo = "SizesInfo";
-        private const string ReportNameWeakReferenceInfo = "WeakReferenceInfo";
+		private const string ReportTitleSizeInfo = "Type Sizes";
+		private const string ReportTitleBaseSizeInfo = "Base Type Sizes";
+		private const string ReportNameSizeInfo = "SizesInfo";
+		private const string ReportNameBaseSizeInfo = "BaseSizesInfo";
+		private const string ReportNameWeakReferenceInfo = "WeakReferenceInfo";
         private const string ReportTitleWeakReferenceInfo = "WeakReference Information";
         private const string ReportTitleInstRef = "Instance Refs";
         private const string ReportNameInstRef = "InstRef";
         private const string ReportTitleSizeDiffs = "Count;/Size Comp";
         private const string ReportNameSizeDiffs = "SizesDiff";
+
+		#endregion reports
+
+	    #region grids
 
 		// type display grids
 		//
@@ -52,6 +58,11 @@ namespace MDRDesk
 		private const string GridNameTypeView = "NameTypeView";
 		private const string GridReversedNameTypeView = "ReversedNameTypeView";
 
+		private const string GridFinalizerQueue = "FinalizerQueueGrid";
+		private const string FinalizerQueueListView = "FinalizerQueueListView";
+		private const string FinalizerQueAddrListBox = "FinalizerQueAddresses";
+		private const string FinalizerQueTextBox = "FinalizerQueTextBox";
+		
 		private string GetReportTitle(ListView lst)
         {
             if (lst.Tag is Tuple<ListingInfo, string>)
@@ -72,7 +83,7 @@ namespace MDRDesk
             return false;
         }
 
-        #endregion Reports
+        #endregion grids
 
         #region Display Grids
 
@@ -435,54 +446,144 @@ namespace MDRDesk
             }
             var addr = (ulong)lbAddresses.SelectedItems[0];
 
-            // get reference search info
-            //
-            ReferenceSearchSetup dlg = new ReferenceSearchSetup("Get parents of instance: " + Utils.RealAddressString(addr)) { Owner = this };
-            dlg.ShowDialog();
-            if (dlg.Cancelled) return;
-            int level = dlg.GetAllReferences ? Int32.MaxValue : dlg.SearchDepthLevel;
-            var dispMode = dlg.DisplayMode;
+			DisplayInstanceParentReferences(addr);
 
-            string msg = "Getting parent references for: '" + Utils.RealAddressString(addr) + "', ";
-            if (dispMode == ReferenceSearchSetup.DispMode.List)
-            {
-                SetStartTaskMainWindowState(msg + "please wait...");
-                var report = await Task.Run(() => CurrentIndex.GetParentReferencesReport(addr, level));
-                if (report.Error != null)
-                {
-                    SetEndTaskMainWindowState(msg + "failed.");
-                    MessageBox.Show(report.Error, "Action Aborted", MessageBoxButton.OK, MessageBoxImage.Exclamation);
-                    return;
-                }
-                SetEndTaskMainWindowState(msg + "done.");
-                DisplayListViewBottomGrid(report, Constants.BlackDiamond, ReportNameInstRef, ReportTitleInstRef);
-            }
-            if (dispMode == ReferenceSearchSetup.DispMode.Tree)
-            {
-                SetStartTaskMainWindowState(msg + "please wait...");
-                var report = await Task.Run(() => CurrentIndex.GetParentTree(addr, level));
-                if (report.Item1 != null)
-                {
-                    SetEndTaskMainWindowState(msg + "failed.");
-                    MessageBox.Show(report.Item1, "Action Aborted", MessageBoxButton.OK, MessageBoxImage.Exclamation);
-                    return;
-                }
-                SetEndTaskMainWindowState(msg + "done.");
-                DisplayTypeAncestorsGrid(report.Item2);
-            }
+			//// get reference search info
+			////
+			//ReferenceSearchSetup dlg = new ReferenceSearchSetup("Get parents of instance: " + Utils.RealAddressString(addr)) { Owner = this };
+   //         dlg.ShowDialog();
+   //         if (dlg.Cancelled) return;
+   //         int level = dlg.GetAllReferences ? Int32.MaxValue : dlg.SearchDepthLevel;
+   //         var dispMode = dlg.DisplayMode;
+
+   //         string msg = "Getting parent references for: '" + Utils.RealAddressString(addr) + "', ";
+   //         if (dispMode == ReferenceSearchSetup.DispMode.List)
+   //         {
+   //             SetStartTaskMainWindowState(msg + "please wait...");
+   //             var report = await Task.Run(() => CurrentIndex.GetParentReferencesReport(addr, level));
+   //             if (report.Error != null)
+   //             {
+   //                 SetEndTaskMainWindowState(msg + "failed.");
+   //                 MessageBox.Show(report.Error, "Action Aborted", MessageBoxButton.OK, MessageBoxImage.Exclamation);
+   //                 return;
+   //             }
+   //             SetEndTaskMainWindowState(msg + "done.");
+   //             DisplayListViewBottomGrid(report, Constants.BlackDiamond, ReportNameInstRef, ReportTitleInstRef);
+   //         }
+   //         if (dispMode == ReferenceSearchSetup.DispMode.Tree)
+   //         {
+   //             SetStartTaskMainWindowState(msg + "please wait...");
+   //             var report = await Task.Run(() => CurrentIndex.GetParentTree(addr, level));
+   //             if (report.Item1 != null)
+   //             {
+   //                 SetEndTaskMainWindowState(msg + "failed.");
+   //                 MessageBox.Show(report.Item1, "Action Aborted", MessageBoxButton.OK, MessageBoxImage.Exclamation);
+   //                 return;
+   //             }
+   //             SetEndTaskMainWindowState(msg + "done.");
+   //             DisplayTypeAncestorsGrid(report.Item2);
+   //         }
         }
 
-        #endregion types main displays
+		private async void ExecuteReferenceQuery(ulong addr)
+		{
+			DisplayInstanceParentReferences(addr);
 
+			//MainStatusShowMessage(statusMessage + ", please wait...");
+			//MainToolbarTray.IsEnabled = false;
+			//Mouse.OverrideCursor = Cursors.Wait;
+			//var result = await Task.Run(() =>
+			//{
+			//	return CurrentMap.GetFieldReferencesReport(addr, level);
+			//});
 
-        private void DisplayListViewBottomGrid(ListingInfo info, char prefix, string name, string reportTitle, SWC.MenuItem[] menuItems = null, string filePath = null)
+			//Mouse.OverrideCursor = null;
+			//MainToolbarTray.IsEnabled = true;
+
+			//if (result.Error != null)
+			//{
+			//	MainStatusShowMessage(statusMessage + ": FAILED!");
+			//	MessageBox.Show(result.Error, "QUERY FAILED", MessageBoxButton.OK, MessageBoxImage.Error);
+			//	return;
+			//}
+			//MainStatusShowMessage(statusMessage + ": DONE");
+			//DisplayListViewBottomGrid(result, Constants.BlackDiamond, ReportNameInstRef, ReportTitleInstRef);
+
+		}
+
+		private async void DisplayInstanceParentReferences(ulong addr)
+	    {
+			// get reference search info
+			//
+			ReferenceSearchSetup dlg = new ReferenceSearchSetup("Get parents of instance: " + Utils.RealAddressString(addr)) { Owner = this };
+			dlg.ShowDialog();
+			if (dlg.Cancelled) return;
+			int level = dlg.GetAllReferences ? Int32.MaxValue : dlg.SearchDepthLevel;
+			var dispMode = dlg.DisplayMode;
+
+			string msg = "Getting parent references for: '" + Utils.RealAddressString(addr) + "', ";
+			if (dispMode == ReferenceSearchSetup.DispMode.List)
+			{
+				SetStartTaskMainWindowState(msg + "please wait...");
+				var report = await Task.Run(() => CurrentIndex.GetParentReferencesReport(addr, level));
+				if (report.Error != null)
+				{
+					SetEndTaskMainWindowState(msg + "failed.");
+					MessageBox.Show(report.Error, "Action Aborted", MessageBoxButton.OK, MessageBoxImage.Exclamation);
+					return;
+				}
+				SetEndTaskMainWindowState(msg + "done.");
+				DisplayListViewBottomGrid(report, Constants.BlackDiamond, ReportNameInstRef, ReportTitleInstRef);
+			}
+			if (dispMode == ReferenceSearchSetup.DispMode.Tree)
+			{
+				SetStartTaskMainWindowState(msg + "please wait...");
+				var report = await Task.Run(() => CurrentIndex.GetParentTree(addr, level));
+				if (report.Item1 != null)
+				{
+					SetEndTaskMainWindowState(msg + "failed.");
+					MessageBox.Show(report.Item1, "Action Aborted", MessageBoxButton.OK, MessageBoxImage.Exclamation);
+					return;
+				}
+				SetEndTaskMainWindowState(msg + "done.");
+				DisplayTypeAncestorsGrid(report.Item2);
+			}
+		}
+
+		#endregion types main displays
+
+		#region Finalizer Queue
+
+	    private void DisplayFinalizerQueue(DisplayableFinalizerQueue finlQue)
+	    {
+			var grid = this.TryFindResource(GridFinalizerQueue) as Grid;
+			grid.Name = GridFinalizerQueue + "__" + Utils.GetNewID();
+			Debug.Assert(grid != null);
+			grid.Tag = finlQue;
+			var listView = (ListView)LogicalTreeHelper.FindLogicalNode(grid, FinalizerQueueListView);
+			Debug.Assert(listView!=null);
+			listView.Items.Clear();
+		    listView.ItemsSource = finlQue.Items;
+
+			var txtBox = (TextBox)LogicalTreeHelper.FindLogicalNode(grid, FinalizerQueTextBox);
+			Debug.Assert(txtBox!=null);
+		    txtBox.Text = finlQue.Information;
+			var tab = new CloseableTabItem() { Header = Constants.BlackDiamondPadded + "Finalization", Content = grid, Name = grid.Name + "_tab" };
+			MainTab.Items.Add(tab);
+			MainTab.SelectedItem = tab;
+			MainTab.UpdateLayout();
+		}
+
+		#endregion Finalizer Queue
+
+		private void DisplayListViewBottomGrid(ListingInfo info, char prefix, string name, string reportTitle, SWC.MenuItem[] menuItems = null, string filePath = null)
         {
             var grid = this.TryFindResource("ListViewBottomGrid") as Grid;
             grid.Name = name + "__" + Utils.GetNewID();
             Debug.Assert(grid != null);
             string path;
             if (filePath == null)
-                path = CurrentMap != null ? CurrentMap.DumpPath : CurrentAdhocDump?.DumpPath;
+                path = CurrentIndex != null ? CurrentIndex.DumpPath : CurrentAdhocDump?.DumpPath;
             else
                 path = filePath;
             grid.Tag = new Tuple<string, DumpFileMoniker>(reportTitle, new DumpFileMoniker(path));
@@ -504,6 +605,7 @@ namespace MDRDesk
                 gridView.Columns.Add(gridColumn);
             }
 
+			listView.Items.Clear();
             listView.ItemsSource = info.Items;
             var bottomGrid = (Panel)LogicalTreeHelper.FindLogicalNode(grid, "BottomGrid");
             Debug.Assert(bottomGrid != null);
@@ -866,10 +968,10 @@ namespace MDRDesk
             var treeView = (TreeView)LogicalTreeHelper.FindLogicalNode(treeViewGrid, "InstHierarchyFieldTreeview");
             Debug.Assert(treeView != null);
             treeView.Items.Clear();
-            treeView.Items.Add(tvRoot);
-            TreeViewItem treeViewItem = (treeView.Items[0] as TreeViewItem);
+			tvRoot.IsSelected = true;
+			treeView.Items.Add(tvRoot);
+			treeView.BringIntoView();
             tvRoot.ExpandSubtree();
-            tvRoot.IsSelected = true;
             tvRoot.BringIntoView();
             var lstAddresses = (ListBox)LogicalTreeHelper.FindLogicalNode(mainGrid, "InstHierarchyAncestorAddresses");
             lstAddresses.ItemsSource = null;
@@ -913,7 +1015,7 @@ namespace MDRDesk
                 var result = await Task.Run(() =>
                 {
                     string error;
-                    Tuple<InstanceValue, AncestorDispRecord[]> instanceInfo = CurrentMap.GetInstanceInfo(addr, fldNdx, out error);
+                    Tuple<InstanceValue, AncestorDispRecord[]> instanceInfo = CurrentIndex.GetInstanceInfo(addr, fldNdx, out error);
                     return Tuple.Create(error, instanceInfo);
                 });
 
@@ -949,7 +1051,7 @@ namespace MDRDesk
                 var result = await Task.Run(() =>
                 {
                     string error;
-                    Tuple<InstanceValue, AncestorDispRecord[]> instanceInfo = CurrentMap.GetInstanceInfo(selectedAddress, Constants.InvalidIndex, out error);
+                    Tuple<InstanceValue, AncestorDispRecord[]> instanceInfo = CurrentIndex.GetInstanceInfo(selectedAddress, Constants.InvalidIndex, out error);
                     return Tuple.Create(error, instanceInfo);
                 });
 
@@ -1047,16 +1149,43 @@ namespace MDRDesk
         private void ShowError(string errStr)
         {
             string[] parts = errStr.Split(new[] { Constants.HeavyGreekCrossPadded }, StringSplitOptions.None);
-            Debug.Assert(parts.Length > 2);
-            var dialog = new MdrMessageBox()
-            {
-                Owner = this,
-                Caption = parts[0],
-                InstructionHeading = parts[1],
-                InstructionText = parts[2],
-                DeatilsText = parts.Length > 3 ? parts[3] : string.Empty
-            };
-            dialog.SetButtonsPredefined(EnumPredefinedButtons.Ok);
+	        MdrMessageBox dialog;
+
+			if (parts.Length > 2)
+	        {
+				dialog = new MdrMessageBox()
+				{
+					Owner = this,
+					Caption = parts[0],
+					InstructionHeading = parts[1],
+					InstructionText = parts[2],
+					DeatilsText = parts.Length > 3 ? parts[3] : string.Empty
+				};
+			}
+			else if (parts.Length > 1)
+			{
+				dialog = new MdrMessageBox()
+				{
+					Owner = this,
+					Caption = parts[0],
+					InstructionHeading = parts[1],
+					InstructionText = parts[2],
+					DeatilsText = parts.Length > 3 ? parts[3] : string.Empty
+				};
+			}
+			else 
+			{
+				dialog = new MdrMessageBox()
+				{
+					Owner = this,
+					Caption = parts[0],
+					InstructionHeading = errStr,
+					InstructionText = string.Empty,
+					DeatilsText = string.Empty
+				};
+			}
+
+			dialog.SetButtonsPredefined(EnumPredefinedButtons.Ok);
             dialog.DetailsExpander.Visibility = string.IsNullOrWhiteSpace(dialog.DeatilsText) ? Visibility.Collapsed : Visibility.Visible;
             var result = dialog.ShowDialog();
         }
@@ -1093,29 +1222,7 @@ namespace MDRDesk
 
         #region Map Queries
 
-        private async void ExecuteReferenceQuery(string statusMessage, ulong addr, ulong[] addresses, int level)
-        {
-            MainStatusShowMessage(statusMessage + ", please wait...");
-            MainToolbarTray.IsEnabled = false;
-            Mouse.OverrideCursor = Cursors.Wait;
-            var result = await Task.Run(() =>
-            {
-                return CurrentMap.GetFieldReferencesReport(addr, level);
-            });
 
-            Mouse.OverrideCursor = null;
-            MainToolbarTray.IsEnabled = true;
-
-            if (result.Error != null)
-            {
-                MainStatusShowMessage(statusMessage + ": FAILED!");
-                MessageBox.Show(result.Error, "QUERY FAILED", MessageBoxButton.OK, MessageBoxImage.Error);
-                return;
-            }
-            MainStatusShowMessage(statusMessage + ": DONE");
-            DisplayListViewBottomGrid(result, Constants.BlackDiamond, ReportNameInstRef, ReportTitleInstRef);
-
-        }
 
         private async void ExecuteGenerationQuery(string statusMessage, ulong[] addresses, Grid grid)
         {
@@ -1123,7 +1230,7 @@ namespace MDRDesk
 
             var result = await Task.Run(() =>
             {
-                return CurrentMap.GetGenerationHistogram(addresses);
+                return CurrentIndex.GetGenerationHistogram(addresses);
             });
 
             Expander expander = null;
@@ -1171,10 +1278,10 @@ namespace MDRDesk
                 switch (reportTitle)
                 {
                     case ReportTitleStringUsage:
-                        genHistogram = CurrentMap.GetStringGcGenerationHistogram(str, out error);
+                        genHistogram = CurrentIndex.GetStringGcGenerationHistogram(str, out error);
                         break;
                     default:
-                        genHistogram = CurrentMap.GetTypeGcGenerationHistogram(str, out error);
+                        genHistogram = CurrentIndex.GetTypeGcGenerationHistogram(str, out error);
                         break;
                 }
                 return new Tuple<string, int[]>(error, genHistogram);
@@ -1218,7 +1325,7 @@ namespace MDRDesk
             var result = await Task.Run(() =>
             {
                 string error;
-                Tuple<InstanceValue, AncestorDispRecord[]> instanceInfo = CurrentMap.GetInstanceInfo(addr, fldNdx, out error);
+                Tuple<InstanceValue, AncestorDispRecord[]> instanceInfo = CurrentIndex.GetInstanceInfo(Utils.RealAddress(addr), fldNdx, out error);
 
                 return Tuple.Create(error, instanceInfo);
             });
@@ -1398,7 +1505,7 @@ namespace MDRDesk
         {
             var value = val.Value.Content;
             return ((value.Length > 0 && value[0] == Constants.NonValueChar)
-                        ? (Constants.FancyKleeneStar.ToString() + Utils.AddressString(val.Address))
+                        ? (Constants.FancyKleeneStar.ToString() + Utils.RealAddressString(val.Address))
                         : val.Value.ToString());
         }
 

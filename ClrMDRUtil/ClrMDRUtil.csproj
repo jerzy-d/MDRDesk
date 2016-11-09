@@ -92,10 +92,12 @@
     <Compile Include="ClrUtils\ClrTypeSidekick.cs" />
     <Compile Include="ClrUtils\ClrtThread.cs" />
     <Compile Include="ClrUtils\ClrtTypes.cs" />
+    <Compile Include="ClrUtils\DisplayableFinalizerQueue.cs" />
     <Compile Include="ClrUtils\DumpFileMoniker.cs" />
     <Compile Include="ClrUtils\ElementTypeCount.cs" />
     <Compile Include="ClrUtils\FieldDependency.cs" />
     <Compile Include="ClrUtils\IndexCurrentInfo.cs" />
+    <Compile Include="ClrUtils\IndexProxy.cs" />
     <Compile Include="ClrUtils\InstanceReferences.cs" />
     <Compile Include="ClrUtils\StringStats.cs" />
     <Compile Include="ClrUtils\ThreadBlockMap.cs" />

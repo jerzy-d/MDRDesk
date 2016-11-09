@@ -46,7 +46,7 @@ namespace MDRDesk
 		private RecentFileList RecentAdhocList;
 
 		public static string BaseTitle;
-		public static Map CurrentMap; // TODO JRD to be removed
+		//public static Map CurrentMap; // TODO JRD to be removed
 		public static DumpIndex CurrentIndex;
 		public static ClrtDump CurrentAdhocDump;
 		public static DumpIndex CurrentAdhocIndex;
@@ -172,7 +172,6 @@ namespace MDRDesk
 			Setup.SaveConfigSettings(out error);
 			var task = Task.Factory.StartNew(() =>
 			{
-				CurrentMap?.Dispose();
 				CurrentAdhocDump?.Dispose();
 				CurrentAdhocIndex?.Dispose();
 			});
@@ -422,66 +421,17 @@ namespace MDRDesk
 
 			SetStartTaskMainWindowState("Getting finalizer queue info, please wait...");
 
-			var finalizerInfo = await Task.Run(() => CurrentMap.GetDisplayableFinalizationQueue(true));
+			var finalizerInfo = await Task.Run(() => CurrentIndex.GetDisplayableFinalizationQueue());
+
+			if (finalizerInfo.Item1!=null)
+			{
+				SetEndTaskMainWindowState("Getting finalizer queue info failed.");
+				MessageBox.Show(finalizerInfo.Item1, "Action Failed", MessageBoxButton.OK,MessageBoxImage.Exclamation);
+				return;
+			}
 
 			SetEndTaskMainWindowState("Getting finalizer queue info done.");
-
-			var grid = this.TryFindResource("ListViewBottomGrid") as Grid;
-			Debug.Assert(grid != null);
-			grid.Name = "FinalizerQueue__" + Utils.GetNewID();
-			grid.Tag = new DumpFileMoniker(CurrentMap.DumpPath);
-			var listView = (ListView)LogicalTreeHelper.FindLogicalNode(grid, "TopListView");
-			GridView gridView = (GridView)listView.View;
-
-			gridView.Columns.Add(new GridViewColumn
-			{
-				Header = "Address",
-				DisplayMemberBinding = new Binding("PFirst"),
-				Width = 200,
-			});
-			gridView.Columns.Add(new GridViewColumn
-			{
-				Header = "Not Rooted",
-				DisplayMemberBinding = new Binding("PSecond"),
-				Width = 100,
-			});
-			gridView.Columns.Add(new GridViewColumn
-			{
-				Header = "Type",
-				DisplayMemberBinding = new Binding("PThird"),
-				Width = 500,
-			});
-
-			listView.ItemsSource = finalizerInfo.Item1;
-			var bottomGrid = (Panel)LogicalTreeHelper.FindLogicalNode(grid, "BottomGrid");
-
-			var btmLstView = new ListView
-			{
-				VerticalAlignment = SW.VerticalAlignment.Stretch,
-				HorizontalAlignment = HorizontalAlignment.Stretch
-			};
-			GridView btmGridView = new GridView();
-			btmGridView.Columns.Add(new GridViewColumn
-			{
-				Header = "Count",
-				DisplayMemberBinding = new Binding("Key"),
-				Width = 200,
-			});
-			btmGridView.Columns.Add(new GridViewColumn
-			{
-				Header = "Type",
-				DisplayMemberBinding = new Binding("Value"),
-				Width = 500,
-			});
-			btmLstView.ItemsSource = finalizerInfo.Item2;
-			btmLstView.View = btmGridView;
-
-			bottomGrid.Children.Add(btmLstView);
-
-			var tab = new CloseableTabItem() { Header = Constants.BlackDiamond + " Finalization Queue", Content = grid, Name = "FinalizationQueueView" };
-			MainTab.Items.Add(tab);
-			MainTab.SelectedItem = tab;
-			MainTab.UpdateLayout();
+			DisplayFinalizerQueue(finalizerInfo.Item2);
 		}
 
 		private void IndexShowRootsClicked(object sender, RoutedEventArgs e)
@@ -498,7 +448,7 @@ namespace MDRDesk
 			var result = await Task.Run(() =>
 			{
 				string error;
-				var info = CurrentMap.GetWeakReferenceInfo(out error);
+				var info = CurrentIndex.GetWeakReferenceInfo(out error);
 				return error == null ? info : new ListingInfo(error);
 			});
 
@@ -515,19 +465,22 @@ namespace MDRDesk
 			DisplayListViewBottomGrid(result, Constants.BlackDiamond, ReportNameWeakReferenceInfo, ReportTitleWeakReferenceInfo);
 		}
 
+		private void IndexGetSizeInformationClicked(object sender, RoutedEventArgs e)
+		{
+			GetSizeInformation(false);
+		}
 
-		private async void IndexGetSizeInformationClicked(object sender, RoutedEventArgs e)
+		private void IndexGetBaseSizeInformationClicked(object sender, RoutedEventArgs e)
+		{
+			GetSizeInformation(true);
+		}
+
+		private async void GetSizeInformation(bool baseSize)
 		{
 			if (!IsIndexAvailable("Get Size Information")) return;
 
 			SetStartTaskMainWindowState("Getting type size information: , please wait...");
-			var result = await Task.Run(() =>
-			{
-				string error;
-				var info = CurrentMap.GetAllTypesSizesInfo(out error);
-				return error == null ? info : new ListingInfo(error);
-			});
-
+			var result = await Task.Run(() => CurrentIndex.GetAllTypesSizesInfo(baseSize));
 			SetEndTaskMainWindowState(result.Error == null
 				? "Getting type size information done."
 				: "Getting sizes info failed.");
@@ -538,7 +491,9 @@ namespace MDRDesk
 				return;
 			}
 
-			DisplayListViewBottomGrid(result, Constants.BlackDiamond, ReportNameSizeInfo, ReportTitleSizeInfo);
+			DisplayListViewBottomGrid(result, Constants.BlackDiamond, 
+				baseSize ? ReportNameBaseSizeInfo : ReportNameSizeInfo, 
+				baseSize ? ReportTitleBaseSizeInfo : ReportTitleSizeInfo);
 		}
 
 		private long _minStringUsage = 1;
@@ -553,7 +508,7 @@ namespace MDRDesk
 
 			GetUserEnteredNumber("Minimum String Reference Count", "Enter number, hex format not allowed:", out _minStringUsage);
 
-			if (CurrentMap.AreStringDataFilesAvailable())
+			if (CurrentIndex.AreStringDataFilesAvailable())
 				SetStartTaskMainWindowState("Getting string usage. Please wait...");
 			else
 				SetStartTaskMainWindowState("Getting string usage, string cache has to be created, it will take a while. Please wait...");
@@ -561,17 +516,16 @@ namespace MDRDesk
 
 			var taskResult = await Task.Run(() =>
 			{
-				string error;
-				return CurrentMap.GetStringStats((int)_minStringUsage, out error, addGenerationInfo);
+				return CurrentIndex.GetStringStats((int)_minStringUsage, addGenerationInfo);
 			});
 
 			SetEndTaskMainWindowState(taskResult.Error == null
-				? "Collecting strings of: " + CurrentMap.DumpBaseName + " done."
-				: "Collecting strings of: " + CurrentMap.DumpBaseName + " failed.");
+				? "Collecting strings of: " + CurrentIndex.DumpFileName + " done."
+				: "Collecting strings of: " + CurrentIndex.DumpFileName + " failed.");
 
 			if (taskResult.Error != null)
 			{
-				MainStatusShowMessage("Getting Strings: " + CurrentMap.DumpBaseName + ", failed.");
+				MainStatusShowMessage("Getting Strings: " + CurrentIndex.DumpFileName + ", failed.");
 				MessageBox.Show(taskResult.Error, "Getting Strings Failed", MessageBoxButton.OK, MessageBoxImage.Error);
 				return;
 			}
@@ -601,17 +555,17 @@ namespace MDRDesk
 
 			switch (menuItem.Header.ToString().ToUpper())
 			{
-				case "IMMEDIATE PARENT REFERENCE":
-					Dispatcher.CurrentDispatcher.InvokeAsync(() => ExecuteReferenceQuery("Getting instance references", addr, null, 1));
+				case "PARENT REFERENCES":
+					Dispatcher.CurrentDispatcher.InvokeAsync(() => ExecuteReferenceQuery(addr));
 					break;
-				case "N PARENTS REFERENCE":
-					long refLevel;
-					if (!GetUserEnteredNumber("Reference Query Level", "Enter number, hex format not allowed:", out refLevel)) return;
-					Dispatcher.CurrentDispatcher.InvokeAsync(() => ExecuteReferenceQuery("Getting instance references", addr, null, (int)refLevel));
-					break;
-				case "ALL PARENTS REFERENCE":
-					Dispatcher.CurrentDispatcher.InvokeAsync(() => ExecuteReferenceQuery("Getting instance references", addr, null, Int32.MaxValue));
-					break;
+				//case "N PARENTS REFERENCE":
+				//	long refLevel;
+				//	if (!GetUserEnteredNumber("Reference Query Level", "Enter number, hex format not allowed:", out refLevel)) return;
+				//	Dispatcher.CurrentDispatcher.InvokeAsync(() => ExecuteReferenceQuery("Getting instance references", addr, null, (int)refLevel));
+				//	break;
+				//case "ALL PARENTS REFERENCE":
+				//	Dispatcher.CurrentDispatcher.InvokeAsync(() => ExecuteReferenceQuery("Getting instance references", addr, null, Int32.MaxValue));
+				//	break;
 				case "GENERATION HISTOGRAM":
 					var grid = GetCurrentTabGrid();
 					Dispatcher.CurrentDispatcher.InvokeAsync(() => ExecuteGenerationQuery("Get instance generation", new ulong[] { addr }, grid));
@@ -631,12 +585,12 @@ namespace MDRDesk
 
 			var taskResult = await Task.Run(() =>
 			{
-				return CurrentMap.CompareTypesWithOther(path);
+				return CurrentIndex.CompareTypesWithOther(path);
 			});
 
 			SetEndTaskMainWindowState(taskResult.Error == null
-				? "Collecting sizes of: " + CurrentMap.DumpBaseName + " done."
-				: "Collecting sizes of: " + CurrentMap.DumpBaseName + " failed.");
+				? "Collecting sizes of: " + CurrentIndex.DumpFileName + " done."
+				: "Collecting sizes of: " + CurrentIndex.DumpFileName + " failed.");
 
 			DisplayListViewBottomGrid(taskResult, Constants.BlackDiamond, ReportNameSizeDiffs, ReportTitleSizeDiffs);
 		}
@@ -650,12 +604,12 @@ namespace MDRDesk
 
 			var taskResult = await Task.Run(() =>
 			{
-				return CurrentMap.CompareStringsWithOther(path);
+				return CurrentIndex.CompareStringsWithOther(path);
 			});
 
 			SetEndTaskMainWindowState(taskResult.Error == null
-				? "Collecting strings of: " + CurrentMap.DumpBaseName + " done."
-				: "Collecting strings of: " + CurrentMap.DumpBaseName + " failed.");
+				? "Collecting strings of: " + CurrentIndex.DumpFileName + " done."
+				: "Collecting strings of: " + CurrentIndex.DumpFileName + " failed.");
 
 			if (taskResult.Error != null)
 			{
@@ -920,7 +874,7 @@ namespace MDRDesk
 							case ReportTitleStringUsage:
 								SetStartTaskMainWindowState("Searching for instances with string field: " + selStr + ", please wait.");
 
-								var task = Task<ListingInfo>.Factory.StartNew(() => CurrentMap.GetTypesWithSpecificStringFieldListing(selStr));
+								var task = Task<ListingInfo>.Factory.StartNew(() => CurrentIndex.GetTypesWithSpecificStringFieldListing(selStr));
 								task.Wait();
 								SetEndTaskMainWindowState(task.Result.Error == null
 									? "Searching for instances with string field done."
@@ -949,7 +903,7 @@ namespace MDRDesk
 								selStr = entries[ndx].Second;
 								var addr = Convert.ToUInt64(selStr, 16);
 
-								var report = CurrentMap.GetFieldReferencesReport(addr);
+								var report = CurrentIndex.GetParentReferencesReport(addr,4);
 								if (report.Error != null)
 								{
 									Dispatcher.CurrentDispatcher.InvokeAsync(() => ShowError(report.Error));
@@ -966,7 +920,7 @@ namespace MDRDesk
 						if (GetDlgString("Type String Prefix", "", "", out pref))
 						{
 							sel = pref + Constants.FancyKleeneStar;
-							var len = CurrentMap.GetSizeOfStringsWithPrefix(sel, out error);
+							var len = CurrentIndex.GetSizeOfStringsWithPrefix(sel, out error);
 							if (error != null && len < 0)
 							{
 								// error TODO JRD
@@ -1135,7 +1089,7 @@ namespace MDRDesk
 					Debug.Assert(datAry != null);
 					var repPath = dmpInf.OutputFolder + System.IO.Path.DirectorySeparatorChar + "ALLSTRINGUSAGE.txt";
 					string error;
-					StringStatsDispEntry.WriteShortReport(datAry, repPath, "String usage in: " + CurrentMap.DumpBaseName, datAry.Length,
+					StringStatsDispEntry.WriteShortReport(datAry, repPath, "String usage in: " + CurrentIndex.DumpFileName, datAry.Length,
 						new string[] { "Count" }, null, out error);
 					break;
 			}
@@ -1239,7 +1193,7 @@ namespace MDRDesk
 					var datAry = listView.ItemsSource as StringStatsDispEntry[];
 					Debug.Assert(datAry != null);
 					repPath = filePathInfo.OutputFolder + System.IO.Path.DirectorySeparatorChar + "STRINGUSAGE.txt";
-					StringStatsDispEntry.WriteShortReport(datAry, repPath, "String usage in: " + CurrentMap.DumpBaseName, 100,
+					StringStatsDispEntry.WriteShortReport(datAry, repPath, "String usage in: " + CurrentIndex.DumpFileName, 100,
 						new string[] { "Count", "TotalSize" }, null, out error);
 					break;
 				case "ReportFile":
@@ -1494,7 +1448,7 @@ namespace MDRDesk
 			foreach (var item in lbAddresses.SelectedItems)
 			{
 				if (++cnt > 10000) break;
-				sb.AppendLine(Utils.AddressString((ulong)item));
+				sb.AppendLine(Utils.RealAddressString((ulong)item));
 			}
 			if (cnt < 1)
 			{
@@ -1535,7 +1489,7 @@ namespace MDRDesk
 			var sb = StringBuilderCache.Acquire(maxLen * 18);
 			for (int i = 0, icnt = addresses.Length; i < icnt; ++i)
 			{
-				sb.AppendLine(Utils.AddressString(addresses[i]));
+				sb.AppendLine(Utils.RealAddressString(addresses[i]));
 			}
 			string str = StringBuilderCache.GetStringAndRelease(sb);
 
@@ -1619,11 +1573,11 @@ namespace MDRDesk
 			var result = await Task.Run(() =>
 			{
 				string error;
-				var info = CurrentMap.GetTypeSizeDetails(typeId, out error);
+				var info = CurrentIndex.GetTypeSizeDetails(typeId, out error);
 				if (info == null)
 					return new Tuple<string, string, string>(error, null, null);
 
-				var rep = Reports.DumpTypeSizeDetails(CurrentMap.ReportPath, typeName, info.Item1, info.Item2, info.Item3, info.Item4, info.Item5,
+				var rep = Reports.DumpTypeSizeDetails(CurrentIndex.OutputFolder, typeName, info.Item1, info.Item2, info.Item3, info.Item4, info.Item5,
 					out error);
 
 				return new Tuple<string, string, string>(null, rep.Item1, rep.Item2);
@@ -1657,7 +1611,7 @@ namespace MDRDesk
 			var result = await Task.Run(() =>
 			{
 				string error;
-				ClrtDisplayableType dispType = CurrentMap.GetTypeDisplayableRecord(typeId, out error);
+				ClrtDisplayableType dispType = CurrentIndex.GetTypeDisplayableRecord(typeId, out error);
 				if (dispType == null)
 					return new Tuple<string, ClrtDisplayableType>(error, null);
 				return new Tuple<string, ClrtDisplayableType>(null, dispType);
@@ -1703,7 +1657,7 @@ namespace MDRDesk
 			var result = await Task.Run(() =>
 			{
 				string error;
-				ClrtDisplayableType fldDispType = CurrentMap.GetTypeDisplayableRecord(parentDispType, dispType, out error);
+				ClrtDisplayableType fldDispType = CurrentIndex.GetTypeDisplayableRecord(parentDispType, dispType, out error);
 				if (fldDispType == null)
 					return new Tuple<string, ClrtDisplayableType>(error, null);
 				return new Tuple<string, ClrtDisplayableType>(null, fldDispType);

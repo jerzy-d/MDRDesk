@@ -698,7 +698,7 @@ namespace UnitTestMdr
 			{
 				var runtime = clrDump.Runtimes[0];
 				var heap = runtime.GetHeap();
-				var resultOk = Map.GetLohInfo(runtime, out error);
+				var resultOk = DumpIndex.GetLohInfo(runtime, out error);
 				Assert.IsTrue(resultOk);
 			}
 		}
@@ -1115,182 +1115,185 @@ namespace UnitTestMdr
 
 		#region Roots/Statics
 
-		[TestMethod]
-		public void TestStaticFields()
-		{
-			string error = null;
-			StreamWriter wr = null;
-			var clrDump = GetDump();
-			var map = OpenMap0();
-			Assert.IsNotNull(map);
-			byte[] byteBuffer = new byte[32 * 1024];
-			byte[] lenBytes = new byte[4];
-			int notFoundOnHeapCnt = 0;
-			int valueClassOnHeapCnt = 0;
-			StringIdAsyncDct idDct = new StringIdAsyncDct();
-			using (clrDump)
-			{
-				try
-				{
-					ulong[][] instances;
-					uint[][] sizes;
-					int[][] instanceTypes;
-					StringIdAsyncDct[] stringIds = StringIdAsyncDct.GetArrayOfDictionaries(clrDump.RuntimeCount);
-					ConcurrentBag<string>[] errors = new ConcurrentBag<string>[clrDump.RuntimeCount];
-					for (int i = 0; i < clrDump.RuntimeCount; ++i)
-						errors[i] = new ConcurrentBag<string>();
-					var typeInfos = Indexer.GetTypeInfos(clrDump, null, stringIds, errors, out instances, out sizes, out instanceTypes, out error);
-					Assert.IsNotNull(typeInfos, error);
+		/// <summary>
+		/// TODO JRD -- redo
+		/// </summary>
+		//[TestMethod]
+		//public void TestStaticFields()
+		//{
+		//	string error = null;
+		//	StreamWriter wr = null;
+		//	var clrDump = GetDump();
+		//	var map = OpenMap0();
+		//	Assert.IsNotNull(map);
+		//	byte[] byteBuffer = new byte[32 * 1024];
+		//	byte[] lenBytes = new byte[4];
+		//	int notFoundOnHeapCnt = 0;
+		//	int valueClassOnHeapCnt = 0;
+		//	StringIdAsyncDct idDct = new StringIdAsyncDct();
+		//	using (clrDump)
+		//	{
+		//		try
+		//		{
+		//			ulong[][] instances;
+		//			uint[][] sizes;
+		//			int[][] instanceTypes;
+		//			StringIdAsyncDct[] stringIds = StringIdAsyncDct.GetArrayOfDictionaries(clrDump.RuntimeCount);
+		//			ConcurrentBag<string>[] errors = new ConcurrentBag<string>[clrDump.RuntimeCount];
+		//			for (int i = 0; i < clrDump.RuntimeCount; ++i)
+		//				errors[i] = new ConcurrentBag<string>();
+		//			var typeInfos = Indexer.GetTypeInfos(clrDump, null, stringIds, errors, out instances, out sizes, out instanceTypes, out error);
+		//			Assert.IsNotNull(typeInfos, error);
 
-					var path = TestConfiguration.OutPath0 + clrDump.DumpFileName + ".STATICVARS.map";
-					wr = new StreamWriter(path);
-					var runtime = clrDump.Runtimes[0];
-					var appDomains = Indexer.GetAppDomains(runtime, idDct);
-					var names = idDct.GetNamesSortedById();
-					var appDomainsCount = appDomains.AppDomainCount;
-					wr.WriteLine("### ClrAppDomains " + appDomainsCount);
-					wr.WriteLine("[" + Utils.AddressString(appDomains.SystemDomain.Address) + " " + names[appDomains.SystemDomain.NameId] + " {" + appDomains.SystemDomain.Id + "}");
-					wr.WriteLine("[" + Utils.AddressString(appDomains.SharedDomain.Address) + " " + names[appDomains.SharedDomain.NameId] + " {" + appDomains.SharedDomain.Id + "}");
-					for (int i = 0, icnt = appDomainsCount; i < icnt; ++i)
-					{
-						wr.WriteLine("[" + Utils.AddressString(appDomains[i].Address) + " " + names[appDomains[i].NameId] + " {" + appDomains[i].Id + "}");
-					}
-					var heap = runtime.GetHeap();
-					var segs = heap.Segments;
-					var doneSet = new HashSet<string>();
-					wr.WriteLine("### ClrTypes and static fiels.");
-					for (int i = 0, icnt = segs.Count; i < icnt; ++i)
-					{
-						var seg = segs[i];
-						ulong addr = seg.FirstObject;
-						while (addr != 0ul)
-						{
-							var clrType = heap.GetObjectType(addr);
-							if (clrType == null || clrType.StaticFields.Count < 1) goto NEXT_OBJECT;
-							if (!doneSet.Add(clrType.Name)) goto NEXT_OBJECT;
-							bool isParentStruct = false;
-							if (clrType.IsValueClass)
-							{
-								isParentStruct = true;
-								++valueClassOnHeapCnt;
-							}
+		//			var path = TestConfiguration.OutPath0 + clrDump.DumpFileName + ".STATICVARS.map";
+		//			wr = new StreamWriter(path);
+		//			var runtime = clrDump.Runtimes[0];
+		//			var appDomains = Indexer.GetAppDomains(runtime, idDct);
+		//			var names = idDct.GetNamesSortedById();
+		//			var appDomainsCount = appDomains.AppDomainCount;
+		//			wr.WriteLine("### ClrAppDomains " + appDomainsCount);
+		//			wr.WriteLine("[" + Utils.AddressString(appDomains.SystemDomain.Address) + " " + names[appDomains.SystemDomain.NameId] + " {" + appDomains.SystemDomain.Id + "}");
+		//			wr.WriteLine("[" + Utils.AddressString(appDomains.SharedDomain.Address) + " " + names[appDomains.SharedDomain.NameId] + " {" + appDomains.SharedDomain.Id + "}");
+		//			for (int i = 0, icnt = appDomainsCount; i < icnt; ++i)
+		//			{
+		//				wr.WriteLine("[" + Utils.AddressString(appDomains[i].Address) + " " + names[appDomains[i].NameId] + " {" + appDomains[i].Id + "}");
+		//			}
+		//			var heap = runtime.GetHeap();
+		//			var segs = heap.Segments;
+		//			var doneSet = new HashSet<string>();
+		//			wr.WriteLine("### ClrTypes and static fiels.");
+		//			for (int i = 0, icnt = segs.Count; i < icnt; ++i)
+		//			{
+		//				var seg = segs[i];
+		//				ulong addr = seg.FirstObject;
+		//				while (addr != 0ul)
+		//				{
+		//					var clrType = heap.GetObjectType(addr);
+		//					if (clrType == null || clrType.StaticFields.Count < 1) goto NEXT_OBJECT;
+		//					if (!doneSet.Add(clrType.Name)) goto NEXT_OBJECT;
+		//					bool isParentStruct = false;
+		//					if (clrType.IsValueClass)
+		//					{
+		//						isParentStruct = true;
+		//						++valueClassOnHeapCnt;
+		//					}
 
-							wr.WriteLine(Utils.AddressString(addr) + " " + string.Format("{0,08}", clrType.StaticFields.Count)
-								+ " " + clrType.ElementType + " " + clrType.Name);
-							for (int j = 0, jcnt = clrType.StaticFields.Count; j < jcnt; ++j) // skipping system and shared domains
-							{
-								var staticField = clrType.StaticFields[j];
-								var staticFieldType = staticField.Type;
-								Assert.IsNotNull(staticFieldType);
-								wr.WriteLine("   " + staticField.Name + " " + staticField.Type.ElementType + " " + staticField.Type.Name);
-								for (int k = 2, kcnt = appDomainsCount; k < kcnt; ++k)
-								{
-									string valAsStr = Constants.NullName;
-									string addrAsStr = Constants.ZeroAddressStr;
-									object value = null;
-									var appDomain = appDomains[k];
-									var isInitialized = false; //staticField.IsInitialized(appDomain);
-									if (isInitialized)
-									{
-										value = null; //staticField.GetValue(appDomain);
-										if (value != null)
-										{
-											if (staticFieldType.ElementType == ClrElementType.String)
-											{
-												ulong oaddr = (ulong)value;
-												addrAsStr = Utils.AddressString(oaddr);
-												valAsStr = ClrMDRIndex.ValueExtractor.GetStringAtAddress(oaddr, heap);
-											}
-											else if (staticFieldType.ElementType == ClrElementType.Object)
-											{
-												try
-												{
-													ulong oaddr = (ulong)value;
-													addrAsStr = Utils.AddressString(oaddr);
-													if (oaddr == 0UL)
-													{
-														valAsStr = Constants.NullName;
-													}
-													else
-													{
-														var oid = map.GetInstanceIdAtAddr(oaddr);
-														if (oid == Constants.InvalidIndex)
-														{
-															valAsStr = "{not found on heap}";
-															++notFoundOnHeapCnt;
-														}
-														else
-														{
-															valAsStr = addrAsStr;
-														}
+		//					wr.WriteLine(Utils.AddressString(addr) + " " + string.Format("{0,08}", clrType.StaticFields.Count)
+		//						+ " " + clrType.ElementType + " " + clrType.Name);
+		//					for (int j = 0, jcnt = clrType.StaticFields.Count; j < jcnt; ++j) // skipping system and shared domains
+		//					{
+		//						var staticField = clrType.StaticFields[j];
+		//						var staticFieldType = staticField.Type;
+		//						Assert.IsNotNull(staticFieldType);
+		//						wr.WriteLine("   " + staticField.Name + " " + staticField.Type.ElementType + " " + staticField.Type.Name);
+		//						for (int k = 2, kcnt = appDomainsCount; k < kcnt; ++k)
+		//						{
+		//							string valAsStr = Constants.NullName;
+		//							string addrAsStr = Constants.ZeroAddressStr;
+		//							object value = null;
+		//							var appDomain = appDomains[k];
+		//							var isInitialized = false; //staticField.IsInitialized(appDomain);
+		//							if (isInitialized)
+		//							{
+		//								value = null; //staticField.GetValue(appDomain);
+		//								if (value != null)
+		//								{
+		//									if (staticFieldType.ElementType == ClrElementType.String)
+		//									{
+		//										ulong oaddr = (ulong)value;
+		//										addrAsStr = Utils.AddressString(oaddr);
+		//										valAsStr = ClrMDRIndex.ValueExtractor.GetStringAtAddress(oaddr, heap);
+		//									}
+		//									else if (staticFieldType.ElementType == ClrElementType.Object)
+		//									{
+		//										try
+		//										{
+		//											ulong oaddr = (ulong)value;
+		//											addrAsStr = Utils.AddressString(oaddr);
+		//											if (oaddr == 0UL)
+		//											{
+		//												valAsStr = Constants.NullName;
+		//											}
+		//											else
+		//											{
+		//												var oid = map.GetInstanceIdAtAddr(oaddr);
+		//												if (oid == Constants.InvalidIndex)
+		//												{
+		//													valAsStr = "{not found on heap}";
+		//													++notFoundOnHeapCnt;
+		//												}
+		//												else
+		//												{
+		//													valAsStr = addrAsStr;
+		//												}
 
-													}
-												}
-												catch (InvalidCastException icex)
-												{
-													valAsStr = "{ulong invalid cast}";
-												}
-											}
-											else if (staticFieldType.ElementType == ClrElementType.Struct)
-											{
-												ulong oaddr = (ulong)value;
-												addrAsStr = Utils.AddressString(oaddr);
-												if (oaddr == 0UL)
-												{
-													valAsStr = Constants.NullName;
-												}
-												else
-												{
-													switch (staticFieldType.Name)
-													{
-														case "System.Decimal":
-															valAsStr = ClrMDRIndex.ValueExtractor.GetDecimalValue(oaddr, staticFieldType, null);
-															break;
-														case "System.DateTime":
-															valAsStr = ClrMDRIndex.ValueExtractor.GetDateTimeValue(oaddr, staticFieldType);
-															break;
-														case "System.TimeSpan":
-															valAsStr = ClrMDRIndex.ValueExtractor.GetTimeSpanValue(oaddr, staticFieldType);
-															break;
-														case "System.Guid":
-															valAsStr = ClrMDRIndex.ValueExtractor.GetGuidValue(oaddr, staticFieldType);
-															break;
-														default:
-															valAsStr = addrAsStr + " " + staticFieldType.Name;
-															break;
-													}
-												}
-											}
-										}
+		//											}
+		//										}
+		//										catch (InvalidCastException icex)
+		//										{
+		//											valAsStr = "{ulong invalid cast}";
+		//										}
+		//									}
+		//									else if (staticFieldType.ElementType == ClrElementType.Struct)
+		//									{
+		//										ulong oaddr = (ulong)value;
+		//										addrAsStr = Utils.AddressString(oaddr);
+		//										if (oaddr == 0UL)
+		//										{
+		//											valAsStr = Constants.NullName;
+		//										}
+		//										else
+		//										{
+		//											switch (staticFieldType.Name)
+		//											{
+		//												case "System.Decimal":
+		//													valAsStr = ClrMDRIndex.ValueExtractor.GetDecimalValue(oaddr, staticFieldType, null);
+		//													break;
+		//												case "System.DateTime":
+		//													valAsStr = ClrMDRIndex.ValueExtractor.GetDateTimeValue(oaddr, staticFieldType);
+		//													break;
+		//												case "System.TimeSpan":
+		//													valAsStr = ClrMDRIndex.ValueExtractor.GetTimeSpanValue(oaddr, staticFieldType);
+		//													break;
+		//												case "System.Guid":
+		//													valAsStr = ClrMDRIndex.ValueExtractor.GetGuidValue(oaddr, staticFieldType);
+		//													break;
+		//												default:
+		//													valAsStr = addrAsStr + " " + staticFieldType.Name;
+		//													break;
+		//											}
+		//										}
+		//									}
+		//								}
 
-									}
-									else
-									{
-										valAsStr = "{not initialized}";
-									}
-									wr.WriteLine("      " + addrAsStr + " " + valAsStr);
+		//							}
+		//							else
+		//							{
+		//								valAsStr = "{not initialized}";
+		//							}
+		//							wr.WriteLine("      " + addrAsStr + " " + valAsStr);
 
-								}
-							}
+		//						}
+		//					}
 
-							NEXT_OBJECT:
-							addr = seg.NextObject(addr);
-						}
-					}
-					wr.Write("### Not found on heap count: " + notFoundOnHeapCnt);
-					wr.Write("### Value class on heap count: " + valueClassOnHeapCnt);
-				}
-				catch (Exception ex)
-				{
-					error = Utils.GetExceptionErrorString(ex);
-					Assert.IsTrue(false, error);
-				}
-				finally
-				{
-					wr?.Close();
-				}
-			}
-		}
+		//					NEXT_OBJECT:
+		//					addr = seg.NextObject(addr);
+		//				}
+		//			}
+		//			wr.Write("### Not found on heap count: " + notFoundOnHeapCnt);
+		//			wr.Write("### Value class on heap count: " + valueClassOnHeapCnt);
+		//		}
+		//		catch (Exception ex)
+		//		{
+		//			error = Utils.GetExceptionErrorString(ex);
+		//			Assert.IsTrue(false, error);
+		//		}
+		//		finally
+		//		{
+		//			wr?.Close();
+		//		}
+		//	}
+		//}
 
 
 		#endregion Roots/Statics
@@ -1673,12 +1676,12 @@ namespace UnitTestMdr
 				{
 					var aryFragmentsCallbackId =
 						map.GetTypeId("System.Threading.SparselyPopulatedArrayFragment<System.Threading.CancellationCallbackInfo>");
-					var aryFragmentsCallbacks = map.GetTypeAddresses(aryFragmentsCallbackId);
+					var aryFragmentsCallbacks = map.GetTypeRealAddresses(aryFragmentsCallbackId);
 
 					var aryFragmentsCannonId =
 						//						map.GetTypeId("System.Threading.SparselyPopulatedArrayFragment<System.__Canon>");
 						map.GetTypeId("System.Threading.SparselyPopulatedArray<System.Threading.CancellationCallbackInfo>[]");
-					var aryFragmentsCannons = map.GetTypeAddresses(aryFragmentsCannonId);
+					var aryFragmentsCannons = map.GetTypeRealAddresses(aryFragmentsCannonId);
 
 					var runtime = clrDump.Runtimes[0];
 					var heap = runtime.GetHeap();
@@ -4367,10 +4370,10 @@ namespace UnitTestMdr
 		/// Opens dump map using th from App.config, key: test_mapfolder.
 		/// </summary>
 		/// <returns>Instance of a dump map, or null on failure.</returns>
-		private Map OpenMap0()
+		private DumpIndex OpenMap0()
 		{
 			string error;
-			var map = Map.OpenMap(new Version(1, 0, 0), TestConfiguration.MapPath0, out error);
+			var map = DumpIndex.OpenIndexInstanceReferences(new Version(1, 0, 0), TestConfiguration.MapPath0, 0, out error);
 			Assert.IsTrue(map != null);
 			return map;
 		}

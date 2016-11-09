@@ -232,9 +232,27 @@ module FQry =
         Instance hierarchy walk.
     *)
 
-    let getInstanceStructValue (ndxInfo:IndexCurrentInfo) (heap:ClrHeap) (clrType:ClrType) (cats:TypeCategories) (addr:address) (fldNdx:int) : string * InstanceValue * ClrType =
+//    let getInstanceStructValue (ndxInfo:IndexCurrentInfo) (heap:ClrHeap) (clrType:ClrType) (cats:TypeCategories) (addr:address) (fldNdx:int) : string * InstanceValue * ClrType =
+//        Debug.Assert(fldNdx <> Constants.InvalidIndex)
+//        let typeInfo = ndxInfo.GetTypeNameAndIdAtAddr(addr)
+//        Debug.Assert(cats.First = TypeCategory.Struct)
+//        let mutable getFieldsFlag = false;
+//        let mutable fldName = String.Empty
+//        let value =
+//            match cats.Second with
+//            | TypeCategory.Decimal  -> ValueExtractor.GetDecimalValue(addr,clrType,null)
+//            | TypeCategory.DateTime -> ValueExtractor.GetDateTimeValue(addr,clrType)
+//            | TypeCategory.TimeSpan -> ValueExtractor.GetTimeSpanValue(addr,clrType)
+//            | TypeCategory.Guid     -> ValueExtractor.GetGuidValue(addr,clrType)
+//            | _ ->
+//                getFieldsFlag <- true
+//                fldName <- getFieldName clrType fldNdx
+//                Constants.NonValue
+//        (null, new InstanceValue(typeInfo.Value, addr, typeInfo.Key, fldName, value, fldNdx), if getFieldsFlag then clrType else null)
+
+    let getInstanceStructValue (ndxProxy:IndexProxy) (heap:ClrHeap) (clrType:ClrType) (cats:TypeCategories) (addr:address) (fldNdx:int) : string * InstanceValue * ClrType =
         Debug.Assert(fldNdx <> Constants.InvalidIndex)
-        let typeInfo = ndxInfo.GetTypeNameAndIdAtAddr(addr)
+        let typeInfo = ndxProxy.GetTypeNameAndIdAtAddr(addr)
         Debug.Assert(cats.First = TypeCategory.Struct)
         let mutable getFieldsFlag = false;
         let mutable fldName = String.Empty
@@ -250,8 +268,34 @@ module FQry =
                 Constants.NonValue
         (null, new InstanceValue(typeInfo.Value, addr, typeInfo.Key, fldName, value, fldNdx), if getFieldsFlag then clrType else null)
 
-    let getInstanceClassValue (ndxInfo:IndexCurrentInfo) (heap:ClrHeap) (clrType:ClrType) (cats:TypeCategories) (addr:address) : string * InstanceValue * ClrType =
-        let typeInfo = ndxInfo.GetTypeNameAndIdAtAddr(addr)
+//    let getInstanceClassValue (ndxInfo:IndexCurrentInfo) (heap:ClrHeap) (clrType:ClrType) (cats:TypeCategories) (addr:address) : string * InstanceValue * ClrType =
+//        let typeInfo = ndxInfo.GetTypeNameAndIdAtAddr(addr)
+//        match cats.First with
+//        | TypeCategory.Reference ->
+//            match cats.Second with
+//            | TypeCategory.String ->
+//                let strVal = ValueExtractor.GetStringValue(clrType,addr)
+//                (null, new InstanceValue(typeInfo.Value, addr, typeInfo.Key, String.Empty, strVal), null)
+//            | TypeCategory.Exception ->
+//                 let value = ValueExtractor.GetShortExceptionValue(addr, clrType, heap)
+//                 (null, new InstanceValue(typeInfo.Value, addr, typeInfo.Key, String.Empty, value), clrType)
+//            | TypeCategory.Array ->
+//                let acnt = clrType.GetArrayLength(addr)
+//                let value = "[" + acnt.ToString() + "]"
+//                (null, new InstanceValue(typeInfo.Value, addr, typeInfo.Key, String.Empty, value), null)
+//            | TypeCategory.SystemObject | TypeCategory.Reference | TypeCategory.System__Canon -> 
+//                (null, new InstanceValue(typeInfo.Value, addr, typeInfo.Key, String.Empty, Constants.NonValue), clrType)
+//            | _ -> ("Type (second) category not found.", null, null) // should never happen, for testing and debbuging
+//        | TypeCategory.Struct ->
+//            ("Struct types ahould not be handled by getInstanceClassValue.", null, null)
+//        | TypeCategory.Primitive ->
+//            let objVal = clrType.GetValue(addr)
+//            let value = ValueExtractor.GetPrimitiveValue(objVal, clrType)
+//            (null, new InstanceValue(typeInfo.Value, addr, typeInfo.Key, String.Empty, value), null)
+//        | _ -> ("Type (first) category not found.", null, null) // should never happen, for testing and debbuging
+
+    let getInstanceClassValue (ndxProxy:IndexProxy) (heap:ClrHeap) (clrType:ClrType) (cats:TypeCategories) (addr:address) : string * InstanceValue * ClrType =
+        let typeInfo = ndxProxy.GetTypeNameAndIdAtAddr(addr)
         match cats.First with
         | TypeCategory.Reference ->
             match cats.Second with
@@ -284,7 +328,39 @@ module FQry =
         else
             Other
 
-    let getInstanceValueFields (ndxInfo:IndexCurrentInfo) (heap:ClrHeap) (clrType:ClrType) (addr:address) (instVal:InstanceValue): string = 
+//    let getInstanceValueFields (ndxInfo:IndexCurrentInfo) (heap:ClrHeap) (clrType:ClrType) (addr:address) (instVal:InstanceValue): string = 
+//        let fldCount = fieldCount clrType
+//        let internalAddresses = hasInternalAddresses clrType
+//        match fldCount with
+//        | 0 -> ()
+//        | _ ->
+//            for fldNdx = 0 to fldCount-1 do
+//                let fld = clrType.Fields.[fldNdx]
+//                let clrValue = ValueExtractor.TryGetPrimitiveValue(heap, addr, fld, internalAddresses)
+//                match Utils.IsNonValue(clrValue) with
+//                | true ->
+//                    match internalAddresses with
+//                    | true ->
+//                        let typeName = fieldTypeName fld
+//                        let typeId = ndxInfo.GetTypeId(typeName)
+//                        instVal.Addvalue(new InstanceValue(typeId, Constants.InvalidAddress, typeName, fld.Name, clrValue))
+//                    | _ ->
+//                        match fld with
+//                        | FieldTypeNull | Other ->
+//                            let fldAddr = getReferenceFieldAddress addr fld internalAddresses
+//                            let fldTypeInfo = ndxInfo.GetTypeNameAndIdAtAddr(fldAddr)
+//                            instVal.Addvalue(new InstanceValue(fldTypeInfo.Value, fldAddr, fldTypeInfo.Key, fld.Name, clrValue))
+//                        | FieldTypeIsStruct ->
+//                            let fldTypeId = ndxInfo.GetTypeId(fld.Type.Name);
+//                            instVal.Addvalue(new InstanceValue(fldTypeId, addr, fld.Type.Name, fld.Name, clrValue, fldNdx))
+//                        | _ -> ()
+//                | _ ->
+//                    let typeName = fieldTypeName fld
+//                    let typeId = ndxInfo.GetTypeId(typeName)
+//                    instVal.Addvalue(new InstanceValue(typeId, Constants.InvalidAddress, typeName, fld.Name, clrValue))
+//        null
+
+    let getInstanceValueFields (ndxProxy:IndexProxy) (heap:ClrHeap) (clrType:ClrType) (addr:address) (instVal:InstanceValue): string = 
         let fldCount = fieldCount clrType
         let internalAddresses = hasInternalAddresses clrType
         match fldCount with
@@ -298,25 +374,48 @@ module FQry =
                     match internalAddresses with
                     | true ->
                         let typeName = fieldTypeName fld
-                        let typeId = ndxInfo.GetTypeId(typeName)
+                        let typeId = ndxProxy.GetTypeId(typeName)
                         instVal.Addvalue(new InstanceValue(typeId, Constants.InvalidAddress, typeName, fld.Name, clrValue))
                     | _ ->
                         match fld with
                         | FieldTypeNull | Other ->
                             let fldAddr = getReferenceFieldAddress addr fld internalAddresses
-                            let fldTypeInfo = ndxInfo.GetTypeNameAndIdAtAddr(fldAddr)
+                            let fldTypeInfo = ndxProxy.GetTypeNameAndIdAtAddr(fldAddr)
                             instVal.Addvalue(new InstanceValue(fldTypeInfo.Value, fldAddr, fldTypeInfo.Key, fld.Name, clrValue))
                         | FieldTypeIsStruct ->
-                            let fldTypeId = ndxInfo.GetTypeId(fld.Type.Name);
+                            let fldTypeId = ndxProxy.GetTypeId(fld.Type.Name);
                             instVal.Addvalue(new InstanceValue(fldTypeId, addr, fld.Type.Name, fld.Name, clrValue, fldNdx))
                         | _ -> ()
                 | _ ->
                     let typeName = fieldTypeName fld
-                    let typeId = ndxInfo.GetTypeId(typeName)
+                    let typeId = ndxProxy.GetTypeId(typeName)
                     instVal.Addvalue(new InstanceValue(typeId, Constants.InvalidAddress, typeName, fld.Name, clrValue))
         null
 
-    let getInstanceValue (ndxInfo:IndexCurrentInfo) (heap:ClrHeap) (addr:address) (fldNdx:int) : string * InstanceValue = 
+//    let getInstanceValue (ndxInfo:IndexCurrentInfo) (heap:ClrHeap) (addr:address) (fldNdx:int) : string * InstanceValue = 
+//        let mutable instVal = null
+//        let mutable instValResult = (null,null,null);
+//        let clrType = heap.GetObjectType(addr)
+//        if isNull clrType then
+//            ("Unknown type category to handle.",null)
+//        else
+//            let cats = getTypeCategory clrType
+//            match cats.First with
+//            | TypeCategory.Reference
+//            | TypeCategory.Primitive -> instValResult <- getInstanceClassValue ndxInfo heap clrType cats addr
+//            | TypeCategory.Struct    -> instValResult <- getInstanceStructValue ndxInfo heap clrType cats addr fldNdx
+//            | TypeCategory.Uknown    -> instValResult <- ("ClrType category is TypeCategory.Unknown, at address: " + Utils.AddressString(addr),null,null)
+//            | _                      -> instValResult <- ("getInstanceValue doesn't know how to handle: " + cats.First.ToString(),null,null)
+//            let mutable error, instVal, clrType = instValResult
+//            if isNull error then
+//                match clrType with
+//                | null  -> ()
+//                | _     -> error <- getInstanceValueFields ndxInfo heap clrType addr instVal
+//                (error,instVal)
+//            else
+//                (error, null)
+
+    let getInstanceValue (ndxProxy:IndexProxy) (heap:ClrHeap) (addr:address) (fldNdx:int) : string * InstanceValue = 
         let mutable instVal = null
         let mutable instValResult = (null,null,null);
         let clrType = heap.GetObjectType(addr)
@@ -326,24 +425,23 @@ module FQry =
             let cats = getTypeCategory clrType
             match cats.First with
             | TypeCategory.Reference
-            | TypeCategory.Primitive -> instValResult <- getInstanceClassValue ndxInfo heap clrType cats addr
-            | TypeCategory.Struct    -> instValResult <- getInstanceStructValue ndxInfo heap clrType cats addr fldNdx
+            | TypeCategory.Primitive -> instValResult <- getInstanceClassValue ndxProxy heap clrType cats addr
+            | TypeCategory.Struct    -> instValResult <- getInstanceStructValue ndxProxy heap clrType cats addr fldNdx
             | TypeCategory.Uknown    -> instValResult <- ("ClrType category is TypeCategory.Unknown, at address: " + Utils.AddressString(addr),null,null)
             | _                      -> instValResult <- ("getInstanceValue doesn't know how to handle: " + cats.First.ToString(),null,null)
             let mutable error, instVal, clrType = instValResult
             if isNull error then
                 match clrType with
                 | null  -> ()
-                | _     -> error <- getInstanceValueFields ndxInfo heap clrType addr instVal
+                | _     -> error <- getInstanceValueFields ndxProxy heap clrType addr instVal
                 (error,instVal)
             else
                 (error, null)
-
     (*
         Displayable types.
     *)
 
-    let getDisplayableTypeFields (ndxInfo:IndexCurrentInfo) (heap:ClrHeap) (addr: address) (clrType:ClrType) (dispType:ClrtDisplayableType) =
+    let getDisplayableTypeFields (ndxProxy:IndexProxy) (heap:ClrHeap) (addr: address) (clrType:ClrType) (dispType:ClrtDisplayableType) =
         let fldCount = fieldCount clrType
         match fldCount with
         | 0 -> ()
@@ -352,20 +450,20 @@ module FQry =
             for fldNdx = 0 to fldCount-1 do
                 let fld = clrType.Fields.[fldNdx]
                 let typeName = fieldTypeName fld
-                let typeId = ndxInfo.GetTypeId(typeName)
+                let typeId = ndxProxy.GetTypeId(typeName)
                 let cat = getTypeCategory fld.Type
                 dispTypes.[fldNdx] <- new ClrtDisplayableType(typeId, fldNdx, typeName, fld.Name, cat)
             dispType.AddFields(dispTypes)
 
-    let getDisplayableType (ndxInfo:IndexCurrentInfo) (heap:ClrHeap) (addr: address) =
+    let getDisplayableType (ndxProxy:IndexProxy) (heap:ClrHeap) (addr: address) =
         let clrType = heap.GetObjectType(addr)
-        let typeId = ndxInfo.GetTypeIdAtAddr(addr)
+        let typeId = ndxProxy.GetTypeIdAtAddr(addr)
         let cat = getTypeCategory clrType
         let dispType = new ClrtDisplayableType(typeId, Constants.InvalidIndex, clrType.Name, String.Empty, cat)
-        getDisplayableTypeFields ndxInfo heap addr clrType dispType
+        getDisplayableTypeFields ndxProxy heap addr clrType dispType
         dispType
 
-    let getDisplayableFieldType (ndxInfo:IndexCurrentInfo) (heap:ClrHeap) (addr: address) (fldndx:int) =
+    let getDisplayableFieldType (ndxProxy:IndexProxy) (heap:ClrHeap) (addr: address) (fldndx:int) =
         let clrType = heap.GetObjectType(addr)
         let fld = getField clrType fldndx
         if isNull fld then
@@ -384,7 +482,7 @@ module FQry =
                 for fldNdx in [0..count-1] do
                     let fld = fld.Type.Fields.[fldNdx]
                     let cat = getTypeCategory clrType
-                    let typeId = ndxInfo.GetTypeId(fld.Type.Name)
+                    let typeId = ndxProxy.GetTypeId(fld.Type.Name)
                     dispTypes.[fldNdx] <-  new ClrtDisplayableType(typeId, fldNdx, fld.Type.Name, fld.Name, cat)
                 (null, dispTypes)
 
@@ -392,28 +490,28 @@ module FQry =
         Type values data.
     *)
 
-    let getTypeFieldValue (ndxInfo:IndexCurrentInfo) (heap:ClrHeap) (addr:address) (clrType:ClrType) (fld:ClrInstanceField) : (address * obj) =
+    let getTypeFieldValue (ndxProxy:IndexProxy) (heap:ClrHeap) (addr:address) (clrType:ClrType) (fld:ClrInstanceField) : (address * obj) =
         (0UL,null)
 
-    let rec getFieldValues (ndxInfo:IndexCurrentInfo) (heap:ClrHeap) (clrType:ClrType) (addr:address) (fields:ResizeArray<FieldValue>) =
+    let rec getFieldValues (ndxProxy:IndexProxy) (heap:ClrHeap) (clrType:ClrType) (addr:address) (fields:ResizeArray<FieldValue>) =
         match fields with
         | null -> ()
         | _ ->
             for fld in fields do
                 
-                let fldAddr, fldValue = getTypeFieldValue ndxInfo heap addr clrType fld.InstField
-                getFieldValues ndxInfo heap fld.ClType fldAddr fld.Fields
+                let fldAddr, fldValue = getTypeFieldValue ndxProxy heap addr clrType fld.InstField
+                getFieldValues ndxProxy heap fld.ClType fldAddr fld.Fields
             ()
 
-    let rec acceptFilter (ndxInfo:IndexCurrentInfo) (heap:ClrHeap) (clrType:ClrType) (addr:address) (fields:ResizeArray<FieldValue>) (accept:bool) =
+    let rec acceptFilter (ndxProxy:IndexProxy) (heap:ClrHeap) (clrType:ClrType) (addr:address) (fields:ResizeArray<FieldValue>) (accept:bool) =
         match fields with
         | null -> accept
         | _ ->
             let mutable curAccept = accept
             for fld in fields do
-                let fldAddr, fldValue = getTypeFieldValue ndxInfo heap addr clrType fld.InstField
+                let fldAddr, fldValue = getTypeFieldValue ndxProxy heap addr clrType fld.InstField
                 curAccept <- fld.Accept(fldValue,accept)
-                acceptFilter ndxInfo heap fld.ClType fldAddr fld.Fields curAccept |> ignore
+                acceptFilter ndxProxy heap fld.ClType fldAddr fld.Fields curAccept |> ignore
             curAccept
 
     let rec findFilter (fields:ResizeArray<FieldValue>) (found:bool) =
@@ -433,13 +531,13 @@ module FQry =
     let hasFilter' (fields:ResizeArray<FieldValue>) =
         findFilter fields false
 
-    let getTypeValuesAtAddresses (ndxInfo:IndexCurrentInfo) (heap:ClrHeap) (clrType:ClrType) (typeValue: TypeValue) (addresses:(address array)) =
+    let getTypeValuesAtAddresses (ndxProxy:IndexProxy) (heap:ClrHeap) (clrType:ClrType) (typeValue: TypeValue) (addresses:(address array)) =
         let mutable error:string = null
         let mutable allWell = true
         let mutable ndx:int32 = 0
         let fieldValues = typeValue.Fields
         let hasFilter = hasFilter' fieldValues
         for addr in addresses do
-            if hasFilter && acceptFilter ndxInfo heap clrType addr typeValue.Fields true then
-                getFieldValues ndxInfo heap clrType addr typeValue.Fields
+            if hasFilter && acceptFilter ndxProxy heap clrType addr typeValue.Fields true then
+                getFieldValues ndxProxy heap clrType addr typeValue.Fields
         ()

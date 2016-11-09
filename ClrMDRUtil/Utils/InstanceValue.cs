@@ -53,7 +53,7 @@ namespace ClrMDRIndex
 				_fieldName
 				+ "  "
 				+ Constants.LeftCurlyBracket
-	            + ((value.Length> 0 && value[0] == Constants.NonValueChar) ? (Constants.FancyKleeneStar.ToString() + Utils.AddressString(_address)) : _value.ToString())
+	            + ((value.Length> 0 && value[0] == Constants.NonValueChar) ? (Constants.FancyKleeneStar.ToString() + Utils.RealAddressString(_address)) : _value.ToString())
 				+ Constants.RightCurlyBracket
 				+ "   "
 				+ _typeName;
