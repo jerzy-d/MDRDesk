@@ -68,11 +68,9 @@
     <CodeAnalysisRuleSet>MinimumRecommendedRules.ruleset</CodeAnalysisRuleSet>
   </PropertyGroup>
   <ItemGroup>
-    <Reference Include="DmpNdxQueries">
-      <HintPath>..\DmpNdxQueries\bin\Debug\DmpNdxQueries.dll</HintPath>
-    </Reference>
-    <Reference Include="Microsoft.Diagnostics.Runtime">
-      <HintPath>..\ClrMd\32\Microsoft.Diagnostics.Runtime.dll</HintPath>
+    <Reference Include="Microsoft.Diagnostics.Runtime, Version=0.8.31.1, Culture=neutral, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\ClrMd\64\Microsoft.Diagnostics.Runtime.dll</HintPath>
     </Reference>
     <Reference Include="System" />
     <Reference Include="System.configuration" />
@@ -98,6 +96,10 @@
     <ProjectReference Include="..\ClrMDRUtil\ClrMDRUtil.csproj">
       <Project>{7b01ccc0-8c10-4aa1-8154-4b55160e322b}</Project>
       <Name>ClrMDRUtil</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\DmpNdxQueries\DmpNdxQueries.fsproj">
+      <Project>{edc2770a-abb6-482e-a78f-a8d5d5c40d86}</Project>
+      <Name>DmpNdxQueries</Name>
     </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />

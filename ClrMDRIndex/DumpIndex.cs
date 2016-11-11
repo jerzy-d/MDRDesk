@@ -110,6 +110,15 @@ namespace ClrMDRIndex
 			{
 				var index = new DumpIndex(dumpPath, runtimeNdx, IndexType.InstanceRefrences);
 				index._dumpInfo = index.LoadDumpInfo(out error);
+				if (!Utils.IsIndexVersionCompatible(version, index.DumpInfo))
+				{
+					error = Utils.GetErrorString("Failed to Open Index", index._fileMoniker.MapFolder,
+												"Index version is not compatible with this application's version."
+												+ Environment.NewLine
+												+ "Please reindex the corresponding crash dump.");
+					return null;
+
+				}
 				if (!index.LoadInstanceReferences(out error)) return null;
 				if (!index.InitDump(out error, progress)) return null;
 				index._indexProxy = new IndexProxy(index.Dump, index._instances, index._instanceTypes,index._typeNames);
@@ -340,6 +349,16 @@ namespace ClrMDRIndex
 		public string GetTypeName(int id)
 		{
 			return (id >= 0 && id < _typeNames.Length) ? _typeNames[id] : Constants.UnknownTypeName;
+		}
+
+		public int GetTypeId(int instanceId)
+		{
+			return (instanceId >= 0 && instanceId < _instanceTypes.Length) ? _instanceTypes[instanceId] : Constants.InvalidIndex;
+		}
+
+		public ulong GetInstanceAddress(int instanceId)
+		{
+			return (instanceId >= 0 && instanceId < _instances.Length) ? _instances[instanceId] : Constants.InvalidAddress;
 		}
 
 		public int GetTypeId(string typeName)

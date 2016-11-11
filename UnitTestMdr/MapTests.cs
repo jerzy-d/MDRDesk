@@ -1107,7 +1107,7 @@ namespace UnitTestMdr
 			//using (var map = OpenMap(@"D:\Jerzy\WinDbgStuff\dumps\Analytics\Memory.Usage.OPAM.971\RealPositionCmp\Eze.Analytics.Svc.RPBIG_160913_151123.map"))
 			//using (var map = OpenMap(@"D:\Jerzy\WinDbgStuff\dumps\Analytics\Baly\analytics9_1512161604.good.map"))
 			//using (var map = OpenMap(@"D:\Jerzy\WinDbgStuff\dumps\Analytics\Memory.Usage.OPAM.971\Eze.Analytics.Svc.exe.EzeBitVector.map"))
-			using (var map = OpenMap(@"D:\Jerzy\WinDbgStuff\dumps\Analytics\Memory.Usage.OPAM.971\Eze.Analytics.Svc.exe.EzeBitVector.PadOff.map"))
+			using (var index = OpenMap(@"D:\Jerzy\WinDbgStuff\dumps\Analytics\Lou\Analytics3.dmp.map"))
 			{
 				try
 				{
@@ -1115,9 +1115,9 @@ namespace UnitTestMdr
 					ClrType aryType = null;
 					ClrInstanceField bits = null;
 					ulong aryAddr = 0;
-					int typeId = map.GetTypeId(str);
-					ulong[] addresses = map.GetTypeRealAddresses(typeId);
-					var heap = map.Dump.GetFreshHeap();
+					int typeId = index.GetTypeId(str);
+					ulong[] addresses = index.GetTypeRealAddresses(typeId);
+					var heap = index.Dump.GetFreshHeap();
 					for (int i = 0, icnt = addresses.Length; i < icnt; ++i)
 					{
 						var addr = addresses[i];
@@ -1164,7 +1164,7 @@ namespace UnitTestMdr
 					try
 					{
 
-						sw = new StreamWriter(map.AdhocFolder + Path.DirectorySeparatorChar + "EzeBitVector.txt");
+						sw = new StreamWriter(index.AdhocFolder + Path.DirectorySeparatorChar + "EzeBitVector.txt");
 						sw.WriteLine("#### Total EzeBitVector Instance Count: " + Utils.SizeString(addresses.Length));
 						sw.WriteLine("#### Total EzeBitVector Unique Count: " + Utils.SizeString(dct.Count));
 						sw.WriteLine("#### Columns: duplicate count, ulong[] size, vector content");
@@ -1189,6 +1189,174 @@ namespace UnitTestMdr
 				}
 			}
 		}
+
+		[TestMethod]
+		public void TestDictionaryCounts()
+		{
+			const string typeName0 = "System.Decimal";
+			const string typeName1 = "System.Collections.Generic.Dictionary+Entry<System.String,System.Object>[]";
+			const string typeName2 = "System.Collections.Generic.Dictionary<System.String,System.Object>";
+
+			string error = null;
+			SortedDictionary<string, int> dct = new SortedDictionary<string, int>(StringComparer.Ordinal);
+			int nullFieldCount = 0;
+			StringBuilder sb = new StringBuilder(256);
+			using (var index = OpenMap(@"D:\Jerzy\WinDbgStuff\dumps\Analytics\Lou\Analytics1.dmp.map"))
+			{
+				try
+				{
+					int typeId0 = index.GetTypeId(typeName0);
+					int typeId1 = index.GetTypeId(typeName1);
+					int typeId2 = index.GetTypeId(typeName2);
+
+					var instNdxs = index.GetTypeInstanceIndices(typeId0);
+					KeyValuePair<IndexNode, int>[] parentTree = index.GetParentReferences(instNdxs, out error, 3);
+
+					int notRootedCount = 0;
+					var set = new HashSet<ulong>();
+					for (int i = 0, icnt = parentTree.Length; i < icnt; ++i)
+					{
+						var node = parentTree[i].Key;
+						if (node.Nodes.Length < 1)
+						{
+							++notRootedCount;
+							continue;
+						}
+						for (int j = 0, jcnt = node.Nodes.Length; j < jcnt ; ++j)
+						{
+							int typeId = index.GetTypeId(node.Nodes[j].Index);
+							if (typeId == typeId1)
+							{
+								var nodes = node.Nodes[j].Nodes;
+								for (int k = 0, kcnt = nodes.Length; k < kcnt; ++k)
+								{
+									int tpId = index.GetTypeId(nodes[k].Index);
+									if (tpId == typeId2)
+									{
+										var addr = index.GetInstanceAddress(nodes[k].Index);
+										set.Add(Utils.RealAddress(addr));
+									}
+								}
+							}
+						}
+					}
+
+					ulong[] addresses = set.ToArray();
+					Array.Sort(addresses);
+					var heap = index.GetFreshHeap();
+
+					int maxCount = 0;
+					int minCount = Int32.MaxValue;
+					int emptyCount = 0;
+					long countSum = 0L;
+
+					for (int i = 0, icnt = addresses.Length; i < icnt; ++i)
+					{
+						var result = CollectionContent.getDictionaryCount(heap, addresses[i]);
+						var count = result.Item2;
+						if (count > maxCount) maxCount = count;
+						if (count < minCount) minCount = count;
+						countSum += count;
+					}
+
+					double avgCount = (double) countSum/addresses.Length;
+
+					int a = 0;
+
+					//StreamWriter sw = null;
+					//try
+					//{
+
+					//	sw = new StreamWriter(index.AdhocFolder + Path.DirectorySeparatorChar + "EzeBitVector.txt");
+					//	sw.WriteLine("#### Total EzeBitVector Instance Count: " + Utils.SizeString(addresses.Length));
+					//	sw.WriteLine("#### Total EzeBitVector Unique Count: " + Utils.SizeString(dct.Count));
+					//	sw.WriteLine("#### Columns: duplicate count, ulong[] size, vector content");
+					//	foreach (var kv in dct)
+					//	{
+					//		var pos = kv.Key.IndexOf('_');
+					//		int aryCount = Int32.Parse(kv.Key.Substring(0, pos));
+					//		sw.WriteLine(Utils.CountStringHeader(kv.Value) + Utils.CountStringHeader(aryCount) + kv.Key.Substring(pos + 1));
+					//	}
+
+					//}
+					//catch (Exception ex)
+					//{
+					//	Assert.IsTrue(false, ex.ToString());
+					//}
+					//finally { sw?.Close(); }
+
+				}
+				catch (Exception ex)
+				{
+					Assert.IsTrue(false, ex.ToString());
+				}
+			}
+		}
+
+
+		[TestMethod]
+		public void TestDictionaryCounts2()
+		{
+			const string typeName0 = "ECS.Common.HierarchyCache.Structure.PositionIndexGroup";
+			const string typeName1 = "System.Collections.Generic.Dictionary+Entry<System.String,System.Object>[]";
+			const string typeName2 = "System.Collections.Generic.Dictionary<System.String,System.Object>";
+
+			string error = null;
+			SortedDictionary<string, int> dct = new SortedDictionary<string, int>(StringComparer.Ordinal);
+			int nullFieldCount = 0;
+			int recalcRequiredPoisonPositionsIfTtzSignChangesEmpty = 0;
+			int recalcRequiredPositionsInducingRecalcEmpty = 0;
+
+			StringBuilder sb = new StringBuilder(256);
+			using (var index = OpenMap(@"D:\Jerzy\WinDbgStuff\dumps\Analytics\Lou\Analytics3.dmp.map"))
+			{
+				try
+				{
+					int typeId0 = index.GetTypeId(typeName0);
+					var addresses = index.GetTypeRealAddresses(typeId0);
+					var heap = index.GetFreshHeap();
+					int clrTypeNullCount = 0;
+					for (int i = 0, icnt = addresses.Length; i < icnt; ++i)
+					{
+						var clrType = heap.GetObjectType(addresses[i]);
+						if (clrType == null)
+						{
+							++clrTypeNullCount;
+							continue;
+						}
+
+						var addr = addresses[i];
+						var fld1 = clrType.GetFieldByName("recalcRequiredPoisonPositionsIfTtzSignChanges");
+						var addr1 = Auxiliaries.getReferenceFieldAddress(addr, fld1, false);
+						var fld2 = clrType.GetFieldByName("recalcRequiredPositionsInducingRecalc");
+						var addr2 = Auxiliaries.getReferenceFieldAddress(addr, fld2, false);
+						int cnt1 = 0;
+						if (addr1 != Constants.InvalidAddress)
+						{
+							cnt1 = CollectionContent.getDictionaryCount(heap, addr1).Item2;
+							if (cnt1 == 0)
+								++recalcRequiredPoisonPositionsIfTtzSignChangesEmpty;
+						}
+						int cnt2 = 0;
+						if (addr2 != Constants.InvalidAddress)
+						{
+							cnt2 = CollectionContent.getDictionaryCount(heap, addr2).Item2;
+							if (cnt2 == 0)
+								++recalcRequiredPositionsInducingRecalcEmpty;
+						}
+
+					}
+
+
+				}
+				catch (Exception ex)
+				{
+					Assert.IsTrue(false, ex.ToString());
+				}
+			}
+		}
+
+
 		[TestMethod]
 		public void TestGetTypeSizeDetails()
 		{
@@ -1993,7 +2161,7 @@ namespace UnitTestMdr
 		public static DumpIndex OpenMap(string mapPath)
 		{
 			string error;
-			var map = DumpIndex.OpenIndexInstanceReferences(new Version(1,0,0), mapPath, 0, out error);
+			var map = DumpIndex.OpenIndexInstanceReferences(new Version(0,2,0,1), mapPath, 0, out error);
 			Assert.IsTrue(map != null, error);
 			return map;
 		}

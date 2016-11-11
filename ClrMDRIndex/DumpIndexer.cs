@@ -51,6 +51,8 @@ namespace ClrMDRIndex
 		{
 			error = null;
 			indexPath = _fileMoniker.MapFolder;
+			Stopwatch indexingStopWatch = new Stopwatch();
+			indexingStopWatch.Start();
 			var clrtDump = new ClrtDump(DumpPath);
 			if (!clrtDump.Init(out error)) return false;
 			Stopwatch stopWatch = new Stopwatch();
@@ -163,8 +165,9 @@ namespace ClrMDRIndex
 									for (int k = 0, kcnt = fldRefList.Count; k < kcnt; ++k)
 									{
 										var fldAddr = fldRefList[k].Key;
+										if (fldAddr == 0UL) continue;
 										var addrnx = Utils.AddressSearch(addresses, fldAddr, 0, addressesLastNdx);
-										if (fldAddr == 0UL || fldRefs.Contains(addrnx)) continue;
+										if (addrnx < 0 || fldRefs.Contains(addrnx)) continue;
 										fldRefs.Add(addrnx);
 										if (isRooted)
 										{
@@ -235,7 +238,8 @@ namespace ClrMDRIndex
 						heap = null;
 					}
 
-					DumpIndexInfo(version, clrtDump);
+					var indexingDuration = Utils.StopAndGetDurationString(indexingStopWatch);
+					DumpIndexInfo(version, clrtDump, indexingDuration);
 					return true;
 				}
 				catch (Exception ex)
@@ -637,7 +641,7 @@ namespace ClrMDRIndex
 
 		#region data dumping
 
-		private void DumpIndexInfo(Version version, ClrtDump dump)
+		private void DumpIndexInfo(Version version, ClrtDump dump, string indexingDuration = null)
 		{
 			var path = _fileMoniker.GetFilePath(-1, Constants.TxtIndexInfoFilePostfix);
 			StreamWriter txtWriter = null;
@@ -646,9 +650,14 @@ namespace ClrMDRIndex
 			{
 				ResetReadOnlyAttribute(path);
 				txtWriter = new StreamWriter(path);
-				txtWriter.WriteLine("MDR Version: [" + Utils.VersionValue(version).ToString() +
-									"], this is this application version.");
+				txtWriter.WriteLine("MDR Version: [" 
+									+ version 
+									+ "], this is this application version.");
 				txtWriter.WriteLine("Dump Path: " + _fileMoniker.Path);
+				if (!string.IsNullOrWhiteSpace(indexingDuration))
+				{
+					txtWriter.WriteLine("Indexing Duration: " + indexingDuration);
+				}
 				var runtimes = dump.Runtimes;
 				var clrinfos = dump.ClrInfos;
 				txtWriter.WriteLine("Runtime Count: " + runtimes.Length);

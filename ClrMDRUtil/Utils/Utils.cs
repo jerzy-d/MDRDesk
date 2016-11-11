@@ -10,6 +10,7 @@ using System.Runtime.CompilerServices;
 using System.Text;
 using System.Threading;
 using Microsoft.Diagnostics.Runtime;
+using Microsoft.Diagnostics.Runtime.Interop;
 
 namespace ClrMDRIndex
 {
@@ -2095,17 +2096,29 @@ namespace ClrMDRIndex
 			return version.Major*1000 + version.Minor*100 + (version.MinorRevision);
 		}
 
-
-		private const string verPrefix = "MDR Version: [";
-		public static bool IsIndexVersionCompatible(Version version, string verStr)
+		public static string VersionString(Version version)
 		{
-			if (!verStr.StartsWith(verPrefix)) return false;
-			var pos = verStr.IndexOf(']');
-			if (pos <= verPrefix.Length) return false;
-			int ndxVerValue;
-			if (Int32.TryParse(verStr.Substring(verPrefix.Length, pos - verPrefix.Length),out ndxVerValue))
+			return version.ToString();
+		}
+
+		/// <summary>
+		/// Check if the index version matches current application.
+		/// </summary>
+		/// <param name="version">Version of this application.</param>
+		/// <param name="indexInfoStr">Index general information as a string.</param>
+		/// <returns>False if the index revision number is different then saved index revision.</returns>
+		public static bool IsIndexVersionCompatible(Version version, string indexInfoStr)
+		{
+			const string verPrefix = "MDR Version: [";
+			if (!indexInfoStr.StartsWith(verPrefix)) return false;
+			var pos = indexInfoStr.IndexOf(']');
+			var ver = indexInfoStr.Substring(verPrefix.Length, pos - verPrefix.Length);
+			var parts = ver.Split('.');
+			if (parts.Length < 4) return false;
+			int revision;
+			if (Int32.TryParse(parts[3],out revision))
 			{
-				if (VersionValue(version) == ndxVerValue) return true; // it should be less or equal but we cannot yet guarantee backward compability
+				return revision == version.Revision;
 			}
 			return false;
 		}

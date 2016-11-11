@@ -45,6 +45,11 @@ Settings
 Label x:Name="LbCurrentAdHocDump" -- ??
 
 
+CHANGES
+
+1. Refactored indexer and index classes, actually they are replaced by new ones, with most of the code copied from the old ones.
+
+
 PERFORMANCE
 								   1101             0200              gain/loss (%)
 ------------------------------------------------------------------------------
@@ -52,5 +57,9 @@ Getting type parents tree:         00:01:34:57      00:00:03:29       2625.84%
 Getting instance parents list:              ??               ??       significant gain, as above, cannot get actual time spans
 Getting all types size information 00:02:38:19      00:00:03.02       5119.23%
 
+ConvergEx/Analytics_Post.dmp (4,881,039 KB)
+
+Indexing                           00:14:27:24      00:10:17:82
+Open Index                                          00:00:26:61
 
 
