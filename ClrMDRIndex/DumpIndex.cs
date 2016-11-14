@@ -5,6 +5,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices;
+using System.Security.Permissions;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -74,6 +75,7 @@ namespace ClrMDRIndex
 		public WeakReference<Tuple<int[],int[]>> _arraySizes;
 
 		private ClrtSegment[] _segments; // segment infos, for instances generation histograms
+		private bool _segmentInfoUnrooted;
 
 		private ClrtDump _clrtDump;
 		public ClrtDump Dump => _clrtDump;
@@ -155,7 +157,8 @@ namespace ClrMDRIndex
 				// segments -- generation info
 				//
 				path = _fileMoniker.GetFilePath(_currentRuntimeIndex, Constants.MapSegmentInfoFilePostfix);
-				_segments = ClrtSegment.ReadSegments(path, out error);
+				
+				_segments = ClrtSegment.ReadSegments(path, out _segmentInfoUnrooted, out error);
 
 				// roots
 				//
@@ -608,7 +611,7 @@ namespace ClrMDRIndex
 			error = null;
 			try
 			{
-				ClrElementType[] elems = GetElementTypeArray(out error);
+				ClrElementType[] elems = GetElementTypeList(out error);
 				if (error != null) return null;
 				Tuple<int[], int[]> arySizes = GetArraySizes(out error);
 				if (error != null) return null;
@@ -1926,43 +1929,78 @@ namespace ClrMDRIndex
 
 		#region segments/generations/sizes
 
-		public Tuple<string, long>[][] GetGenerationTotals()
+		public KeyValuePair<uint[], uint[]> GetSizeArrays(out string error)
 		{
-			Tuple<int[], ulong[], int[], ulong[]> histograms =
-				ClrtSegment.GetTotalGenerationDistributions(_segments);
-
-			Tuple<string, long>[] ary0 = new Tuple<string, long>[4];
-			ary0[0] = new Tuple<string, long>("G0", histograms.Item1[0]);
-			ary0[1] = new Tuple<string, long>("G1", histograms.Item1[1]);
-			ary0[2] = new Tuple<string, long>("G2", histograms.Item1[2]);
-			ary0[3] = new Tuple<string, long>("LOH", histograms.Item1[3]);
-
-			Tuple<string, long>[] ary1 = new Tuple<string, long>[4];
-			ary1[0] = new Tuple<string, long>("G0", (long)histograms.Item2[0]);
-			ary1[1] = new Tuple<string, long>("G1", (long)histograms.Item2[1]);
-			ary1[2] = new Tuple<string, long>("G2", (long)histograms.Item2[2]);
-			ary1[3] = new Tuple<string, long>("LOH", (long)histograms.Item2[3]);
-
-			Tuple<string, long>[] ary2 = new Tuple<string, long>[4];
-			ary2[0] = new Tuple<string, long>("G0", histograms.Item3[0]);
-			ary2[1] = new Tuple<string, long>("G1", histograms.Item3[1]);
-			ary2[2] = new Tuple<string, long>("G2", histograms.Item3[2]);
-			ary2[3] = new Tuple<string, long>("LOH", histograms.Item3[3]);
-
-			Tuple<string, long>[] ary3 = new Tuple<string, long>[4];
-			ary3[0] = new Tuple<string, long>("G0", (long)histograms.Item4[0]);
-			ary3[1] = new Tuple<string, long>("G1", (long)histograms.Item4[1]);
-			ary3[2] = new Tuple<string, long>("G2", (long)histograms.Item4[2]);
-			ary3[3] = new Tuple<string, long>("LOH", (long)histograms.Item4[3]);
-
-			return new Tuple<string, long>[][]
-			{
-				ary0,
-				ary1,
-				ary2,
-				ary3,
-			};
+			var sizes = GetSizeArray(false, out error);
+			if (error != null) return new KeyValuePair<uint[], uint[]>(null, null);
+			var baseSizes = GetSizeArray(true, out error);
+			if (error != null) return new KeyValuePair<uint[], uint[]>(null, null);
+			return new KeyValuePair<uint[], uint[]>(baseSizes, sizes);
 		}
+
+		public KeyValuePair<uint, uint> GetInstanceSizes(ulong address, out string error)
+		{
+			error = null;
+			var instNdx = Utils.AddressSearch(_instances, address);
+			if (instNdx < 0)
+			{
+				error = "Cannot find an instance at address: " + Utils.RealAddressString(address);
+				return new KeyValuePair<uint, uint>(0,0);
+			}
+			var sizes = GetSizeArray(false, out error);
+			if (error != null) return new KeyValuePair<uint, uint>(0, 0);
+			var totalSize = sizes[instNdx];
+			var baseSizes = GetSizeArray(true, out error);
+			if (error != null) return new KeyValuePair<uint, uint>(0, 0);
+			var baseSize = baseSizes[instNdx];
+			return new KeyValuePair<uint, uint>(baseSize,totalSize);
+
+		}
+
+		public Tuple<int[], ulong[], int[], ulong[],int[],ulong[]> GetTotalGenerationDistributions(out string error)
+		{
+			var sizes = GetSizeArray(false, out error);
+			return ClrtSegment.GetTotalGenerationDistributions(_currentRuntimeIndex,_segments,_instances,sizes,_fileMoniker,_segmentInfoUnrooted);
+		}
+
+
+		//public Tuple<string, long>[][] GetGenerationTotals()
+		//{
+		//	Tuple<int[], ulong[], int[], ulong[]> histograms =
+		//		ClrtSegment.GetTotalGenerationDistributions(_segments);
+
+		//	Tuple<string, long>[] ary0 = new Tuple<string, long>[4];
+		//	ary0[0] = new Tuple<string, long>("G0", histograms.Item1[0]);
+		//	ary0[1] = new Tuple<string, long>("G1", histograms.Item1[1]);
+		//	ary0[2] = new Tuple<string, long>("G2", histograms.Item1[2]);
+		//	ary0[3] = new Tuple<string, long>("LOH", histograms.Item1[3]);
+
+		//	Tuple<string, long>[] ary1 = new Tuple<string, long>[4];
+		//	ary1[0] = new Tuple<string, long>("G0", (long)histograms.Item2[0]);
+		//	ary1[1] = new Tuple<string, long>("G1", (long)histograms.Item2[1]);
+		//	ary1[2] = new Tuple<string, long>("G2", (long)histograms.Item2[2]);
+		//	ary1[3] = new Tuple<string, long>("LOH", (long)histograms.Item2[3]);
+
+		//	Tuple<string, long>[] ary2 = new Tuple<string, long>[4];
+		//	ary2[0] = new Tuple<string, long>("G0", histograms.Item3[0]);
+		//	ary2[1] = new Tuple<string, long>("G1", histograms.Item3[1]);
+		//	ary2[2] = new Tuple<string, long>("G2", histograms.Item3[2]);
+		//	ary2[3] = new Tuple<string, long>("LOH", histograms.Item3[3]);
+
+		//	Tuple<string, long>[] ary3 = new Tuple<string, long>[4];
+		//	ary3[0] = new Tuple<string, long>("G0", (long)histograms.Item4[0]);
+		//	ary3[1] = new Tuple<string, long>("G1", (long)histograms.Item4[1]);
+		//	ary3[2] = new Tuple<string, long>("G2", (long)histograms.Item4[2]);
+		//	ary3[3] = new Tuple<string, long>("LOH", (long)histograms.Item4[3]);
+
+		//	return new Tuple<string, long>[][]
+		//	{
+		//		ary0,
+		//		ary1,
+		//		ary2,
+		//		ary3,
+		//	};
+		//}
 
 		public int[] GetGenerationHistogram(ulong[] addresses)
 		{
@@ -1989,9 +2027,6 @@ namespace ClrMDRIndex
 			}
 			return GetTypeGcGenerationHistogram(typeId);
 		}
-
-
-		
 
 		public int[] GetTypeGcGenerationHistogram(int typeId)
 		{
@@ -2114,7 +2149,7 @@ namespace ClrMDRIndex
 			}
 		}
 
-		private ClrElementType[] GetElementTypeArray(out string error)
+		public ClrElementType[] GetElementTypeList(out string error)
 		{
 			error = null;
 			try
@@ -2122,7 +2157,7 @@ namespace ClrMDRIndex
 				ClrElementType[] elems = null;
 				if (_elementTypes == null || !_elementTypes.TryGetTarget(out elems))
 					{
-						elems = Utils.ReadClrElementTypeArray(_fileMoniker.GetFilePath(_currentRuntimeIndex, Constants.MapInstanceBaseSizesFilePostfix),
+						elems = Utils.ReadClrElementTypeArray(_fileMoniker.GetFilePath(_currentRuntimeIndex, Constants.MapInstanceElemTypesFilePostfix),
 							out error);
 						if (elems == null) return null;
 						if (_elementTypes == null)
@@ -2163,28 +2198,30 @@ namespace ClrMDRIndex
 				return null;
 			}
 		}
-		public Tuple<ulong, KeyValuePair<uint, ulong>[]> GetTypeTotalSizes(int typeId, bool baseSizes, out string error)
+		public KeyValuePair<ulong, ulong> GetTypeSizes(int typeId, out string error)
 		{
 			error = null;
 			try
 			{
-				uint[] sizes = GetSizeArray(baseSizes, out error);
+				uint[] sizes = GetSizeArray(false, out error);
+				uint[] baseSz = GetSizeArray(true, out error);
 				int[] instIndices = GetTypeInstanceIndices(typeId);
 				ulong totalSize = 0UL;
-				var sizeInfos = new KeyValuePair<uint, ulong>[instIndices.Length];
+				ulong totalBaseSize = 0UL;
 				for (int i = 0, icnt = instIndices.Length; i < icnt; ++i)
 				{
 					var ndx = instIndices[i];
 					var sz = sizes[ndx];
 					totalSize += sz;
-					sizeInfos[i] = new KeyValuePair<uint, ulong>(sz, _instances[ndx]);
+					var bsz = baseSz[ndx];
+					totalBaseSize += bsz;
 				}
-				return new Tuple<ulong, KeyValuePair<uint, ulong>[]>(totalSize, sizeInfos);
+				return new KeyValuePair<ulong, ulong>(totalBaseSize,totalSize);
 			}
 			catch (Exception ex)
 			{
 				error = Utils.GetExceptionErrorString(ex);
-				return null;
+				return new KeyValuePair<ulong, ulong>(0UL,0UL);
 			}
 		}
 
@@ -2277,7 +2314,6 @@ namespace ClrMDRIndex
 			ulong[] addresses = GetTypeRealAddresses(typeId);
 			return ClrtDump.GetTotalSizeDetail(Dump, addresses, out error);
 		}
-
 
 		public ListingInfo CompareTypesWithOther(string otherDumpPath)
 		{
@@ -2387,6 +2423,7 @@ namespace ClrMDRIndex
 				Dump?.Dispose();
 			}
 		}
+
 		#endregion segments/generations/sizes
 
 		#region dump

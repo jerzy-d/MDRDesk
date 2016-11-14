@@ -9,15 +9,6 @@ namespace ClrMDRIndex
 {
 	public class ClrtSegment
 	{
-		public enum SegType
-		{
-			Uknown,
-			Gen0,
-			Gen1,
-			Gen2,
-			Large
-		}
-
 		public enum Generation
 		{
 			Gen0,
@@ -59,6 +50,21 @@ namespace ClrMDRIndex
 		public ulong Gen1Size => _gen1Size;
 		private ulong _gen2Size;
 		public ulong Gen2Size => _gen2Size;
+
+		private int _gen0UnrootedCount;
+		public int Gen0UnrootedCount => _gen0UnrootedCount;
+		private int _gen1UnrootedCount;
+		public int Gen1UnrootedCount => _gen1UnrootedCount;
+		private int _gen2UnrootedCount;
+		public int Gen2UnrootedCount => _gen2UnrootedCount;
+
+		private ulong _gen0UnrootedSize;
+		public ulong Gen0UnrootedSize => _gen0UnrootedSize;
+		private ulong _gen1UnrootedSize;
+		public ulong Gen1UnrootedSize => _gen1UnrootedSize;
+		private ulong _gen2UnrootedSize;
+		public ulong Gen2UnrootedSize => _gen2UnrootedSize;
+
 
 		private int _gen0FreeCount;
 		public int Gen0FreeCount => _gen0FreeCount;
@@ -103,6 +109,25 @@ namespace ClrMDRIndex
 			return EndIndex - FirstIndex;
 		}
 
+		private void IncUnrooted(Generation gen, uint size)
+		{
+			switch (gen)
+			{
+				case Generation.Gen0:
+					_gen0UnrootedCount += 1;
+					_gen0UnrootedSize += size;
+					return;
+				case Generation.Gen1:
+					_gen1UnrootedCount += 1;
+					_gen1UnrootedSize += size;
+					return;
+				case Generation.Gen2:
+					_gen2UnrootedCount += 1;
+					_gen2UnrootedSize += size;
+					return;
+			}
+		}
+
 		public static void SetGenerationStats(ClrSegment clrSeg, ulong addr, ulong size, int[] cnts, ulong[] sizes)
 		{
 			addr = Utils.RealAddress(addr);
@@ -137,6 +162,16 @@ namespace ClrMDRIndex
 			_gen0FreeSize = freeSizes[0];
 			_gen1FreeSize = freeSizes[1];
 			_gen2FreeSize = freeSizes[2];
+		}
+
+		public void SetGenerationUnrootedStats(int[] cnts, ulong[] sizes)
+		{
+			_gen0UnrootedCount = cnts[0];
+			_gen1UnrootedCount = cnts[1];
+			_gen2UnrootedCount = cnts[2];
+			_gen0UnrootedSize = sizes[0];
+			_gen1UnrootedSize = sizes[1];
+			_gen2UnrootedSize = sizes[2];
 		}
 
 		public void ToShortString(StringBuilder sb)
@@ -206,20 +241,20 @@ namespace ClrMDRIndex
 					{
 						found = true;
 						var gen = segments[j].GetGeneration(addr);
-						histogram[(int) gen] += 1;
+						histogram[(int)gen] += 1;
 						break;
 					}
 				}
 				if (!found)
 				{
-					histogram[(int) Generation.Uknown] += 1;
+					histogram[(int)Generation.Uknown] += 1;
 				}
 			}
 			return histogram;
 		}
 
 
-		public static int FindSegment(ClrtSegment[] segments, ulong addr)
+		public static int FindSegmentIndex(ClrtSegment[] segments, ulong addr)
 		{
 			addr = Utils.RealAddress(addr);
 			for (var i = 0; i < segments.Length; ++i)
@@ -229,45 +264,94 @@ namespace ClrMDRIndex
 			return Constants.InvalidIndex;
 		}
 
+		public static ClrtSegment FindSegment(ClrtSegment[] segments, ulong addr)
+		{
+			addr = Utils.RealAddress(addr);
+			for (var i = 0; i < segments.Length; ++i)
+			{
+				if (segments[i].IsInSegment(addr)) return segments[i];
+			}
+			return null;
+		}
 
-	    public static Tuple<int[],ulong[],int[],ulong[]> GetTotalGenerationDistributions(ClrtSegment[] segments)
-	    {
-	        var genTotalCount = new int[4];
-	        var genTotalSize = new ulong[4];
-	        var freeTotalGenCount = new int[4];
-	        var freeTotalGenSize = new ulong[4];
+		/// <summary>
+		/// 
+		/// </summary>
+		/// <param name="rtmNdx"></param>
+		/// <param name="segments"></param>
+		/// <param name="instances"></param>
+		/// <param name="sizes"></param>
+		/// <param name="fileMoniker"></param>
+		/// <param name="hasUnrootedInfo"></param>
+		/// <returns></returns>
+		public static Tuple<int[], ulong[], int[], ulong[], int[], ulong[]> GetTotalGenerationDistributions(int rtmNdx, ClrtSegment[] segments, ulong[] instances, uint[] sizes, DumpFileMoniker fileMoniker, bool hasUnrootedInfo)
+		{
+			var genTotalCount = new int[4];
+			var genTotalSize = new ulong[4];
+			var genTotalUnrootedCount = new int[4];
+			var genTotalUnrootedSize = new ulong[4];
+			var freeTotalGenCount = new int[4];
+			var freeTotalGenSize = new ulong[4];
 
-	        for (int i = 0, icnt = segments.Length; i < icnt; ++i)
-	        {
-	            var seg = segments[i];
-		        if (seg.Large)
-		        {
-			        genTotalCount[(int) Generation.Large] += seg.Gen0Count;
-			        genTotalSize[(int) Generation.Large] += seg.Gen0Size;
-			        freeTotalGenCount[(int) Generation.Large] += seg.Gen0FreeCount;
-			        freeTotalGenSize[(int) Generation.Large] += seg.Gen0FreeSize;
+			// check unrooted
+			if (!hasUnrootedInfo)
+			{
+				for (int i = 0, icnt = instances.Length; i < icnt; ++i)
+				{
+					if (Utils.IsNotRooted(instances[i]))
+					{
+						var addr = instances[i];
+						var seg = ClrtSegment.FindSegment(segments, addr);
+						if (seg == null) continue;
+						var gen = seg.GetGeneration(addr);
+						if (gen == Generation.Uknown) continue;
+						seg.IncUnrooted(gen, sizes[i]);
+					}
+				}
+				string error;
+				ClrtSegment.DumpSegments(fileMoniker.GetFilePath(rtmNdx, Constants.MapSegmentInfoFilePostfix), segments,
+					out error, true);
+			}
+
+			for (int i = 0, icnt = segments.Length; i < icnt; ++i)
+			{
+				var seg = segments[i];
+				if (seg.Large)
+				{
+					genTotalCount[(int)Generation.Large] += seg.Gen0Count;
+					genTotalSize[(int)Generation.Large] += seg.Gen0Size;
+					freeTotalGenCount[(int)Generation.Large] += seg.Gen0FreeCount;
+					freeTotalGenSize[(int)Generation.Large] += seg.Gen0FreeSize;
+					genTotalUnrootedCount[(int)Generation.Large] += seg.Gen0UnrootedCount;
+					genTotalSize[(int)Generation.Large] += seg.Gen0UnrootedSize;
 					continue;
-		        }
+				}
 				genTotalCount[(int)Generation.Gen0] += seg.Gen0Count;
 				genTotalSize[(int)Generation.Gen0] += seg.Gen0Size;
+				genTotalUnrootedCount[(int)Generation.Gen0] += seg.Gen0UnrootedCount;
+				genTotalUnrootedSize[(int)Generation.Gen0] += seg.Gen0UnrootedSize;
 				freeTotalGenCount[(int)Generation.Gen0] += seg.Gen0FreeCount;
 				freeTotalGenSize[(int)Generation.Gen0] += seg.Gen0FreeSize;
 
 				genTotalCount[(int)Generation.Gen1] += seg.Gen1Count;
 				genTotalSize[(int)Generation.Gen1] += seg.Gen1Size;
+				genTotalUnrootedCount[(int)Generation.Gen1] += seg.Gen1UnrootedCount;
+				genTotalUnrootedSize[(int)Generation.Gen1] += seg.Gen1UnrootedSize;
 				freeTotalGenCount[(int)Generation.Gen1] += seg.Gen1FreeCount;
 				freeTotalGenSize[(int)Generation.Gen1] += seg.Gen1FreeSize;
 
 				genTotalCount[(int)Generation.Gen2] += seg.Gen2Count;
 				genTotalSize[(int)Generation.Gen2] += seg.Gen2Size;
+				genTotalUnrootedCount[(int)Generation.Gen2] += seg.Gen2UnrootedCount;
+				genTotalUnrootedSize[(int)Generation.Gen2] += seg.Gen2UnrootedSize;
 				freeTotalGenCount[(int)Generation.Gen2] += seg.Gen2FreeCount;
 				freeTotalGenSize[(int)Generation.Gen2] += seg.Gen2FreeSize;
 			}
 
-	        return Tuple.Create(genTotalCount, genTotalSize, freeTotalGenCount, freeTotalGenSize);
-	    }
+			return Tuple.Create(genTotalCount, genTotalSize, freeTotalGenCount, freeTotalGenSize, genTotalUnrootedCount, genTotalUnrootedSize);
+		}
 
-        public static string GetGenerationHistogramSimpleString(int[] histogram)
+		public static string GetGenerationHistogramSimpleString(int[] histogram)
 		{
 			Debug.Assert(histogram.Length == 5);
 			StringBuilder sb = new StringBuilder(64);
@@ -284,7 +368,7 @@ namespace ClrMDRIndex
 			return sb.ToString();
 		}
 
-		public static Tuple<string,long>[] GetGenerationHistogramTuples(int[] histogram)
+		public static Tuple<string, long>[] GetGenerationHistogramTuples(int[] histogram)
 		{
 			Debug.Assert(histogram.Length == 5);
 			int cnt = histogram[4] > 0 ? 5 : 4;
@@ -293,7 +377,7 @@ namespace ClrMDRIndex
 			ary[1] = new Tuple<string, long>("Generation 1", histogram[1]);
 			ary[2] = new Tuple<string, long>("Generation 2", histogram[2]);
 			ary[3] = new Tuple<string, long>("Large Obj Heap", histogram[3]);
-			if (cnt>4)
+			if (cnt > 4)
 				ary[4] = new Tuple<string, long>("Uknown", histogram[4]);
 
 			return ary;
@@ -328,6 +412,14 @@ namespace ClrMDRIndex
 			writer.Write(_gen0Size);
 			writer.Write(_gen1Size);
 			writer.Write(_gen2Size);
+
+			writer.Write(_gen0UnrootedCount);
+			writer.Write(_gen1UnrootedCount);
+			writer.Write(_gen2UnrootedCount);
+
+			writer.Write(_gen0UnrootedSize);
+			writer.Write(_gen1UnrootedSize);
+			writer.Write(_gen2UnrootedSize);
 
 			writer.Write(_gen0FreeCount);
 			writer.Write(_gen1FreeCount);
@@ -371,6 +463,14 @@ namespace ClrMDRIndex
 				_gen1Size = reader.ReadUInt64(),
 				_gen2Size = reader.ReadUInt64(),
 
+				_gen0UnrootedCount = reader.ReadInt32(),
+				_gen1UnrootedCount = reader.ReadInt32(),
+				_gen2UnrootedCount = reader.ReadInt32(),
+
+				_gen0UnrootedSize = reader.ReadUInt64(),
+				_gen1UnrootedSize = reader.ReadUInt64(),
+				_gen2UnrootedSize = reader.ReadUInt64(),
+
 				_gen0FreeCount = reader.ReadInt32(),
 				_gen1FreeCount = reader.ReadInt32(),
 				_gen2FreeCount = reader.ReadInt32(),
@@ -383,13 +483,14 @@ namespace ClrMDRIndex
 			return seg;
 		}
 
-		public static bool DumpSegments(string path, ClrtSegment[] segments, out string error)
+		public static bool DumpSegments(string path, ClrtSegment[] segments, out string error, bool unrootedIncluded = false)
 		{
 			error = null;
 			BinaryWriter bw = null;
 			try
 			{
 				bw = new BinaryWriter(File.Open(path, FileMode.Create));
+				bw.Write(unrootedIncluded);
 				DumpSegments(segments, bw);
 				return true;
 			}
@@ -414,10 +515,11 @@ namespace ClrMDRIndex
 			}
 		}
 
-		public static ClrtSegment[] ReadSegments(string path, out string error)
+		public static ClrtSegment[] ReadSegments(string path, out bool segUnrootedInfo, out string error)
 		{
 			error = null;
 			BinaryReader br = null;
+			segUnrootedInfo = false;
 			if (!File.Exists(path))
 			{
 				error = "Segment file not available: " + path;
@@ -426,6 +528,7 @@ namespace ClrMDRIndex
 			try
 			{
 				br = new BinaryReader(File.Open(path, FileMode.Open));
+				segUnrootedInfo = br.ReadBoolean();
 				return ReadSegments(br);
 			}
 			catch (Exception ex)
@@ -443,7 +546,7 @@ namespace ClrMDRIndex
 		{
 			StringBuilder sb = StringBuilderCache.Acquire(256);
 			Debug.Assert(titles.Length == histogr.Length);
-			string[] genPrefix = new[] {" 0[", " 1[", " 2[", " L["};
+			string[] genPrefix = new[] { " 0[", " 1[", " 2[", " L[" };
 			for (int i = 0, icnt = titles.Length; i < icnt; ++i)
 			{
 				sb.Append(titles[i]);

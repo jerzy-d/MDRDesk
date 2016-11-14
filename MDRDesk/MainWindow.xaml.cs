@@ -381,8 +381,8 @@ namespace MDRDesk
 			}
 			CurrentIndex = result.Item2;
 
-			var genInfo = CurrentIndex.GetGenerationTotals();
-			DisplayGeneralInfoGrid(CurrentIndex.DumpInfo, genInfo);
+			//var genInfo = CurrentIndex.GetGenerationTotals();
+			DisplayGeneralInfoGrid(CurrentIndex.DumpInfo);
 			if ((TypeDisplayNamespaceClass.IsChecked ?? (bool)TypeDisplayNamespaceClass.IsChecked) && result.Item3 != null)
 			{
 				DisplayNamespaceGrid(result.Item3);
@@ -1343,7 +1343,7 @@ namespace MDRDesk
 
 		private void SetEndTaskMainWindowState(string message)
 		{
-			MainStatusShowMessage(message + Utils.StopAndGetDurationString(_taskDurationStopwatch));
+			MainStatusShowMessage(message + "        tm:" + Utils.StopAndGetDurationString(_taskDurationStopwatch));
 			MainToolbarTray.IsEnabled = true;
 			Mouse.OverrideCursor = null;
 			MainStatusProgressBar.Visibility = Visibility.Hidden;
@@ -1694,30 +1694,58 @@ namespace MDRDesk
 		}
 
 
-		private void LbGetInstValueClicked(object sender, RoutedEventArgs e)
+		private ulong GetAddressFromList(object listBox)
 		{
-			var lbAddresses = GetTypeAddressesListBox(sender);
+			AssertIndexIsAvailable();
+			if (!IsIndexAvailable()) return Constants.InvalidAddress;
+			var lbAddresses = GetTypeAddressesListBox(listBox);
 			if (lbAddresses.SelectedItems.Count < 1)
 			{
 				MessageBox.Show("No address is selected!", "Action Aborted", MessageBoxButton.OK, MessageBoxImage.Exclamation);
-				return;
+				return Constants.InvalidAddress;
 			}
 			var addr = (ulong)lbAddresses.SelectedItems[0];
+			return addr;
+		}
+
+		private void LbGetInstValueClicked(object sender, RoutedEventArgs e)
+		{
+			ulong addr = GetAddressFromList(sender);
+			if (addr == Constants.InvalidAddress) return;
 
 
 		}
 
 		private void LbGetInstHierarchyClicked(object sender, RoutedEventArgs e)
 		{
-			var lbAddresses = GetTypeAddressesListBox(sender);
-			if (lbAddresses.SelectedItems.Count < 1)
-			{
-				MessageBox.Show("No address is selected!", "Action Aborted", MessageBoxButton.OK, MessageBoxImage.Exclamation);
-				return;
-			}
-			var addr = (ulong)lbAddresses.SelectedItems[0];
+			ulong addr = GetAddressFromList(sender);
+			if (addr == Constants.InvalidAddress) return;
 			Dispatcher.CurrentDispatcher.InvokeAsync(() => ExecuteInstanceHierarchyQuery("Get instance hierarchy " + Utils.AddressStringHeader(addr), addr, Constants.InvalidIndex));
 
+		}
+
+		private async void AddrLstGetInstSizesClicked(object sender, RoutedEventArgs e)
+		{
+			ulong addr = GetAddressFromList(sender);
+			if (addr == Constants.InvalidAddress) return;
+			SetStartTaskMainWindowState("Getting instance[" + Utils.RealAddressString(addr) + "], please wait...");
+
+			var result = await Task.Run(() =>
+			{
+				string error;
+				KeyValuePair<uint, uint> info = CurrentIndex.GetInstanceSizes(addr, out error);
+				return new Tuple<string, KeyValuePair<uint, uint>>(error, info);
+			});
+
+			if (result.Item1 != null)
+			{
+				ShowError(result.Item1);
+				SetEndTaskMainWindowState("Getting instance [" + Utils.RealAddressString(addr) + "] sizes failed.");
+				return;
+			}
+			SetEndTaskMainWindowState("Instance [" + Utils.RealAddressString(addr)
+				+ "] sizes, base: " + Utils.LargeNumberString((ulong)result.Item2.Key)
+				+ ",  total: " + Utils.LargeNumberString((ulong)result.Item2.Value));
 		}
 
 
@@ -1751,6 +1779,11 @@ namespace MDRDesk
 			var tab = new CloseableTabItem() { Header = "Parents of: " + Utils.AddressString(rootNode.Address), Content = grid };
 			MainTab.Items.Add(tab);
 			MainTab.SelectedItem = tab;
+		}
+
+		private void AssertIndexIsAvailable()
+		{
+			Debug.Assert(CurrentIndex!=null);
 		}
 
 		private bool IsIndexAvailable(string caption = null)

@@ -186,6 +186,7 @@ namespace ClrMDRIndex
 							}
 
 							fldRefQue.Add(new KeyValuePair<int, int[]>(-1, null));
+
 							threadFldRefPersister.Join();
 							durationStr = Utils.StopAndGetDurationString(stopWatch);
 
@@ -338,6 +339,7 @@ namespace ClrMDRIndex
 			try
 			{
 				var segs = heap.Segments;
+				ClrtSegment[] mysegs = new ClrtSegment[segs.Count];
 				var rootsLastNdx = roots.Length - 1;
 				int addrNdx = 0;
 				int segIndex = 0;
@@ -345,7 +347,6 @@ namespace ClrMDRIndex
 				uint[] baseSizes = new uint[addresses.Length];
 				int[] elemetTypes = new int[addresses.Length];
 				var arraySizes = new List<KeyValuePair<int,int>>(addresses.Length/25);
-				ClrtSegment[] mysegs = new ClrtSegment[segs.Count];
 
 				for (int segNdx = 0, icnt = segs.Count; segNdx < icnt; ++segNdx)
 				{
@@ -366,11 +367,6 @@ namespace ClrMDRIndex
 						typeIds[addrNdx] = typeId;
 						elemetTypes[addrNdx] = clrType == null ? (int)ClrElementType.Unknown : (int)clrType.ElementType;
 						if (clrType == null) goto NEXT_OBJECT;
-
-						if (addr == 0x000000388786b98)
-						{
-							int a = 1;
-						}
 
 						int rootNdx = Utils.AddressSearch(roots, addr);
 						int finlNdx = Utils.AddressSearch(finalizers, addr);

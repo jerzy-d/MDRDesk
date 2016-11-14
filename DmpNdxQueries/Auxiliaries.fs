@@ -429,6 +429,31 @@ module Auxiliaries =
         let chart = Chart.Column data
         new ChartControl(chart)
 
-    let getColumnChartWithTitle (data:(string*int64) array) (title:string) =
+    let getLongColumnChartWithTitle (data:(string*uint64) array) (title:string) =
+        let chart = Chart.Column (data, Title=title)
+        chart.WithLegend
+        new ChartControl(chart)
+
+    let getIntColumnChartWithTitle (data:(string*int) array) (title:string) =
         let chart = Chart.Column (data, Title=title)
         new ChartControl(chart)
+
+    let getCountGenerationsChart (instanceCounts:int array) (unrootedCounts:int array) (freeCounts:int array) =
+        let titleAry = [|"oG0";"oG1";"oG2";"oLO";"uG0";"uG1";"uG2";"uLO";"fG0";"fG1";"fG2";"fLO"|]
+        let dataAry0 = Array.concat [| instanceCounts ; unrootedCounts |]
+        let dataAry = Array.concat [| dataAry0 ; freeCounts |]
+        getIntColumnChartWithTitle (Array.zip titleAry dataAry) "object, unrooted, free counts"
+
+    let getCountGenerationsChart2 (counts:int array) =
+        let titleAry = [|"oG0";"oG1";"oG2";"oLO";"uG0";"uG1";"uG2";"uLO";"fG0";"fG1";"fG2";"fLO"|]
+        getIntColumnChartWithTitle (Array.zip titleAry counts) "object, unrooted, free counts"
+
+    let getSizeGenerationsChart (instanceSizes:uint64 array) (unrootedSizes:uint64 array) (freeSizes:uint64 array) =
+        let titleAry = [|"oG0";"oG1";"oG2";"oLO";"uG0";"uG1";"uG2";"uLO";"fG0";"fG1";"fG2";"fLO"|]
+        let dataAry0 = Array.concat [| instanceSizes ; unrootedSizes |]
+        let dataAry = Array.concat [| dataAry0 ; freeSizes |]
+        getLongColumnChartWithTitle (Array.zip titleAry dataAry) "object, unrooted, free sizes"
+
+    let getSizeGenerationsChart2 (sizes:uint64 array) =
+        let titleAry = [|"oG0";"oG1";"oG2";"oLO";"uG0";"uG1";"uG2";"uLO";"fG0";"fG1";"fG2";"fLO"|]
+        getLongColumnChartWithTitle (Array.zip titleAry sizes) "object, unrooted, free sizes"
