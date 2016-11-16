@@ -19,9 +19,9 @@ namespace UnitTestMdr
 	public class MapTests
 	{
 		private const string _mapPath = @"D:\Jerzy\WinDbgStuff\dumps\Analytics\Scopia\noDeleteMsgs.map";
-		private const string _typeName = @"ECS.Common.HierarchyCache.Structure.RealPosition";
 
-		private const string _indexPath = @"C:\WinDbgStuff\Dumps\Analytics\ConvergeEx\Analytics_Post.dmp.map";
+		private const string _typeName = @"Eze.Server.Common.Pulse.Common.ServerColumn";
+		private const string _indexPath = @"D:\Jerzy\WinDbgStuff\dumps\Analytics\Baly\analytics_160107_122809.Baly.crash.dmp.map";
 
 
 		private TestContext testContextInstance;
@@ -297,80 +297,80 @@ namespace UnitTestMdr
 		#region Specialized Queries
 
 
-		[TestMethod]
-		public void TestWeakReferenceFields()
-		{
-			string error;
-			ulong address = 0x0000008000c0d8;
-			var map =
-				OpenMap(@"D:\Jerzy\WinDbgStuff\dumps\Analytics\Memory.Usage.OPAM.971\Eze.Analytics.Svc.exe.EzeBitVector.PadOff.map");
-			Assert.IsNotNull(map);
-			List<string> errors = new List<string>();
-			using (map)
-			{
-				int totalCount;
-				KeyValuePair<int, ulong[]>[] prefaddresses = map.GetTypeWithPrefixAddresses("System.WeakReference", false,
-					out totalCount);
+		//[TestMethod]
+		//public void TestWeakReferenceFields()
+		//{
+		//	string error;
+		//	ulong address = 0x0000008000c0d8;
+		//	var map =
+		//		OpenMap(@"D:\Jerzy\WinDbgStuff\dumps\Analytics\Memory.Usage.OPAM.971\Eze.Analytics.Svc.exe.EzeBitVector.PadOff.map");
+		//	Assert.IsNotNull(map);
+		//	List<string> errors = new List<string>();
+		//	using (map)
+		//	{
+		//		int totalCount;
+		//		KeyValuePair<int, ulong[]>[] prefaddresses = map.GetTypeWithPrefixAddresses("System.WeakReference", false,
+		//			out totalCount);
 
-				int typeId = map.GetTypeId("System.WeakReference");
-				ulong[] addresses = map.GetTypeRealAddresses(typeId);
+		//		int typeId = map.GetTypeId("System.WeakReference");
+		//		ulong[] addresses = map.GetTypeRealAddresses(typeId);
 
-				var heap = map.GetFreshHeap();
-				ClrType weakReferenceType = heap.GetObjectType(address); // System.WeakReference
-				ClrInstanceField m_handleField = weakReferenceType.Fields[0];
-				object m_handleValue = m_handleField.GetValue(address, false, false);
-				ClrType m_handleType = m_handleField.Type; //  System.IntPtr
-				ClrInstanceField m_valueField = m_handleType.Fields[0];
-				ulong m_valueValue = (ulong) m_valueField.GetValue((ulong) (long) m_handleValue, true, false);
-				ClrType eeferencedType = heap.GetObjectType(m_valueValue); // type this WeakReference points to
+		//		var heap = map.GetFreshHeap();
+		//		ClrType weakReferenceType = heap.GetObjectType(address); // System.WeakReference
+		//		ClrInstanceField m_handleField = weakReferenceType.Fields[0];
+		//		object m_handleValue = m_handleField.GetValue(address, false, false);
+		//		ClrType m_handleType = m_handleField.Type; //  System.IntPtr
+		//		ClrInstanceField m_valueField = m_handleType.Fields[0];
+		//		ulong m_valueValue = (ulong) m_valueField.GetValue((ulong) (long) m_handleValue, true, false);
+		//		ClrType eeferencedType = heap.GetObjectType(m_valueValue); // type this WeakReference points to
 
-				//ulong[] addrTest = new[] {address};
-				var result = DmpNdxQueries.SpecializedQueries.getWeakReferenceInfos(heap, addresses, m_handleField, m_valueField);
-				if (result.Item1 != null)
-				{
-					Assert.IsTrue(false, result.Item1);
-				}
+		//		//ulong[] addrTest = new[] {address};
+		//		var result = DmpNdxQueries.SpecializedQueries.getWeakReferenceInfos(heap, addresses, m_handleField, m_valueField);
+		//		if (result.Item1 != null)
+		//		{
+		//			Assert.IsTrue(false, result.Item1);
+		//		}
 
 
 
-				string repPath = map.AdhocFolder + @"\WeakReferenceObjects.txt";
-				StreamWriter sw = null;
-				try
-				{
-					sw = new StreamWriter(repPath);
-					var infos = result.Item2;
-					Array.Sort(infos, new Utils.TripleUlUlStrByStrUl2Cmp());
+		//		string repPath = map.AdhocFolder + @"\WeakReferenceObjects.txt";
+		//		StreamWriter sw = null;
+		//		try
+		//		{
+		//			sw = new StreamWriter(repPath);
+		//			var infos = result.Item2;
+		//			Array.Sort(infos, new Utils.TripleUlUlStrByStrUl2Cmp());
 
-					sw.WriteLine("### MDRDESK REPORT: WeakReference");
-					sw.WriteLine("### TITLE: WeakReference");
-					sw.WriteLine("### COUNT: " + Utils.LargeNumberString(infos.Length));
-					sw.WriteLine("### COLUMNS: Address|ulong \u271A Object Address|string \u271A Object Type|string");
-					sw.WriteLine("### SEPARATOR:  \u271A ");
-					sw.WriteLine("#### WeakReference count: " + Utils.LargeNumberString(infos.Length));
+		//			sw.WriteLine("### MDRDESK REPORT: WeakReference");
+		//			sw.WriteLine("### TITLE: WeakReference");
+		//			sw.WriteLine("### COUNT: " + Utils.LargeNumberString(infos.Length));
+		//			sw.WriteLine("### COLUMNS: Address|ulong \u271A Object Address|string \u271A Object Type|string");
+		//			sw.WriteLine("### SEPARATOR:  \u271A ");
+		//			sw.WriteLine("#### WeakReference count: " + Utils.LargeNumberString(infos.Length));
 
-					sw.WriteLine("#### Total WeakReference instance count: " + infos.Length);
-					sw.WriteLine("#### Clumns: address of WeakReference, address of type pointed to, type name");
-					sw.WriteLine("####");
-					for (int i = 0, icnt = infos.Length; i < icnt; ++i)
-					{
-						sw.Write(Utils.AddressStringHeader(infos[i].First) + Constants.HeavyGreekCrossPadded);
-						sw.Write(Utils.AddressStringHeader(infos[i].Second) + Constants.HeavyGreekCrossPadded);
-						sw.WriteLine(infos[i].Third);
-					}
-				}
-				catch (Exception ex)
-				{
-					Assert.IsTrue(false, ex.ToString());
-				}
-				finally
-				{
-					sw?.Close();
-				}
+		//			sw.WriteLine("#### Total WeakReference instance count: " + infos.Length);
+		//			sw.WriteLine("#### Clumns: address of WeakReference, address of type pointed to, type name");
+		//			sw.WriteLine("####");
+		//			for (int i = 0, icnt = infos.Length; i < icnt; ++i)
+		//			{
+		//				sw.Write(Utils.AddressStringHeader(infos[i].First) + Constants.HeavyGreekCrossPadded);
+		//				sw.Write(Utils.AddressStringHeader(infos[i].Second) + Constants.HeavyGreekCrossPadded);
+		//				sw.WriteLine(infos[i].Third);
+		//			}
+		//		}
+		//		catch (Exception ex)
+		//		{
+		//			Assert.IsTrue(false, ex.ToString());
+		//		}
+		//		finally
+		//		{
+		//			sw?.Close();
+		//		}
 
-			}
+		//	}
 
-			//Assert.IsNull(error, error);
-		}
+		//	//Assert.IsNull(error, error);
+		//}
 
 
 
@@ -814,6 +814,43 @@ namespace UnitTestMdr
 		//	var nonEmptys = map.GetNonemptyElementTypes();
 		//	var ets2 = map.GetElementTypes(ClrElementType.Array);
 		//}
+
+		[TestMethod]
+		public void TestTypeInstanceSearch()
+		{
+			var map = OpenMap(_indexPath);
+			Assert.IsNotNull(map);
+			List<string> columns = new List<string>();
+			using (map)
+			{
+				try
+				{
+					var typeId = map.GetTypeId(_typeName);
+					var typeInstances = map.GetTypeInstances(typeId);
+					var heap = map.Dump.Heap;
+					for (int i = 0, icnt = typeInstances.Length; i < icnt; ++i)
+					{
+						var addr = Utils.RealAddress(typeInstances[i]);
+						var clrType = heap.GetObjectType(addr);
+						var fldCalc = clrType.GetFieldByName("calc");
+						Assert.IsNotNull(fldCalc);
+						var calcObj = fldCalc.GetValue(addr, false, false);
+						if (calcObj == null || (ulong)calcObj == 0UL)
+						{
+							var fldColumnName = clrType.GetFieldByName("ColumnName");
+							Assert.IsNotNull(fldColumnName);
+							var colName = (string)fldColumnName.GetValue(addr, false, true);
+							columns.Add(colName);
+						}
+					}
+				}
+				catch (Exception ex)
+				{
+					Assert.IsTrue(false,ex.ToString());
+				}
+			}
+
+		}
 
 		[TestMethod]
 		public void TestTypeAccess()

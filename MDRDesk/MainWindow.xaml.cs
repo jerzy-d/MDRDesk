@@ -1427,12 +1427,6 @@ namespace MDRDesk
 			int a = 0;
 		}
 
-
-
-
-
-
-
 		private void CopyAddressSelectionClicked(object sender, RoutedEventArgs e)
 		{
 			var lbAddresses = GetTypeAddressesListBox(sender);
@@ -1545,9 +1539,6 @@ namespace MDRDesk
 			Debug.Assert(lbTypeNames != null);
 			return lbTypeNames;
 		}
-
-
-
 
         private async void GenerateSizeDetailsReport(object sender, RoutedEventArgs e) // TODO JRD -- display as ListView (listing)
 		{
@@ -1750,7 +1741,7 @@ namespace MDRDesk
 
 
 		/// <summary>
-		/// TODO JRD -- thsi is Alex instance walker
+		/// TODO JRD -- this is Alex instance walker
 		/// </summary>
 		/// <param name="rootNode"></param>
 		private void DisplayInstanceReferenceTree(InstanceTypeNode rootNode)

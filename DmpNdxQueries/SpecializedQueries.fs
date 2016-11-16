@@ -122,21 +122,43 @@ module SpecializedQueries =
     /// <param name="m_handle">Instance of m_handle field.</param>
     /// <param name="m_value">Instance of m_value field (from System.IntPtr type).</param>
     /// <returns></returns>
-    let getWeakReferenceInfos (heap:ClrHeap) (addresses:address array) (m_handle:ClrInstanceField) (m_value:ClrInstanceField): (string*triple<address,address,string>[]) =
-        let typeInfos = ResizeArray<triple<address,address,string>>(addresses.Length)
-        try
-            for addr in addresses do
-                let m_handleObj = m_handle.GetValue(addr, false, false)
-                let m_handleVal = if isNull m_handleObj then 0L else m_handleObj :?> int64
-                let m_valueObj = if m_handleVal = 0L then null else m_value.GetValue(Convert.ToUInt64(m_handleVal), true, false)
-                let m_valueVal = if isNull m_valueObj then 0UL else m_valueObj :?> address
-                let clrType = heap.GetObjectType(m_valueVal) // type pointed to by WeakReference instance at address addr
-                let typeName = if isNull clrType then Constants.Unknown else clrType.Name
-                typeInfos.Add(new triple<address,address,string>(addr,m_valueVal,typeName))
-                ()
-            (null, typeInfos.ToArray())
-        with
-            | exn -> (exn.ToString(),null)
+//    let getWeakReferenceInfos (heap:ClrHeap) (addresses:address array) (m_handle:ClrInstanceField) (m_value:ClrInstanceField): (string*triple<address,address,string>[]) =
+//        let typeInfos = ResizeArray<triple<address,address,string>>(addresses.Length)
+//        try
+//            for flaggedAddr in addresses do
+//                let addr = Utils.RealAddress(flaggedAddr)
+//                let m_handleObj = m_handle.GetValue(addr, false, false)
+//                let m_handleVal = if isNull m_handleObj then 0L else m_handleObj :?> int64
+//                let m_valueObj = if m_handleVal = 0L then null else m_value.GetValue(Convert.ToUInt64(m_handleVal), true, false)
+//                let m_valueVal = if isNull m_valueObj then 0UL else m_valueObj :?> address
+//                let clrType = heap.GetObjectType(m_valueVal) // type pointed to by WeakReference instance at address addr
+//                let typeName = if isNull clrType then Constants.Unknown else clrType.Name
+//                typeInfos.Add(new triple<address,address,string>(flaggedAddr,m_valueVal,typeName))
+//                ()
+//            (null, typeInfos.ToArray())
+//        with
+//            | exn -> (exn.ToString(),null)
+//
+//    let getWeakReferenceReferences (heap:ClrHeap) (addresses:address array) (m_handle:ClrInstanceField) (m_value:ClrInstanceField) (typeNames:string array): (string*Dictionary<address,KeyValuePair<int,List<address>>>) =
+//        let typeInfos = new Dictionary<address,KeyValuePair<int,List<address>>>()
+//        try
+//            for flaggedAddr in addresses do
+//                let addr = Utils.RealAddress(flaggedAddr)
+//                let m_handleObj = m_handle.GetValue(addr, false, false)
+//                let m_handleVal = if isNull m_handleObj then 0L else m_handleObj :?> int64
+//                let m_valueObj = if m_handleVal = 0L then null else m_value.GetValue(Convert.ToUInt64(m_handleVal), true, false)
+//                let m_valueVal = if isNull m_valueObj then 0UL else m_valueObj :?> address
+//                let (haveIt,haveVal) = typeInfos.TryGetValue(m_valueVal)
+//                if haveIt then
+//                    haveVal.Value.Add(flaggedAddr)
+//                else
+//                    let clrType = heap.GetObjectType(m_valueVal) // type pointed to by WeakReference instance at address addr
+//                    let typeName = if isNull clrType then Constants.Unknown else clrType.Name
+//                typeInfos.Add(new triple<address,address,string>(flaggedAddr,m_valueVal,typeName))
+//                ()
+//            (null, typeInfos)
+//        with
+//            | exn -> (exn.ToString(),null)
 
     (*** System.Text.StringBuilder *)
 

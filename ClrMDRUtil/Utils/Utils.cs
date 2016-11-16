@@ -46,6 +46,12 @@ namespace ClrMDRIndex
 		}
 
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		public static string MultiAddressString(int addrCount)
+		{
+			return string.Format("\u275A{0}\u275A", Utils.LargeNumberString(addrCount));
+		}
+
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static string AddressStringHeader(ulong addr)
         {
             ulong realAddr = RealAddress(addr);
@@ -2039,6 +2045,18 @@ namespace ClrMDRIndex
 		{
 			var ary = dct.ToArray();
 			Array.Sort(ary, (a, b) => a.Value.Value > b.Value.Value ? -1 : (a.Value.Value < b.Value.Value ? 1 : 0));
+			return ary;
+		}
+
+		public static T[] CopyToArray<T>(T firstItem, IList<T> rest)
+		{
+
+			T[] ary = new T[rest.Count+1];
+			ary[0] = firstItem;
+			for (int i = 0, icnt = rest.Count; i < icnt; ++i)
+			{
+				ary[i + 1] = rest[i];
+			}
 			return ary;
 		}
 

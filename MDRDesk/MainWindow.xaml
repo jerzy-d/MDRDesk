@@ -506,7 +506,7 @@
         </ToolBarTray>
         <TabControl Name="MainTab" Grid.Row="2" HorizontalAlignment="Stretch" Margin="1,1,1,1" VerticalAlignment="Stretch" >
         </TabControl>
-        <StatusBar x:Name="MainStatusBar" Grid.Row="3" HorizontalAlignment="Stretch" Height="36.142" RenderTransformOrigin="0.276,-0.08" Background="#FF767474">
+        <StatusBar x:Name="MainStatusBar" Grid.Row="3" HorizontalAlignment="Stretch" Height="36.142" RenderTransformOrigin="0.276,-0.08" Background="LightGray">
             <StatusBar.ItemsPanel>
                 <ItemsPanelTemplate>
                     <Grid HorizontalAlignment="Stretch">
