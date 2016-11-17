@@ -714,6 +714,71 @@ namespace MDRDesk
 			MainTab.UpdateLayout();
 		}
 
+		private void DisplayListingGrid(ListingInfo info, char prefix, string name, string reportTitle, SWC.MenuItem[] menuItems = null, string filePath = null)
+		{
+			var grid = this.TryFindResource("ListingGrid") as Grid;
+			grid.Name = name + "__" + Utils.GetNewID();
+			Debug.Assert(grid != null);
+			string path;
+			if (filePath == null)
+				path = CurrentIndex != null ? CurrentIndex.DumpPath : CurrentAdhocDump?.DumpPath;
+			else
+				path = filePath;
+			grid.Tag = new Tuple<string, DumpFileMoniker>(reportTitle, new DumpFileMoniker(path));
+			var listView = (ListView)LogicalTreeHelper.FindLogicalNode(grid, "ListingView");
+			GridView gridView = (GridView)listView.View;
+
+			// save data and listing name in listView
+			//
+			listView.Tag = new Tuple<ListingInfo, string>(info, reportTitle);
+
+			for (int i = 0, icnt = info.ColInfos.Length; i < icnt; ++i)
+			{
+				var gridColumn = new GridViewColumn
+				{
+					Header = info.ColInfos[i].Name,
+					DisplayMemberBinding = new Binding(listing<string>.PropertyNames[i]),
+					Width = info.ColInfos[i].Width,
+				};
+				gridView.Columns.Add(gridColumn);
+			}
+
+			listView.Items.Clear();
+			listView.ItemsSource = info.Items;
+			var txtBox = (TextBox)LogicalTreeHelper.FindLogicalNode(grid, "ListingInformation");
+			Debug.Assert(txtBox != null);
+			//TextBox txtBox = new TextBox
+			//{
+			//	HorizontalAlignment = HorizontalAlignment.Stretch,
+			//	VerticalAlignment = SW.VerticalAlignment.Stretch,
+			//	Foreground = Brushes.DarkGreen,
+			//	Text = info.Notes,
+			//	FontWeight = FontWeights.Bold
+			//};
+			//bottomGrid.Children.Add(txtBox);
+
+			if (menuItems == null)
+			{
+				SWC.MenuItem mi = new SWC.MenuItem { Header = "Copy List Row", Tag = listView };
+				menuItems = new SWC.MenuItem[]
+				{
+					mi
+				};
+			}
+			foreach (var menu in menuItems)
+			{
+				menu.Tag = listView;
+				menu.Click += ListViewBottomGridClick;
+			}
+			listView.ContextMenu = new SWC.ContextMenu();
+			listView.ContextMenu.ItemsSource = menuItems;
+
+			var tab = new CloseableTabItem() { Header = prefix + " " + reportTitle, Content = grid, Name = name + Utils.GetNewID() };
+			MainTab.Items.Add(tab);
+			MainTab.SelectedItem = tab;
+			MainTab.UpdateLayout();
+		}
+
 		private void DisplayDependencyNodeGrid(DependencyNode root)
 		{
 			TreeViewItem tvRoot = new TreeViewItem();

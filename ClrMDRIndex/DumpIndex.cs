@@ -1321,18 +1321,17 @@ namespace ClrMDRIndex
 			error = null;
 			try
 			{
-
-				int totalCount;
+				int totalWeakRefCount = 0;
 				var ids = GetTypeIds("System.WeakReference", false);
 				if (ids.Length < 1) return new ListingInfo(Constants.InformationSymbolHeader + "No System.WeakReference instances found.");
 				var indices = new KeyValuePair<int,int[]>[ids.Length];
-				SortedDictionary<int, List<int>> dct = new SortedDictionary<int, List<int>>();
+				var dct = new SortedDictionary<int, Dictionary<int,List<int>>>();
 				var heap = Dump.GetFreshHeap();
 				for (int i = 0, icnt = ids.Length; i < icnt; ++i)
 				{
 					var refs = GetTypeInstanceIndices(ids[i]);
 					if (refs.Length < 1) continue;
-
+					totalWeakRefCount += refs.Length;
 					indices[i] = new KeyValuePair<int, int[]>(ids[i], refs);
 
 					var firstAddr = Utils.RealAddress(_instances[refs[0]]);
@@ -1350,14 +1349,25 @@ namespace ClrMDRIndex
 						var m_valueObj = m_handleVal == 0L ? null : m_valueField.GetValue(Convert.ToUInt64(m_handleVal), true, false);
 						var m_valueVal = m_valueObj == null ? 0UL : (ulong)m_valueObj;
 						var instNdx = GetInstanceIndex(m_valueVal);
-						List<int> lst;
-						if (dct.TryGetValue(instNdx, out lst))
+						var instType = GetTypeId(instNdx);
+						Dictionary<int, List<int>> lst;
+						if (dct.TryGetValue(instType, out lst))
 						{
-							lst.Add(wkRefInstNdx);
+							List<int> l;
+							if (lst.TryGetValue(instNdx, out l))
+							{
+								l.Add(wkRefInstNdx);
+							}
+							else
+							{
+								lst.Add(instNdx,new List<int>() {wkRefInstNdx});
+							}
 						}
 						else
 						{
-							dct.Add(instNdx,new List<int>() {wkRefInstNdx});
+							lst = new Dictionary<int, List<int>>();
+							lst.Add(instNdx,new List<int>() {wkRefInstNdx});
+							dct.Add(instType,lst);
 						}
 					}
 				}
@@ -1366,178 +1376,57 @@ namespace ClrMDRIndex
 				//
 				var dataAry = new string[dct.Count * 3];
 				var infoAry = new listing<string>[dct.Count];
-				int[][] data = new int[dct.Count][];
+				var addrData = new KeyValuePair<ulong,ulong[]>[dct.Count][];
 				int ndx = 0;
 				int off = 0;
 				foreach (var kv in dct)
 				{
-					var objIndex = kv.Key;
-					var wkRefList = kv.Value.ToArray();
-					var ndxData = Utils.CopyToArray(kv.Key, kv.Value);
-					data[ndx] = ndxData;
-					var typeId = _instanceTypes[ndxData[0]];
-					var typeName = _typeNames[typeId];
-					var objAddrStr = Utils.AddressString(_instances[ndxData[0]]);
-					var wkrAddrStr = GetAddressString(kv.Value);
-					dct[kv.Key] = null; // release mem
+					var typeName = GetTypeName(kv.Key);
+					var objDct = kv.Value;
+					var objCount = objDct.Count;
+					int wkRefCount = 0;
+
+					var instAry = new KeyValuePair<ulong, ulong[]>[objCount];
+					int instNdx = 0;
+					foreach (var instKv in objDct)
+					{
+						wkRefCount += instKv.Value.Count;
+						ulong[] wkRefAry = new ulong[instKv.Value.Count];
+						for (int i = 0, icnt = instKv.Value.Count; i < icnt; ++i)
+						{
+							wkRefAry[i] = GetInstanceAddress(instKv.Value[i]);
+						}
+						Utils.SortAddresses(wkRefAry);
+						var instAddr = GetInstanceAddress(instKv.Key);
+						instAry[instNdx] = new KeyValuePair<ulong, ulong[]>(instAddr,wkRefAry);
+					}
+
+					var objCountStr = Utils.LargeNumberString(objCount);
+					var wkRefCountStr = Utils.LargeNumberString(wkRefCount);
 
 					infoAry[ndx] = new listing<string>(dataAry, off, 3);
-					dataAry[off++] = wkrAddrStr;
-					dataAry[off++] = objAddrStr;
+					dataAry[off++] = objCountStr;
+					dataAry[off++] = wkRefCountStr;
 					dataAry[off++] = typeName;
-
+					addrData[ndx] = instAry;
+					++ndx;
 				}
 
 				ColumnInfo[] colInfos = new[]
 					{
-						new ColumnInfo("WeakReference Address", ReportFile.ColumnType.String,100,1,true),
-						new ColumnInfo("Object Address", ReportFile.ColumnType.UInt64,100,2,true),
-						new ColumnInfo("Object Type", ReportFile.ColumnType.UInt64,600,3,true),
-						};
+						new ColumnInfo("Object Count", ReportFile.ColumnType.Int32,100,1,true),
+						new ColumnInfo("WeakReference Count", ReportFile.ColumnType.Int32,100,2,true),
+						new ColumnInfo("Object Type", ReportFile.ColumnType.String,400,3,true),
+					};
 
-				//	Array.Sort(infoAry, ReportFile.GetComparer(colInfos[0]));
+				StringBuilder sb = StringBuilderCache.Acquire(StringBuilderCache.MaxCapacity);
+				sb.AppendLine("WeakReference type: " + string.Empty)
+					.AppendLine("WeakReference Count: " + Utils.LargeNumberString(totalWeakRefCount))
+					.AppendLine("Pointed instances Count: " + Utils.LargeNumberString(0));
+				string descr = StringBuilderCache.GetStringAndRelease(sb);
 
-				//	string descr = "WeakReference Count: " + Utils.CountString(totalCount) + Environment.NewLine
-				//					+ "Pointed instances Count: " + Utils.CountString(objects.Count) + Environment.NewLine;
+				return new ListingInfo(null, infoAry, colInfos, descr, addrData);
 
-				return new ListingInfo(Constants.InformationSymbolHeader + "No System.WeakReference instances found.");
-
-
-				//KeyValuePair<int, ulong[]>[] weakReferenceAddresses = GetTypeWithPrefixAddresses("System.WeakReference", false, out totalCount);
-				//KeyValuePair<int, triple<ulong, ulong, string>[]>[] results = new KeyValuePair<int, triple<ulong, ulong, string>[]>[weakReferenceAddresses.Length];
-
-				//for (int i = 0, icnt = weakReferenceAddresses.Length; i < icnt; ++i)
-				//{
-				//	var addresses = weakReferenceAddresses[i].Value;
-				//	var firstAddr = Utils.RealAddress(addresses[0]);
-
-				//	ClrType weakReferenceType = heap.GetObjectType(firstAddr); // System.WeakReference or System.WeakReference<T>
-				//	ClrInstanceField m_handleField = weakReferenceType.Fields[0];
-				//	object m_handleValue = m_handleField.GetValue(firstAddr, false, false);
-				//	ClrType m_handleType = m_handleField.Type; //  System.IntPtr
-				//	ClrInstanceField m_valueField = m_handleType.Fields[0];
-				//	ulong m_valueValue = (ulong)m_valueField.GetValue((ulong)(long)m_handleValue, true, false);
-				//	ClrType eeferencedType = heap.GetObjectType(m_valueValue); // type this WeakReference points to
-				//	var result = DmpNdxQueries.SpecializedQueries.getWeakReferenceInfos(heap, addresses, m_handleField, m_valueField);
-				//	results[i] = new KeyValuePair<int, triple<ulong, ulong, string>[]>(weakReferenceAddresses[i].Key, result.Item2);
-				//}
-
-				//HashSet<ulong> objects = new HashSet<ulong>();
-				//var objTypes = new SortedDictionary<string, int>(StringComparer.Ordinal);
-				//var objDups = new SortedDictionary<ulong, KeyValuePair<string, int>>();
-
-				//if (weakReferenceAddresses.Length == 1) // only one type of WeakReference
-				//{
-				//	var typeName = GetTypeName(weakReferenceAddresses[0].Key);
-				//	int recCount = results[0].Value.Length;
-				//	var dataAry = new string[recCount * 3];
-				//	var infoAry = new listing<string>[recCount];
-				//	int off = 0;
-				//	for (int i = 0; i < recCount; ++i)
-				//	{
-				//		var rec = results[0].Value[i];
-				//		infoAry[i] = new listing<string>(dataAry, off, 3);
-				//		dataAry[off++] = Utils.AddressString(rec.First);
-				//		dataAry[off++] = Utils.AddressString(rec.Second);
-				//		dataAry[off++] = rec.Third;
-
-				//		// get some stats
-				//		objects.Add(rec.Second);
-				//		KeyValuePair<string, int> kv;
-				//		if (objDups.TryGetValue(rec.Second, out kv))
-				//			objDups[rec.Second] = new KeyValuePair<string, int>(kv.Key, kv.Value + 1);
-				//		else
-				//			objDups.Add(rec.Second, new KeyValuePair<string, int>(rec.Third, 1));
-				//		int objCnt;
-				//		if (objTypes.TryGetValue(rec.Third, out objCnt))
-				//			objTypes[rec.Third] = objCnt + 1;
-				//		else
-				//			objTypes.Add(rec.Third, 1);
-				//	}
-
-				//	ColumnInfo[] colInfos = new[]
-				//	{
-				//		new ColumnInfo("WeakReference Address", ReportFile.ColumnType.UInt64,150,1,true),
-				//		new ColumnInfo("Object Address", ReportFile.ColumnType.UInt64,150,2,true),
-				//		new ColumnInfo("Object Type", ReportFile.ColumnType.UInt64,400,3,true),
-				//	};
-
-				//	Array.Sort(infoAry, ReportFile.GetComparer(colInfos[0]));
-
-				//	var objCountAry = Utils.GetOrderedByValueDesc(objTypes);
-				//	var objDupCountAry = Utils.GetOrderedByValueDesc(objDups);
-
-				//	StringBuilder sb = StringBuilderCache.Acquire(StringBuilderCache.MaxCapacity);
-				//	sb.AppendLine("WeakReference type: " + typeName)
-				//		.AppendLine("WeakReference Count: " + Utils.CountString(recCount))
-				//		.AppendLine("Pointed instances Count: " + Utils.CountString(objects.Count));
-				//	sb.AppendLine("Types top 50");
-				//	for (int i = 0, icnt = Math.Min(50, objCountAry.Length); i < icnt; ++i)
-				//	{
-				//		sb.Append(Utils.CountStringHeader(objCountAry[i].Value));
-				//		sb.AppendLine(objCountAry[i].Key);
-				//	}
-
-				//	sb.AppendLine("Instances duplicates, top 50");
-				//	for (int i = 0, icnt = Math.Min(50, objDupCountAry.Length); i < icnt; ++i)
-				//	{
-				//		sb.Append(Utils.AddressStringHeader(objDupCountAry[i].Key));
-				//		sb.Append(Utils.CountStringHeader(objDupCountAry[i].Value.Value));
-				//		sb.AppendLine(objDupCountAry[i].Value.Key);
-				//	}
-
-				//	string descr = StringBuilderCache.GetStringAndRelease(sb);
-
-				//	return new ListingInfo(null, infoAry, colInfos, descr);
-				//}
-				//else
-				//{
-				//	var dataAry = new string[totalCount * 4];
-				//	var infoAry = new listing<string>[totalCount];
-				//	for (int i = 0, icnt = weakReferenceAddresses.Length; i < icnt; ++i)
-				//	{
-				//		var typeName = GetTypeName(weakReferenceAddresses[i].Key);
-				//		int recCount = results[i].Value.Length;
-				//		int off = 0;
-				//		for (int j = 0; j < recCount; ++j)
-				//		{
-				//			var rec = results[i].Value[j];
-				//			infoAry[i] = new listing<string>(dataAry, off, 4);
-				//			dataAry[off++] = Utils.AddressString(rec.First);
-				//			dataAry[off++] = typeName;
-				//			dataAry[off++] = Utils.AddressString(rec.Second);
-				//			dataAry[off++] = rec.Third;
-
-				//			// get some stats
-				//			objects.Add(rec.Second);
-				//			KeyValuePair<string, int> kv;
-				//			if (objDups.TryGetValue(rec.Second, out kv))
-				//				objDups[rec.Second] = new KeyValuePair<string, int>(kv.Key, kv.Value + 1);
-				//			else
-				//				objDups.Add(rec.Second, new KeyValuePair<string, int>(rec.Third, 1));
-				//			int objCnt;
-				//			if (objTypes.TryGetValue(rec.Third, out objCnt))
-				//				objTypes[rec.Third] = objCnt + 1;
-				//			else
-				//				objTypes.Add(rec.Third, 1);
-				//		}
-				//	}
-
-				//	ColumnInfo[] colInfos = new[]
-				//		{
-				//		new ColumnInfo("WeakReference Address", ReportFile.ColumnType.UInt64,100,1,true),
-				//		new ColumnInfo("WeakReference Type", ReportFile.ColumnType.UInt64,300,2,true),
-				//		new ColumnInfo("Object Address", ReportFile.ColumnType.UInt64,100,3,true),
-				//		new ColumnInfo("Object Type", ReportFile.ColumnType.UInt64,400,4,true),
-				//		};
-
-				//	Array.Sort(infoAry, ReportFile.GetComparer(colInfos[0]));
-
-				//	string descr = "WeakReference Count: " + Utils.CountString(totalCount) + Environment.NewLine
-				//					+ "Pointed instances Count: " + Utils.CountString(objects.Count) + Environment.NewLine;
-				//	return new ListingInfo(null, infoAry, colInfos, descr);
-
-				//}
 			}
 			catch (Exception ex)
 			{

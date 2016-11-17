@@ -8,6 +8,7 @@ using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Diagnostics.Runtime;
 using ClrMDRIndex;
@@ -129,6 +130,23 @@ namespace UnitTestMdr
 			var v2 = iheap2.Dump();
 
 		}
+
+
+		[TestMethod]
+		public void TestThisLocking()
+		{
+			var lou = new Lou();
+
+			var t1 = new Thread(lou.LockingMethod);
+			t1.Start();
+			Thread.Sleep(1000);
+			var t2 = new Thread(lou.RegularMethod);
+			t2.Start();
+
+			t2.Join();
+			t1.Join();
+		}
+
 
 		[TestMethod]
 		public void TestUtilsMethods()

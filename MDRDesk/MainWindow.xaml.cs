@@ -462,7 +462,9 @@ namespace MDRDesk
 				return;
 			}
 
-			DisplayListViewBottomGrid(result, Constants.BlackDiamond, ReportNameWeakReferenceInfo, ReportTitleWeakReferenceInfo);
+//			DisplayListViewBottomGrid(result, Constants.BlackDiamond, ReportNameWeakReferenceInfo, ReportTitleWeakReferenceInfo);
+
+			DisplayListingGrid(result, Constants.BlackDiamond, ReportNameWeakReferenceInfo, ReportTitleWeakReferenceInfo);
 		}
 
 		private void IndexGetSizeInformationClicked(object sender, RoutedEventArgs e)
