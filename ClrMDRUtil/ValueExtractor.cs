@@ -4,6 +4,7 @@ using System.Diagnostics;
 using System.Globalization;
 using System.Linq;
 using System.Net.NetworkInformation;
+using System.Runtime.CompilerServices;
 using System.Text;
 using System.Threading.Tasks;
 using Microsoft.Diagnostics.Runtime;
@@ -27,6 +28,96 @@ namespace ClrMDRIndex
 		SystemObject = 12,
 		System__Canon = 13,
 		Interface = 14,
+	}
+
+	[Flags]
+	public enum TypeKind : uint
+	{
+		// LSB -- ClrElementType values
+		Unknown = 0,
+		Boolean = 2,
+		Char = 3,
+		Int8 = 4,
+		UInt8 = 5,
+		Int16 = 6,
+		UInt16 = 7,
+		Int32 = 8,
+		UInt32 = 9,
+		Int64 = 10,
+		UInt64 = 11,
+		Float = 12,
+		Double = 13,
+		String = 14,
+		Pointer = 15,
+		Struct = 17,
+		Class = 18,
+		Array = 20,
+		NativeInt = 24,
+		NativeUInt = 25,
+		FunctionPointer = 27,
+		Object = 28,
+		SZArray = 29,
+
+		// second LSB top level kinds
+		ReferenceK =	0x00000100,
+		StructK =		0x00000200,
+		PrimitiveK =	0x00000300,
+		EnumK =			0x00000400,
+		StringK =		0x00000500,
+		ArrayK =		0x00000600,
+		InterfaceK =	0x00000700,
+
+		// 2 MSB more detailed info
+		Decimal =		0x00010000,
+		DateTime =		0x00020000,
+		TimeSpan =		0x00030000,
+		Guid =			0x00040000,
+		Exception =		0x00050000,
+		SystemObject =	0x00060000,
+		System__Canon = 0x00070000,
+
+		ClrElementTypeMask =		0x000000FF,
+		MainTypeKindMask =			0x0000FF00,
+		ParticularTypeKindMask =	0xFFFF0000,
+	}
+
+	public class TypeKinds
+	{
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		public static ClrElementType GetClrElementType(TypeKind kind)
+		{
+			return (ClrElementType) (kind & TypeKind.ClrElementTypeMask);
+		}
+
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		public static TypeKind SetClrElementType(TypeKind kind, ClrElementType elemType)
+		{
+			return (kind | (TypeKind)elemType);
+		}
+
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		public static TypeKind GetMainTypeKind(TypeKind kind)
+		{
+			return (kind & TypeKind.ClrElementTypeMask);
+		}
+
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		public static TypeKind SetMainTypeKind(TypeKind outKind, TypeKind kind)
+		{
+			return (outKind | kind);
+		}
+
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		public static TypeKind GetParticularTypeKind(TypeKind kind)
+		{
+			return (kind & TypeKind.ParticularTypeKindMask);
+		}
+
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		public static TypeKind SetParticularTypeKind(TypeKind outKind, TypeKind kind)
+		{
+			return (outKind | kind);
+		}
 	}
 
 	public struct TypeCategories
@@ -200,6 +291,7 @@ namespace ClrMDRIndex
 
 		private const ulong TicksMask = 0x3FFFFFFFFFFFFFFF;
 
+		// TODO JRD -- skipping firs entry in array
 		public static string GetDateTimeValue(ulong addr, ClrType type, string formatSpec = null)
 		{
 			var data = (ulong)type.Fields[0].GetValue(addr);
@@ -208,6 +300,22 @@ namespace ClrMDRIndex
 			return formatSpec == null ? dt.ToString(CultureInfo.InvariantCulture) : dt.ToString(formatSpec);
 		}
 
+		static byte[] _bytes = new byte[8];
+		public static string GetDateTimeValue(ClrHeap heap, ulong addr, string formatSpec = null)
+		{
+			var read = heap.ReadMemory(addr, _bytes, 0, 8);
+			ulong data = BitConverter.ToUInt64(_bytes, 0);
+			data = data & TicksMask;
+			try // might throw on bad data
+			{
+				var dt = DateTime.FromBinary((long)data);
+				return formatSpec == null ? dt.ToString(CultureInfo.InvariantCulture) : dt.ToString(formatSpec);
+			}
+			catch (Exception)
+			{
+				return formatSpec == null ? DateTime.MinValue.ToString(CultureInfo.InvariantCulture) : DateTime.MinValue.ToString(formatSpec);
+			}
+		}
 
 		public static string GetDateTimeValue(ulong addr, ClrInstanceField fld, bool internalPtr, string formatSpec = null)
 		{
@@ -221,7 +329,7 @@ namespace ClrMDRIndex
 		//
 		// System.TimeSpan
 		//
-
+		// TODO JRD -- skipping first entry in arrays
 		public static string GetTimeSpanValue(ulong addr, ClrType type)
 		{
 			var data = (long)type.Fields[0].GetValue(addr);
@@ -240,7 +348,7 @@ namespace ClrMDRIndex
 		//
 		// System.Guid
 		//
-
+		// TODO JRD -- bad
 		public static string GetGuidValue(ulong addr, ClrType type)
 		{
 			StringBuilder sb = StringBuilderCache.Acquire(64);

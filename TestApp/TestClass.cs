@@ -17,6 +17,7 @@ namespace TestApp
         private Dictionary<int, string> _dictionary;
 	    private TestStruct _testStruct;
 
+		private string[] _stringArray;
 		private TimeSpan[] _timeSpanArray;
 		private DateTime[] _dateTimeArray;
 		private Guid[] _guidArray;
@@ -33,6 +34,7 @@ namespace TestApp
 				new KeyValuePair<string, KeyValuePair<DateTime, TestStructClass>>(name + "key",new KeyValuePair<DateTime, TestStructClass>(DateTime.Now, testStructClass));
 			_testStruct = new TestStruct(name + "_fromTestClass",20,kvPair);
 
+			_stringArray = new string[StructArrayLen];
 			_timeSpanArray = new TimeSpan[StructArrayLen];
 			_dateTimeArray = new DateTime[StructArrayLen];
 			_guidArray = new Guid[StructArrayLen];
@@ -42,6 +44,7 @@ namespace TestApp
 			decimal dec = 0.5m;
 			for (int i = 0; i < StructArrayLen; ++i)
 			{
+				_stringArray[i] = "_stringArrayItem_" + i;
 				_timeSpanArray[i] = new TimeSpan(1,1,1,i);
 				dt = dt + tmDelta;
 				_dateTimeArray[i] = dt;

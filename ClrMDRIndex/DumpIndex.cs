@@ -1318,9 +1318,11 @@ namespace ClrMDRIndex
 
 		public ListingInfo GetWeakReferenceInfo(out string error)
 		{
+			Stopwatch stopWatch = new Stopwatch();
 			error = null;
 			try
 			{
+				stopWatch.Start();
 				int totalWeakRefCount = 0;
 				var ids = GetTypeIds("System.WeakReference", false);
 				if (ids.Length < 1) return new ListingInfo(Constants.InformationSymbolHeader + "No System.WeakReference instances found.");
@@ -1371,6 +1373,9 @@ namespace ClrMDRIndex
 						}
 					}
 				}
+
+				var durationGetDataFromHeap = Utils.StopAndGetDurationString(stopWatch);
+				stopWatch.Restart();
 
 				// format data and prepare report listing
 				//
@@ -1424,6 +1429,8 @@ namespace ClrMDRIndex
 					.AppendLine("WeakReference Count: " + Utils.LargeNumberString(totalWeakRefCount))
 					.AppendLine("Pointed instances Count: " + Utils.LargeNumberString(0));
 				string descr = StringBuilderCache.GetStringAndRelease(sb);
+
+				var durationFomattingData = Utils.StopAndGetDurationString(stopWatch);
 
 				return new ListingInfo(null, infoAry, colInfos, descr, addrData);
 
