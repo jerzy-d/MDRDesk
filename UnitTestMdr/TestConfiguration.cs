@@ -36,7 +36,7 @@ namespace UnitTestMdr
 						Error = error;
 						return false;
 					}
-					if (!GetConfigTestData()) return false;
+//					if (!GetConfigTestData()) return false;
 					SettingsConfigured = true;
 					return true;
 				}
