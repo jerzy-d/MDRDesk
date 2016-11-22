@@ -30,7 +30,7 @@ namespace UnitTestMdr
 		private const int NOTIFYING = 2;
 		private const int NOTIFYINGCOMPLETE = 3;
 
-		private const string _dumpPath = @"D:\Jerzy\WinDbgStuff\dumps\TestApp\TestApp.exe_161118_104348.dmp";
+		private const string _dumpPath = @"C:\WinDbgStuff\Dumps\TestApp\TestApp.exe_161118_202111.dmp";
 
 
 		#endregion Fields/Properties
@@ -1599,7 +1599,7 @@ namespace UnitTestMdr
 		[TestMethod]
 		public void TestGetTimespanArrayContent()
 		{
-			ulong aryAddr = 0x2d3f770;
+			ulong aryAddr = 0x00001ab0000f700;
 			var dmp = GetDump(_dumpPath);
 			using (dmp)
 			{
@@ -1609,7 +1609,7 @@ namespace UnitTestMdr
 				string[] strings = new string[result.Item4];
 				for (int i = 0, icnt = result.Item4; i < icnt; ++i)
 				{
-					strings[i] = CollectionContent.aryElemTimespan(heap, aryAddr, result.Item2, result.Item3, i);
+					strings[i] = CollectionContent.aryElemTimespanR(heap, aryAddr, result.Item2, result.Item3, i);
 				}
 				Assert.IsTrue(NoNullEntries(strings));
 			}
@@ -1618,7 +1618,7 @@ namespace UnitTestMdr
 		[TestMethod]
 		public void TestGetGuidArrayContent()
 		{
-			ulong aryAddr = 0x2d3f850;
+			ulong aryAddr = 0x00001ab0000f7e0;
 			var dmp = GetDump(_dumpPath);
 			using (dmp)
 			{
@@ -2000,15 +2000,15 @@ namespace UnitTestMdr
 		#region Threads/Sync Objects
 
 		[TestMethod]
-		public void TestGetThreadTraces()
+		public void TestGetThreadTraces0()
 		{
 			string error = null;
 			using (var clrDump = GetDump())
 			{
 				var sb = StringBuilderCache.Acquire(StringBuilderCache.MaxCapacity);
+				var fileMoniker = new DumpFileMoniker(Setup.RecentDumpList[0]);
 				StreamWriter wr = null;
-				var path = TestConfiguration.OutPath0 + clrDump.DumpFileName + ".THREADTRACES.txt";
-				wr = new StreamWriter(path);
+				wr = new StreamWriter(fileMoniker.OutputFolder + Path.DirectorySeparatorChar + "THREADTRACES.txt");
 				var stackTraceLst = new List<ClrStackFrame>();
 				try
 				{
@@ -2074,6 +2074,46 @@ namespace UnitTestMdr
 						wr.WriteLine(sb.ToString());
 					}
 
+				}
+				catch (Exception ex)
+				{
+					error = Utils.GetExceptionErrorString(ex);
+					Assert.IsTrue(false, error);
+				}
+				finally
+				{
+					StringBuilderCache.Release(sb);
+					wr?.Close();
+				}
+			}
+		}
+
+		[TestMethod]
+		public void TestGetThreadTraces()
+		{
+			string error = null;
+			using (var clrDump = GetDump())
+			{
+				var sb = StringBuilderCache.Acquire(StringBuilderCache.MaxCapacity);
+				var fileMoniker = new DumpFileMoniker(Setup.RecentDumpList[0]);
+				StreamWriter wr = null;
+				wr = new StreamWriter(fileMoniker.OutputFolder + Path.DirectorySeparatorChar + "THREADINFOS.txt");
+				try
+				{
+					ClrRuntime runtime = clrDump.Runtimes[0];
+					var stackTraceLst = new List<ClrStackFrame>();
+					var thInfos = new  KeyValuePair<ClrThread, ClrStackFrame[]>[runtime.Threads.Count];
+					int ndx = 0;
+					foreach (var th in runtime.Threads)
+					{
+						stackTraceLst.Clear();
+						foreach (var trace in th.EnumerateStackTrace())
+						{
+							stackTraceLst.Add(trace);
+						}
+						thInfos[ndx++] = new KeyValuePair<ClrThread, ClrStackFrame[]>(th,stackTraceLst.ToArray());
+					}
+					Assert.IsTrue(thInfos.Length > 0);
 				}
 				catch (Exception ex)
 				{
@@ -4515,7 +4555,8 @@ namespace UnitTestMdr
 		private ClrtDump GetDump()
 		{
 			string error;
-			var clrDump = OpenCrashDump(TestConfiguration.DumpPath0, out error);
+			Assert.IsTrue(Setup.RecentDumpList.Count>0);
+			var clrDump = OpenCrashDump(Setup.RecentDumpList[0], out error);
 			Assert.IsTrue(clrDump != null, error);
 			return clrDump;
 		}

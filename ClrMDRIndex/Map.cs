@@ -2249,7 +2249,7 @@ namespace ClrMDRIndex
 				new ColumnInfo("Type", ReportFile.ColumnType.String,500,6,true),
 			};
 
-			Array.Sort(dataListing, ReportFile.GetComparer(colInfos[4]));
+			Array.Sort(dataListing, new ListingNumCmpDesc(4));
 
 			var otherDmpName = Path.GetFileName(otherDumpPath);
 			StringBuilder sb = new StringBuilder(512);

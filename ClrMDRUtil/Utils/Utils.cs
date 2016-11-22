@@ -2062,11 +2062,6 @@ namespace ClrMDRIndex
 
 		#region Errors Formatting
 
-		public static bool IsInformationString(string str)
-		{
-			return (!string.IsNullOrEmpty(str) && str[0] == Constants.InformationSymbol) ? true : false;
-		}
-
 		public static string GetErrorString(string caption, string heading, string text, string details=null)
 		{
 			return (caption ?? string.Empty) + Constants.HeavyGreekCrossPadded
@@ -2084,6 +2079,11 @@ namespace ClrMDRIndex
 			       + ex.StackTrace; // details;
 		}
 
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		public static bool IsInformation(string str)
+		{
+			return !string.IsNullOrEmpty(str) && (str[0] == Constants.InformationSymbol);
+		}
 
 		//public static string ToRoman(int number)
 		//{
@@ -2141,11 +2141,6 @@ namespace ClrMDRIndex
 			return false;
 		}
 
-		[MethodImpl(MethodImplOptions.AggressiveInlining)]
-		public static bool IsInformation(string str)
-		{
-			return !string.IsNullOrEmpty(str) && (str[0]==Constants.InformationSymbol);
-		}
 
 		/// <summary>
 		/// Return an empty array to avoid unnecessary memory allocation.

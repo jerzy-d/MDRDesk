@@ -34,8 +34,6 @@ namespace ClrMDRIndex
 			_fieldNdx = fldNdx;
 		}
 
-
-
 	    public void Addvalue(InstanceValue val)
 	    {
 	        _values.Add(val);
@@ -60,6 +58,29 @@ namespace ClrMDRIndex
 	    }
 	}
 
+
+	public interface IGetKey<T>
+	{
+		T GetKey();
+	}
+
+	public class InstanceValueAndAncestors : IGetKey<Tuple<ulong,int>>
+	{
+		public InstanceValue Instance { get; private set; }
+		public AncestorDispRecord[] Ancestors { get; private set; }
+
+		public InstanceValueAndAncestors(InstanceValue instance, AncestorDispRecord[] ancestors)
+		{
+			Instance = instance;
+			Ancestors = ancestors;
+		}
+
+		public Tuple<ulong, int> GetKey()
+		{
+			return new Tuple<ulong, int>(Instance.Address,Instance.FieldIndex);
+		}
+	}
+
 	internal class InstanceValueFieldCmp : IComparer<InstanceValue>
 	{
 		public int Compare(InstanceValue a, InstanceValue b)
@@ -69,5 +90,33 @@ namespace ClrMDRIndex
 				? string.Compare(a.TypeName, b.TypeName, StringComparison.Ordinal)
 				: cmp;
 		}
+	}
+
+	internal class InstanceHierarchyInfoEqCmp : IEqualityComparer<Tuple<InstanceValue, AncestorDispRecord[]>>
+	{
+		public bool Equals(Tuple<InstanceValue, AncestorDispRecord[]> b1, Tuple<InstanceValue, AncestorDispRecord[]> b2)
+		{
+			return b1.Item1.Address == b2.Item1.Address;
+		}
+
+		public int GetHashCode(Tuple<InstanceValue, AncestorDispRecord[]> bx)
+		{
+			return bx.Item1.Address.GetHashCode();
+		}
+
+	}
+
+	public class InstanceHierarchyKeyEqCmp : IEqualityComparer<Tuple<ulong,int>>
+	{
+		public bool Equals(Tuple<ulong,int> b1, Tuple<ulong,int> b2)
+		{
+			return b1.Item1 == b2.Item1 && b1.Item2 == b2.Item2;
+		}
+
+		public int GetHashCode(Tuple<ulong,int> bx)
+		{
+			return bx.Item1.GetHashCode()^bx.Item2.GetHashCode();
+		}
+
 	}
 }

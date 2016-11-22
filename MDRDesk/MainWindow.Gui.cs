@@ -1,12 +1,15 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Data;
 using System.Diagnostics;
 using System.Drawing;
 using System.Globalization;
+using System.Linq;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Data;
 using System.Windows.Documents;
 using System.Windows.Input;
 using Microsoft.Diagnostics.Runtime;
@@ -60,6 +63,7 @@ namespace MDRDesk
 		private const string GridReversedNameTypeView = "ReversedNameTypeView";
 
 		private const string GridFinalizerQueue = "FinalizerQueueGrid";
+		private const string WeakReferenceViewGrid = "WeakReferenceViewGrid";
 		private const string FinalizerQueueListView = "FinalizerQueueListView";
 		private const string FinalizerQueAddrListBox = "FinalizerQueAddresses";
 		private const string FinalizerQueTextBox = "FinalizerQueTextBox";
@@ -87,6 +91,14 @@ namespace MDRDesk
 		#endregion grids
 
 		#region Display Grids
+
+		private void DisplayTab(char prefix, string reportTitle, Grid grid, string name)
+		{
+			var tab = new CloseableTabItem() { Header = prefix + " " + reportTitle, Content = grid, Name = name + Utils.GetNewID() };
+			MainTab.Items.Add(tab);
+			MainTab.SelectedItem = tab;
+			MainTab.UpdateLayout();
+		}
 
 		/// <summary>
 		/// Show information about the crash dump.
@@ -232,6 +244,9 @@ namespace MDRDesk
 			Debug.Assert(nsCountLabel != null);
 			nsCountLabel.Content = Utils.LargeNumberString(namespaces.Length);
 			var tab = new CloseableTabItem() { Header = Constants.BlackDiamond + " Types", Content = grid, Name = "HeapIndexTypeViewTab" };
+			var addressList = (ListBox)LogicalTreeHelper.FindLogicalNode(grid, @"lbTypeNamespaceAddresses");
+			Debug.Assert(addressList!=null);
+			addressList.ContextMenu.Tag = addressList;
 			MainTab.Items.Add(tab);
 			MainTab.SelectedItem = tab;
 			MainTab.UpdateLayout();
@@ -288,6 +303,11 @@ namespace MDRDesk
 			var lab = (Label)LogicalTreeHelper.FindLogicalNode(grid, "lTypeCount");
 			Debug.Assert(lab != null);
 			lab.Content = "type count: " + string.Format("{0:#,###}", CurrentIndex.UsedTypeCount);
+
+			var addressList = (ListBox)LogicalTreeHelper.FindLogicalNode(grid, @"lbTypeNameAddresses");
+			Debug.Assert(addressList != null);
+			addressList.ContextMenu.Tag = addressList;
+
 			var tab = new CloseableTabItem() { Header = Constants.BlackDiamond + " Types", Content = grid, Name = "HeapIndexTypeViewTab" };
 			MainTab.Items.Add(tab);
 			MainTab.SelectedItem = tab;
@@ -635,16 +655,63 @@ namespace MDRDesk
 			grid.Tag = finlQue;
 			var listView = (ListView)LogicalTreeHelper.FindLogicalNode(grid, FinalizerQueueListView);
 			Debug.Assert(listView != null);
+			listView.Tag = new bool[] {false, false, true}; // column current sorting
 			listView.Items.Clear();
 			listView.ItemsSource = finlQue.Items;
 
 			var txtBox = (TextBox)LogicalTreeHelper.FindLogicalNode(grid, FinalizerQueTextBox);
 			Debug.Assert(txtBox != null);
 			txtBox.Text = finlQue.Information;
+
+			var lstBoxObjs = (ListBox)LogicalTreeHelper.FindLogicalNode(grid, "FinalizerQueAddresses");
+			Debug.Assert(lstBoxObjs != null);
+			lstBoxObjs.ContextMenu.Tag = lstBoxObjs;
+
 			var tab = new CloseableTabItem() { Header = Constants.BlackDiamondPadded + "Finalization", Content = grid, Name = grid.Name + "_tab" };
 			MainTab.Items.Add(tab);
 			MainTab.SelectedItem = tab;
 			MainTab.UpdateLayout();
+			listView.SelectedItem = 0;
+		}
+
+		private void FinalizerQueueSelectionChanged(object sender, SelectionChangedEventArgs e)
+		{
+			ListView listView = sender as ListView;
+			Debug.Assert(listView != null);
+			if (listView.SelectedItem != null)
+			{
+				var listItem = listView.SelectedItem as FinalizerQueueDisplayableItem;
+				Debug.Assert(listItem != null);
+				var grid = GetCurrentTabGrid();
+				Debug.Assert(grid != null);
+				var listBox = (ListBox)LogicalTreeHelper.FindLogicalNode(grid, "FinalizerQueAddresses");
+				Debug.Assert(listBox != null);
+				listBox.ItemsSource = listItem.Addresses;
+				listBox.SelectedIndex = 0;
+			}
+		}
+
+		private void FinalizerQueueViewHeaderClick(object sender, RoutedEventArgs e)
+		{
+			GridViewColumnHeader column = e.OriginalSource as GridViewColumnHeader;
+			if (column == null) return;
+			if (column.Role == GridViewColumnHeaderRole.Padding) return;
+			string colName = column.Column.Header.ToString();
+			var listView = sender as ListView;
+			if (listView == null) return;
+			var aryToSort = listView.ItemsSource as FinalizerQueueDisplayableItem[];
+			Debug.Assert(aryToSort!=null);
+			if (aryToSort.Length < 2) return;
+			int colNdx = Utils.SameStrings(colName, "Total Count")
+				? 0
+				: (Utils.SameStrings(colName, "Unrooted Count") ? 1 : 2);
+			var sorts = listView.Tag as bool[];
+			sorts[colNdx] = !sorts[colNdx];
+			Array.Sort(aryToSort,new FinalizerQueueDisplayableItemCmp(colNdx,sorts[colNdx]));
+			listView.ItemsSource = aryToSort;
+			ICollectionView dataView = CollectionViewSource.GetDefaultView(listView.ItemsSource);
+			dataView.Refresh();
+			return;
 		}
 
 		#endregion Finalizer Queue
@@ -707,11 +774,7 @@ namespace MDRDesk
 			}
 			listView.ContextMenu = new SWC.ContextMenu();
 			listView.ContextMenu.ItemsSource = menuItems;
-
-			var tab = new CloseableTabItem() { Header = prefix + " " + reportTitle, Content = grid, Name = name + Utils.GetNewID() };
-			MainTab.Items.Add(tab);
-			MainTab.SelectedItem = tab;
-			MainTab.UpdateLayout();
+			DisplayTab(prefix, reportTitle, grid, name);
 		}
 
 		private void DisplayListingGrid(ListingInfo info, char prefix, string name, string reportTitle, SWC.MenuItem[] menuItems = null, string filePath = null)
@@ -747,15 +810,6 @@ namespace MDRDesk
 			listView.ItemsSource = info.Items;
 			var txtBox = (TextBox)LogicalTreeHelper.FindLogicalNode(grid, "ListingInformation");
 			Debug.Assert(txtBox != null);
-			//TextBox txtBox = new TextBox
-			//{
-			//	HorizontalAlignment = HorizontalAlignment.Stretch,
-			//	VerticalAlignment = SW.VerticalAlignment.Stretch,
-			//	Foreground = Brushes.DarkGreen,
-			//	Text = info.Notes,
-			//	FontWeight = FontWeights.Bold
-			//};
-			//bottomGrid.Children.Add(txtBox);
 
 			if (menuItems == null)
 			{
@@ -773,12 +827,122 @@ namespace MDRDesk
 			listView.ContextMenu = new SWC.ContextMenu();
 			listView.ContextMenu.ItemsSource = menuItems;
 
-			var tab = new CloseableTabItem() { Header = prefix + " " + reportTitle, Content = grid, Name = name + Utils.GetNewID() };
-			MainTab.Items.Add(tab);
-			MainTab.SelectedItem = tab;
-			MainTab.UpdateLayout();
+			DisplayTab(prefix, reportTitle, grid, name);
+			//var tab = new CloseableTabItem() { Header = prefix + " " + reportTitle, Content = grid, Name = name + Utils.GetNewID() };
+			//MainTab.Items.Add(tab);
+			//MainTab.SelectedItem = tab;
+			//MainTab.UpdateLayout();
 		}
 
+		#region weakreference
+
+		private void DisplayWeakReferenceGrid(ListingInfo info, char prefix, string name, string reportTitle, SWC.MenuItem[] menuItems = null, string filePath = null)
+		{
+			var mainGrid = this.TryFindResource("WeakReferenceViewGrid") as Grid;
+			Debug.Assert(mainGrid != null);
+			mainGrid.Name = name + "__" + Utils.GetNewID();
+			string path;
+			if (filePath == null)
+				path = CurrentIndex != null ? CurrentIndex.DumpPath : CurrentAdhocDump?.DumpPath;
+			else
+				path = filePath;
+
+			var grid = (Grid)LogicalTreeHelper.FindLogicalNode(mainGrid, "WeakReferenceGrid");
+
+			grid.Tag = new Tuple<string, DumpFileMoniker>(reportTitle, new DumpFileMoniker(path));
+			var listView = (ListView)LogicalTreeHelper.FindLogicalNode(grid, "WeakReferenceView");
+			GridView gridView = (GridView)listView.View;
+
+			// save data and listing name in listView
+			//
+			listView.Tag = new Tuple<ListingInfo, string>(info, reportTitle);
+
+			for (int i = 0, icnt = info.ColInfos.Length; i < icnt; ++i)
+			{
+				var gridColumn = new GridViewColumn
+				{
+					Header = info.ColInfos[i].Name,
+					DisplayMemberBinding = new Binding(listing<string>.PropertyNames[i]),
+					Width = info.ColInfos[i].Width,
+				};
+				gridView.Columns.Add(gridColumn);
+			}
+
+			listView.Items.Clear();
+			listView.ItemsSource = info.Items;
+			var txtBox = (TextBox)LogicalTreeHelper.FindLogicalNode(grid, "WeakReferenceInformation");
+			Debug.Assert(txtBox != null);
+			txtBox.Text = info.Notes;
+			if (menuItems == null)
+			{
+				SWC.MenuItem mi = new SWC.MenuItem { Header = "Copy List Row", Tag = listView };
+				menuItems = new SWC.MenuItem[]
+				{
+					mi
+				};
+			}
+			foreach (var menu in menuItems)
+			{
+				menu.Tag = listView;
+				menu.Click += ListViewBottomGridClick;
+			}
+			listView.ContextMenu = new SWC.ContextMenu();
+			listView.ContextMenu.ItemsSource = menuItems;
+			listView.ContextMenu.Tag = listView;
+
+			var lstBoxObjs = (ListBox)LogicalTreeHelper.FindLogicalNode(mainGrid, "WeakReferenceObjectAddresses");
+			Debug.Assert(lstBoxObjs != null);
+			lstBoxObjs.ContextMenu.Tag = lstBoxObjs;
+			var lstBoxRoots = (ListBox)LogicalTreeHelper.FindLogicalNode(mainGrid, "WeakReferenceRootAddresses");
+			Debug.Assert(lstBoxRoots != null);
+			lstBoxRoots.ContextMenu.Tag = lstBoxRoots;
+
+
+			DisplayTab(prefix, reportTitle, mainGrid, name);
+			listView.SelectedIndex = 0;
+		}
+
+		private void WeakReferenceViewSelectionChanged(object sender, SelectionChangedEventArgs e)
+		{
+			ListView listView = sender as ListView;
+			Debug.Assert(listView != null);
+			if (listView.SelectedItem != null)
+			{
+				var listItem = (listing<string>) listView.SelectedItem;
+				int ndx = listItem.Offset/listItem.Count;
+				var dataInfo = listView.Tag as Tuple<ListingInfo, string>;
+				Debug.Assert(dataInfo!=null);
+				var data = dataInfo.Item1.Data as KeyValuePair <ulong,ulong[]>[][];
+				Debug.Assert(data != null);
+				var grid = GetCurrentTabGrid();
+				Debug.Assert(grid != null);
+				var listBox = (ListBox)LogicalTreeHelper.FindLogicalNode(grid, "WeakReferenceObjectAddresses");
+				Debug.Assert(listBox != null);
+				listBox.Tag = new Tuple<KeyValuePair<ulong, ulong[]>[][], int>(data,ndx);
+				listBox.ItemsSource = data[ndx].Select((a)=> a.Key);
+				listBox.SelectedIndex = 0;
+			}
+		}
+
+		private void WeakReferenceObjectAddressesChanged(object sender, SelectionChangedEventArgs e)
+		{
+			ListBox lb = sender as ListBox;
+			Debug.Assert(lb != null);
+			if (lb.SelectedIndex >= 0)
+			{
+				var selInfo = lb.Tag as Tuple<KeyValuePair<ulong, ulong[]>[][], int>;
+				Debug.Assert(selInfo != null);
+				var grid = GetCurrentTabGrid();
+				Debug.Assert(grid != null);
+				var listBox = (ListBox) LogicalTreeHelper.FindLogicalNode(grid, "WeakReferenceRootAddresses");
+				Debug.Assert(listBox != null);
+				listBox.ItemsSource = selInfo.Item1[selInfo.Item2][lb.SelectedIndex].Value;
+			}
+
+		}
+
+		#endregion weakreference
+		
 		private void DisplayDependencyNodeGrid(DependencyNode root)
 		{
 			TreeViewItem tvRoot = new TreeViewItem();
@@ -1040,13 +1204,13 @@ namespace MDRDesk
 
 		#region Instance Hierarchy Traversing
 
-		private void DisplayInstanceHierarchyGrid(Tuple<InstanceValue, AncestorDispRecord[]> instanceInfo)
+		private void DisplayInstanceHierarchyGrid(InstanceValueAndAncestors instanceInfo)
 		{
 			var mainGrid = this.TryFindResource("InstanceHierarchyGrid") as Grid;
 			Debug.Assert(mainGrid != null);
 			mainGrid.Name = "InstanceHierarchyGrid__" + Utils.GetNewID();
-			var undoRedoList = new UndoRedoList<Tuple<InstanceValue, AncestorDispRecord[]>>(new InstanceHierarchyInfoEqCmp());
-			undoRedoList.AddToUndo(instanceInfo);
+			var undoRedoList = new UndoRedoList<InstanceValueAndAncestors,Tuple<ulong,int>>(new InstanceHierarchyKeyEqCmp());
+			undoRedoList.Add(instanceInfo);
 			mainGrid.Tag = undoRedoList;
 			TreeViewItem root;
 			var ancestorList = UpdateInstanceHierarchyGrid(instanceInfo, mainGrid, out root);
@@ -1059,22 +1223,20 @@ namespace MDRDesk
 			root.BringIntoView();
 		}
 
-		private ListBox UpdateInstanceHierarchyGrid(Tuple<InstanceValue, AncestorDispRecord[]> instanceInfo, Grid mainGrid, out TreeViewItem tvRoot)
+		private ListBox UpdateInstanceHierarchyGrid(InstanceValueAndAncestors instanceInfo, Grid mainGrid, out TreeViewItem tvRoot)
 		{
-			InstanceValue instVal = instanceInfo.Item1;
+			InstanceValue instVal = instanceInfo.Instance;
 			var stackPanel = new StackPanel() { Orientation = Orientation.Horizontal };
-			// var image = new Image() { Source = @"C:\projects\csharp\MDRDesk\MDRDesk\Images\Structure_grey_16x.png" };
 			var textBlk = new TextBlock();
 			textBlk.Inlines.Add(instVal.ToString());
 			stackPanel.Children.Add(textBlk);
 			tvRoot = new TreeViewItem
 			{
-
 				Header = GetInstanceValueStackPanel(instVal),
 				Tag = instVal
 			};
 
-			Queue<KeyValuePair<InstanceValue, TreeViewItem>> que = new Queue<KeyValuePair<InstanceValue, TreeViewItem>>();
+			var que = new Queue<KeyValuePair<InstanceValue, TreeViewItem>>();
 			que.Enqueue(new KeyValuePair<InstanceValue, TreeViewItem>(instVal, tvRoot));
 			while (que.Count > 0)
 			{
@@ -1099,7 +1261,7 @@ namespace MDRDesk
 			mainLabel.Content = instVal;
 
 			var ancestorNameList = (ListBox)LogicalTreeHelper.FindLogicalNode(mainGrid, "InstHierarchyAncestorNames");
-			ancestorNameList.ItemsSource = instanceInfo.Item2;
+			ancestorNameList.ItemsSource = instanceInfo.Ancestors;
 
 			var treeViewGrid = (Grid)LogicalTreeHelper.FindLogicalNode(mainGrid, "InstHierarchyFieldGrid");
 			Debug.Assert(treeViewGrid != null);
@@ -1147,29 +1309,39 @@ namespace MDRDesk
 			Debug.Assert(instValue != null);
 			if (instValue.Address != Constants.InvalidAddress)
 			{
-				SetStartTaskMainWindowState("Getting instance info" + ", please wait...");
+				var mainGrid = GetCurrentTabGrid();
+				Debug.Assert(mainGrid!=null);
+				var undoList = mainGrid.Tag as UndoRedoList<InstanceValueAndAncestors,Tuple<ulong,int>>;
 				ulong addr = instValue.Address;
 				int fldNdx = instValue.FieldIndex;
-				var result = await Task.Run(() =>
-				{
-					string error;
-					Tuple<InstanceValue, AncestorDispRecord[]> instanceInfo = CurrentIndex.GetInstanceInfo(addr, fldNdx, out error);
-					return Tuple.Create(error, instanceInfo);
-				});
+				var existing = undoList.GetExisting(new Tuple<ulong, int>(addr, fldNdx));
 
-				if (result.Item1 != null)
+				Tuple<string, InstanceValueAndAncestors> result;
+				if (existing == null)
 				{
-					SetEndTaskMainWindowState("Getting instance info" + ", FAILED.");
-					if (result.Item1[0] == Constants.InformationSymbol)
-						ShowInformation("Instance Hierarchy", "Instance " + Utils.AddressString(addr) + " seatrch failed", result.Item1, null);
-					else
-						ShowError(result.Item1);
-					return;
+					SetStartTaskMainWindowState("Getting instance info" + ", please wait...");
+					result = await Task.Run(() =>
+					{
+						string error;
+						InstanceValueAndAncestors instanceInfo = CurrentIndex.GetInstanceInfo(addr, fldNdx, out error);
+						return Tuple.Create(error, instanceInfo);
+					});
+					if (result.Item1 != null)
+					{
+						SetEndTaskMainWindowState("Getting instance info" + ", FAILED.");
+						if (result.Item1[0] == Constants.InformationSymbol)
+							ShowInformation("Instance Hierarchy", "Instance " + Utils.AddressString(addr) + " seatrch failed", result.Item1, null);
+						else
+							ShowError(result.Item1);
+						return;
+					}
+					undoList.Add(result.Item2);
+				}
+				else
+				{
+					result = new Tuple<string, InstanceValueAndAncestors>(null,existing);
 				}
 
-				var mainGrid = GetCurrentTabGrid();
-				Debug.Assert(mainGrid.Tag is UndoRedoList<Tuple<InstanceValue, AncestorDispRecord[]>>);
-				((UndoRedoList<Tuple<InstanceValue, AncestorDispRecord[]>>)mainGrid.Tag).AddToUndo(result.Item2);
 				TreeViewItem tvRoot;
 				var ancestorList = UpdateInstanceHierarchyGrid(result.Item2, mainGrid, out tvRoot);
 				ancestorList.SelectedIndex = 0;
@@ -1185,61 +1357,70 @@ namespace MDRDesk
 			if (lstBox.SelectedItem != null)
 			{
 				var selectedAddress = (ulong)lstBox.SelectedItem;
-				SetStartTaskMainWindowState("Getting instance info" + ", please wait...");
-				var result = await Task.Run(() =>
-				{
-					string error;
-					Tuple<InstanceValue, AncestorDispRecord[]> instanceInfo = CurrentIndex.GetInstanceInfo(selectedAddress, Constants.InvalidIndex, out error);
-					return Tuple.Create(error, instanceInfo);
-				});
-
-				if (result.Item1 != null)
-				{
-					SetEndTaskMainWindowState("Getting instance info" + ", FAILED.");
-					if (result.Item1[0] == Constants.InformationSymbol)
-						ShowInformation("Instance Hierarchy", "Instance " + Utils.AddressString(selectedAddress) + " seatrch failed", result.Item1, null);
-					else
-						ShowError(result.Item1);
-					return;
-				}
-
+				Tuple<string, InstanceValueAndAncestors> result;
+				// ancestors cannot be structures so maybe the address is in the undo cache
 				var mainGrid = GetCurrentTabGrid();
-				Debug.Assert(mainGrid.Tag is UndoRedoList<Tuple<InstanceValue, AncestorDispRecord[]>>);
-				((UndoRedoList<Tuple<InstanceValue, AncestorDispRecord[]>>)mainGrid.Tag).AddToUndo(result.Item2);
+				Debug.Assert(mainGrid != null);
+				var undoList = mainGrid.Tag as UndoRedoList<InstanceValueAndAncestors, Tuple<ulong, int>>;
+				var key = new Tuple<ulong, int>(selectedAddress, Constants.InvalidIndex);
+				InstanceValueAndAncestors instanceInfo = undoList.GetExisting(key);
+				if (instanceInfo == null)
+				{
+					SetStartTaskMainWindowState("Getting instance info" + ", please wait...");
+					result = await Task.Run(() =>
+					{
+						string error;
+						instanceInfo = CurrentIndex.GetInstanceInfo(selectedAddress, Constants.InvalidIndex, out error);
+						return Tuple.Create(error, instanceInfo);
+					});
+
+					if (result.Item1 != null)
+					{
+						SetEndTaskMainWindowState("Getting instance info" + ", FAILED.");
+						if (result.Item1[0] == Constants.InformationSymbol)
+							ShowInformation("Instance Hierarchy", "Instance " + Utils.AddressString(selectedAddress) + " seatrch failed",
+								result.Item1, null);
+						else
+							ShowError(result.Item1);
+						return;
+					}
+					undoList.Add(result.Item2);
+					SetEndTaskMainWindowState("Getting instance info" + ", DONE.");
+				}
+				else
+				{
+					result = new Tuple<string, InstanceValueAndAncestors>(null,instanceInfo);
+				}
 				TreeViewItem tvItem;
 				var ancestorList = UpdateInstanceHierarchyGrid(result.Item2, mainGrid, out tvItem);
 				ancestorList.SelectedIndex = 0;
 				tvItem.IsSelected = true;
 				tvItem.BringIntoView();
 
-				SetEndTaskMainWindowState("Getting instance info" + ", DONE.");
 
 			}
 		}
 
 		private void InstHierarchyUndoClicked(object sender, RoutedEventArgs e)
 		{
-			var mainGrid = GetCurrentTabGrid();
-			Debug.Assert(mainGrid.Tag is UndoRedoList<Tuple<InstanceValue, AncestorDispRecord[]>>);
-			bool canUndo;
-			var data = ((UndoRedoList<Tuple<InstanceValue, AncestorDispRecord[]>>)mainGrid.Tag).Undo(out canUndo);
-			if (canUndo)
-			{
-				TreeViewItem tvItem;
-				var ancestorList = UpdateInstanceHierarchyGrid(data, mainGrid, out tvItem);
-				ancestorList.SelectedIndex = 0;
-				tvItem.IsSelected = true;
-				tvItem.BringIntoView();
-			}
+			InstHierarchyRedoUndo(true);
 		}
+
 
 		private void InstHierarchyRedoClicked(object sender, RoutedEventArgs e)
 		{
+			InstHierarchyRedoUndo(false);
+		}
+
+		private void InstHierarchyRedoUndo(bool undo)
+		{
 			var mainGrid = GetCurrentTabGrid();
-			Debug.Assert(mainGrid.Tag is UndoRedoList<Tuple<InstanceValue, AncestorDispRecord[]>>);
-			bool canRedo;
-			var data = ((UndoRedoList<Tuple<InstanceValue, AncestorDispRecord[]>>)mainGrid.Tag).Redo(out canRedo);
-			if (canRedo)
+			Debug.Assert(mainGrid != null);
+			var undoList = mainGrid.Tag as UndoRedoList<InstanceValueAndAncestors, Tuple<ulong, int>>;
+			Debug.Assert(undoList != null);
+			bool can;
+			var data = undo ? undoList.Undo(out can) : undoList.Redo(out can);
+			if (can)
 			{
 				TreeViewItem tvItem;
 				var ancestorList = UpdateInstanceHierarchyGrid(data, mainGrid, out tvItem);
@@ -1360,8 +1541,6 @@ namespace MDRDesk
 
 		#region Map Queries
 
-
-
 		private async void ExecuteGenerationQuery(string statusMessage, ulong[] addresses, Grid grid)
 		{
 			SetStartTaskMainWindowState(statusMessage + ", please wait...");
@@ -1463,7 +1642,7 @@ namespace MDRDesk
 			var result = await Task.Run(() =>
 			{
 				string error;
-				Tuple<InstanceValue, AncestorDispRecord[]> instanceInfo = CurrentIndex.GetInstanceInfo(Utils.RealAddress(addr), fldNdx, out error);
+				InstanceValueAndAncestors instanceInfo = CurrentIndex.GetInstanceInfo(Utils.RealAddress(addr), fldNdx, out error);
 
 				return Tuple.Create(error, instanceInfo);
 			});
@@ -1651,17 +1830,5 @@ namespace MDRDesk
 
 	}
 
-	internal class InstanceHierarchyInfoEqCmp : IEqualityComparer<Tuple<InstanceValue, AncestorDispRecord[]>>
-	{
-		public bool Equals(Tuple<InstanceValue, AncestorDispRecord[]> b1, Tuple<InstanceValue, AncestorDispRecord[]> b2)
-		{
-			return b1.Item1.Address == b2.Item1.Address;
-		}
 
-		public int GetHashCode(Tuple<InstanceValue, AncestorDispRecord[]> bx)
-		{
-			return bx.Item1.Address.GetHashCode();
-		}
-
-	}
 }

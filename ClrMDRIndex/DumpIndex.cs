@@ -583,7 +583,7 @@ namespace ClrMDRIndex
 					new ColumnInfo("Avg Size", ReportFile.ColumnType.UInt64, 150, 5, true),
 					new ColumnInfo("Type", ReportFile.ColumnType.String, 500, 6, true),
 				};
-				Array.Sort(infoAry, ReportFile.GetComparer(colInfos[0]));
+				Array.Sort(infoAry, new ListingNumCmpDesc(0));
 
 				string descr = "Type Count: " + Utils.CountString(typeDct.Count) + Environment.NewLine
 							   + "Instance Count: " + Utils.CountString(_instances.Length) + Environment.NewLine
@@ -1161,14 +1161,14 @@ namespace ClrMDRIndex
 		/// <param name="fldNdx">Field index, this is used for struct types, in this case addr is of the parent.</param>
 		/// <param name="error">Output error.</param>
 		/// <returns>Instance information, and list of its parents.</returns>
-		public Tuple<InstanceValue, AncestorDispRecord[]> GetInstanceInfo(ulong addr, int fldNdx, out string error)
+		public InstanceValueAndAncestors GetInstanceInfo(ulong addr, int fldNdx, out string error)
 		{
 			try
 			{
 				// get ancestors
 				//
 				var ancestors = _instanceReferences.GetFieldParents(addr, out error);
-				if (error != null) return null;
+				if (error != null && !Utils.IsInformation(error)) return null;
 				AncestorDispRecord[] ancestorInfos = GroupAddressesByTypesForDisplay(ancestors);
 
 				// get instance info: fields and values
@@ -1177,7 +1177,7 @@ namespace ClrMDRIndex
 				var result = DmpNdxQueries.FQry.getInstanceValue(_indexProxy, heap, addr, fldNdx);
 				error = result.Item1;
 				result.Item2?.SortByFieldName();
-				return new Tuple<InstanceValue, AncestorDispRecord[]>(result.Item2, ancestorInfos);
+				return new InstanceValueAndAncestors(result.Item2, ancestorInfos);
 			}
 			catch (Exception ex)
 			{
@@ -1403,7 +1403,7 @@ namespace ClrMDRIndex
 						}
 						Utils.SortAddresses(wkRefAry);
 						var instAddr = GetInstanceAddress(instKv.Key);
-						instAry[instNdx] = new KeyValuePair<ulong, ulong[]>(instAddr,wkRefAry);
+						instAry[instNdx++] = new KeyValuePair<ulong, ulong[]>(instAddr,wkRefAry);
 					}
 
 					var objCountStr = Utils.LargeNumberString(objCount);
@@ -1419,8 +1419,8 @@ namespace ClrMDRIndex
 
 				ColumnInfo[] colInfos = new[]
 					{
-						new ColumnInfo("Object Count", ReportFile.ColumnType.Int32,100,1,true),
-						new ColumnInfo("WeakReference Count", ReportFile.ColumnType.Int32,100,2,true),
+						new ColumnInfo("Object Count", ReportFile.ColumnType.Int32,150,1,true),
+						new ColumnInfo("WeakReference Count", ReportFile.ColumnType.Int32,150,2,true),
 						new ColumnInfo("Object Type", ReportFile.ColumnType.String,400,3,true),
 					};
 
@@ -2378,7 +2378,7 @@ namespace ClrMDRIndex
 				new ColumnInfo("Type", ReportFile.ColumnType.String,500,6,true),
 			};
 
-			Array.Sort(dataListing, ReportFile.GetComparer(colInfos[4]));
+			Array.Sort(dataListing, new ListingNumCmpDesc(4));
 
 			var otherDmpName = Path.GetFileName(otherDumpPath);
 			StringBuilder sb = new StringBuilder(512);

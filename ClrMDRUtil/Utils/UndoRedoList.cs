@@ -4,90 +4,65 @@ using System.Linq;
 
 namespace ClrMDRIndex
 {
-	public class UndoRedoList<T>
+	public class UndoRedoList<T,U> where T : class, IGetKey<U>
 	{
-		private  readonly List<T> _undoList;
-		private readonly List<T> _redoList;
-		private readonly IEqualityComparer<T> _comparer;
+		private  readonly List<T> _list;
+		private int _current;
+		private readonly Dictionary<U, T> _cache;
+		private readonly IEqualityComparer<U> _comparer;
 
-		public UndoRedoList(IEqualityComparer<T> cmp)
+		public UndoRedoList(IEqualityComparer<U> comparer)
 		{
-			_comparer = cmp;
-			_undoList = new List<T>();
-			_redoList = new List<T>();
+			_list = new List<T>();
+			_cache = new Dictionary<U, T>(comparer);
+			_comparer = comparer;
 		}
 
-		public void AddToUndo(T item)
+		public void Add(T item)
 		{
-			AddToList(_undoList, item);
-		}
-
-		public void AddToList(List<T> lst, T item)
-		{
-			if (lst.Count > 0)
+			var key = item.GetKey();
+			T existing;
+			if (!_cache.TryGetValue(key, out existing))
 			{
-				if (!_comparer.Equals(lst.Last(), item))
-				{
-					lst.Add(item);
-				}
+				_cache.Add(key, item);
+				existing = item;
+			}
+			if (_list.Count == 0)
+			{
+				_list.Add(existing);
 				return;
 			}
-			lst.Add(item);
+			++_current;
+			if (_current < _list.Count)
+				_list.Insert(_current,existing);
+			else
+				_list.Add(existing);
+		}
+
+		public T GetExisting(U key)
+		{
+			T existing;
+			if (_cache.TryGetValue(key, out existing))
+			{
+				return existing;
+			}
+			return null;
 		}
 
 		public T Undo(out bool canUndo)
 		{
-			canUndo = false;
-			if (_undoList.Count < 2) return default(T);
-			int lstNdx = _undoList.Count - 1;
-			T item = _undoList[lstNdx];
-			AddToList(_redoList,item);
-			_undoList.RemoveAt(lstNdx);
-			--lstNdx;
-			item = _undoList[lstNdx];
-			_undoList.RemoveAt(lstNdx);
-			canUndo = true;
-			return item;
+			canUndo = _list.Count > 1 && _current > 0;
+			if (!canUndo) return _list[_current];
+			--_current;
+			return _list[_current];
 		}
 
 		public T Redo(out bool canRedo)
 		{
-			canRedo = false;
-			if (_redoList.Count < 1) return default(T);
-			int lstNdx = _redoList.Count - 1;
-			T item = _redoList[lstNdx];
-			AddToList(_undoList,item);
-			_redoList.RemoveAt(lstNdx);
-			canRedo = true;
-			return item;
-		}
-
-		public T Undo(T currentItem, out bool canUndo)
-		{
-			canUndo = false;
-			if (_undoList.Count < 2) return default(T);
-			int lstNdx = _undoList.Count - 1;
-			T item = _undoList[lstNdx];
-			Debug.Assert(_comparer.Equals(currentItem,item));
-			AddToList(_redoList,currentItem);
-			_undoList.RemoveAt(lstNdx);
-			--lstNdx;
-			item = _undoList[lstNdx];
-			_undoList.RemoveAt(lstNdx);
-			canUndo = true;
-			return item;
-		}
-
-		public T Redo(T currentItem, out bool canRedo)
-		{
-			canRedo = false;
-			if (_redoList.Count < 1) return default(T);
-			AddToUndo(currentItem);
-			int lstNdx = _redoList.Count - 1;
-			T item = _redoList[lstNdx];
-			_redoList.RemoveAt(lstNdx);
-			canRedo = true;
-			return item;
+			canRedo = _list.Count > 1 && _current < _list.Count - 1;
+			if (!canRedo) return _list[_current];
+			++_current;
+			return _list[_current];
 		}
 	}
 }

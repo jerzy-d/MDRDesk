@@ -31,18 +31,54 @@ namespace ClrMDRIndex
 		}
 	}
 
+	public class FinalizerQueueDisplayableItemCmp : IComparer<FinalizerQueueDisplayableItem>
+	{
+		private int _ndx;
+		private bool _asc;
+
+		public FinalizerQueueDisplayableItemCmp(int ndx, bool asc)
+		{
+			_ndx = ndx;
+			_asc = asc;
+		}
+		public int Compare(FinalizerQueueDisplayableItem a, FinalizerQueueDisplayableItem b)
+		{
+			int cmp;
+			switch (_ndx)
+			{
+				case 0:
+					cmp = _asc
+						? Utils.NumStrAscComparer.Compare(a.TotalCount, b.TotalCount)
+						: Utils.NumStrAscComparer.Compare(b.TotalCount, a.TotalCount);
+					break;
+				case 1:
+					cmp = _asc
+						? Utils.NumStrAscComparer.Compare(a.NotRootedCount, b.NotRootedCount)
+						: Utils.NumStrAscComparer.Compare(b.NotRootedCount, a.NotRootedCount);
+					break;
+				default:
+					cmp = _asc
+						? string.Compare(a.TypeName,b.TypeName, StringComparison.Ordinal)
+						: string.Compare(b.TypeName, a.TypeName, StringComparison.Ordinal);
+					break;
+			}
+			return cmp;
+		}
+	}
+
 	public class FinalizerQueueDisplayableItem
 	{
 		public string TotalCount { get; private set; }
 		public string NotRootedCount { get; private set; }
 		public string TypeName { get; private set; }
-		public ulong Addresses { get; private set; }
+		public ulong[] Addresses { get; private set; }
 
 		public FinalizerQueueDisplayableItem(int totCnt, int notRooted, string typeName, ulong[] addresses)
 		{
 			TotalCount = Utils.CountString(totCnt);
 			NotRootedCount = Utils.CountString(notRooted);
 			TypeName = typeName;
+			Addresses = addresses;
 		}
 
 		public static DisplayableFinalizerQueue GetDisplayableFinalizerQueue(ClrtRoot[] data, ulong[] instances, string[] typeNames, DumpFileMoniker fileMoniker)
@@ -87,7 +123,8 @@ namespace ClrMDRIndex
 				var item = new FinalizerQueueDisplayableItem(typeCount, notRooted, typeName, typeAddresses.ToArray());
 				items.Add(item);
 			}
-
+			var itemsAry = items.ToArray();
+			Array.Sort(itemsAry,new FinalizerQueueDisplayableItemCmp(2,true));
 			return new DisplayableFinalizerQueue(items.ToArray(), totalCount, totalUnrootedCount,fileMoniker);
 		}
 

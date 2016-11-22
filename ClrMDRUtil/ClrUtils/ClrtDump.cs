@@ -1343,7 +1343,8 @@ namespace ClrMDRIndex
 					new ColumnInfo("Avg Size", ReportFile.ColumnType.UInt64, 150, 5, true),
 					new ColumnInfo("Type", ReportFile.ColumnType.String, 500, 6, true),
 				};
-				Array.Sort(infoAry, ReportFile.GetComparer(colInfos[0]));
+
+				Array.Sort(infoAry, new ListingNumCmpAsc(0));
 
 				string descr = "Type Count: " + typeDct.Count + Environment.NewLine
 				               + "Instance Count: " + instanceCount + Environment.NewLine

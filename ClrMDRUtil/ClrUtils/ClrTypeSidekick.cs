@@ -12,13 +12,13 @@ namespace ClrMDRIndex
 	{
 		public ClrType ClrType { get; }
 		public ClrInstanceField InstanceField { get; }
-		public TypeCategories Categories { get; }
+		public TypeKind Kind { get; }
 		public List<ClrTypeSidekick> Fields { get; }
 		public object Data { get; private set; }
 
 		public bool IsInvalid => ClrType == null;
 
-		public bool IsArray => Categories.First == TypeCategory.Reference && Categories.Second == TypeCategory.Array;
+		public bool IsArray => TypeKinds.IsArray(Kind);
 
 		public ClrTypeSidekick GetField(int ndx)
 		{
@@ -34,25 +34,25 @@ namespace ClrMDRIndex
 		{
 			ClrType = clrType;
 			InstanceField = instanceField;
-			Categories = TypeCategories.GetCategories(clrType);
+			Kind = TypeKinds.GetTypeKind(clrType);
 			Fields = new List<ClrTypeSidekick>(0);
 			Data = null;
 		}
 
-		public ClrTypeSidekick(ClrType clrType, TypeCategories cats)
+		public ClrTypeSidekick(ClrType clrType, TypeKind kind)
 		{
 			ClrType = clrType;
 			InstanceField = null;
-			Categories = cats;
+			Kind = kind;
 			Fields = new List<ClrTypeSidekick>(0);
 			Data = null;
 		}
 
-		public ClrTypeSidekick(ClrType clrType, TypeCategories cats, ClrInstanceField instanceField)
+		public ClrTypeSidekick(ClrType clrType, TypeKind kind, ClrInstanceField instanceField)
 		{
 			ClrType = clrType;
 			InstanceField = instanceField;
-			Categories = cats;
+			Kind = kind;
 			Fields = new List<ClrTypeSidekick>(0);
 			Data = null;
 		}
@@ -71,41 +71,6 @@ namespace ClrMDRIndex
 		public void SetData(object data)
 		{
 			Data = data;
-		}
-
-		private static void GetReferenceTypeFieldSidekick(ClrHeap heap, ClrTypeSidekick clrs, ulong addr, ClrInstanceField fld)
-		{
-			var clrType = clrs.ClrType;
-			var cats = clrs.Categories;
-			switch (cats.First)
-			{
-				case TypeCategory.Reference:
-
-					break;
-				case TypeCategory.Struct:
-
-					break;
-			}
-		}
-
-		public static ClrTypeSidekick GeTypeSidekick(ClrHeap heap, ClrType clrType, TypeCategories cats, ulong addr)
-		{
-			Debug.Assert(clrType!=null);
-			var clrs = new ClrTypeSidekick(clrType, cats, null);
-			if (clrType.Fields == null || clrType.Fields.Count < 1) return clrs;
-			for (int i = 0, icnt = clrType.Fields.Count; i < icnt; ++i)
-			{
-				switch (cats.First)
-				{
-					case TypeCategory.Reference:
-
-						break;
-					case TypeCategory.Struct:
-
-						break;
-				}
-			}
-			return clrs;
 		}
 	}
 

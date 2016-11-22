@@ -65,17 +65,27 @@
             <MenuItem x:Name="TypeListGenerateSizeDetailsReport" Header="Generate Size Details Report" Click="GenerateSizeDetailsReport"></MenuItem>
             <MenuItem x:Name="TypeListGetTypeValuesReport" Header="Type Values Report" Click="GetTypeValuesReportClicked"></MenuItem>
         </ContextMenu>
-        <ControlTemplate x:Key="ButtonControlTemplate1" TargetType="Button">
-            <Grid>
-                <Ellipse Margin="8,0,0,0" Stroke="#FF000000" VerticalAlignment="Center" HorizontalAlignment="Center">
-                    <Ellipse.Fill>
-                        <LinearGradientBrush EndPoint="0.5,1" StartPoint="0.5,1">
-                            <GradientStop Color="#FF4292F2"/>
-                            <GradientStop Color="#FFC9EDF7" Offset="1"/>
-                        </LinearGradientBrush>
-                    </Ellipse.Fill>
-                </Ellipse>
-                <TextBlock Margin="1,1,1,1" Text="Run" HorizontalAlignment="Center" VerticalAlignment="Center" TextWrapping="Wrap"/>
+        <ControlTemplate x:Key="ListingGridTemplate" TargetType="Control">
+            <Grid x:Name="ListingGrid">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="75*"/>
+                    <RowDefinition Height="5"/>
+                    <RowDefinition Height="20*"/>
+                </Grid.RowDefinitions>
+                <ListView  Name="ListingView" Grid.Row="0" VerticalAlignment="Stretch" HorizontalAlignment="Stretch" Margin="2,2,2,2" GridViewColumnHeader.Click="ListViewBottomGridHeaderClick">
+                    <ListView.ItemContainerStyle>
+                        <Style TargetType="ListViewItem">
+                            <Setter Property="HorizontalContentAlignment" Value="Left" />
+                        </Style>
+                    </ListView.ItemContainerStyle>
+                    <ListView.View>
+                        <GridView AllowsColumnReorder="True">
+                        </GridView>
+                    </ListView.View>
+                </ListView>
+                <GridSplitter Grid.Row="1" VerticalAlignment="Center" HorizontalAlignment="Stretch" Height="5" ShowsPreview="False" Background="DarkGray"></GridSplitter>
+                <TextBox Name="ListingInformation" v4:Grid.Row="2" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" Margin="2,2,2,2">
+                </TextBox>
             </Grid>
         </ControlTemplate>
         <!-- change ulong value to hex string-->
@@ -226,7 +236,7 @@
                 <ColumnDefinition Width="5"/>
                 <ColumnDefinition Width="15*"/>
             </Grid.ColumnDefinitions>
-            <ListView x:Name="FinalizerQueueListView" Grid.Row="0" v4:Grid.Column="0" SelectionMode="Single" ItemsSource="{Binding}">
+            <ListView x:Name="FinalizerQueueListView" Grid.Row="0" v4:Grid.Column="0" SelectionMode="Single" ItemsSource="{Binding}" SelectionChanged="FinalizerQueueSelectionChanged" GridViewColumnHeader.Click="FinalizerQueueViewHeaderClick">
                 <ListView.View>
                 <GridView>
                     <GridViewColumn DisplayMemberBinding="{Binding Path=TotalCount}" Header="Total Count" Width="150"/>
@@ -294,6 +304,53 @@
             <GridSplitter Grid.Row="1" VerticalAlignment="Center" HorizontalAlignment="Stretch" Height="5" ShowsPreview="False" Background="DarkGray"></GridSplitter>
             <TextBox Name="ListingInformation" v4:Grid.Row="2" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" Margin="2,2,2,2">
             </TextBox>
+        </Grid>
+        <Grid x:Key="WeakReferenceViewGrid" x:Shared="False">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="50*"/>
+                <RowDefinition Height="50*"/>
+            </Grid.RowDefinitions>
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="80*"/>
+                <ColumnDefinition Width="5"/>
+                <ColumnDefinition Width="15*"/>
+            </Grid.ColumnDefinitions>
+            <Grid x:Name="WeakReferenceGrid" v4:Grid.Row="0" v4:Grid.RowSpan="2" v4:Grid.Column="0">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="75*"/>
+                    <RowDefinition Height="5"/>
+                    <RowDefinition Height="20*"/>
+                </Grid.RowDefinitions>
+                <ListView  Name="WeakReferenceView" Grid.Row="0" VerticalAlignment="Stretch" HorizontalAlignment="Stretch" Margin="2,2,2,2" GridViewColumnHeader.Click="ListViewBottomGridHeaderClick" SelectionChanged="WeakReferenceViewSelectionChanged">
+                    <ListView.ItemContainerStyle>
+                        <Style TargetType="ListViewItem">
+                            <Setter Property="HorizontalContentAlignment" Value="Left" />
+                        </Style>
+                    </ListView.ItemContainerStyle>
+                    <ListView.View>
+                        <GridView AllowsColumnReorder="True">
+                        </GridView>
+                    </ListView.View>
+                </ListView>
+                <GridSplitter Grid.Row="1" VerticalAlignment="Center" HorizontalAlignment="Stretch" Height="5" ShowsPreview="False" Background="DarkGray"></GridSplitter>
+                <TextBox Name="WeakReferenceInformation" v4:Grid.Row="2" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" Margin="2,2,2,2">
+                </TextBox>
+            </Grid>
+            <GridSplitter Grid.Column="1" v4:Grid.Row="0" v4:Grid.RowSpan="2" VerticalAlignment="Stretch" HorizontalAlignment="Center" Width="5" ShowsPreview="False" Background="DarkGray"></GridSplitter>
+            <ListBox Name="WeakReferenceObjectAddresses" v4:Grid.Row="0" v4:Grid.Column="2" Margin="2,2,2,2" SelectionChanged="WeakReferenceObjectAddressesChanged"  ContextMenu="{StaticResource AddresListContextMenu}">
+                <ListBox.ItemTemplate>
+                    <DataTemplate>
+                        <TextBlock Text="{Binding Converter={StaticResource LongHexConverter}}"/>
+                    </DataTemplate>
+                </ListBox.ItemTemplate>
+                </ListBox>
+            <ListBox Name="WeakReferenceRootAddresses" v4:Grid.Row="1" v4:Grid.Column="2" Margin="2,2,2,2"  ContextMenu="{StaticResource AddresListContextMenu}">
+                <ListBox.ItemTemplate>
+                    <DataTemplate>
+                        <TextBlock Text="{Binding Converter={StaticResource LongHexConverter}}"/>
+                    </DataTemplate>
+                </ListBox.ItemTemplate>
+            </ListBox>
         </Grid>
         <Grid x:Key="InstanceHierarchyGrid"  x:Shared="False">
             <Grid.RowDefinitions>

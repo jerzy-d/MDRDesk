@@ -31,6 +31,33 @@ module Auxiliaries =
     let ptrSize is64Bit =  if is64Bit then 8 else 4
     let stringBaseSize is64Bit = if is64Bit then 26 else 14
 
+    let typeKind (clrType:ClrType) : TypeKind =
+        let elemType = clrType.ElementType
+        let kind = TypeKinds.SetClrElementType(TypeKind.Unknown, elemType)
+        match elemType with
+        | ClrElementType.Array   -> kind ||| TypeKind.ArrayKind
+        | ClrElementType.SZArray -> kind ||| TypeKind.ArrayKind
+        | ClrElementType.String  -> kind ||| TypeKind.StringKind
+        | ClrElementType.Object  ->
+            let subKind = kind ||| TypeKind.ReferenceKind
+            if clrType.IsException then
+                subKind ||| TypeKind.Exception;
+            else
+                match clrType.Name with
+                | "System.Object"  -> subKind ||| TypeKind.Object
+                | "System.__Canon" -> subKind ||| TypeKind.System__Canon
+                | _                -> subKind
+        | ClrElementType.Struct  ->
+            let subKind = kind ||| TypeKind.StructKind
+            match clrType.Name with
+            | "System.Decimal"   -> subKind ||| TypeKind.Decimal
+            | "System.DateTime"  -> subKind ||| TypeKind.DateTime
+            | "System.TimeSpan"  -> subKind ||| TypeKind.TimeSpan
+            | "System.Guid"      -> subKind ||| TypeKind.Guid
+            | _                  -> subKind
+        | ClrElementType.Unknown -> TypeKind.Unknown
+        | _                      -> kind ||| TypeKind.PrimitiveKind
+
     type AddrNameStruct =
         struct
             val public Addr: address
@@ -394,28 +421,28 @@ module Auxiliaries =
 
     let getObjectType (heap:ClrHeap) (addr:address) = 
         let clrType = heap.GetObjectType(addr)
-        let cats = getTypeCategory clrType
-        match cats.First with
-        | TypeCategory.Reference ->
-            match cats.Second with
-            | TypeCategory.String 
-            | TypeCategory.Exception
-            | TypeCategory.Array ->
-                new ClrTypeSidekick(clrType,cats,null)
-            | TypeCategory.SystemObject ->
-                new ClrTypeSidekick(clrType,cats,null)
-            | TypeCategory.System__Canon ->
-                new ClrTypeSidekick(clrType,cats,null)
-            | TypeCategory.Reference ->
-                getReferenceFields heap addr (new ClrTypeSidekick(clrType,cats,null))
+        let kind = typeKind clrType
+        match TypeKinds.GetMainTypeKind(kind) with
+        | TypeKind.Unknown ->
+            EmptyClrTypeSidekick.Value
+        | TypeKind.ReferenceKind ->
+            match TypeKinds.GetParticularTypeKind(kind) with
+            | TypeKind.Str 
+            | TypeKind.Exception
+            | TypeKind.Ary ->
+                new ClrTypeSidekick(clrType,kind,null)
+            | TypeKind.SystemObject ->
+                new ClrTypeSidekick(clrType,kind,null)
+            | TypeKind.System__Canon ->
+                new ClrTypeSidekick(clrType,kind,null)
             | _ ->
-                EmptyClrTypeSidekick.Value
-        | TypeCategory.Struct ->
-            match cats.Second with
-            | TypeCategory.DateTime | TypeCategory.Guid | TypeCategory.TimeSpan | TypeCategory.Decimal ->
-                new ClrTypeSidekick(clrType,cats,null)
+                getReferenceFields heap addr (new ClrTypeSidekick(clrType,kind,null))
+        | TypeKind.Struct ->
+            match TypeKinds.GetParticularTypeKind(kind) with
+            | TypeKind.DateTime | TypeKind.Guid | TypeKind.TimeSpan | TypeKind.Decimal ->
+                new ClrTypeSidekick(clrType,kind,null)
             | _ -> 
-                getStructgFields heap addr (new ClrTypeSidekick(clrType,cats,null))
+                getStructgFields heap addr (new ClrTypeSidekick(clrType,kind,null))
         | _ ->
             EmptyClrTypeSidekick.Value
 

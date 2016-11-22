@@ -31,7 +31,7 @@ namespace ClrMDRIndex
 	}
 
 	[Flags]
-	public enum TypeKind : uint
+	public enum TypeKind : int
 	{
 		// LSB -- ClrElementType values
 		Unknown = 0,
@@ -59,34 +59,36 @@ namespace ClrMDRIndex
 		SZArray = 29,
 
 		// second LSB top level kinds
-		ReferenceK =	0x00000100,
-		StructK =		0x00000200,
-		PrimitiveK =	0x00000300,
-		EnumK =			0x00000400,
-		StringK =		0x00000500,
-		ArrayK =		0x00000600,
-		InterfaceK =	0x00000700,
+		ReferenceKind =	0x00000100,
+		StructKind =		0x00000200,
+		PrimitiveKind =	0x00000300,
+		EnumKind =			0x00000400,
+		StringKind =		0x00000500,
+		ArrayKind =		0x00000600,
+		InterfaceKind =	0x00000700,
 
 		// 2 MSB more detailed info
 		Decimal =		0x00010000,
 		DateTime =		0x00020000,
 		TimeSpan =		0x00030000,
 		Guid =			0x00040000,
-		Exception =		0x00050000,
-		SystemObject =	0x00060000,
-		System__Canon = 0x00070000,
+		Exception =     0x00050000,
+		Str =           0x00060000,
+		SystemObject =	0x00070000,
+		System__Canon = 0x00080000,
+		Ary =           0x00090000,
 
 		ClrElementTypeMask =		0x000000FF,
 		MainTypeKindMask =			0x0000FF00,
-		ParticularTypeKindMask =	0xFFFF0000,
+		ParticularTypeKindMask =	0x7FFF0000,
 	}
 
 	public class TypeKinds
 	{
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
-		public static ClrElementType GetClrElementType(TypeKind kind)
+		public static TypeKind GetClrElementType(TypeKind kind)
 		{
-			return (ClrElementType) (kind & TypeKind.ClrElementTypeMask);
+			return (kind & TypeKind.ClrElementTypeMask);
 		}
 
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -98,7 +100,7 @@ namespace ClrMDRIndex
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		public static TypeKind GetMainTypeKind(TypeKind kind)
 		{
-			return (kind & TypeKind.ClrElementTypeMask);
+			return (kind & TypeKind.MainTypeKindMask);
 		}
 
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -117,6 +119,58 @@ namespace ClrMDRIndex
 		public static TypeKind SetParticularTypeKind(TypeKind outKind, TypeKind kind)
 		{
 			return (outKind | kind);
+		}
+
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		public static bool IsArray(TypeKind kind)
+		{
+			return (GetMainTypeKind(kind) & kind) != 0;
+		}
+
+		public static TypeKind GetTypeKind(ClrType clrType)
+		{
+			var elemType = clrType.ElementType;
+			var kind = TypeKinds.SetClrElementType(TypeKind.Unknown, elemType);
+			switch (elemType)
+			{
+				case ClrElementType.Array:
+				case ClrElementType.SZArray:
+					return kind | TypeKind.ArrayKind;
+				case ClrElementType.String:
+					return kind | TypeKind.StringKind;
+				case ClrElementType.Object:
+					kind |= TypeKind.ReferenceKind;
+					if (clrType.IsException)
+						return kind | TypeKind.Exception;
+					switch (clrType.Name)
+					{
+						case "System.Object":
+							return kind | TypeKind.Object;
+						case "System.__Canon":
+							return kind | TypeKind.System__Canon;
+						default:
+							return kind;
+					}
+				case ClrElementType.Struct:
+					kind |= TypeKind.StructKind;
+					switch (clrType.Name)
+					{
+						case "System.Decimal":
+							return kind | TypeKind.Decimal;
+						case "System.DateTime":
+							return kind | TypeKind.DateTime;
+						case "System.TimeSpan":
+							return kind | TypeKind.TimeSpan;
+						case "System.Guid":
+							return kind | TypeKind.Guid;
+						default:
+							return kind;
+					}
+				case ClrElementType.Unknown:
+					return TypeKind.Unknown;
+				default:
+					return kind | TypeKind.PrimitiveKind;
+			}
 		}
 	}
 
@@ -300,11 +354,11 @@ namespace ClrMDRIndex
 			return formatSpec == null ? dt.ToString(CultureInfo.InvariantCulture) : dt.ToString(formatSpec);
 		}
 
-		static byte[] _bytes = new byte[8];
 		public static string GetDateTimeValue(ClrHeap heap, ulong addr, string formatSpec = null)
 		{
-			var read = heap.ReadMemory(addr, _bytes, 0, 8);
-			ulong data = BitConverter.ToUInt64(_bytes, 0);
+			byte[] bytes = new byte[8];
+			var read = heap.ReadMemory(addr, bytes, 0, 8);
+			ulong data = BitConverter.ToUInt64(bytes, 0);
 			data = data & TicksMask;
 			try // might throw on bad data
 			{
@@ -345,6 +399,22 @@ namespace ClrMDRIndex
 			return ts.ToString("c");
 		}
 
+		public static string GetTimeSpanValue(ClrHeap heap, ulong addr) // TODO JRD -- check if this works
+		{
+			byte[] bytes = new byte[8];
+			var read = heap.ReadMemory(addr, bytes, 0, 8);
+			long data = BitConverter.ToInt64(bytes, 0);
+			try // might throw on bad data
+			{
+				var ts = TimeSpan.FromTicks(data);
+				return ts.ToString("c");
+			}
+			catch (Exception)
+			{
+				return TimeSpan.MinValue.ToString("c");
+			}
+		}
+
 		//
 		// System.Guid
 		//
@@ -353,19 +423,19 @@ namespace ClrMDRIndex
 		{
 			StringBuilder sb = StringBuilderCache.Acquire(64);
 
-			var ival = (int)type.Fields[0].GetValue(addr);
+			var ival = (int)type.Fields[0].GetValue(addr,true);
 			sb.AppendFormat("{0:X8}", ival);
 			sb.Append('-');
-			var sval = (short)type.Fields[1].GetValue(addr);
+			var sval = (short)type.Fields[1].GetValue(addr,true);
 			sb.AppendFormat("{0:X4}", sval);
 			sb.Append('-');
-			sval = (short)type.Fields[2].GetValue(addr);
+			sval = (short)type.Fields[2].GetValue(addr,true);
 			sb.AppendFormat("{0:X4}", sval);
 			sb.Append('-');
 			for (var i = 3; i < 11; ++i)
 			{
 				if (i == 5) sb.Append('-');
-				var val = (byte)type.Fields[i].GetValue(addr);
+				var val = (byte)type.Fields[i].GetValue(addr,true);
 				sb.AppendFormat("{0:X2}", val);
 			}
 			return StringBuilderCache.GetStringAndRelease(sb);

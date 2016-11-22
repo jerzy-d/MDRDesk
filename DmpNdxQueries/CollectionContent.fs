@@ -141,15 +141,16 @@ module CollectionContent =
     *)
 
     //
-    let aryInfo (heap:ClrHeap) (addr:address) : (string * ClrType * ClrType * int) = 
+    let aryInfo (heap:ClrHeap) (addr:address) : (string * ClrType * ClrType * int * TypeKind) = 
         let clrType = heap.GetObjectType(addr)
         if isNull clrType then
-            ("Cannot get type at address: " + Utils.AddressString(addr), null, null, 0)
+            ("Cannot get type at address: " + Utils.AddressString(addr), null, null, 0, enum<TypeKind> ((int)ClrElementType.Unknown))
         elif not clrType.IsArray then
-            ("The type at address: " + Utils.AddressString(addr) + " is not array.", clrType, null, 0)
+            ("The type at address: " + Utils.AddressString(addr) + " is not array.", clrType, null, 0, enum<TypeKind> ((int)ClrElementType.Unknown))
         else
             let len = clrType.GetArrayLength(addr)
-            (null, clrType, clrType.ComponentType, len)
+            let kind = typeKind clrType.ComponentType
+            (null, clrType, clrType.ComponentType, len, kind)
 
 
     let aryElemString (heap:ClrHeap) (addr:address) (aryType:ClrType) (ndx:int) =
@@ -181,12 +182,12 @@ module CollectionContent =
         else
             ValueExtractor.GetDateTimeValue( heap, elemAddr, null)
 
-    let aryElemTimespan (heap:ClrHeap) (addr:address) (aryType:ClrType) (elemType:ClrType) (ndx:int) =
+    let aryElemTimespanR (heap:ClrHeap) (addr:address) (aryType:ClrType) (elemType:ClrType) (ndx:int) =
         let elemAddr = aryType.GetArrayElementAddress(addr,ndx)
         if elemAddr = Constants.InvalidAddress then
             Constants.NullValue
         else
-            ValueExtractor.GetTimeSpanValue( elemAddr, elemType)
+            ValueExtractor.GetTimeSpanValue(heap,elemAddr)
 
     let aryElemGuid (heap:ClrHeap) (addr:address) (aryType:ClrType) (elemType:ClrType) (ndx:int) =
         let elemAddr = aryType.GetArrayElementAddress(addr,ndx)
@@ -298,19 +299,19 @@ module CollectionContent =
             let raddr = ValueExtractor.ReadUlongAtAddress(elemAddr,heap)
             (addressMarkupString raddr) + " " + elemType.Name
 
-    let getArrayKnownStructElem (heap:ClrHeap) (addr:address) (aryType:ClrType) (elemType:ClrType) (cat:TypeCategory) (ndx:int) =
+    let getArrayKnownStructElem (heap:ClrHeap) (addr:address) (aryType:ClrType) (elemType:ClrType) (kind:TypeKind) (ndx:int) =
         let elemAddr = aryType.GetArrayElementAddress(addr,ndx)
         if elemAddr = Constants.InvalidAddress then
             Constants.NullValue
         else
-             match cat with
-                | TypeCategory.DateTime ->
+             match TypeKinds.GetParticularTypeKind(kind) with
+                | TypeKind.DateTime ->
                     ValueExtractor.GetDateTimeValue( elemAddr, elemType, null)
-                | TypeCategory.TimeSpan ->
+                | TypeKind.TimeSpan ->
                     ValueExtractor.GetTimeSpanValue( elemAddr, elemType)
-                | TypeCategory.Decimal ->
+                | TypeKind.Decimal ->
                     ValueExtractor.GetDecimalValue( elemAddr, elemType,null)
-                | TypeCategory.Guid ->
+                | TypeKind.Guid ->
                     ValueExtractor.GetGuidValue( elemAddr, elemType)
                 | _ -> "Don't know how to get value of " + elemType.Name
 
@@ -322,21 +323,21 @@ module CollectionContent =
         let mutable value:string = null
         let values = new ResizeArray<string>(count)
         let elemType = elemInfo.ClrType
-        let elemCats = elemInfo.Categories
+        let elemKind = elemInfo.Kind
         while ndx < count do
-            match elemCats.First with
-            | TypeCategory.Reference ->
-                match elemCats.Second with
-                | TypeCategory.String ->
+            match TypeKinds.GetMainTypeKind(elemKind) with
+            | TypeKind.ReferenceKind ->
+                match TypeKinds.GetParticularTypeKind(elemKind) with
+                | TypeKind.Str ->
                     value <- getArrayStringElem heap addr aryClrType ndx
-                | TypeCategory.Exception ->
+                | TypeKind.Exception ->
                     value <- getArrayExceptionElem heap addr aryClrType elemType ndx
                 | _ ->
                     value <- getArrayReferenceElem heap addr aryClrType elemType ndx
-            | TypeCategory.Struct ->
-                match elemCats.Second with
-                | TypeCategory.DateTime | TypeCategory.TimeSpan | TypeCategory.Decimal | TypeCategory.Guid ->
-                    value <- getArrayKnownStructElem heap addr aryClrType elemType elemCats.Second ndx
+            | TypeKind.StructKind ->
+                match TypeKinds.GetParticularTypeKind(elemKind) with
+                | TypeKind.DateTime | TypeKind.TimeSpan | TypeKind.Decimal | TypeKind.Guid ->
+                    value <- getArrayKnownStructElem heap addr aryClrType elemType elemKind ndx
                 | _ ->
                     if elemType.Name.StartsWith("System.Collections.Generic.Dictionary+Entry") then
                         let elemAddr = aryClrType.GetArrayElementAddress(addr,ndx)

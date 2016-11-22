@@ -3167,6 +3167,18 @@
             Version numbers of OS that this dump was taken on.
             </summary>
         </member>
+        <member name="P:Microsoft.Diagnostics.Runtime.Utilities.DumpReader.OSVersion">
+            <summary>
+            Operating system that the dump was taken on.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Diagnostics.Runtime.Utilities.DumpReader.OSVersionString">
+            <summary>
+            Friendly helper to get full OS version string (including CSDVersion) that the dump was taken on.
+            </summary>
+            <remarks>This is really just to compensate that public OperatingSystem's ctor doesn't let us
+            add the service pack string, so we need a special helper for that.</remarks>
+        </member>
         <member name="P:Microsoft.Diagnostics.Runtime.Utilities.DumpReader.ProcessorArchitecture">
             <summary>
             The processor architecture that this dump was taken on.

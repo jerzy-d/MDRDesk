@@ -458,13 +458,17 @@ namespace MDRDesk
 
 			if (result.Error != null)
 			{
-				MessageBox.Show(result.Error, "Getting WeakReference Information Failed", MessageBoxButton.OK, MessageBoxImage.Error);
+				ShowError(result.Error);
+				return;
+			}
+			if (result.Items.Length < 1)
+			{
+				ShowInformation("Not Found", "WeakReference Information", "No WeakReference instances found",string.Empty);
 				return;
 			}
 
-//			DisplayListViewBottomGrid(result, Constants.BlackDiamond, ReportNameWeakReferenceInfo, ReportTitleWeakReferenceInfo);
-
-			DisplayListingGrid(result, Constants.BlackDiamond, ReportNameWeakReferenceInfo, ReportTitleWeakReferenceInfo);
+			//DisplayListingGrid(result, Constants.BlackDiamond, ReportNameWeakReferenceInfo, ReportTitleWeakReferenceInfo);
+			DisplayWeakReferenceGrid(result, Constants.BlackDiamond, ReportNameWeakReferenceInfo, ReportTitleWeakReferenceInfo);
 		}
 
 		private void IndexGetSizeInformationClicked(object sender, RoutedEventArgs e)
@@ -1502,6 +1506,12 @@ namespace MDRDesk
 
 		private ListBox GetTypeAddressesListBox(object sender)
 		{
+			var menuItem = sender as MenuItem;
+			Debug.Assert(menuItem!=null);
+			var contextMenu = menuItem.Parent as ContextMenu;
+			Debug.Assert(contextMenu!=null);
+			if (contextMenu.Tag is ListBox) return contextMenu.Tag as ListBox;
+
 			var grid = GetCurrentTabGrid();
 			string gridName = Utils.GetNameWithoutId(grid.Name);
 			string listName = null;
@@ -1513,6 +1523,9 @@ namespace MDRDesk
 					break;
 				case GridNameNamespaceTypeView:
 					listName = "lbTypeNamespaceAddresses";
+					break;
+				case WeakReferenceViewGrid:
+					listName = "WeakReferenceObjectAddresses";
 					break;
 			}
 			if (listName == null) return null;
