@@ -66,4 +66,12 @@ namespace ClrMDRIndex
 		}
 
 	}
+
+	public class BlockingObjectCmp : IComparer<BlockingObject>
+	{
+		public int Compare(BlockingObject a, BlockingObject b)
+		{
+			return a.Object < b.Object ? -1 : (a.Object > b.Object ? 1 : 0);
+		}
+	}
 }

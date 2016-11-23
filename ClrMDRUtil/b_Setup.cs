@@ -234,37 +234,55 @@ namespace ClrMDRIndex
             return  string.Join(";", lst);
         }
 
-        //public static bool ReadAppSettings()
-        //{
-        //	try
-        //	{
-        //		var appSettings = ConfigurationManager.AppSettings;
+		public static string GetRecentIndexPath(int ndx = 0)
+		{
+			if (RecentIndexList != null && RecentIndexList.Count > ndx)
+			{
+				return RecentIndexList[ndx];
+			}
+			return null;
+		}
 
-        //		if (appSettings.Count == 0)
-        //		{
-        //			_dacPaths = Utils.EmptyArray<string>.Value;
-        //			_dumpPaths = Utils.EmptyArray<string>.Value;
-        //		}
-        //		else
-        //		{
-        //			List<string> dacs = new List<string>();
-        //			List<string> dumps = new List<string>();
-        //			foreach (var key in appSettings.AllKeys)
-        //			{
-        //				if (key.StartsWith("dac")) dacs.Add(appSettings[key]);
-        //				else if (key.StartsWith("dump")) dumps.Add(appSettings[key]);
-        //			}
-        //			_dacPaths = dacs.ToArray();
-        //			_dumpPaths = dumps.ToArray();
-        //		}
-        //		return true;
-        //	}
-        //	catch (ConfigurationErrorsException ex)
-        //	{
-        //		Error = "Error reading app settings" + Environment.NewLine + ex.ToString();
-        //		return false;
-        //	}
+		public static string GetRecentDumpPath(int ndx = 0)
+		{
+			if (RecentDumpList != null && RecentDumpList.Count > ndx)
+			{
+				return RecentDumpList[ndx];
+			}
+			return null;
+		}
 
-        //}
-    }
+		//public static bool ReadAppSettings()
+		//{
+		//	try
+		//	{
+		//		var appSettings = ConfigurationManager.AppSettings;
+
+		//		if (appSettings.Count == 0)
+		//		{
+		//			_dacPaths = Utils.EmptyArray<string>.Value;
+		//			_dumpPaths = Utils.EmptyArray<string>.Value;
+		//		}
+		//		else
+		//		{
+		//			List<string> dacs = new List<string>();
+		//			List<string> dumps = new List<string>();
+		//			foreach (var key in appSettings.AllKeys)
+		//			{
+		//				if (key.StartsWith("dac")) dacs.Add(appSettings[key]);
+		//				else if (key.StartsWith("dump")) dumps.Add(appSettings[key]);
+		//			}
+		//			_dacPaths = dacs.ToArray();
+		//			_dumpPaths = dumps.ToArray();
+		//		}
+		//		return true;
+		//	}
+		//	catch (ConfigurationErrorsException ex)
+		//	{
+		//		Error = "Error reading app settings" + Environment.NewLine + ex.ToString();
+		//		return false;
+		//	}
+
+		//}
+	}
 }

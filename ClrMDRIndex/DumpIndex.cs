@@ -79,10 +79,11 @@ namespace ClrMDRIndex
 
 		private ClrtDump _clrtDump;
 		public ClrtDump Dump => _clrtDump;
+		public ClrRuntime Runtime => _clrtDump.Runtime;
 
 		private string[] _stringIds; // ordered by string ids TODO JRD
 		public string[] StringIds => _stringIds;
-
+		
 		private ClrtRootInfo _roots;
 
 		private IndexProxy _indexProxy;

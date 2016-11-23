@@ -1345,23 +1345,17 @@ namespace ClrMDRIndex
 		#endregion Indexing Helpers
 	}
 
-	public class ClrThreadCmp : IComparer<ClrThread>
-	{
-		public int Compare(ClrThread a, ClrThread b)
-		{
-			if (a.OSThreadId == b.OSThreadId)
-			{
-				return a.ManagedThreadId < b.ManagedThreadId ? -1 : (a.ManagedThreadId > b.ManagedThreadId ? 1 : 0);
-			}
-			return a.OSThreadId < b.OSThreadId ? -1 : 1;
-		}
-	}
+	//public class ClrThreadCmp : IComparer<ClrThread>
+	//{
+	//	public int Compare(ClrThread a, ClrThread b)
+	//	{
+	//		if (a.OSThreadId == b.OSThreadId)
+	//		{
+	//			return a.ManagedThreadId < b.ManagedThreadId ? -1 : (a.ManagedThreadId > b.ManagedThreadId ? 1 : 0);
+	//		}
+	//		return a.OSThreadId < b.OSThreadId ? -1 : 1;
+	//	}
+	//}
 
-	public class BlockingObjectCmp : IComparer<BlockingObject>
-	{
-		public int Compare(BlockingObject a, BlockingObject b)
-		{
-			return a.Object < b.Object ? -1 : (a.Object > b.Object ? 1 : 0);
-		}
-	}
+
 }

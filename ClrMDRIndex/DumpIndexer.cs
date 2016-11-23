@@ -778,6 +778,38 @@ namespace ClrMDRIndex
 			}
 		}
 
+		public static ClrThread[] GetThreads(ClrRuntime runtime)
+		{
+			var lst = new List<ClrThread>(256);
+			var thrdLst = runtime.Threads;
+			for (int i = 0, icnt = thrdLst.Count; i < icnt; ++i)
+			{
+				lst.Add(thrdLst[i]);
+			}
+			lst.Sort(new ClrThreadCmp());
+			return lst.ToArray();
+		}
+
+		public static int GetThreadId(ClrThread[] ary, ClrThread thrd)
+		{
+			if (thrd == null) return Constants.InvalidIndex;
+			return Array.BinarySearch(ary, thrd, new ClrThreadCmp());
+		}
+
+		public static BlockingObject[] GetBlockingObjects(ClrHeap heap)
+		{
+			var lst = new List<BlockingObject>(1024);
+			foreach (var block in heap.EnumerateBlockingObjects())
+			{
+				lst.Add(block);
+			}
+			var ary = lst.ToArray();
+			Array.Sort(ary,new BlockingObjectCmp());
+			return ary;
+		}
+
+
+
 		#endregion indexing helpers
 	}
 }
