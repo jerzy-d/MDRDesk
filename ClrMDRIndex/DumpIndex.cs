@@ -119,6 +119,7 @@ namespace ClrMDRIndex
 												"Index version is not compatible with this application's version."
 												+ Environment.NewLine
 												+ "Please reindex the corresponding crash dump.");
+					index.Dispose();
 					return null;
 
 				}
@@ -356,6 +357,14 @@ namespace ClrMDRIndex
 			return instanceIndex == Constants.InvalidIndex
 				? Constants.UnknownTypeName
 				: _typeNames[_instanceTypes[instanceIndex]];
+		}
+
+		public int GetTypeId(ulong addr)
+		{
+			var instanceIndex = GetInstanceIndex(addr);
+			return instanceIndex == Constants.InvalidIndex 
+				? Constants.InvalidIndex
+				: _instanceTypes[instanceIndex];
 		}
 
 		public string GetTypeName(int id)
@@ -2305,6 +2314,160 @@ namespace ClrMDRIndex
 		{
 			ulong[] addresses = GetTypeRealAddresses(typeId);
 			return ClrtDump.GetTotalSizeDetail(Dump, addresses, out error);
+		}
+
+		public ListingInfo GetTypeFieldDefaultValues(int typeId)
+		{
+			ulong[] addresses = GetTypeRealAddresses(typeId);
+			var heap = Dump.Heap;
+			ClrType clrType = null;
+			int fldCount = 0;
+			KeyValuePair<string, string>[] fieldDefValues=null;
+			int[] counts = null;
+			ClrType[] fldTypes = null;
+			TypeKind[] fldKinds = null;
+			ClrInstanceField[] fields=null;
+			string[] fieldTypeNames = null;
+			int ndx = 0;
+			bool intrnl = false;
+			while (clrType == null)
+			{
+				clrType = heap.GetObjectType(addresses[ndx]);
+				if (clrType != null)
+				{
+					intrnl = clrType.IsValueClass;
+					fldCount = clrType.Fields.Count;
+					fieldDefValues = new KeyValuePair<string, string>[fldCount];
+					counts = new int[fldCount];
+					fldTypes = new ClrType[fldCount];
+					fields = new ClrInstanceField[fldCount];
+					fldKinds = new TypeKind[fldCount];
+					fieldTypeNames = new string[fldCount];
+					for (int f = 0; f < fldCount; ++f)
+					{
+						var fldType = clrType.Fields[f].Type;
+						fieldTypeNames[f] = fldType.Name;
+						fldTypes[f] = fldType;
+						var defValue = Auxiliaries.typeDefaultValue(fldType);
+						fieldDefValues[f] = new KeyValuePair<string, string>(clrType.Fields[f].Name,defValue);
+						fields[f] = clrType.Fields[f];
+						fldKinds[f] = Auxiliaries.typeKind(fldType);
+					}
+					break;
+				}
+			}
+
+			var minDt = new DateTime(1800,1,1);
+
+			for (int i = ndx, icnt = addresses.Length; i < icnt; ++i)
+			{
+				var addr = addresses[i];
+				ulong fldAddr;
+				for (int j = 0; j < fldCount; ++j)
+				{
+					switch (fldTypes[j].ElementType)
+					{
+						case ClrElementType.Unknown:
+							break;
+						case ClrElementType.SZArray:
+						case ClrElementType.Array:
+							fldAddr = fields[j].GetAddress(addr);
+							if (fldAddr == 0UL)
+								counts[j] = counts[j] + 1;
+							else if (fldTypes[j].GetArrayLength(fldAddr) == 0)
+							{
+								counts[j] = counts[j] + 1;
+							}
+							break;
+						case ClrElementType.String:
+							var str = (string)fields[j].GetValue(addr, false, true);
+							if (str == null || str.Length < 1)
+								counts[j] = counts[j] + 1;
+							break;
+						case ClrElementType.Class:
+						case ClrElementType.Object:
+							fldAddr = fields[j].GetAddress(addr);
+							if (fldAddr == 0UL)
+								counts[j] = counts[j] + 1;
+							break;
+						case ClrElementType.FunctionPointer:
+							fldAddr = fields[j].GetAddress(addr);
+							if (fldAddr == 0UL)
+								counts[j] = counts[j] + 1;
+							break;
+						case ClrElementType.Struct:
+							switch (TypeKinds.GetParticularTypeKind(fldKinds[j]))
+							{
+								case TypeKind.Decimal:
+									var dec = ValueExtractor.GetDecimal(addr, fields[j]);
+									if (dec == 0m)
+									{
+										counts[j] = counts[j] + 1;
+									}
+									break;
+								case TypeKind.DateTime:
+									var dt = ValueExtractor.GetDateTime(addr, fields[j], intrnl);
+									if (dt < minDt)
+									{
+										counts[j] = counts[j] + 1;
+									}
+									break;
+								case TypeKind.TimeSpan:
+									var ts = ValueExtractor.GetTimeSpan(addr, fields[j]);
+									if (ts.TotalMilliseconds == 0.0)
+									{
+										counts[j] = counts[j] + 1;
+									}
+									break;
+								case TypeKind.Guid:
+									if (ValueExtractor.IsGuidEmpty(addr, fields[j]))
+									{
+										counts[j] = counts[j] + 1;
+									}
+									break;
+							}
+							break;
+						default:
+							if (ValueExtractor.IsPrimitiveValueDefault(addr, fields[j]))
+							{
+								counts[j] = counts[j] + 1;
+							}
+							break;
+					}
+				}
+			}
+
+			const int ColumnCount = 5;
+			int listNdx = 0;
+			int dataNdx = 0;
+			listing<string>[] dataListing = new listing<string>[fldCount];
+			string[] data = new string[fldCount * ColumnCount];
+			for (int i = 0; i < fldCount; ++i)
+			{
+				dataListing[listNdx++] = new listing<string>(data, dataNdx, ColumnCount);
+				data[dataNdx++] = Utils.LargeNumberString(counts[i]);
+				int per = (int)Math.Round(((double)counts[i]*100.0)/(double)addresses.Length);
+				data[dataNdx++] = Utils.LargeNumberString(per);
+				data[dataNdx++] = fieldDefValues[i].Value;
+				data[dataNdx++] = fieldDefValues[i].Key;
+				data[dataNdx++] = fieldTypeNames[i];
+			}
+
+			ColumnInfo[] colInfos = new[]
+{
+				new ColumnInfo("count", ReportFile.ColumnType.Int32,100,1,true),
+				new ColumnInfo("% rounded", ReportFile.ColumnType.Int32,100,2,true),
+				new ColumnInfo("def value", ReportFile.ColumnType.String,100,3,true),
+				new ColumnInfo("field name", ReportFile.ColumnType.String,200,4,true),
+				new ColumnInfo("field type", ReportFile.ColumnType.String,400,5,true),
+			};
+
+			StringBuilder sb = StringBuilderCache.Acquire(StringBuilderCache.MaxCapacity);
+			sb.Append("Default values stats of: ").Append(clrType.Name).AppendLine();
+			sb.Append("Instance count: ").Append(Utils.LargeNumberString(addresses.Length)).AppendLine();
+
+			return new ListingInfo(null, dataListing, colInfos, sb.ToString());
+
 		}
 
 		public ListingInfo CompareTypesWithOther(string otherDumpPath)

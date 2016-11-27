@@ -2129,71 +2129,71 @@ namespace UnitTestMdr
 		}
 
 
-		[TestMethod]
-		public void TestBuildThreadMap()
-		{
-			string error = null;
-			var blkObjTypeNames = new SortedSet<string>();
-			using (var clrDump = GetDump(@"D:\Jerzy\WinDbgStuff\dumps\Analytics\ConvergEx\Analytics2.dmp"))
-			{
-				try
-				{
-					var runtime = clrDump.Runtimes[0];
-					var threads = Indexer.GetThreads(runtime);
-					var heap = runtime.GetHeap();
-					var blkObjects = Indexer.GetBlockingObjects(runtime);
-					ClrType[] blkTypes = new ClrType[blkObjects.Length];
-					for (int i = 0, icnt = blkObjects.Length; i < icnt; ++i)
-					{
-						var blkObjType = heap.GetObjectType(blkObjects[i].Object);
-						Assert.IsNotNull(blkObjType);
-						blkTypes[i] = blkObjType;
-						blkObjTypeNames.Add(blkObjType.Name);
-					}
-					var typeInfos = new KeyValuePair<ulong[], int[]>(Utils.EmptyArray<ulong>.Value, Utils.EmptyArray<int>.Value);
-					var blks = new ClrtBlkObject[blkObjects.Length];
-					var blkAddresses = new ulong[blkObjects.Length];
-					for (int i = 0, icnt = blkObjects.Length; i < icnt; ++i)
-					{
-						blks[i] = new ClrtBlkObject(blkObjects[i], threads, typeInfos);
-						blkAddresses[i] = blkObjects[i].Object;
-					}
-					var thrds = new ClrtThread[threads.Length];
-					for (int i = 0, icnt = threads.Length; i < icnt; ++i)
-					{
-						thrds[i] = new ClrtThread(threads[i], blkAddresses);
-					}
+		//[TestMethod]
+		//public void TestBuildThreadMap()
+		//{
+		//	string error = null;
+		//	var blkObjTypeNames = new SortedSet<string>();
+		//	using (var clrDump = GetDump(@"D:\Jerzy\WinDbgStuff\dumps\Analytics\ConvergEx\Analytics2.dmp"))
+		//	{
+		//		try
+		//		{
+		//			var runtime = clrDump.Runtimes[0];
+		//			var threads = Indexer.GetThreads(runtime);
+		//			var heap = runtime.GetHeap();
+		//			var blkObjects = Indexer.GetBlockingObjects(runtime);
+		//			ClrType[] blkTypes = new ClrType[blkObjects.Length];
+		//			for (int i = 0, icnt = blkObjects.Length; i < icnt; ++i)
+		//			{
+		//				var blkObjType = heap.GetObjectType(blkObjects[i].Object);
+		//				Assert.IsNotNull(blkObjType);
+		//				blkTypes[i] = blkObjType;
+		//				blkObjTypeNames.Add(blkObjType.Name);
+		//			}
+		//			var typeInfos = new KeyValuePair<ulong[], int[]>(Utils.EmptyArray<ulong>.Value, Utils.EmptyArray<int>.Value);
+		//			var blks = new ClrtBlkObject[blkObjects.Length];
+		//			var blkAddresses = new ulong[blkObjects.Length];
+		//			for (int i = 0, icnt = blkObjects.Length; i < icnt; ++i)
+		//			{
+		//				blks[i] = new ClrtBlkObject(blkObjects[i], threads, typeInfos);
+		//				blkAddresses[i] = blkObjects[i].Object;
+		//			}
+		//			var thrds = new ClrtThread[threads.Length];
+		//			for (int i = 0, icnt = threads.Length; i < icnt; ++i)
+		//			{
+		//				thrds[i] = new ClrtThread(threads[i], blkAddresses);
+		//			}
 
-					var thrdBlkMap = new ThreadBlockMap(blks, thrds);
-					thrdBlkMap.CreateGrapByBlkObjects(out error);
-					Assert.IsNull(error, error);
-					bool hasCycle = thrdBlkMap.HasCycle(out error);
-					Assert.IsNull(error, error);
+		//			var thrdBlkMap = new ThreadBlockMap(blks, thrds);
+		//			thrdBlkMap.CreateGrapByBlkObjects(out error);
+		//			Assert.IsNull(error, error);
+		//			bool hasCycle = thrdBlkMap.HasCycle(out error);
+		//			Assert.IsNull(error, error);
 
-					var segs = heap.Segments;
-					for (int i = 0, icnt = segs.Count; i < icnt; ++i)
-					{
-						var seg = segs[i];
-						ulong addr = seg.FirstObject;
-						while (addr != 0ul)
-						{
-							var clrType = heap.GetObjectType(addr);
-							if (clrType == null) goto NEXT_OBJECT;
+		//			var segs = heap.Segments;
+		//			for (int i = 0, icnt = segs.Count; i < icnt; ++i)
+		//			{
+		//				var seg = segs[i];
+		//				ulong addr = seg.FirstObject;
+		//				while (addr != 0ul)
+		//				{
+		//					var clrType = heap.GetObjectType(addr);
+		//					if (clrType == null) goto NEXT_OBJECT;
 
 
 
-							NEXT_OBJECT:
-							addr = seg.NextObject(addr);
-						}
-					}
-				}
-				catch (Exception ex)
-				{
-					error = Utils.GetExceptionErrorString(ex);
-					Assert.IsTrue(false, error);
-				}
-			}
-		}
+		//					NEXT_OBJECT:
+		//					addr = seg.NextObject(addr);
+		//				}
+		//			}
+		//		}
+		//		catch (Exception ex)
+		//		{
+		//			error = Utils.GetExceptionErrorString(ex);
+		//			Assert.IsTrue(false, error);
+		//		}
+		//	}
+		//}
 
 		[TestMethod]
 		public void TestThreadInstances()

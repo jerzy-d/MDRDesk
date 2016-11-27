@@ -58,6 +58,25 @@ module Auxiliaries =
         | ClrElementType.Unknown -> TypeKind.Unknown
         | _                      -> kind ||| TypeKind.PrimitiveKind
 
+    let typeDefaultValue (clrType:ClrType) : string =
+        let elemType = clrType.ElementType
+        match elemType with
+        | ClrElementType.Array | ClrElementType.SZArray ->
+            "[0]/null"
+        | ClrElementType.String ->
+            "\"\"/null"
+        | ClrElementType.Object ->
+            "null"
+        | ClrElementType.Struct  ->
+             match clrType.Name with
+            | "System.Decimal"   -> "0"
+            | "System.DateTime"  -> "< 01/01/1800"
+            | "System.TimeSpan"  -> "0"
+            | "System.Guid"      -> "00000000-0000-0000-0000-000000000000"
+            | _                  -> "empty"
+        | ClrElementType.Unknown -> "unknown"
+        | _                      -> "0"
+
     type AddrNameStruct =
         struct
             val public Addr: address

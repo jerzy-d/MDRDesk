@@ -70,9 +70,8 @@
       <SpecificVersion>False</SpecificVersion>
       <HintPath>..\ClrMDRIndex\bin\x64\Debug\ClrMDRIndex.dll</HintPath>
     </Reference>
-    <Reference Include="Microsoft.Diagnostics.Runtime, Version=0.8.31.1, Culture=neutral, processorArchitecture=MSIL">
-      <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\ClrMd\Release\Microsoft.Diagnostics.Runtime.dll</HintPath>
+    <Reference Include="Microsoft.Diagnostics.Runtime">
+      <HintPath>..\ClrMd\Microsoft.Diagnostics.Runtime.dll</HintPath>
     </Reference>
     <Reference Include="System" />
     <Reference Include="System.Configuration" />
@@ -105,7 +104,6 @@
     <Compile Include="ClrUtils\IndexProxy.cs" />
     <Compile Include="ClrUtils\InstanceReferences.cs" />
     <Compile Include="ClrUtils\StringStats.cs" />
-    <Compile Include="ClrUtils\ThreadBlockMap.cs" />
     <Compile Include="Graph\DepthFirstOrder.cs" />
     <Compile Include="Graph\Digraph.cs" />
     <Compile Include="Graph\DirectedCycle.cs" />

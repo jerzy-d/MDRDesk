@@ -407,6 +407,33 @@ namespace MDRDesk
 			MessageBox.Show("Not implemented yet.", "Get Field Values", MessageBoxButton.OK, MessageBoxImage.Information);
 		}
 
+
+		private async void GetFieldDefaultValuesClicked(object sender, RoutedEventArgs e)
+		{
+			string typeName;
+			int typeId;
+			if (!GetTypeNameInfo(sender, out typeName, out typeId)) return;
+			SetStartTaskMainWindowState("generating type field default values report, please wait...");
+			var result = await Task.Run(() =>
+			{
+				return CurrentIndex.GetTypeFieldDefaultValues(typeId);
+			});
+			string msg;
+			if (result.Error != null)
+			{
+				msg = "getting default values for: " + Utils.BaseTypeName(typeName) + ", failed.";
+				MessageBox.Show(result.Error, msg, MessageBoxButton.OK, MessageBoxImage.Error);
+			}
+			else
+			{
+				msg = "getting default values for: " + Utils.BaseTypeName(typeName) + ", done.";
+			}
+			SetEndTaskMainWindowState(msg);
+
+			DisplayListingGrid(result, Constants.BlackDiamond, "TypeDefaults", "TypeDefaultValues");
+		}
+
+
 		//private async void GetInstancesHeapSizesClicked(object sender, bool baseSizes)
 		//{
 		//	string typeName;
@@ -808,8 +835,6 @@ namespace MDRDesk
 
 			listView.Items.Clear();
 			listView.ItemsSource = info.Items;
-			var txtBox = (TextBox)LogicalTreeHelper.FindLogicalNode(grid, "ListingInformation");
-			Debug.Assert(txtBox != null);
 
 			if (menuItems == null)
 			{
@@ -826,12 +851,14 @@ namespace MDRDesk
 			}
 			listView.ContextMenu = new SWC.ContextMenu();
 			listView.ContextMenu.ItemsSource = menuItems;
+			if (!string.IsNullOrEmpty(info.Notes))
+			{
+				var txtBox = (TextBox)LogicalTreeHelper.FindLogicalNode(grid, "ListingInformation");
+				Debug.Assert(txtBox != null);
+				txtBox.Text = info.Notes;
+			}
 
 			DisplayTab(prefix, reportTitle, grid, name);
-			//var tab = new CloseableTabItem() { Header = prefix + " " + reportTitle, Content = grid, Name = name + Utils.GetNewID() };
-			//MainTab.Items.Add(tab);
-			//MainTab.SelectedItem = tab;
-			//MainTab.UpdateLayout();
 		}
 
 		#region weakreference

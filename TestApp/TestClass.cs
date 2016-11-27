@@ -16,6 +16,7 @@ namespace TestApp
         private ConcurrentDictionary<string, KeyValuePair<string, string>> _concurrentDictionary;
         private Dictionary<int, string> _dictionary;
 	    private TestStruct _testStruct;
+	    private Guid _myGuid;
 
 		private string[] _stringArray;
 		private TimeSpan[] _timeSpanArray;
@@ -33,7 +34,7 @@ namespace TestApp
 			KeyValuePair<string, KeyValuePair<DateTime, TestStructClass>> kvPair = 
 				new KeyValuePair<string, KeyValuePair<DateTime, TestStructClass>>(name + "key",new KeyValuePair<DateTime, TestStructClass>(DateTime.Now, testStructClass));
 			_testStruct = new TestStruct(name + "_fromTestClass",20,kvPair);
-
+			_myGuid = Guid.NewGuid();
 			_stringArray = new string[StructArrayLen];
 			_timeSpanArray = new TimeSpan[StructArrayLen];
 			_dateTimeArray = new DateTime[StructArrayLen];

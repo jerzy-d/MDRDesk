@@ -36,6 +36,24 @@ module FQry =
         with
             | exn -> (exn.ToString(),nullTypes.ToArray())
 
+    let heapWarmup (heap:ClrHeap) : (string * address array * int) =
+        let nullTypes = ResizeArray<address>()
+        let mutable count:int32 = 0
+        try
+            let mutable ndx:int32 = 0
+            while ndx < heap.Segments.Count do
+                let seg = heap.Segments.[ndx]
+                let mutable addr = seg.FirstObject;
+                while addr <> 0UL do
+                    let clrtype = heap.GetObjectType(addr)
+                    if isNull clrtype then nullTypes.Add(addr)
+                    addr <- seg.NextObject(addr)
+                    count <- count + 1
+                ndx <- ndx + 1
+            (null, nullTypes.ToArray(),count)
+        with
+            | exn -> (exn.ToString(),nullTypes.ToArray(),count)
+
     let getTypeAddresses (heap:ClrHeap) (typeName:string): (string * KeyValuePair<address,uint64> array) =
         let types = ResizeArray<KeyValuePair<address,uint64>>(1024)
         try

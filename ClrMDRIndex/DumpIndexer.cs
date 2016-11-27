@@ -47,7 +47,8 @@ namespace ClrMDRIndex
 			_fileMoniker = new DumpFileMoniker(dmpPath);
 		}
 
-		public bool CreateDumpIndex(Version version, IProgress<string> progress, IndexingArguments indexArguments, out string indexPath, out string error)
+		public bool CreateDumpIndex(Version version, IProgress<string> progress, IndexingArguments indexArguments,
+			out string indexPath, out string error)
 		{
 			error = null;
 			indexPath = _fileMoniker.MapFolder;
@@ -69,9 +70,9 @@ namespace ClrMDRIndex
 					// indexing
 					//
 					if (!GetPrerequisites(clrtDump, progress, out _stringIdDcts, out error)) return false;
-				    if (!GetTargetModuleInfos(clrtDump, progress, out error)) return false;
+					if (!GetTargetModuleInfos(clrtDump, progress, out error)) return false;
 
-                    for (int r = 0, rcnt = clrtDump.RuntimeCount; r < rcnt; ++r)
+					for (int r = 0, rcnt = clrtDump.RuntimeCount; r < rcnt; ++r)
 					{
 						_currentRuntimeIndex = r;
 						string runtimeIndexHeader = Utils.RuntimeStringHeader(r);
@@ -111,13 +112,14 @@ namespace ClrMDRIndex
 							//
 							progress?.Report(runtimeIndexHeader + "Getting roots... Previous action duration: " + durationStr);
 							stopWatch.Restart();
-							var rootAddrInfo = ClrtRootInfo.GetRootAddresses(r, heap, typeNames, strIds,_fileMoniker,out error);
+							var rootAddrInfo = ClrtRootInfo.GetRootAddresses(r, heap, typeNames, strIds, _fileMoniker, out error);
 							Debug.Assert(error == null);
 							durationStr = Utils.StopAndGetDurationString(stopWatch);
 
 							// get addresses and set roots
 							//
-							progress?.Report(runtimeIndexHeader + "Getting addresses and setting roots... Previous action duration: " + durationStr);
+							progress?.Report(runtimeIndexHeader + "Getting addresses and setting roots... Previous action duration: " +
+							                 durationStr);
 							stopWatch.Restart();
 							addresses = new ulong[addrCount];
 							typeIds = new int[addrCount];
@@ -127,6 +129,16 @@ namespace ClrMDRIndex
 							}
 							durationStr = Utils.StopAndGetDurationString(stopWatch);
 
+							// threads and blocking objects
+							//
+							stopWatch.Restart();
+							progress?.Report(runtimeIndexHeader +
+							                 "Getting threads, blocking objecks information... Previous action duration: " + durationStr);
+							if (!GetThreadsAndBlockingObjects(clrtDump, addresses, typeIds, out error))
+							{
+								return false;
+							}
+							durationStr = Utils.StopAndGetDurationString(stopWatch);
 
 							// field dependencies
 							//
@@ -202,9 +214,11 @@ namespace ClrMDRIndex
 							// build instance reference map
 							//
 							stopWatch.Restart();
-							progress?.Report(runtimeIndexHeader + "Building instance reference map... Previous action duration: " + durationStr);
+							progress?.Report(runtimeIndexHeader + "Building instance reference map... Previous action duration: " +
+							                 durationStr);
 
-							InstanceReferences.InvertFieldRefs(new Tuple<int, DumpFileMoniker, ConcurrentBag<string>, IProgress<string>>(r, _fileMoniker, errors, null));
+							InstanceReferences.InvertFieldRefs(new Tuple<int, DumpFileMoniker, ConcurrentBag<string>, IProgress<string>>(r,
+								_fileMoniker, errors, null));
 
 							durationStr = Utils.StopAndGetDurationString(stopWatch);
 							stopWatch.Restart();
@@ -271,15 +285,17 @@ namespace ClrMDRIndex
 			BinaryWriter brOffsets = null;
 			try
 			{
-				brOffsets = new BinaryWriter(File.Open(_fileMoniker.GetFilePath(rtNdx, Constants.MapTypeInstanceOffsetsFilePostfix), FileMode.Create));
+				brOffsets =
+					new BinaryWriter(File.Open(_fileMoniker.GetFilePath(rtNdx, Constants.MapTypeInstanceOffsetsFilePostfix),
+						FileMode.Create));
 				var indices = Utils.Iota(typeIds.Length);
 				var ids = new int[typeIds.Length];
 				Array.Copy(typeIds, 0, ids, 0, typeIds.Length);
 				Array.Sort(ids, indices);
-				brOffsets.Write((int)0);
+				brOffsets.Write((int) 0);
 				int prev = ids[0];
 				brOffsets.Write(prev);
-				brOffsets.Write((int)0);
+				brOffsets.Write((int) 0);
 				int usedTypeCnt = 1;
 				for (int i = 1, icnt = ids.Length; i < icnt; ++i)
 				{
@@ -331,7 +347,8 @@ namespace ClrMDRIndex
 			return count;
 		}
 
-		public bool GetAddressesSetRoots(ClrHeap heap, ulong[] addresses, int[] typeIds, string[] typeNames, Tuple<ulong[],ulong[]> rootInfos, out string error)
+		public bool GetAddressesSetRoots(ClrHeap heap, ulong[] addresses, int[] typeIds, string[] typeNames,
+			Tuple<ulong[], ulong[]> rootInfos, out string error)
 		{
 			error = null;
 			var roots = rootInfos.Item1;
@@ -346,7 +363,7 @@ namespace ClrMDRIndex
 				uint[] sizes = new uint[addresses.Length];
 				uint[] baseSizes = new uint[addresses.Length];
 				int[] elemetTypes = new int[addresses.Length];
-				var arraySizes = new List<KeyValuePair<int,int>>(addresses.Length/25);
+				var arraySizes = new List<KeyValuePair<int, int>>(addresses.Length/25);
 
 				for (int segNdx = 0, icnt = segs.Count; segNdx < icnt; ++segNdx)
 				{
@@ -365,7 +382,7 @@ namespace ClrMDRIndex
 						var typeNameKey = clrType == null ? Constants.NullTypeName : clrType.Name;
 						int typeId = Array.BinarySearch(typeNames, typeNameKey, StringComparer.Ordinal);
 						typeIds[addrNdx] = typeId;
-						elemetTypes[addrNdx] = clrType == null ? (int)ClrElementType.Unknown : (int)clrType.ElementType;
+						elemetTypes[addrNdx] = clrType == null ? (int) ClrElementType.Unknown : (int) clrType.ElementType;
 						if (clrType == null) goto NEXT_OBJECT;
 
 						int rootNdx = Utils.AddressSearch(roots, addr);
@@ -387,10 +404,10 @@ namespace ClrMDRIndex
 						}
 						var isFree = Utils.SameStrings(clrType.Name, Constants.FreeTypeName);
 						var baseSize = clrType.BaseSize;
-						baseSizes[addrNdx] = (uint)baseSize;
+						baseSizes[addrNdx] = (uint) baseSize;
 						var size = clrType.GetSize(addr);
-						if (size > (ulong)UInt32.MaxValue) size = (ulong)UInt32.MaxValue;
-						sizes[addrNdx] = (uint)size;
+						if (size > (ulong) UInt32.MaxValue) size = (ulong) UInt32.MaxValue;
+						sizes[addrNdx] = (uint) size;
 
 						// get generation stats
 						//
@@ -401,7 +418,7 @@ namespace ClrMDRIndex
 						if (clrType.IsArray)
 						{
 							int asz = clrType.GetArrayLength(addr);
-							arraySizes.Add(new KeyValuePair<int, int>(addrNdx,asz));
+							arraySizes.Add(new KeyValuePair<int, int>(addrNdx, asz));
 						}
 
 						NEXT_OBJECT:
@@ -418,26 +435,36 @@ namespace ClrMDRIndex
 
 				// dump segments info
 				//
-				if (!ClrtSegment.DumpSegments(_fileMoniker.GetFilePath(_currentRuntimeIndex,Constants.MapSegmentInfoFilePostfix), mysegs, out error))
+				if (
+					!ClrtSegment.DumpSegments(_fileMoniker.GetFilePath(_currentRuntimeIndex, Constants.MapSegmentInfoFilePostfix),
+						mysegs, out error))
 				{
 					_errors[_currentRuntimeIndex].Add("DumpSegments failed." + Environment.NewLine + error);
 				}
 
 				// dump sizes
 				//
-				if (!Utils.WriteUintArray(_fileMoniker.GetFilePath(_currentRuntimeIndex, Constants.MapInstanceSizesFilePostfix), sizes,out error))
+				if (
+					!Utils.WriteUintArray(_fileMoniker.GetFilePath(_currentRuntimeIndex, Constants.MapInstanceSizesFilePostfix), sizes,
+						out error))
 				{
 					_errors[_currentRuntimeIndex].Add("Dumping sizes failed." + Environment.NewLine + error);
 				}
-				if (!Utils.WriteUintArray(_fileMoniker.GetFilePath(_currentRuntimeIndex, Constants.MapInstanceBaseSizesFilePostfix), baseSizes, out error))
+				if (
+					!Utils.WriteUintArray(_fileMoniker.GetFilePath(_currentRuntimeIndex, Constants.MapInstanceBaseSizesFilePostfix),
+						baseSizes, out error))
 				{
 					_errors[_currentRuntimeIndex].Add("Dumping base sizes failed." + Environment.NewLine + error);
 				}
-				if (!Utils.WriteIntArray(_fileMoniker.GetFilePath(_currentRuntimeIndex, Constants.MapInstanceElemTypesFilePostfix), elemetTypes, out error))
+				if (
+					!Utils.WriteIntArray(_fileMoniker.GetFilePath(_currentRuntimeIndex, Constants.MapInstanceElemTypesFilePostfix),
+						elemetTypes, out error))
 				{
 					_errors[_currentRuntimeIndex].Add("Dumping element types failed." + Environment.NewLine + error);
 				}
-				if (!Utils.WriteKvIntIntArray(_fileMoniker.GetFilePath(_currentRuntimeIndex, Constants.MapArraySizesFilePostfix), arraySizes, out error))
+				if (
+					!Utils.WriteKvIntIntArray(_fileMoniker.GetFilePath(_currentRuntimeIndex, Constants.MapArraySizesFilePostfix),
+						arraySizes, out error))
 				{
 					_errors[_currentRuntimeIndex].Add("Dumping array sizes failed." + Environment.NewLine + error);
 				}
@@ -451,6 +478,197 @@ namespace ClrMDRIndex
 			}
 		}
 
+		private bool GetThreadsAndBlockingObjects(ClrtDump clrtDump, ulong[] instances, int[] typeIds, out string error,
+			IProgress<string> progress=null)
+		{
+			error = null;
+			BinaryWriter bw = null;
+			try
+			{
+				for (int r = 0, rcnt = clrtDump.RuntimeCount; r < rcnt; ++r)
+				{
+					var heap = clrtDump.Runtimes[r].GetHeap();
+					var threads = DumpIndexer.GetThreads(clrtDump.Runtimes[r]);
+					var blocks = DumpIndexer.GetBlockingObjects(heap);
+					var threadSet = new HashSet<ClrThread>(new ClrThreadEqualityCmp());
+					var blkGraph = new List<Tuple<BlockingObject, ClrThread[], ClrThread[]>>();
+					var allBlkList = new List<BlockingObject>();
+					var owners = new List<ClrThread>();
+					var waiters = new List<ClrThread>();
+					for (int i = 0, icnt = blocks.Length; i < icnt; ++i)
+					{
+						var blk = blocks[i];
+						owners.Clear();
+						waiters.Clear();
+						ClrThread owner = null;
+						if (blk.Taken && blk.HasSingleOwner)
+						{
+							owner = blk.Owner;
+							if (owner != null)
+							{
+								threadSet.Add(owner);
+								owners.Add(owner);
+							}
+						}
+
+						if (blk.Owners != null && blk.Owners.Count > 0)
+						{
+							for (int j = 0, jcnt = blk.Owners.Count; j < jcnt; ++j)
+							{
+								var th = blk.Owners[j];
+								if (th != null)
+								{
+									threadSet.Add(th);
+									if (owner == null || owner.OSThreadId != th.OSThreadId)
+										owners.Add(th);
+								}
+							}
+						}
+
+						if (blk.Waiters != null && blk.Waiters.Count > 0)
+						{
+							for (int j = 0, jcnt = blk.Waiters.Count; j < jcnt; ++j)
+							{
+								var th = blk.Waiters[j];
+								if (th != null)
+								{
+									threadSet.Add(th);
+									waiters.Add(th);
+								}
+							}
+						}
+
+						if (owners.Count > 0)
+						{
+							var ownerAry = owners.ToArray();
+							var waiterAry = waiters.ToArray();
+							blkGraph.Add(new Tuple<BlockingObject, ClrThread[], ClrThread[]>(blk, ownerAry, waiterAry));
+							allBlkList.Add(blk);
+						}
+						else if (waiters.Count > 0)
+						{
+							blkGraph.Add(new Tuple<BlockingObject, ClrThread[], ClrThread[]>(blk, Utils.EmptyArray<ClrThread>.Value,
+								waiters.ToArray()));
+							allBlkList.Add(blk);
+						}
+					}
+
+					var thrCmp = new ClrThreadCmp();
+					var blkCmp = new BlockingObjectCmp();
+					var blkInfoCmp = new BlkObjInfoCmp();
+
+					// blocks and threads found in blocking objects
+					//
+					var blkThreadAry = threadSet.ToArray();
+					Array.Sort(blkThreadAry, thrCmp);
+					var blkBlockAry = allBlkList.ToArray();
+					Array.Sort(blkBlockAry, blkCmp);
+					var threadBlocksAry = blkGraph.ToArray();
+					Array.Sort(threadBlocksAry, blkInfoCmp);
+
+					// create maps
+					//
+					int[] blkMap = new int[blkBlockAry.Length];
+					int[] thrMap = new int[blkThreadAry.Length];
+					for (int i = 0, icnt = blkMap.Length; i < icnt; ++i)
+					{
+						blkMap[i] = Array.BinarySearch(blocks, blkBlockAry[i], blkCmp);
+						Debug.Assert(blkMap[i] >= 0);
+					}
+
+					for (int i = 0, icnt = thrMap.Length; i < icnt; ++i)
+					{
+						thrMap[i] = Array.BinarySearch(threads, blkThreadAry[i], thrCmp);
+						Debug.Assert(thrMap[i] >= 0);
+					}
+
+					int blkThreadCount = blkThreadAry.Length;
+					Digraph graph = new Digraph(blkThreadCount + blkBlockAry.Length);
+
+					for (int i = 0, cnt = threadBlocksAry.Length; i < cnt; ++i)
+					{
+						var blkInfo = threadBlocksAry[i];
+						for (int j = 0, tcnt = blkInfo.Item2.Length; j < tcnt; ++j)
+						{
+							var ndx = Array.BinarySearch(blkThreadAry, blkInfo.Item2[j], thrCmp);
+							Debug.Assert(ndx >= 0);
+							graph.AddDistinctEdge(blkThreadCount + i, ndx);
+						}
+						for (int j = 0, tcnt = blkInfo.Item3.Length; j < tcnt; ++j)
+						{
+							var ndx = Array.BinarySearch(blkThreadAry, blkInfo.Item3[j], thrCmp);
+							Debug.Assert(ndx >= 0);
+							graph.AddDistinctEdge(ndx, blkThreadCount + i);
+						}
+					}
+
+					var cycle = new DirectedCycle(graph);
+					var cycles = cycle.GetCycle();
+
+					// save graph
+					//
+					var path = _fileMoniker.GetFilePath(r, Constants.MapThreadsAndBlocksGraphFilePostfix);
+					bw = new BinaryWriter(File.Open(path, FileMode.Create));
+					bw.Write(cycles.Length);
+					for (int i = 0, icnt = cycles.Length; i < icnt; ++i)
+					{
+						bw.Write(cycles[i]);
+					}
+					bw.Write(thrMap.Length);
+					for (int i = 0, icnt = thrMap.Length; i < icnt; ++i)
+					{
+					bw.Write(thrMap[i]);
+					}
+					bw.Write(blkMap.Length);
+					for (int i = 0, icnt = blkMap.Length; i < icnt; ++i)
+					{
+						bw.Write(blkMap[i]);
+					}
+					graph.Dump(bw, out error);
+					bw.Close();
+					bw = null;
+					if (error != null) return false;
+
+					// save threads and blocks
+					//
+					path = _fileMoniker.GetFilePath(0, Constants.MapThreadsAndBlocksFilePostfix);
+					bw = new BinaryWriter(File.Open(path, FileMode.Create));
+					bw.Write(threads.Length);
+					for (int i = 0, icnt = threads.Length; i < icnt; ++i)
+					{
+						var clrtThread = new ClrtThread(threads[i], blocks, blkCmp);
+						Debug.Assert(clrtThread!=null);
+						clrtThread.Dump(bw);
+					}
+					bw.Write(blocks.Length);
+					for (int i = 0, icnt = blocks.Length; i < icnt; ++i)
+					{
+						var blk = blocks[i];
+						var ndx = Array.BinarySearch(blkBlockAry, blk, blkCmp);
+						var typeId = GetTypeId(blk.Object, instances, typeIds);
+						var clrtBlock = new ClrtBlkObject(blk, ndx, typeId);
+						Debug.Assert(clrtBlock!=null);
+						clrtBlock.Dump(bw);
+					}
+				}
+				return true;
+			}
+			catch (Exception ex)
+			{
+				error = Utils.GetExceptionErrorString(ex);
+				return false;
+			}
+			finally
+			{
+				bw?.Close();
+			}
+		}
+
+		public int GetTypeId(ulong addr, ulong[] instances, int[] typeIds)
+		{
+			int inst = Utils.AddressSearch(instances, addr);
+			return inst < 0 ? Constants.InvalidIndex : typeIds[inst];
+		}
 
 		/// <summary>
 		/// 
@@ -811,5 +1029,14 @@ namespace ClrMDRIndex
 
 
 		#endregion indexing helpers
+	}
+
+	public class BlkObjInfoCmp : IComparer<Tuple<BlockingObject, ClrThread[], ClrThread[]>>
+	{
+		public int Compare(Tuple<BlockingObject, ClrThread[], ClrThread[]> a,
+			Tuple<BlockingObject, ClrThread[], ClrThread[]> b)
+		{
+			return a.Item1.Object < b.Item1.Object ? -1 : (a.Item1.Object > b.Item1.Object ? 1 : 0);
+		}
 	}
 }

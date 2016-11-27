@@ -1,5 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Collections.Specialized;
+using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -55,7 +57,7 @@ namespace ClrMDRIndex
 		public bool IsFinalizer => (_traits & (int)Traits.Finalizer) != 0;
 		public bool IsThreadpoolWorker => (_traits & (int)Traits.ThreadpoolWorker) != 0;
 
-		public ClrtThread(ClrThread thrd, ulong[] blkObjects)
+		public ClrtThread(ClrThread thrd, BlockingObject[] blkObjects, BlockingObjectCmp blkCmp)
 		{
 			_address = thrd.Address;
 			_traits = GetTraits(thrd);
@@ -63,16 +65,16 @@ namespace ClrMDRIndex
 			_managedId = thrd.ManagedThreadId;
 			_lockCount = thrd.LockCount;
 			_teb = thrd.Teb;
-			_blkObjects = blkObjects != null ? GetBlockingObjects(thrd.BlockingObjects, blkObjects) : Utils.EmptyArray<int>.Value;
+			_blkObjects = GetBlockingObjects(thrd.BlockingObjects, blkObjects,blkCmp);
 		}
 
-		private int[] GetBlockingObjects(IList<BlockingObject> lst, ulong[] blkObjects)
+		private int[] GetBlockingObjects(IList<BlockingObject> lst, BlockingObject[] blkObjects, BlockingObjectCmp blkCmp)
 		{
 			if (lst == null || lst.Count < 1) return Utils.EmptyArray<int>.Value;
 			var waitLst = new List<int>();
 			for (int i = 0, icnt = lst.Count; i < icnt; ++i)
 			{
-				var ndx = Array.BinarySearch(blkObjects, lst[i].Object);
+				var ndx = Array.BinarySearch(blkObjects, lst[i],blkCmp);
 				if (ndx >= 0) waitLst.Add(ndx);
 			}
 			return waitLst.Count > 0 ? waitLst.ToArray() : Utils.EmptyArray<int>.Value;
@@ -121,17 +123,40 @@ namespace ClrMDRIndex
 			if (sb.Length > 0) sb.Remove(sb.Length - 2, 2);
 			return StringBuilderCache.GetStringAndRelease(sb);
 		}
+
+		public void Dump(BinaryWriter bw)
+		{
+			bw.Write(_address);
+			bw.Write(_teb);
+			bw.Write(_blkObjects.Length);
+			for (int i = 0, icnt = _blkObjects.Length; i < icnt; ++i)
+			{
+				bw.Write(_blkObjects[i]);
+			}
+			bw.Write(_traits);
+			bw.Write(_osId);
+			bw.Write(_managedId);
+			bw.Write(_lockCount);
+		}
 	}
 
 	public class ClrThreadCmp : IComparer<ClrThread>
 	{
 		public int Compare(ClrThread a, ClrThread b)
 		{
-			if (a.OSThreadId == b.OSThreadId)
-			{
-				return a.ManagedThreadId < b.ManagedThreadId ? -1 : (a.ManagedThreadId > b.ManagedThreadId ? 1 : 0);
-			}
-			return a.OSThreadId < b.OSThreadId ? -1 : 1;
+			return a.Address < b.Address ? -1 : (a.Address > b.Address ? 1 : 0);
+		}
+	}
+
+	public class ClrThreadEqualityCmp : IEqualityComparer<ClrThread>
+	{
+		public bool Equals(ClrThread a, ClrThread b)
+		{
+			return a.OSThreadId == b.OSThreadId;
+		}
+		public int GetHashCode(ClrThread t)
+		{
+			return t.OSThreadId.GetHashCode();
 		}
 	}
 }

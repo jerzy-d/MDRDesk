@@ -231,6 +231,8 @@ namespace ClrMDRIndex
 
 	public class ValueExtractor
 	{
+		public static bool Is64Bit = Environment.Is64BitOperatingSystem;
+
 		//
 		// System.Decimal
 		//
@@ -247,6 +249,20 @@ namespace ClrMDRIndex
 			decimal d = new decimal(bits);
 
 			return d.ToString(CultureInfo.InvariantCulture);
+		}
+
+		public static decimal GetDecimal(ulong parentAddr, ClrInstanceField field)
+		{
+			var addr = field.GetAddress(parentAddr, true);
+			var flags = (int)field.Type.Fields[0].GetValue(addr);
+			var hi = (int)field.Type.Fields[1].GetValue(addr);
+			var lo = (int)field.Type.Fields[2].GetValue(addr);
+			var mid = (int)field.Type.Fields[3].GetValue(addr);
+
+			int[] bits = { lo, mid, hi, flags };
+			decimal d = new decimal(bits);
+
+			return d;
 		}
 
 		public static string GetDecimalValue(ulong addr, ClrType type, string formatSpec)
@@ -380,6 +396,15 @@ namespace ClrMDRIndex
 			return formatSpec == null ? dt.ToString(CultureInfo.InvariantCulture) : dt.ToString(formatSpec);
 		}
 
+		public static DateTime GetDateTime(ulong addr, ClrInstanceField fld, bool internalPtr)
+		{
+			ulong fldAddr = fld.GetAddress(addr, internalPtr);
+			var data = (ulong)fld.Type.Fields[0].GetValue(fldAddr, true);
+			data = data & TicksMask;
+			var dt = DateTime.FromBinary((long)data);
+			return dt;
+		}
+
 		//
 		// System.TimeSpan
 		//
@@ -397,6 +422,14 @@ namespace ClrMDRIndex
 			var data = (long)fld.Type.Fields[0].GetValue(fldAddr, true);
 			var ts = TimeSpan.FromTicks(data);
 			return ts.ToString("c");
+		}
+
+		public static TimeSpan GetTimeSpan(ulong addr, ClrInstanceField fld) // TODO JRD -- check if this works
+		{
+			ulong fldAddr = fld.GetAddress(addr, true);
+			var data = (long)fld.Type.Fields[0].GetValue(fldAddr, true);
+			var ts = TimeSpan.FromTicks(data);
+			return ts;
 		}
 
 		public static string GetTimeSpanValue(ClrHeap heap, ulong addr) // TODO JRD -- check if this works
@@ -439,6 +472,63 @@ namespace ClrMDRIndex
 				sb.AppendFormat("{0:X2}", val);
 			}
 			return StringBuilderCache.GetStringAndRelease(sb);
+		}
+
+		public static string GetGuidValue(ulong addr, ClrInstanceField field)
+		{
+			StringBuilder sb = StringBuilderCache.Acquire(64);
+			var fldAddr = field.GetAddress(addr);
+			if (fldAddr == 0UL) return Constants.NullValue;
+			var ival = (int)field.Type.Fields[0].GetValue(fldAddr, true);
+			sb.AppendFormat("{0:X8}", ival);
+			sb.Append('-');
+			var sval = (short)field.Type.Fields[1].GetValue(fldAddr, true);
+			sb.AppendFormat("{0:X4}", sval);
+			sb.Append('-');
+			sval = (short)field.Type.Fields[2].GetValue(fldAddr, true);
+			sb.AppendFormat("{0:X4}", sval);
+			sb.Append('-');
+			for (var i = 3; i < 11; ++i)
+			{
+				if (i == 5) sb.Append('-');
+				var val = (byte)field.Type.Fields[i].GetValue(fldAddr, true);
+				sb.AppendFormat("{0:X2}", val);
+			}
+			return StringBuilderCache.GetStringAndRelease(sb);
+		}
+
+		public static bool IsGuidEmpty(ulong addr, ClrInstanceField field)
+		{
+			var fldAddr = field.GetAddress(addr);
+			if (fldAddr == 0UL) return true;
+			var ival = (int)field.Type.Fields[0].GetValue(fldAddr, true);
+			if (ival != 0) return false;
+			var sval = (short)field.Type.Fields[1].GetValue(fldAddr, true);
+			if (sval != 0) return false;
+			sval = (short)field.Type.Fields[2].GetValue(fldAddr, true);
+			if (sval != 0) return false;
+			for (var i = 3; i < 11; ++i)
+			{
+				var val = (byte)field.Type.Fields[i].GetValue(fldAddr, true);
+				if (val != 0) return false;
+			}
+			return true;
+		}
+
+		public static bool IsEmptyGuid(ulong addr, ClrType type)
+		{
+			var ival = (int)type.Fields[0].GetValue(addr, true);
+			if (ival != 0) return false;
+			var sval = (short)type.Fields[1].GetValue(addr, true);
+			if (sval != 0) return false;
+			sval = (short)type.Fields[2].GetValue(addr, true);
+			if (sval != 0) return false;
+			for (var i = 3; i < 11; ++i)
+			{
+				var val = (byte)type.Fields[i].GetValue(addr, true);
+				if (val != 0) return false;
+			}
+			return true;
 		}
 
 		//
@@ -542,6 +632,47 @@ namespace ClrMDRIndex
 			}
 		}
 
+		public static bool IsPrimitiveValueDefault(ulong addr, ClrInstanceField field)
+		{
+			if (field.Type == null) return true;
+			var obj = field.GetValue(addr);
+			switch (field.ElementType)
+			{
+				case ClrElementType.Unknown:
+					return false;
+				case ClrElementType.Boolean:
+					return ((bool)obj) == false;
+				case ClrElementType.Char:
+					return ((char)obj) == 0;
+				case ClrElementType.Int8:
+					return ((Byte)obj) == 0;
+				case ClrElementType.Int16:
+					return ((Int16)obj) == 0;
+				case ClrElementType.Int32:
+					return ((Int32)obj) == 0;
+				case ClrElementType.Int64:
+					return ((Int64)obj)==0;
+				case ClrElementType.UInt8:
+					return ((Byte)obj)==0;
+				case ClrElementType.UInt16:
+					return ((UInt16)obj)==0;
+				case ClrElementType.UInt32:
+					return ((UInt32)obj)==0UL;
+				case ClrElementType.UInt64:
+					return ((UInt64)obj)==0UL;
+				case ClrElementType.Float:
+				case ClrElementType.Double:
+					return (Double)obj == 0.0;
+				case ClrElementType.Pointer:
+					return Is64Bit ? (UInt64)obj ==0 : (UInt32)obj==0;
+				case ClrElementType.NativeInt:
+					return (int)obj==0;
+				case ClrElementType.NativeUInt:
+					return (uint)obj==0;
+				default:
+					return true;
+			}
+		}
 		public static int GetPrimitiveValueSize(ClrElementType elementType)
 		{
 			switch (elementType)
@@ -657,9 +788,7 @@ namespace ClrMDRIndex
 							if (addrObj == null) return Constants.NullName;
 							return ValueExtractor.GetTimeSpanValue((ulong)addrObj, clrType);
 						case TypeCategory.Guid:
-							addrObj = field.GetValue(classAddr, internalAddr, false);
-							if (addrObj == null) return Constants.NullName;
-							return ValueExtractor.GetDecimalValue((ulong)addrObj, clrType, null);
+							return ValueExtractor.GetGuidValue(classAddr, field);
 						default:
 							return Constants.NonValue;
 					}

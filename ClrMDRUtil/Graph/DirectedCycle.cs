@@ -58,14 +58,9 @@ namespace ClrMDRIndex
 			return _cycle != null;
 		}
 
-		public IEnumerable<int> Cycle()
-		{
-			return _cycle;
-		}
-
 		public int[] GetCycle()
 		{
-			return _cycle.ToArray();
+			return _cycle?.ToArray() ?? Utils.EmptyArray<int>.Value;
 		}
 
 		public bool Check(out string error)

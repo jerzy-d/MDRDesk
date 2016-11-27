@@ -197,6 +197,8 @@ namespace ClrMDRIndex
 
 		public const string TxtCommonStringIdsPostfix = ".`STRINGIDS[0].txt"; // list of strings, ordered by ids
 
+		public const string MapThreadsAndBlocksFilePostfix = ".`THREADSANDBLOCKS[0].bin";
+		public const string MapThreadsAndBlocksGraphFilePostfix = ".`THREADSANDBLOCKSGRAPH[0].bin";
 
 		// end of new stuff ///////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -265,7 +267,7 @@ namespace ClrMDRIndex
 		//public const string MapFinalizerObjectAddressesPostfix = ".FINALIZEROBJECTADDRESSES[0].map";
 
 		public const string TxtThreadsAndBlocksFilePostfix = ".THREADSANDBLOCKS[0].txt";
-		public const string MapThreadsAndBlocksFilePostfix = ".THREADSANDBLOCKS[0].map";
+		//public const string MapThreadsAndBlocksFilePostfix = ".THREADSANDBLOCKS[0].map";
 
         
 	}

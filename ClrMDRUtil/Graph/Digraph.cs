@@ -111,7 +111,7 @@ namespace ClrMDRIndex
 				{
 					var adj = _adjacencyLists[i];
 					wr.Write(adj.Count);
-					for (int j = 0, acnt = adj.Count; j < cnt; ++j)
+					for (int j = 0, acnt = adj.Count; j < acnt; ++j)
 					{
 						wr.Write(adj[j]);
 					}

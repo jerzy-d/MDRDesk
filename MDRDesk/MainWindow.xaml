@@ -54,6 +54,7 @@
             <MenuItem x:Name="TypeListCopyTypeName" Header="Copy Type Name" Click="CopyTypeNameClicked"></MenuItem>
             <MenuItem x:Name="TypeListGenerationDistribution" Header="Generation Ditribution" Click="GenerationDistributionClicked"></MenuItem>
             <MenuItem x:Name="TypeListGetFieldValues" Header="Get Field Values" Click="GetFieldValuesClicked"></MenuItem>
+            <MenuItem x:Name="TypeListGetFieldDefaultValues" Header="Field Default Values Report" Click="GetFieldDefaultValuesClicked"></MenuItem>
             <Separator></Separator>
             <!--<MenuItem x:Name="TypeListGetTotalHeapSize" Header="Get Type Total Heap Size" Click="GetTotalHeapSizeClicked"></MenuItem>
             <MenuItem x:Name="TypeListGetTotalHeapSizeReport" Header="Get Type Total Heap Size Report" Click="GetTotalHeapSizeReportClicked"></MenuItem>-->
