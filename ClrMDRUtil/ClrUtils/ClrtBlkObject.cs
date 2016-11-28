@@ -8,6 +8,16 @@ using Microsoft.Diagnostics.Runtime;
 
 namespace ClrMDRIndex
 {
+	public class ClrtBlockingObjects
+	{
+		private ClrtBlkObject[] _blockingObjects;
+
+		//public static ClrtBlkObject[] GetClrtBlkObjects(BinaryReader br, int activeBlockCount)
+		//{
+			
+		//}
+	}
+
 	public class ClrtBlkObject
 	{
 		private ulong _address;
@@ -67,6 +77,7 @@ namespace ClrMDRIndex
 
 			return new ClrtBlkObject(addr,taken,blkReason,recursionCnt,typeId,blockInfoNdx);
 		}
+
 	}
 
 	public class BlockingObjectCmp : IComparer<BlockingObject>

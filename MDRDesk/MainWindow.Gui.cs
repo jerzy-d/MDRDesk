@@ -107,6 +107,7 @@ namespace MDRDesk
 		/// <param name="info">General crush dump info.</param>
 		private void DisplayGeneralInfoGrid(string info)
 		{
+			Debug.Assert(CurrentIndex != null);
 			var grid = this.TryFindResource("GeneralInfoView") as Grid;
 			Debug.Assert(grid != null);
 
@@ -136,6 +137,14 @@ namespace MDRDesk
 					txtBlock.Inlines.Add(ln);
 					txtBlock.Inlines.Add(Environment.NewLine);
 				}
+			}
+
+			if (CurrentIndex.DeadlockFound)
+			{
+				txtBlock.Inlines.Add(Environment.NewLine);
+				txtBlock.Inlines.Add(new Run("POSSIBLE THREAD DEADLOCK FOUND!") { FontWeight = FontWeights.Bold, FontSize = 12, Foreground = Brushes.Red});
+				txtBlock.Inlines.Add(new Run(" see threads/blocking objects graph.") { FontWeight = FontWeights.Bold, FontSize = 10, FontStyle = FontStyles.Italic});
+				txtBlock.Inlines.Add(Environment.NewLine);
 			}
 
 			txtBlock.Inlines.Add(Environment.NewLine);

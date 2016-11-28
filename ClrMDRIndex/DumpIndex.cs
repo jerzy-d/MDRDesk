@@ -72,7 +72,7 @@ namespace ClrMDRIndex
 		public WeakReference<uint[]> _sizes;
 		public WeakReference<uint[]> _baseSizes;
 		public WeakReference<ClrElementType[]> _elementTypes;
-		public WeakReference<Tuple<int[],int[]>> _arraySizes;
+		public WeakReference<Tuple<int[], int[]>> _arraySizes;
 
 		private ClrtSegment[] _segments; // segment infos, for instances generation histograms
 		private bool _segmentInfoUnrooted;
@@ -83,11 +83,15 @@ namespace ClrMDRIndex
 
 		private string[] _stringIds; // ordered by string ids TODO JRD
 		public string[] StringIds => _stringIds;
-		
+
 		private ClrtRootInfo _roots;
 
 		private IndexProxy _indexProxy;
 		public IndexProxy IndexProxy => _indexProxy;
+
+		private int[] _deadlock;
+		private Digraph _threadBlockgraph;
+		public bool DeadlockFound => _deadlock.Length > 0;
 
 		#endregion fields/properties
 
@@ -116,16 +120,16 @@ namespace ClrMDRIndex
 				if (!Utils.IsIndexVersionCompatible(version, index.DumpInfo))
 				{
 					error = Utils.GetErrorString("Failed to Open Index", index._fileMoniker.MapFolder,
-												"Index version is not compatible with this application's version."
-												+ Environment.NewLine
-												+ "Please reindex the corresponding crash dump.");
+						"Index version is not compatible with this application's version."
+						+ Environment.NewLine
+						+ "Please reindex the corresponding crash dump.");
 					index.Dispose();
 					return null;
 
 				}
 				if (!index.LoadInstanceReferences(out error)) return null;
 				if (!index.InitDump(out error, progress)) return null;
-				index._indexProxy = new IndexProxy(index.Dump, index._instances, index._instanceTypes,index._typeNames);
+				index._indexProxy = new IndexProxy(index.Dump, index._instances, index._instanceTypes, index._typeNames);
 				return index;
 			}
 			catch (Exception ex)
@@ -159,7 +163,7 @@ namespace ClrMDRIndex
 				// segments -- generation info
 				//
 				path = _fileMoniker.GetFilePath(_currentRuntimeIndex, Constants.MapSegmentInfoFilePostfix);
-				
+
 				_segments = ClrtSegment.ReadSegments(path, out _segmentInfoUnrooted, out error);
 
 				// roots
@@ -187,12 +191,45 @@ namespace ClrMDRIndex
 				_instanceReferences.Init(out error);
 				if (error != null) return false;
 
+				// threads and blocks
+				//
+				if (!LoadThreadBlockGraph(out error))
+				{
+					return false;
+				}
+
 				return true;
 			}
 			catch (Exception ex)
 			{
 				error = Utils.GetExceptionErrorString(ex);
 				return false;
+			}
+		}
+
+		private bool LoadThreadBlockGraph(out string error)
+		{
+			error = null;
+			BinaryReader br = null;
+			try
+			{
+				var path = _fileMoniker.GetFilePath(_currentRuntimeIndex, Constants.MapThreadsAndBlocksGraphFilePostfix);
+				br = new BinaryReader(File.Open(path, FileMode.Open));
+				int cycleCount = br.ReadInt32();
+				_deadlock = cycleCount > 0 ? new int[cycleCount] : Utils.EmptyArray<int>.Value;
+				for (int i = 0; i < cycleCount; ++i)
+					_deadlock[i] = br.ReadInt32();
+				_threadBlockgraph = Digraph.Load(br,out error);
+				return error == null;
+			}
+			catch (Exception ex)
+			{
+				error = Utils.GetExceptionErrorString(ex);
+				return false;
+			}
+			finally
+			{
+				br?.Close();
 			}
 		}
 
@@ -2330,6 +2367,7 @@ namespace ClrMDRIndex
 			string[] fieldTypeNames = null;
 			int ndx = 0;
 			bool intrnl = false;
+			int totalDefValues = 0;
 			while (clrType == null)
 			{
 				clrType = heap.GetObjectType(addresses[ndx]);
@@ -2377,23 +2415,33 @@ namespace ClrMDRIndex
 							else if (fldTypes[j].GetArrayLength(fldAddr) == 0)
 							{
 								counts[j] = counts[j] + 1;
+								++totalDefValues;
 							}
 							break;
 						case ClrElementType.String:
 							var str = (string)fields[j].GetValue(addr, false, true);
 							if (str == null || str.Length < 1)
+							{
 								counts[j] = counts[j] + 1;
+								++totalDefValues;
+							}
 							break;
 						case ClrElementType.Class:
 						case ClrElementType.Object:
 							fldAddr = fields[j].GetAddress(addr);
 							if (fldAddr == 0UL)
+							{
 								counts[j] = counts[j] + 1;
+								++totalDefValues;
+							}
 							break;
 						case ClrElementType.FunctionPointer:
 							fldAddr = fields[j].GetAddress(addr);
 							if (fldAddr == 0UL)
+							{
 								counts[j] = counts[j] + 1;
+								++totalDefValues;
+							}
 							break;
 						case ClrElementType.Struct:
 							switch (TypeKinds.GetParticularTypeKind(fldKinds[j]))
@@ -2403,6 +2451,7 @@ namespace ClrMDRIndex
 									if (dec == 0m)
 									{
 										counts[j] = counts[j] + 1;
+										++totalDefValues;
 									}
 									break;
 								case TypeKind.DateTime:
@@ -2410,6 +2459,7 @@ namespace ClrMDRIndex
 									if (dt < minDt)
 									{
 										counts[j] = counts[j] + 1;
+										++totalDefValues;
 									}
 									break;
 								case TypeKind.TimeSpan:
@@ -2417,12 +2467,14 @@ namespace ClrMDRIndex
 									if (ts.TotalMilliseconds == 0.0)
 									{
 										counts[j] = counts[j] + 1;
+										++totalDefValues;
 									}
 									break;
 								case TypeKind.Guid:
 									if (ValueExtractor.IsGuidEmpty(addr, fields[j]))
 									{
 										counts[j] = counts[j] + 1;
+										++totalDefValues;
 									}
 									break;
 							}
@@ -2431,6 +2483,7 @@ namespace ClrMDRIndex
 							if (ValueExtractor.IsPrimitiveValueDefault(addr, fields[j]))
 							{
 								counts[j] = counts[j] + 1;
+								++totalDefValues;
 							}
 							break;
 					}
@@ -2463,8 +2516,12 @@ namespace ClrMDRIndex
 			};
 
 			StringBuilder sb = StringBuilderCache.Acquire(StringBuilderCache.MaxCapacity);
-			sb.Append("Default values stats of: ").Append(clrType.Name).AppendLine();
-			sb.Append("Instance count: ").Append(Utils.LargeNumberString(addresses.Length)).AppendLine();
+			sb.Append("Default field values stats of: ").Append(clrType.Name).AppendLine();
+			sb.Append("Instance count: ").Append(Utils.LargeNumberString(addresses.Length));
+			sb.Append(", field count: ").Append(Utils.LargeNumberString(fldCount)).AppendLine();
+			var totPercent = (int)Math.Round(((double)totalDefValues * 100.0) / (double)(addresses.Length*fldCount));
+			sb.Append("Total default values percent: ").Append(Utils.LargeNumberString(totPercent)).Append("%").AppendLine();
+			sb.Append("NOTE: Boolean false value is counted as default one.").AppendLine();
 
 			return new ListingInfo(null, dataListing, colInfos, sb.ToString());
 

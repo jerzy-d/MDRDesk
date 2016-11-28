@@ -787,43 +787,43 @@ namespace MDRDesk
 
 		}
 
-		private async void AhqOpenInstanceRefsClicked(object sender, RoutedEventArgs e)
-		{
-			var dumpFilePath = SelectCrashDumpFile();
-			if (dumpFilePath == null) return;
+		//private async void AhqOpenInstanceRefsClicked(object sender, RoutedEventArgs e)
+		//{
+		//	var dumpFilePath = SelectCrashDumpFile();
+		//	if (dumpFilePath == null) return;
 
-			var progressHandler = new Progress<string>(MainStatusShowMessage);
-			var progress = progressHandler as IProgress<string>;
-			var dmpFileName = Path.GetFileName(dumpFilePath);
-			SetStartTaskMainWindowState("Indexing: " + dmpFileName + ", please wait.");
+		//	var progressHandler = new Progress<string>(MainStatusShowMessage);
+		//	var progress = progressHandler as IProgress<string>;
+		//	var dmpFileName = Path.GetFileName(dumpFilePath);
+		//	SetStartTaskMainWindowState("Indexing: " + dmpFileName + ", please wait.");
 
-			var result = await Task.Run(() =>
-			{
-				string error;
-				var index = DumpIndex.OpenIndexInstanceReferences(_myVersion, dumpFilePath, 0, out error, progress);
-				if (index != null)
-				{
-					if (CurrentAdhocIndex != null)
-					{
-						CurrentAdhocIndex.Dispose();
-					}
-					CurrentAdhocIndex = index;
-				}
-				return new Tuple<bool, string>(index!=null, error);
-			});
+		//	var result = await Task.Run(() =>
+		//	{
+		//		string error;
+		//		var index = DumpIndex.OpenIndexInstanceReferences(_myVersion, dumpFilePath, 0, out error, progress);
+		//		if (index != null)
+		//		{
+		//			if (CurrentAdhocIndex != null)
+		//			{
+		//				CurrentAdhocIndex.Dispose();
+		//			}
+		//			CurrentAdhocIndex = index;
+		//		}
+		//		return new Tuple<bool, string>(index!=null, error);
+		//	});
 
-			Utils.ForceGcWithCompaction();
-			SetEndTaskMainWindowState(result.Item1
-				? "Indexing: " + dmpFileName + " done."
-				: "Indexing: " + dmpFileName + " failed.");
+		//	Utils.ForceGcWithCompaction();
+		//	SetEndTaskMainWindowState(result.Item1
+		//		? "Indexing: " + dmpFileName + " done."
+		//		: "Indexing: " + dmpFileName + " failed.");
 
-			if (!result.Item1)
-			{
-				ShowError(result.Item2);
-				return;
-			}
+		//	if (!result.Item1)
+		//	{
+		//		ShowError(result.Item2);
+		//		return;
+		//	}
 
-		}
+		//}
 
 
 		/// <summary>
