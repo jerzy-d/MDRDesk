@@ -152,11 +152,11 @@ namespace ClrMDRIndex
 	{
 		public bool Equals(ClrThread a, ClrThread b)
 		{
-			return a.OSThreadId == b.OSThreadId;
+			return a.Address == b.Address;
 		}
 		public int GetHashCode(ClrThread t)
 		{
-			return t.OSThreadId.GetHashCode();
+			return t.Address.GetHashCode();
 		}
 	}
 }

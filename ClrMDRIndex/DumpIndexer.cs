@@ -519,7 +519,7 @@ namespace ClrMDRIndex
 								if (th != null)
 								{
 									threadSet.Add(th);
-									if (owner == null || owner.OSThreadId != th.OSThreadId)
+									if (owner == null || owner.Address != th.Address)
 										owners.Add(th);
 								}
 							}

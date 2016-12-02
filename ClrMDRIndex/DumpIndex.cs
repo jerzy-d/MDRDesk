@@ -90,6 +90,8 @@ namespace ClrMDRIndex
 		public IndexProxy IndexProxy => _indexProxy;
 
 		private int[] _deadlock;
+		private int[] _threadBlockingMap;
+		private int[] _blockBlockingMap;
 		private Digraph _threadBlockgraph;
 		public bool DeadlockFound => _deadlock.Length > 0;
 
@@ -219,6 +221,16 @@ namespace ClrMDRIndex
 				_deadlock = cycleCount > 0 ? new int[cycleCount] : Utils.EmptyArray<int>.Value;
 				for (int i = 0; i < cycleCount; ++i)
 					_deadlock[i] = br.ReadInt32();
+				int count = br.ReadInt32();
+				_threadBlockingMap = count > 0 ? new int[count] : Utils.EmptyArray<int>.Value;
+				for (int i = 0; i < count; ++i)
+					_threadBlockingMap[i] = br.ReadInt32();
+
+				count = br.ReadInt32();
+				_blockBlockingMap = count > 0 ? new int[count] : Utils.EmptyArray<int>.Value;
+				for (int i = 0; i < count; ++i)
+					_blockBlockingMap[i] = br.ReadInt32();
+
 				_threadBlockgraph = Digraph.Load(br,out error);
 				return error == null;
 			}

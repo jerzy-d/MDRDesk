@@ -2645,6 +2645,131 @@ namespace UnitTestMdr
 		}
 
 		[TestMethod]
+		public void TestSpecificFilteredTypePulsePositionStateManager()
+		{
+			string typeName = @"Eze.Server.Common.Pulse.Common.Types.PulsePositionStateManager";
+			string error = null;
+			int min = Int32.MaxValue;
+			int max = Int32.MinValue;
+			int totalOfCounts = 0;
+			int totalOfDct = 0;
+			int totalOfTypeInstances = 0;
+			SortedDictionary<int, int> histogram = new SortedDictionary<int, int>(new Utils.IntCmpDesc());
+
+			using (var clrDump = GetDump(@"D:\Jerzy\WinDbgStuff\dumps\Analytics\Harding\prcdmpAnalyticsHarding.20151029.dmp"))
+			//using (var clrDump = GetDump(@"D:\Jerzy\WinDbgStuff\dumps\Analytics\Highline\analyticsdump111.dlk.dmp"))
+			//using (var clrDump = GetDump(@"D:\Jerzy\WinDbgStuff\dumps\Analytics\CNS\Analytics6_160323_1615.good.dmp"))
+			//using (var clrDump = GetDump(@"D:\Jerzy\WinDbgStuff\dumps\Analytics\ConvergEx\Analytics_Post.dmp"))
+			//using (var clrDump = GetDump(@"D:\Jerzy\WinDbgStuff\dumps\Analytics\OZ\Analytics11.OZ.dmp"))
+			//using (var clrDump = GetDump(@"D:\Jerzy\WinDbgStuff\dumps\Analytics\OZ\analytics8.OZ.1510271623.dmp"))
+			//using (var clrDump = GetDump(@"D:\Jerzy\WinDbgStuff\dumps\Analytics\Anavon\Eze.Analytics.Svc_160225_204724.Anavon.dmp"))
+			//using (var clrDump = GetDump(@"D:\Jerzy\WinDbgStuff\dumps\Analytics\Baly\analytics9_1512161604.good.Baly.dmp"))
+			//using (var clrDump = GetDump(@"D:\Jerzy\WinDbgStuff\dumps\Analytics\Baly\analytics7_1510301630.Baly.dmp"))
+			//using (var clrDump = GetDump(@"D:\Jerzy\WinDbgStuff\dumps\Analytics\Lou\Analytics1.dmp"))
+			//using (var clrDump = GetDump(@"D:\Jerzy\WinDbgStuff\dumps\Analytics\Lou\Analytics3.dmp"))
+			//using (var clrDump = GetDump(@"D:\Jerzy\WinDbgStuff\dumps\Analytics\Lou\Analytics5.dmp"))
+			//using (var clrDump = GetDump(@"D:\Jerzy\WinDbgStuff\dumps\Analytics\Scopia\Eze.Analytics.Svc_160929_103505.dmp"))
+			{
+				try
+				{
+					var runtime = clrDump.Runtimes[0];
+					var heap = runtime.GetHeap();
+					var segs = heap.Segments;
+					ClrType fldClrType = null;
+					ClrInstanceField fldClrTypeFld = null;
+					int dctCnt = 0;
+					for (int i = 0, icnt = segs.Count; i < icnt; ++i)
+					{
+						dctCnt = 0;
+						var seg = segs[i];
+						ulong addr = seg.FirstObject;
+						while (addr != 0ul)
+						{
+							var clrType = heap.GetObjectType(addr);
+							if (clrType == null || !Utils.SameStrings(clrType.Name, typeName)) goto NEXT_OBJECT;
+							++totalOfTypeInstances;
+
+							var fld = clrType.GetFieldByName("aggregationSet");
+							var fldAddr = Auxiliaries.getReferenceFieldAddress(addr, fld, false);
+							if (fldAddr == Constants.InvalidAddress) continue;
+							if (fldClrType == null)
+								fldClrType = heap.GetObjectType(fldAddr);
+							if (fldClrType != null)
+							{
+								if (fldClrTypeFld == null)
+								{
+									fldClrTypeFld = fldClrType.GetFieldByName("count");
+								}
+								if (fldClrTypeFld != null)
+								{
+									dctCnt = (int)fldClrTypeFld.GetValue(fldAddr, false);
+									int c;
+									if (histogram.TryGetValue(dctCnt, out c))
+									{
+										histogram[dctCnt] = c + 1;
+									}
+									else
+									{
+										histogram.Add(dctCnt,1);
+									}
+									if (max < dctCnt) max = dctCnt;
+									if (min > dctCnt) min = dctCnt;
+								}
+							}
+
+							++totalOfDct;
+							totalOfCounts += dctCnt;
+
+							NEXT_OBJECT:
+							addr = seg.NextObject(addr);
+						}
+					}
+
+					StreamWriter wr = null;
+					try
+					{
+						Tuple<string, string> dmpFolders = DumpFileMoniker.GetAndCreateMapFolders(clrDump.DumpPath, out error);
+						var path = dmpFolders.Item2 + Path.DirectorySeparatorChar +  @"\DctCounts." + Path.GetFileName(clrDump.DumpPath) + ".txt";
+						wr = new StreamWriter(path);
+
+						wr.WriteLine("#### Dump: " + clrDump.DumpPath);
+						wr.WriteLine();
+						wr.WriteLine("#### " + typeName + " instances count: " + Utils.LargeNumberString(totalOfTypeInstances));
+						wr.WriteLine("#### aggregationSet field instances count: " + Utils.LargeNumberString(totalOfDct));
+						wr.WriteLine("#### aggregationSet dictionaries total item count: " + Utils.LargeNumberString(totalOfCounts));
+						wr.WriteLine("#### Dictionary counts, min: " + min + ", max: " + max + ", avg: " + ((int)Math.Round((double)totalOfCounts/(double)totalOfDct)));
+						wr.WriteLine();
+						wr.WriteLine("#### Counts Histograms: dct count -> frequency  ||  frequency -> dct count");
+						wr.WriteLine();
+						var histAry = histogram.ToArray();
+						Array.Sort(histAry,(a,b) => a.Value < b.Value ? 1 : (a.Value > b.Value ? -1 : 0) );
+						var ndx = 0;
+						foreach (var kv in histogram)
+						{
+							wr.Write(Utils.SizeString(kv.Key) + "  ->  " + Utils.SizeString(kv.Value));
+							wr.Write("  ||  ");
+							wr.WriteLine(Utils.SizeString(histAry[ndx].Value) + "  ->  " + Utils.SizeString(histAry[ndx].Key));
+							++ndx;
+
+						}
+						wr.Close();
+						wr = null;
+					}
+					finally
+					{
+						wr?.Close();
+					}
+				}
+				catch (Exception ex)
+				{
+					error = Utils.GetExceptionErrorString(ex);
+					Assert.IsTrue(false, error);
+				}
+			}
+		}
+
+
+		[TestMethod]
 		public void TestSpecificFilteredType3()
 		{
 			string typeName = @"ECS.Common.HierarchyCache.Structure.RealPosition";

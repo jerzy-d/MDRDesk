@@ -1751,6 +1751,17 @@ namespace ClrMDRIndex
 			return n;
 		}
 
+		public static int BitCount(uint c)
+		{
+			unchecked
+			{
+				c = c - ((c >> 1) & 0x55555555);
+				c = (c & 0x33333333) + ((c >> 2) & 0x33333333);
+				c = ((c + (c >> 4) & 0xF0F0F0F) * 0x1010101) >> 24;
+			}
+			return (int) c;
+		}
+
 		public static string GetNameWithoutId(string name)
 		{
 			if (string.IsNullOrWhiteSpace(name)) return name;

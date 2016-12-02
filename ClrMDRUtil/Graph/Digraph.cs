@@ -36,7 +36,7 @@ namespace ClrMDRIndex
 
 		private void SetEdgeCount(int edgeCnt)
 		{
-			EdgeCount = EdgeCount;
+			EdgeCount = edgeCnt;
 		}
 
 		public List<int> AdjacencyList(int v)
