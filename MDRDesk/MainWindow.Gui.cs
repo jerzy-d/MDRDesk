@@ -12,6 +12,7 @@ using System.Windows.Controls;
 using System.Windows.Data;
 using System.Windows.Documents;
 using System.Windows.Input;
+using System.Windows.Media;
 using Microsoft.Diagnostics.Runtime;
 using ClrMDRIndex;
 using Binding = System.Windows.Data.Binding;
@@ -1249,7 +1250,8 @@ namespace MDRDesk
 			undoRedoList.Add(instanceInfo);
 			mainGrid.Tag = undoRedoList;
 			TreeViewItem root;
-			var ancestorList = UpdateInstanceHierarchyGrid(instanceInfo, mainGrid, out root);
+			TreeView treeView;
+			var ancestorList = UpdateInstanceHierarchyGrid(instanceInfo, mainGrid,out treeView, out root);
 
 			var tab = new CloseableTabItem() { Header = Constants.BlackDiamond + " Instance Hierarchy", Content = mainGrid, Name = "InstanceHierarchyGrid" };
 			MainTab.Items.Add(tab);
@@ -1257,9 +1259,10 @@ namespace MDRDesk
 			MainTab.UpdateLayout();
 			ancestorList.SelectedIndex = 0;
 			root.BringIntoView();
+			ScrollToBegin(treeView,mainGrid);
 		}
 
-		private ListBox UpdateInstanceHierarchyGrid(InstanceValueAndAncestors instanceInfo, Grid mainGrid, out TreeViewItem tvRoot)
+		private ListBox UpdateInstanceHierarchyGrid(InstanceValueAndAncestors instanceInfo, Grid mainGrid, out TreeView treeView, out TreeViewItem tvRoot)
 		{
 			InstanceValue instVal = instanceInfo.Instance;
 			var stackPanel = new StackPanel() { Orientation = Orientation.Horizontal };
@@ -1301,28 +1304,58 @@ namespace MDRDesk
 
 			var treeViewGrid = (Grid)LogicalTreeHelper.FindLogicalNode(mainGrid, "InstHierarchyFieldGrid");
 			Debug.Assert(treeViewGrid != null);
-			var treeView = (TreeView)LogicalTreeHelper.FindLogicalNode(treeViewGrid, "InstHierarchyFieldTreeview");
+			treeView = (TreeView)LogicalTreeHelper.FindLogicalNode(treeViewGrid, "InstHierarchyFieldTreeview");
 			Debug.Assert(treeView != null);
 			treeView.Items.Clear();
 			tvRoot.IsSelected = true;
-			treeView.Items.Add(tvRoot);
-			treeView.BringIntoView();
 			tvRoot.ExpandSubtree();
+			treeView.Items.Add(tvRoot);
 			tvRoot.BringIntoView();
 			var lstAddresses = (ListBox)LogicalTreeHelper.FindLogicalNode(mainGrid, "InstHierarchyAncestorAddresses");
 			lstAddresses.ItemsSource = null;
 			return ancestorNameList;
 		}
 
-		private void InstHierarchyTreeViewExpanded(object sender, RoutedEventArgs e)
+		private void ScrollToBegin(TreeView treeView,Grid grid)
 		{
-			var treeView = sender as TreeView;
-			Debug.Assert(treeView != null);
-			if (treeView.SelectedItem == null)
-				(treeView.Items[0] as TreeViewItem).BringIntoView();
-			else
-				(treeView.SelectedItem as TreeViewItem).BringIntoView();
+			var sz = treeView.DesiredSize;
+			var scroll = FindScroll(treeView);
+			if (scroll != null)
+			{
+				scroll.ScrollToLeftEnd();
+				scroll.UpdateLayout();
+				scroll.ScrollToTop();
+				scroll.UpdateLayout();
+			}
 		}
+
+		private ScrollViewer FindScroll(TreeView treeView)
+		{
+			
+			ScrollViewer scroll = null;
+			DependencyObject dep = treeView as DependencyObject;
+			if (dep == null) return null;
+			int cnt = VisualTreeHelper.GetChildrenCount(dep);
+			if (cnt > 0)
+			{
+				Border scroll_border = VisualTreeHelper.GetChild(dep, 0) as Border;
+				if (scroll_border != null)
+				{
+					scroll = scroll_border.Child as ScrollViewer;
+				}
+			}
+			return scroll;
+		}
+
+		//private void InstHierarchyTreeViewExpanded(object sender, RoutedEventArgs e)
+		//{
+		//	var treeView = sender as TreeView;
+		//	Debug.Assert(treeView != null);
+		//	if (treeView.SelectedItem == null)
+		//		(treeView.Items[0] as TreeViewItem).BringIntoView();
+		//	else
+		//		(treeView.SelectedItem as TreeViewItem).BringIntoView();
+		//}
 
 		private void InstHierarchyAncestorChanged(object sender, SelectionChangedEventArgs e)
 		{
@@ -1379,9 +1412,11 @@ namespace MDRDesk
 				}
 
 				TreeViewItem tvRoot;
-				var ancestorList = UpdateInstanceHierarchyGrid(result.Item2, mainGrid, out tvRoot);
+				TreeView treeView;
+				var ancestorList = UpdateInstanceHierarchyGrid(result.Item2, mainGrid, out treeView, out tvRoot);
 				ancestorList.SelectedIndex = 0;
 				tvRoot.BringIntoView();
+				ScrollToBegin(treeView,mainGrid);
 				SetEndTaskMainWindowState("Getting instance info" + ", DONE.");
 			}
 		}
@@ -1428,12 +1463,12 @@ namespace MDRDesk
 					result = new Tuple<string, InstanceValueAndAncestors>(null,instanceInfo);
 				}
 				TreeViewItem tvItem;
-				var ancestorList = UpdateInstanceHierarchyGrid(result.Item2, mainGrid, out tvItem);
+				TreeView treeView;
+				var ancestorList = UpdateInstanceHierarchyGrid(result.Item2, mainGrid, out treeView, out tvItem);
 				ancestorList.SelectedIndex = 0;
 				tvItem.IsSelected = true;
 				tvItem.BringIntoView();
-
-
+				ScrollToBegin(treeView,mainGrid);
 			}
 		}
 
@@ -1459,10 +1494,12 @@ namespace MDRDesk
 			if (can)
 			{
 				TreeViewItem tvItem;
-				var ancestorList = UpdateInstanceHierarchyGrid(data, mainGrid, out tvItem);
+				TreeView treeView;
+				var ancestorList = UpdateInstanceHierarchyGrid(data, mainGrid, out treeView, out tvItem);
 				ancestorList.SelectedIndex = 0;
 				tvItem.IsSelected = true;
 				tvItem.BringIntoView();
+				ScrollToBegin(treeView,mainGrid);
 			}
 		}
 

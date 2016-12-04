@@ -416,8 +416,6 @@ module Auxiliaries =
             heap.ReadMemory(off + 4UL, strBuf, 0, len) |> ignore
             Encoding.Unicode.GetString(strBuf)
 
- 
-
     let getErrorString (errors: ResizeArray<string>) : string =
         if not (isNull errors) && errors.Count > 0 then
             let sb = new StringBuilder(128)
@@ -482,6 +480,7 @@ module Auxiliaries =
 
     let getIntColumnChartWithTitle (data:(string*int) array) (title:string) =
         let chart = Chart.Column (data, Title=title)
+        chart.WithLegend
         new ChartControl(chart)
 
     let getCountGenerationsChart (instanceCounts:int array) (unrootedCounts:int array) (freeCounts:int array) =

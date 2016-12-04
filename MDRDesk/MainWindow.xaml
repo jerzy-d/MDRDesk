@@ -414,7 +414,11 @@
             </Grid>
             <GridSplitter Grid.Row="1" Grid.Column="1" VerticalAlignment="Stretch" HorizontalAlignment="Center" Width="5" ShowsPreview="False" Background="DarkGray"></GridSplitter>
             <Grid x:Name="InstHierarchyFieldGrid" Grid.Row="1" Grid.Column="2">
-                <TreeView x:Name="InstHierarchyFieldTreeview" VerticalAlignment="Stretch" HorizontalAlignment="Stretch" Margin="2,2,2,2" FontSize="14" TreeViewItem.Expanded="InstHierarchyTreeViewExpanded" MouseDoubleClick="InstHierarchyTreeViewDoubleClicked">
+                <TreeView x:Name="InstHierarchyFieldTreeview" VerticalAlignment="Stretch" HorizontalAlignment="Stretch" Margin="2,2,2,2" FontSize="14" 
+                          MouseDoubleClick="InstHierarchyTreeViewDoubleClicked" ScrollViewer.IsDeferredScrollingEnabled="False"
+                          HorizontalContentAlignment="Left" VerticalContentAlignment="Top">
+                    <!--ScrollViewer.IsDeferredScrollingEnabled="False">-->
+                    <!--TreeViewItem.Expanded="InstHierarchyTreeViewExpanded"-->
                     <TreeView.BorderBrush>BlanchedAlmond</TreeView.BorderBrush>
                 </TreeView>
             </Grid>
