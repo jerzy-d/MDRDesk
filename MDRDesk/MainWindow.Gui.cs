@@ -1322,8 +1322,8 @@ namespace MDRDesk
 			var scroll = FindScroll(treeView);
 			if (scroll != null)
 			{
-				scroll.ScrollToLeftEnd();
-				scroll.UpdateLayout();
+				//scroll.ScrollToLeftEnd();
+				//scroll.UpdateLayout();
 				scroll.ScrollToTop();
 				scroll.UpdateLayout();
 			}

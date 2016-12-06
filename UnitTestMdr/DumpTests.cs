@@ -542,8 +542,8 @@ namespace UnitTestMdr
 		{
 			Stopwatch stopWatch = new Stopwatch();
 			//string dmpPath = @"D:\Jerzy\WinDbgStuff\dumps\TestApp\TestApp.exe_161031_093521.dmp";
-			string dmpPath = @"C:\WinDbgStuff\dumps\Analytics\ConvergeEx\Analytics_Post.dmp";
-			//string dmpPath = @"C:\WinDbgStuff\Dumps\Analytics\Highline\analyticsdump111.dmp";
+			//string dmpPath = @"C:\WinDbgStuff\dumps\Analytics\ConvergeEx\Analytics_Post.dmp";
+			string dmpPath = @"D:\Jerzy\WinDbgStuff\Dumps\Analytics\Highline\analyticsdump111.dlk.dmp";
 			
 			string error = null;
 			var errors = new ConcurrentBag<string>();
