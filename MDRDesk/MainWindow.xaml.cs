@@ -1633,72 +1633,6 @@ namespace MDRDesk
 			SetEndTaskMainWindowState("Getting type details for: '" + baseTypeName + "', done");
 		}
 
-		private async void TypeValueReportTreeViewDoubleClicked(object sender, MouseButtonEventArgs e)
-		{
-			TreeView tv = sender as TreeView;
-			var selItem = tv.SelectedItem as TreeViewItem;
-			Debug.Assert(selItem != null);
-			var dispType = selItem.Tag as ClrtDisplayableType;
-			Debug.Assert(dispType != null);
-
-			string msg;
-			if (!dispType.CanGetFields(out msg))
-			{
-				MainStatusShowMessage("Action failed for: '" + dispType.FieldName + "'. " + msg);
-				return;
-			}
-
-			if (dispType.FieldIndex == Constants.InvalidIndex) // this root type, fields are already displayed
-			{
-				return;
-			}
-
-			var parent = selItem.Parent as TreeViewItem;
-			Debug.Assert(parent != null);
-			var parentDispType = parent.Tag as ClrtDisplayableType;
-			Debug.Assert(parentDispType != null);
-
-			SetStartTaskMainWindowState("Getting type details for field: '" + dispType.FieldName + "', please wait...");
-
-			var result = await Task.Run(() =>
-			{
-				string error;
-				ClrtDisplayableType fldDispType = CurrentIndex.GetTypeDisplayableRecord(parentDispType, dispType, out error);
-				if (fldDispType == null)
-					return new Tuple<string, ClrtDisplayableType>(error, null);
-				return new Tuple<string, ClrtDisplayableType>(null, fldDispType);
-			});
-
-			if (result.Item1 != null)
-			{
-				if (Utils.IsInformation(result.Item1))
-				{
-					SetEndTaskMainWindowState("Action failed for: '" + dispType.FieldName + "'. " + result.Item1);
-					return;
-				}
-
-				// TODO JRD -- display msg box with error
-
-				SetEndTaskMainWindowState("Getting type details for field: '" + dispType.FieldName + "', failed");
-
-				return;
-			}
-
-			var fields = result.Item2.Fields;
-			selItem.Items.Clear();
-			for (int i = 0, icnt = fields.Length; i < icnt; ++i)
-			{
-				var fld = fields[i];
-				var node = GetTypeValueSetupTreeViewItem(fld);
-				selItem.Items.Add(node);
-			}
-			selItem.ExpandSubtree();
-
-			SetEndTaskMainWindowState("Getting type details for field: '" + dispType.FieldName + "', done");
-
-
-		}
-
 
 		private ulong GetAddressFromList(object listBox)
 		{
@@ -1755,37 +1689,37 @@ namespace MDRDesk
 		}
 
 
-		/// <summary>
-		/// TODO JRD -- this is Alex instance walker
-		/// </summary>
-		/// <param name="rootNode"></param>
-		private void DisplayInstanceReferenceTree(InstanceTypeNode rootNode)
-		{
-			var grid = this.TryFindResource("TreeViewGrid") as Grid;
-			Debug.Assert(grid != null);
-			var treeView = (TreeView)LogicalTreeHelper.FindLogicalNode(grid, @"treeView");
-			var viewRoot = new TreeViewItem() { Header = rootNode };
-			Queue<TreeViewItem> que = new Queue<TreeViewItem>(64);
-			que.Enqueue(viewRoot);
-			while (que.Count > 0)
-			{
-				var item = que.Dequeue();
-				var instNode = item.Header as InstanceTypeNode;
-				var instances = instNode.TypeNodes;
-				for (int i = 0, icnt = instances.Length; i < icnt; ++i)
-				{
-					var vnode = new TreeViewItem() { Header = instances[i] };
-					item.Items.Add(vnode);
-					que.Enqueue(vnode);
-				}
-			}
+		///// <summary>
+		///// TODO JRD -- this is Alex instance walker
+		///// </summary>
+		///// <param name="rootNode"></param>
+		//private void DisplayInstanceReferenceTree(InstanceTypeNode rootNode)
+		//{
+		//	var grid = this.TryFindResource("TreeViewGrid") as Grid;
+		//	Debug.Assert(grid != null);
+		//	var treeView = (TreeView)LogicalTreeHelper.FindLogicalNode(grid, @"treeView");
+		//	var viewRoot = new TreeViewItem() { Header = rootNode };
+		//	Queue<TreeViewItem> que = new Queue<TreeViewItem>(64);
+		//	que.Enqueue(viewRoot);
+		//	while (que.Count > 0)
+		//	{
+		//		var item = que.Dequeue();
+		//		var instNode = item.Header as InstanceTypeNode;
+		//		var instances = instNode.TypeNodes;
+		//		for (int i = 0, icnt = instances.Length; i < icnt; ++i)
+		//		{
+		//			var vnode = new TreeViewItem() { Header = instances[i] };
+		//			item.Items.Add(vnode);
+		//			que.Enqueue(vnode);
+		//		}
+		//	}
 
-			treeView.Items.Add(viewRoot);
-			viewRoot.ExpandSubtree();
-			var tab = new CloseableTabItem() { Header = "Parents of: " + Utils.AddressString(rootNode.Address), Content = grid };
-			MainTab.Items.Add(tab);
-			MainTab.SelectedItem = tab;
-		}
+		//	treeView.Items.Add(viewRoot);
+		//	viewRoot.ExpandSubtree();
+		//	var tab = new CloseableTabItem() { Header = "Parents of: " + Utils.AddressString(rootNode.Address), Content = grid };
+		//	MainTab.Items.Add(tab);
+		//	MainTab.SelectedItem = tab;
+		//}
 
 		private void AssertIndexIsAvailable()
 		{

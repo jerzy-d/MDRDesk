@@ -227,6 +227,7 @@ namespace MDRDesk
 			}
 			txtBlock.Inlines.Add(new Run("    Total Count: " + Utils.LargeNumberString(total)));
 		}
+
 		private void DisplayGenerationLine(TextBlock txtBlock, string[] titles, ulong[] values)
 		{
 			Debug.Assert(titles.Length == values.Length);
@@ -979,7 +980,142 @@ namespace MDRDesk
 		}
 
 		#endregion weakreference
-		
+
+		#region type values report
+
+		private void DisplayTypeValueSetupGrid(ClrtDisplayableType dispType)
+		{
+			var mainGrid = this.TryFindResource("TypeValueReportSetupGrid") as Grid;
+			Debug.Assert(mainGrid != null);
+			mainGrid.Name = "TypeValueReportSetupGrid__" + Utils.GetNewID();
+			var typeValQry = new TypeValuesQuery();
+			mainGrid.Tag = typeValQry;
+			TreeView treeView = UpdateTypeValueSetupGrid(dispType, mainGrid, null);
+			TreeViewItem treeViewItem = (treeView.Items[0] as TreeViewItem);
+			typeValQry.SetCurrentTreeViewItem(treeViewItem);
+			var tab = new CloseableTabItem() { Header = Constants.BlackDiamond + " Type Value Setup", Content = mainGrid, Name = mainGrid.Name + "_tab" };
+			MainTab.Items.Add(tab);
+			MainTab.SelectedItem = tab;
+			if (treeViewItem != null)
+			{
+				treeViewItem.IsSelected = true;
+			}
+
+			MainTab.UpdateLayout();
+		}
+
+		private TreeViewItem GetTypeValueSetupTreeViewItem(ClrtDisplayableType dispType)
+		{
+			var txtBlk = GetClrtDisplayableTypeStackPanel(dispType);
+			var node = new TreeViewItem
+			{
+				Header = txtBlk,
+				Tag = dispType,
+			};
+			txtBlk.Tag = node;
+			return node;
+		}
+
+		private void UpdateTypeValueSetupTreeViewItem(TreeViewItem node, ClrtDisplayableType dispType)
+		{
+			var txtBlk = GetClrtDisplayableTypeStackPanel(dispType);
+			node.Header = txtBlk;
+			node.Tag = dispType;
+			txtBlk.Tag = node;
+		}
+
+		private TreeView UpdateTypeValueSetupGrid(ClrtDisplayableType dispType, Grid mainGrid, TreeViewItem root)
+		{
+			bool realRoot = false;
+			if (root == null)
+			{
+				realRoot = true;
+				root = GetTypeValueSetupTreeViewItem(dispType);
+			}
+			var fields = dispType.Fields;
+			for (int i = 0, icnt = fields.Length; i < icnt; ++i)
+			{
+				var fld = fields[i];
+				var node = GetTypeValueSetupTreeViewItem(fld);
+				root.Items.Add(node);
+			}
+
+			var treeView = (TreeView)LogicalTreeHelper.FindLogicalNode(mainGrid, "TypeValueReportTreeView");
+			Debug.Assert(treeView != null);
+			if (realRoot)
+			{
+				treeView.Items.Clear();
+				treeView.Items.Add(root);
+			}
+			root.ExpandSubtree();
+			return treeView;
+		}
+
+		private async void TypeValueReportTreeViewDoubleClicked(object sender, MouseButtonEventArgs e)
+		{
+			TreeView tv = sender as TreeView;
+			var selItem = tv.SelectedItem as TreeViewItem;
+			Debug.Assert(selItem != null);
+			var dispType = selItem.Tag as ClrtDisplayableType;
+			Debug.Assert(dispType != null);
+
+			string msg;
+			if (!dispType.CanGetFields(out msg))
+			{
+				MainStatusShowMessage("Action failed for: '" + dispType.FieldName + "'. " + msg);
+				return;
+			}
+
+			if (dispType.FieldIndex == Constants.InvalidIndex) // this root type, fields are already displayed
+			{
+				return;
+			}
+
+			var parent = selItem.Parent as TreeViewItem;
+			Debug.Assert(parent != null);
+			var parentDispType = parent.Tag as ClrtDisplayableType;
+			Debug.Assert(parentDispType != null);
+
+			SetStartTaskMainWindowState("Getting type details for field: '" + dispType.FieldName + "', please wait...");
+
+			var result = await Task.Run(() =>
+			{
+				string error;
+				ClrtDisplayableType fldDispType = CurrentIndex.GetTypeDisplayableRecord(parentDispType, dispType, out error);
+				if (fldDispType == null)
+					return new Tuple<string, ClrtDisplayableType>(error, null);
+				return new Tuple<string, ClrtDisplayableType>(null, fldDispType);
+			});
+
+			if (result.Item1 != null)
+			{
+				if (Utils.IsInformation(result.Item1))
+				{
+					SetEndTaskMainWindowState("Action failed for: '" + dispType.FieldName + "'. " + result.Item1);
+					return;
+				}
+
+				// TODO JRD -- display msg box with error
+
+				SetEndTaskMainWindowState("Getting type details for field: '" + dispType.FieldName + "', failed");
+
+				return;
+			}
+
+			var fields = result.Item2.Fields;
+			selItem.Items.Clear();
+			for (int i = 0, icnt = fields.Length; i < icnt; ++i)
+			{
+				var fld = fields[i];
+				var node = GetTypeValueSetupTreeViewItem(fld);
+				selItem.Items.Add(node);
+			}
+			selItem.ExpandSubtree();
+
+			SetEndTaskMainWindowState("Getting type details for field: '" + dispType.FieldName + "', done");
+		}
+
+
 		private void DisplayDependencyNodeGrid(DependencyNode root)
 		{
 			TreeViewItem tvRoot = new TreeViewItem();
@@ -1060,77 +1196,6 @@ namespace MDRDesk
 			MainTab.Items.Add(tab);
 			MainTab.SelectedItem = tab;
 			MainTab.UpdateLayout();
-		}
-
-
-		private void DisplayTypeValueSetupGrid(ClrtDisplayableType dispType)
-		{
-			var mainGrid = this.TryFindResource("TypeValueReportSetupGrid") as Grid;
-			Debug.Assert(mainGrid != null);
-			mainGrid.Name = "TypeValueReportSetupGrid__" + Utils.GetNewID();
-			var typeValQry = new TypeValuesQuery();
-			mainGrid.Tag = typeValQry;
-			TreeView treeView = UpdateTypeValueSetupGrid(dispType, mainGrid, null);
-			TreeViewItem treeViewItem = (treeView.Items[0] as TreeViewItem);
-			typeValQry.SetCurrentTreeViewItem(treeViewItem);
-			var tab = new CloseableTabItem() { Header = Constants.BlackDiamond + " Type Value Setup", Content = mainGrid, Name = mainGrid.Name + "_tab" };
-			MainTab.Items.Add(tab);
-			MainTab.SelectedItem = tab;
-			if (treeViewItem != null)
-			{
-				treeViewItem.IsSelected = true;
-			}
-
-			MainTab.UpdateLayout();
-		}
-
-		private TreeViewItem GetTypeValueSetupTreeViewItem(ClrtDisplayableType dispType)
-		{
-			var txtBlk = GetClrtDisplayableTypeStackPanel(dispType);
-			var node = new TreeViewItem
-			{
-				Header = txtBlk,
-				Tag = dispType,
-			};
-			txtBlk.Tag = node;
-			return node;
-		}
-
-		private void UpdateTypeValueSetupTreeViewItem(TreeViewItem node, ClrtDisplayableType dispType)
-		{
-			var txtBlk = GetClrtDisplayableTypeStackPanel(dispType);
-			node.Header = txtBlk;
-			node.Tag = dispType;
-			txtBlk.Tag = node;
-		}
-
-		private TreeView UpdateTypeValueSetupGrid(ClrtDisplayableType dispType, Grid mainGrid, TreeViewItem root)
-		{
-			bool realRoot = false;
-			if (root == null)
-			{
-				realRoot = true;
-				root = GetTypeValueSetupTreeViewItem(dispType);
-			}
-			var fields = dispType.Fields;
-			for (int i = 0, icnt = fields.Length; i < icnt; ++i)
-			{
-				var fld = fields[i];
-				var node = GetTypeValueSetupTreeViewItem(fld);
-				root.Items.Add(node);
-			}
-
-			var treeView = (TreeView)LogicalTreeHelper.FindLogicalNode(mainGrid, "TypeValueReportTreeView");
-			Debug.Assert(treeView != null);
-			if (realRoot)
-			{
-				treeView.Items.Clear();
-				treeView.Items.Add(root);
-			}
-			root.ExpandSubtree();
-			root.BringIntoView();
-			//treeView.UpdateLayout();
-			return treeView;
 		}
 
 		private void TypeValueReportMouseDown(object sender, MouseButtonEventArgs e)
@@ -1239,6 +1304,9 @@ namespace MDRDesk
 			}
 		}
 
+		#endregion type values report
+
+
 		#region Instance Hierarchy Traversing
 
 		private void DisplayInstanceHierarchyGrid(InstanceValueAndAncestors instanceInfo)
@@ -1258,8 +1326,6 @@ namespace MDRDesk
 			MainTab.SelectedItem = tab;
 			MainTab.UpdateLayout();
 			ancestorList.SelectedIndex = 0;
-			root.BringIntoView();
-			ScrollToBegin(treeView,mainGrid);
 		}
 
 		private ListBox UpdateInstanceHierarchyGrid(InstanceValueAndAncestors instanceInfo, Grid mainGrid, out TreeView treeView, out TreeViewItem tvRoot)
@@ -1307,55 +1373,19 @@ namespace MDRDesk
 			treeView = (TreeView)LogicalTreeHelper.FindLogicalNode(treeViewGrid, "InstHierarchyFieldTreeview");
 			Debug.Assert(treeView != null);
 			treeView.Items.Clear();
-			tvRoot.IsSelected = true;
-			tvRoot.ExpandSubtree();
 			treeView.Items.Add(tvRoot);
-			tvRoot.BringIntoView();
 			var lstAddresses = (ListBox)LogicalTreeHelper.FindLogicalNode(mainGrid, "InstHierarchyAncestorAddresses");
 			lstAddresses.ItemsSource = null;
+			tvRoot.IsSelected = true;
+			tvRoot.ExpandSubtree();
 			return ancestorNameList;
 		}
 
-		private void ScrollToBegin(TreeView treeView,Grid grid)
-		{
-			var sz = treeView.DesiredSize;
-			var scroll = FindScroll(treeView);
-			if (scroll != null)
-			{
-				//scroll.ScrollToLeftEnd();
-				//scroll.UpdateLayout();
-				scroll.ScrollToTop();
-				scroll.UpdateLayout();
-			}
-		}
 
-		private ScrollViewer FindScroll(TreeView treeView)
+		private void TreeViewItem_RequestBringIntoView(object sender, RequestBringIntoViewEventArgs e)
 		{
-			
-			ScrollViewer scroll = null;
-			DependencyObject dep = treeView as DependencyObject;
-			if (dep == null) return null;
-			int cnt = VisualTreeHelper.GetChildrenCount(dep);
-			if (cnt > 0)
-			{
-				Border scroll_border = VisualTreeHelper.GetChild(dep, 0) as Border;
-				if (scroll_border != null)
-				{
-					scroll = scroll_border.Child as ScrollViewer;
-				}
-			}
-			return scroll;
+			e.Handled = true;
 		}
-
-		//private void InstHierarchyTreeViewExpanded(object sender, RoutedEventArgs e)
-		//{
-		//	var treeView = sender as TreeView;
-		//	Debug.Assert(treeView != null);
-		//	if (treeView.SelectedItem == null)
-		//		(treeView.Items[0] as TreeViewItem).BringIntoView();
-		//	else
-		//		(treeView.SelectedItem as TreeViewItem).BringIntoView();
-		//}
 
 		private void InstHierarchyAncestorChanged(object sender, SelectionChangedEventArgs e)
 		{
@@ -1415,8 +1445,6 @@ namespace MDRDesk
 				TreeView treeView;
 				var ancestorList = UpdateInstanceHierarchyGrid(result.Item2, mainGrid, out treeView, out tvRoot);
 				ancestorList.SelectedIndex = 0;
-				tvRoot.BringIntoView();
-				ScrollToBegin(treeView,mainGrid);
 				SetEndTaskMainWindowState("Getting instance info" + ", DONE.");
 			}
 		}
@@ -1467,8 +1495,6 @@ namespace MDRDesk
 				var ancestorList = UpdateInstanceHierarchyGrid(result.Item2, mainGrid, out treeView, out tvItem);
 				ancestorList.SelectedIndex = 0;
 				tvItem.IsSelected = true;
-				tvItem.BringIntoView();
-				ScrollToBegin(treeView,mainGrid);
 			}
 		}
 
@@ -1498,23 +1524,23 @@ namespace MDRDesk
 				var ancestorList = UpdateInstanceHierarchyGrid(data, mainGrid, out treeView, out tvItem);
 				ancestorList.SelectedIndex = 0;
 				tvItem.IsSelected = true;
-				tvItem.BringIntoView();
-				ScrollToBegin(treeView,mainGrid);
+				//tvItem.BringIntoView();
+				//ScrollToBegin(treeView,mainGrid);
 			}
 		}
 
-		static void OnTreeViewItemSelected(object sender, RoutedEventArgs e)
-		{
-			// Only react to the Selected event raised by the TreeViewItem
-			// whose IsSelected property was modified. Ignore all ancestors
-			// who are merely reporting that a descendant's Selected fired.
-			if (!Object.ReferenceEquals(sender, e.OriginalSource))
-				return;
+		//static void OnTreeViewItemSelected(object sender, RoutedEventArgs e)
+		//{
+		//	// Only react to the Selected event raised by the TreeViewItem
+		//	// whose IsSelected property was modified. Ignore all ancestors
+		//	// who are merely reporting that a descendant's Selected fired.
+		//	if (!Object.ReferenceEquals(sender, e.OriginalSource))
+		//		return;
 
-			TreeViewItem item = e.OriginalSource as TreeViewItem;
-			if (item != null)
-				item.BringIntoView();
-		}
+		//	TreeViewItem item = e.OriginalSource as TreeViewItem;
+		//	if (item != null)
+		//		item.BringIntoView();
+		//}
 
 
 		#endregion Instance Hierarchy Traversing

@@ -367,9 +367,9 @@
             </Grid.ColumnDefinitions>
             <Grid x:Name="InstHierarchyValueGrid" Grid.Row="0" Grid.Column="0" Grid.ColumnSpan="5">
                 <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="10*"/>
+                    <ColumnDefinition Width="32"/>
+                    <ColumnDefinition Width="32"/>
                     <ColumnDefinition Width="80*"/>
-                    <ColumnDefinition Width="10*"/>
                 </Grid.ColumnDefinitions>
                 <Button  x:Name="InstHierarchyRedo" Grid.Column="0" Width="30" Height="24" HorizontalAlignment="Left" VerticalAlignment="Center" BorderThickness="0" Click="InstHierarchyRedoClicked"
                          Background="AliceBlue">
@@ -379,8 +379,7 @@
                         <!--<TextBlock FontWeight="Bold" FontSize="12">Redo</TextBlock>-->
                     </StackPanel>
                 </Button>
-                <Label x:Name="InstHierarchyValueLabel" Grid.Column="1" VerticalAlignment="Center" HorizontalAlignment="Center" FontSize="14" FontWeight="Bold"/>
-                <Button x:Name="InstHierarchyUndo" Grid.Column="2" Width="30" Height="24" HorizontalAlignment="Right" VerticalAlignment="Center" BorderThickness="0" Click="InstHierarchyUndoClicked"
+                <Button x:Name="InstHierarchyUndo" Grid.Column="1" Width="30" Height="24" HorizontalAlignment="Right" VerticalAlignment="Center" BorderThickness="0" Click="InstHierarchyUndoClicked"
                         Background="AliceBlue">
                     <Button.ToolTip>Undo</Button.ToolTip>
                     <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
@@ -388,6 +387,7 @@
                         <!--<TextBlock FontWeight="Bold" FontSize="12">Undo</TextBlock>-->
                     </StackPanel>
                 </Button>
+                <Label x:Name="InstHierarchyValueLabel" Grid.Column="2" VerticalAlignment="Center" HorizontalAlignment="Center" FontSize="14" FontWeight="Bold"/>
             </Grid>
             <Grid x:Name="InstHierarchyAncestorsGrid" Grid.Row="1" Grid.Column="0">
                 <Grid>
@@ -414,13 +414,15 @@
             </Grid>
             <GridSplitter Grid.Row="1" Grid.Column="1" VerticalAlignment="Stretch" HorizontalAlignment="Center" Width="5" ShowsPreview="False" Background="DarkGray"></GridSplitter>
             <Grid x:Name="InstHierarchyFieldGrid" Grid.Row="1" Grid.Column="2">
-                <TreeView x:Name="InstHierarchyFieldTreeview" VerticalAlignment="Stretch" HorizontalAlignment="Stretch" Margin="2,2,2,2" FontSize="14" 
-                          MouseDoubleClick="InstHierarchyTreeViewDoubleClicked" ScrollViewer.IsDeferredScrollingEnabled="False"
-                          HorizontalContentAlignment="Left" VerticalContentAlignment="Top">
-                    <!--ScrollViewer.IsDeferredScrollingEnabled="False">-->
-                    <!--TreeViewItem.Expanded="InstHierarchyTreeViewExpanded"-->
-                    <TreeView.BorderBrush>BlanchedAlmond</TreeView.BorderBrush>
-                </TreeView>
+                <TreeView x:Name="InstHierarchyFieldTreeview" VerticalAlignment="Stretch" HorizontalAlignment="Stretch" Margin="2,2,2,2" FontSize="12" 
+                          MouseDoubleClick="InstHierarchyTreeViewDoubleClicked">
+                        <TreeView.ItemContainerStyle>
+                            <Style TargetType="TreeViewItem">
+                                <EventSetter Event="RequestBringIntoView" Handler="TreeViewItem_RequestBringIntoView"/>
+                            </Style>
+                        </TreeView.ItemContainerStyle>
+                     <TreeView.BorderBrush>BlanchedAlmond</TreeView.BorderBrush>
+                    </TreeView>
             </Grid>
             <GridSplitter Grid.Row="1" Grid.Column="3" VerticalAlignment="Stretch" HorizontalAlignment="Center" Width="5" ShowsPreview="False" Background="DarkGray"></GridSplitter>
             <Expander x:Name="CollectionExpander" Margin="0,7,0,0" DockPanel.Dock="Bottom" Header="..." Grid.Row="1" Grid.Column="4" ExpandDirection="Left">
@@ -447,7 +449,7 @@
             <Button Grid.Row="0" Grid.Column="2" Style="{StaticResource ButtonStyle5}" Width="115" Margin="0,2,0,2" Content="Run"/>
             <GridSplitter Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="3" VerticalAlignment="Center" HorizontalAlignment="Stretch" Height="5" ShowsPreview="False" Background="DarkGray"></GridSplitter>
             <TreeView x:Name="TypeValueReportTreeView" Grid.Row="2" Grid.Column="0" VerticalAlignment="Stretch" HorizontalAlignment="Stretch" Margin="20,1,1,1" SelectedItemChanged="TypeValueReportMouseOnSelectedItemChanged"
-                       MouseDoubleClick="TypeValueReportTreeViewDoubleClicked"  FontSize="14" >
+                       MouseDoubleClick="TypeValueReportTreeViewDoubleClicked"  FontSize="12" >
                 <!--MouseDoubleClick="TypeValueReportTreeViewDoubleClicked"  MouseRightButtonDown="TypeValueReportMouseDown"  FontSize="14" >-->
                 <TreeView.ContextMenu>
                     <ContextMenu>
@@ -455,6 +457,11 @@
                         <MenuItem x:Name="TypeValueReportFilterMenuitem" Header="Set filter value" Click="TypeValueReportFilterClicked"></MenuItem>
                     </ContextMenu>
                 </TreeView.ContextMenu>
+                <TreeView.ItemContainerStyle>
+                    <Style TargetType="TreeViewItem">
+                        <EventSetter Event="RequestBringIntoView" Handler="TreeViewItem_RequestBringIntoView"/>
+                    </Style>
+                </TreeView.ItemContainerStyle>
             </TreeView>
             <GridSplitter Grid.Row="2" Grid.Column="1" VerticalAlignment="Stretch" HorizontalAlignment="Center" Width="5" ShowsPreview="False" Background="DarkGray"></GridSplitter>
             <Grid Grid.Row="2" Grid.Column="2">
