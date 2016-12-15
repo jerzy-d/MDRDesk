@@ -63,55 +63,6 @@ module SpecializedQueries =
                             elemType
         ary
 
-    (*** arrays ***)
-
-    let getArrayValues (heap:ClrHeap) (aryAddr:address) (aryType:ClrType) (aryElemType:ClrType) (elemType:ClrType) (count: int32) =
-        let mutable ndx:int32 = 0
-        let mutable elemAddr:Object = null
-        let mutable elemVal:Object = null
-        let mutable value:string = null
-        let values = new ResizeArray<string>(count)
-        let cats = getTypeCategory elemType
-        while ndx < count do
-            match cats.First with
-            | TypeCategory.Reference -> 
-                elemAddr <- aryType.GetArrayElementValue(aryAddr, ndx)
-                values.Add(getObjectValue heap elemType cats elemAddr false)
-            | TypeCategory.Primitive ->
-                elemVal <- aryType.GetArrayElementValue(aryAddr, ndx)
-                values.Add (getObjectValue heap elemType cats elemAddr false)
-            | TypeCategory.Struct ->
-                let elemValAddr = aryType.GetArrayElementAddress(aryAddr, ndx)
-                let raddr = ValueExtractor.ReadUlongAtAddress(elemValAddr,heap)
-                let paddr = ValueExtractor.ReadPointerAtAddress(elemValAddr,heap)
-
-                let val1 = aryElemType.Fields.[0].GetValue(elemValAddr,true,true)
-                let val2 = aryElemType.Fields.[1].GetValue(elemValAddr,true,false)
-
-                values.Add(val1.ToString() + Constants.HeavyGreekCrossPadded + val2.ToString())
-            | _ -> values.Add("..???..")
-           
-            ndx <- ndx + 1
-        values
-
-//    let getArrayContentImpl (heap:ClrHeap) (addr:uint64) (aryType:ClrType) : string * string * int32 * string array =
-//        let count = aryType.GetArrayLength(addr)
-//        let aryElemType = getArrayElemType heap addr aryType 0 count
-//        if aryElemType = null then
-//            ("Getting type at : " + Utils.AddressString(addr) + " failed, null was returned.", null, count, null)
-//        else
-//            let values = getArrayValues heap addr aryType aryType.ComponentType aryElemType count
-//            (null, aryElemType.Name,count,values.ToArray())
-//
-//    let getArrayContent (heap:ClrHeap) (addr:uint64) : string * string * int32 * string array =
-//        let clrType = heap.GetObjectType(addr)
-//        if (clrType = null) then 
-//            ("Getting type at : " + Utils.AddressString(addr) + " failed, null was returned.", null, 0, null)
-//        elif (not clrType.IsArray) then
-//            ("Type at : " +  Utils.AddressString(addr) + " is not an array.", null, 0, emptyStringArray)
-//        else
-//            getArrayContentImpl heap addr clrType 
-
     (*** System.WeakReference *)
 
     /// <summary>
@@ -160,50 +111,7 @@ module SpecializedQueries =
 //        with
 //            | exn -> (exn.ToString(),null)
 
-    (*** System.Text.StringBuilder *)
 
-    let getStringBuilderTypeAndFields (heap:ClrHeap) (addr:address) : (ClrType*ClrInstanceField*ClrInstanceField*ClrInstanceField*ClrInstanceField) =
-        let clrType = heap.GetObjectType(addr)
-        let m_ChunkChars = clrType.GetFieldByName("m_ChunkChars")
-        let m_ChunkPrevious = clrType.GetFieldByName("m_ChunkPrevious")
-        let m_ChunkLength = clrType.GetFieldByName("m_ChunkLength")
-        let m_ChunkOffset = clrType.GetFieldByName("m_ChunkOffset")
-        (clrType,m_ChunkChars,m_ChunkPrevious,m_ChunkLength,m_ChunkOffset)
-
-
-    let rec getStringBuilderArrays (addr:address) (m_ChunkChars:ClrInstanceField) (m_ChunkPrevious:ClrInstanceField) (m_ChunkLength:ClrInstanceField) (chunks:ResizeArray<char[]>) (size:int) : int =
-        match addr with
-            | 0UL -> size
-            | _ ->
-                let chunkAddr = getAddressFromField addr m_ChunkChars false
-                match chunkAddr with
-                    | 0UL -> size
-                    | _ ->
-                        let usedLength = getIntFromField addr m_ChunkLength false
-                        let newSize = size + usedLength
-                        let chunkAry = getCharArrayWithLenght chunkAddr m_ChunkChars.Type usedLength
-                        chunks.Insert(0,chunkAry)
-                        let prevAddr = getAddressFromField addr m_ChunkPrevious false
-                        getStringBuilderArrays prevAddr m_ChunkChars m_ChunkPrevious m_ChunkLength chunks newSize
-
-
-    let getStringBuilderContent (addr:address) (m_ChunkChars:ClrInstanceField) (m_ChunkPrevious:ClrInstanceField) (m_ChunkLength:ClrInstanceField) (m_ChunkOffset:ClrInstanceField) : string =
-        let chunks =  ResizeArray<char[]>()
-        let totalSize = getStringBuilderArrays addr m_ChunkChars m_ChunkPrevious m_ChunkLength chunks 0
-        let mutable strAry = Array.create<char> totalSize '\u0000'
-        let mutable offset = 0
-        for chunk in chunks do
-            Array.Copy(chunk,0,strAry,offset,chunk.Length)
-            offset <- offset + chunk.Length
-        new string(strAry)
-            
-    let getStringBuilderString (heap:ClrHeap) (addr:address) =
-        let clrType = heap.GetObjectType(addr)
-        let m_ChunkChars = clrType.GetFieldByName("m_ChunkChars")
-        let m_ChunkPrevious = clrType.GetFieldByName("m_ChunkPrevious")
-        let m_ChunkLength = clrType.GetFieldByName("m_ChunkLength")
-        let m_ChunkOffset = clrType.GetFieldByName("m_ChunkOffset")
-        getStringBuilderContent addr m_ChunkChars m_ChunkPrevious m_ChunkLength m_ChunkOffset
 
     (* System.Collections.Concurrent.ConcurrentDictionary<TKey, TValue> *)
 
@@ -294,38 +202,38 @@ module SpecializedQueries =
             index <- index + 1
         result
 
-    let rec getConcurrentDictionaryNodeContent (heap:ClrHeap) (addr:address) (clrType:ClrType) (m_next:ClrInstanceField) (m_key:ClrInstanceField) (m_keyCat:TypeCategories) (m_value:ClrInstanceField) (m_valueCat:TypeCategories) (values:ResizeArray<KeyValuePair<string,string>>) =
-        let m_keyValue = getFieldValue heap m_key m_keyCat addr false
-        let m_valueValue = getFieldValue heap m_value m_valueCat addr false
-        values.Add(new KeyValuePair<string,string>(m_keyValue,m_valueValue))
-        let nextObj = m_next.GetValue(addr)
-        match nextObj with
-        | null -> ()
-        | _ ->
-            let newAddr = unbox<address>(nextObj)
-            if newAddr = 0UL then
-                ()
-            else
-                getConcurrentDictionaryNodeContent heap newAddr clrType m_next m_key m_keyCat m_value m_valueCat values
-        ()
-
-    let getConcurrentDictionaryContent (heap:ClrHeap) (addr:address) =
-        let clrType = heap.GetObjectType(addr)
-        let m_tables, m_growLockArray, m_keyRehashCount, m_budget = getConcurrentDictionaryFieldInfo heap clrType addr
-        let m_tablesAddr = getAddressFromField addr m_tables false
-        let m_tablesType = heap.GetObjectType(m_tablesAddr)
-        let m_bucketsType, m_bucketsAddr, m_locksTypeAry, m_countPerLockAray, m_comparerType = getTablesFieldInfo heap m_tablesType m_tablesAddr
-        let m_bucketsAryLength = m_bucketsType.GetArrayLength(m_bucketsAddr)
-        let mutable values = ResizeArray<KeyValuePair<string,string>>()
-        let nodeAddr, nodeType, m_next, m_key, m_value = getConcurrentDictionaryNodeFields heap m_bucketsType m_bucketsAddr m_bucketsAryLength
-        // check if key and value types are usable
-
-
-
-        let m_keyCategory = getTypeCategory m_key.Type
-        let m_valueCategory = getTypeCategory m_value.Type
-
-        for i in [0..m_bucketsAryLength-1] do
-            getConcurrentDictionaryNodeContent heap addr nodeType m_next m_key m_keyCategory m_value m_valueCategory values
-        ()
-
+//    let rec getConcurrentDictionaryNodeContent (heap:ClrHeap) (addr:address) (clrType:ClrType) (m_next:ClrInstanceField) (m_key:ClrInstanceField) (m_keyCat:TypeCategories) (m_value:ClrInstanceField) (m_valueCat:TypeCategories) (values:ResizeArray<KeyValuePair<string,string>>) =
+//        let m_keyValue = getFieldValue heap m_key m_keyCat addr false
+//        let m_valueValue = getFieldValue heap m_value m_valueCat addr false
+//        values.Add(new KeyValuePair<string,string>(m_keyValue,m_valueValue))
+//        let nextObj = m_next.GetValue(addr)
+//        match nextObj with
+//        | null -> ()
+//        | _ ->
+//            let newAddr = unbox<address>(nextObj)
+//            if newAddr = 0UL then
+//                ()
+//            else
+//                getConcurrentDictionaryNodeContent heap newAddr clrType m_next m_key m_keyCat m_value m_valueCat values
+//        ()
+//
+//    let getConcurrentDictionaryContent (heap:ClrHeap) (addr:address) =
+//        let clrType = heap.GetObjectType(addr)
+//        let m_tables, m_growLockArray, m_keyRehashCount, m_budget = getConcurrentDictionaryFieldInfo heap clrType addr
+//        let m_tablesAddr = getAddressFromField addr m_tables false
+//        let m_tablesType = heap.GetObjectType(m_tablesAddr)
+//        let m_bucketsType, m_bucketsAddr, m_locksTypeAry, m_countPerLockAray, m_comparerType = getTablesFieldInfo heap m_tablesType m_tablesAddr
+//        let m_bucketsAryLength = m_bucketsType.GetArrayLength(m_bucketsAddr)
+//        let mutable values = ResizeArray<KeyValuePair<string,string>>()
+//        let nodeAddr, nodeType, m_next, m_key, m_value = getConcurrentDictionaryNodeFields heap m_bucketsType m_bucketsAddr m_bucketsAryLength
+//        // check if key and value types are usable
+//
+//
+//
+//        let m_keyCategory = getTypeCategory m_key.Type
+//        let m_valueCategory = getTypeCategory m_value.Type
+//
+//        for i in [0..m_bucketsAryLength-1] do
+//            getConcurrentDictionaryNodeContent heap addr nodeType m_next m_key m_keyCategory m_value m_valueCategory values
+//        ()
+//

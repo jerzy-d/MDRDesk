@@ -12,135 +12,9 @@ module CollectionContent =
     open ClrMDRIndex
 
     (*
-        System.Collections.Generic.Dictionary<TKey,TValue>
-    *)
-
-    let getDictionaryCount (heap:ClrHeap) (addr:address) =
-        let clrType = heap.GetObjectType(addr)
-        if (isNull clrType) then
-            ("Cannot get type at address: " + Utils.AddressString(addr), -1)
-        else
-            let fld = clrType.GetFieldByName("count")
-            let count = fld.GetValue(addr,false,false)
-            (null,unbox<int>(count))
-
-    let getDictionaryEntries (heap:ClrHeap) (addr:address) : string * address * ClrType =
-         let dctType = heap.GetObjectType(addr)
-         let fld = dctType.GetFieldByName("entries")
-         let entrAddr = unbox<address>(fld.GetValue(addr,false,false))
-         let entrType = heap.GetObjectType(entrAddr)
-         (null,entrAddr,entrType)
-
-    let getDictionaryStringKeys (heap:ClrHeap) (addr:address) (entrAryType:ClrType): string array =
-         let count = entrAryType.GetArrayLength(addr)
-         let lst = new ResizeArray<string>()
-         for i = 0 to count - 1 do
-            let elemAddr = entrAryType.GetArrayElementAddress(addr,i)
-            let raddr = ValueExtractor.ReadUlongAtAddress(elemAddr,heap)
-            if (raddr <> Constants.InvalidAddress) then
-                let sval = ValueExtractor.GetStringAtAddress(raddr,heap)
-                lst.Add(sval)
-            else ()
-         lst.ToArray()
-
-    let getEntryStringKeys (heap:ClrHeap) (addr:address) : string array =
-         let entrAryType = heap.GetObjectType(addr)
-         let count = entrAryType.GetArrayLength(addr)
-         let lst = new ResizeArray<string>()
-         for i = 0 to count - 1 do
-            let elemAddr = entrAryType.GetArrayElementAddress(addr,i)
-            let raddr = ValueExtractor.ReadUlongAtAddress(elemAddr,heap)
-            if (raddr <> Constants.InvalidAddress) then
-                let sval = ValueExtractor.GetStringAtAddress(raddr,heap)
-                lst.Add(sval)
-            else ()
-         lst.ToArray()
-
-    
-    (*
-        System.Collections.Generic.SortedDictionary<TKey,TValue>
-    *)
-
-    /// Get tree (key,value) pairs in inorder traversal
-    let rec getNodeValues (heap:ClrHeap) (nodeType:ClrType) (addr:address) (fldNdxs:int32 array) (kvpInfo:KeyValuePairInfo) (keys:ResizeArray<string>) (values:ResizeArray<string>)=
-        if addr <> 0UL then
-            let lnodeAddr = unbox<address>(nodeType.Fields.[fldNdxs.[0]].GetValue(addr))
-            getNodeValues heap nodeType lnodeAddr fldNdxs kvpInfo keys values |> ignore
-
-            let kvpFld = nodeType.Fields.[fldNdxs.[2]]
-            let kvpAddr = kvpFld.GetAddress(addr)
-            
-            let keyVal, valVal = getKeyValuePairValues heap kvpAddr kvpInfo
-            keys.Add (keyVal)
-            values.Add(valVal)
-
-            let rnodeAddr = unbox<address>(nodeType.Fields.[fldNdxs.[1]].GetValue(addr))
-            getNodeValues heap nodeType rnodeAddr fldNdxs kvpInfo keys values |> ignore
-            ()
-    
-    type DictionaryResult =
-        struct
-            val Error: string
-            val DctType: string
-            val Address: address
-            val KeyType: string
-            val ValType: string
-            val Keys: string array
-            val Values: string array
-            new(error, dctType, addr, keyType, valType, keys, values) = { Error = error; DctType = dctType; Address = addr; KeyType = keyType; ValType = valType; Keys = keys; Values = values }
-        end
-
-    let getErrorDictionaryResult (error:string) : DictionaryResult =
-       new DictionaryResult( error, null, 0UL, null, null, null, null )
-
-
-    /// 
-    let getSortedDictionaryValues (heap:ClrHeap) (addr:address) : DictionaryResult =
-        try
-            let dctType = heap.GetObjectType addr
-            if isNull dctType then
-                getErrorDictionaryResult ("Get type returns null at address: " + Utils.AddressString(addr))
-            else if not (dctType.Name.StartsWith "System.Collections.Generic.SortedDictionary<") then
-                getErrorDictionaryResult ("Expected type: SortedDictionary, but  at address: "+ Utils.AddressString(addr) + " we have: " + dctType.Name)
-            else if isNull dctType.Fields || dctType.Fields.Count < 1 then
-                getErrorDictionaryResult ("SortedDictionary instance at address: "+ Utils.AddressString(addr) + " does not have fields.")
-            else
-                let setFld = dctType.GetFieldByName("_set"); // get TreeSet 
-                let setFldAddr = unbox<address>(setFld.GetValue(addr))
-                let setType = heap.GetObjectType(setFldAddr)
-                let rootFld = setType.GetFieldByName("root") // get TreeSet root node
-                let rootFldAddr = unbox<address>(rootFld.GetValue(setFldAddr))
-                let rootType = heap.GetObjectType(rootFldAddr)
-                let fldNdxs = getTypeFieldIndices rootType [|"Left"; "Right"; "Item"|] // get indices of fields we are interested in
-                // KeyVsaluePair info
-                let kvpFld = rootType.Fields.[fldNdxs.[2]] // this is Item field (KeyValuePair)
-                let kvpAddr = kvpFld.GetAddress(rootFldAddr)
-                let kFld = kvpFld.Type.GetFieldByName("key")
-                let vFld = kvpFld.Type.GetFieldByName("value")
-                // get values for type fixup
-                let key = kFld.GetValue(kvpAddr,true)
-                let value = vFld.GetValue(kvpAddr,true)
-                // type fixup
-                let kType = tryGetType heap kFld.Type key 
-                let vType = tryGetType heap vFld.Type value
-                // type categories
-                let kTypeCat = getTypeCategory kType
-                let vTypeCat = getTypeCategory vType
-                let kvpInfo = { KeyValuePairInfo.keyFld = kFld; keyType = kType; keyCat = kTypeCat; valFld = vFld; valType = vType; valCat = vTypeCat; }
-                // get keys and values in tree order
-                let keys = new ResizeArray<string>()
-                let values = new ResizeArray<string>()
-                getNodeValues heap rootType rootFldAddr fldNdxs kvpInfo keys values
-                new DictionaryResult( null, dctType.Name, addr, kType.Name, vType.Name, keys.ToArray(), values.ToArray() )
-        with
-            | exn -> getErrorDictionaryResult (exn.ToString())
-
-
-    (*
         Arrays.
     *)
 
-    //
     let aryInfo (heap:ClrHeap) (addr:address) : (string * ClrType * ClrType * int * TypeKind) = 
         let clrType = heap.GetObjectType(addr)
         if isNull clrType then
@@ -152,8 +26,7 @@ module CollectionContent =
             let kind = typeKind clrType.ComponentType
             (null, clrType, clrType.ComponentType, len, kind)
 
-
-    let aryElemString (heap:ClrHeap) (addr:address) (aryType:ClrType) (ndx:int) =
+    let aryElemString (heap:ClrHeap) (addr:address) (aryType:ClrType) (elemType:ClrType) (ndx:int) =
         let elemAddr = aryType.GetArrayElementAddress(addr,ndx)
         if elemAddr = Constants.InvalidAddress then
             Constants.NullValue
@@ -196,84 +69,235 @@ module CollectionContent =
         else
             ValueExtractor.GetGuidValue( elemAddr, elemType)
 
+    let aryElemPrimitive (heap:ClrHeap) (addr:address) (aryType:ClrType) (elemType:ClrType) (ndx:int) =
+        let elemobj = aryType.GetArrayElementValue(addr,ndx)
+        if isNull elemobj then
+            Constants.NullValue
+        else
+            ValueExtractor.GetPrimitiveValue( elemobj, elemType)
 
-//    let getArrayValues (heap:ClrHeap) (aryAddr:uint64) (aryType:ClrType) (aryElemType:ClrType) (elemType:ClrType) (count: int32) =
-//        let mutable ndx:int32 = 0
-//        let mutable elemAddr:Object = null
-//        let mutable elemVal:Object = null
-//        let mutable value:string = null
-//        let values = new ResizeArray<string>(count)
-//        let cats = getTypeCategory elemType
-//        while ndx < count do
-//            if aryElemType.IsObjectReference then
-//                elemAddr <- aryType.GetArrayElementValue(aryAddr, ndx)
-//                elemVal <- elemType.GetValue(unbox<address>(elemAddr))
-//                value <- getObjectValue heap elemType cats elemVal false
-//                values.Add (value.ToString())
-//            else if aryElemType.IsPrimitive then
-//                elemVal <- aryType.GetArrayElementValue(aryAddr, ndx)
-//                value <- getObjectValue heap elemType cats elemVal false
-//                values.Add (value.ToString())
-//            else
-//                values.Add("..???..")
-//            
-//            ndx <- ndx + 1
-//        values
-//
-//    let rec tryGetArrayElemType (heap:ClrHeap) (aryAddr:uint64) (aryType:ClrType) (ndx:int32) (max:int32) =
-//        if ndx = max then 
-//            null
-//        else
-//            let elemAddr = aryType.GetArrayElementAddress(aryAddr, ndx)
-//            let elemType = heap.GetObjectType(elemAddr)
-//            if elemType <> null && not (isTypeUnknown elemType) then
-//                elemType
-//            else
-//                let elemVal = aryType.GetArrayElementValue(aryAddr, ndx)
-//                if (elemVal <> null) && (elemVal :? address) then
-//                    let elemType = heap.GetObjectType(unbox<address>(elemVal))
-//                    if elemType <> null && not (isTypeUnknown elemType) then
-//                        elemType
-//                    else
-//                        tryGetArrayElemType heap aryAddr aryType (ndx+1) max
-//                else
-//                    tryGetArrayElemType heap aryAddr aryType (ndx+1) max
-//
-//    let rec tryGetArrayElementType (heap:ClrHeap) (aryAddr:uint64) (aryType:ClrType) (ndx:int32) (max:int32) =
-//        if ndx = max then 
-//            null
-//        else
-//            let elemAddr = aryType.GetArrayElementAddress(aryAddr, ndx)
-//            let elemType = heap.GetObjectType(elemAddr)
-//            if elemType <> null && not (isTypeUnknown elemType) then
-//                elemType
-//            else
-//                let elemVal = aryType.GetArrayElementValue(aryAddr, ndx)
-//                if (elemVal <> null) && (elemVal :? address) then
-//                    let elemType = heap.GetObjectType(unbox<address>(elemVal))
-//                    if elemType <> null && not (isTypeUnknown elemType) then
-//                        elemType
-//                    else
-//                        tryGetArrayElemType heap aryAddr aryType (ndx+1) max
-//                else
-//                    tryGetArrayElemType heap aryAddr aryType (ndx+1) max
-//
-//    let getArrayElemType (heap:ClrHeap) (aryAddr:uint64) (clrType:ClrType) (ndx:int32) (max:int32) =
-//        if clrType.ComponentType <> null && not (isTypeUnknown clrType.ComponentType) then
-//            clrType.ComponentType
-//        else 
-//            tryGetArrayElemType heap aryAddr clrType ndx max
-//
-//    
-//
-//    let getArrayContentImpl (heap:ClrHeap) (addr:uint64) (aryType:ClrType) : string * string * int32 * string array =
-//        let count = aryType.GetArrayLength(addr)
-//        let aryElemType = getArrayElemType heap addr aryType 0 count
-//        if aryElemType = null then
-//            ("Getting type at : " + Utils.AddressString(addr) + " failed, null was returned.", null, count, emptyStringArray)
-//        else
-//            let values = getArrayValues heap addr aryType aryType.ComponentType aryElemType count
-//            (null, aryElemType.Name,count,values.ToArray())
+    let getAryItems (heap:ClrHeap) (addr:address) (aryType:ClrType) (elemType:ClrType) (cnt:int) getter =
+        let ary = Array.create cnt null
+        for i = 0 to (cnt - 1) do
+            ary.[i] <- getter heap addr aryType elemType i
+        ary
+
+    let getAryContent (heap:ClrHeap) (addr:address) : string * ClrType * ClrType * int * string array =
+        try
+            let error, clrType, aryElemType, count, kind = aryInfo heap addr
+            if not (isNull error) then
+                (error,null,null,0,null)
+            else
+                let values = Array.create count null
+                match valueKind kind with
+                | TypeKind.ValueKind ->
+                    let specKind = specificKind kind
+                    match specificKind kind with
+                    | TypeKind.Decimal ->
+                        (null,clrType,aryElemType,count,getAryItems heap addr clrType aryElemType count aryElemDecimal)
+                    | TypeKind.DateTime ->
+                        (null,clrType,aryElemType,count,getAryItems heap addr clrType aryElemType count aryElemDatetimeR)
+                    | TypeKind.TimeSpan ->
+                        (null,clrType,aryElemType,count,getAryItems heap addr clrType aryElemType count aryElemTimespanR)
+                    | TypeKind.Guid ->
+                        (null,clrType,aryElemType,count,getAryItems heap addr clrType aryElemType count aryElemGuid)
+                    | TypeKind.Str ->
+                        (null,clrType,aryElemType,count,getAryItems heap addr clrType aryElemType count aryElemString)
+                    | TypeKind.Primitive ->
+                        (null,clrType,aryElemType,count,getAryItems heap addr clrType aryElemType count aryElemPrimitive)
+                    | _ ->
+                        (null,clrType,aryElemType,count,null)
+                | _ ->
+                    (null,clrType,aryElemType,count,null)
+        with
+            | exn -> (exn.ToString(),null,null,0,null)
+
+    let getIntAry (heap:ClrHeap) (addr:address) (clrType:ClrType) : string * int array =
+        try
+            let len = clrType.GetArrayLength(addr)
+            let ary : int array = Array.create len 0
+            for i = 0 to (len - 1) do
+                ary.[i] <- unbox<int32>(clrType.GetArrayElementValue(addr,i))
+            (null,ary)
+        with
+            | exn -> (exn.ToString(),null)
+
+    (*
+        System.Text.StringBuilder TODO JRD add chunk count
+    *)
+
+    let rec getStringBuilderArrays (addr:address) (m_ChunkChars:ClrInstanceField) (m_ChunkPrevious:ClrInstanceField) (m_ChunkLength:ClrInstanceField) (chunks:ResizeArray<char[]>) (size:int) : int =
+        match addr with
+            | 0UL -> size
+            | _ ->
+                let chunkAddr = getAddressFromField addr m_ChunkChars false
+                match chunkAddr with
+                    | 0UL -> size
+                    | _ ->
+                        let usedLength = getIntFromField addr m_ChunkLength false
+                        let newSize = size + usedLength
+                        let chunkAry = getCharArrayWithLenght chunkAddr m_ChunkChars.Type usedLength
+                        chunks.Insert(0,chunkAry)
+                        let prevAddr = getAddressFromField addr m_ChunkPrevious false
+                        getStringBuilderArrays prevAddr m_ChunkChars m_ChunkPrevious m_ChunkLength chunks newSize
+
+
+    let getStringBuilderContent (addr:address) (m_ChunkChars:ClrInstanceField) (m_ChunkPrevious:ClrInstanceField) (m_ChunkLength:ClrInstanceField) (m_ChunkOffset:ClrInstanceField) : string =
+        let chunks =  ResizeArray<char[]>()
+        let totalSize = getStringBuilderArrays addr m_ChunkChars m_ChunkPrevious m_ChunkLength chunks 0
+        let mutable strAry = Array.create<char> totalSize '\u0000'
+        let mutable offset = 0
+        for chunk in chunks do
+            Array.Copy(chunk,0,strAry,offset,chunk.Length)
+            offset <- offset + chunk.Length
+        new string(strAry)
+            
+    let getStringBuilderString (heap:ClrHeap) (addr:address) =
+        let clrType = heap.GetObjectType(addr)
+        let m_ChunkChars = clrType.GetFieldByName("m_ChunkChars")
+        let m_ChunkPrevious = clrType.GetFieldByName("m_ChunkPrevious")
+        let m_ChunkLength = clrType.GetFieldByName("m_ChunkLength")
+        let m_ChunkOffset = clrType.GetFieldByName("m_ChunkOffset")
+        getStringBuilderContent addr m_ChunkChars m_ChunkPrevious m_ChunkLength m_ChunkOffset
+
+    (*
+        System.Collections.Generic.Dictionary<TKey,TValue>
+    *)
+
+    let getDictionaryInfo (heap:ClrHeap) (addr:address) (clrType:ClrType) =
+        let count = getFieldIntValue heap addr clrType "count"
+        let version = getFieldIntValue heap addr clrType "version"
+        let freeCount = getFieldIntValue heap addr clrType "freeCount"
+        let fldDescription = [|
+            new KeyValuePair<string,string>("count",count.ToString())
+            new KeyValuePair<string,string>("free count",freeCount.ToString())
+            new KeyValuePair<string,string>("version",version.ToString())
+            |]
+        let entries = clrType.GetFieldByName("entries")
+        let entriesAddr = getReferenceFieldAddress addr entries false
+        let entriesType = heap.GetObjectType(entriesAddr) // that is address of entries array
+        let entryAddr = entriesType.GetArrayElementAddress(entriesAddr,0)
+        let entryType = entriesType.ComponentType
+        let Entry_hashCodeFld = entryType.GetFieldByName("hashCode")
+        let Entry_nextFld = entryType.GetFieldByName("next")
+        let Entry_keyFld = entryType.GetFieldByName("key")
+        let Entry_valueFld = entryType.GetFieldByName("value")
+        let Entry_keyType = tryGetFieldType heap (entryAddr + (uint64)Entry_keyFld.Offset) Entry_keyFld 
+        let Entry_valueType = tryGetFieldType heap (entryAddr + (uint64)Entry_valueFld.Offset) Entry_valueFld 
+        (fldDescription, count, entriesType, entriesAddr, Entry_hashCodeFld, Entry_nextFld, Entry_keyFld, Entry_keyType, Entry_valueFld, Entry_valueType)
+
+    let dictionaryContent (heap:ClrHeap) (addr:address) =
+        try
+            let dctType = heap.GetObjectType(addr)
+            let fldDescription, count, entriesType, entriesAddr, Entry_hashCodeFld, Entry_nextFld, Entry_keyFld, Entry_keyType, Entry_valueFld, Entry_valueType
+                 = getDictionaryInfo heap addr dctType
+            let Entry_keyKind = typeKind Entry_keyType
+            let Entry_valueKind = typeKind Entry_valueType
+            let entryList = new ResizeArray<KeyValuePair<string,string>>(count)
+            let mutable index:int32 = 0
+            while index < count do
+                let entryAddr = entriesType.GetArrayElementAddress(entriesAddr,index)
+                let hashCode = getIntValue entryAddr Entry_hashCodeFld true
+                if hashCode >= 0 then
+                    let keyVal = getFieldValue heap entryAddr true Entry_keyFld Entry_keyKind
+                    let valVal = getFieldValue heap entryAddr true Entry_valueFld Entry_valueKind
+                    entryList.Add(new KeyValuePair<string,string>(keyVal,valVal))
+                index <- index + 1
+            (null, fldDescription, count, dctType, Entry_keyType, Entry_valueType, entryList.ToArray())
+        with
+            | exn -> (exn.ToString(),null,0,null,null,null,null)
+
+
+    let getDictionaryCount (heap:ClrHeap) (addr:address) =
+        let clrType = heap.GetObjectType(addr)
+        if (isNull clrType) then
+            ("Cannot get type at address: " + Utils.AddressString(addr), -1)
+        else
+            let fld = clrType.GetFieldByName("count")
+            let count = fld.GetValue(addr,false,false)
+            (null,unbox<int>(count))
+    
+    (*
+        System.Collections.Generic.SortedDictionary<TKey,TValue>
+        _set fields
+        Node root;
+        IComparer<T> comparer;
+        int count;
+        int version;
+    *)
+
+    /// return error, description, count, root type, root address, root left field, root right field, key field, value field
+    let getSortedDictionaryInfo (heap:ClrHeap) (addr:address) : string * KeyValuePair<string,string> array * int * ClrType * address =
+        try
+            let error, dctType = getSpecificType heap addr "System.Collections.Generic.SortedDictionary<"
+            let dctType = heap.GetObjectType addr
+            if isNull dctType then
+                (error,null,0,null,0UL)
+            else
+                let setFld = dctType.GetFieldByName("_set"); // get TreeSet 
+                let setFldAddr = unbox<address>(setFld.GetValue(addr))
+                let setType = heap.GetObjectType(setFldAddr)
+                let count = getFieldIntValue heap setFldAddr setType "count"
+                let version = getFieldIntValue heap setFldAddr setType "version"
+                
+                let description = [|
+                        new KeyValuePair<string,string>("Type Name",dctType.Name)
+                        new KeyValuePair<string,string>("Count",count.ToString())
+                        new KeyValuePair<string,string>("Version",version.ToString())
+                        |]
+                let rootFld = setType.GetFieldByName("root") // get TreeSet root node
+                let rootFldAddr = unbox<address>(rootFld.GetValue(setFldAddr))
+                let rootType = heap.GetObjectType(rootFldAddr)
+                (null,description,count,rootType,rootFldAddr)
+        with
+            | exn -> (exn.ToString(),null,0,null,0UL)
+
+    let getSortedDictionaryItemTypes (heap:ClrHeap) (nodeAddr:address) (itemFld:ClrInstanceField) =
+        let keyFld = itemFld.Type.GetFieldByName("key")
+        let valFld = itemFld.Type.GetFieldByName("value")
+        let itemAddr = itemFld.GetAddress(nodeAddr)
+        let keyType =  tryGetType' heap itemAddr true keyFld
+        let valType =  tryGetType' heap itemAddr true valFld
+        (keyFld, keyType,valFld,valType)
+
+    let getSortedDicionaryContent (heap:ClrHeap) (addr:address) =
+        let error,description,count,rootType,rootAddress = getSortedDictionaryInfo heap addr
+        let leftNodeFld = rootType.GetFieldByName("Left")
+        let rightNodeFld = rootType.GetFieldByName("Right")
+        let itemNodeFld = rootType.GetFieldByName("Item")
+
+        let keyFld, keyType,valFld,valType = getSortedDictionaryItemTypes heap rootAddress itemNodeFld
+
+        let keyKind = typeKind keyType
+        let valKind = typeKind valType
+
+        let stack = new Stack<address>(2*Utils.Log2(count+1))
+        let mutable node = rootAddress
+        while node <> Constants.InvalidAddress do
+            stack.Push(node)
+            let left = getReferenceFieldAddress node leftNodeFld false
+            if left <> Constants.InvalidAddress then
+                node <- left
+            else
+                let right = getReferenceFieldAddress node rightNodeFld false
+                node <- right
+        let values = new ResizeArray<KeyValuePair<string,string>>(count)
+        while stack.Count > 0 do
+             node <- stack.Pop()
+
+             let itemAddr = itemNodeFld.GetAddress(node)
+             let keyStr = getFieldValue heap itemAddr true keyFld keyKind
+             let valStr = getFieldValue heap itemAddr true valFld valKind
+             values.Add(new KeyValuePair<string,string>(keyStr,valStr))
+
+             node <- getReferenceFieldAddress node rightNodeFld false
+             while node <> Constants.InvalidAddress do
+                stack.Push(node)
+                node <- getReferenceFieldAddress node leftNodeFld false
+                if node = Constants.InvalidAddress then
+                    node <- getReferenceFieldAddress node rightNodeFld false
+
+        (error,description,values.ToArray())
 
     let getArrayStringElem (heap:ClrHeap) (addr:address) (aryType:ClrType) (ndx:int) =
         let elemAddr = aryType.GetArrayElementAddress(addr,ndx)

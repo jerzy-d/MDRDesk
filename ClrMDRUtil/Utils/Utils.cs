@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
@@ -1056,6 +1057,18 @@ namespace ClrMDRIndex
 			return -1;
 		}
 
+		public static bool SameStringArrays(string[] ary1, string[] ary2)
+		{
+			if (ary1 == null && ary2 == null) return true;
+			if (ary1 == null || ary2 == null) return false;
+			if (ary1.Length != ary2.Length) return false;
+			for (int i = 0, icnt = ary1.Length; i < icnt; ++i)
+			{
+				if (!SameStrings(ary1[i], ary2[i])) return false;
+			}
+			return true;
+		}
+
 		//public static bool ParseReportLine(string ln, ReportFile.ColumnType[] columns, List<string> lst)
 		//{
 		//	if (string.IsNullOrWhiteSpace(ln)) return false;
@@ -1132,11 +1145,13 @@ namespace ClrMDRIndex
 			return StringBuilderCache.GetStringAndRelease(sb);
 		}
 
-        #endregion String Utils
+		#endregion String Utils
 
-        #region Comparers
+		#region Comparers
 
-        public class AddressCmpDesc : IComparer<ulong>
+
+
+		public class AddressCmpDesc : IComparer<ulong>
         {
             public int Compare(ulong a, ulong b)
             {
@@ -1762,6 +1777,17 @@ namespace ClrMDRIndex
 			return (int) c;
 		}
 
+		public static int Log2(int value)
+		{
+			int c = 0;
+			while (value > 0)
+			{
+				c++;
+				value >>= 1;
+			}
+			return c;
+		}
+
 		public static string GetNameWithoutId(string name)
 		{
 			if (string.IsNullOrWhiteSpace(name)) return name;
@@ -2190,4 +2216,27 @@ namespace ClrMDRIndex
 
 		#endregion Misc
 	}
+
+	//internal class KeyValuePairComparer<KeyValuePair<T, U>> : IComparer<KeyValuePair<T, U>>
+	//{
+	//	internal IComparer<T> keyComparer;
+
+	//	public KeyValuePairComparer(IComparer<T> keyComparer)
+	//	{
+	//		if (keyComparer == null)
+	//		{
+	//			this.keyComparer = Comparer<T>.Default;
+	//		}
+	//		else
+	//		{
+	//			this.keyComparer = keyComparer;
+	//		}
+	//	}
+
+	//	public override int Compare(KeyValuePair<TKey, TValue> x, KeyValuePair<TKey, TValue> y)
+	//	{
+	//		return keyComparer.Compare(x.Key, y.Key);
+	//	}
+	//}
+
 }

@@ -13,8 +13,9 @@ namespace TestApp
         private int _processId;
         private CancellationTokenSource _cancelSource;
         private Thread _thread;
-        private ConcurrentDictionary<string, KeyValuePair<string, string>> _concurrentDictionary;
-        private Dictionary<int, string> _dictionary;
+		private ConcurrentDictionary<string, KeyValuePair<string, string>> _concurrentDictionary;
+		private SortedDictionary<string, string> _sortedDictionary;
+		private Dictionary<int, string> _dictionary;
 	    private TestStruct _testStruct;
 	    private Guid _myGuid;
 
@@ -74,12 +75,14 @@ namespace TestApp
             StringBuilder sb = InitStringBuilder();
             _concurrentDictionary = new ConcurrentDictionary<string, KeyValuePair<string, string>>();
             _dictionary = new Dictionary<int, string>();
+			_sortedDictionary = new SortedDictionary<string, string>();
 
             int count = 0;
             while (!calcelToken.IsCancellationRequested)
             {
                 _concurrentDictionary.TryAdd("key_" + count,new KeyValuePair<string, string>("valueKey_" + count, "valueValue_" + count));
                 _dictionary.Add(count, "value_" + count);
+				_sortedDictionary.Add("sorted_key_" + count, "sorted_value_" + count);
                 ++count;
                 if ((count % 20) == 0)
                     Console.WriteLine("[procId: " + _processId + "] dct entries added " + count);

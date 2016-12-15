@@ -29,6 +29,8 @@ namespace ClrMDRIndex
 
 
 		public int BlockInfoIndex => _blockInfoNdx;
+		public int TypeId => _typeId;
+		public BlockingReason BlkReason => _blkReason;
 
 		/// <summary>
 		/// Create instance of our version BlockingObject.

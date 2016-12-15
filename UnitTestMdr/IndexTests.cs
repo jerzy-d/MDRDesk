@@ -35,6 +35,12 @@ namespace UnitTestMdr
 			set { testContextInstance = value; }
 		}
 
+		[AssemblyInitialize]
+		public static void AssemblyInit(TestContext context)
+		{
+			Assert.IsTrue(TestConfiguration.ConfigureSettings());
+		}
+
 		#endregion test context/initialization
 
 		#region threads

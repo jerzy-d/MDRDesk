@@ -60,10 +60,10 @@ namespace ClrMDRIndex
 
 		// second LSB top level kinds
 		ReferenceKind =	0x00000100,
-		StructKind =		0x00000200,
+		StructKind =	0x00000200,
 		PrimitiveKind =	0x00000300,
-		EnumKind =			0x00000400,
-		StringKind =		0x00000500,
+		EnumKind =		0x00000400,
+		StringKind =	0x00000500,
 		ArrayKind =		0x00000600,
 		InterfaceKind =	0x00000700,
 
@@ -77,18 +77,23 @@ namespace ClrMDRIndex
 		SystemObject =	0x00070000,
 		System__Canon = 0x00080000,
 		Ary =           0x00090000,
+		Primitive =     0x000A0000,
+
+		// our value kind
+		ValueKind = 0x10000000,
 
 		ClrElementTypeMask =		0x000000FF,
 		MainTypeKindMask =			0x0000FF00,
-		ParticularTypeKindMask =	0x7FFF0000,
+		ParticularTypeKindMask =    0x0FFF0000,
+		ValueTypeKindMask =         0x70000000,
 	}
 
 	public class TypeKinds
 	{
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
-		public static TypeKind GetClrElementType(TypeKind kind)
+		public static ClrElementType GetClrElementType(TypeKind kind)
 		{
-			return (kind & TypeKind.ClrElementTypeMask);
+			return (ClrElementType)(kind & TypeKind.ClrElementTypeMask);
 		}
 
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -122,9 +127,22 @@ namespace ClrMDRIndex
 		}
 
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		public static TypeKind GetValueTypeKind(TypeKind kind)
+		{
+			return (kind & TypeKind.ValueTypeKindMask);
+		}
+
+
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		public static bool IsArray(TypeKind kind)
 		{
-			return (GetMainTypeKind(kind) & kind) != 0;
+			return (GetMainTypeKind(kind) & kind) == TypeKind.Array;
+		}
+
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		public static bool IsValue(TypeKind kind)
+		{
+			return (GetValueTypeKind(kind) & kind) == TypeKind.ValueKind;
 		}
 
 		public static TypeKind GetTypeKind(ClrType clrType)
@@ -137,7 +155,7 @@ namespace ClrMDRIndex
 				case ClrElementType.SZArray:
 					return kind | TypeKind.ArrayKind;
 				case ClrElementType.String:
-					return kind | TypeKind.StringKind;
+					return kind | TypeKind.StringKind | TypeKind.ValueKind | TypeKind.Str;
 				case ClrElementType.Object:
 					kind |= TypeKind.ReferenceKind;
 					if (clrType.IsException)
@@ -156,20 +174,20 @@ namespace ClrMDRIndex
 					switch (clrType.Name)
 					{
 						case "System.Decimal":
-							return kind | TypeKind.Decimal;
+							return kind | TypeKind.Decimal | TypeKind.ValueKind;
 						case "System.DateTime":
-							return kind | TypeKind.DateTime;
+							return kind | TypeKind.DateTime | TypeKind.ValueKind;
 						case "System.TimeSpan":
-							return kind | TypeKind.TimeSpan;
+							return kind | TypeKind.TimeSpan | TypeKind.ValueKind;
 						case "System.Guid":
-							return kind | TypeKind.Guid;
+							return kind | TypeKind.Guid | TypeKind.ValueKind;
 						default:
 							return kind;
 					}
 				case ClrElementType.Unknown:
 					return TypeKind.Unknown;
 				default:
-					return kind | TypeKind.PrimitiveKind;
+					return kind | TypeKind.PrimitiveKind | TypeKind.ValueKind | TypeKind.Primitive;
 			}
 		}
 	}

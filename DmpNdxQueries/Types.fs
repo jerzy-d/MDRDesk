@@ -11,7 +11,131 @@ module Types =
     open Microsoft.Diagnostics.Runtime
     open ClrMDRIndex
 
-        /// We get get this one, in good heaps. Why?
+    let typeKind (clrType:ClrType) : TypeKind =
+        let elemType = clrType.ElementType
+        let kind = TypeKinds.SetClrElementType(TypeKind.Unknown, elemType)
+        match elemType with
+        | ClrElementType.Array   -> kind ||| TypeKind.ArrayKind
+        | ClrElementType.SZArray -> kind ||| TypeKind.ArrayKind
+        | ClrElementType.String  -> kind ||| TypeKind.StringKind ||| TypeKind.ValueKind ||| TypeKind.Str
+        | ClrElementType.Object  ->
+            let subKind = kind ||| TypeKind.ReferenceKind
+            if clrType.IsException then
+                subKind ||| TypeKind.Exception;
+            else
+                match clrType.Name with
+                | "System.Object"  -> subKind ||| TypeKind.Object
+                | "System.__Canon" -> subKind ||| TypeKind.System__Canon
+                | _                -> subKind
+        | ClrElementType.Struct  ->
+            let subKind = kind ||| TypeKind.StructKind
+            match clrType.Name with
+            | "System.Decimal"   -> subKind ||| TypeKind.Decimal ||| TypeKind.ValueKind
+            | "System.DateTime"  -> subKind ||| TypeKind.DateTime ||| TypeKind.ValueKind
+            | "System.TimeSpan"  -> subKind ||| TypeKind.TimeSpan ||| TypeKind.ValueKind
+            | "System.Guid"      -> subKind ||| TypeKind.Guid ||| TypeKind.ValueKind
+            | _                  -> subKind
+        | ClrElementType.Unknown -> TypeKind.Unknown
+        | _                      -> kind ||| TypeKind.PrimitiveKind ||| TypeKind.ValueKind  ||| TypeKind.Primitive;
+
+    let clrElementType kind : ClrElementType = TypeKinds.GetClrElementType(kind)
+    let valueKind kind = TypeKinds.GetValueTypeKind(kind)
+    let specificKind kind = TypeKinds.GetParticularTypeKind(kind)
+
+    let typeDefaultValue (clrType:ClrType) : string =
+        let elemType = clrType.ElementType
+        match elemType with
+        | ClrElementType.Array | ClrElementType.SZArray ->
+            "[0]/null"
+        | ClrElementType.String ->
+            "\"\"/null"
+        | ClrElementType.Object ->
+            "null"
+        | ClrElementType.Struct  ->
+             match clrType.Name with
+            | "System.Decimal"   -> "0"
+            | "System.DateTime"  -> "< 01/01/1800"
+            | "System.TimeSpan"  -> "0"
+            | "System.Guid"      -> "00000000-0000-0000-0000-000000000000"
+            | _                  -> "empty"
+        | ClrElementType.Unknown -> "unknown"
+        | _                      -> "0"
+
+    let getTypeValue (heap:ClrHeap) (addr:address) (clrType:ClrType) (kind:TypeKind) : string =
+        match valueKind kind with
+        | TypeKind.ValueKind ->
+            let specKind = specificKind kind
+            match specificKind kind with
+            | TypeKind.Decimal ->
+                Constants.NullValue
+            | TypeKind.DateTime ->
+                Constants.NullValue
+            | TypeKind.TimeSpan ->
+                Constants.NullValue
+            | TypeKind.Guid ->
+                Constants.NullValue
+            | TypeKind.Str ->
+                Constants.NullValue
+            | TypeKind.Primitive ->
+                Constants.NullValue
+            | _ ->
+                Constants.NullValue
+        | _ ->
+            Constants.NullValue
+
+    let getFieldValue (heap:ClrHeap) (addr:address) (intr:bool) (fld:ClrInstanceField) (kind:TypeKind) : string =
+        match valueKind kind with
+        | TypeKind.ValueKind ->
+            let specKind = specificKind kind
+            match specificKind kind with
+            | TypeKind.Decimal ->
+                ValueExtractor.GetDecimalValue(addr, fld)
+            | TypeKind.DateTime ->
+                Constants.NullValue
+            | TypeKind.TimeSpan ->
+                Constants.NullValue
+            | TypeKind.Guid ->
+                Constants.NullValue
+            | TypeKind.Str ->
+                let fldAddr = unbox<uint64>(fld.GetValue(addr,intr,false))
+                ValueExtractor.GetStringAtAddress(fldAddr,heap)
+            | TypeKind.Primitive ->
+                let obj = fld.GetValue(addr,intr,false)
+                let elemType = clrElementType kind
+                ValueExtractor.GetPrimitiveValue(obj, elemType)
+            | _ ->
+                Constants.NullValue
+        | _ ->
+            Constants.NullValue
+
+    let getObjectType (heap:ClrHeap) (addr:address) = 
+        let clrType = heap.GetObjectType(addr)
+        let kind = typeKind clrType
+        match TypeKinds.GetMainTypeKind(kind) with
+        | TypeKind.Unknown ->
+            EmptyClrTypeSidekick.Value
+        | TypeKind.ReferenceKind ->
+            match TypeKinds.GetParticularTypeKind(kind) with
+            | TypeKind.Str 
+            | TypeKind.Exception
+            | TypeKind.Ary ->
+                new ClrTypeSidekick(clrType,kind,null)
+            | TypeKind.SystemObject ->
+                new ClrTypeSidekick(clrType,kind,null)
+            | TypeKind.System__Canon ->
+                new ClrTypeSidekick(clrType,kind,null)
+            | _ ->
+                getReferenceFields heap addr (new ClrTypeSidekick(clrType,kind,null))
+        | TypeKind.Struct ->
+            match TypeKinds.GetParticularTypeKind(kind) with
+            | TypeKind.DateTime | TypeKind.Guid | TypeKind.TimeSpan | TypeKind.Decimal ->
+                new ClrTypeSidekick(clrType,kind,null)
+            | _ -> 
+                getStructgFields heap addr (new ClrTypeSidekick(clrType,kind,null))
+        | _ ->
+            EmptyClrTypeSidekick.Value
+
+    /// We get get this one, in good heaps. Why?
     let isErrorType (clrType: ClrType) =
         Utils.SameStrings(clrType.Name,"ERROR")
 
@@ -39,6 +163,21 @@ module Types =
                 | exn -> clrType
         else
             clrType
+
+    let tryGetType' (heap:ClrHeap) (addr:address) (intr:bool) (fld:ClrInstanceField) =
+        if fld.IsValueClass then
+            fld.Type
+        else
+            let valueObj = fld.GetValue(addr,intr)
+            tryGetType heap fld.Type valueObj
+
+    ///
+    let tryGetFieldType (heap:ClrHeap) (addr:address) (fld:ClrInstanceField) =
+       if isNull fld.Type || isTypeNameVague fld.Type.Name then
+          let fldAddr = ValueExtractor.ReadPointerAtAddress(addr,heap)
+          heap.GetObjectType(fldAddr)
+       else
+           fld.Type
 
     let private getStructTypeFieldSidekick (heap:ClrHeap) (clrs:ClrTypeSidekick) (addr:address) (fld:ClrInstanceField) =
         let clrType = fld.Type

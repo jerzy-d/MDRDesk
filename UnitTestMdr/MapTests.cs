@@ -374,29 +374,7 @@ namespace UnitTestMdr
 
 
 
-		[TestMethod]
-		public void TestStringBuilderContent()
-		{
-			string expectedString =
-				@"0aaaaaaaaaa1aaaaaaaaaa2aaaaaaaaaa3aaaaaaaaaa4aaaaaaaaaa5aaaaaaaaaa6aaaaaaaaaa7aaaaaaaaaa8aaaaaaaaaa9aaaaaaaaaa";
-			var sbTypeName = @"System.Text.StringBuilder";
-			var map = OpenMap(@"D:\Jerzy\WinDbgStuff\dumps\TestApp\TestApp.exe_160926_081822.map");
-			bool found = false;
-			using (map)
-			{
-				var typeId = map.GetTypeId(sbTypeName);
-				Assert.IsFalse(typeId == Constants.InvalidIndex);
-				ulong[] typeAddresses = map.GetTypeRealAddresses(typeId);
-				Assert.IsTrue(typeAddresses != null && typeAddresses.Length > 0);
-				for (int i = 0, icnt = typeAddresses.Length; i < icnt; ++i)
-				{
-					var str = SpecializedQueries.getStringBuilderString(map.GetFreshHeap(), typeAddresses[i]);
-					if (string.Compare(expectedString, str, StringComparison.Ordinal) == 0)
-						found = true;
-				}
-				Assert.IsTrue(found);
-			}
-		}
+
 
 
 		[TestMethod]
@@ -413,25 +391,25 @@ namespace UnitTestMdr
 
 		}
 
-		[TestMethod]
-		public void TestConcurrentDictionaryContent()
-		{
-			var sbTypeName =
-				@"System.Collections.Concurrent.ConcurrentDictionary<System.String,System.Collections.Generic.KeyValuePair<System.String,System.String>>";
-			var map = OpenMap(@"D:\Jerzy\WinDbgStuff\dumps\TestApp\TestApp.exe_160928_083345.map");
-			bool found = false;
-			using (map)
-			{
-				var typeId = map.GetTypeId(sbTypeName);
-				Assert.IsFalse(typeId == Constants.InvalidIndex);
-				ulong[] typeAddresses = map.GetTypeRealAddresses(typeId);
-				Assert.IsTrue(typeAddresses != null && typeAddresses.Length > 0);
-				for (int i = 0, icnt = typeAddresses.Length; i < icnt; ++i)
-				{
-					SpecializedQueries.getConcurrentDictionaryContent(map.GetFreshHeap(), typeAddresses[i]);
-				}
-			}
-		}
+		//[TestMethod]
+		//public void TestConcurrentDictionaryContent()
+		//{
+		//	var sbTypeName =
+		//		@"System.Collections.Concurrent.ConcurrentDictionary<System.String,System.Collections.Generic.KeyValuePair<System.String,System.String>>";
+		//	var map = OpenMap(@"D:\Jerzy\WinDbgStuff\dumps\TestApp\TestApp.exe_160928_083345.map");
+		//	bool found = false;
+		//	using (map)
+		//	{
+		//		var typeId = map.GetTypeId(sbTypeName);
+		//		Assert.IsFalse(typeId == Constants.InvalidIndex);
+		//		ulong[] typeAddresses = map.GetTypeRealAddresses(typeId);
+		//		Assert.IsTrue(typeAddresses != null && typeAddresses.Length > 0);
+		//		for (int i = 0, icnt = typeAddresses.Length; i < icnt; ++i)
+		//		{
+		//			SpecializedQueries.getConcurrentDictionaryContent(map.GetFreshHeap(), typeAddresses[i]);
+		//		}
+		//	}
+		//}
 
 		#endregion Specialized Queries
 
@@ -445,105 +423,105 @@ namespace UnitTestMdr
 		}
 
 
-		[TestMethod]
-		public void TestDictionaries()
-		{
-			using (var map = OpenMap(@"D:\Jerzy\WinDbgStuff\dumps\Analytics\Lou\Eze.Analytics.App_161018_173251.map"))
-			{
+		//[TestMethod]
+		//public void TestDictionaries()
+		//{
+		//	using (var map = OpenMap(@"D:\Jerzy\WinDbgStuff\dumps\Analytics\Lou\Eze.Analytics.App_161018_173251.map"))
+		//	{
 
-				var typeName = "System.Collections.Generic.Dictionary<System.String,System.Object>";
-				var typeId = map.GetTypeId(typeName);
-				ulong[] addresses = map.GetTypeRealAddresses(typeId);
-				int[] counts = new int[addresses.Length];
-				var heap = map.GetFreshHeap();
-				for (int i = 0, icnt = addresses.Length; i < icnt; ++i)
-				{
-					var result = CollectionContent.getDictionaryCount(heap, addresses[i]);
-					counts[i] = result.Item2;
-				}
-				Array.Sort(counts, addresses);
-				List<string> keyLst = new List<string>();
-				for (int i = addresses.Length - 4; i > 0; --i)
-				{
-					if (counts[i] < 1) break;
-					var eresult = CollectionContent.getDictionaryEntries(heap, addresses[i]);
-					var keys = CollectionContent.getDictionaryStringKeys(heap, eresult.Item2, eresult.Item3);
+		//		var typeName = "System.Collections.Generic.Dictionary<System.String,System.Object>";
+		//		var typeId = map.GetTypeId(typeName);
+		//		ulong[] addresses = map.GetTypeRealAddresses(typeId);
+		//		int[] counts = new int[addresses.Length];
+		//		var heap = map.GetFreshHeap();
+		//		for (int i = 0, icnt = addresses.Length; i < icnt; ++i)
+		//		{
+		//			var result = CollectionContent.getDictionaryCount(heap, addresses[i]);
+		//			counts[i] = result.Item2;
+		//		}
+		//		Array.Sort(counts, addresses);
+		//		List<string> keyLst = new List<string>();
+		//		for (int i = addresses.Length - 4; i > 0; --i)
+		//		{
+		//			if (counts[i] < 1) break;
+		//			var eresult = CollectionContent.getDictionaryEntries(heap, addresses[i]);
+		//			var keys = CollectionContent.getDictionaryStringKeys(heap, eresult.Item2, eresult.Item3);
 
-					string str = string.Join(Constants.HeavyGreekCrossPadded, keys);
-					keyLst.Add(str);
-				}
+		//			string str = string.Join(Constants.HeavyGreekCrossPadded, keys);
+		//			keyLst.Add(str);
+		//		}
 
-				keyLst.Sort();
-
-
-				List<string[]> keyAry = new List<string[]>();
-				for (int i = addresses.Length - 1, icnt = addresses.Length - 4; i > icnt; --i)
-				{
-					if (counts[i] < 1) break;
-					var eresult = CollectionContent.getDictionaryEntries(heap, addresses[i]);
-					var keys = CollectionContent.getDictionaryStringKeys(heap, eresult.Item2, eresult.Item3);
-					keyAry.Add(keys);
-				}
-
-			}
-		}
+		//		keyLst.Sort();
 
 
-		[TestMethod]
-		public void TestDictionaryEntries()
-		{
-			using (var map = OpenMap(@"D:\Jerzy\WinDbgStuff\dumps\Analytics\Lou\Eze.Analytics.App_161018_173251.map"))
-			{
+		//		List<string[]> keyAry = new List<string[]>();
+		//		for (int i = addresses.Length - 1, icnt = addresses.Length - 4; i > icnt; --i)
+		//		{
+		//			if (counts[i] < 1) break;
+		//			var eresult = CollectionContent.getDictionaryEntries(heap, addresses[i]);
+		//			var keys = CollectionContent.getDictionaryStringKeys(heap, eresult.Item2, eresult.Item3);
+		//			keyAry.Add(keys);
+		//		}
 
-				var typeName = "System.Collections.Generic.Dictionary+Entry<System.String,System.Object>[]";
-				var typeId = map.GetTypeId(typeName);
-				ulong[] addresses = map.GetTypeRealAddresses(typeId);
-				int[] counts = new int[addresses.Length];
-				var heap = map.GetFreshHeap();
-				var keyLst = new List<KeyValuePair<ulong, string[]>>();
-				var specKeysLst = new List<KeyValuePair<ulong, string[]>>();
-				var specKeyAddresses = new List<ulong>();
-				for (int i = 0, icnt = addresses.Length; i < icnt; ++i)
-				{
-					var keys = CollectionContent.getEntryStringKeys(heap, addresses[i]);
-					keyLst.Add(new KeyValuePair<ulong, string[]>(addresses[i], keys));
-					for (int j = 0; j < 5 && j < keys.Length; ++j)
-					{
-						if (keys[j] == "1")
-						{
-							specKeysLst.Add(new KeyValuePair<ulong, string[]>(addresses[i], keys));
-							specKeyAddresses.Add(addresses[i]);
-							break;
-						}
-					}
-				}
-				var keyAry = keyLst.ToArray();
-				keyLst = null;
-				var specKeyAry = specKeysLst.ToArray();
-				specKeysLst = null;
+		//	}
+		//}
 
-				var specKeyAryAddr = specKeyAddresses.ToArray();
 
-				Array.Sort(keyAry, (a, b) => a.Value.Length < b.Value.Length ? 1 : (a.Value.Length > b.Value.Length ? -1 : 0));
-				Array.Sort(specKeyAry, (a, b) => a.Value.Length < b.Value.Length ? 1 : (a.Value.Length > b.Value.Length ? -1 : 0));
+		//[TestMethod]
+		//public void TestDictionaryEntries()
+		//{
+		//	using (var map = OpenMap(@"D:\Jerzy\WinDbgStuff\dumps\Analytics\Lou\Eze.Analytics.App_161018_173251.map"))
+		//	{
 
-				var hist1 = map.GetGenerationHistogram(addresses);
-				var hist2 = map.GetGenerationHistogram(specKeyAryAddr);
+		//		var typeName = "System.Collections.Generic.Dictionary+Entry<System.String,System.Object>[]";
+		//		var typeId = map.GetTypeId(typeName);
+		//		ulong[] addresses = map.GetTypeRealAddresses(typeId);
+		//		int[] counts = new int[addresses.Length];
+		//		var heap = map.GetFreshHeap();
+		//		var keyLst = new List<KeyValuePair<ulong, string[]>>();
+		//		var specKeysLst = new List<KeyValuePair<ulong, string[]>>();
+		//		var specKeyAddresses = new List<ulong>();
+		//		for (int i = 0, icnt = addresses.Length; i < icnt; ++i)
+		//		{
+		//			var keys = CollectionContent.getEntryStringKeys(heap, addresses[i]);
+		//			keyLst.Add(new KeyValuePair<ulong, string[]>(addresses[i], keys));
+		//			for (int j = 0; j < 5 && j < keys.Length; ++j)
+		//			{
+		//				if (keys[j] == "1")
+		//				{
+		//					specKeysLst.Add(new KeyValuePair<ulong, string[]>(addresses[i], keys));
+		//					specKeyAddresses.Add(addresses[i]);
+		//					break;
+		//				}
+		//			}
+		//		}
+		//		var keyAry = keyLst.ToArray();
+		//		keyLst = null;
+		//		var specKeyAry = specKeysLst.ToArray();
+		//		specKeysLst = null;
 
-				string error;
+		//		var specKeyAryAddr = specKeyAddresses.ToArray();
 
-				//HashSet<ulong> parents = new HashSet<ulong>();
-				//for (int i = 0, icnt = specKeyAryAddr.Length; i < icnt; ++i)
-				//{
-				//	var pars = map.GetParents(specKeyAryAddr[i], out error);
-				//	for (int j = 0, jcnt = pars.Length; j < jcnt; ++j)
-				//	{
-				//		parents.Add(pars[j].Key);
-				//	}
-				//}
+		//		Array.Sort(keyAry, (a, b) => a.Value.Length < b.Value.Length ? 1 : (a.Value.Length > b.Value.Length ? -1 : 0));
+		//		Array.Sort(specKeyAry, (a, b) => a.Value.Length < b.Value.Length ? 1 : (a.Value.Length > b.Value.Length ? -1 : 0));
 
-			}
-		}
+		//		var hist1 = map.GetGenerationHistogram(addresses);
+		//		var hist2 = map.GetGenerationHistogram(specKeyAryAddr);
+
+		//		string error;
+
+		//		//HashSet<ulong> parents = new HashSet<ulong>();
+		//		//for (int i = 0, icnt = specKeyAryAddr.Length; i < icnt; ++i)
+		//		//{
+		//		//	var pars = map.GetParents(specKeyAryAddr[i], out error);
+		//		//	for (int j = 0, jcnt = pars.Length; j < jcnt; ++j)
+		//		//	{
+		//		//		parents.Add(pars[j].Key);
+		//		//	}
+		//		//}
+
+		//	}
+		//}
 
 		[TestMethod]
 		public void TestDumpTypeFields()

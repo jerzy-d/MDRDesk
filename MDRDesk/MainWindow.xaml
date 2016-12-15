@@ -7,6 +7,7 @@
         xmlns:v4="http://schemas.microsoft.com/netfx/2009/xaml/presentation"
         xmlns:mdr="clr-namespace:ClrMDRIndex;assembly=ClrMDRIndex"
         xmlns:wf="clr-namespace:System.Windows.Forms;assembly=System.Windows.Forms"
+        xmlns:gv="clr-namespace:Microsoft.Msagl.GraphViewerGdi;assembly=Microsoft.Msagl.GraphViewerGdi"
         xmlns:collgen="System.Collections.Generic;assembly=mscorlib"
         xmlns:system="clr-namespace:System;assembly=mscorlib"
         xmlns:objectModel="clr-namespace:System.Collections.ObjectModel;assembly=mscorlib"
@@ -480,6 +481,11 @@
             </Grid>
             <GridSplitter Grid.Row="3"  Grid.Column="0"  Grid.ColumnSpan="3" VerticalAlignment="Center" HorizontalAlignment="Stretch" Height="5" ShowsPreview="False" Background="DarkGray"></GridSplitter>
             <TextBox x:Name="TypeValueReportBottomTextBox" Grid.Row="4" Grid.Column="0" Grid.ColumnSpan="3" VerticalAlignment="Stretch" HorizontalAlignment="Stretch" Margin="1,1,1,1"/>
+        </Grid>
+        <Grid x:Key="ThreadGraphGrid" x:Shared="False">
+            <WindowsFormsHost  x:Name="graphViewerHost">
+                <gv:GViewer x:Name="graphViewer"/>
+            </WindowsFormsHost>
         </Grid>
     </Window.Resources>
     <Grid x:Name="MainGrid">

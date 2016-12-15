@@ -31,51 +31,6 @@ module Auxiliaries =
     let ptrSize is64Bit =  if is64Bit then 8 else 4
     let stringBaseSize is64Bit = if is64Bit then 26 else 14
 
-    let typeKind (clrType:ClrType) : TypeKind =
-        let elemType = clrType.ElementType
-        let kind = TypeKinds.SetClrElementType(TypeKind.Unknown, elemType)
-        match elemType with
-        | ClrElementType.Array   -> kind ||| TypeKind.ArrayKind
-        | ClrElementType.SZArray -> kind ||| TypeKind.ArrayKind
-        | ClrElementType.String  -> kind ||| TypeKind.StringKind
-        | ClrElementType.Object  ->
-            let subKind = kind ||| TypeKind.ReferenceKind
-            if clrType.IsException then
-                subKind ||| TypeKind.Exception;
-            else
-                match clrType.Name with
-                | "System.Object"  -> subKind ||| TypeKind.Object
-                | "System.__Canon" -> subKind ||| TypeKind.System__Canon
-                | _                -> subKind
-        | ClrElementType.Struct  ->
-            let subKind = kind ||| TypeKind.StructKind
-            match clrType.Name with
-            | "System.Decimal"   -> subKind ||| TypeKind.Decimal
-            | "System.DateTime"  -> subKind ||| TypeKind.DateTime
-            | "System.TimeSpan"  -> subKind ||| TypeKind.TimeSpan
-            | "System.Guid"      -> subKind ||| TypeKind.Guid
-            | _                  -> subKind
-        | ClrElementType.Unknown -> TypeKind.Unknown
-        | _                      -> kind ||| TypeKind.PrimitiveKind
-
-    let typeDefaultValue (clrType:ClrType) : string =
-        let elemType = clrType.ElementType
-        match elemType with
-        | ClrElementType.Array | ClrElementType.SZArray ->
-            "[0]/null"
-        | ClrElementType.String ->
-            "\"\"/null"
-        | ClrElementType.Object ->
-            "null"
-        | ClrElementType.Struct  ->
-             match clrType.Name with
-            | "System.Decimal"   -> "0"
-            | "System.DateTime"  -> "< 01/01/1800"
-            | "System.TimeSpan"  -> "0"
-            | "System.Guid"      -> "00000000-0000-0000-0000-000000000000"
-            | _                  -> "empty"
-        | ClrElementType.Unknown -> "unknown"
-        | _                      -> "0"
 
     type AddrNameStruct =
         struct
@@ -253,7 +208,26 @@ module Auxiliaries =
         | TypeCategory.Primitive ->
             (null,fld.Type,null)
         | _ -> ("Don't know how to get this field type.",null,null)
+    
+    let getType (heap:ClrHeap) (addr:address) =
+        heap.GetObjectType(addr)
 
+    let getSpecificType (heap:ClrHeap) (addr:address) (prefix:string) =
+        let clrType = heap.GetObjectType(addr)
+        if isNull clrType then
+            ("Type instance is null at address: " + Utils.AddressString(addr), null)
+        else if not (clrType.Name.StartsWith prefix) then
+            ("Expected type: " + prefix + ", but  at address: "+ Utils.AddressString(addr) + " we have: " + clrType.Name, null)
+        else
+            (null, clrType)
+
+
+    let getFieldIntValue (heap:ClrHeap) (addr:address) (clrType:ClrType) (fldName:string) =
+        let fld = clrType.GetFieldByName(fldName);
+        unbox<int32>(fld.GetValue(addr))
+
+    let getIntValue (addr:address) (fld:ClrInstanceField) (intr:bool) =
+        unbox<int32>(fld.GetValue(addr,intr))
 
     (*
         getting selected field values for a selected type
@@ -436,32 +410,6 @@ module Auxiliaries =
         
         clrs
 
-    let getObjectType (heap:ClrHeap) (addr:address) = 
-        let clrType = heap.GetObjectType(addr)
-        let kind = typeKind clrType
-        match TypeKinds.GetMainTypeKind(kind) with
-        | TypeKind.Unknown ->
-            EmptyClrTypeSidekick.Value
-        | TypeKind.ReferenceKind ->
-            match TypeKinds.GetParticularTypeKind(kind) with
-            | TypeKind.Str 
-            | TypeKind.Exception
-            | TypeKind.Ary ->
-                new ClrTypeSidekick(clrType,kind,null)
-            | TypeKind.SystemObject ->
-                new ClrTypeSidekick(clrType,kind,null)
-            | TypeKind.System__Canon ->
-                new ClrTypeSidekick(clrType,kind,null)
-            | _ ->
-                getReferenceFields heap addr (new ClrTypeSidekick(clrType,kind,null))
-        | TypeKind.Struct ->
-            match TypeKinds.GetParticularTypeKind(kind) with
-            | TypeKind.DateTime | TypeKind.Guid | TypeKind.TimeSpan | TypeKind.Decimal ->
-                new ClrTypeSidekick(clrType,kind,null)
-            | _ -> 
-                getStructgFields heap addr (new ClrTypeSidekick(clrType,kind,null))
-        | _ ->
-            EmptyClrTypeSidekick.Value
 
             
 

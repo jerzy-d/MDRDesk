@@ -49,12 +49,6 @@ namespace UnitTestMdr
 			set { testContextInstance = value; }
 		}
 
-		[AssemblyInitialize]
-		public static void AssemblyInit(TestContext context)
-		{
-			Assert.IsTrue(TestConfiguration.ConfigureSettings());
-		}
-
 		#endregion TestContext/Initialization
 
 		#region Misc
@@ -1539,100 +1533,27 @@ namespace UnitTestMdr
 			return true;
 		}
 
-		[TestMethod]
-		public void TestGetStringArrayContent()
-		{
-			ulong aryAddr = 0x2d3f700;
-			var dmp = GetDump(_dumpPath);
-			using (dmp)
-			{
-				var heap = dmp.Heap;
-				var result = CollectionContent.aryInfo(heap, aryAddr);
-				Assert.IsNull(result.Item1,result.Item1);
-				string[] strings = new string[result.Item4];
-				for (int i = 0, icnt = result.Item4; i < icnt; ++i)
-				{
-					strings[i] = CollectionContent.aryElemString(heap, aryAddr, result.Item2, i);
-				}
-				Assert.IsTrue(NoNullEntries(strings));
-			}
-		}
 
-		[TestMethod]
-		public void TestGetDecimalArrayContent()
-		{
-			ulong aryAddr = 0x2d3f918;
-			var dmp = GetDump(_dumpPath);
-			using (dmp)
-			{
-				var heap = dmp.Heap;
-				var result = CollectionContent.aryInfo(heap, aryAddr);
-				Assert.IsNull(result.Item1, result.Item1);
-				string[] strings = new string[result.Item4];
-				for (int i = 0, icnt = result.Item4; i < icnt; ++i)
-				{
-					strings[i] = CollectionContent.aryElemDecimal(heap, aryAddr, result.Item2, result.Item3, i);
-				}
-				Assert.IsTrue(NoNullEntries(strings));
-			}
-		}
 
-		[TestMethod]
-		public void TestGetDateTimeArrayContent()
-		{
-			ulong aryAddr = 0x2d3f7e0;
-			var dmp = GetDump(_dumpPath);
-			using (dmp)
-			{
-				var heap = dmp.Heap;
-				var result = CollectionContent.aryInfo(heap, aryAddr);
-				Assert.IsNull(result.Item1, result.Item1);
-				string[] strings = new string[result.Item4];
-				for (int i = 0, icnt = result.Item4; i < icnt; ++i)
-				{
-					strings[i] = CollectionContent.aryElemDatetimeR(heap, aryAddr, result.Item2, result.Item3, i);
-				}
-				Assert.IsTrue(NoNullEntries(strings));
-			}
-		}
+		//[TestMethod]
+		//public void TestGetDecimalArrayContent()
+		//{
+		//	ulong aryAddr = 0x0002189f5af8b8;
+		//	var dmp = GetDump(_dumpPath);
+		//	using (dmp)
+		//	{
+		//		var heap = dmp.Heap;
+		//		var result = CollectionContent.aryInfo(heap, aryAddr);
+		//		Assert.IsNull(result.Item1, result.Item1);
+		//		string[] strings = new string[result.Item4];
+		//		for (int i = 0, icnt = result.Item4; i < icnt; ++i)
+		//		{
+		//			strings[i] = CollectionContent.aryElemDecimal(heap, aryAddr, result.Item2, result.Item3, i);
+		//		}
+		//		Assert.IsTrue(NoNullEntries(strings));
+		//	}
+		//}
 
-		[TestMethod]
-		public void TestGetTimespanArrayContent()
-		{
-			ulong aryAddr = 0x00001ab0000f700;
-			var dmp = GetDump(_dumpPath);
-			using (dmp)
-			{
-				var heap = dmp.Heap;
-				var result = CollectionContent.aryInfo(heap, aryAddr);
-				Assert.IsNull(result.Item1, result.Item1);
-				string[] strings = new string[result.Item4];
-				for (int i = 0, icnt = result.Item4; i < icnt; ++i)
-				{
-					strings[i] = CollectionContent.aryElemTimespanR(heap, aryAddr, result.Item2, result.Item3, i);
-				}
-				Assert.IsTrue(NoNullEntries(strings));
-			}
-		}
-
-		[TestMethod]
-		public void TestGetGuidArrayContent()
-		{
-			ulong aryAddr = 0x00001ab0000f7e0;
-			var dmp = GetDump(_dumpPath);
-			using (dmp)
-			{
-				var heap = dmp.Heap;
-				var result = CollectionContent.aryInfo(heap, aryAddr);
-				Assert.IsNull(result.Item1, result.Item1);
-				string[] strings = new string[result.Item4];
-				for (int i = 0, icnt = result.Item4; i < icnt; ++i)
-				{
-					strings[i] = CollectionContent.aryElemGuid(heap, aryAddr, result.Item2, result.Item3, i);
-				}
-				Assert.IsTrue(NoNullEntries(strings));
-			}
-		}
 
 		[TestMethod]
 		public void TestGetArrayContent2()

@@ -71,6 +71,7 @@ namespace ClrMDRIndex
         public const char InformationSymbol = '\u2110'; // ℐ SCRIPT CAPITAL I
         public const char HeavyRightArrow = '\u279C'; // ➜ HEAVY ROUND-TIPPED RIGHTWARDS ARROW
 		public const string HeavyRightArrowPadded = " \u279C "; // ➜ HEAVY ROUND-TIPPED RIGHTWARDS ARROW
+		public const string HeavyRightArrowHeader = "\u279C "; // ➜ HEAVY ROUND-TIPPED RIGHTWARDS ARROW
 		public const string FailureSymbolHeader = "\u2132 "; // Ⅎ TURNED CAPITAL F
 		public const string WindowsNewLine = " \u27A5 "; // ➥ HEAVY BLACK CURVED DOWNWARDS AND RIGHTWARDS ARROW
 		public const string UnixNewLine = " \u27A6 "; // ➦ HEAVY BLACK CURVED UPWARDS AND RIGHTWARDS ARROW
@@ -85,6 +86,7 @@ namespace ClrMDRIndex
 		public const char HeavyVerticalBar = '\u275A'; // ❚ HEAVY VERTICAL BAR
 		public const char MediumVerticalBar = '\u2759'; // ❙ MEDIUM VERTICAL BAR
 		public const string MediumVerticalBarPadded = " \u2759 "; // ❙ MEDIUM VERTICAL BAR
+		public const string BlackFourPointedStarHeader = " \u2726 "; // ✦ BLACK FOUR POINTED STAR 
 
 		public const char BlackTriangle = '\u25BC'; // ▼  black down-pointing triangle
 		public const char ShadowedWhiteSquare = '\u274F'; // ❏ LOWER RIGHT DROP-SHADOWED WHITE SQUARE

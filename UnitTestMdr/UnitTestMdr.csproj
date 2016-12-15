@@ -96,6 +96,7 @@
     <Otherwise />
   </Choose>
   <ItemGroup>
+    <Compile Include="CrashDumpTests.cs" />
     <Compile Include="DumpTests.cs" />
     <Compile Include="IndexTests.cs" />
     <Compile Include="Lou.cs" />

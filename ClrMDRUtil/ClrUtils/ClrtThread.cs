@@ -68,6 +68,17 @@ namespace ClrMDRIndex
 			_blkObjects = GetBlockingObjects(thrd.BlockingObjects, blkObjects,blkCmp);
 		}
 
+		public ClrtThread(ulong address, int traits, uint osId, int managedId, ulong teb, uint lockCnt, int[] blocks)
+		{
+			_address = address;
+			_traits = traits;
+			_osId = osId;
+			_managedId = managedId;
+			_lockCount = lockCnt;
+			_teb = teb;
+			_blkObjects = blocks;
+		}
+
 		private int[] GetBlockingObjects(IList<BlockingObject> lst, BlockingObject[] blkObjects, BlockingObjectCmp blkCmp)
 		{
 			if (lst == null || lst.Count < 1) return Utils.EmptyArray<int>.Value;
@@ -137,6 +148,24 @@ namespace ClrMDRIndex
 			bw.Write(_osId);
 			bw.Write(_managedId);
 			bw.Write(_lockCount);
+		}
+
+		public static ClrtThread Load(BinaryReader br)
+		{
+			ulong address = br.ReadUInt64();
+			ulong teb = br.ReadUInt64();
+			int blkCnt = br.ReadInt32();
+			int[] blks = new int[blkCnt];
+			for (int i = 0; i < blkCnt; ++i)
+			{
+				blks[i] = br.ReadInt32();
+			}
+			int traits = br.ReadInt32();
+			uint osId = br.ReadUInt32();
+			int managedId = br.ReadInt32();
+			uint lockCnt = br.ReadUInt32();
+
+			return new ClrtThread(address, traits, osId, managedId, teb, lockCnt, blks);
 		}
 	}
 

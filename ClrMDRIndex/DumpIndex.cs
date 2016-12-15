@@ -90,10 +90,13 @@ namespace ClrMDRIndex
 		public IndexProxy IndexProxy => _indexProxy;
 
 		private int[] _deadlock;
+		public int[] Deadlock => _deadlock;
 		private int[] _threadBlockingMap;
 		private int[] _blockBlockingMap;
 		private Digraph _threadBlockgraph;
 		public bool DeadlockFound => _deadlock.Length > 0;
+		private ClrtThread[] _threads;
+		private ClrtBlkObject[] _blocks;
 
 		#endregion fields/properties
 
@@ -199,7 +202,6 @@ namespace ClrMDRIndex
 				{
 					return false;
 				}
-
 				return true;
 			}
 			catch (Exception ex)
@@ -231,8 +233,47 @@ namespace ClrMDRIndex
 				for (int i = 0; i < count; ++i)
 					_blockBlockingMap[i] = br.ReadInt32();
 
-				_threadBlockgraph = Digraph.Load(br,out error);
+				_threadBlockgraph = Digraph.Load(br, out error);
+
+				if (DeadlockFound)
+				{
+					LoadThreadsAndBlocks(out error);
+				}
 				return error == null;
+			}
+			catch (Exception ex)
+			{
+				error = Utils.GetExceptionErrorString(ex);
+				return false;
+			}
+			finally
+			{
+				br?.Close();
+			}
+		}
+
+
+		private bool LoadThreadsAndBlocks(out string error)
+		{
+			error = null;
+			BinaryReader br = null;
+			try
+			{
+				var path = _fileMoniker.GetFilePath(_currentRuntimeIndex, Constants.MapThreadsAndBlocksFilePostfix);
+				br = new BinaryReader(File.Open(path, FileMode.Open));
+				int threadCnt = br.ReadInt32();
+				_threads = new ClrtThread[threadCnt];
+				for (int i = 0; i < threadCnt; ++i)
+				{
+					_threads[i] = ClrtThread.Load(br);
+				}
+				int blockCnt = br.ReadInt32();
+				_blocks = new ClrtBlkObject[blockCnt];
+				for (int i = 0; i < blockCnt; ++i)
+				{
+					_blocks[i] = ClrtBlkObject.Load(br);
+				}
+				return true;
 			}
 			catch (Exception ex)
 			{
@@ -2379,29 +2420,37 @@ namespace ClrMDRIndex
 			string[] fieldTypeNames = null;
 			int ndx = 0;
 			bool intrnl = false;
+			bool isArray = false;
 			int totalDefValues = 0;
-			while (clrType == null)
+			while (clrType == null) // get type from heap
 			{
 				clrType = heap.GetObjectType(addresses[ndx]);
 				if (clrType != null)
 				{
 					intrnl = clrType.IsValueClass;
-					fldCount = clrType.Fields.Count;
+					isArray = clrType.IsArray;
+					fldCount = isArray ? 1 : clrType.Fields.Count;
+
 					fieldDefValues = new KeyValuePair<string, string>[fldCount];
 					counts = new int[fldCount];
 					fldTypes = new ClrType[fldCount];
 					fields = new ClrInstanceField[fldCount];
 					fldKinds = new TypeKind[fldCount];
 					fieldTypeNames = new string[fldCount];
+
+					if (isArray)
+					{
+						
+					}
 					for (int f = 0; f < fldCount; ++f)
 					{
 						var fldType = clrType.Fields[f].Type;
 						fieldTypeNames[f] = fldType.Name;
 						fldTypes[f] = fldType;
-						var defValue = Auxiliaries.typeDefaultValue(fldType);
+						var defValue = Types.typeDefaultValue(fldType);
 						fieldDefValues[f] = new KeyValuePair<string, string>(clrType.Fields[f].Name,defValue);
 						fields[f] = clrType.Fields[f];
-						fldKinds[f] = Auxiliaries.typeKind(fldType);
+						fldKinds[f] = Types.typeKind(fldType);
 					}
 					break;
 				}
@@ -2649,6 +2698,49 @@ namespace ClrMDRIndex
 		}
 
 		#endregion segments/generations/sizes
+
+		#region threads/blocking objects
+
+		public bool IsThreadId(int id)
+		{
+			return id < _threadBlockingMap.Length;
+		}
+
+		public int GetIdFromGraph(int id)
+		{
+			return IsThreadId(id) ? id : id - _threadBlockingMap.Length;
+		}
+
+		public int GetBlockingId(int id)
+		{
+			if (_threads == null) return Constants.InvalidIndex;
+			Debug.Assert(id>=_threads.Length);
+			return _threads.Length - id;
+		}
+
+		public string GetThreadLabel(int id)
+		{
+			if (_threads == null) return Constants.Unknown;
+			ClrtThread thread = _threads[_threadBlockingMap[id]];
+			return thread.OSThreadId + "/" + thread.ManagedThreadId;
+		}
+
+		public string GetThreadOrBlkLabel(int id, out bool isThread)
+		{
+			isThread = false;
+			if (_threads == null) return Constants.Unknown;
+			isThread = IsThreadId(id);
+			if (isThread)
+			{
+				ClrtThread thread = _threads[_threadBlockingMap[id]];
+				return thread.OSThreadId + "/" + thread.ManagedThreadId;
+			}
+			ClrtBlkObject blk = _blocks[GetIdFromGraph(id)];
+			return Utils.BaseTypeName(GetTypeName(blk.TypeId)) + "/" + blk.BlkReason;
+		}
+
+
+		#endregion threads/blocking objects
 
 		#region dump
 

@@ -63,6 +63,8 @@ namespace MDRDesk
 		private const string GridNameTypeView = "NameTypeView";
 		private const string GridReversedNameTypeView = "ReversedNameTypeView";
 
+		private const string ThreadGraphGrid = "ThreadGraphGrid";
+
 		private const string GridFinalizerQueue = "FinalizerQueueGrid";
 		private const string WeakReferenceViewGrid = "WeakReferenceViewGrid";
 		private const string FinalizerQueueListView = "FinalizerQueueListView";

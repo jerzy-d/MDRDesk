@@ -10,9 +10,11 @@ using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Data;
+using System.Windows.Forms.Integration;
 using System.Windows.Input;
 using System.Windows.Threading;
 using ClrMDRIndex;
+using Microsoft.Msagl.Drawing;
 using Application = System.Windows.Application;
 using Binding = System.Windows.Data.Binding;
 using Clipboard = System.Windows.Clipboard;
@@ -27,6 +29,8 @@ using TextBox = System.Windows.Controls.TextBox;
 using TreeView = System.Windows.Controls.TreeView;
 using SW = System.Windows;
 using SWC = System.Windows.Controls;
+using Microsoft.Msagl.GraphViewerGdi;
+using Microsoft.Msagl.Layout.Layered;
 
 
 namespace MDRDesk
@@ -394,7 +398,55 @@ namespace MDRDesk
 				else
 					DisplayTypesGrid(false);
 			}
+			if (CurrentIndex.DeadlockFound)
+			{
+				var grid = this.TryFindResource(ThreadGraphGrid) as Grid;
+				var graphHost = (WindowsFormsHost)LogicalTreeHelper.FindLogicalNode(grid, "graphViewerHost");
+				Debug.Assert(graphHost != null);
+				GViewer graphView = (GViewer) graphHost.Child;
+				Graph graph = new Graph();
 
+				//System.Drawing.Image threadImage = Properties.Resources.Thread_16x;
+				//System.Drawing.Image lockImage = Properties.Resources.Lock_16x;
+
+				var sugiyamaSettings = (SugiyamaLayoutSettings)graph.LayoutAlgorithmSettings;
+				sugiyamaSettings.NodeSeparation *= 2;
+
+				int[] deadlock = CurrentIndex.Deadlock;
+
+				
+
+				for (int i = 1, icnt = deadlock.Length; i < icnt; ++i)
+				{
+					var id1 = deadlock[i - 1];
+					var id1Str = id1.ToString();
+					bool isThread1;
+					var label1 = CurrentIndex.GetThreadOrBlkLabel(id1, out isThread1);
+					var node1 = new Node(id1Str);
+					node1.LabelText = (isThread1 ? Constants.HeavyRightArrowHeader : Constants.BlackFourPointedStarHeader) + label1;
+
+					var id2 = deadlock[i];
+					var id2Str = id2.ToString();
+					bool isThread2;
+					var label2 = CurrentIndex.GetThreadOrBlkLabel(id2, out isThread2);
+					var node2 = new Node(id2Str);
+					node2.LabelText = (isThread2 ? Constants.HeavyRightArrowHeader : Constants.BlackFourPointedStarHeader) + label2;
+					graph.AddNode(node1);
+					graph.AddNode(node2);
+					graph.AddEdge(id1Str,id2Str);
+				}
+				//graph.LayerConstraints.PinNodesToSameLayer(new[] { graph.FindNode("A"), graph.FindNode("B"), graph.FindNode("C") });
+				graphView.Graph = graph;
+
+
+				Debug.Assert(grid != null);
+				grid.Name = ThreadGraphGrid + "__" + Utils.GetNewID();
+				var tab = new CloseableTabItem() { Header = Constants.BlackDiamond + " General Info", Content = grid, Name = "GeneralInfoViewTab" };
+				MainTab.Items.Add(tab);
+				MainTab.SelectedItem = tab;
+				MainTab.UpdateLayout();
+
+			}
 			this.Title = BaseTitle + Constants.BlackDiamondPadded + CurrentIndex.DumpFileName;
 			RecentIndexList.Add(CurrentIndex.IndexFolder);
 		}
