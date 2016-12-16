@@ -13,6 +13,7 @@ namespace ClrMDRIndex
 		public int VertexCount { get; private set; }
 		public int EdgeCount { get; private set; }
 		private readonly List<int>[] _adjacencyLists;
+		public List<int>[] AdjacencyLists => _adjacencyLists;
 
 		public Digraph(int vertexCount, bool doNotInitAdjLists=false)
 		{

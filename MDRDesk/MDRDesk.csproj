@@ -98,6 +98,15 @@
     <Reference Include="FSharp.Charting">
       <HintPath>..\packages\FSharp.Charting.0.90.14\lib\net40\FSharp.Charting.dll</HintPath>
     </Reference>
+    <Reference Include="GraphX.PCL.Common">
+      <HintPath>..\GraphX\GraphX.PCL.Common.dll</HintPath>
+    </Reference>
+    <Reference Include="GraphX.PCL.Logic">
+      <HintPath>..\GraphX\GraphX.PCL.Logic.dll</HintPath>
+    </Reference>
+    <Reference Include="GraphX.WPF.Controls">
+      <HintPath>..\GraphX\GraphX.WPF.Controls.dll</HintPath>
+    </Reference>
     <Reference Include="Microsoft.Diagnostics.Runtime">
       <HintPath>..\ClrMd\Microsoft.Diagnostics.Runtime.dll</HintPath>
     </Reference>
@@ -107,8 +116,26 @@
     <Reference Include="Microsoft.Msagl.Drawing">
       <HintPath>..\MSAGL\Microsoft.Msagl.Drawing.dll</HintPath>
     </Reference>
+    <Reference Include="Microsoft.Msagl.GraphmapsWpfControl">
+      <HintPath>..\MSAGL\Microsoft.Msagl.GraphmapsWpfControl.dll</HintPath>
+    </Reference>
     <Reference Include="Microsoft.Msagl.GraphViewerGdi">
       <HintPath>..\MSAGL\Microsoft.Msagl.GraphViewerGdi.dll</HintPath>
+    </Reference>
+    <Reference Include="Microsoft.Msagl.WpfGraphControl">
+      <HintPath>..\MSAGL\Microsoft.Msagl.WpfGraphControl.dll</HintPath>
+    </Reference>
+    <Reference Include="QuickGraph">
+      <HintPath>..\GraphX\QuickGraph.dll</HintPath>
+    </Reference>
+    <Reference Include="QuickGraph.Data">
+      <HintPath>..\GraphX\QuickGraph.Data.dll</HintPath>
+    </Reference>
+    <Reference Include="QuickGraph.Graphviz">
+      <HintPath>..\GraphX\QuickGraph.Graphviz.dll</HintPath>
+    </Reference>
+    <Reference Include="QuickGraph.Serialization">
+      <HintPath>..\GraphX\QuickGraph.Serialization.dll</HintPath>
     </Reference>
     <Reference Include="System" />
     <Reference Include="System.Configuration" />
@@ -136,6 +163,11 @@
       <SubType>Designer</SubType>
     </ApplicationDefinition>
     <Compile Include="Converters.cs" />
+    <Compile Include="Graphs\DataEdge.cs" />
+    <Compile Include="Graphs\DataVertex.cs" />
+    <Compile Include="Graphs\DlkGraphArea.cs" />
+    <Compile Include="Graphs\DlkGraph.cs" />
+    <Compile Include="Graphs\DlkGXLogicCore.cs" />
     <Compile Include="MainWindow.Gui.cs" />
     <Compile Include="MdrMessageBox.xaml.cs">
       <DependentUpon>MdrMessageBox.xaml</DependentUpon>

@@ -15,6 +15,9 @@ using System.Windows.Input;
 using System.Windows.Media;
 using Microsoft.Diagnostics.Runtime;
 using ClrMDRIndex;
+using GraphX.Controls;
+using GraphX.PCL.Common.Enums;
+using GraphX.PCL.Logic.Algorithms.LayoutAlgorithms;
 using Binding = System.Windows.Data.Binding;
 using Brushes = System.Windows.Media.Brushes;
 using Cursors = System.Windows.Input.Cursors;
@@ -63,7 +66,8 @@ namespace MDRDesk
 		private const string GridNameTypeView = "NameTypeView";
 		private const string GridReversedNameTypeView = "ReversedNameTypeView";
 
-		private const string ThreadGraphGrid = "ThreadGraphGrid";
+		private const string DeadlockGraphGrid = "DeadlockGraphGrid";
+		private const string ThreadBlockingGraphGrid = "ThreadBlockingGraphGrid";
 
 		private const string GridFinalizerQueue = "FinalizerQueueGrid";
 		private const string WeakReferenceViewGrid = "WeakReferenceViewGrid";
@@ -92,6 +96,480 @@ namespace MDRDesk
 		}
 
 		#endregion grids
+
+		#region graphs
+
+		#region deadlock
+
+		public bool DisplayDeadlock(int[] deadlock, out string error)
+		{
+			error = null;
+			try
+			{
+				var grid = this.TryFindResource("DeadlockGraphXGrid") as Grid;
+				Debug.Assert(grid != null);
+				grid.Name = DeadlockGraphGrid + "__" + Utils.GetNewID();
+				var zoomctrl = (ZoomControl)LogicalTreeHelper.FindLogicalNode(grid, "DlkZoomCtrl");
+				Debug.Assert(zoomctrl != null);
+				var area = (DlkGraphArea)LogicalTreeHelper.FindLogicalNode(grid, "DlkGraphArea");
+				Debug.Assert(area != null);
+
+				ZoomControl.SetViewFinderVisibility(zoomctrl, Visibility.Visible);
+				//zoomctrl.ZoomToFill();
+				//Set Fill zooming strategy so whole graph will be always visible
+				DlkGraphAreaSetup(deadlock, area);
+
+				area.GenerateGraph(true, true);
+
+				/* 
+				 * After graph generation is finished you can apply some additional settings for newly created visual vertex and edge controls
+				 * (VertexControl and EdgeControl classes).
+				 * 
+				 */
+
+				//This method sets the dash style for edges. It is applied to all edges in Area.EdgesList. You can also set dash property for
+				//each edge individually using EdgeControl.DashStyle property.
+				//For ex.: Area.EdgesList[0].DashStyle = GraphX.EdgeDashStyle.Dash;
+				SetVertexEdgeDisplay(area);
+
+				//This method sets edges arrows visibility. It is also applied to all edges in Area.EdgesList. You can also set property for
+				//each edge individually using property, for ex: Area.EdgesList[0].ShowArrows = true;
+				area.ShowAllEdgesArrows(true);
+
+				//This method sets edges labels visibility. It is also applied to all edges in Area.EdgesList. You can also set property for
+				//each edge individually using property, for ex: Area.EdgesList[0].ShowLabel = true;
+				area.ShowAllEdgesLabels(true);
+
+				zoomctrl.ZoomToFill();
+
+				area.RelayoutGraph();
+				zoomctrl.ZoomToFill();
+
+				var tab = new CloseableTabItem() { Header = Constants.BlackDiamond + " Deadlock", Content = grid, Name = "GeneralInfoViewTab" };
+				MainTab.Items.Add(tab);
+				MainTab.SelectedItem = tab;
+				MainTab.UpdateLayout();
+
+
+				return true;
+			}
+			catch (Exception ex)
+			{
+				error = Utils.GetExceptionErrorString(ex);
+				return false;
+			}
+		}
+
+		private void DlkGraphAreaSetup(int[] deadlock, DlkGraphArea area)
+		{
+			//Lets create logic core and filled data graph with edges and vertices
+			var logicCore = new DlkGXLogicCore() { Graph = DlkGraphSetup(deadlock) };
+			//This property sets layout algorithm that will be used to calculate vertices positions
+			//Different algorithms uses different values and some of them uses edge Weight property.
+			logicCore.DefaultLayoutAlgorithm = LayoutAlgorithmTypeEnum.KK;
+			//Now we can set parameters for selected algorithm using AlgorithmFactory property. This property provides methods for
+			//creating all available algorithms and algo parameters.
+			logicCore.DefaultLayoutAlgorithmParams = logicCore.AlgorithmFactory.CreateLayoutParameters(LayoutAlgorithmTypeEnum.EfficientSugiyama);
+			//Unfortunately to change algo parameters you need to specify params type which is different for every algorithm.
+			//((KKLayoutParameters)logicCore.DefaultLayoutAlgorithmParams).MaxIterations = 100;
+
+			//This property sets vertex overlap removal algorithm.
+			//Such algorithms help to arrange vertices in the layout so no one overlaps each other.
+			logicCore.DefaultOverlapRemovalAlgorithm = OverlapRemovalAlgorithmTypeEnum.FSA;
+			//Default parameters are created automaticaly when new default algorithm is set and previous params were NULL
+			logicCore.DefaultOverlapRemovalAlgorithmParams.HorizontalGap = 50;
+			logicCore.DefaultOverlapRemovalAlgorithmParams.VerticalGap = 50;
+
+			//This property sets edge routing algorithm that is used to build route paths according to algorithm logic.
+			//For ex., SimpleER algorithm will try to set edge paths around vertices so no edge will intersect any vertex.
+			//Bundling algorithm will try to tie different edges that follows same direction to a single channel making complex graphs more appealing.
+			logicCore.DefaultEdgeRoutingAlgorithm = EdgeRoutingAlgorithmTypeEnum.SimpleER;
+
+			//This property sets async algorithms computation so methods like: Area.RelayoutGraph() and Area.GenerateGraph()
+			//will run async with the UI thread. Completion of the specified methods can be catched by corresponding events:
+			//Area.RelayoutFinished and Area.GenerateGraphFinished.
+			logicCore.AsyncAlgorithmCompute = false;
+
+			//Finally assign logic core to GraphArea object
+			area.LogicCore = logicCore;
+		}
+
+
+		private DlkGraph DlkGraphSetup(int[] deadlock)
+		{
+			//Lets make new data graph instance
+			var dataGraph = new DlkGraph();
+			//Now we need to create edges and vertices to fill data graph
+			//This edges and vertices will represent graph structure and connections
+			//Lets make some vertices
+
+			DataVertex[] vertices = new DataVertex[deadlock.Length];
+
+			HashSet<int> set = new HashSet<int>();
+
+			for (int i = 0, icnt = deadlock.Length; i < icnt; ++i)
+			{
+				var id = deadlock[i];
+				if (!set.Add(id))
+				{
+					vertices[i] = Array.Find(vertices, v => v.ID == (long)id);
+					continue;
+				}
+				bool isThread;
+				var label = CurrentIndex.GetThreadOrBlkLabel(id, out isThread);
+				label = (isThread ? Constants.HeavyRightArrowHeader : Constants.BlackFourPointedStarHeader) + label;
+				var node = new DataVertex(label);
+				node.ID = id;
+				vertices[i] = node;
+				dataGraph.AddVertex(node);
+			}
+			for (int i = 1, icnt = deadlock.Length; i < icnt; ++i)
+			{
+				var dataEdge = new DataEdge(vertices[i - 1], vertices[i]);
+				dataGraph.AddEdge(dataEdge);
+			}
+
+			return dataGraph;
+		}
+
+		#endregion deadlock
+
+		#region threads/blocks
+
+		public bool DisplayThreadBlockMap(Digraph digraph, out string error)
+		{
+			error = null;
+			try
+			{
+				var grid = this.TryFindResource("ThreadBlockingGraphXGrid") as Grid;
+				Debug.Assert(grid != null);
+				grid.Name = DeadlockGraphGrid + "__" + Utils.GetNewID();
+				var zoomctrl = (ZoomControl)LogicalTreeHelper.FindLogicalNode(grid, "TBZoomCtrl");
+				Debug.Assert(zoomctrl != null);
+				var area = (DlkGraphArea)LogicalTreeHelper.FindLogicalNode(grid, "TBGraphArea");
+				Debug.Assert(area != null);
+
+				ZoomControl.SetViewFinderVisibility(zoomctrl, Visibility.Visible);
+				//zoomctrl.ZoomToFill();
+				//Set Fill zooming strategy so whole graph will be always visible
+				TBGraphAreaSetup(digraph, area);
+
+				area.GenerateGraph(true, true);
+
+				/* 
+				 * After graph generation is finished you can apply some additional settings for newly created visual vertex and edge controls
+				 * (VertexControl and EdgeControl classes).
+				 * 
+				 */
+
+				//This method sets the dash style for edges. It is applied to all edges in Area.EdgesList. You can also set dash property for
+				//each edge individually using EdgeControl.DashStyle property.
+				//For ex.: Area.EdgesList[0].DashStyle = GraphX.EdgeDashStyle.Dash;
+				SetVertexEdgeDisplay(area);
+
+				//This method sets edges arrows visibility. It is also applied to all edges in Area.EdgesList. You can also set property for
+				//each edge individually using property, for ex: Area.EdgesList[0].ShowArrows = true;
+				area.ShowAllEdgesArrows(true);
+
+				//This method sets edges labels visibility. It is also applied to all edges in Area.EdgesList. You can also set property for
+				//each edge individually using property, for ex: Area.EdgesList[0].ShowLabel = true;
+				area.ShowAllEdgesLabels(true);
+
+				zoomctrl.ZoomToFill();
+
+				//area.RelayoutGraph();
+				//zoomctrl.ZoomToFill();
+
+				var tab = new CloseableTabItem() { Header = Constants.BlackDiamond + " Threads/Blocks", Content = grid, Name = "GeneralInfoViewTab" };
+				MainTab.Items.Add(tab);
+				MainTab.SelectedItem = tab;
+				MainTab.UpdateLayout();
+
+
+				return true;
+			}
+			catch (Exception ex)
+			{
+				error = Utils.GetExceptionErrorString(ex);
+				return false;
+			}
+		}
+
+		private void TBGraphAreaSetup(Digraph digraph, DlkGraphArea area)
+		{
+			//Lets create logic core and filled data graph with edges and vertices
+			var logicCore = new DlkGXLogicCore() { Graph = TBGraphSetup(digraph) };
+			//This property sets layout algorithm that will be used to calculate vertices positions
+			//Different algorithms uses different values and some of them uses edge Weight property.
+			logicCore.DefaultLayoutAlgorithm = LayoutAlgorithmTypeEnum.KK;
+			//Now we can set parameters for selected algorithm using AlgorithmFactory property. This property provides methods for
+			//creating all available algorithms and algo parameters.
+			logicCore.DefaultLayoutAlgorithmParams = logicCore.AlgorithmFactory.CreateLayoutParameters(LayoutAlgorithmTypeEnum.Sugiyama);
+			//Unfortunately to change algo parameters you need to specify params type which is different for every algorithm.
+			//((KKLayoutParameters)logicCore.DefaultLayoutAlgorithmParams).MaxIterations = 100;
+
+			//This property sets vertex overlap removal algorithm.
+			//Such algorithms help to arrange vertices in the layout so no one overlaps each other.
+			logicCore.DefaultOverlapRemovalAlgorithm = OverlapRemovalAlgorithmTypeEnum.FSA;
+			//Default parameters are created automaticaly when new default algorithm is set and previous params were NULL
+			logicCore.DefaultOverlapRemovalAlgorithmParams.HorizontalGap = 50;
+			logicCore.DefaultOverlapRemovalAlgorithmParams.VerticalGap = 50;
+
+			//This property sets edge routing algorithm that is used to build route paths according to algorithm logic.
+			//For ex., SimpleER algorithm will try to set edge paths around vertices so no edge will intersect any vertex.
+			//Bundling algorithm will try to tie different edges that follows same direction to a single channel making complex graphs more appealing.
+			logicCore.DefaultEdgeRoutingAlgorithm = EdgeRoutingAlgorithmTypeEnum.SimpleER;
+
+			//This property sets async algorithms computation so methods like: Area.RelayoutGraph() and Area.GenerateGraph()
+			//will run async with the UI thread. Completion of the specified methods can be catched by corresponding events:
+			//Area.RelayoutFinished and Area.GenerateGraphFinished.
+			logicCore.AsyncAlgorithmCompute = false;
+
+			//Finally assign logic core to GraphArea object
+			area.LogicCore = logicCore;
+		}
+
+		private DlkGraph TBGraphSetup(Digraph digraph)
+		{
+			//Lets make new data graph instance
+			var dataGraph = new DlkGraph();
+			//Now we need to create edges and vertices to fill data graph
+			//This edges and vertices will represent graph structure and connections
+			//Lets make some vertices
+
+			List<int>[] adjLists = digraph.AdjacencyLists;
+
+			SortedDictionary<int, triple<List<List<int>>, List<KeyValuePair<List<int>,int>>,int >> dct = null; 
+			if (digraph.EdgeCount > 300)
+			{
+				dct = new SortedDictionary<int, triple<List<List<int>>, List<KeyValuePair<List<int>, int>>, int>>();
+				for (int i = 0, icnt = adjLists.Length; i < icnt; ++i)
+				{
+					var lst = adjLists[i];
+					if (lst == null || lst.Count < 1) continue;
+					bool isThread = CurrentIndex.IsThreadId(i);
+					if (isThread)
+					{
+						triple<List<List<int>>, List<KeyValuePair<List<int>, int>>, int> info;
+						if (dct.TryGetValue(i, out info))
+						{
+							info.First.Add(lst);
+							var cnt = info.Third + lst.Count;
+							dct[i] = new triple<List<List<int>>, List<KeyValuePair<List<int>, int>>, int>(info.First,info.Second,cnt);
+						}
+						else
+						{
+							var lists = new List<List<int>>();
+							lists.Add(lst);
+							dct.Add(i, new triple<List<List<int>>, List<KeyValuePair<List<int>, int>>, int>(lists,null,lst.Count));
+						}
+					}
+					else
+					{
+						for (int j = 0, jcnt = lst.Count; j < jcnt; ++j)
+						{
+							var id = lst[j];
+							if (!CurrentIndex.IsThreadId(id)) continue;
+
+							triple<List<List<int>>, List<KeyValuePair<List<int>, int>>, int> info;
+							if (dct.TryGetValue(id, out info))
+							{
+								var lists = info.Second;
+								if (lists == null)
+								{
+									lists = new List<KeyValuePair<List<int>, int>>();
+								}
+								lists.Add(new KeyValuePair<List<int>, int>(lst,i));
+								var cnt = info.Third + lst.Count;
+								dct[id] = new triple<List<List<int>>, List<KeyValuePair<List<int>, int>>, int>(info.First,lists,cnt);
+							}
+							else
+							{
+								var lists = new List<KeyValuePair<List<int>, int>>();
+								lists.Add(new KeyValuePair<List<int>, int>(lst, i));
+								dct.Add(id, new triple<List<List<int>>, List<KeyValuePair<List<int>, int>>, int>(info.First, lists, lst.Count));
+							}
+						}
+					}
+					
+
+				}
+			}
+
+
+			if (dct != null)
+			{
+				var nodes = new Dictionary<int, DataVertex>();
+				var ecount = 0;
+				var index = 0;
+				foreach (var triple in dct)
+				{
+					var lists1 = triple.Value.First;
+					var lists2 = triple.Value.Second;
+					ecount += triple.Value.Third;
+
+					var id = triple.Key;
+
+					DataVertex node = null;
+					if (!nodes.TryGetValue(id,out node))
+					{
+						bool isThread;
+						var label = CurrentIndex.GetThreadOrBlkLabel(id, out isThread);
+						label = (isThread ? Constants.HeavyRightArrowHeader : Constants.BlackFourPointedStarHeader) + label;
+						node = new DataVertex(label);
+						node.ID = id;
+						dataGraph.AddVertex(node);
+						nodes.Add(id,node);
+					}
+
+					if (lists1 != null)
+					{
+						for (int i = 0, icnt = lists1.Count; i < icnt; ++i)
+						{
+							var lst = lists1[i];
+							for (int j = 0, jcnt = lst.Count; j < jcnt; ++j)
+							{
+								var aid = lst[j];
+								DataVertex anode = null;
+								if (!nodes.TryGetValue(aid, out anode))
+								{
+									bool isThread;
+									var label = CurrentIndex.GetThreadOrBlkLabel(aid, out isThread);
+									label = (isThread ? Constants.HeavyRightArrowHeader : Constants.BlackFourPointedStarHeader) + label;
+									anode = new DataVertex(label);
+									anode.ID = aid;
+									dataGraph.AddVertex(anode);
+									nodes.Add(aid, anode);
+								}
+								var dataEdge = new DataEdge(node, anode);
+								dataGraph.AddEdge(dataEdge);
+
+							}
+						}
+					}
+
+					if (lists2 != null)
+					{
+						for (int i = 0, icnt = lists2.Count; i < icnt; ++i)
+						{
+							id = lists2[i].Value;
+							var lst = lists2[i].Key;
+
+							node = null;
+							if (!nodes.TryGetValue(id, out node))
+							{
+								bool isThread;
+								var label = CurrentIndex.GetThreadOrBlkLabel(id, out isThread);
+								label = (isThread ? Constants.HeavyRightArrowHeader : Constants.BlackFourPointedStarHeader) + label;
+								node = new DataVertex(label);
+								node.ID = id;
+								dataGraph.AddVertex(node);
+								nodes.Add(id, node);
+							}
+
+							for (int j = 0, jcnt = lst.Count; j < jcnt; ++j)
+							{
+								var aid = lst[j];
+								DataVertex anode = null;
+								if (!nodes.TryGetValue(aid, out anode))
+								{
+									bool isThread;
+									var label = CurrentIndex.GetThreadOrBlkLabel(aid, out isThread);
+									label = (isThread ? Constants.HeavyRightArrowHeader : Constants.BlackFourPointedStarHeader) + label;
+									anode = new DataVertex(label);
+									anode.ID = aid;
+									dataGraph.AddVertex(anode);
+									nodes.Add(aid, anode);
+								}
+								var dataEdge = new DataEdge(node, anode);
+								dataGraph.AddEdge(dataEdge);
+							}
+						}
+					}
+
+					if (ecount > 300)
+						break;
+				}
+
+				return dataGraph;
+			}
+
+
+			DataVertex[] vertices = new DataVertex[digraph.VertexCount];
+			HashSet<int> set = new HashSet<int>();
+
+			for (int i = 0, icnt = adjLists.Length; i < icnt; ++i)
+			{
+				if (adjLists[i] == null || adjLists[i].Count < 1) continue;
+				DataVertex node = vertices[i];
+				if (node == null)
+				{
+					bool isThread;
+					var label = CurrentIndex.GetThreadOrBlkLabel(i, out isThread);
+					label = (isThread ? Constants.HeavyRightArrowHeader : Constants.BlackFourPointedStarHeader) + label;
+					node = new DataVertex(label);
+					node.ID = i;
+					vertices[i] = node;
+					dataGraph.AddVertex(node);
+				}
+				var lst = adjLists[i];
+				for (int j = 0, jcnt = lst.Count; j < jcnt; ++j)
+				{
+					var id = lst[j];
+					DataVertex aNode = vertices[id];
+					if (aNode == null)
+					{
+						bool isThread;
+						var label = CurrentIndex.GetThreadOrBlkLabel(id, out isThread);
+						label = (isThread ? Constants.HeavyRightArrowHeader : Constants.BlackFourPointedStarHeader) + label;
+						aNode = new DataVertex(label);
+						aNode.ID = id;
+						vertices[id] = aNode;
+						dataGraph.AddVertex(aNode);
+					}
+					var dataEdge = new DataEdge(node, aNode);
+					dataGraph.AddEdge(dataEdge);
+				}
+			}
+
+			return dataGraph;
+		}
+
+
+		#endregion  threads/blocks
+		
+		#region common
+
+		private void SetVertexEdgeDisplay(DlkGraphArea area)
+		{
+			var dct = area.EdgesList;
+			foreach (var edge in dct)
+			{
+				var id = edge.Key.Source.ID;
+				if (CurrentIndex.IsThreadId((int)id))
+				{
+					edge.Value.DashStyle = EdgeDashStyle.Dash;
+				}
+				else
+				{
+					edge.Value.DashStyle = EdgeDashStyle.Solid;
+				}
+			}
+
+			var vdct = area.VertexList;
+			foreach (var vertex in vdct)
+			{
+				var id = vertex.Key.ID;
+				if (CurrentIndex.IsThreadId((int)id))
+				{
+					vertex.Value.Background = Brushes.Chocolate;
+				}
+			}
+		}
+
+		#endregion common
+
+		#endregion graphs
 
 		#region Display Grids
 

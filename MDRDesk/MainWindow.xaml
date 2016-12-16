@@ -12,6 +12,7 @@
         xmlns:system="clr-namespace:System;assembly=mscorlib"
         xmlns:objectModel="clr-namespace:System.Collections.ObjectModel;assembly=mscorlib"
         xmlns:generic="clr-namespace:System.Collections.Generic;assembly=mscorlib"
+        xmlns:gx="clr-namespace:GraphX.Controls;assembly=GraphX.WPF.Controls"
         mc:Ignorable="d"
         Title="MainWindow" Height="750" Width="1200"  Background="#FF43626C"
         Icon="Images/appbar.list.gear.ico"
@@ -482,10 +483,34 @@
             <GridSplitter Grid.Row="3"  Grid.Column="0"  Grid.ColumnSpan="3" VerticalAlignment="Center" HorizontalAlignment="Stretch" Height="5" ShowsPreview="False" Background="DarkGray"></GridSplitter>
             <TextBox x:Name="TypeValueReportBottomTextBox" Grid.Row="4" Grid.Column="0" Grid.ColumnSpan="3" VerticalAlignment="Stretch" HorizontalAlignment="Stretch" Margin="1,1,1,1"/>
         </Grid>
-        <Grid x:Key="ThreadGraphGrid" x:Shared="False">
-            <WindowsFormsHost  x:Name="graphViewerHost">
-                <gv:GViewer x:Name="graphViewer"/>
+        <Grid x:Key="DeadlockGraphGrid" x:Shared="False">
+            <WindowsFormsHost  x:Name="deadlockViewerHost">
+                <gv:GViewer x:Name="deadlockViewer"/>
             </WindowsFormsHost>
+        </Grid>
+        <Grid x:Key="ThreadBlockingGraphGrid" x:Shared="False">
+            <!--<DockPanel x:Name="ThreadBlockingViewerHost">
+                
+            </DockPanel>-->
+            <WindowsFormsHost  x:Name="ThreadBlockingViewerHost">
+                <gv:GViewer x:Name="ThreadBlockingViewer"/>
+            </WindowsFormsHost>
+        </Grid>
+        <Grid x:Key="DeadlockGraphXGrid" x:Shared="False">
+            <DockPanel>
+            <gx:ZoomControl x:Name="DlkZoomCtrl" Visibility="Visible">
+                <local:DlkGraphArea x:Name="DlkGraphArea"/>
+            </gx:ZoomControl>
+            </DockPanel>
+        </Grid>
+        <Grid x:Key="ThreadBlockingGraphXGrid" x:Shared="False">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="32"></RowDefinition>
+                <RowDefinition Height="*"></RowDefinition>
+            </Grid.RowDefinitions>
+            <gx:ZoomControl x:Name="TBZoomCtrl" Visibility="Visible" v4:Grid.Row="1">
+                <local:DlkGraphArea x:Name="TBGraphArea"/>
+            </gx:ZoomControl>
         </Grid>
     </Window.Resources>
     <Grid x:Name="MainGrid">
@@ -522,6 +547,7 @@
                         <MenuItem x:Name="IndexShowFinalizerQueue" Header="Show Finalizer Queue" Click="IndexShowFinalizerQueueClicked"/>
                         <MenuItem x:Name="IndexShowRoots" Header="Show Roots" Click="IndexShowRootsClicked"/>
                         <MenuItem x:Name="IndexShowWeakReferences" Header="Show WeakReference Instances" Click="IndexShowWeakReferencesClicked"/>
+                        <MenuItem x:Name="IndexShowBlockingThreads" Header="Show Blocks and Threads Graph" Click="IndexShowBlockingThreadsClicked"/>
                         <MenuItem x:Name="IndexGetSizeInformation" Header="Type Sizes Information" Click="IndexGetSizeInformationClicked"/>
                         <MenuItem x:Name="IndexGetBaseSizeInformation" Header="Type Base Sizes Information" Click="IndexGetBaseSizeInformationClicked"/>
                         <MenuItem x:Name="IndexStringUsage" Header="String Usage" Click="IndexStringUsageClicked"/>

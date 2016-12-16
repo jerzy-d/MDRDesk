@@ -94,6 +94,7 @@ namespace ClrMDRIndex
 		private int[] _threadBlockingMap;
 		private int[] _blockBlockingMap;
 		private Digraph _threadBlockgraph;
+		public Digraph ThreadBlockgraph => _threadBlockgraph;
 		public bool DeadlockFound => _deadlock.Length > 0;
 		private ClrtThread[] _threads;
 		private ClrtBlkObject[] _blocks;
@@ -2700,6 +2701,14 @@ namespace ClrMDRIndex
 		#endregion segments/generations/sizes
 
 		#region threads/blocking objects
+
+		public bool LoadThreadBlockInfo(out string error)
+		{
+			error = null;
+			if (_threads == null)
+				return LoadThreadsAndBlocks(out error);
+			return true;
+		}
 
 		public bool IsThreadId(int id)
 		{
