@@ -2745,7 +2745,9 @@ namespace ClrMDRIndex
 				return thread.OSThreadId + "/" + thread.ManagedThreadId;
 			}
 			ClrtBlkObject blk = _blocks[GetIdFromGraph(id)];
-			return Utils.BaseTypeName(GetTypeName(blk.TypeId)) + "/" + blk.BlkReason;
+			if (blk.BlkReason != BlockingReason.None)
+				return Utils.BaseTypeName(GetTypeName(blk.TypeId)) + "/" + blk.BlkReason;
+			return Utils.BaseTypeName(GetTypeName(blk.TypeId));
 		}
 
 

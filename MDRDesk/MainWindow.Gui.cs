@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Data;
@@ -31,6 +32,13 @@ using TextBox = System.Windows.Controls.TextBox;
 using TreeView = System.Windows.Controls.TreeView;
 using SW = System.Windows;
 using SWC = System.Windows.Controls;
+using SubgraphDictionary =
+	System.Collections.Generic.SortedDictionary
+	<int,
+		ClrMDRIndex.triple
+		<System.Collections.Generic.List<System.Collections.Generic.List<int>>,
+			System.Collections.Generic.List<System.Collections.Generic.KeyValuePair<System.Collections.Generic.List<int>, int>>,
+			int>>;
 
 namespace MDRDesk
 {
@@ -109,9 +117,9 @@ namespace MDRDesk
 				var grid = this.TryFindResource("DeadlockGraphXGrid") as Grid;
 				Debug.Assert(grid != null);
 				grid.Name = DeadlockGraphGrid + "__" + Utils.GetNewID();
-				var zoomctrl = (ZoomControl)LogicalTreeHelper.FindLogicalNode(grid, "DlkZoomCtrl");
+				var zoomctrl = (ZoomControl) LogicalTreeHelper.FindLogicalNode(grid, "DlkZoomCtrl");
 				Debug.Assert(zoomctrl != null);
-				var area = (DlkGraphArea)LogicalTreeHelper.FindLogicalNode(grid, "DlkGraphArea");
+				var area = (DlkGraphArea) LogicalTreeHelper.FindLogicalNode(grid, "DlkGraphArea");
 				Debug.Assert(area != null);
 
 				ZoomControl.SetViewFinderVisibility(zoomctrl, Visibility.Visible);
@@ -145,7 +153,12 @@ namespace MDRDesk
 				area.RelayoutGraph();
 				zoomctrl.ZoomToFill();
 
-				var tab = new CloseableTabItem() { Header = Constants.BlackDiamond + " Deadlock", Content = grid, Name = "GeneralInfoViewTab" };
+				var tab = new CloseableTabItem()
+				{
+					Header = Constants.BlackDiamond + " Deadlock",
+					Content = grid,
+					Name = "GeneralInfoViewTab"
+				};
 				MainTab.Items.Add(tab);
 				MainTab.SelectedItem = tab;
 				MainTab.UpdateLayout();
@@ -163,13 +176,14 @@ namespace MDRDesk
 		private void DlkGraphAreaSetup(int[] deadlock, DlkGraphArea area)
 		{
 			//Lets create logic core and filled data graph with edges and vertices
-			var logicCore = new DlkGXLogicCore() { Graph = DlkGraphSetup(deadlock) };
+			var logicCore = new DlkGXLogicCore() {Graph = DlkGraphSetup(deadlock)};
 			//This property sets layout algorithm that will be used to calculate vertices positions
 			//Different algorithms uses different values and some of them uses edge Weight property.
 			logicCore.DefaultLayoutAlgorithm = LayoutAlgorithmTypeEnum.KK;
 			//Now we can set parameters for selected algorithm using AlgorithmFactory property. This property provides methods for
 			//creating all available algorithms and algo parameters.
-			logicCore.DefaultLayoutAlgorithmParams = logicCore.AlgorithmFactory.CreateLayoutParameters(LayoutAlgorithmTypeEnum.EfficientSugiyama);
+			logicCore.DefaultLayoutAlgorithmParams =
+				logicCore.AlgorithmFactory.CreateLayoutParameters(LayoutAlgorithmTypeEnum.EfficientSugiyama);
 			//Unfortunately to change algo parameters you need to specify params type which is different for every algorithm.
 			//((KKLayoutParameters)logicCore.DefaultLayoutAlgorithmParams).MaxIterations = 100;
 
@@ -194,7 +208,6 @@ namespace MDRDesk
 			area.LogicCore = logicCore;
 		}
 
-
 		private DlkGraph DlkGraphSetup(int[] deadlock)
 		{
 			//Lets make new data graph instance
@@ -212,7 +225,7 @@ namespace MDRDesk
 				var id = deadlock[i];
 				if (!set.Add(id))
 				{
-					vertices[i] = Array.Find(vertices, v => v.ID == (long)id);
+					vertices[i] = Array.Find(vertices, v => v.ID == (long) id);
 					continue;
 				}
 				bool isThread;
@@ -244,15 +257,46 @@ namespace MDRDesk
 				var grid = this.TryFindResource("ThreadBlockingGraphXGrid") as Grid;
 				Debug.Assert(grid != null);
 				grid.Name = DeadlockGraphGrid + "__" + Utils.GetNewID();
-				var zoomctrl = (ZoomControl)LogicalTreeHelper.FindLogicalNode(grid, "TBZoomCtrl");
-				Debug.Assert(zoomctrl != null);
-				var area = (DlkGraphArea)LogicalTreeHelper.FindLogicalNode(grid, "TBGraphArea");
-				Debug.Assert(area != null);
+				grid.Tag = new Tuple<Digraph, List<int>, SubgraphDictionary,bool>(digraph, new List<int>(), new SubgraphDictionary(),true);
 
-				ZoomControl.SetViewFinderVisibility(zoomctrl, Visibility.Visible);
-				//zoomctrl.ZoomToFill();
-				//Set Fill zooming strategy so whole graph will be always visible
-				TBGraphAreaSetup(digraph, area);
+				UpdateThreadBlockMap(grid, out error);
+
+				var tab = new CloseableTabItem()
+				{
+					Header = Constants.BlackDiamond + " Threads/Blocks",
+					Content = grid,
+					Name = "GeneralInfoViewTab"
+				};
+				MainTab.Items.Add(tab);
+				MainTab.SelectedItem = tab;
+				MainTab.UpdateLayout();
+				return true;
+			}
+			catch (Exception ex)
+			{
+				error = Utils.GetExceptionErrorString(ex);
+				return false;
+			}
+		}
+
+		public bool UpdateThreadBlockMap(Grid grid, out string error)
+		{
+			error = null;
+			try
+			{
+				var zoomctrl = (ZoomControl) LogicalTreeHelper.FindLogicalNode(grid, "TBZoomCtrl");
+				Debug.Assert(zoomctrl != null);
+				var area = (DlkGraphArea) LogicalTreeHelper.FindLogicalNode(grid, "TBGraphArea");
+				Debug.Assert(area != null);
+				area.RemoveAllEdges(true);
+				area.RemoveAllVertices(true);
+				var graphInfo = grid.Tag as Tuple<Digraph, List<int>, SubgraphDictionary, bool>;
+				var digraph = graphInfo.Item1;
+				var currentIds = graphInfo.Item2;
+				var subgraphsDct = graphInfo.Item3;
+				var forward = graphInfo.Item4;
+
+				TBGraphAreaSetup(digraph, area, currentIds, subgraphsDct, forward, out error);
 
 				area.GenerateGraph(true, true);
 
@@ -276,15 +320,54 @@ namespace MDRDesk
 				area.ShowAllEdgesLabels(true);
 
 				zoomctrl.ZoomToFill();
+				return true;
+			}
+			catch (Exception ex)
+			{
+				error = Utils.GetExceptionErrorString(ex);
+				return false;
+			}
+		}
 
-				//area.RelayoutGraph();
-				//zoomctrl.ZoomToFill();
+		private bool TBGraphAreaSetup(Digraph digraph, DlkGraphArea area, List<int> currentIds,
+			SubgraphDictionary subgraphsDct, bool forward, out string error)
+		{
+			error = null;
+			try
+			{
+				DlkGraph graph = TBGraphSetup(digraph, currentIds, subgraphsDct, forward, out error);
+				if (graph == null) return false;
+				//Lets create logic core and filled data graph with edges and vertices
+				var logicCore = new DlkGXLogicCore() {Graph = graph};
+				//This property sets layout algorithm that will be used to calculate vertices positions
+				//Different algorithms uses different values and some of them uses edge Weight property.
+				logicCore.DefaultLayoutAlgorithm = LayoutAlgorithmTypeEnum.KK;
+				//Now we can set parameters for selected algorithm using AlgorithmFactory property. This property provides methods for
+				//creating all available algorithms and algo parameters.
+				logicCore.DefaultLayoutAlgorithmParams =
+					logicCore.AlgorithmFactory.CreateLayoutParameters(LayoutAlgorithmTypeEnum.Sugiyama);
+				//Unfortunately to change algo parameters you need to specify params type which is different for every algorithm.
+				//((KKLayoutParameters)logicCore.DefaultLayoutAlgorithmParams).MaxIterations = 100;
 
-				var tab = new CloseableTabItem() { Header = Constants.BlackDiamond + " Threads/Blocks", Content = grid, Name = "GeneralInfoViewTab" };
-				MainTab.Items.Add(tab);
-				MainTab.SelectedItem = tab;
-				MainTab.UpdateLayout();
+				//This property sets vertex overlap removal algorithm.
+				//Such algorithms help to arrange vertices in the layout so no one overlaps each other.
+				logicCore.DefaultOverlapRemovalAlgorithm = OverlapRemovalAlgorithmTypeEnum.FSA;
+				//Default parameters are created automaticaly when new default algorithm is set and previous params were NULL
+				logicCore.DefaultOverlapRemovalAlgorithmParams.HorizontalGap = 50;
+				logicCore.DefaultOverlapRemovalAlgorithmParams.VerticalGap = 50;
 
+				//This property sets edge routing algorithm that is used to build route paths according to algorithm logic.
+				//For ex., SimpleER algorithm will try to set edge paths around vertices so no edge will intersect any vertex.
+				//Bundling algorithm will try to tie different edges that follows same direction to a single channel making complex graphs more appealing.
+				logicCore.DefaultEdgeRoutingAlgorithm = EdgeRoutingAlgorithmTypeEnum.SimpleER;
+
+				//This property sets async algorithms computation so methods like: Area.RelayoutGraph() and Area.GenerateGraph()
+				//will run async with the UI thread. Completion of the specified methods can be catched by corresponding events:
+				//Area.RelayoutFinished and Area.GenerateGraphFinished.
+				logicCore.AsyncAlgorithmCompute = false;
+
+				//Finally assign logic core to GraphArea object
+				area.LogicCore = logicCore;
 
 				return true;
 			}
@@ -295,131 +378,204 @@ namespace MDRDesk
 			}
 		}
 
-		private void TBGraphAreaSetup(Digraph digraph, DlkGraphArea area)
+		private const int MaxTBGraphEdges = 300;
+
+		private DlkGraph TBGraphSetup(Digraph digraph,
+			List<int> currentThreadIds,
+			SubgraphDictionary subgraphsDct,
+			bool forward,
+			out string error)
 		{
-			//Lets create logic core and filled data graph with edges and vertices
-			var logicCore = new DlkGXLogicCore() { Graph = TBGraphSetup(digraph) };
-			//This property sets layout algorithm that will be used to calculate vertices positions
-			//Different algorithms uses different values and some of them uses edge Weight property.
-			logicCore.DefaultLayoutAlgorithm = LayoutAlgorithmTypeEnum.KK;
-			//Now we can set parameters for selected algorithm using AlgorithmFactory property. This property provides methods for
-			//creating all available algorithms and algo parameters.
-			logicCore.DefaultLayoutAlgorithmParams = logicCore.AlgorithmFactory.CreateLayoutParameters(LayoutAlgorithmTypeEnum.Sugiyama);
-			//Unfortunately to change algo parameters you need to specify params type which is different for every algorithm.
-			//((KKLayoutParameters)logicCore.DefaultLayoutAlgorithmParams).MaxIterations = 100;
-
-			//This property sets vertex overlap removal algorithm.
-			//Such algorithms help to arrange vertices in the layout so no one overlaps each other.
-			logicCore.DefaultOverlapRemovalAlgorithm = OverlapRemovalAlgorithmTypeEnum.FSA;
-			//Default parameters are created automaticaly when new default algorithm is set and previous params were NULL
-			logicCore.DefaultOverlapRemovalAlgorithmParams.HorizontalGap = 50;
-			logicCore.DefaultOverlapRemovalAlgorithmParams.VerticalGap = 50;
-
-			//This property sets edge routing algorithm that is used to build route paths according to algorithm logic.
-			//For ex., SimpleER algorithm will try to set edge paths around vertices so no edge will intersect any vertex.
-			//Bundling algorithm will try to tie different edges that follows same direction to a single channel making complex graphs more appealing.
-			logicCore.DefaultEdgeRoutingAlgorithm = EdgeRoutingAlgorithmTypeEnum.SimpleER;
-
-			//This property sets async algorithms computation so methods like: Area.RelayoutGraph() and Area.GenerateGraph()
-			//will run async with the UI thread. Completion of the specified methods can be catched by corresponding events:
-			//Area.RelayoutFinished and Area.GenerateGraphFinished.
-			logicCore.AsyncAlgorithmCompute = false;
-
-			//Finally assign logic core to GraphArea object
-			area.LogicCore = logicCore;
-		}
-
-		private DlkGraph TBGraphSetup(Digraph digraph)
-		{
-			//Lets make new data graph instance
-			var dataGraph = new DlkGraph();
-			//Now we need to create edges and vertices to fill data graph
-			//This edges and vertices will represent graph structure and connections
-			//Lets make some vertices
-
-			List<int>[] adjLists = digraph.AdjacencyLists;
-
-			SortedDictionary<int, triple<List<List<int>>, List<KeyValuePair<List<int>,int>>,int >> dct = null; 
-			if (digraph.EdgeCount > 300)
+			error = null;
+			try
 			{
-				dct = new SortedDictionary<int, triple<List<List<int>>, List<KeyValuePair<List<int>, int>>, int>>();
-				for (int i = 0, icnt = adjLists.Length; i < icnt; ++i)
+				if (currentThreadIds.Count > 0) // displaying subgraphs, subgraphsDct is already populated
 				{
-					var lst = adjLists[i];
-					if (lst == null || lst.Count < 1) continue;
-					bool isThread = CurrentIndex.IsThreadId(i);
-					if (isThread)
-					{
-						triple<List<List<int>>, List<KeyValuePair<List<int>, int>>, int> info;
-						if (dct.TryGetValue(i, out info))
-						{
-							info.First.Add(lst);
-							var cnt = info.Third + lst.Count;
-							dct[i] = new triple<List<List<int>>, List<KeyValuePair<List<int>, int>>, int>(info.First,info.Second,cnt);
-						}
-						else
-						{
-							var lists = new List<List<int>>();
-							lists.Add(lst);
-							dct.Add(i, new triple<List<List<int>>, List<KeyValuePair<List<int>, int>>, int>(lists,null,lst.Count));
-						}
-					}
-					else
-					{
-						for (int j = 0, jcnt = lst.Count; j < jcnt; ++j)
-						{
-							var id = lst[j];
-							if (!CurrentIndex.IsThreadId(id)) continue;
+					return TBGetSubgraph(currentThreadIds, subgraphsDct, forward, out error);
+				}
+				if (digraph.EdgeCount > MaxTBGraphEdges)
+				{
+					TBCreateSubgraphs(digraph, subgraphsDct);
+					return TBGetSubgraph(currentThreadIds, subgraphsDct, forward, out error);
+				}
+				//Lets make new data graph instance
+				var dataGraph = new DlkGraph();
+				//Now we need to create edges and vertices to fill data graph
+				//This edges and vertices will represent graph structure and connections
+				//Lets make some vertices
 
+				List<int>[] adjLists = digraph.AdjacencyLists;
+
+				if (digraph.EdgeCount > 300)
+				{
+					subgraphsDct = new SortedDictionary<int, triple<List<List<int>>, List<KeyValuePair<List<int>, int>>, int>>();
+					for (int i = 0, icnt = adjLists.Length; i < icnt; ++i)
+					{
+						var lst = adjLists[i];
+						if (lst == null || lst.Count < 1) continue;
+						bool isThread = CurrentIndex.IsThreadId(i);
+						if (isThread)
+						{
 							triple<List<List<int>>, List<KeyValuePair<List<int>, int>>, int> info;
-							if (dct.TryGetValue(id, out info))
+							if (subgraphsDct.TryGetValue(i, out info))
 							{
-								var lists = info.Second;
-								if (lists == null)
-								{
-									lists = new List<KeyValuePair<List<int>, int>>();
-								}
-								lists.Add(new KeyValuePair<List<int>, int>(lst,i));
+								info.First.Add(lst);
 								var cnt = info.Third + lst.Count;
-								dct[id] = new triple<List<List<int>>, List<KeyValuePair<List<int>, int>>, int>(info.First,lists,cnt);
+								subgraphsDct[i] = new triple<List<List<int>>, List<KeyValuePair<List<int>, int>>, int>(info.First, info.Second,
+									cnt);
 							}
 							else
 							{
-								var lists = new List<KeyValuePair<List<int>, int>>();
-								lists.Add(new KeyValuePair<List<int>, int>(lst, i));
-								dct.Add(id, new triple<List<List<int>>, List<KeyValuePair<List<int>, int>>, int>(info.First, lists, lst.Count));
+								var lists = new List<List<int>>();
+								lists.Add(lst);
+								subgraphsDct.Add(i, new triple<List<List<int>>, List<KeyValuePair<List<int>, int>>, int>(lists, null, lst.Count));
 							}
 						}
+						else
+						{
+							for (int j = 0, jcnt = lst.Count; j < jcnt; ++j)
+							{
+								var id = lst[j];
+								if (!CurrentIndex.IsThreadId(id)) continue;
+
+								triple<List<List<int>>, List<KeyValuePair<List<int>, int>>, int> info;
+								if (subgraphsDct.TryGetValue(id, out info))
+								{
+									var lists = info.Second;
+									if (lists == null)
+									{
+										lists = new List<KeyValuePair<List<int>, int>>();
+									}
+									lists.Add(new KeyValuePair<List<int>, int>(lst, i));
+									var cnt = info.Third + lst.Count;
+									subgraphsDct[id] = new triple<List<List<int>>, List<KeyValuePair<List<int>, int>>, int>(info.First, lists, cnt);
+								}
+								else
+								{
+									var lists = new List<KeyValuePair<List<int>, int>>();
+									lists.Add(new KeyValuePair<List<int>, int>(lst, i));
+									subgraphsDct.Add(id,
+										new triple<List<List<int>>, List<KeyValuePair<List<int>, int>>, int>(info.First, lists, lst.Count));
+								}
+							}
+						}
+
 					}
-					
-
 				}
-			}
 
+				DataVertex[] vertices = new DataVertex[digraph.VertexCount];
+				HashSet<int> set = new HashSet<int>();
 
-			if (dct != null)
-			{
-				var nodes = new Dictionary<int, DataVertex>();
-				var ecount = 0;
-				var index = 0;
-				foreach (var triple in dct)
+				for (int i = 0, icnt = adjLists.Length; i < icnt; ++i)
 				{
-					var lists1 = triple.Value.First;
-					var lists2 = triple.Value.Second;
-					ecount += triple.Value.Third;
-
-					var id = triple.Key;
-
-					DataVertex node = null;
-					if (!nodes.TryGetValue(id,out node))
+					if (adjLists[i] == null || adjLists[i].Count < 1) continue;
+					DataVertex node = vertices[i];
+					if (node == null)
 					{
 						bool isThread;
-						var label = CurrentIndex.GetThreadOrBlkLabel(id, out isThread);
+						var label = CurrentIndex.GetThreadOrBlkLabel(i, out isThread);
 						label = (isThread ? Constants.HeavyRightArrowHeader : Constants.BlackFourPointedStarHeader) + label;
 						node = new DataVertex(label);
-						node.ID = id;
+						node.ID = i;
+						vertices[i] = node;
 						dataGraph.AddVertex(node);
-						nodes.Add(id,node);
+					}
+					var lst = adjLists[i];
+					for (int j = 0, jcnt = lst.Count; j < jcnt; ++j)
+					{
+						var id = lst[j];
+						DataVertex aNode = vertices[id];
+						if (aNode == null)
+						{
+							bool isThread;
+							var label = CurrentIndex.GetThreadOrBlkLabel(id, out isThread);
+							label = (isThread ? Constants.HeavyRightArrowHeader : Constants.BlackFourPointedStarHeader) + label;
+							aNode = new DataVertex(label);
+							aNode.ID = id;
+							vertices[id] = aNode;
+							dataGraph.AddVertex(aNode);
+						}
+						var dataEdge = new DataEdge(node, aNode);
+						dataGraph.AddEdge(dataEdge);
+					}
+				}
+
+				return dataGraph;
+			}
+			catch (Exception ex)
+			{
+				error = Utils.GetExceptionErrorString(ex);
+				return null;
+			}
+		}
+
+		private DlkGraph TBGetSubgraph(List<int> currentThreadIds,
+										SubgraphDictionary subgraphsDct,
+										bool forward,
+										out string error)
+		{
+			error = null;
+			try
+			{
+				List<int> threadIds = new List<int>();
+				var dataGraph = new DlkGraph();
+				var nodes = new Dictionary<int, DataVertex>();
+				var ecount = 0;
+				var lastId = currentThreadIds.Count > 0 ? currentThreadIds[currentThreadIds.Count - 1] : Int32.MaxValue;
+				Stack<KeyValuePair<int, int>> stack = forward ? null : new Stack<KeyValuePair<int, int>>(subgraphsDct.Count / 2);
+				foreach (var kv in subgraphsDct)
+				{
+					if (lastId == Int32.MaxValue)
+					{
+						threadIds.Add(kv.Key);
+						ecount += kv.Value.Third;
+					}
+					else if (!forward)
+					{
+						var id = kv.Key;
+						if (id == currentThreadIds[0])
+						{
+							break;
+						}
+						stack.Push(new KeyValuePair<int, int>(id, kv.Value.Third));
+					}
+					else
+					{
+						var id = kv.Value.Third;
+						if (id > lastId)
+						{
+							threadIds.Add(id);
+							ecount += kv.Value.Third;
+						}
+					}
+					if (ecount > MaxTBGraphEdges)
+						break;
+				}
+				if (!forward)
+				{
+					while (stack.Count > 0 && ecount <= MaxTBGraphEdges)
+					{
+						var kv = stack.Pop();
+						threadIds.Add(kv.Key);
+						ecount += kv.Value;
+					}
+				}
+
+				foreach (var thrdId in threadIds)
+				{
+					var triple = subgraphsDct[thrdId];
+					var lists1 = triple.First;
+					var lists2 = triple.Second;
+					DataVertex node = null;
+					if (!nodes.TryGetValue(thrdId, out node))
+					{
+						bool isThread;
+						var label = CurrentIndex.GetThreadOrBlkLabel(thrdId, out isThread);
+						label = (isThread ? Constants.HeavyRightArrowHeader : Constants.BlackFourPointedStarHeader) + label;
+						node = new DataVertex(label);
+						node.ID = thrdId;
+						dataGraph.AddVertex(node);
+						nodes.Add(thrdId, node);
 					}
 
 					if (lists1 != null)
@@ -452,7 +608,7 @@ namespace MDRDesk
 					{
 						for (int i = 0, icnt = lists2.Count; i < icnt; ++i)
 						{
-							id = lists2[i].Value;
+							var id = lists2[i].Value;
 							var lst = lists2[i].Key;
 
 							node = null;
@@ -486,58 +642,78 @@ namespace MDRDesk
 							}
 						}
 					}
-
-					if (ecount > 300)
-						break;
 				}
 
+				currentThreadIds.Clear();
+				currentThreadIds.AddRange(threadIds);
 				return dataGraph;
+
 			}
-
-
-			DataVertex[] vertices = new DataVertex[digraph.VertexCount];
-			HashSet<int> set = new HashSet<int>();
-
-			for (int i = 0, icnt = adjLists.Length; i < icnt; ++i)
+			catch (Exception ex)
 			{
-				if (adjLists[i] == null || adjLists[i].Count < 1) continue;
-				DataVertex node = vertices[i];
-				if (node == null)
-				{
-					bool isThread;
-					var label = CurrentIndex.GetThreadOrBlkLabel(i, out isThread);
-					label = (isThread ? Constants.HeavyRightArrowHeader : Constants.BlackFourPointedStarHeader) + label;
-					node = new DataVertex(label);
-					node.ID = i;
-					vertices[i] = node;
-					dataGraph.AddVertex(node);
-				}
-				var lst = adjLists[i];
-				for (int j = 0, jcnt = lst.Count; j < jcnt; ++j)
-				{
-					var id = lst[j];
-					DataVertex aNode = vertices[id];
-					if (aNode == null)
-					{
-						bool isThread;
-						var label = CurrentIndex.GetThreadOrBlkLabel(id, out isThread);
-						label = (isThread ? Constants.HeavyRightArrowHeader : Constants.BlackFourPointedStarHeader) + label;
-						aNode = new DataVertex(label);
-						aNode.ID = id;
-						vertices[id] = aNode;
-						dataGraph.AddVertex(aNode);
-					}
-					var dataEdge = new DataEdge(node, aNode);
-					dataGraph.AddEdge(dataEdge);
-				}
+				error = Utils.GetExceptionErrorString(ex);
+				return null;
 			}
-
-			return dataGraph;
 		}
 
 
+		private void TBCreateSubgraphs(Digraph digraph, SubgraphDictionary subgraphsDct)
+		{
+			Debug.Assert(subgraphsDct != null && subgraphsDct.Count == 0);
+			List<int>[] adjLists = digraph.AdjacencyLists;
+			for (int i = 0, icnt = adjLists.Length; i < icnt; ++i)
+			{
+				var lst = adjLists[i];
+				if (lst == null || lst.Count < 1) continue;
+				bool isThread = CurrentIndex.IsThreadId(i);
+				if (isThread)
+				{
+					triple<List<List<int>>, List<KeyValuePair<List<int>, int>>, int> info;
+					if (subgraphsDct.TryGetValue(i, out info))
+					{
+						info.First.Add(lst);
+						var cnt = info.Third + lst.Count;
+						subgraphsDct[i] = new triple<List<List<int>>, List<KeyValuePair<List<int>, int>>, int>(info.First, info.Second, cnt);
+					}
+					else
+					{
+						var lists = new List<List<int>>();
+						lists.Add(lst);
+						subgraphsDct.Add(i, new triple<List<List<int>>, List<KeyValuePair<List<int>, int>>, int>(lists, null, lst.Count));
+					}
+				}
+				else
+				{
+					for (int j = 0, jcnt = lst.Count; j < jcnt; ++j)
+					{
+						var id = lst[j];
+						if (!CurrentIndex.IsThreadId(id)) continue;
+
+						triple<List<List<int>>, List<KeyValuePair<List<int>, int>>, int> info;
+						if (subgraphsDct.TryGetValue(id, out info))
+						{
+							var lists = info.Second;
+							if (lists == null)
+							{
+								lists = new List<KeyValuePair<List<int>, int>>();
+							}
+							lists.Add(new KeyValuePair<List<int>, int>(lst, i));
+							var cnt = info.Third + lst.Count;
+							subgraphsDct[id] = new triple<List<List<int>>, List<KeyValuePair<List<int>, int>>, int>(info.First, lists, cnt);
+						}
+						else
+						{
+							var lists = new List<KeyValuePair<List<int>, int>>();
+							lists.Add(new KeyValuePair<List<int>, int>(lst, i));
+							subgraphsDct.Add(id, new triple<List<List<int>>, List<KeyValuePair<List<int>, int>>, int>(info.First, lists, lst.Count));
+						}
+					}
+				}
+			}
+		}
+
 		#endregion  threads/blocks
-		
+
 		#region common
 
 		private void SetVertexEdgeDisplay(DlkGraphArea area)

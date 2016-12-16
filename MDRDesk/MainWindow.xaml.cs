@@ -14,8 +14,6 @@ using System.Windows.Forms.Integration;
 using System.Windows.Input;
 using System.Windows.Threading;
 using ClrMDRIndex;
-using Microsoft.Msagl.Drawing;
-using Microsoft.Msagl.GraphmapsWpfControl;
 using Application = System.Windows.Application;
 using Binding = System.Windows.Data.Binding;
 using Clipboard = System.Windows.Clipboard;
@@ -30,12 +28,6 @@ using TextBox = System.Windows.Controls.TextBox;
 using TreeView = System.Windows.Controls.TreeView;
 using SW = System.Windows;
 using SWC = System.Windows.Controls;
-using Microsoft.Msagl.GraphViewerGdi;
-using Microsoft.Msagl.Layout.Incremental;
-using Microsoft.Msagl.Layout.Layered;
-using Microsoft.Msagl.Layout.MDS;
-using Microsoft.Msagl.WpfGraphControl;
-
 
 namespace MDRDesk
 {
@@ -540,81 +532,6 @@ namespace MDRDesk
 				ShowError(error);
 			}
 			return;
-
-			Digraph digraph = CurrentIndex.ThreadBlockgraph;
-			Node[] nodes = new Node[digraph.VertexCount];
-			List<int>[] adjLists = digraph.AdjacencyLists;
-			Graph graph = new Graph();
-			for (int i = 0, icnt = adjLists.Length; i < icnt; ++i)
-			{
-				if (adjLists[i] == null || adjLists[i].Count < 1) continue;
-				Node node = nodes[i];
-				if (node==null)
-				{
-					bool isThread;
-					var label = CurrentIndex.GetThreadOrBlkLabel(i, out isThread);
-					node = new Node(i.ToString());
-					node.LabelText = (isThread ? Constants.HeavyRightArrowHeader : Constants.BlackFourPointedStarHeader);
-					nodes[i] = node;
-					graph.AddNode(node);
-				}
-				var lst = adjLists[i];
-				for (int j = 0, jcnt = lst.Count; j < jcnt; ++j)
-				{
-					var id = lst[j];
-					Node aNode = nodes[id];
-					if (aNode==null)
-					{
-						bool isThread;
-						var label = CurrentIndex.GetThreadOrBlkLabel(id, out isThread);
-						aNode = new Node(id.ToString());
-						aNode.LabelText = (isThread ? Constants.HeavyRightArrowHeader : Constants.BlackFourPointedStarHeader);
-						nodes[i] = aNode;
-						graph.AddNode(aNode);
-					}
-					graph.AddEdge(node.Id, aNode.Id);
-				}
-			}
-
-			var grid = this.TryFindResource(ThreadBlockingGraphGrid) as Grid;
-			Debug.Assert(grid != null);
-			var graphHost = (WindowsFormsHost)LogicalTreeHelper.FindLogicalNode(grid, "ThreadBlockingViewerHost");
-			Debug.Assert(graphHost != null);
-			GViewer graphView = (GViewer)graphHost.Child;
-			//var sugiyamaSettings = (SugiyamaLayoutSettings)graph.LayoutAlgorithmSettings;
-			//sugiyamaSettings.NodeSeparation *= 2;
-			//graph.LayoutAlgorithmSettings = new MdsLayoutSettings();
-			//int[] deadlock = CurrentIndex.Deadlock;
-			//for (int i = 1, icnt = deadlock.Length; i < icnt; ++i)
-			//{
-			//	var id1 = deadlock[i - 1];
-			//	var id1Str = id1.ToString();
-			//	bool isThread1;
-			//	var label1 = CurrentIndex.GetThreadOrBlkLabel(id1, out isThread1);
-			//	var node1 = new Node(id1Str);
-			//	node1.LabelText = (isThread1 ? Constants.HeavyRightArrowHeader : Constants.BlackFourPointedStarHeader) + label1;
-
-			//	var id2 = deadlock[i];
-			//	var id2Str = id2.ToString();
-			//	bool isThread2;
-			//	var label2 = CurrentIndex.GetThreadOrBlkLabel(id2, out isThread2);
-			//	var node2 = new Node(id2Str);
-			//	node2.LabelText = (isThread2 ? Constants.HeavyRightArrowHeader : Constants.BlackFourPointedStarHeader) + label2;
-			//	graph.AddNode(node1);
-			//	graph.AddNode(node2);
-			//	graph.AddEdge(id1Str, id2Str);
-			//}
-
-			//GraphmapsViewer graphViewer = new GraphmapsViewer();
-			//graphViewer.BindToPanel(graphHost);
-			graphView.Graph = graph;
-			Debug.Assert(grid != null);
-			grid.Name = ThreadBlockingGraphGrid + "__" + Utils.GetNewID();
-			var tab = new CloseableTabItem() { Header = Constants.BlackDiamond + " Threads/Blocks", Content = grid, Name = grid.Name+"_tab" };
-			MainTab.Items.Add(tab);
-			MainTab.SelectedItem = tab;
-			MainTab.UpdateLayout();
-
 		}
 
 		private void IndexGetSizeInformationClicked(object sender, RoutedEventArgs e)

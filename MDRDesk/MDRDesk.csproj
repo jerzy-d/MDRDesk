@@ -110,21 +110,6 @@
     <Reference Include="Microsoft.Diagnostics.Runtime">
       <HintPath>..\ClrMd\Microsoft.Diagnostics.Runtime.dll</HintPath>
     </Reference>
-    <Reference Include="Microsoft.Msagl">
-      <HintPath>..\MSAGL\Microsoft.Msagl.dll</HintPath>
-    </Reference>
-    <Reference Include="Microsoft.Msagl.Drawing">
-      <HintPath>..\MSAGL\Microsoft.Msagl.Drawing.dll</HintPath>
-    </Reference>
-    <Reference Include="Microsoft.Msagl.GraphmapsWpfControl">
-      <HintPath>..\MSAGL\Microsoft.Msagl.GraphmapsWpfControl.dll</HintPath>
-    </Reference>
-    <Reference Include="Microsoft.Msagl.GraphViewerGdi">
-      <HintPath>..\MSAGL\Microsoft.Msagl.GraphViewerGdi.dll</HintPath>
-    </Reference>
-    <Reference Include="Microsoft.Msagl.WpfGraphControl">
-      <HintPath>..\MSAGL\Microsoft.Msagl.WpfGraphControl.dll</HintPath>
-    </Reference>
     <Reference Include="QuickGraph">
       <HintPath>..\GraphX\QuickGraph.dll</HintPath>
     </Reference>
