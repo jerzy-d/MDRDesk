@@ -79,33 +79,33 @@ module Auxiliaries =
         | Composites of ClrtValue array
         | Address of uint64
 
-    type KeyValuePairInfo =
-        { keyFld: ClrInstanceField;
-          keyType: ClrType;
-          keyCat: TypeCategories;
-          valFld: ClrInstanceField;
-          valType: ClrType;
-          valCat: TypeCategories; }
+//    type KeyValuePairInfo =
+//        { keyFld: ClrInstanceField;
+//          keyType: ClrType;
+//          keyCat: TypeCategories;
+//          valFld: ClrInstanceField;
+//          valType: ClrType;
+//          valCat: TypeCategories; }
 
-    type DictionaryValue =
-        struct
-            val Error: string
-            val DctType: string
-            val Address: address
-            val KeyType: string
-            val ValType: string
-            val Keys: string array
-            val Values: string array
-            new(error, dctType, addr, keyType, valType, keys, values) = { Error = error; DctType = dctType; Address = addr; KeyType = keyType; ValType = valType; Keys = keys; Values = values }
-        end
+//    type DictionaryValue =
+//        struct
+//            val Error: string
+//            val DctType: string
+//            val Address: address
+//            val KeyType: string
+//            val ValType: string
+//            val Keys: string array
+//            val Values: string array
+//            new(error, dctType, addr, keyType, valType, keys, values) = { Error = error; DctType = dctType; Address = addr; KeyType = keyType; ValType = valType; Keys = keys; Values = values }
+//        end
 
     let kvStringAddressComparer = new KvStringAddressComparer()
 
     let hasInternalAddresses (clrType:ClrType) = clrType.IsValueClass
 
     /// Convienient categorization of clr types when getting a type instance value.
-    let inline getTypeCategory (clrType:ClrType) : TypeCategories =
-        TypeCategories.GetCategories(clrType)
+//    let inline getTypeCategory (clrType:ClrType) : TypeCategories =
+//        TypeCategories.GetCategories(clrType)
 
     let getFieldName (clrType:ClrType) (ndx:int) =
         match clrType with
@@ -173,42 +173,42 @@ module Auxiliaries =
         | Constants.InvalidAddress -> null
         | _ -> heap.GetObjectType(clrAddr)
 
-    let getStructFields (heap:ClrHeap) (addr:address) (fld:ClrInstanceField) : (ClrType array) =
-        if isNull fld.Type then
-            null
-        else
-            let lst = ResizeArray<ClrType>()
-            let fields = fld.Type.Fields
-            for i = 0 to fields.Count-1 do
-                let f = fields.[i]
-                let cats = getTypeCategory f.Type
-                match cats.First with
-                | TypeCategory.Uknown -> 
-                    ()
-                | TypeCategory.Reference -> 
-                    let clrType = getFieldClrType heap addr fld false
-                    ()
-                | _ ->
-                    ()
-            null
+//    let getStructFields (heap:ClrHeap) (addr:address) (fld:ClrInstanceField) : (ClrType array) =
+//        if isNull fld.Type then
+//            null
+//        else
+//            let lst = ResizeArray<ClrType>()
+//            let fields = fld.Type.Fields
+//            for i = 0 to fields.Count-1 do
+//                let f = fields.[i]
+//                let cats = getTypeCategory f.Type
+//                match cats.First with
+//                | TypeCategory.Uknown -> 
+//                    ()
+//                | TypeCategory.Reference -> 
+//                    let clrType = getFieldClrType heap addr fld false
+//                    ()
+//                | _ ->
+//                    ()
+//            null
 
-    let getFieldType (heap:ClrHeap) (addr:address) (fld:ClrInstanceField) (intern:bool) =
-        let cats = getTypeCategory fld.Type
-        match cats.First with
-        | TypeCategory.Uknown -> ("",null,null)
-        | TypeCategory.Reference ->
-            match cats.Second with
-            | TypeCategory.Struct ->
-                let clrTypeAddr = getReferenceFieldAddress addr fld intern
-                let clrType = heap.GetObjectType(clrTypeAddr)
-                (null, clrType, null)
-            | _ -> (null, fld.Type, null)
-        | TypeCategory.Struct ->
-            ("",null,null)
-        | TypeCategory.Primitive ->
-            (null,fld.Type,null)
-        | _ -> ("Don't know how to get this field type.",null,null)
-    
+//    let getFieldType (heap:ClrHeap) (addr:address) (fld:ClrInstanceField) (intern:bool) =
+//        let cats = getTypeCategory fld.Type
+//        match cats.First with
+//        | TypeCategory.Uknown -> ("",null,null)
+//        | TypeCategory.Reference ->
+//            match cats.Second with
+//            | TypeCategory.Struct ->
+//                let clrTypeAddr = getReferenceFieldAddress addr fld intern
+//                let clrType = heap.GetObjectType(clrTypeAddr)
+//                (null, clrType, null)
+//            | _ -> (null, fld.Type, null)
+//        | TypeCategory.Struct ->
+//            ("",null,null)
+//        | TypeCategory.Primitive ->
+//            (null,fld.Type,null)
+//        | _ -> ("Don't know how to get this field type.",null,null)
+//    
     let getType (heap:ClrHeap) (addr:address) =
         heap.GetObjectType(addr)
 
@@ -233,125 +233,125 @@ module Auxiliaries =
         getting selected field values for a selected type
     *)
 
-    let getFieldValue (heap : ClrHeap) (field : ClrInstanceField) (typeCats: TypeCategories) (classAddr : address) (isinternal:bool) =
-        let clrType: ClrType = field.Type
-        if clrType = null then 
-            "!field-type-null"
-        else
-             match typeCats.First with
-                | TypeCategory.Reference ->
-                    let addr = unbox<address>(field.GetValue(classAddr))
-                    match typeCats.Second with
-                        | TypeCategory.String ->
-                            if (addr = 0UL) then Constants.NullName
-                            else field.GetValue(classAddr,isinternal,true).ToString()
-                        | TypeCategory.Exception ->
-                            if (addr = 0UL) then Constants.NullName
-                            else ValueExtractor.GetShortExceptionValue(addr, field.Type,heap)
-                        | TypeCategory.Array -> // get general info only
-                            let aryTypeStr = if field.Type.ComponentType = null then "unknown component type" else field.Type.ComponentType.Name
-                            let len = clrType.GetArrayLength(addr)
-                            getDispAddress addr + " [" + string len + "] : " + aryTypeStr
-                        | TypeCategory.SystemObject ->
-                            let cT = heap.GetObjectType(addr);
-                            if (not (isNull cT) && cT.Name = "System.Decimal") then
-                                ValueExtractor.GetDecimalValue(addr, cT, null)
-                            else
-                                getDispAddress addr
-                        | TypeCategory.Reference ->
-                            getDispAddress addr
-                        | _ ->
-                            getDispAddress addr + " What the heck is this?"
-                | TypeCategory.Struct ->
-                    let addr = field.GetAddress(classAddr, clrType.IsValueClass)
-                    match typeCats.Second with
-                        | TypeCategory.Decimal -> ValueExtractor.GetDecimalValue(addr,field.Type,null)
-                        | TypeCategory.DateTime -> ValueExtractor.GetDateTimeValue(addr,field.Type)
-                        | TypeCategory.TimeSpan -> ValueExtractor.GetTimeSpanValue(addr,field.Type)
-                        | TypeCategory.Guid -> ValueExtractor.GetGuidValue(addr,field.Type)
-                        | _ -> "struct"
-                | TypeCategory.Primitive -> // primitives
-                   let o = field.GetValue(classAddr,clrType.IsValueClass)
-                   ValueExtractor.GetPrimitiveValue(o, field.Type)
-                | _ -> "?DON'T KNOW HOW TO GET VALUE?"
-
-    let getObjectValue (heap : ClrHeap) (clrType:ClrType) (typeCats: TypeCategories) (value : Object) (isinternal:bool) =
-            match typeCats.First with
-                | TypeCategory.Reference ->
-                    let addr = unbox<uint64>(value)
-                    match typeCats.Second with
-                        | TypeCategory.String ->
-                            if (addr = 0UL) then Constants.NullName
-                            else ValueExtractor.GetStringValue(clrType, addr)
-                        | TypeCategory.Exception ->
-                            if (addr = 0UL) then Constants.NullName
-                            else ValueExtractor.GetShortExceptionValue(addr, clrType, heap)
-                        | TypeCategory.Array -> // get general info only
+//    let getFieldValue (heap : ClrHeap) (field : ClrInstanceField) (typeCats: TypeCategories) (classAddr : address) (isinternal:bool) =
+//        let clrType: ClrType = field.Type
+//        if clrType = null then 
+//            "!field-type-null"
+//        else
+//             match typeCats.First with
+//                | TypeCategory.Reference ->
+//                    let addr = unbox<address>(field.GetValue(classAddr))
+//                    match typeCats.Second with
+//                        | TypeCategory.String ->
+//                            if (addr = 0UL) then Constants.NullName
+//                            else field.GetValue(classAddr,isinternal,true).ToString()
+//                        | TypeCategory.Exception ->
+//                            if (addr = 0UL) then Constants.NullName
+//                            else ValueExtractor.GetShortExceptionValue(addr, field.Type,heap)
+//                        | TypeCategory.Array -> // get general info only
 //                            let aryTypeStr = if field.Type.ComponentType = null then "unknown component type" else field.Type.ComponentType.Name
 //                            let len = clrType.GetArrayLength(addr)
-                            getDispAddress addr + " [" + "?" + "] : "
-                        | TypeCategory.SystemObject ->
-                            getDispAddress addr
-                        | TypeCategory.Reference ->
-                            getDispAddress addr
-                        | _ ->
-                            getDispAddress addr + " What the heck is this?"
-                | TypeCategory.Struct ->
-                    let addr = unbox<uint64>(value)
-                    match typeCats.Second with
-                        | TypeCategory.Decimal -> ValueExtractor.GetDecimalValue(addr,clrType,null)
-                        | TypeCategory.DateTime -> ValueExtractor.GetDateTimeValue(addr,clrType)
-                        | TypeCategory.TimeSpan -> ValueExtractor.GetTimeSpanValue(addr,clrType)
-                        | TypeCategory.Guid -> ValueExtractor.GetGuidValue(addr,clrType)
-                        | _ -> "struct"
-                | TypeCategory.Primitive -> // primitives
-                   ValueExtractor.GetPrimitiveValue(value, clrType)
-                | _ -> "?DON'T KNOW HOW TO GET VALUE?"
+//                            getDispAddress addr + " [" + string len + "] : " + aryTypeStr
+//                        | TypeCategory.SystemObject ->
+//                            let cT = heap.GetObjectType(addr);
+//                            if (not (isNull cT) && cT.Name = "System.Decimal") then
+//                                ValueExtractor.GetDecimalValue(addr, cT, null)
+//                            else
+//                                getDispAddress addr
+//                        | TypeCategory.Reference ->
+//                            getDispAddress addr
+//                        | _ ->
+//                            getDispAddress addr + " What the heck is this?"
+//                | TypeCategory.Struct ->
+//                    let addr = field.GetAddress(classAddr, clrType.IsValueClass)
+//                    match typeCats.Second with
+//                        | TypeCategory.Decimal -> ValueExtractor.GetDecimalValue(addr,field.Type,null)
+//                        | TypeCategory.DateTime -> ValueExtractor.GetDateTimeValue(addr,field.Type)
+//                        | TypeCategory.TimeSpan -> ValueExtractor.GetTimeSpanValue(addr,field.Type)
+//                        | TypeCategory.Guid -> ValueExtractor.GetGuidValue(addr,field.Type)
+//                        | _ -> "struct"
+//                | TypeCategory.Primitive -> // primitives
+//                   let o = field.GetValue(classAddr,clrType.IsValueClass)
+//                   ValueExtractor.GetPrimitiveValue(o, field.Type)
+//                | _ -> "?DON'T KNOW HOW TO GET VALUE?"
 
-    let tryGetPrimitiveValue (heap:ClrHeap) (classAddr:address) (field : ClrInstanceField) (internalAddr: bool) =
-        let clrType = field.Type
-        let cats = TypeCategories.GetCategories(clrType)
-        match cats.First with
-                | TypeCategory.Reference ->
-                    match cats.Second with
-                        | TypeCategory.String ->
-                            let addr = unbox<address>(field.GetValue(classAddr, internalAddr,false))
-                            if (addr = 0UL) then Constants.NullName
-                            else ValueExtractor.GetStringValue(clrType, addr)
-                        | TypeCategory.Exception ->
-                            let addr = unbox<address>(field.GetValue(classAddr, internalAddr,false))
-                            if (addr = 0UL) then Constants.NullName
-                            else ValueExtractor.GetShortExceptionValue(addr, clrType, heap)
-                        | _ ->
-                            nonValue
-                | TypeCategory.Struct ->
-                    match cats.Second with
-                        | TypeCategory.Decimal -> 
-                            let addr = unbox<address>(field.GetValue(classAddr, internalAddr,false))
-                            ValueExtractor.GetDecimalValue(addr,clrType,null)
-                        | TypeCategory.DateTime -> 
-                            let addr = unbox<address>(field.GetValue(classAddr, internalAddr,false))
-                            ValueExtractor.GetDateTimeValue(addr,clrType)
-                        | TypeCategory.TimeSpan -> 
-                            let addr = unbox<address>(field.GetValue(classAddr, internalAddr,false))
-                            ValueExtractor.GetTimeSpanValue(addr,clrType)
-                        | TypeCategory.Guid -> 
-                            let addr = unbox<address>(field.GetValue(classAddr, internalAddr,false))
-                            ValueExtractor.GetGuidValue(addr,clrType)
-                        | _ -> nonValue
-                | TypeCategory.Primitive -> // primitives
-                   let valObj = field.GetValue(classAddr)
-                   ValueExtractor.GetPrimitiveValue(valObj, clrType)
-                | _ -> nonValue
+//    let getObjectValue (heap : ClrHeap) (clrType:ClrType) (typeCats: TypeCategories) (value : Object) (isinternal:bool) =
+//            match typeCats.First with
+//                | TypeCategory.Reference ->
+//                    let addr = unbox<uint64>(value)
+//                    match typeCats.Second with
+//                        | TypeCategory.String ->
+//                            if (addr = 0UL) then Constants.NullName
+//                            else ValueExtractor.GetStringValue(clrType, addr)
+//                        | TypeCategory.Exception ->
+//                            if (addr = 0UL) then Constants.NullName
+//                            else ValueExtractor.GetShortExceptionValue(addr, clrType, heap)
+//                        | TypeCategory.Array -> // get general info only
+////                            let aryTypeStr = if field.Type.ComponentType = null then "unknown component type" else field.Type.ComponentType.Name
+////                            let len = clrType.GetArrayLength(addr)
+//                            getDispAddress addr + " [" + "?" + "] : "
+//                        | TypeCategory.SystemObject ->
+//                            getDispAddress addr
+//                        | TypeCategory.Reference ->
+//                            getDispAddress addr
+//                        | _ ->
+//                            getDispAddress addr + " What the heck is this?"
+//                | TypeCategory.Struct ->
+//                    let addr = unbox<uint64>(value)
+//                    match typeCats.Second with
+//                        | TypeCategory.Decimal -> ValueExtractor.GetDecimalValue(addr,clrType,null)
+//                        | TypeCategory.DateTime -> ValueExtractor.GetDateTimeValue(addr,clrType)
+//                        | TypeCategory.TimeSpan -> ValueExtractor.GetTimeSpanValue(addr,clrType)
+//                        | TypeCategory.Guid -> ValueExtractor.GetGuidValue(addr,clrType)
+//                        | _ -> "struct"
+//                | TypeCategory.Primitive -> // primitives
+//                   ValueExtractor.GetPrimitiveValue(value, clrType)
+//                | _ -> "?DON'T KNOW HOW TO GET VALUE?"
+//
+//    let tryGetPrimitiveValue (heap:ClrHeap) (classAddr:address) (field : ClrInstanceField) (internalAddr: bool) =
+//        let clrType = field.Type
+//        let cats = TypeCategories.GetCategories(clrType)
+//        match cats.First with
+//                | TypeCategory.Reference ->
+//                    match cats.Second with
+//                        | TypeCategory.String ->
+//                            let addr = unbox<address>(field.GetValue(classAddr, internalAddr,false))
+//                            if (addr = 0UL) then Constants.NullName
+//                            else ValueExtractor.GetStringValue(clrType, addr)
+//                        | TypeCategory.Exception ->
+//                            let addr = unbox<address>(field.GetValue(classAddr, internalAddr,false))
+//                            if (addr = 0UL) then Constants.NullName
+//                            else ValueExtractor.GetShortExceptionValue(addr, clrType, heap)
+//                        | _ ->
+//                            nonValue
+//                | TypeCategory.Struct ->
+//                    match cats.Second with
+//                        | TypeCategory.Decimal -> 
+//                            let addr = unbox<address>(field.GetValue(classAddr, internalAddr,false))
+//                            ValueExtractor.GetDecimalValue(addr,clrType,null)
+//                        | TypeCategory.DateTime -> 
+//                            let addr = unbox<address>(field.GetValue(classAddr, internalAddr,false))
+//                            ValueExtractor.GetDateTimeValue(addr,clrType)
+//                        | TypeCategory.TimeSpan -> 
+//                            let addr = unbox<address>(field.GetValue(classAddr, internalAddr,false))
+//                            ValueExtractor.GetTimeSpanValue(addr,clrType)
+//                        | TypeCategory.Guid -> 
+//                            let addr = unbox<address>(field.GetValue(classAddr, internalAddr,false))
+//                            ValueExtractor.GetGuidValue(addr,clrType)
+//                        | _ -> nonValue
+//                | TypeCategory.Primitive -> // primitives
+//                   let valObj = field.GetValue(classAddr)
+//                   ValueExtractor.GetPrimitiveValue(valObj, clrType)
+//                | _ -> nonValue
+//
+//    let getFieldVal (heap:ClrHeap) (parentAddr:address) (fld:ClrInstanceField) (fldType:ClrType) (fldCat:TypeCategories) (isInternal:bool) =
+//        let value = fld.GetValue(parentAddr,isInternal)
+//        getObjectValue heap fldType fldCat value isInternal
 
-    let getFieldVal (heap:ClrHeap) (parentAddr:address) (fld:ClrInstanceField) (fldType:ClrType) (fldCat:TypeCategories) (isInternal:bool) =
-        let value = fld.GetValue(parentAddr,isInternal)
-        getObjectValue heap fldType fldCat value isInternal
-
-    let getKeyValuePairValues (heap:ClrHeap) (kvpAddr:address) (kvpInfo:KeyValuePairInfo) = 
-        let keyStr = getFieldVal heap kvpAddr kvpInfo.keyFld kvpInfo.keyType kvpInfo.keyCat true
-        let valStr = getFieldVal heap kvpAddr kvpInfo.valFld kvpInfo.valType kvpInfo.valCat true
-        (keyStr,valStr)
+//    let getKeyValuePairValues (heap:ClrHeap) (kvpAddr:address) (kvpInfo:KeyValuePairInfo) = 
+//        let keyStr = getFieldVal heap kvpAddr kvpInfo.keyFld kvpInfo.keyType kvpInfo.keyCat true
+//        let valStr = getFieldVal heap kvpAddr kvpInfo.valFld kvpInfo.valType kvpInfo.valCat true
+//        (keyStr,valStr)
 
 
 

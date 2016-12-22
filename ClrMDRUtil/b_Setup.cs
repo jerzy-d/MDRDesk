@@ -10,7 +10,7 @@ namespace ClrMDRIndex
 	{
 	    public enum RecentFiles : int
 	    {
-	        Dump,
+	        Unknown,
             Adhoc,
             Map,
             MaxCount = 5
@@ -23,10 +23,10 @@ namespace ClrMDRIndex
 		static string[] _dumpPaths;
 
 		public static string PrivateDacFolder { get; private set; }
+		public static string ProcDumpFolder { get; private set; }
 		public static string LastDump { get; private set; }
 
-        public static List<string> RecentDumpList { get; private set; }
-        public static List<string> RecentIndexList { get; private set; }
+         public static List<string> RecentIndexList { get; private set; }
         public static List<string> RecentAdhocList { get; private set; }
 
         public static string MapFolder { get; private set; }
@@ -48,13 +48,7 @@ namespace ClrMDRIndex
 
 	    public static void AddRecentFileList(string path, RecentFiles files )
 	    {
-	        if (files == RecentFiles.Dump)
-	        {
-	            if (RecentDumpList.Count > (int)RecentFiles.MaxCount)
-                    RecentDumpList.RemoveAt(RecentDumpList.Count-1);
-                RecentDumpList.Insert(0, path);
-            }
-            else if (files == RecentFiles.Adhoc)
+            if (files == RecentFiles.Adhoc)
             {
                 if (RecentAdhocList.Count > (int)RecentFiles.MaxCount)
                     RecentAdhocList.RemoveAt(RecentAdhocList.Count - 1);
@@ -70,12 +64,7 @@ namespace ClrMDRIndex
 
         public static void ResetRecentFileList(IList<string> paths, RecentFiles files)
         {
-            if (files == RecentFiles.Dump)
-            {
-                RecentDumpList.Clear();
-                RecentDumpList.AddRange(paths);
-            }
-            else if (files == RecentFiles.Adhoc)
+            if (files == RecentFiles.Adhoc)
             {
                 RecentAdhocList.Clear();
                 RecentAdhocList.AddRange(paths);
@@ -93,7 +82,6 @@ namespace ClrMDRIndex
 			error = null;
 			PrivateDacFolder = string.Empty;
 			LastDump = string.Empty;
-            RecentDumpList = new List<string>();
             RecentIndexList = new List<string>();
             RecentAdhocList = new List<string>();
             StringBuilder errors = StringBuilderCache.Acquire(256);
@@ -125,10 +113,6 @@ namespace ClrMDRIndex
                         {
                             GraphPort = Int32.Parse(appSettings.Settings[key].Value.Trim());
                         }
-                        else if (Utils.SameStrings(ky, "recentdumps"))
-                        {
-                            GetSemicolonDelimitedFilePaths(RecentDumpList, appSettings.Settings[key].Value);
-                        }
                         else if (Utils.SameStrings(ky, "recentindices"))
                         {
 							GetSemicolonDelimitedFolderPaths(RecentIndexList, appSettings.Settings[key].Value);
@@ -137,9 +121,9 @@ namespace ClrMDRIndex
                         {
                             GetSemicolonDelimitedFilePaths(RecentAdhocList, appSettings.Settings[key].Value);
                         }
-                        else if (Utils.SameStrings(ky, "typedisplaymode"))
+                        else if (Utils.SameStrings(ky, "procdumpfolder"))
                         {
-                            TypesDisplayMode = appSettings.Settings[key].Value.Trim();
+                            ProcDumpFolder = appSettings.Settings[key].Value.Trim();
                         }
                     }
                 }
@@ -183,7 +167,6 @@ namespace ClrMDRIndex
             {
                 var config = ConfigurationManager.OpenExeConfiguration(ConfigurationUserLevel.None);
                 config.AppSettings.Settings["typedisplaymode"].Value = TypesDisplayMode;
-                config.AppSettings.Settings["recentdumps"].Value = JoinSemicolonDelimitedList(RecentDumpList);
                 config.AppSettings.Settings["recentindices"].Value = JoinSemicolonDelimitedList(RecentIndexList);
                 config.AppSettings.Settings["recentadhocs"].Value = JoinSemicolonDelimitedList(RecentAdhocList);
                 config.Save(ConfigurationSaveMode.Modified);
@@ -243,11 +226,12 @@ namespace ClrMDRIndex
 			return null;
 		}
 
-		public static string GetRecentDumpPath(int ndx = 0)
+
+		public static string GetRecentAdhocPath(int ndx = 0)
 		{
-			if (RecentDumpList != null && RecentDumpList.Count > ndx)
+			if (RecentAdhocList != null && RecentAdhocList.Count > ndx)
 			{
-				return RecentDumpList[ndx];
+				return RecentAdhocList[ndx];
 			}
 			return null;
 		}

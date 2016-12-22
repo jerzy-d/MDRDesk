@@ -12,6 +12,7 @@ using System.Runtime.Remoting.Messaging;
 using System.Text;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using ClrMDRIndex;
+using ClrMDRUtil.Utils;
 using Microsoft.Diagnostics.Runtime;
 using DmpNdxQueries;
 
@@ -655,6 +656,303 @@ namespace UnitTestMdr
 				return a.Item1.Object < b.Item1.Object ? -1 : (a.Item1.Object > b.Item1.Object ? 1 : 0);
 			}
 		}
+
+
+		[TestMethod]
+		public void TestIndexThreadInfo()
+		{
+			const string indexPath = @"C:\WinDbgStuff\Dumps\Analytics\AnalyticsMemory\A2_noDF.dmp.map";
+			string error = null;
+			StreamWriter sw = null;
+			var rootEqCmp = new ClrRootEqualityComparer();
+			var rootCmp = new ClrRootObjCmp();
+
+			using (var index = OpenIndex(indexPath))
+			{
+				try
+				{
+					
+					var runtime = index.Runtime;
+					var heap = runtime.GetHeap();
+					var stackTraceLst = new List<ClrStackFrame>();
+					var threads = DumpIndexer.GetThreads(runtime);
+					var threadLocalDeadVars = new ClrRoot[threads.Length][];
+					var threadLocalAliveVars = new ClrRoot[threads.Length][];
+					var threadFrames = new ClrStackFrame[threads.Length][];
+					var frames = new SortedDictionary<string,int>();
+					var stackObjects = new SortedDictionary<string, int>();
+					var totalStaclObjectsCount = 0;
+					for (int i = 0, icnt = threads.Length; i < icnt; ++i)
+					{
+						var t = threads[i];
+						stackTraceLst.Clear();
+						foreach (var st in t.EnumerateStackTrace())
+						{
+							stackTraceLst.Add(st);
+							if (stackTraceLst.Count > 100) break;
+						}
+						threadLocalAliveVars[i] = t.EnumerateStackObjects(false).ToArray();
+						var all = t.EnumerateStackObjects(true).ToArray();
+						threadLocalDeadVars[i] = all.Except(threadLocalAliveVars[i], rootEqCmp).ToArray();
+						threadFrames[i] = stackTraceLst.ToArray();
+					}
+
+					var path = index.AdhocFolder + Path.DirectorySeparatorChar + "TestIndexThreadsInfo.txt";
+					sw = new StreamWriter(path);
+					HashSet<ulong> localsAlive = new HashSet<ulong>();
+					HashSet<ulong> localsDead = new HashSet<ulong>();
+					var localAliveDups = new HashSet<ClrRoot>(rootEqCmp);
+					var localDeadDups = new HashSet<ClrRoot>(rootEqCmp);
+					int dupLocals = 0;
+					for (int i = 0, icnt = threads.Length; i < icnt; ++i)
+					{
+						ClrThread th = threads[i];
+						var frm = threadFrames[i];
+						var vars = threadLocalDeadVars[i];
+						sw.WriteLine(th.OSThreadId.ToString() + "/" + th.ManagedThreadId + "  " + Utils.RealAddressString(th.Address));
+						sw.WriteLine("    alive locals");
+						for (int j = 0, jcnt = threadLocalAliveVars[i].Length; j < jcnt; ++j)
+						{
+							ClrRoot root = threadLocalAliveVars[i][j];
+							if (!localsAlive.Add(root.Object))
+							{
+								localAliveDups.Add(root);
+								++dupLocals;
+							}
+							ClrType clrType = heap.GetObjectType(root.Object);
+							var typeId = index.GetTypeId(root.Object);
+							sw.Write("    " + Utils.RealAddressStringHeader(root.Object));
+							if (clrType != null)
+								sw.Write(clrType.Name);
+							else
+								sw.Write(Constants.NullTypeName);
+							sw.WriteLine("  [" + typeId + "]");
+
+							int cnt;
+							var stackObj = Utils.RealAddressStringHeader(root.Object) + typeId.ToString();
+							++totalStaclObjectsCount;
+							if (stackObjects.TryGetValue(stackObj, out cnt))
+							{
+								stackObjects[stackObj] = cnt + 1;
+							}
+							else
+							{
+								stackObjects.Add(stackObj, 1);
+							}
+						}
+
+						sw.WriteLine("    dead locals");
+						for (int j = 0, jcnt = threadLocalDeadVars[i].Length; j < jcnt; ++j)
+						{
+							ClrRoot root = threadLocalDeadVars[i][j];
+							if (!localsDead.Add(root.Object))
+							{
+								localDeadDups.Add(root);
+								++dupLocals;
+							}
+							ClrType clrType = heap.GetObjectType(root.Object);
+							var typeId = index.GetTypeId(root.Object);
+							sw.Write("    " + Utils.RealAddressStringHeader(root.Object));
+							if (clrType != null)
+								sw.Write(clrType.Name);
+							else
+								sw.Write(Constants.NullTypeName);
+							sw.WriteLine("  [" + typeId + "]");
+							int cnt;
+							var stackObj = Utils.RealAddressStringHeader(root.Object) + typeId.ToString();
+							++totalStaclObjectsCount;
+							if (stackObjects.TryGetValue(stackObj, out cnt))
+							{
+								stackObjects[stackObj] = cnt + 1;
+							}
+							else
+							{
+								stackObjects.Add(stackObj,1);
+							}
+						}
+						for (int j = 0, jcnt = threadFrames[i].Length; j < jcnt; ++j)
+						{
+							ClrStackFrame fr = threadFrames[i][j];
+							if (fr.Method != null)
+							{
+								string fullSig = fr.Method.GetFullSignature();
+								if (fullSig == null)
+									fullSig = fr.Method.Name;
+								if (fullSig == null) fullSig = "UKNOWN METHOD";
+								var frameStr = Utils.RealAddressStringHeader(fr.InstructionPointer) + fullSig;
+								sw.WriteLine("  " + frameStr);
+								int cnt;
+								if (frames.TryGetValue(frameStr, out cnt))
+								{
+									frames[frameStr] = cnt + 1;
+								}
+								else
+								{
+									frames.Add(frameStr,1);
+								}
+
+							}
+							else
+							{
+								string sig = string.IsNullOrEmpty(fr.DisplayString) ? "UKNOWN METHOD" : fr.DisplayString;
+								var frameStr = Utils.RealAddressStringHeader(fr.InstructionPointer) + sig;
+								sw.WriteLine("  " + frameStr);
+								int cnt;
+								if (frames.TryGetValue(frameStr, out cnt))
+								{
+									frames[frameStr] = cnt + 1;
+								}
+								else
+								{
+									frames.Add(frameStr, 1);
+								}
+							}
+						}
+					}
+
+					var localAliveDupsAry = localAliveDups.ToArray();
+					var localDeadDupsAry = localDeadDups.ToArray();
+
+
+
+					TestContext.WriteLine("LOCAL OBJECT ALIVE COUNT: " + localsAlive.Count);
+					TestContext.WriteLine("LOCAL OBJECT DEAD COUNT: " + localsDead.Count);
+					TestContext.WriteLine("LOCAL OBJECT DUPLICATE COUNT: " + dupLocals);
+
+				}
+				catch (Exception ex)
+				{
+					error = Utils.GetExceptionErrorString(ex);
+					Assert.IsTrue(false, error);
+				}
+				finally
+				{
+					sw?.Close();
+				}
+			}
+		}
+
+
+		[TestMethod]
+		public void TestIndexSaveThreadInfo()
+		{
+			const string indexPath = @"C:\WinDbgStuff\Dumps\Analytics\AnalyticsMemory\A2_noDF.dmp.map";
+			string error = null;
+			var rootEqCmp = new ClrRootEqualityComparer();
+			var rootCmp = new ClrRootObjCmp();
+
+			using (var index = OpenIndex(indexPath))
+			{
+				try
+				{
+
+					var runtime = index.Runtime;
+					var heap = runtime.GetHeap();
+					var stackTraceLst = new List<ClrStackFrame>();
+					var threads = DumpIndexer.GetThreads(runtime);
+					var threadLocalDeadVars = new ClrRoot[threads.Length][];
+					var threadLocalAliveVars = new ClrRoot[threads.Length][];
+					var threadFrames = new ClrStackFrame[threads.Length][];
+
+					var frames = new StringIdDct();
+					var stObjCmp = new Utils.KVIntUlongCmpAsc();
+					var stackObject = new SortedDictionary<KeyValuePair<int,ulong>,int>(stObjCmp);
+
+					for (int i = 0, icnt = threads.Length; i < icnt; ++i)
+					{
+						var t = threads[i];
+						stackTraceLst.Clear();
+						foreach (var st in t.EnumerateStackTrace())
+						{
+							stackTraceLst.Add(st);
+							if (stackTraceLst.Count > 100) break;
+						}
+						threadLocalAliveVars[i] = t.EnumerateStackObjects(false).ToArray();
+						var all = t.EnumerateStackObjects(true).ToArray();
+						threadLocalDeadVars[i] = all.Except(threadLocalAliveVars[i], rootEqCmp).ToArray();
+						threadFrames[i] = stackTraceLst.ToArray();
+					}
+
+
+					string[] typeNames = index.TypeNames;
+					var frameIds = new List<int>();
+					var aliveIds = new List<int>();
+					var deadIds = new List<int>();
+
+					for (int i = 0, icnt = threads.Length; i < icnt; ++i)
+					{
+						aliveIds.Clear();
+						for (int j = 0, jcnt = threadLocalAliveVars[i].Length; j < jcnt; ++j)
+						{
+							ClrRoot root = threadLocalAliveVars[i][j];
+							ClrType clrType = heap.GetObjectType(root.Object);
+							var typeName = clrType == null ? Constants.NullTypeName : clrType.Name;
+							var typeId = Array.BinarySearch(typeNames, typeName, StringComparer.Ordinal);
+							if (typeId < 0) typeId = Constants.InvalidIndex;
+							int stackId;
+							if (!stackObject.TryGetValue(new KeyValuePair<int, ulong>(typeId, root.Object), out stackId))
+							{
+								stackId = stackObject.Count;
+								stackObject.Add(new KeyValuePair<int, ulong>(typeId, root.Object), stackId);
+							}
+							aliveIds.Add(stackId);
+						}
+
+						deadIds.Clear();
+						for (int j = 0, jcnt = threadLocalDeadVars[i].Length; j < jcnt; ++j)
+						{
+							ClrRoot root = threadLocalDeadVars[i][j];
+							ClrType clrType = heap.GetObjectType(root.Object);
+							var typeName = clrType == null ? Constants.NullTypeName : clrType.Name;
+							var typeId = Array.BinarySearch(typeNames, typeName, StringComparer.Ordinal);
+							if (typeId < 0) typeId = Constants.InvalidIndex;
+							int stackId;
+							if (!stackObject.TryGetValue(new KeyValuePair<int, ulong>(typeId, root.Object), out stackId))
+							{
+								stackId = stackObject.Count;
+								stackObject.Add(new KeyValuePair<int, ulong>(typeId,root.Object),stackId);
+							}
+							deadIds.Add(stackId);
+						}
+
+
+						frameIds.Clear();
+						for (int j = 0, jcnt = threadFrames[i].Length; j < jcnt; ++j)
+						{
+							ClrStackFrame fr = threadFrames[i][j];
+							if (fr.Method != null)
+							{
+								string fullSig = fr.Method.GetFullSignature();
+								if (fullSig == null)
+									fullSig = fr.Method.Name;
+								if (fullSig == null) fullSig = "UKNOWN METHOD";
+								var frameStr = Utils.RealAddressStringHeader(fr.InstructionPointer) + fullSig;
+								var frId = frames.JustGetId(frameStr);
+								frameIds.Add(frId);
+							}
+							else
+							{
+								string sig = string.IsNullOrEmpty(fr.DisplayString) ? "UKNOWN METHOD" : fr.DisplayString;
+								var frameStr = Utils.RealAddressStringHeader(fr.InstructionPointer) + sig;
+								var frId = frames.JustGetId(frameStr);
+								frameIds.Add(frId);
+							}
+						}
+					}
+
+				}
+				catch (Exception ex)
+				{
+					error = Utils.GetExceptionErrorString(ex);
+					Assert.IsTrue(false, error);
+				}
+				finally
+				{
+					//sw?.Close();
+				}
+			}
+		}
+
 
 		#endregion threads
 

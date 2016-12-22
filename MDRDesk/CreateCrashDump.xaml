@@ -1,0 +1,43 @@
+﻿<Window x:Class="MDRDesk.CreateCrashDump"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:MDRDesk"
+        mc:Ignorable="d"
+        WindowStartupLocation="CenterOwner"
+        WindowStyle="ToolWindow"
+        Title="Create Crash Dump" Height="340" Width="530">
+    <Grid HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="20*" />
+            <ColumnDefinition Width="80*" />
+        </Grid.ColumnDefinitions>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="40" />
+            <RowDefinition Height="40" />
+            <RowDefinition Height="40" />
+            <RowDefinition Height="40" />
+        </Grid.RowDefinitions>
+        <Grid Grid.Row="0" Grid.Column="0" Grid.ColumnSpan="2" HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
+            <ListView x:Name="ProcessList" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" Margin="4,4,4,4" SelectionMode="Single" SelectionChanged="ProcessList_OnSelectionChanged">
+                <ListView.View>
+                    <GridView>
+                        <GridViewColumn Header="Process Id" DisplayMemberBinding="{Binding Key}" Width="100" />
+                        <GridViewColumn Header="Process Name" DisplayMemberBinding="{Binding Value}" Width="414" />
+                    </GridView>
+                </ListView.View>
+            </ListView>
+        </Grid>
+        <TextBox x:Name="ProcumpOptions" Grid.Row="1" Grid.Column="0" HorizontalAlignment="Stretch"  Height="23" Width="90" Margin="4,2,4,2" Text="/ma" VerticalAlignment="Center" IsReadOnly="True"/>
+        <TextBox x:Name="SelectedDump" Grid.Row="1" Grid.Column="1" HorizontalAlignment="Stretch"  Height="23" Margin="4,2,4,2" Text="..." VerticalAlignment="Center" IsReadOnly="True"/>
+        <Button x:Name="ButtonOutputFolder" Content="Output Folder..." Grid.Row="2" Grid.Column="0" HorizontalAlignment="Left" Margin="4,2,2,2" VerticalAlignment="Center" Width="90" Height="28" FontSize="10" Click="ButtonOutputFolder_OnClick"/>
+        <TextBox x:Name="OutputFolder" Grid.Row="2" Grid.Column="1" HorizontalAlignment="Stretch"  Height="23" Margin="4,2,4,2" Text="..." VerticalAlignment="Center" />
+        <Button x:Name="ButtonProcdumpPath" Content="Procdump Path..." Grid.Row="3" Grid.Column="0" HorizontalAlignment="Left" Margin="4,2,2,2" VerticalAlignment="Center"  Width="90" Height="28" FontSize="10" Click="ButtonProcdumpPath_OnClick"/>
+        <TextBox x:Name="ProcdumpPath" Grid.Row="3" Grid.Column="1" HorizontalAlignment="Stretch"  Height="23" Margin="4,2,4,2" Text="..." VerticalAlignment="Center" />
+        <Button x:Name="ButtonCreateDump" Grid.Row="4" Grid.Column="0" Content="Create Dump" HorizontalAlignment="Left" Margin="4,2,2,2" VerticalAlignment="Center" Width="90" Height="28" Background="DarkOliveGreen" Click="ButtonCreateDumpClicked" IsEnabled="False"/>
+        <Button x:Name="ButtonClose" Grid.Row ="4" Grid.Column="1" Content="Close" HorizontalAlignment="Right" Margin="4,2,2,2" VerticalAlignment="Center" Width="75" Height="28" Click="ButtonCloseClicked"/>
+        <CheckBox x:Name="IndexCheckBox" Content="index after creating" Grid.Column="1" HorizontalAlignment="Left" Margin="8,2,0,2" Grid.Row="4" VerticalAlignment="Center" IsChecked="True"/>
+    </Grid>
+</Window>

@@ -409,15 +409,15 @@ module FQry =
                 let fld = clrType.Fields.[fldNdx]
                 let typeName = fieldTypeName fld
                 let typeId = ndxProxy.GetTypeId(typeName)
-                let cat = getTypeCategory fld.Type
-                dispTypes.[fldNdx] <- new ClrtDisplayableType(typeId, fldNdx, typeName, fld.Name, cat)
+                let kind = typeKind fld.Type
+                dispTypes.[fldNdx] <- new ClrtDisplayableType(typeId, fldNdx, typeName, fld.Name, kind)
             dispType.AddFields(dispTypes)
 
     let getDisplayableType (ndxProxy:IndexProxy) (heap:ClrHeap) (addr: address) =
         let clrType = heap.GetObjectType(addr)
         let typeId = ndxProxy.GetTypeIdAtAddr(addr)
-        let cat = getTypeCategory clrType
-        let dispType = new ClrtDisplayableType(typeId, Constants.InvalidIndex, clrType.Name, String.Empty, cat)
+        let kind = typeKind clrType
+        let dispType = new ClrtDisplayableType(typeId, Constants.InvalidIndex, clrType.Name, String.Empty, kind)
         getDisplayableTypeFields ndxProxy heap addr clrType dispType
         dispType
 
@@ -439,9 +439,9 @@ module FQry =
                 let mutable dispTypes:ClrtDisplayableType[] = Array.create count null
                 for fldNdx in [0..count-1] do
                     let fld = fld.Type.Fields.[fldNdx]
-                    let cat = getTypeCategory clrType
+                    let kind = typeKind clrType
                     let typeId = ndxProxy.GetTypeId(fld.Type.Name)
-                    dispTypes.[fldNdx] <-  new ClrtDisplayableType(typeId, fldNdx, fld.Type.Name, fld.Name, cat)
+                    dispTypes.[fldNdx] <-  new ClrtDisplayableType(typeId, fldNdx, fld.Type.Name, fld.Name, kind)
                 (null, dispTypes)
 
     (*

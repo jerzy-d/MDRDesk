@@ -449,4 +449,30 @@ namespace ClrMDRIndex
 			return a.TypeId < b.TypeId ? -1 : 1;
 		}
 	}
+
+	public class ClrRootObjCmp : IComparer<ClrRoot>
+	{
+		public int Compare(ClrRoot a, ClrRoot b)
+		{
+			return a.Object < b.Object ? -1 : (a.Object > b.Object ? 1 : 0);
+		}
+	}
+
+	public class ClrRootEqualityComparer : IEqualityComparer<ClrRoot>
+	{
+		public bool Equals(ClrRoot r1, ClrRoot r2)
+		{
+			if (r2 == null && r1 == null)
+				return true;
+			if (r1 == null | r2 == null)
+				return false;
+			return r1.Object == r2.Object;
+		}
+
+		public int GetHashCode(ClrRoot r)
+		{
+			return r.Object.GetHashCode();
+		}
+	}
+
 }

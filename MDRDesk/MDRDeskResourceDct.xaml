@@ -6,4 +6,5 @@
     <Image x:Key="InterfacePng" Source="./Images/Interface_16x.png"/>
     <Image x:Key="PrimitivePng" Source="./Images/data_number_on_16x.png"/>
     <Image x:Key="ArrayPng" Source="./Images/Arrange_16x.png"/>
+    <Image x:Key="QuestionPng" Source="./Images/Question_16x.png"/>
 </ResourceDictionary>

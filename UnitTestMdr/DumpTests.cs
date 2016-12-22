@@ -1500,29 +1500,29 @@ namespace UnitTestMdr
 			}
 		}
 
-		[TestMethod]
-		public void TestGetArrayContent()
-		{
-			var str1 = Utils.AddressString(0);
-			var str2 = Utils.AddressString(427092);
+		//[TestMethod]
+		//public void TestGetArrayContent()
+		//{
+		//	var str1 = Utils.AddressString(0);
+		//	var str2 = Utils.AddressString(427092);
 
 
-			var dmp = GetDump(@"D:\Jerzy\WinDbgStuff\dumps\Analytics\Lou\Eze.Analytics.App_161018_173251.dmp");
-			//var dmp = GetDump(@"D:\Jerzy\WinDbgStuff\dumps\TestApp\TestApp.exe_161010_075709.dmp");
-			using (dmp)
-			{
-				var rntm = dmp.Runtime;
-				var domains = rntm.AppDomains.ToArray();
+		//	var dmp = GetDump(@"D:\Jerzy\WinDbgStuff\dumps\Analytics\Lou\Eze.Analytics.App_161018_173251.dmp");
+		//	//var dmp = GetDump(@"D:\Jerzy\WinDbgStuff\dumps\TestApp\TestApp.exe_161010_075709.dmp");
+		//	using (dmp)
+		//	{
+		//		var rntm = dmp.Runtime;
+		//		var domains = rntm.AppDomains.ToArray();
 
-				//ulong addr = 0x00000002cf7ba8;
-				ulong addr = 0x00000013379d80;
+		//		//ulong addr = 0x00000002cf7ba8;
+		//		ulong addr = 0x00000013379d80;
 
-				var clrSidekick = Types.getTypeSidekickAtAddress(dmp.Heap, addr);
+		//		var clrSidekick = Types.getTypeSidekickAtAddress(dmp.Heap, addr);
 
-				var aryValuesa = DmpNdxQueries.CollectionContent.getArrayContent(dmp.Heap, addr);
-			}
+		//		var aryValuesa = DmpNdxQueries.CollectionContent.getArrayContent(dmp.Heap, addr);
+		//	}
 
-		}
+		//}
 
 		private bool NoNullEntries(string[] ary)
 		{
@@ -1555,57 +1555,57 @@ namespace UnitTestMdr
 		//}
 
 
-		[TestMethod]
-		public void TestGetArrayContent2()
-		{
-			var str1 = Utils.AddressString(0);
-			var str2 = Utils.AddressString(427092);
+		//[TestMethod]
+		//public void TestGetArrayContent2()
+		//{
+		//	var str1 = Utils.AddressString(0);
+		//	var str2 = Utils.AddressString(427092);
 
 
-			//var dmp = GetDump(@"D:\Jerzy\WinDbgStuff\dumps\TestApp\TestApp.exe_161021_104608.dmp");
-			//var dmp = GetDump(@"D:\Jerzy\WinDbgStuff\dumps\TestApp\TestApp.exe_161010_075709.dmp");
-			var dmp = GetDump(@"D:\Jerzy\WinDbgStuff\dumps\TestApp\TestApp.exe_161021_104608.dmp");
-			using (dmp)
-			{
-				ulong dateTimeAryAddr = 0x29fe980;
-				var clrSidekick1 = Types.getTypeSidekickAtAddress(dmp.Heap, dateTimeAryAddr);
-				var aryValues1 = DmpNdxQueries.CollectionContent.getArrayContent(dmp.Heap, dateTimeAryAddr);
+		//	//var dmp = GetDump(@"D:\Jerzy\WinDbgStuff\dumps\TestApp\TestApp.exe_161021_104608.dmp");
+		//	//var dmp = GetDump(@"D:\Jerzy\WinDbgStuff\dumps\TestApp\TestApp.exe_161010_075709.dmp");
+		//	var dmp = GetDump(@"D:\Jerzy\WinDbgStuff\dumps\TestApp\TestApp.exe_161021_104608.dmp");
+		//	using (dmp)
+		//	{
+		//		ulong dateTimeAryAddr = 0x29fe980;
+		//		var clrSidekick1 = Types.getTypeSidekickAtAddress(dmp.Heap, dateTimeAryAddr);
+		//		var aryValues1 = DmpNdxQueries.CollectionContent.getArrayContent(dmp.Heap, dateTimeAryAddr);
 
-				ulong decimalAryAddr = 0x29feab8;
-				var clrSidekick2 = Types.getTypeSidekickAtAddress(dmp.Heap, decimalAryAddr);
-				var aryValues2 = DmpNdxQueries.CollectionContent.getArrayContent(dmp.Heap, decimalAryAddr);
+		//		ulong decimalAryAddr = 0x29feab8;
+		//		var clrSidekick2 = Types.getTypeSidekickAtAddress(dmp.Heap, decimalAryAddr);
+		//		var aryValues2 = DmpNdxQueries.CollectionContent.getArrayContent(dmp.Heap, decimalAryAddr);
 
-				ulong guidAryAddr = 0x29fe9f0;
-				var clrSidekick3 = Types.getTypeSidekickAtAddress(dmp.Heap, guidAryAddr);
-				var aryValues3 = DmpNdxQueries.CollectionContent.getArrayContent(dmp.Heap, guidAryAddr);
+		//		ulong guidAryAddr = 0x29fe9f0;
+		//		var clrSidekick3 = Types.getTypeSidekickAtAddress(dmp.Heap, guidAryAddr);
+		//		var aryValues3 = DmpNdxQueries.CollectionContent.getArrayContent(dmp.Heap, guidAryAddr);
 
-				ulong timeSpanAryAddr = 0x29fe910;
-				var clrSidekick4 = Types.getTypeSidekickAtAddress(dmp.Heap, timeSpanAryAddr);
-				var aryValues4 = DmpNdxQueries.CollectionContent.getArrayContent(dmp.Heap, timeSpanAryAddr);
+		//		ulong timeSpanAryAddr = 0x29fe910;
+		//		var clrSidekick4 = Types.getTypeSidekickAtAddress(dmp.Heap, timeSpanAryAddr);
+		//		var aryValues4 = DmpNdxQueries.CollectionContent.getArrayContent(dmp.Heap, timeSpanAryAddr);
 
-			}
+		//	}
 
-		}
-
-
-		[TestMethod]
-		public void TestTypeSidekick()
-		{
-
-			//var dmp = GetDump(@"D:\Jerzy\WinDbgStuff\dumps\Analytics\Presentation\Eze.Analytics.Svc.exe_161010_122402.dmp");
-			var dmp = GetDump(@"D:\Jerzy\WinDbgStuff\dumps\Analytics\ConvergEx\Analytics.dmp");
-			using (dmp)
-			{
-				var rntm = dmp.Runtime;
-				var domains = rntm.AppDomains.ToArray();
+		//}
 
 
-				//ulong addr = 0x00000080c21010;
-				ulong addr = 0x00008b6e9f0b08; // 0x00008b5eac3b88;
-				var clrSidekick = Types.getTypeSidekickAtAddress(dmp.Heap, addr);
-			}
+		//[TestMethod]
+		//public void TestTypeSidekick()
+		//{
 
-		}
+		//	//var dmp = GetDump(@"D:\Jerzy\WinDbgStuff\dumps\Analytics\Presentation\Eze.Analytics.Svc.exe_161010_122402.dmp");
+		//	var dmp = GetDump(@"D:\Jerzy\WinDbgStuff\dumps\Analytics\ConvergEx\Analytics.dmp");
+		//	using (dmp)
+		//	{
+		//		var rntm = dmp.Runtime;
+		//		var domains = rntm.AppDomains.ToArray();
+
+
+		//		//ulong addr = 0x00000080c21010;
+		//		ulong addr = 0x00008b6e9f0b08; // 0x00008b5eac3b88;
+		//		var clrSidekick = Types.getTypeSidekickAtAddress(dmp.Heap, addr);
+		//	}
+
+		//}
 
 		#endregion Strings, Arrays, Dictionaries, etc...
 
@@ -1927,7 +1927,7 @@ namespace UnitTestMdr
 			using (var clrDump = GetDump())
 			{
 				var sb = StringBuilderCache.Acquire(StringBuilderCache.MaxCapacity);
-				var fileMoniker = new DumpFileMoniker(Setup.RecentDumpList[0]);
+				var fileMoniker = new DumpFileMoniker(Setup.GetRecentAdhocPath(0));
 				StreamWriter wr = null;
 				wr = new StreamWriter(fileMoniker.OutputFolder + Path.DirectorySeparatorChar + "THREADTRACES.txt");
 				var stackTraceLst = new List<ClrStackFrame>();
@@ -2016,7 +2016,7 @@ namespace UnitTestMdr
 			using (var clrDump = GetDump())
 			{
 				var sb = StringBuilderCache.Acquire(StringBuilderCache.MaxCapacity);
-				var fileMoniker = new DumpFileMoniker(Setup.RecentDumpList[0]);
+				var fileMoniker = new DumpFileMoniker(Setup.GetRecentAdhocPath(0));
 				StreamWriter wr = null;
 				wr = new StreamWriter(fileMoniker.OutputFolder + Path.DirectorySeparatorChar + "THREADINFOS.txt");
 				try
@@ -4601,8 +4601,8 @@ namespace UnitTestMdr
 		private ClrtDump GetDump()
 		{
 			string error;
-			Assert.IsTrue(Setup.RecentDumpList.Count>0);
-			var clrDump = OpenCrashDump(Setup.RecentDumpList[0], out error);
+			Assert.IsTrue(Setup.RecentAdhocList.Count>0);
+			var clrDump = OpenCrashDump(Setup.GetRecentAdhocPath(0), out error);
 			Assert.IsTrue(clrDump != null, error);
 			return clrDump;
 		}

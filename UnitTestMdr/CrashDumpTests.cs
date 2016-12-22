@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Text;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Net.Sockets;
 using ClrMDRIndex;
@@ -66,6 +67,8 @@ namespace UnitTestMdr
 		#endregion
 
 		#endregion ctrs/context/initialization
+
+		#region collection content
 
 		#region array content
 
@@ -201,7 +204,6 @@ namespace UnitTestMdr
 			}
 		}
 
-
 		private bool NoNullEntries(string[] ary)
 		{
 			for (int i = 0, icnt = ary.Length; i < icnt; ++i)
@@ -275,14 +277,227 @@ namespace UnitTestMdr
 
 		#endregion System.Text.StringBuilder
 
+		#endregion collection content
 
+		#region threads
+
+		[TestMethod]
+		public void TestBlocking()
+		{
+			var dmp = OpenDump(@"C:\WinDbgStuff\Dumps\Analytics\AnalyticsMemory\A2_noDF.dmp");
+			uint ThreadId = 13680;
+			using (dmp)
+			{
+				ClrThread thread;
+				var threads = DumpIndexer.GetThreads(dmp.Runtime);
+				for (int i = 0, icnt = threads.Length; i < icnt; ++i)
+				{
+					if (threads[i].OSThreadId == ThreadId)
+					{
+						thread = threads[i];
+					}
+				}
+
+				var heap = dmp.Heap;
+				BlockingObject[] freeBlks;
+				var blocks = DumpIndexer.GetBlockingObjectsEx(heap,out freeBlks);
+
+				List<BlockingObject> obloks = new List<BlockingObject>(256);
+				List<BlockingObject> wbloks = new List<BlockingObject>(256);
+				List<BlockingObject> wwbloks = new List<BlockingObject>(256);
+				HashSet<string> typeSet = new HashSet<string>();
+				int nullTypeCnt = 0;
+				for (int i = 0, icnt = blocks.Length; i < icnt; ++i)
+				{
+					var block = blocks[i];
+
+					if (block.HasSingleOwner && block.Taken && block.Owner!=null && block.Owner.OSThreadId==ThreadId)
+					{
+						wwbloks.Add(block);
+						var clrType = heap.GetObjectType(block.Object);
+						if (clrType != null)
+							typeSet.Add(clrType.Name);
+						else
+							++nullTypeCnt;
+					}
+					for (int j = 0, jcnt = block.Owners.Count; j < jcnt; ++j)
+					{
+						if (block.Owners[j]==null) continue;
+						if (block.Owners[j].OSThreadId == ThreadId)
+						{
+							obloks.Add(block);
+							var clrType = heap.GetObjectType(block.Object);
+							if (clrType != null)
+								typeSet.Add(clrType.Name);
+							else
+								++nullTypeCnt;
+						}
+					}
+					for (int j = 0, jcnt = block.Waiters.Count; j < jcnt; ++j)
+					{
+						if (block.Waiters[j] == null) continue;
+						if (block.Waiters[j].OSThreadId == ThreadId)
+						{
+							wbloks.Add(block);
+							var clrType = heap.GetObjectType(block.Object);
+							if (clrType != null)
+								typeSet.Add(clrType.Name);
+							else
+								++nullTypeCnt;
+
+						}
+					}
+				}
+				int notFreeCnt = 0;
+				for (int i = 0, icnt = freeBlks.Length; i < icnt; ++i)
+				{
+					var blk = freeBlks[i];
+					var clrType = heap.GetObjectType(blk.Object);
+					if (clrType != null && clrType.Name != "Free")
+					{
+						++notFreeCnt;
+					}
+				}
+				Assert.IsTrue(notFreeCnt == 0);
+				int a = 1;
+
+			}
+		}
+
+		[TestMethod]
+		public void TestThreadInfo()
+		{
+			const string dumpPath = @"C:\WinDbgStuff\Dumps\Analytics\AnalyticsMemory\A2_noDF.dmp";
+			string error = null;
+			StreamWriter sw = null;
+			var rootEqCmp = new ClrRootEqualityComparer();
+			var rootCmp = new ClrRootObjCmp();
+
+			using (var clrDump = OpenDump(dumpPath))
+			{
+				try
+				{
+					var runtime = clrDump.Runtimes[0];
+					var heap = runtime.GetHeap();
+					var stackTraceLst = new List<ClrStackFrame>();
+					var threads = DumpIndexer.GetThreads(runtime);
+					var threadLocalDeadVars = new ClrRoot[threads.Length][];
+					var threadLocalAliveVars = new ClrRoot[threads.Length][];
+					var threadFrames = new ClrStackFrame[threads.Length][];
+
+					for (int i = 0, icnt = threads.Length; i < icnt; ++i)
+					{
+						var t = threads[i];
+						stackTraceLst.Clear();
+						foreach (var st in t.EnumerateStackTrace())
+						{
+							stackTraceLst.Add(st);
+							if (stackTraceLst.Count > 100) break;
+						}
+						threadLocalAliveVars[i] = t.EnumerateStackObjects(false).ToArray();
+						var all = t.EnumerateStackObjects(true).ToArray();
+						threadLocalDeadVars[i] = all.Except(threadLocalAliveVars[i], rootEqCmp).ToArray();
+						threadFrames[i] = stackTraceLst.ToArray();
+					}
+
+					var path = DumpFileMoniker.GetAndCreateOutFolder(dumpPath, out error) + Path.DirectorySeparatorChar + "TestThreadsInfo.txt";
+					sw = new StreamWriter(path);
+					HashSet<ulong> locals = new HashSet<ulong>();
+					var localAliveDups = new HashSet<ClrRoot>(rootEqCmp);
+					var localDeadDups = new HashSet<ClrRoot>(rootEqCmp);
+					int dupLocals = 0;
+					for (int i = 0, icnt = threads.Length; i < icnt; ++i)
+					{
+						ClrThread th = threads[i];
+						var frm = threadFrames[i];
+						var vars = threadLocalDeadVars[i];
+						sw.WriteLine(th.OSThreadId.ToString() + "/" + th.ManagedThreadId + "  " + Utils.RealAddressString(th.Address));
+						sw.WriteLine("    alive locals");
+						for (int j = 0, jcnt = threadLocalAliveVars[i].Length; j < jcnt; ++j)
+						{
+							ClrRoot root = threadLocalAliveVars[i][j];
+							if (!locals.Add(root.Object))
+							{
+								localAliveDups.Add(root);
+								++dupLocals;
+							}
+							ClrType clrType = heap.GetObjectType(root.Object);
+							sw.Write("    " + Utils.RealAddressStringHeader(root.Object));
+							if (clrType != null)
+								sw.WriteLine(clrType.Name);
+							else
+								sw.WriteLine();
+						}
+
+						sw.WriteLine("    dead locals");
+						for (int j = 0, jcnt = threadLocalDeadVars[i].Length; j < jcnt; ++j)
+						{
+							ClrRoot root = threadLocalDeadVars[i][j];
+							if (!locals.Add(root.Object))
+							{
+								localDeadDups.Add(root);
+								++dupLocals;
+							}
+							ClrType clrType = heap.GetObjectType(root.Object);
+							sw.Write("    " + Utils.RealAddressStringHeader(root.Object));
+							if (clrType != null)
+								sw.WriteLine(clrType.Name);
+							else
+								sw.WriteLine();
+						}
+						for (int j = 0, jcnt = threadFrames[i].Length; j < jcnt; ++j)
+						{
+							ClrStackFrame fr = threadFrames[i][j];
+							if (fr.Method != null)
+							{
+								string fullSig = fr.Method.GetFullSignature();
+								if (fullSig == null)
+									fullSig = fr.Method.Name;
+								if (fullSig == null) fullSig = "UNKNOWN";
+								sw.WriteLine("  " + Utils.RealAddressStringHeader(fr.InstructionPointer)
+												+ Utils.RealAddressStringHeader(fr.Method.NativeCode)
+												+ fullSig);
+
+							}
+							else
+							{
+								sw.WriteLine("  METHOD UKNOWN");
+							}
+							if (!string.IsNullOrEmpty(fr.DisplayString))
+								sw.WriteLine("  " + fr.DisplayString);
+							else
+								sw.WriteLine("  ???");
+						}
+					}
+
+					var localAliveDupsAry = localAliveDups.ToArray();
+					var localDeadDupsAry = localDeadDups.ToArray();
+
+
+
+					TestContext.WriteLine("LOCAL OBJECT DUPLICATE COUNT: " + dupLocals);
+
+				}
+				catch (Exception ex)
+				{
+					error = Utils.GetExceptionErrorString(ex);
+					Assert.IsTrue(false, error);
+				}
+				finally
+				{
+					sw?.Close();
+				}
+			}
+		}
+
+		#endregion threads
 
 		#region open dump
 
 		public static ClrtDump OpenDump(int indexNdx = 0)
 		{
 			string error;
-			var path = Setup.GetRecentDumpPath(indexNdx);
+			var path = Setup.GetRecentAdhocPath(indexNdx);
 			Assert.IsNotNull(path, "Setup returned null when asked for index " + indexNdx + ".");
 			var clrDump = new ClrtDump(path);
 			var initOk = clrDump.Init(out error);

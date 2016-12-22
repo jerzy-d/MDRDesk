@@ -192,60 +192,60 @@ namespace ClrMDRIndex
 		}
 	}
 
-	public struct TypeCategories
-	{
-		public readonly TypeCategory First;
-		public readonly TypeCategory Second;
-		public readonly ClrElementType ClrElement;
+	//public struct TypeCategories
+	//{
+	//	public readonly TypeCategory First;
+	//	public readonly TypeCategory Second;
+	//	public readonly ClrElementType ClrElement;
 
-		TypeCategories(TypeCategory first, TypeCategory second, ClrElementType clrElement)
-		{
-			First = first;
-			Second = second;
-			ClrElement = clrElement;
-		}
+	//	TypeCategories(TypeCategory first, TypeCategory second, ClrElementType clrElement)
+	//	{
+	//		First = first;
+	//		Second = second;
+	//		ClrElement = clrElement;
+	//	}
 
-		public static TypeCategories GetCategories(ClrType clrType)
-		{
-			if (clrType == null) return new TypeCategories(TypeCategory.Uknown, TypeCategory.Uknown, ClrElementType.Unknown);
-			switch (clrType.ElementType)
-			{
-				case ClrElementType.String:
-					return new TypeCategories(TypeCategory.Reference, TypeCategory.String, clrType.ElementType);
-				case ClrElementType.SZArray:
-					return new TypeCategories(TypeCategory.Reference, TypeCategory.Array, clrType.ElementType);
-				case ClrElementType.Object:
-					if (clrType.IsException)
-						return new TypeCategories(TypeCategory.Reference, TypeCategory.Exception, clrType.ElementType);
-					if (Utils.SameStrings(clrType.Name, "System.Object"))
-						return new TypeCategories(TypeCategory.Reference, TypeCategory.SystemObject, clrType.ElementType);
-					if (Utils.SameStrings(clrType.Name, "System.__Canon"))
-						return new TypeCategories(TypeCategory.Reference, TypeCategory.System__Canon, clrType.ElementType);
-					if (clrType.IsArray)
-						return new TypeCategories(TypeCategory.Reference, TypeCategory.Array, clrType.ElementType);
-					if (clrType.IsInterface)
-						return new TypeCategories(TypeCategory.Reference, TypeCategory.Interface, clrType.ElementType);
-					return new TypeCategories(TypeCategory.Reference, TypeCategory.Reference, clrType.ElementType);
-				case ClrElementType.Struct:
-					if (Utils.SameStrings(clrType.Name, "System.Decimal"))
-						return new TypeCategories(TypeCategory.Struct, TypeCategory.Decimal, clrType.ElementType);
-					if (Utils.SameStrings(clrType.Name, "System.DateTime"))
-						return new TypeCategories(TypeCategory.Struct, TypeCategory.DateTime, clrType.ElementType);
-					if (Utils.SameStrings(clrType.Name, "System.TimeSpan"))
-						return new TypeCategories(TypeCategory.Struct, TypeCategory.TimeSpan, clrType.ElementType);
-					if (Utils.SameStrings(clrType.Name, "System.Guid"))
-						return new TypeCategories(TypeCategory.Struct, TypeCategory.Guid, clrType.ElementType);
-					if (clrType.IsInterface)
-						return new TypeCategories(TypeCategory.Struct, TypeCategory.Interface, clrType.ElementType);
-					return new TypeCategories(TypeCategory.Struct, TypeCategory.Struct, clrType.ElementType);
-				case ClrElementType.Unknown:
-					return new TypeCategories(TypeCategory.Uknown, TypeCategory.Uknown, clrType.ElementType);
-				default:
-					return new TypeCategories(TypeCategory.Primitive, TypeCategory.Primitive, clrType.ElementType);
-			}
-		}
+	//	public static TypeCategories GetCategories(ClrType clrType)
+	//	{
+	//		if (clrType == null) return new TypeCategories(TypeCategory.Uknown, TypeCategory.Uknown, ClrElementType.Unknown);
+	//		switch (clrType.ElementType)
+	//		{
+	//			case ClrElementType.String:
+	//				return new TypeCategories(TypeCategory.Reference, TypeCategory.String, clrType.ElementType);
+	//			case ClrElementType.SZArray:
+	//				return new TypeCategories(TypeCategory.Reference, TypeCategory.Array, clrType.ElementType);
+	//			case ClrElementType.Object:
+	//				if (clrType.IsException)
+	//					return new TypeCategories(TypeCategory.Reference, TypeCategory.Exception, clrType.ElementType);
+	//				if (Utils.SameStrings(clrType.Name, "System.Object"))
+	//					return new TypeCategories(TypeCategory.Reference, TypeCategory.SystemObject, clrType.ElementType);
+	//				if (Utils.SameStrings(clrType.Name, "System.__Canon"))
+	//					return new TypeCategories(TypeCategory.Reference, TypeCategory.System__Canon, clrType.ElementType);
+	//				if (clrType.IsArray)
+	//					return new TypeCategories(TypeCategory.Reference, TypeCategory.Array, clrType.ElementType);
+	//				if (clrType.IsInterface)
+	//					return new TypeCategories(TypeCategory.Reference, TypeCategory.Interface, clrType.ElementType);
+	//				return new TypeCategories(TypeCategory.Reference, TypeCategory.Reference, clrType.ElementType);
+	//			case ClrElementType.Struct:
+	//				if (Utils.SameStrings(clrType.Name, "System.Decimal"))
+	//					return new TypeCategories(TypeCategory.Struct, TypeCategory.Decimal, clrType.ElementType);
+	//				if (Utils.SameStrings(clrType.Name, "System.DateTime"))
+	//					return new TypeCategories(TypeCategory.Struct, TypeCategory.DateTime, clrType.ElementType);
+	//				if (Utils.SameStrings(clrType.Name, "System.TimeSpan"))
+	//					return new TypeCategories(TypeCategory.Struct, TypeCategory.TimeSpan, clrType.ElementType);
+	//				if (Utils.SameStrings(clrType.Name, "System.Guid"))
+	//					return new TypeCategories(TypeCategory.Struct, TypeCategory.Guid, clrType.ElementType);
+	//				if (clrType.IsInterface)
+	//					return new TypeCategories(TypeCategory.Struct, TypeCategory.Interface, clrType.ElementType);
+	//				return new TypeCategories(TypeCategory.Struct, TypeCategory.Struct, clrType.ElementType);
+	//			case ClrElementType.Unknown:
+	//				return new TypeCategories(TypeCategory.Uknown, TypeCategory.Uknown, clrType.ElementType);
+	//			default:
+	//				return new TypeCategories(TypeCategory.Primitive, TypeCategory.Primitive, clrType.ElementType);
+	//		}
+	//	}
 
-	}
+	//}
 
 	public class ValueExtractor
 	{
@@ -776,41 +776,41 @@ namespace ClrMDRIndex
 		public static string TryGetPrimitiveValue(ClrHeap heap, ulong classAddr, ClrInstanceField field, bool internalAddr)
 		{
 			var clrType = field.Type;
-			var cat = TypeCategories.GetCategories(clrType);
+			var kind = TypeKinds.GetTypeKind(clrType);
 			object addrObj;
-			switch (cat.First)
+			switch (TypeKinds.GetMainTypeKind(kind))
 			{
-				case TypeCategory.Reference:
-					switch (cat.Second)
+				case TypeKind.StringKind:
+					addrObj = field.GetValue(classAddr, internalAddr, false);
+					if (addrObj == null) return Constants.NullValue;
+					return ValueExtractor.GetStringValue(clrType, (ulong)addrObj);
+				case TypeKind.ReferenceKind:
+					switch (TypeKinds.GetParticularTypeKind(kind))
 					{
-						case TypeCategory.String:
-							addrObj = field.GetValue(classAddr, internalAddr, false);
-							if (addrObj == null) return Constants.NullValue;
-							return ValueExtractor.GetStringValue(clrType, (ulong)addrObj);
-						case TypeCategory.Exception:
+						case TypeKind.Exception:
 							addrObj = field.GetValue(classAddr, internalAddr, false);
 							if (addrObj == null) return Constants.NullName;
 							return ValueExtractor.GetShortExceptionValue((ulong)addrObj, clrType, heap);
 						default:
 							return Constants.NonValue;
 					}
-				case TypeCategory.Struct:
-					switch (cat.Second)
+				case TypeKind.StructKind:
+					switch (TypeKinds.GetParticularTypeKind(kind))
 					{
-						case TypeCategory.Decimal:
+						case TypeKind.Decimal:
 							return ValueExtractor.GetDecimalValue(classAddr, field);
-						case TypeCategory.DateTime:
+						case TypeKind.DateTime:
 							return ValueExtractor.GetDateTimeValue(classAddr, field, internalAddr, null);
-						case TypeCategory.TimeSpan:
+						case TypeKind.TimeSpan:
 							addrObj = field.GetValue(classAddr, internalAddr, false);
 							if (addrObj == null) return Constants.NullName;
 							return ValueExtractor.GetTimeSpanValue((ulong)addrObj, clrType);
-						case TypeCategory.Guid:
+						case TypeKind.Guid:
 							return ValueExtractor.GetGuidValue(classAddr, field);
 						default:
 							return Constants.NonValue;
 					}
-				case TypeCategory.Primitive:
+				case TypeKind.PrimitiveKind:
 					addrObj = field.GetValue(classAddr, internalAddr, false);
 					return ValueExtractor.GetPrimitiveValue(addrObj, clrType);
 				default:

@@ -126,8 +126,16 @@ namespace ClrMDRIndex
         public const char FilterChar = '\u2132'; // Ⅎ TURNED CAPITAL F
         public const string FilterHeader = " \u2132\u279C "; // Ⅎ TURNED CAPITAL F
 
+		public const char RightSolidArrow = '\u279E'; // ➞ HEAVY TRIANGLE-HEADED RIGHTWARDS ARROW
+		public const string RightSolidArrowPadded = " \u279E "; // ➞ HEAVY TRIANGLE-HEADED RIGHTWARDS ARROW
+		public const char RightDashedArrow = '\u279F'; // ➟ DASHED TRIANGLE-HEADED RIGHTWARDS ARROW
+		public const string RightDashedArrowPadded = " \u279F "; // ➟ DASHED TRIANGLE-HEADED RIGHTWARDS ARROW
 
-        public char[] SubDigits = new[]
+		//27A0 ➠ HEAVY DASHED TRIANGLE-HEADED RIGHTWARDS ARROW 
+		//27A1 ➡ BLACK RIGHTWARDS ARROW
+		//279D ➝ TRIANGLE-HEADED RIGHTWARDS ARROW
+
+		public char[] SubDigits = new[]
 		{
 			'\u2080', // ₀ SUBSCRIPT ZERO
 		};
@@ -201,6 +209,9 @@ namespace ClrMDRIndex
 
 		public const string MapThreadsAndBlocksFilePostfix = ".`THREADSANDBLOCKS[0].bin";
 		public const string MapThreadsAndBlocksGraphFilePostfix = ".`THREADSANDBLOCKSGRAPH[0].bin";
+		public const string TxtThreadFrameDescriptionFilePostfix = ".`THREADFRAMEDESCRIPTION[0].txt";
+		public const string MapThreadFramesFilePostfix = ".`THREADFRAMES[0].bin";
+
 
 		// end of new stuff ///////////////////////////////////////////////////////////////////////////////////////////////////////
 

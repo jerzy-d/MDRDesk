@@ -1437,122 +1437,122 @@ namespace UnitTestMdr
 			}
 		}
 
-		[TestMethod]
-		public void TestDictionaryCounts3()
-		{
-			const string typeName0 = "ECS.Common.HierarchyCache.Structure.AggregationTracksClosedPositions";
+		//[TestMethod]
+		//public void TestDictionaryCounts3()
+		//{
+		//	const string typeName0 = "ECS.Common.HierarchyCache.Structure.AggregationTracksClosedPositions";
 
-			string error = null;
-			SortedDictionary<string, int> dct = new SortedDictionary<string, int>(StringComparer.Ordinal);
-			int nullFieldCount = 0;
-			int recalcRequiredPoisonPositionsIfTtzSignChangesEmpty = 0;
-			int recalcRequiredPositionsInducingRecalcEmpty = 0;
+		//	string error = null;
+		//	SortedDictionary<string, int> dct = new SortedDictionary<string, int>(StringComparer.Ordinal);
+		//	int nullFieldCount = 0;
+		//	int recalcRequiredPoisonPositionsIfTtzSignChangesEmpty = 0;
+		//	int recalcRequiredPositionsInducingRecalcEmpty = 0;
 
-			StringBuilder sb = new StringBuilder(256);
-			using (var index = OpenMap(@"C:\WinDbgStuff\dumps\Analytics\Lou\Analytics3.dmp.map"))
-			{
-				try
-				{
-					int typeId0 = index.GetTypeId(typeName0);
-					var addresses = index.GetTypeRealAddresses(typeId0);
-					var heap = index.GetFreshHeap();
-					int dupCount = 0;
-					int nullCount = 0;
-					List<KeyValuePair<string[], string[]>> lst = new List<KeyValuePair<string[], string[]>>();
-					HashSet<string> set = new HashSet<string>();
-					SortedDictionary<string, int> dups = new SortedDictionary<string, int>();
-					for (int i = 0, icnt = addresses.Length; i < icnt; ++i)
-					{
-						var clrType = heap.GetObjectType(addresses[i]);
-						if (clrType == null)
-						{
-							++nullCount;
-							continue;
-						}
+		//	StringBuilder sb = new StringBuilder(256);
+		//	using (var index = OpenMap(@"C:\WinDbgStuff\dumps\Analytics\Lou\Analytics3.dmp.map"))
+		//	{
+		//		try
+		//		{
+		//			int typeId0 = index.GetTypeId(typeName0);
+		//			var addresses = index.GetTypeRealAddresses(typeId0);
+		//			var heap = index.GetFreshHeap();
+		//			int dupCount = 0;
+		//			int nullCount = 0;
+		//			List<KeyValuePair<string[], string[]>> lst = new List<KeyValuePair<string[], string[]>>();
+		//			HashSet<string> set = new HashSet<string>();
+		//			SortedDictionary<string, int> dups = new SortedDictionary<string, int>();
+		//			for (int i = 0, icnt = addresses.Length; i < icnt; ++i)
+		//			{
+		//				var clrType = heap.GetObjectType(addresses[i]);
+		//				if (clrType == null)
+		//				{
+		//					++nullCount;
+		//					continue;
+		//				}
 
-						var addr = addresses[i];
-						var fldKeyValue = clrType.GetFieldByName("keyValue");
-						var fldKeyValueAddr = Auxiliaries.getReferenceFieldAddress(addr, fldKeyValue, false);
-						var fldKeyValueArray = clrType.GetFieldByName("keyValueArray");
-						var fldKeyValueArrayAddr = Auxiliaries.getReferenceFieldAddress(addr, fldKeyValueArray, false);
-						var fldKeyValueObj = heap.GetObjectType(fldKeyValueAddr);
-						var fldData = fldKeyValueObj.GetFieldByName("data");
-						var fldDataStr = fldData.GetValue(fldKeyValueAddr, false, true) as string;
-						if (!set.Add(fldDataStr))
-						{
-							++dupCount;
-							int cnt;
-							if (dups.TryGetValue(fldDataStr, out cnt))
-							{
-								dups[fldDataStr] = cnt + 1;
-							}
-							else
-							{
-								dups.Add(fldDataStr, 1);
-							}
-						}
-						var fldDataStrAry = fldDataStr.Split('\u001e');
-						var aryInfo = CollectionContent.getArrayContent(heap, fldKeyValueArrayAddr);
+		//				var addr = addresses[i];
+		//				var fldKeyValue = clrType.GetFieldByName("keyValue");
+		//				var fldKeyValueAddr = Auxiliaries.getReferenceFieldAddress(addr, fldKeyValue, false);
+		//				var fldKeyValueArray = clrType.GetFieldByName("keyValueArray");
+		//				var fldKeyValueArrayAddr = Auxiliaries.getReferenceFieldAddress(addr, fldKeyValueArray, false);
+		//				var fldKeyValueObj = heap.GetObjectType(fldKeyValueAddr);
+		//				var fldData = fldKeyValueObj.GetFieldByName("data");
+		//				var fldDataStr = fldData.GetValue(fldKeyValueAddr, false, true) as string;
+		//				if (!set.Add(fldDataStr))
+		//				{
+		//					++dupCount;
+		//					int cnt;
+		//					if (dups.TryGetValue(fldDataStr, out cnt))
+		//					{
+		//						dups[fldDataStr] = cnt + 1;
+		//					}
+		//					else
+		//					{
+		//						dups.Add(fldDataStr, 1);
+		//					}
+		//				}
+		//				var fldDataStrAry = fldDataStr.Split('\u001e');
+		//				var aryInfo = CollectionContent.getArrayContent(heap, fldKeyValueArrayAddr);
 
-						lst.Add(new KeyValuePair<string[], string[]>(fldDataStrAry, aryInfo.Item4));
+		//				lst.Add(new KeyValuePair<string[], string[]>(fldDataStrAry, aryInfo.Item4));
 
 
-					}
+		//			}
 
-					int notTheSameCount = 0;
-					Dictionary<int, int> countDct = new Dictionary<int, int>();
-					for (int i = 0, icnt = lst.Count; i < icnt; ++i)
-					{
-						var ary1 = lst[i].Key;
-						var ary2 = lst[i].Value;
-						int len;
-						if (countDct.TryGetValue(ary1.Length, out len))
-						{
-							countDct[ary1.Length] = len + 1;
-						}
-						else
-						{
-							countDct.Add(ary1.Length,1);
-						}
-						if (ary1.Length != ary2.Length)
-						{
-							++notTheSameCount;
-						}
-						for (int j = 0, jcnt = ary1.Length; j < jcnt; ++j)
-						{
-							if (ary1[j] == ary2[j]) continue;
-							++notTheSameCount;
-						}
+		//			int notTheSameCount = 0;
+		//			Dictionary<int, int> countDct = new Dictionary<int, int>();
+		//			for (int i = 0, icnt = lst.Count; i < icnt; ++i)
+		//			{
+		//				var ary1 = lst[i].Key;
+		//				var ary2 = lst[i].Value;
+		//				int len;
+		//				if (countDct.TryGetValue(ary1.Length, out len))
+		//				{
+		//					countDct[ary1.Length] = len + 1;
+		//				}
+		//				else
+		//				{
+		//					countDct.Add(ary1.Length,1);
+		//				}
+		//				if (ary1.Length != ary2.Length)
+		//				{
+		//					++notTheSameCount;
+		//				}
+		//				for (int j = 0, jcnt = ary1.Length; j < jcnt; ++j)
+		//				{
+		//					if (ary1[j] == ary2[j]) continue;
+		//					++notTheSameCount;
+		//				}
 
-					}
+		//			}
 
-					StreamWriter sw = null;
-					try
-					{
-						var path = index.AdhocFolder + @"\KeyDups.txt";
-						sw = new StreamWriter(path);
-						foreach (var kv in dups)
-						{
-							sw.WriteLine("[" + (kv.Value + 1) + "] " + kv.Key);
-						}
-					}
-					catch (Exception ex)
-					{
-						Assert.IsTrue(false, ex.ToString());
-					}
-					finally
-					{
-						sw?.Close();
-					}
+		//			StreamWriter sw = null;
+		//			try
+		//			{
+		//				var path = index.AdhocFolder + @"\KeyDups.txt";
+		//				sw = new StreamWriter(path);
+		//				foreach (var kv in dups)
+		//				{
+		//					sw.WriteLine("[" + (kv.Value + 1) + "] " + kv.Key);
+		//				}
+		//			}
+		//			catch (Exception ex)
+		//			{
+		//				Assert.IsTrue(false, ex.ToString());
+		//			}
+		//			finally
+		//			{
+		//				sw?.Close();
+		//			}
 
-					Assert.IsTrue(true);
-				}
-				catch (Exception ex)
-				{
-					Assert.IsTrue(false, ex.ToString());
-				}
-			}
-		}
+		//			Assert.IsTrue(true);
+		//		}
+		//		catch (Exception ex)
+		//		{
+		//			Assert.IsTrue(false, ex.ToString());
+		//		}
+		//	}
+		//}
 
 		[TestMethod]
 		public void TestGetTypeSizeDetails()

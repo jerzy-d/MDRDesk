@@ -11,16 +11,16 @@ namespace ClrMDRIndex
 	{
 		private int _typeId;
 		private string _typeName;
-		private TypeCategories _category;
+		private TypeKind _kind;
 
 		private List<FieldValue> _fields;
 		public List<FieldValue> Fields => _fields;
 
-		public TypeValue(int typeId, string typeName, TypeCategories category)
+		public TypeValue(int typeId, string typeName, TypeKind kind)
 		{
 			_typeId = typeId;
 			_typeName = typeName;
-			_category = category;
+			_kind = kind;
 			_fields = null;
 		}
 
@@ -29,33 +29,31 @@ namespace ClrMDRIndex
 	public class FieldValue
 	{
 		private int _typeId;
-		private string _typeName;
-		private int _fieldIndex;
 		private string _fieldName;
 		private ClrType _clrType;
 		private ClrInstanceField _instField;
-		private TypeCategories _category;
+		private TypeKind _kind;
 		private List<string> _values;
 		private List<FieldValue> _fields;
 		private FilterValue _filter;
 
 		public int TypeId => _typeId;
-		public int FieldIndex => _fieldIndex;
+		public string FieldName => _fieldName;
 		public ClrType ClType => _clrType;
 		public ClrInstanceField InstField => _instField;
 		public List<FieldValue> Fields => _fields;
 		public FilterValue Filter;
 
-		public FieldValue(int typeId, string typeName, int fieldIndex, string fieldName, TypeCategories category)
+		public FieldValue(int typeId, string fieldName, TypeKind kind)
 		{
 			_typeId = typeId;
-			_typeName = typeName;
-			_fieldIndex = fieldIndex;
-			_category = category;
+			_fieldName = fieldName;
+			_kind = kind;
 		}
 
 		public bool AddField(FieldValue fld)
 		{
+			if (_fields == null) _fields = new List<FieldValue>();
 			if (_fields.Contains(fld)) return false;
 			_fields.Add(fld);
 			return true;
@@ -88,35 +86,49 @@ namespace ClrMDRIndex
 		{
 			if (b1.TypeId == b2.TypeId)
 			{
-				return b1.FieldIndex == b2.FieldIndex;
+				return Utils.SameStrings(b1.FieldName,b2.FieldName);
 			}
 			return true;
 		}
 
 		public int GetHashCode(FieldValue bx)
 		{
-			return bx.TypeId.GetHashCode() ^ bx.FieldIndex.GetHashCode();
+			return bx.TypeId.GetHashCode() ^ bx.FieldName.GetHashCode();
 		}
 	}
 
 	public class FilterValue
 	{
-		private string _valueStr;
-		private object _valueObj;
-		private bool _include;
-
-		public string ValueStr => _valueStr;
-
-		public FilterValue(string val, bool include)
+		[Flags]
+		public enum Op
 		{
-			_valueStr = val;
-			_include = include;
+			Exculde = 1,
+			EQ = 1 << 1,
+			LT = 1 << 2,
+			GT = 1 << 3,
+			AND = 1 << 4,
+			OR = 1 << 5,
 		}
 
-		public bool Accept(string value, bool accept)
+		private Op _op;
+		private object[] _values;
+		private string _filterString;
+		public string FilterString => _filterString;
+
+		public FilterValue(string filterStr)
 		{
-			if (Utils.SameStrings(value, _valueStr))
-				return true;
+			_filterString = filterStr;
+		}
+
+		public FilterValue(Op op, object[] values)
+		{
+			_op = op;
+			_values = values;
+		}
+
+		public bool Accept(object obj)
+		{
+
 			return false;
 		}
 

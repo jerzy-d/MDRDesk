@@ -147,12 +147,17 @@
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </ApplicationDefinition>
+    <Compile Include="Charts\ChartProvider.cs" />
     <Compile Include="Converters.cs" />
+    <Compile Include="CreateCrashDump.xaml.cs">
+      <DependentUpon>CreateCrashDump.xaml</DependentUpon>
+    </Compile>
     <Compile Include="Graphs\DataEdge.cs" />
     <Compile Include="Graphs\DataVertex.cs" />
     <Compile Include="Graphs\DlkGraphArea.cs" />
     <Compile Include="Graphs\DlkGraph.cs" />
     <Compile Include="Graphs\DlkGXLogicCore.cs" />
+    <Compile Include="GuiUtils.cs" />
     <Compile Include="MainWindow.Gui.cs" />
     <Compile Include="MdrMessageBox.xaml.cs">
       <DependentUpon>MdrMessageBox.xaml</DependentUpon>
@@ -166,6 +171,10 @@
       <DependentUpon>TypeValueFilterDlg.xaml</DependentUpon>
     </Compile>
     <Compile Include="TypeValuesQuery.cs" />
+    <Page Include="CreateCrashDump.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
     <Page Include="InputStringDlg.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
@@ -324,6 +333,15 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="Images\Thread_16x.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <Resource Include="Images\Backward_16x.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <Resource Include="Images\Forward_16x.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <Resource Include="Images\Question_16x.png" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <PropertyGroup>

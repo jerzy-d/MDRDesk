@@ -1352,7 +1352,7 @@ namespace ClrMDRIndex
 				instances = GetTypeRealAddresses(dispType.TypeId);
 				if (instances == null || instances.Length < 1)
 				{
-					error = "Type instances not found.";
+					error = Constants.InformationSymbolHeader + "Type instances not found.";
 					return null;
 				}
 

@@ -134,13 +134,13 @@ namespace ClrMDRIndex
 
 							// threads and blocking objects
 							//
-							extraWorker = new Thread(GetThreadsAndBlockingObjects);
-							extraWorker.Start(new Tuple<ClrtDump,ulong[],int[]>(dumpClone,addresses,typeIds));
+							extraWorker = new Thread(GetThreadsInfos);
+							extraWorker.Start(new Tuple<ClrtDump,ulong[],int[],string[]>(dumpClone,addresses,typeIds,typeNames));
 
 							stopWatch.Restart();
 							progress?.Report(runtimeIndexHeader +
 							                 "Getting threads, blocking objecks information... Previous action duration: " + durationStr);
-							//if (!GetThreadsAndBlockingObjects(clrtDump, addresses, typeIds, out error))
+							//if (!GetThreadsInfos(clrtDump, addresses, typeIds, out error))
 							//{
 							//	return false;
 							//}
@@ -486,15 +486,16 @@ namespace ClrMDRIndex
 			}
 		}
 
-//		private bool GetThreadsAndBlockingObjects(ClrtDump clrtDump, ulong[] instances, int[] typeIds, out string error)
-		private void GetThreadsAndBlockingObjects(object param)
+		private void GetThreadsInfos(object param)
 		{
-			var parameters = param as Tuple<ClrtDump, ulong[], int[]>;
+			var parameters = param as Tuple<ClrtDump, ulong[], int[],string[]>;
 			var clrtDump = parameters.Item1;
 			var instances = parameters.Item2;
 			var typeIds = parameters.Item3;
-			
+			var typeNames = parameters.Item4;
+
 			BinaryWriter bw = null;
+			StreamWriter sw = null;
 			try
 			{
 				var heap = clrtDump.Runtimes[_currentRuntimeIndex].GetHeap();
@@ -638,19 +639,105 @@ namespace ClrMDRIndex
 				graph.Dump(bw, out error);
 				bw.Close();
 				bw = null;
-				AddError(_currentRuntimeIndex, "Exception in GetThreadsAndBlockingObjects." + Environment.NewLine + error);
+				AddError(_currentRuntimeIndex, "Exception in GetThreadsInfos." + Environment.NewLine + error);
 
-				// save threads and blocks
+
+				// get frames info
 				//
-				path = _fileMoniker.GetFilePath(0, Constants.MapThreadsAndBlocksFilePostfix);
+
+				var frames = new StringIdDct();
+				var stObjCmp = new Utils.KVIntUlongCmpAsc();
+				var stackObject = new SortedDictionary<KeyValuePair<int, ulong>, int>(stObjCmp);
+				var stackTraceLst = new List<ClrStackFrame>();
+				var rootEqCmp = new ClrRootEqualityComparer();
+				var frameIds = new List<int>();
+				var aliveIds = new List<int>();
+				var deadIds = new List<int>();
+
+
+				// save threads and blocks, generate stack info
+				//
+				path = _fileMoniker.GetFilePath(_currentRuntimeIndex, Constants.MapThreadsAndBlocksFilePostfix);
 				bw = new BinaryWriter(File.Open(path, FileMode.Create));
 				bw.Write(threads.Length);
 				for (int i = 0, icnt = threads.Length; i < icnt; ++i)
 				{
-					var clrtThread = new ClrtThread(threads[i], blocks, blkCmp);
+					var thread = threads[i];
+					stackTraceLst.Clear();
+					foreach (var st in thread.EnumerateStackTrace())
+					{
+						stackTraceLst.Add(st);
+						if (stackTraceLst.Count > 100) break;
+					}
+
+					var threadLocalAliveVars = thread.EnumerateStackObjects(false).ToArray();
+					var all = thread.EnumerateStackObjects(true).ToArray();
+					var threadLocalDeadVars = all.Except(threadLocalAliveVars, rootEqCmp).ToArray();
+					var threadFrames = stackTraceLst.ToArray();
+
+					aliveIds.Clear();
+					for (int j = 0, jcnt = threadLocalAliveVars.Length; j < jcnt; ++j)
+					{
+						ClrRoot root = threadLocalAliveVars[j];
+						ClrType clrType = heap.GetObjectType(root.Object);
+						var typeName = clrType == null ? Constants.NullTypeName : clrType.Name;
+						var typeId = Array.BinarySearch(typeNames, typeName, StringComparer.Ordinal);
+						if (typeId < 0) typeId = Constants.InvalidIndex;
+						int stackId;
+						if (!stackObject.TryGetValue(new KeyValuePair<int, ulong>(typeId, root.Object), out stackId))
+						{
+							stackId = stackObject.Count;
+							stackObject.Add(new KeyValuePair<int, ulong>(typeId, root.Object), stackId);
+						}
+						aliveIds.Add(stackId);
+					}
+
+					deadIds.Clear();
+					for (int j = 0, jcnt = threadLocalDeadVars.Length; j < jcnt; ++j)
+					{
+						ClrRoot root = threadLocalDeadVars[j];
+						ClrType clrType = heap.GetObjectType(root.Object);
+						var typeName = clrType == null ? Constants.NullTypeName : clrType.Name;
+						var typeId = Array.BinarySearch(typeNames, typeName, StringComparer.Ordinal);
+						if (typeId < 0) typeId = Constants.InvalidIndex;
+						int stackId;
+						if (!stackObject.TryGetValue(new KeyValuePair<int, ulong>(typeId, root.Object), out stackId))
+						{
+							stackId = stackObject.Count;
+							stackObject.Add(new KeyValuePair<int, ulong>(typeId, root.Object), stackId);
+						}
+						deadIds.Add(stackId);
+					}
+
+					frameIds.Clear();
+					for (int j = 0, jcnt = threadFrames.Length; j < jcnt; ++j)
+					{
+						ClrStackFrame fr = threadFrames[j];
+						if (fr.Method != null)
+						{
+							string fullSig = fr.Method.GetFullSignature();
+							if (fullSig == null)
+								fullSig = fr.Method.Name;
+							if (fullSig == null) fullSig = "UKNOWN METHOD";
+							var frameStr = Utils.RealAddressStringHeader(fr.InstructionPointer) + fullSig;
+							var frId = frames.JustGetId(frameStr);
+							frameIds.Add(frId);
+						}
+						else
+						{
+							string sig = string.IsNullOrEmpty(fr.DisplayString) ? "UKNOWN METHOD" : fr.DisplayString;
+							var frameStr = Utils.RealAddressStringHeader(fr.InstructionPointer) + sig;
+							var frId = frames.JustGetId(frameStr);
+							frameIds.Add(frId);
+						}
+					}
+
+					var clrtThread = new ClrtThread(thread, blocks, blkCmp,frameIds.ToArray(),aliveIds.ToArray(),deadIds.ToArray());
 					Debug.Assert(clrtThread!=null);
 					clrtThread.Dump(bw);
 				}
+
+
 				bw.Write(blocks.Length);
 				for (int i = 0, icnt = blocks.Length; i < icnt; ++i)
 				{
@@ -661,15 +748,31 @@ namespace ClrMDRIndex
 					Debug.Assert(clrtBlock!=null);
 					clrtBlock.Dump(bw);
 				}
+				Utils.CloseStream(ref bw);
+
+				path = _fileMoniker.GetFilePath(_currentRuntimeIndex, Constants.MapThreadFramesFilePostfix);
+				bw = new BinaryWriter(File.Open(path, FileMode.Create));
+				var ary = stackObject.ToArray();
+				Array.Sort(ary, (a, b) => a.Value < b.Value ? -1 : (a.Value > b.Value ? 1 : 0));
+				bw.Write(ary.Length);
+				for (int i = 0, icnt = ary.Length; i < icnt; ++i)
+				{
+					bw.Write(ary[i].Key.Key);
+					bw.Write(ary[i].Key.Value);
+				}
+				Utils.CloseStream(ref bw);
+				path = _fileMoniker.GetFilePath(_currentRuntimeIndex, Constants.TxtThreadFrameDescriptionFilePostfix);
+				frames.DumpInIdOrder(path, out error);
 			}
 			catch (Exception ex)
 			{
-				AddError(_currentRuntimeIndex, "Exception in GetThreadsAndBlockingObjects." + Environment.NewLine + Utils.GetExceptionErrorString(ex));
+				AddError(_currentRuntimeIndex, "Exception in GetThreadsInfos." + Environment.NewLine + Utils.GetExceptionErrorString(ex));
 			}
 			finally
 			{
-				clrtDump?.Dispose();
 				bw?.Close();
+				sw?.Close();
+				clrtDump?.Dispose();
 			}
 		}
 
@@ -1028,6 +1131,8 @@ namespace ClrMDRIndex
 			var lst = new List<BlockingObject>(1024);
 			foreach (var block in heap.EnumerateBlockingObjects())
 			{
+				var clrType = heap.GetObjectType(block.Object);
+				if (clrType == null || clrType.Name == "Free") continue;
 				lst.Add(block);
 			}
 			var ary = lst.ToArray();
@@ -1035,6 +1140,27 @@ namespace ClrMDRIndex
 			return ary;
 		}
 
+		public static BlockingObject[] GetBlockingObjectsEx(ClrHeap heap, out BlockingObject[] free)
+		{
+			var lst = new List<BlockingObject>(1024);
+			var freelst = new List<BlockingObject>(1024);
+			foreach (var block in heap.EnumerateBlockingObjects())
+			{
+				var clrType = heap.GetObjectType(block.Object);
+				if (clrType == null || clrType.Name == "Free")
+				{
+					freelst.Add(block);
+					continue;
+				}
+				lst.Add(block);
+			}
+			var cmp = new BlockingObjectCmp();
+			var ary = lst.ToArray();
+			Array.Sort(ary, cmp);
+			free = freelst.ToArray();
+			Array.Sort(free,cmp);
+			return ary;
+		}
 
 
 		#endregion indexing helpers

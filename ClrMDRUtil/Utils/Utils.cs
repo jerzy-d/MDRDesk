@@ -47,6 +47,13 @@ namespace ClrMDRIndex
 		}
 
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		public static string RealAddressStringHeader(ulong addr)
+		{
+			ulong realAddr = RealAddress(addr);
+			return string.Format("0x{0:x14} ", realAddr);
+		}
+
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		public static string MultiAddressString(int addrCount)
 		{
 			return string.Format("\u275A{0}\u275A", Utils.LargeNumberString(addrCount));
@@ -1167,10 +1174,16 @@ namespace ClrMDRIndex
             }
         }
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		public static bool SameStrings(string s1, string s2)
 		{
 			return string.Compare(s1, s2, StringComparison.Ordinal) == 0;
+		}
+
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		public static int CompareStrings(string s1, string s2)
+		{
+			return string.Compare(s1, s2, StringComparison.Ordinal);
 		}
 
 		public class LongCmpDesc : IComparer<long>

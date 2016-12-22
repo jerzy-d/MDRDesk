@@ -385,12 +385,12 @@ module CollectionContent =
             ndx <- ndx + 1
         (elemType.Name, count, values.ToArray())
 
-    let getArrayContent (heap:ClrHeap) (addr:uint64) : string * string * int32 * string array =
-        let error, clrSidekick = Types.getTypeSidekickAtAddress heap  addr
-        if error <> null then 
-            ("Getting type info at : " + Utils.AddressString(addr) + " failed.", null, 0, emptyStringArray)
-        elif (not clrSidekick.IsArray) then
-            ("Type at : " + Utils.AddressString(addr) + " is not an array.", null, 0, emptyStringArray)
-        else
-            let elemName, aryCount, values = getArrayValues heap addr clrSidekick
-            (null, elemName, aryCount, values) 
+//    let getArrayContent (heap:ClrHeap) (addr:uint64) : string * string * int32 * string array =
+//        let error, clrSidekick = Types.getTypeSidekickAtAddress heap  addr
+//        if error <> null then 
+//            ("Getting type info at : " + Utils.AddressString(addr) + " failed.", null, 0, emptyStringArray)
+//        elif (not clrSidekick.IsArray) then
+//            ("Type at : " + Utils.AddressString(addr) + " is not an array.", null, 0, emptyStringArray)
+//        else
+//            let elemName, aryCount, values = getArrayValues heap addr clrSidekick
+//            (null, elemName, aryCount, values) 

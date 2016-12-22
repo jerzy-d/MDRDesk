@@ -21,19 +21,19 @@ namespace ClrMDRIndex
 		public string TypeName => _typeName;
 		public string FieldName => _fieldName;
 
-		private TypeCategories _category;
-        public TypeCategories Category => _category;
+		private TypeKind _kind;
+        public TypeKind Kind => _kind;
 
         private ClrtDisplayableType[] _fields;
 		public ClrtDisplayableType[] Fields => _fields;
 
-		public ClrtDisplayableType(int typeId, int fieldIndex, string typeName, string fieldName, TypeCategories category)
+		public ClrtDisplayableType(int typeId, int fieldIndex, string typeName, string fieldName, TypeKind kind)
 		{
 			_typeId = typeId;
 			_fieldIndex = fieldIndex;
 			_typeName = typeName;
 			_fieldName = fieldName;
-			_category = category;
+			_kind = kind;
 			_fields = Utils.EmptyArray<ClrtDisplayableType>.Value;
 			_valueFilter = null;
 			_getValue = false;
@@ -73,25 +73,38 @@ namespace ClrMDRIndex
 
 		private string TypeHeader()
 		{
-			if (_category.First == TypeCategory.Reference)
+			switch (TypeKinds.GetMainTypeKind(_kind))
 			{
-				return _category.Second == TypeCategory.Interface ? Constants.InterfaceHeader : Constants.ClassHeader;
+				case TypeKind.StringKind:
+					return Constants.PrimitiveHeader;
+				case TypeKind.InterfaceKind:
+					return Constants.InterfaceHeader;
+				case TypeKind.StructKind:
+					switch (TypeKinds.GetParticularTypeKind(_kind))
+					{
+						case TypeKind.DateTime:
+						case TypeKind.Decimal:
+						case TypeKind.Guid:
+						case TypeKind.TimeSpan:
+							return Constants.PrimitiveHeader;
+						default:
+							return Constants.StructHeader;
+					}
+				case TypeKind.ReferenceKind:
+					return Constants.ClassHeader;
+				default:
+					return Constants.PrimitiveHeader;
 			}
-			else if (_category.First == TypeCategory.Struct)
-			{
-				return _category.Second == TypeCategory.Interface ? Constants.InterfaceHeader : Constants.StructHeader;
-			}
-			return Constants.PrimitiveHeader;
 		}
 
 		private string FilterStr(FilterValue filterValue)
 		{
-			if (filterValue == null || filterValue.ValueStr==null) return string.Empty;
-			if (filterValue.ValueStr.Length > 54)
+			if (filterValue == null || filterValue.FilterString==null) return string.Empty;
+			if (filterValue.FilterString.Length > 54)
 			{
-				return " " + Constants.LeftCurlyBracket.ToString() + filterValue.ValueStr.Substring(0, 54) + "..." + Constants.RightCurlyBracket.ToString() + " ";
+				return " " + Constants.LeftCurlyBracket.ToString() + filterValue.FilterString.Substring(0, 54) + "..." + Constants.RightCurlyBracket.ToString() + " ";
 			}
-			return " " + Constants.LeftCurlyBracket.ToString() + filterValue.ValueStr + Constants.RightCurlyBracket.ToString() + " ";
+			return " " + Constants.LeftCurlyBracket.ToString() + filterValue.FilterString + Constants.RightCurlyBracket.ToString() + " ";
 		}
 
 		public string SelectionStr()
@@ -115,40 +128,35 @@ namespace ClrMDRIndex
 		public bool CanGetFields(out string msg)
 		{
 			msg = null;
-			switch (_category.First)
+			switch (TypeKinds.GetMainTypeKind(_kind))
 			{
-				case TypeCategory.Reference:
-					switch (_category.Second)
+				case TypeKind.StringKind:
+					msg = Constants.InterfaceHeader + "Cannot get fields, this type is considered primitive.";
+					return false;
+				case TypeKind.InterfaceKind:
+					msg = Constants.InterfaceHeader + "Cannot get fields of interface.";
+					return false;
+				case TypeKind.StructKind:
+					switch (TypeKinds.GetParticularTypeKind(_kind))
 					{
-						case TypeCategory.Interface:
-							msg = Constants.InterfaceHeader + "Cannot get fields of interface.";
-							return false;
-						case TypeCategory.String:
+						case TypeKind.DateTime:
+						case TypeKind.Decimal:
+						case TypeKind.Guid:
+						case TypeKind.TimeSpan:
 							msg = Constants.InterfaceHeader + "Cannot get fields, this type is considered primitive.";
 							return false;
+						default:
+							return true;
 					}
-					break;
-				case TypeCategory.Struct:
-					switch (_category.Second)
-					{
-						case TypeCategory.Interface:
-							msg = Constants.InterfaceHeader + "Cannot get fields of interface.";
-							return false;
-						case TypeCategory.TimeSpan:
-						case TypeCategory.Guid:
-						case TypeCategory.DateTime:
-							msg = Constants.InterfaceHeader + "Cannot get fields, this type is considered primitive.";
-							return false;
-					}
-					break;
-				case TypeCategory.Primitive:
+				case TypeKind.ReferenceKind:
+					return true;
+				case TypeKind.PrimitiveKind:
 					msg = Constants.PrimitiveHeader + "Cannot get fields, this type is primitive.";
 					return false;
 				default:
 					msg = "Cannot get fields, uknown type.";
 					return false;
 			}
-			return true;
 		}
 	}
 

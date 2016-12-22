@@ -45,6 +45,9 @@ namespace ClrMDRIndex
 		private uint _lockCount;
 		private ulong _teb;
 		private int[] _blkObjects;
+		private int[] _frames;
+		private int[] _liveStackObjects;
+		private int[] _deadStackObjects;
 
 		public ulong Address => _address;
 		public uint OSThreadId => _osId;
@@ -65,10 +68,41 @@ namespace ClrMDRIndex
 			_managedId = thrd.ManagedThreadId;
 			_lockCount = thrd.LockCount;
 			_teb = thrd.Teb;
-			_blkObjects = GetBlockingObjects(thrd.BlockingObjects, blkObjects,blkCmp);
+			_blkObjects = GetBlockingObjects(thrd.BlockingObjects, blkObjects, blkCmp);
+			_frames = Utils.EmptyArray<int>.Value;
+			_liveStackObjects = Utils.EmptyArray<int>.Value;
+			_deadStackObjects = Utils.EmptyArray<int>.Value;
 		}
 
-		public ClrtThread(ulong address, int traits, uint osId, int managedId, ulong teb, uint lockCnt, int[] blocks)
+		public ClrtThread(ClrThread thrd, BlockingObject[] blkObjects, BlockingObjectCmp blkCmp, int[] frames, int[] aliveStackObjects, int[] deadStackObjects)
+		{
+			_address = thrd.Address;
+			_traits = GetTraits(thrd);
+			_osId = thrd.OSThreadId;
+			_managedId = thrd.ManagedThreadId;
+			_lockCount = thrd.LockCount;
+			_teb = thrd.Teb;
+			_blkObjects = GetBlockingObjects(thrd.BlockingObjects, blkObjects, blkCmp);
+			_frames = frames;
+			_liveStackObjects = aliveStackObjects;
+			_deadStackObjects = deadStackObjects;
+		}
+
+		//public ClrtThread(ulong address, int traits, uint osId, int managedId, ulong teb, uint lockCnt, int[] blocks)
+		//{
+		//	_address = address;
+		//	_traits = traits;
+		//	_osId = osId;
+		//	_managedId = managedId;
+		//	_lockCount = lockCnt;
+		//	_teb = teb;
+		//	_blkObjects = blocks;
+		//	_frames = Utils.EmptyArray<int>.Value;
+		//	_liveStackObjects = Utils.EmptyArray<int>.Value;
+		//	_deadStackObjects = Utils.EmptyArray<int>.Value;
+		//}
+
+		public ClrtThread(ulong address, int traits, uint osId, int managedId, ulong teb, uint lockCnt, int[] blocks, int[] frames, int[] aliveStackObjects,int[] deadStackObjects)
 		{
 			_address = address;
 			_traits = traits;
@@ -77,6 +111,16 @@ namespace ClrMDRIndex
 			_lockCount = lockCnt;
 			_teb = teb;
 			_blkObjects = blocks;
+			_frames = frames;
+			_liveStackObjects = aliveStackObjects;
+			_deadStackObjects = deadStackObjects;
+		}
+
+		public void SetFramesAndStackObjects(int[] frames, int[] liveStackObjects, int[] deadStackObjects)
+		{
+			_frames = frames;
+			_liveStackObjects = liveStackObjects;
+			_deadStackObjects = deadStackObjects;
 		}
 
 		private int[] GetBlockingObjects(IList<BlockingObject> lst, BlockingObject[] blkObjects, BlockingObjectCmp blkCmp)
@@ -148,6 +192,21 @@ namespace ClrMDRIndex
 			bw.Write(_osId);
 			bw.Write(_managedId);
 			bw.Write(_lockCount);
+			bw.Write(_frames.Length);
+			for (int i = 0, icnt = _frames.Length; i < icnt; ++i)
+			{
+				bw.Write(_frames[i]);
+			}
+			bw.Write(_liveStackObjects.Length);
+			for (int i = 0, icnt = _liveStackObjects.Length; i < icnt; ++i)
+			{
+				bw.Write(_liveStackObjects[i]);
+			}
+			bw.Write(_deadStackObjects.Length);
+			for (int i = 0, icnt = _deadStackObjects.Length; i < icnt; ++i)
+			{
+				bw.Write(_deadStackObjects[i]);
+			}
 		}
 
 		public static ClrtThread Load(BinaryReader br)
@@ -155,19 +214,30 @@ namespace ClrMDRIndex
 			ulong address = br.ReadUInt64();
 			ulong teb = br.ReadUInt64();
 			int blkCnt = br.ReadInt32();
-			int[] blks = new int[blkCnt];
-			for (int i = 0; i < blkCnt; ++i)
-			{
-				blks[i] = br.ReadInt32();
-			}
+			int[] blks = ReadIntArray(br);
 			int traits = br.ReadInt32();
 			uint osId = br.ReadUInt32();
 			int managedId = br.ReadInt32();
 			uint lockCnt = br.ReadUInt32();
+			int[] frames = ReadIntArray(br);
+			int[] aliveObjects = ReadIntArray(br);
+			int[] deadObjects = ReadIntArray(br);
 
-			return new ClrtThread(address, traits, osId, managedId, teb, lockCnt, blks);
+			return new ClrtThread(address, traits, osId, managedId, teb, lockCnt, blks,frames,aliveObjects,deadObjects);
+		}
+		private static int[] ReadIntArray(BinaryReader br)
+		{
+			int cnt = br.ReadInt32();
+			int[] ary = cnt == 0 ? Utils.EmptyArray<int>.Value : new int[cnt];
+			for (int i = 0; i < cnt; ++i)
+			{
+				ary[i] = br.ReadInt32();
+			}
+			return ary;
 		}
 	}
+
+
 
 	public class ClrThreadCmp : IComparer<ClrThread>
 	{

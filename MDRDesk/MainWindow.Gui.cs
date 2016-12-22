@@ -258,8 +258,11 @@ namespace MDRDesk
 				Debug.Assert(grid != null);
 				grid.Name = DeadlockGraphGrid + "__" + Utils.GetNewID();
 				grid.Tag = new Tuple<Digraph, List<int>, SubgraphDictionary,bool>(digraph, new List<int>(), new SubgraphDictionary(),true);
+				var txtBlk = (TextBlock)LogicalTreeHelper.FindLogicalNode(grid, "ThreadBlockingGraphXHelp");
+				Debug.Assert(txtBlk!=null);
+				SetGraphHelpTextBlock(txtBlk);
 
-				UpdateThreadBlockMap(grid, out error);
+				UpdateThreadBlockMap(grid);
 
 				var tab = new CloseableTabItem()
 				{
@@ -279,11 +282,11 @@ namespace MDRDesk
 			}
 		}
 
-		public bool UpdateThreadBlockMap(Grid grid, out string error)
+		public void UpdateThreadBlockMap(Grid grid)
 		{
-			error = null;
 			try
 			{
+				SetStartTaskMainWindowState("Generating thread/block graph, please wait...");
 				var zoomctrl = (ZoomControl) LogicalTreeHelper.FindLogicalNode(grid, "TBZoomCtrl");
 				Debug.Assert(zoomctrl != null);
 				var area = (DlkGraphArea) LogicalTreeHelper.FindLogicalNode(grid, "TBGraphArea");
@@ -296,6 +299,8 @@ namespace MDRDesk
 				var subgraphsDct = graphInfo.Item3;
 				var forward = graphInfo.Item4;
 
+
+				string error;
 				TBGraphAreaSetup(digraph, area, currentIds, subgraphsDct, forward, out error);
 
 				area.GenerateGraph(true, true);
@@ -319,13 +324,14 @@ namespace MDRDesk
 				//each edge individually using property, for ex: Area.EdgesList[0].ShowLabel = true;
 				area.ShowAllEdgesLabels(true);
 
+
 				zoomctrl.ZoomToFill();
-				return true;
+				SetEndTaskMainWindowState("Generating thread/block graph, done");
 			}
 			catch (Exception ex)
 			{
-				error = Utils.GetExceptionErrorString(ex);
-				return false;
+				SetEndTaskMainWindowState("Generating thread/block graph, FAILED!");
+				ShowError(Utils.GetExceptionErrorString(ex));
 			}
 		}
 
@@ -541,7 +547,7 @@ namespace MDRDesk
 					}
 					else
 					{
-						var id = kv.Value.Third;
+						var id = kv.Key;
 						if (id > lastId)
 						{
 							threadIds.Add(id);
@@ -712,6 +718,31 @@ namespace MDRDesk
 			}
 		}
 
+		private void ThreadBlockingGraphXBackClicked(object sender, RoutedEventArgs e)
+		{
+			var mainGrid = GetCurrentTabGrid();
+			Debug.Assert(mainGrid != null);
+
+		}
+
+		private void ThreadBlockingGraphXForwardClicked(object sender, RoutedEventArgs e)
+		{
+			var grid = GetCurrentTabGrid();
+			Debug.Assert(grid != null);
+			var graphInfo = grid.Tag as Tuple<Digraph, List<int>, SubgraphDictionary, bool>;
+			var currentIds = graphInfo.Item2;
+			var subgraphsDct = graphInfo.Item3;
+			var forward = graphInfo.Item4;
+			int lastId = currentIds!=null && currentIds.Count > 0 ? currentIds[currentIds.Count - 1] : Int32.MaxValue;
+			int lastAvailId = subgraphsDct == null || subgraphsDct.Count < 1 ? Int32.MaxValue : subgraphsDct.Last().Key;
+			if (lastAvailId <= lastId) return;
+			if (!forward)
+				grid.Tag = new Tuple<Digraph, List<int>, SubgraphDictionary, bool>(graphInfo.Item1, graphInfo.Item2, graphInfo.Item3,
+					true);
+			string error;
+			UpdateThreadBlockMap(grid);
+		}
+
 		#endregion  threads/blocks
 
 		#region common
@@ -741,6 +772,21 @@ namespace MDRDesk
 					vertex.Value.Background = Brushes.Chocolate;
 				}
 			}
+		}
+
+		private void SetGraphHelpTextBlock(TextBlock txtBlk)
+		{
+			txtBlk.Inlines.Add(new Run(" thread " ) { Background = Brushes.Chocolate});
+			//txtBlk.Inlines.Add(new Bold(new Run("-->")) { FontSize = 18 });
+			txtBlk.Inlines.Add(new Run(Constants.RightDashedArrowPadded) { FontSize = 18 });
+			txtBlk.Inlines.Add(new Run(" blocking obj ") { Background = Brushes.LightGray });
+			txtBlk.Inlines.Add(new Run(" thread waits for blocking obj    "));
+
+			txtBlk.Inlines.Add(new Run(" blocking obj ") { Background = Brushes.LightGray });
+			//txtBlk.Inlines.Add(new Bold(new Run(Constants.RightSolidArrowPadded)) { FontSize = 16 });
+			txtBlk.Inlines.Add(new Run(Constants.RightSolidArrowPadded) { FontSize = 18 });
+			txtBlk.Inlines.Add(new Run(" os/mngd ids ") { Background = Brushes.Chocolate });
+			txtBlk.Inlines.Add(new Run(" thread owns blocking obj  "));
 		}
 
 		#endregion common
@@ -1750,11 +1796,8 @@ namespace MDRDesk
 					SetEndTaskMainWindowState("Action failed for: '" + dispType.FieldName + "'. " + result.Item1);
 					return;
 				}
-
-				// TODO JRD -- display msg box with error
-
+				ShowError(result.Item1);
 				SetEndTaskMainWindowState("Getting type details for field: '" + dispType.FieldName + "', failed");
-
 				return;
 			}
 
@@ -1946,7 +1989,7 @@ namespace MDRDesk
 
 					var dispType = curSelectionInfo.CurrentTreeViewItem.Tag as ClrtDisplayableType;
 					Debug.Assert(dispType != null);
-					dispType.SetFilter(new FilterValue(val, true));
+					dispType.SetFilter(new FilterValue(val));
 					curSelectionInfo.CurrentTreeViewItem.Header = dispType.ToString();
 
 					//string header = curSelectionInfo.CurrentTreeViewItem.Header as string;
@@ -2510,26 +2553,43 @@ namespace MDRDesk
 		private StackPanel GetClrtDisplayableTypeStackPanel(ClrtDisplayableType dispType)
 		{
 			var stackPanel = new StackPanel() { Orientation = Orientation.Horizontal };
-			var cat = dispType.Category;
+			var kind = dispType.Kind;
 			SWC.Image image = new SWC.Image();
-			if (cat.First == TypeCategory.Reference)
+
+			switch (TypeKinds.GetMainTypeKind(kind))
 			{
-				if (cat.Second == TypeCategory.Interface)
+				case TypeKind.StringKind:
+					image.Source = ((SWC.Image)Application.Current.FindResource("PrimitivePng")).Source;
+					break;
+				case TypeKind.InterfaceKind:
 					image.Source = ((SWC.Image)Application.Current.FindResource("InterfacePng")).Source;
-				else if (cat.Second == TypeCategory.Array)
+					break;
+				case TypeKind.ArrayKind:
 					image.Source = ((SWC.Image)Application.Current.FindResource("ArrayPng")).Source;
-				else
-				{
+					break;
+				case TypeKind.StructKind:
+					switch (TypeKinds.GetParticularTypeKind(kind))
+					{
+						case TypeKind.DateTime:
+						case TypeKind.Decimal:
+						case TypeKind.Guid:
+						case TypeKind.TimeSpan:
+							image.Source = ((SWC.Image)Application.Current.FindResource("PrimitivePng")).Source;
+							break;
+						default:
+							image.Source = ((SWC.Image)Application.Current.FindResource("StructPng")).Source;
+							break;
+					}
+					break;
+				case TypeKind.ReferenceKind:
 					image.Source = ((SWC.Image)Application.Current.FindResource("ClassPng")).Source;
-				}
-			}
-			else if (cat.First == TypeCategory.Struct)
-			{
-				image.Source = ((SWC.Image)Application.Current.FindResource("StructPng")).Source;
-			}
-			else
-			{
-				image.Source = ((SWC.Image)Application.Current.FindResource("PrimitivePng")).Source;
+					break;
+				case TypeKind.PrimitiveKind:
+					image.Source = ((SWC.Image)Application.Current.FindResource("PrimitivePng")).Source;
+					break;
+				default:
+					image.Source = ((SWC.Image)Application.Current.FindResource("QuestionPng")).Source;
+					break;
 			}
 
 			stackPanel.Children.Add(image);
@@ -2553,8 +2613,6 @@ namespace MDRDesk
 			//: SelectionStr() + _fieldName + FilterStr(_valueFilter) + TypeHeader() + _typeName;
 
 		}
-
-
 
 		private StackPanel GetInstanceValueStackPanel(InstanceValue val)
 		{

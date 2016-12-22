@@ -490,12 +490,36 @@
             </DockPanel>
         </Grid>
         <Grid x:Key="ThreadBlockingGraphXGrid" x:Shared="False">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="32"/>
+                <ColumnDefinition Width="32"/>
+                <ColumnDefinition Width="*"/>
+            </Grid.ColumnDefinitions>
             <Grid.RowDefinitions>
-                <RowDefinition Height="32"></RowDefinition>
+                <RowDefinition Height="40"></RowDefinition>
                 <RowDefinition Height="*"></RowDefinition>
             </Grid.RowDefinitions>
-            <gx:ZoomControl x:Name="TBZoomCtrl" Visibility="Visible" v4:Grid.Row="1">
-                <local:DlkGraphArea x:Name="TBGraphArea"/>
+            <StackPanel v4:Grid.Row="0" v4:Grid.ColumnSpan="3" Background="WhiteSmoke"  Orientation="Horizontal">
+                <Button  x:Name="ThreadBlockingGraphXBack" Margin="2,0,2,0" Width="24" Height="24" HorizontalAlignment="Center" VerticalAlignment="Center" BorderThickness="0" Click="ThreadBlockingGraphXBackClicked"
+                         Background="LightGray">
+                    <Button.ToolTip>Redo</Button.ToolTip>
+                    <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                        <Image Source=".\Images\Backward_16x.png" Width="16" Height="16" Margin="0,0,10,0" VerticalAlignment="Center" HorizontalAlignment="Center"/>
+                        <!--<TextBlock FontWeight="Bold" FontSize="12">Redo</TextBlock>-->
+                    </StackPanel>
+                </Button>
+                <Button x:Name="ThreadBlockingGraphXForward" Margin="2,0,2,0" Width="24" Height="24" HorizontalAlignment="Right" VerticalAlignment="Center" BorderThickness="0" Click="ThreadBlockingGraphXForwardClicked"
+                        Background="LightGray">
+                    <Button.ToolTip>Undo</Button.ToolTip>
+                    <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                        <Image Source=".\Images\Forward_16x.png" Width="16" Height="16" Margin="0,0,10,0" VerticalAlignment="Center" HorizontalAlignment="Center"/>
+                        <!--<TextBlock FontWeight="Bold" FontSize="12">Undo</TextBlock>-->
+                    </StackPanel>
+                </Button>
+                <TextBlock Name="ThreadBlockingGraphXHelp" Margin="32,0,2,0" HorizontalAlignment="Right" VerticalAlignment="Center" FontFamily="Trebuchet MS"  FontSize="12" FontStyle="Italic"></TextBlock>
+            </StackPanel>
+            <gx:ZoomControl x:Name="TBZoomCtrl" Visibility="Visible" v4:Grid.Row="1" v4:Grid.Column="0" v4:Grid.ColumnSpan="3">
+                <local:DlkGraphArea x:Name="TBGraphArea" Margin="2,2,2,2"/>
             </gx:ZoomControl>
         </Grid>
     </Window.Resources>
@@ -522,8 +546,9 @@
                         <MenuItem x:Name="AddDacFile" Header="Add Dac File..." Click="AddDacFileClicked"/>
                         <MenuItem x:Name="TryOpenCrashDump" Header="Try Open Dump..." Click="TryOpenCrashDumpClicked"/>
                         <Separator></Separator>
+                        <MenuItem x:Name="CreateCrashDump" Header="Dump Local Process..." Click="CreateCrashDumpClicked"/>
                         <!--<MenuItem x:Name="RecentDumpsMenuItem" Header="Recent Files" ItemsSource="{StaticResource RecentDumps}" DataContext="{StaticResource RecentDumps}"/>-->
-                        <MenuItem x:Name="RecentDumpsMenuItem" Header="Recent Dumps"/>
+                        <!--<MenuItem x:Name="RecentDumpsMenuItem" Header="Recent Dumps"/>-->
                     </MenuItem>
                 <MenuItem x:Name="Index" Header="Index" VerticalAlignment="Center">
                     <MenuItem x:Name="CreateDumpIndex" Header="Create Dump Index..." Click="CreateDumpIndexClicked"/>

@@ -41,7 +41,6 @@ namespace MDRDesk
         /// <summary>
         /// List of recent files.
         /// </summary>
-		private RecentFileList RecentDumpList;
 		private RecentFileList RecentIndexList;
 		private RecentFileList RecentAdhocList;
 
@@ -82,8 +81,6 @@ namespace MDRDesk
 
 				var result = Setup.GetConfigSettings(out error);
 				if (!result) return false;
-				RecentDumpList = new RecentFileList(RecentDumpsMenuItem, (int)Setup.RecentFiles.MaxCount);
-				RecentDumpList.Add(Setup.RecentDumpList);
 				RecentIndexList = new RecentFileList(RecentIndexMenuItem, (int)Setup.RecentFiles.MaxCount);
 				RecentIndexList.Add(Setup.RecentIndexList);
 				RecentAdhocList = new RecentFileList(RecentAdhocMenuItem, (int)Setup.RecentFiles.MaxCount);
@@ -144,7 +141,7 @@ namespace MDRDesk
 
 		private void FileOpenReportFileClicked(object sender, RoutedEventArgs e)
 		{
-			string path = SelectFile(string.Format("*.{0}", Constants.TextFileExt),
+			string path = GuiUtils.SelectFile(string.Format("*.{0}", Constants.TextFileExt),
 			string.Format("Dump Map Files|*.{0}|All Files|*.*", Constants.TextFileExt));
 			if (path == null) return;
 			string error, title;
@@ -166,7 +163,6 @@ namespace MDRDesk
 		public void MainWindow_Closing(object sender, CancelEventArgs e)
 		{
 			string error;
-			if (RecentDumpList != null) Setup.ResetRecentFileList(RecentDumpList.GetPaths(), Setup.RecentFiles.Dump);
 			if (RecentIndexList != null) Setup.ResetRecentFileList(RecentIndexList.GetPaths(), Setup.RecentFiles.Map);
 			if (RecentAdhocList != null) Setup.ResetRecentFileList(RecentAdhocList.GetPaths(), Setup.RecentFiles.Adhoc);
 			Setup.SaveConfigSettings(out error);
@@ -193,7 +189,7 @@ namespace MDRDesk
 
 		private void CrashDumpRequiredDacClicked(object sender, RoutedEventArgs e)
 		{
-			var path = SelectCrashDumpFile();
+			var path = GuiUtils.SelectCrashDumpFile();
 			if (path == null) return;
 
 			string error;
@@ -204,7 +200,6 @@ namespace MDRDesk
 				return;
 			}
 			SW.Clipboard.SetText(dacFile);
-			RecentDumpList.Add(path);
 			ShowInformation("Required Dac File", dacFile, "Dac file name (shown above) is copied to Clipboard.", string.Empty);
 		}
 
@@ -217,6 +212,18 @@ namespace MDRDesk
 		{
 
 		}
+
+
+		private void CreateCrashDumpClicked(object sender, RoutedEventArgs e)
+		{
+			CreateCrashDump dlg = new CreateCrashDump() { Owner = Window.GetWindow(this) };
+			var dlgResult = dlg.ShowDialog();
+			if (dlgResult == true && dlg.IndexDump && System.IO.File.Exists(dlg.DumpPath))
+			{
+				Dispatcher.CurrentDispatcher.InvokeAsync(() => DoCreateDumpIndex(dlg.DumpPath));
+			}
+		}
+
 
 		#endregion Dump
 
@@ -297,10 +304,40 @@ namespace MDRDesk
 			}
 		}
 
-		private async void CreateDumpIndexClicked(object sender, RoutedEventArgs e)
+		private void CreateDumpIndexClicked(object sender, RoutedEventArgs e)
 		{
-			var path = SelectCrashDumpFile();
+			var path = GuiUtils.SelectCrashDumpFile();
 			if (path == null) return;
+			DoCreateDumpIndex(path);
+			//var dmpFileName = Path.GetFileNameWithoutExtension(path);
+			//var progressHandler = new Progress<string>(MainStatusShowMessage);
+			//var progress = progressHandler as IProgress<string>;
+			//SetStartTaskMainWindowState("Indexing: " + dmpFileName + ", please wait.");
+
+			//var result = await Task.Run(() =>
+			//{
+			//	string error;
+			//	string indexPath;
+			//	var indexer = new DumpIndexer(path);
+			//	var ok = indexer.CreateDumpIndex(_myVersion, progress, DumpIndexer.IndexingArguments.All, out indexPath, out error);
+			//	return new Tuple<bool, string, string>(ok, error, indexPath);
+			//});
+
+			//Utils.ForceGcWithCompaction();
+			//SetEndTaskMainWindowState(result.Item1
+			//	? "Indexing: " + dmpFileName + " done."
+			//	: "Indexing: " + dmpFileName + " failed.");
+
+			//if (!result.Item1)
+			//{
+			//	ShowError(result.Item2);
+			//	return;
+			//}
+			//Dispatcher.CurrentDispatcher.InvokeAsync(() => DoOpenDumpIndex(0, result.Item3));
+		}
+		private async void DoCreateDumpIndex(string path)
+		{
+			Debug.Assert(path != null && System.IO.File.Exists(path));
 			var dmpFileName = Path.GetFileNameWithoutExtension(path);
 			var progressHandler = new Progress<string>(MainStatusShowMessage);
 			var progress = progressHandler as IProgress<string>;
@@ -339,7 +376,7 @@ namespace MDRDesk
 					path = e.OriginalSource as string;
 				}
 			}
-			if (path == null) path = GetFolderPath(Setup.MapFolder);
+			if (path == null) path = GuiUtils.GetFolderPath(Setup.MapFolder);
 
 			if (path == null) return;
 
@@ -648,7 +685,7 @@ namespace MDRDesk
 		private async void IndexCompareSizeInformationClicked(object sender, RoutedEventArgs e)
 		{
 			if (!IsIndexAvailable("Compare Size Information")) return;
-			var path = SelectCrashDumpFile();
+			var path = GuiUtils.SelectCrashDumpFile();
 			if (path == null) return;
 			SetStartTaskMainWindowState("Getting type sizes to compare. Please wait...");
 
@@ -667,7 +704,7 @@ namespace MDRDesk
 		private async void IndexCompareStringInformationClicked(object sender, RoutedEventArgs e)
 		{
 			if (!IsIndexAvailable("Compare String Instances Information")) return;
-			var path = SelectCrashDumpFile();
+			var path = GuiUtils.SelectCrashDumpFile();
 			if (path == null) return;
 			SetStartTaskMainWindowState("Getting string instances to compare. Please wait...");
 
@@ -716,7 +753,7 @@ namespace MDRDesk
 		private async void StringUsageClicked(object sender, RoutedEventArgs e)
 		{
 			string error;
-			var dumpFilePath = SelectCrashDumpFile();
+			var dumpFilePath = GuiUtils.SelectCrashDumpFile();
 			if (dumpFilePath == null) return;
 			var progressHandler = new Progress<string>(MainStatusShowMessage);
 			var progress = progressHandler as IProgress<string>;
@@ -766,7 +803,7 @@ namespace MDRDesk
 		private async void AhqTypeCountClicked(object sender, RoutedEventArgs e)
 		{
 			string error;
-			var dumpFilePath = SelectCrashDumpFile();
+			var dumpFilePath = GuiUtils.SelectCrashDumpFile();
 			if (dumpFilePath == null) return;
 			var progressHandler = new Progress<string>(MainStatusShowMessage);
 			var progress = progressHandler as IProgress<string>;
@@ -807,7 +844,7 @@ namespace MDRDesk
 		private void AhqCollectionContentArray(object sender, RoutedEventArgs e)
 		{
 			string error;
-			var dumpFilePath = SelectCrashDumpFile();
+			var dumpFilePath = GuiUtils.SelectCrashDumpFile();
 			if (dumpFilePath == null) return;
 			ulong addr;
 			if (!GetUserEnteredAddress("Enter an array address.", out addr))
@@ -819,7 +856,7 @@ namespace MDRDesk
 
 		private async void AhqCreateInstanceRefsClicked(object sender, RoutedEventArgs e)
 		{
-			var dumpFilePath = SelectCrashDumpFile();
+			var dumpFilePath = GuiUtils.SelectCrashDumpFile();
 			if (dumpFilePath == null) return;
 
 			var progressHandler = new Progress<string>(MainStatusShowMessage);
@@ -1313,90 +1350,90 @@ namespace MDRDesk
 
 		#endregion Menu
 
-		#region File/Folder Selection
+		//#region File/Folder Selection
 
-		private string SelectCrashDumpFile()
-		{
-			return SelectFile(string.Format("*.{0}", Constants.CrashDumpFileExt),
-							string.Format("Dump Map Files|*.{0}|All Files|*.*", Constants.CrashDumpFileExt));
-		}
+		//public string SelectCrashDumpFile()
+		//{
+		//	return SelectFile(string.Format("*.{0}", Constants.CrashDumpFileExt),
+		//					string.Format("Dump Map Files|*.{0}|All Files|*.*", Constants.CrashDumpFileExt));
+		//}
 
-		private string[] SelectCrashDumpFiles()
-		{
-			return SelectFiles(string.Format("*.{0}", Constants.CrashDumpFileExt),
-							string.Format("Dump Map Files|*.{0}|All Files|*.*", Constants.CrashDumpFileExt));
-		}
+		//private string[] SelectCrashDumpFiles()
+		//{
+		//	return SelectFiles(string.Format("*.{0}", Constants.CrashDumpFileExt),
+		//					string.Format("Dump Map Files|*.{0}|All Files|*.*", Constants.CrashDumpFileExt));
+		//}
 
-		private string SelectAssemblyFile()
-		{
-			return SelectFile(string.Format("*.{0}", "dll"),
-							string.Format("Dll files (*.dll)|*.dll|Exe files (*.exe)|*.exe"), null);
-		}
+		//private string SelectAssemblyFile()
+		//{
+		//	return SelectFile(string.Format("*.{0}", "dll"),
+		//					string.Format("Dll files (*.dll)|*.dll|Exe files (*.exe)|*.exe"), null);
+		//}
 
-		private string SelectFile(string defExtension, string filter, string initialDir = null)
-		{
-			try
-			{
-				var dlg = new Microsoft.Win32.OpenFileDialog { DefaultExt = defExtension, Filter = filter, Multiselect = false };
-				dlg.Multiselect = false;
-				if (initialDir != null)
-				{
-					string path = System.IO.Path.GetFullPath(initialDir);
-					if (Directory.Exists(path))
-					{
-						dlg.InitialDirectory = path;
-					}
-				}
-				bool? result = dlg.ShowDialog();
-				return result == true ? dlg.FileName : null;
-			}
-			catch (Exception ex)
-			{
-				ShowError(Utils.GetExceptionErrorString(ex));
-				return null;
-			}
-		}
+		//private string SelectFile(string defExtension, string filter, string initialDir = null)
+		//{
+		//	try
+		//	{
+		//		var dlg = new Microsoft.Win32.OpenFileDialog { DefaultExt = defExtension, Filter = filter, Multiselect = false };
+		//		dlg.Multiselect = false;
+		//		if (initialDir != null)
+		//		{
+		//			string path = System.IO.Path.GetFullPath(initialDir);
+		//			if (Directory.Exists(path))
+		//			{
+		//				dlg.InitialDirectory = path;
+		//			}
+		//		}
+		//		bool? result = dlg.ShowDialog();
+		//		return result == true ? dlg.FileName : null;
+		//	}
+		//	catch (Exception ex)
+		//	{
+		//		ShowError(Utils.GetExceptionErrorString(ex));
+		//		return null;
+		//	}
+		//}
 
-		private string[] SelectFiles(string defExtension, string filter, string initialDir = null)
-		{
-			try
-			{
-				var dlg = new Microsoft.Win32.OpenFileDialog { DefaultExt = defExtension, Filter = filter, Multiselect = false };
-				dlg.Multiselect = true;
-				if (initialDir != null)
-				{
-					string path = System.IO.Path.GetFullPath(initialDir);
-					if (Directory.Exists(path))
-					{
-						dlg.InitialDirectory = path;
-					}
-				}
-				bool? result = dlg.ShowDialog();
-				if (result != true) return null;
-				return dlg.FileNames;
-			}
-			catch (Exception ex)
-			{
-				ShowError(Utils.GetExceptionErrorString(ex));
-				return null;
-			}
-		}
+		//private string[] SelectFiles(string defExtension, string filter, string initialDir = null)
+		//{
+		//	try
+		//	{
+		//		var dlg = new Microsoft.Win32.OpenFileDialog { DefaultExt = defExtension, Filter = filter, Multiselect = false };
+		//		dlg.Multiselect = true;
+		//		if (initialDir != null)
+		//		{
+		//			string path = System.IO.Path.GetFullPath(initialDir);
+		//			if (Directory.Exists(path))
+		//			{
+		//				dlg.InitialDirectory = path;
+		//			}
+		//		}
+		//		bool? result = dlg.ShowDialog();
+		//		if (result != true) return null;
+		//		return dlg.FileNames;
+		//	}
+		//	catch (Exception ex)
+		//	{
+		//		ShowError(Utils.GetExceptionErrorString(ex));
+		//		return null;
+		//	}
+		//}
 
-		private string GetFolderPath(string initialFolder)
-		{
-			string path = null;
-			var dialog = new System.Windows.Forms.FolderBrowserDialog();
-			using (dialog)
-			{
-				if (initialFolder != null) dialog.SelectedPath = initialFolder;
-				System.Windows.Forms.DialogResult result = dialog.ShowDialog();
-				if (result != System.Windows.Forms.DialogResult.OK) return null;
-				path = dialog.SelectedPath;
-			}
-			return path;
-		}
+		//private string GetFolderPath(string initialFolder)
+		//{
+		//	string path = null;
+		//	var dialog = new System.Windows.Forms.FolderBrowserDialog();
+		//	using (dialog)
+		//	{
+		//		if (initialFolder != null) dialog.SelectedPath = initialFolder;
+		//		System.Windows.Forms.DialogResult result = dialog.ShowDialog();
+		//		if (result != System.Windows.Forms.DialogResult.OK) return null;
+		//		path = dialog.SelectedPath;
+		//	}
+		//	return path;
+		//}
 
-		#endregion File/Folder Selection
+		//#endregion File/Folder Selection
 
 		#region GUI Helpers
 
@@ -1449,8 +1486,8 @@ namespace MDRDesk
 		{
 			str = null;
 			InputStringDlg dlg = new InputStringDlg(descr, defValue ?? " ") { Title = title, Owner = Window.GetWindow(this) };
-			if (dlg.DialogResult != null && (!dlg.DialogResult.Value || string.IsNullOrWhiteSpace(dlg.Answer))) return false;
 			var dlgResult = dlg.ShowDialog();
+			if (dlg.DialogResult != null && (!dlg.DialogResult.Value || string.IsNullOrWhiteSpace(dlg.Answer))) return false;
 			str = dlg.Answer.Trim();
 			dlg.Close();
 			dlg = null;
@@ -1844,7 +1881,6 @@ namespace MDRDesk
 				return;
 			}
 		}
-
 
 	}
 }
