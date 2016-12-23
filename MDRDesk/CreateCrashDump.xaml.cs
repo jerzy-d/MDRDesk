@@ -67,7 +67,7 @@ namespace MDRDesk
 			}
 
 			OutputFolder.Text = string.Empty;
-			folder = Setup.MapFolder;
+			folder = Setup.DumpsFolder;
 			if (Directory.Exists(folder))
 			{
 				_outputPath = folder;

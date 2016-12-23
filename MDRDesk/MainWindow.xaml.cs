@@ -376,7 +376,7 @@ namespace MDRDesk
 					path = e.OriginalSource as string;
 				}
 			}
-			if (path == null) path = GuiUtils.GetFolderPath(Setup.MapFolder);
+			if (path == null) path = GuiUtils.GetFolderPath(Setup.DumpsFolder);
 
 			if (path == null) return;
 
@@ -1331,7 +1331,12 @@ namespace MDRDesk
 		#region Settings
 		private void SettingsClicked(object sender, RoutedEventArgs e)
 		{
-
+			MDRDeskSetup dlg = new MDRDeskSetup() { Owner = Window.GetWindow(this) };
+			var dlgResult = dlg.ShowDialog();
+			if (dlgResult == true)
+			{
+				// TODO JRD
+			}
 		}
 
 		#endregion Settings

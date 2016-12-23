@@ -159,6 +159,9 @@
     <Compile Include="Graphs\DlkGXLogicCore.cs" />
     <Compile Include="GuiUtils.cs" />
     <Compile Include="MainWindow.Gui.cs" />
+    <Compile Include="MDRDeskSetup.xaml.cs">
+      <DependentUpon>MDRDeskSetup.xaml</DependentUpon>
+    </Compile>
     <Compile Include="MdrMessageBox.xaml.cs">
       <DependentUpon>MdrMessageBox.xaml</DependentUpon>
     </Compile>
@@ -196,6 +199,10 @@
       <SubType>Code</SubType>
     </Compile>
     <Page Include="MDRDeskResourceDct.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="MDRDeskSetup.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>

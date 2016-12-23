@@ -8,7 +8,7 @@ namespace ClrMDRIndex
 {
 	public class Setup
 	{
-	    public enum RecentFiles : int
+	    public enum RecentFiles
 	    {
 	        Unknown,
             Adhoc,
@@ -16,32 +16,33 @@ namespace ClrMDRIndex
             MaxCount = 5
 	    }
 
-		public static string Error { get; private set; }
-		public static string DacPathFolder { get; private set; }
-
-		static string[] _dacPaths;
-		static string[] _dumpPaths;
-
-		public static string PrivateDacFolder { get; private set; }
+		public static string DacFolder { get; private set; }
 		public static string ProcDumpFolder { get; private set; }
-		public static string LastDump { get; private set; }
+		public static string DumpsFolder { get; private set; }
 
-         public static List<string> RecentIndexList { get; private set; }
+		public static List<string> RecentIndexList { get; private set; }
         public static List<string> RecentAdhocList { get; private set; }
 
-        public static string MapFolder { get; private set; }
-		public static string DacFilePath { get; private set; }
 		public static string GraphDbJar { get; private set; }
 		public static int GraphPort { get; private set; }
 
         public static string TypesDisplayMode { get; private set; }
 
-        public static void SetDacPathFolder(string folder)
+        public static void SetDacFolder(string folder)
 		{
-			DacPathFolder = folder;
+			DacFolder = folder;
 		}
 
-	    public static void SetTypesDisplayMode(string mode)
+		public static void SetDumpsFolder(string folder)
+		{
+			DumpsFolder = folder;
+		}
+		public static void SetProcdumpFolder(string folder)
+		{
+			ProcDumpFolder = folder;
+		}
+
+		public static void SetTypesDisplayMode(string mode)
 	    {
 	        TypesDisplayMode = mode;
 	    }
@@ -80,8 +81,9 @@ namespace ClrMDRIndex
         public static bool GetConfigSettings(out string error)
 		{
 			error = null;
-			PrivateDacFolder = string.Empty;
-			LastDump = string.Empty;
+			DacFolder = string.Empty;
+			DumpsFolder = string.Empty;
+			ProcDumpFolder = string.Empty;
             RecentIndexList = new List<string>();
             RecentAdhocList = new List<string>();
             StringBuilder errors = StringBuilderCache.Acquire(256);
@@ -97,15 +99,23 @@ namespace ClrMDRIndex
                         var ky = key.ToLower();
                         if (Utils.SameStrings(ky, "dacfolder"))
                         {
-                            PrivateDacFolder = appSettings.Settings[key].Value.Trim();
-                        }
-                        else if (Utils.SameStrings(ky, "mapfolder"))
+							var folder = appSettings.Settings[key].Value.Trim();
+	                        if (Directory.Exists(folder)) DacFolder = folder;
+							else errors.AppendLine("Dac folder does not exist: " + folder);
+						}
+						else if (Utils.SameStrings(ky, "mapfolder"))
                         {
-                            MapFolder = appSettings.Settings[key].Value.Trim();
-                            if (!Directory.Exists(MapFolder))
-                                errors.AppendLine("MapFolder does not exist: " + MapFolder);
-                        }
-                        else if (Utils.SameStrings(ky, "graphproxy"))
+							var folder = appSettings.Settings[key].Value.Trim();
+							if (Directory.Exists(folder)) DumpsFolder = folder;
+							else errors.AppendLine("Dumps folder does not exist: " + folder);
+						}
+						else if (Utils.SameStrings(ky, "procdumpfolder"))
+						{
+							var folder = appSettings.Settings[key].Value.Trim();
+							if (Directory.Exists(folder)) ProcDumpFolder = folder;
+							else errors.AppendLine("procdum.exe folder does not exist: " + folder);
+						}
+						else if (Utils.SameStrings(ky, "graphproxy"))
                         {
                             GraphDbJar = appSettings.Settings[key].Value.Trim();
                         }
@@ -121,20 +131,16 @@ namespace ClrMDRIndex
                         {
                             GetSemicolonDelimitedFilePaths(RecentAdhocList, appSettings.Settings[key].Value);
                         }
-                        else if (Utils.SameStrings(ky, "procdumpfolder"))
-                        {
-                            ProcDumpFolder = appSettings.Settings[key].Value.Trim();
-                        }
-                    }
+						else if (Utils.SameStrings(ky, "typedisplaymode"))
+						{
+							TypesDisplayMode = appSettings.Settings[key].Value.Trim();
+						}
+					}
                 }
                 else
                 {
                     error = "The appSettings section is empty.";
                 }
-
-                DacPathFolder = PrivateDacFolder;
-                if (!Directory.Exists(DacPathFolder))
-                    errors.AppendLine("DacPathFolder does not exist: " + DacPathFolder);
                 if (errors.Length > 0) return false;
                 return true;
             }
@@ -168,8 +174,11 @@ namespace ClrMDRIndex
                 var config = ConfigurationManager.OpenExeConfiguration(ConfigurationUserLevel.None);
                 config.AppSettings.Settings["typedisplaymode"].Value = TypesDisplayMode;
                 config.AppSettings.Settings["recentindices"].Value = JoinSemicolonDelimitedList(RecentIndexList);
-                config.AppSettings.Settings["recentadhocs"].Value = JoinSemicolonDelimitedList(RecentAdhocList);
-                config.Save(ConfigurationSaveMode.Modified);
+				config.AppSettings.Settings["recentadhocs"].Value = JoinSemicolonDelimitedList(RecentAdhocList);
+				config.AppSettings.Settings["dacfolder"].Value = DacFolder;
+				config.AppSettings.Settings["mapfolder"].Value = DumpsFolder;
+				config.AppSettings.Settings["procdumpfolder"].Value = ProcDumpFolder;
+				config.Save(ConfigurationSaveMode.Modified);
                 return true;
             }
             catch (Exception ex)

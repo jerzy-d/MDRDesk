@@ -1,0 +1,49 @@
+﻿<Window x:Class="MDRDesk.MDRDeskSetup"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:MDRDesk"
+        mc:Ignorable="d"
+        WindowStartupLocation="CenterOwner"
+        WindowStyle="ToolWindow"
+        Title="MDRDesk Setup" Height="300" Width="609.278">
+    <Grid Margin="0,0,2,0">
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="20*" />
+            <ColumnDefinition Width="80*" />
+        </Grid.ColumnDefinitions>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="20*" />
+            <RowDefinition Height="20*" />
+            <RowDefinition Height="20*" />
+            <RowDefinition Height="20*" />
+            <RowDefinition Height="20*" />
+        </Grid.RowDefinitions>
+        <Button x:Name="ButtonDacFolder" Content="Dac Folder..." Grid.Row="0" Grid.Column="0" HorizontalAlignment="Left" Margin="4,2,2,2" VerticalAlignment="Center" Width="90" Height="28" FontSize="10" Click="ButtonDacFolder_OnClick"/>
+        <TextBox x:Name="TxtBoxDacFolder" Grid.Row="0" Grid.Column="1" HorizontalAlignment="Stretch"  Height="23" Margin="4,2,4,2" Text="..." VerticalAlignment="Center" />
+        <Button x:Name="ButtonDumpFolder" Content="Dumps Folder..." Grid.Row="1" Grid.Column="0" HorizontalAlignment="Left" Margin="4,2,2,2" VerticalAlignment="Center" Width="90" Height="28" FontSize="10" Click="ButtonDumpFolder_OnClick"/>
+        <TextBox x:Name="TxtBoxDumpFolder" Grid.Row="1" Grid.Column="1" HorizontalAlignment="Stretch"  Height="23" Margin="4,2,4,2" Text="..." VerticalAlignment="Center" />
+        <Button x:Name="ButtonProcdump" Content="Procdump Path..." Grid.Row="2" Grid.Column="0" HorizontalAlignment="Left" Margin="4,2,2,2" VerticalAlignment="Center"  Width="90" Height="28" FontSize="10" Click="ButtonProcdump_OnClick"/>
+        <TextBox x:Name="TxtBoxProcdumpPath" Grid.Row="2" Grid.Column="1" HorizontalAlignment="Stretch"  Height="23" Margin="4,2,4,2" Text="..." VerticalAlignment="Center" />
+
+        <Label Content="Type Display Mode" Grid.Row="3" Grid.Column="0" HorizontalAlignment="Left" Margin="4,2,2,2" VerticalAlignment="Center"  Width="Auto" Height="23" FontSize="10"/>
+        <Grid Grid.Row="3" Grid.Column="1" Height="23">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="33*" />
+                <ColumnDefinition Width="33*" />
+                <ColumnDefinition Width="33*" />
+            </Grid.ColumnDefinitions>
+            <RadioButton x:Name="TypeDisplayNamespaceClass" Grid.Column="0" GroupName="TypeDisplayMode" Content="Namespace/Type" HorizontalAlignment="Left" Margin="2,2,2,2" VerticalAlignment="Center"/>
+            <RadioButton x:Name="TypeDisplayClass" Grid.Column="1" GroupName="TypeDisplayMode" Content="Type Name" HorizontalAlignment="Left" Margin="2,2,2,2" VerticalAlignment="Center"/>
+            <RadioButton x:Name="TypeDisplayNamespace" Grid.Column="2" GroupName="TypeDisplayMode" Content="Namespace" HorizontalAlignment="Left" Margin="2,2,2,2" VerticalAlignment="Center"/>
+
+            <!--<RadioButton x:Name ="TypeDisplayNamespaceClass" GroupName="TypeDisplayMode" Checked="ToggleButton_OnChecked" Margin="4,0,4,0" FontWeight="Bold" >Namespace/Class Display</RadioButton>
+            <RadioButton x:Name ="TypeDisplayClass" GroupName="TypeDisplayMode" Checked="ToggleButton_OnChecked" Margin="4,0,4,0" FontWeight="Bold">Class Display</RadioButton>
+            <RadioButton x:Name ="TypeDisplayNamespace" GroupName="TypeDisplayMode" Checked="ToggleButton_OnChecked" Margin="4,0,4,0" FontWeight="Bold">Namespace Display</RadioButton>-->
+
+        </Grid>
+        <Button x:Name="ButtonSaveSetup" Grid.Row="4" Grid.Column="0" Content="Save" HorizontalAlignment="Left" Margin="4,2,2,2" VerticalAlignment="Center" Width="90" Height="28" Background="DarkOliveGreen" Click="ButtonSaveSetup_OnClick"/>
+        <Button x:Name="ButtonCloseSetup" Grid.Row ="4" Grid.Column="1" Content="Close" HorizontalAlignment="Right" Margin="4,2,2,2" VerticalAlignment="Center" Width="75" Height="28" Click="ButtonCloseSetup_OnClick"/>
+    </Grid>
+</Window>

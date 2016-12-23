@@ -96,11 +96,11 @@ namespace ClrMDRIndex
 				_dacPaths = new string[_requiredDacs.Length];
 				_runtimes = new ClrRuntime[_requiredDacs.Length];
 
-				if (!string.IsNullOrWhiteSpace(Setup.DacPathFolder))
+				if (!string.IsNullOrWhiteSpace(Setup.DacFolder))
 				{
 					for (int i = 0, icnt = _clrInfos.Length; i < icnt; ++i)
 					{
-						_dacPaths[i] = Utils.SearchDacFolder(_requiredDacs[i], Setup.DacPathFolder);
+						_dacPaths[i] = Utils.SearchDacFolder(_requiredDacs[i], Setup.DacFolder);
 						if (!string.IsNullOrWhiteSpace(_dacPaths[i]))
 						{
 							_runtimes[i] = _clrInfos[i].CreateRuntime(_dacPaths[i]);

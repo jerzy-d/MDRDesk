@@ -86,6 +86,7 @@ ader="{Binding ElementName=CbAdHocDump, Path=SelectedItem}" >
 FileReport (WriteToHistory_32x.png Visual Studio icon)
 FileReportShort (WriteToHistory_16x.png Visual Studio icon)
 Settings (Settings_32x.png Visual Studio icon)
+	Change or view MDRDesk apllication config file settings.
 ForceGC (ClearWindowContent_16x.png Visual Studio icon)
 	Forces GC collection (including LOH compaction) of  MRDDesk application.
 	The results are displayed in status bar.
