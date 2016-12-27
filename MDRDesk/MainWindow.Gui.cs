@@ -2466,6 +2466,29 @@ namespace MDRDesk
 
 		#region TabItem Cleanup
 
+		private void CloseCurrentIndex()
+		{
+			MainStatusShowMessage("Closing current index...");
+			MainTab.Items.Clear();
+			if (IsIndexAvailable(null))
+			{
+				var task = DisposeCurrentIndex();
+				task.Wait();
+			}
+			MainStatusShowMessage("Current index is no more.");
+		}
+
+		private Task<bool> DisposeCurrentIndex()
+		{
+			return  Task.Run(() =>
+			{
+				CurrentIndex.Dispose();
+				CurrentIndex = null;
+				return true;
+			});
+		}
+
+
 		public void ClearTabItem(Grid grid)
 		{
 			// TODO JRD -- handle all grid types

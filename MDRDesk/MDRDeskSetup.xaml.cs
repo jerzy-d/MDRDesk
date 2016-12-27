@@ -1,25 +1,15 @@
-﻿using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using System.IO;
 using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Data;
-using System.Windows.Documents;
-using System.Windows.Input;
-using System.Windows.Media;
-using System.Windows.Media.Imaging;
-using System.Windows.Shapes;
 using ClrMDRIndex;
 
+// ReSharper disable InconsistentNaming
 namespace MDRDesk
 {
 	/// <summary>
 	/// Interaction logic for MDRDeskSetup.xaml
 	/// </summary>
-	public partial class MDRDeskSetup : Window
+	public partial class MDRDeskSetup
 	{
 		private string _dacFolder;
 		private string _dumpFolder;
@@ -46,6 +36,7 @@ namespace MDRDesk
 					TypeDisplayNamespace.IsChecked = true;
 					break;
 			}
+			TxtBoxReportLineCount.Text = Setup.ShortReportLineCount.ToString();
 		}
 
 		private void ButtonDacFolder_OnClick(object sender, RoutedEventArgs e)
@@ -98,14 +89,19 @@ namespace MDRDesk
 				Setup.SetTypesDisplayMode("fulltypenames");
 			else
 				Setup.SetTypesDisplayMode("namespaces");
+			string shortRepCount = TxtBoxReportLineCount.Text.Trim();
+			Setup.SetShortReportLineCount(shortRepCount);
 			string error;
 			Setup.SaveConfigSettings(out error);
+			DialogResult = true;
 			Close();
 		}
 
 		private void ButtonCloseSetup_OnClick(object sender, RoutedEventArgs e)
 		{
+			DialogResult = true;
 			Close();
 		}
 	}
 }
+// ReSharper restore InconsistentNaming

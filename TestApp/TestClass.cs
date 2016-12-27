@@ -16,7 +16,15 @@ namespace TestApp
 		private ConcurrentDictionary<string, KeyValuePair<string, string>> _concurrentDictionary;
 		private SortedDictionary<string, string> _sortedDictionary;
 		private Dictionary<int, string> _dictionary;
-	    private TestStruct _testStruct;
+		private HashSet<string> _stringHashSet;
+		private HashSet<decimal> _decimalHashSet;
+		private HashSet<DateTime> _dateTimeHashSet;
+		private HashSet<TimeSpan> _timeSpanHashSet;
+		private HashSet<Guid> _guidHashSet;
+		private HashSet<float> _floatHashSet;
+		private HashSet<double> _doubleHashSet;
+		private HashSet<char> _charHashSet;
+		private TestStruct _testStruct;
 	    private Guid _myGuid;
 
 		private string[] _stringArray;
@@ -76,13 +84,43 @@ namespace TestApp
             _concurrentDictionary = new ConcurrentDictionary<string, KeyValuePair<string, string>>();
             _dictionary = new Dictionary<int, string>();
 			_sortedDictionary = new SortedDictionary<string, string>();
+			_stringHashSet = new HashSet<string>();
+			_decimalHashSet = new HashSet<decimal>();
+			_dateTimeHashSet = new HashSet<DateTime>();
+			_timeSpanHashSet = new HashSet<TimeSpan>();
+			_guidHashSet = new HashSet<Guid>();
+			_floatHashSet = new HashSet<float>();
+			_doubleHashSet = new HashSet<double>();
+			_charHashSet = new HashSet<char>();
 
-            int count = 0;
-            while (!calcelToken.IsCancellationRequested)
+			int count = 0;
+			DateTime dt = DateTime.Now;
+			TimeSpan tsd = new TimeSpan(0, 0, 1, 0);
+			TimeSpan ts = new TimeSpan(0, 0, 1, 0);
+	        decimal dec = 1.0m;
+	        float fl = 1.0f;
+			while (!calcelToken.IsCancellationRequested)
             {
                 _concurrentDictionary.TryAdd("key_" + count,new KeyValuePair<string, string>("valueKey_" + count, "valueValue_" + count));
                 _dictionary.Add(count, "value_" + count);
 				_sortedDictionary.Add("sorted_key_" + count, "sorted_value_" + count);
+
+				_stringHashSet.Add("hash_entry" + count);
+	            _dateTimeHashSet.Add(dt);
+	            dt = dt + tsd;
+	            _timeSpanHashSet.Add(ts);
+	            ts = ts + tsd;
+	            _decimalHashSet.Add(dec);
+	            dec = dec + 0.5m;
+	            _guidHashSet.Add(Guid.NewGuid());
+	            _floatHashSet.Add(fl);
+	            _doubleHashSet.Add((double) fl);
+	            if ((_charHashSet.Count & 1) == 0)
+		            _charHashSet.Add('a');
+	            else
+		            _charHashSet.Add('b');
+	            fl = fl + 0.5f;
+
                 ++count;
                 if ((count % 20) == 0)
                     Console.WriteLine("[procId: " + _processId + "] dct entries added " + count);

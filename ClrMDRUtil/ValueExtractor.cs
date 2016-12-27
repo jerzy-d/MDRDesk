@@ -2,195 +2,11 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
-using System.Linq;
-using System.Net.NetworkInformation;
-using System.Runtime.CompilerServices;
 using System.Text;
-using System.Threading.Tasks;
 using Microsoft.Diagnostics.Runtime;
 
 namespace ClrMDRIndex
 {
-	public enum TypeCategory
-	{
-		Uknown = 0,
-		Reference = 1,
-		Struct = 2,
-		Primitive = 3,
-		Enum = 4,
-		String = 5,
-		Array = 6,
-		Decimal = 7,
-		DateTime = 8,
-		TimeSpan = 9,
-		Guid = 10,
-		Exception = 11,
-		SystemObject = 12,
-		System__Canon = 13,
-		Interface = 14,
-	}
-
-	[Flags]
-	public enum TypeKind : int
-	{
-		// LSB -- ClrElementType values
-		Unknown = 0,
-		Boolean = 2,
-		Char = 3,
-		Int8 = 4,
-		UInt8 = 5,
-		Int16 = 6,
-		UInt16 = 7,
-		Int32 = 8,
-		UInt32 = 9,
-		Int64 = 10,
-		UInt64 = 11,
-		Float = 12,
-		Double = 13,
-		String = 14,
-		Pointer = 15,
-		Struct = 17,
-		Class = 18,
-		Array = 20,
-		NativeInt = 24,
-		NativeUInt = 25,
-		FunctionPointer = 27,
-		Object = 28,
-		SZArray = 29,
-
-		// second LSB top level kinds
-		ReferenceKind =	0x00000100,
-		StructKind =	0x00000200,
-		PrimitiveKind =	0x00000300,
-		EnumKind =		0x00000400,
-		StringKind =	0x00000500,
-		ArrayKind =		0x00000600,
-		InterfaceKind =	0x00000700,
-
-		// 2 MSB more detailed info
-		Decimal =		0x00010000,
-		DateTime =		0x00020000,
-		TimeSpan =		0x00030000,
-		Guid =			0x00040000,
-		Exception =     0x00050000,
-		Str =           0x00060000,
-		SystemObject =	0x00070000,
-		System__Canon = 0x00080000,
-		Ary =           0x00090000,
-		Primitive =     0x000A0000,
-
-		// our value kind
-		ValueKind = 0x10000000,
-
-		ClrElementTypeMask =		0x000000FF,
-		MainTypeKindMask =			0x0000FF00,
-		ParticularTypeKindMask =    0x0FFF0000,
-		ValueTypeKindMask =         0x70000000,
-	}
-
-	public class TypeKinds
-	{
-		[MethodImpl(MethodImplOptions.AggressiveInlining)]
-		public static ClrElementType GetClrElementType(TypeKind kind)
-		{
-			return (ClrElementType)(kind & TypeKind.ClrElementTypeMask);
-		}
-
-		[MethodImpl(MethodImplOptions.AggressiveInlining)]
-		public static TypeKind SetClrElementType(TypeKind kind, ClrElementType elemType)
-		{
-			return (kind | (TypeKind)elemType);
-		}
-
-		[MethodImpl(MethodImplOptions.AggressiveInlining)]
-		public static TypeKind GetMainTypeKind(TypeKind kind)
-		{
-			return (kind & TypeKind.MainTypeKindMask);
-		}
-
-		[MethodImpl(MethodImplOptions.AggressiveInlining)]
-		public static TypeKind SetMainTypeKind(TypeKind outKind, TypeKind kind)
-		{
-			return (outKind | kind);
-		}
-
-		[MethodImpl(MethodImplOptions.AggressiveInlining)]
-		public static TypeKind GetParticularTypeKind(TypeKind kind)
-		{
-			return (kind & TypeKind.ParticularTypeKindMask);
-		}
-
-		[MethodImpl(MethodImplOptions.AggressiveInlining)]
-		public static TypeKind SetParticularTypeKind(TypeKind outKind, TypeKind kind)
-		{
-			return (outKind | kind);
-		}
-
-		[MethodImpl(MethodImplOptions.AggressiveInlining)]
-		public static TypeKind GetValueTypeKind(TypeKind kind)
-		{
-			return (kind & TypeKind.ValueTypeKindMask);
-		}
-
-
-		[MethodImpl(MethodImplOptions.AggressiveInlining)]
-		public static bool IsArray(TypeKind kind)
-		{
-			return (GetMainTypeKind(kind) & kind) == TypeKind.Array;
-		}
-
-		[MethodImpl(MethodImplOptions.AggressiveInlining)]
-		public static bool IsValue(TypeKind kind)
-		{
-			return (GetValueTypeKind(kind) & kind) == TypeKind.ValueKind;
-		}
-
-		public static TypeKind GetTypeKind(ClrType clrType)
-		{
-			var elemType = clrType.ElementType;
-			var kind = TypeKinds.SetClrElementType(TypeKind.Unknown, elemType);
-			switch (elemType)
-			{
-				case ClrElementType.Array:
-				case ClrElementType.SZArray:
-					return kind | TypeKind.ArrayKind;
-				case ClrElementType.String:
-					return kind | TypeKind.StringKind | TypeKind.ValueKind | TypeKind.Str;
-				case ClrElementType.Object:
-					kind |= TypeKind.ReferenceKind;
-					if (clrType.IsException)
-						return kind | TypeKind.Exception;
-					switch (clrType.Name)
-					{
-						case "System.Object":
-							return kind | TypeKind.Object;
-						case "System.__Canon":
-							return kind | TypeKind.System__Canon;
-						default:
-							return kind;
-					}
-				case ClrElementType.Struct:
-					kind |= TypeKind.StructKind;
-					switch (clrType.Name)
-					{
-						case "System.Decimal":
-							return kind | TypeKind.Decimal | TypeKind.ValueKind;
-						case "System.DateTime":
-							return kind | TypeKind.DateTime | TypeKind.ValueKind;
-						case "System.TimeSpan":
-							return kind | TypeKind.TimeSpan | TypeKind.ValueKind;
-						case "System.Guid":
-							return kind | TypeKind.Guid | TypeKind.ValueKind;
-						default:
-							return kind;
-					}
-				case ClrElementType.Unknown:
-					return TypeKind.Unknown;
-				default:
-					return kind | TypeKind.PrimitiveKind | TypeKind.ValueKind | TypeKind.Primitive;
-			}
-		}
-	}
 
 	//public struct TypeCategories
 	//{
@@ -255,9 +71,9 @@ namespace ClrMDRIndex
 		// System.Decimal
 		//
 
-		public static string GetDecimalValue(ulong parentAddr, ClrInstanceField field)
+		public static string GetDecimalValue(ulong addr, ClrInstanceField field)
 		{
-			var addr = field.GetAddress(parentAddr, true);
+//			var addr = field.GetAddress(parentAddr, true);
 			var flags = (int)field.Type.Fields[0].GetValue(addr);
 			var hi = (int)field.Type.Fields[1].GetValue(addr);
 			var lo = (int)field.Type.Fields[2].GetValue(addr);
@@ -300,6 +116,32 @@ namespace ClrMDRIndex
 			return new decimal(bits);
 		}
 
+		public static void Swap(int[] ary, int i1, int i2)
+		{
+			var temp = ary[i1];
+			ary[i1] = ary[i2];
+			ary[i2] = temp;
+		}
+
+		public static decimal GetDecimalValue(ClrHeap heap, ulong addr)
+		{
+			int[] bits = ReadIntAryAtAddress(addr, 4, heap);
+			// flags, hi, lo, mid 
+			Swap(bits,0,3);
+			// mid, hi, lo, flags 
+			Swap(bits, 2, 0);
+			// lo, hi,mid, flags 
+			Swap(bits, 1, 2);
+			// lo, mid, hi, flags
+			return new decimal(bits);
+		}
+
+		public static string GetDecimalValue(ClrHeap heap, ulong addr, string formatSpec)
+		{
+			decimal d = GetDecimalValue(heap, addr);
+			return formatSpec == null ? d.ToString(CultureInfo.InvariantCulture) : d.ToString(formatSpec);
+		}
+
 		//
 		// System.String
 		//
@@ -324,6 +166,20 @@ namespace ClrMDRIndex
 			heap.ReadMemory(addr, lenBuf, 0, 8);
 			ulong val = BitConverter.ToUInt64(lenBuf, 0);
 			return val;
+		}
+
+		public static int[] ReadIntAryAtAddress(ulong addr, int count, ClrHeap heap)
+		{
+			if (addr == 0UL) return null;
+			var lenBuf = new byte[4];
+			int[] result = new int[count];
+			for (int i = 0; i < count; ++i)
+			{
+				heap.ReadMemory(addr, lenBuf, 0, 4);
+				result[i] = BitConverter.ToInt32(lenBuf, 0);
+				addr += 4;
+			}
+			return result;
 		}
 
 		public static ulong ReadPointerAtAddress(ulong addr, ClrHeap heap)
@@ -391,7 +247,7 @@ namespace ClrMDRIndex
 		public static string GetDateTimeValue(ClrHeap heap, ulong addr, string formatSpec = null)
 		{
 			byte[] bytes = new byte[8];
-			var read = heap.ReadMemory(addr, bytes, 0, 8);
+			heap.ReadMemory(addr, bytes, 0, 8);
 			ulong data = BitConverter.ToUInt64(bytes, 0);
 			data = data & TicksMask;
 			try // might throw on bad data
@@ -453,7 +309,7 @@ namespace ClrMDRIndex
 		public static string GetTimeSpanValue(ClrHeap heap, ulong addr) // TODO JRD -- check if this works
 		{
 			byte[] bytes = new byte[8];
-			var read = heap.ReadMemory(addr, bytes, 0, 8);
+			heap.ReadMemory(addr, bytes, 0, 8);
 			long data = BitConverter.ToInt64(bytes, 0);
 			try // might throw on bad data
 			{
@@ -631,15 +487,15 @@ namespace ClrMDRIndex
 				case ClrElementType.UInt64:
 					return ((UInt64)obj).ToString();
 				case ClrElementType.Float:
+					return ((float)obj).ToString("N8");
 				case ClrElementType.Double:
-					return string.Format("0.0000", (Double)obj);
-
+					return ((double)obj).ToString("N8");
 				case ClrElementType.Pointer:
 					return "pointer: " + Utils.AddressString((UInt64)obj);
 				case ClrElementType.NativeInt:
-					return "native int: " + obj.ToString();
+					return "native int: " + obj;
 				case ClrElementType.NativeUInt:
-					return "native uint: " + obj.ToString();
+					return "native uint: " + obj;
 				case ClrElementType.String:
 				case ClrElementType.FunctionPointer:
 				case ClrElementType.Object:
@@ -680,7 +536,7 @@ namespace ClrMDRIndex
 					return ((UInt64)obj)==0UL;
 				case ClrElementType.Float:
 				case ClrElementType.Double:
-					return (Double)obj == 0.0;
+					return Math.Abs((Double)obj) < Double.Epsilon;
 				case ClrElementType.Pointer:
 					return Is64Bit ? (UInt64)obj ==0 : (UInt32)obj==0;
 				case ClrElementType.NativeInt:
@@ -733,8 +589,7 @@ namespace ClrMDRIndex
 		{
 			if (obj == null) return Constants.NullValue;
 			if (ClrElementType.Float == elemType || ClrElementType.Double == elemType)
-				return string.Format("0.0000", (Double)obj);
-
+				return ((Double)obj).ToString("C4");
 			if (ClrElementType.Boolean == elemType)
 				return ((bool)obj).ToString();
 			if (ClrElementType.Char == elemType)
@@ -758,9 +613,9 @@ namespace ClrMDRIndex
 			if (ClrElementType.Pointer == elemType)
 				return "pointer: " + $"{(UInt64)obj:x14}";
 			if (ClrElementType.NativeInt == elemType)
-				return "native int: " + obj.ToString();
+				return "native int: " + obj;
 			if (ClrElementType.NativeUInt == elemType)
-				return "native uint: " + obj.ToString();
+				return "native uint: " + obj;
 			if (ClrElementType.String == elemType
 				|| ClrElementType.FunctionPointer == elemType
 				|| ClrElementType.Object == elemType
@@ -783,14 +638,14 @@ namespace ClrMDRIndex
 				case TypeKind.StringKind:
 					addrObj = field.GetValue(classAddr, internalAddr, false);
 					if (addrObj == null) return Constants.NullValue;
-					return ValueExtractor.GetStringValue(clrType, (ulong)addrObj);
+					return GetStringValue(clrType, (ulong)addrObj);
 				case TypeKind.ReferenceKind:
 					switch (TypeKinds.GetParticularTypeKind(kind))
 					{
 						case TypeKind.Exception:
 							addrObj = field.GetValue(classAddr, internalAddr, false);
 							if (addrObj == null) return Constants.NullName;
-							return ValueExtractor.GetShortExceptionValue((ulong)addrObj, clrType, heap);
+							return GetShortExceptionValue((ulong)addrObj, clrType, heap);
 						default:
 							return Constants.NonValue;
 					}
@@ -798,21 +653,21 @@ namespace ClrMDRIndex
 					switch (TypeKinds.GetParticularTypeKind(kind))
 					{
 						case TypeKind.Decimal:
-							return ValueExtractor.GetDecimalValue(classAddr, field);
+							return GetDecimalValue(classAddr, field);
 						case TypeKind.DateTime:
-							return ValueExtractor.GetDateTimeValue(classAddr, field, internalAddr, null);
+							return GetDateTimeValue(classAddr, field, internalAddr);
 						case TypeKind.TimeSpan:
 							addrObj = field.GetValue(classAddr, internalAddr, false);
 							if (addrObj == null) return Constants.NullName;
-							return ValueExtractor.GetTimeSpanValue((ulong)addrObj, clrType);
+							return GetTimeSpanValue((ulong)addrObj, clrType);
 						case TypeKind.Guid:
-							return ValueExtractor.GetGuidValue(classAddr, field);
+							return GetGuidValue(classAddr, field);
 						default:
 							return Constants.NonValue;
 					}
 				case TypeKind.PrimitiveKind:
 					addrObj = field.GetValue(classAddr, internalAddr, false);
-					return ValueExtractor.GetPrimitiveValue(addrObj, clrType);
+					return GetPrimitiveValue(addrObj, clrType);
 				default:
 					return Constants.NonValue;
 			}
@@ -854,8 +709,9 @@ namespace ClrMDRIndex
 				intervals[lstNdx] = last;
 				return;
 			}
-
+			// ReSharper disable ConditionIsAlwaysTrueOrFalse
 			if (lastFree && !free)
+			// ReSharper restore ConditionIsAlwaysTrueOrFalse
 			{
 				if (diff > 0)
 				{
@@ -870,14 +726,9 @@ namespace ClrMDRIndex
 				return;
 			}
 
-			if (!lastFree && free)
-			{
-				intervals.Add(new triple<bool, ulong, ulong>(false, lastAddr, curLastAddr - lastAddr));
-				return;
-			}
+			Debug.Assert(!lastFree && free);
 
-			throw new ApplicationException("Should not happen!");
-
+			intervals.Add(new triple<bool, ulong, ulong>(false, lastAddr, curLastAddr - lastAddr));
 		}
 
 		public static void GetConcurrentDictionary(ClrHeap heap, ulong address, out string error)

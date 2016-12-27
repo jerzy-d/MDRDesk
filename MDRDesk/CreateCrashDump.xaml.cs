@@ -1,16 +1,10 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Data;
-using System.Windows.Documents;
 using System.Windows.Input;
 using System.Windows.Media;
-using System.Windows.Media.Imaging;
-using System.Windows.Shapes;
 using System.Diagnostics;
 using System.IO;
 using ClrMDRIndex;
@@ -20,15 +14,17 @@ namespace MDRDesk
 	/// <summary>
 	/// Interaction logic for CreateCrashDump.xaml
 	/// </summary>
-	public partial class CreateCrashDump : Window
+	public partial class CreateCrashDump
 	{
 		private string _procdumpPath;
 		private string _outputPath;
 		private string _dumpPath;
 		private int _processId = -1;
 		private string _error;
+		public string Error => _error;
 
-		public bool IndexDump => IndexCheckBox.IsChecked.Value;
+		public bool IndexDump => IndexCheckBox.IsChecked != null && IndexCheckBox.IsChecked.Value;
+
 		public string DumpPath => _dumpPath;
 
 		public CreateCrashDump()
@@ -58,7 +54,7 @@ namespace MDRDesk
 			var folder = Setup.ProcDumpFolder;
 			if (Directory.Exists(folder))
 			{
-				var procdumpPath = folder + System.IO.Path.DirectorySeparatorChar + "procdump.exe";
+				var procdumpPath = folder + Path.DirectorySeparatorChar + "procdump.exe";
 				if (File.Exists(procdumpPath))
 				{
 					_procdumpPath = procdumpPath;
@@ -75,6 +71,8 @@ namespace MDRDesk
 			}
 
 			ProcessList.ItemsSource = entries;
+			int myProcessId = Process.GetCurrentProcess().Id;
+			Title = Title + "     [PID: " + myProcessId + "]";
 		}
 
 		private async void ButtonCreateDumpClicked(object sender, RoutedEventArgs e)
@@ -102,7 +100,7 @@ namespace MDRDesk
 					// Do not create the black window.
 					procStartInfo.CreateNoWindow = true;
 					// Now we create a process, assign its ProcessStartInfo and start it
-					System.Diagnostics.Process proc = new System.Diagnostics.Process();
+					var proc = new Process();
 					proc.StartInfo = procStartInfo;
 					proc.Start();
 					// Get the output into a string
@@ -115,12 +113,12 @@ namespace MDRDesk
 				SelectedDump.Foreground = Brushes.DarkGreen;
 				SelectedDump.Text = _dumpPath;
 				if (IndexDump)
-					this.DialogResult = true;
+					DialogResult = true;
 			}
 			catch (Exception ex)
 			{
 				_error = Utils.GetExceptionErrorString(ex);
-				this.DialogResult = false;
+				DialogResult = false;
 				Close();
 			}
 			finally
@@ -180,29 +178,12 @@ namespace MDRDesk
 
 		private void ButtonProcdumpPath_OnClick(object sender, RoutedEventArgs e)
 		{
-			string currentPath = ProcdumpPath.Text.Trim();
-			if (!File.Exists(currentPath))
-				currentPath = null;
-			currentPath = GuiUtils.SelectExeFile();
+			var currentPath = GuiUtils.SelectExeFile();
 			if (File.Exists(currentPath))
 			{
 				ProcdumpPath.Text = currentPath;
-				_procdumpPath = currentPath + System.IO.Path.DirectorySeparatorChar + "procdump.exe";
+				_procdumpPath = currentPath + Path.DirectorySeparatorChar + "procdump.exe";
 			}
 		}
-
-		//private string GetFolderPath(string initialFolder)
-		//{
-		//	string path = null;
-		//	var dialog = new System.Windows.Forms.FolderBrowserDialog();
-		//	using (dialog)
-		//	{
-		//		if (initialFolder != null) dialog.SelectedPath = initialFolder;
-		//		System.Windows.Forms.DialogResult result = dialog.ShowDialog();
-		//		if (result != System.Windows.Forms.DialogResult.OK) return null;
-		//		path = dialog.SelectedPath;
-		//	}
-		//	return path;
-		//}
 	}
 }

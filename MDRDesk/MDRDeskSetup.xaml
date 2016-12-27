@@ -14,10 +14,11 @@
             <ColumnDefinition Width="80*" />
         </Grid.ColumnDefinitions>
         <Grid.RowDefinitions>
-            <RowDefinition Height="20*" />
-            <RowDefinition Height="20*" />
-            <RowDefinition Height="20*" />
-            <RowDefinition Height="20*" />
+            <RowDefinition Height="16*" />
+            <RowDefinition Height="16*" />
+            <RowDefinition Height="16*" />
+            <RowDefinition Height="16*" />
+            <RowDefinition Height="16*" />
             <RowDefinition Height="20*" />
         </Grid.RowDefinitions>
         <Button x:Name="ButtonDacFolder" Content="Dac Folder..." Grid.Row="0" Grid.Column="0" HorizontalAlignment="Left" Margin="4,2,2,2" VerticalAlignment="Center" Width="90" Height="28" FontSize="10" Click="ButtonDacFolder_OnClick"/>
@@ -37,13 +38,10 @@
             <RadioButton x:Name="TypeDisplayNamespaceClass" Grid.Column="0" GroupName="TypeDisplayMode" Content="Namespace/Type" HorizontalAlignment="Left" Margin="2,2,2,2" VerticalAlignment="Center"/>
             <RadioButton x:Name="TypeDisplayClass" Grid.Column="1" GroupName="TypeDisplayMode" Content="Type Name" HorizontalAlignment="Left" Margin="2,2,2,2" VerticalAlignment="Center"/>
             <RadioButton x:Name="TypeDisplayNamespace" Grid.Column="2" GroupName="TypeDisplayMode" Content="Namespace" HorizontalAlignment="Left" Margin="2,2,2,2" VerticalAlignment="Center"/>
-
-            <!--<RadioButton x:Name ="TypeDisplayNamespaceClass" GroupName="TypeDisplayMode" Checked="ToggleButton_OnChecked" Margin="4,0,4,0" FontWeight="Bold" >Namespace/Class Display</RadioButton>
-            <RadioButton x:Name ="TypeDisplayClass" GroupName="TypeDisplayMode" Checked="ToggleButton_OnChecked" Margin="4,0,4,0" FontWeight="Bold">Class Display</RadioButton>
-            <RadioButton x:Name ="TypeDisplayNamespace" GroupName="TypeDisplayMode" Checked="ToggleButton_OnChecked" Margin="4,0,4,0" FontWeight="Bold">Namespace Display</RadioButton>-->
-
         </Grid>
-        <Button x:Name="ButtonSaveSetup" Grid.Row="4" Grid.Column="0" Content="Save" HorizontalAlignment="Left" Margin="4,2,2,2" VerticalAlignment="Center" Width="90" Height="28" Background="DarkOliveGreen" Click="ButtonSaveSetup_OnClick"/>
-        <Button x:Name="ButtonCloseSetup" Grid.Row ="4" Grid.Column="1" Content="Close" HorizontalAlignment="Right" Margin="4,2,2,2" VerticalAlignment="Center" Width="75" Height="28" Click="ButtonCloseSetup_OnClick"/>
+        <Label Content="Short Report Ln Count" Grid.Row="4" Grid.Column="0" HorizontalAlignment="Left" Margin="4,2,2,2" VerticalAlignment="Center"  Width="Auto" Height="23" FontSize="10"/>
+        <TextBox x:Name="TxtBoxReportLineCount" Grid.Row="4" Grid.Column="1" HorizontalAlignment="Stretch"  Height="23" Margin="4,2,4,2" Text="..." VerticalAlignment="Center" />
+        <Button x:Name="ButtonSaveSetup" Grid.Row="5" Grid.Column="0" Content="Save" HorizontalAlignment="Left" Margin="4,2,2,2" VerticalAlignment="Center" Width="90" Height="28" Background="DarkOliveGreen" Click="ButtonSaveSetup_OnClick"/>
+        <Button x:Name="ButtonCloseSetup" Grid.Row ="5" Grid.Column="1" Content="Close" HorizontalAlignment="Right" Margin="4,2,2,2" VerticalAlignment="Center" Width="75" Height="28" Click="ButtonCloseSetup_OnClick"/>
     </Grid>
 </Window>

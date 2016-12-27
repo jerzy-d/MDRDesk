@@ -40,6 +40,7 @@ module Types =
 
     let clrElementType kind : ClrElementType = TypeKinds.GetClrElementType(kind)
     let valueKind kind = TypeKinds.GetValueTypeKind(kind)
+    let mainKind kind = TypeKinds.GetMainTypeKind(kind)
     let specificKind kind = TypeKinds.GetParticularTypeKind(kind)
 
     let typeDefaultValue (clrType:ClrType) : string =
@@ -61,50 +62,79 @@ module Types =
         | ClrElementType.Unknown -> "unknown"
         | _                      -> "0"
 
-    let getTypeValue (heap:ClrHeap) (addr:address) (clrType:ClrType) (kind:TypeKind) : string =
-        match valueKind kind with
+    let getFields (heap:ClrHeap) (addr:address) =
+        ()
+
+    let getTypeValue (heap:ClrHeap) (addr:address) (clrType:ClrType) (fld:ClrInstanceField) (kind:TypeKind) (intr:bool) : string =
+        match mainKind kind with
         | TypeKind.ValueKind ->
-            let specKind = specificKind kind
             match specificKind kind with
-            | TypeKind.Decimal ->
-                Constants.NullValue
-            | TypeKind.DateTime ->
-                Constants.NullValue
-            | TypeKind.TimeSpan ->
-                Constants.NullValue
-            | TypeKind.Guid ->
-                Constants.NullValue
-            | TypeKind.Str ->
-                Constants.NullValue
             | TypeKind.Primitive ->
-                Constants.NullValue
+                "primitive value"
             | _ ->
                 Constants.NullValue
+        | TypeKind.StringKind ->
+            let fldAddr = unbox<uint64>(fld.GetValue(addr,intr,false))
+            ValueExtractor.GetStringAtAddress(fldAddr,heap)
+        | TypeKind.ReferenceKind ->
+            Utils.RealAddressString(addr)
+        | TypeKind.ArrayKind ->
+            Constants.NullValue
+        | TypeKind.StructKind ->
+            match specificKind kind with
+            | TypeKind.Decimal ->
+                ValueExtractor.GetDecimalValue(heap, addr, null)
+            | TypeKind.DateTime ->
+                ValueExtractor.GetDateTimeValue(addr, clrType, null)
+            | TypeKind.TimeSpan ->
+                ValueExtractor.GetTimeSpanValue(addr, clrType)
+            | TypeKind.Guid ->
+                ValueExtractor.GetGuidValue(addr, clrType)
+            | _ ->
+                Constants.NullValue
+        | TypeKind.EnumKind ->
+            Constants.NullValue
+        | TypeKind.InterfaceKind ->
+            Constants.NullValue
         | _ ->
             Constants.NullValue
 
     let getFieldValue (heap:ClrHeap) (addr:address) (intr:bool) (fld:ClrInstanceField) (kind:TypeKind) : string =
-        match valueKind kind with
+        match mainKind kind with
         | TypeKind.ValueKind ->
-            let specKind = specificKind kind
             match specificKind kind with
-            | TypeKind.Decimal ->
-                ValueExtractor.GetDecimalValue(addr, fld)
-            | TypeKind.DateTime ->
-                Constants.NullValue
-            | TypeKind.TimeSpan ->
-                Constants.NullValue
-            | TypeKind.Guid ->
-                Constants.NullValue
-            | TypeKind.Str ->
-                let fldAddr = unbox<uint64>(fld.GetValue(addr,intr,false))
-                ValueExtractor.GetStringAtAddress(fldAddr,heap)
             | TypeKind.Primitive ->
                 let obj = fld.GetValue(addr,intr,false)
                 let elemType = clrElementType kind
                 ValueExtractor.GetPrimitiveValue(obj, elemType)
             | _ ->
                 Constants.NullValue
+        | TypeKind.StringKind ->
+            let fldAddr = unbox<uint64>(fld.GetValue(addr,intr,false))
+            ValueExtractor.GetStringAtAddress(fldAddr,heap)
+        | TypeKind.ReferenceKind ->
+            let obj = unbox<uint64>(fld.GetValue(addr,intr,false))
+            Utils.RealAddressString(obj)
+        | TypeKind.ArrayKind ->
+            Constants.NullValue
+        | TypeKind.StructKind ->
+            match specificKind kind with
+            | TypeKind.Decimal ->
+                ValueExtractor.GetDecimalValue(addr, fld)
+            | TypeKind.DateTime ->
+                ValueExtractor.GetDateTimeValue(addr, fld, intr)
+            | TypeKind.TimeSpan ->
+                ValueExtractor.GetTimeSpanValue(addr, fld)
+            | TypeKind.Guid ->
+                ValueExtractor.GetGuidValue(addr, fld)
+            | _ ->
+                Constants.NullValue
+        | TypeKind.EnumKind ->
+            Constants.NullValue
+        | TypeKind.InterfaceKind ->
+            Constants.NullValue
+        | TypeKind.PrimitiveKind ->
+            ValueExtractor.TryGetPrimitiveValue(heap, addr, fld, intr)
         | _ ->
             Constants.NullValue
 
@@ -139,6 +169,11 @@ module Types =
     let isErrorType (clrType: ClrType) =
         Utils.SameStrings(clrType.Name,"ERROR")
 
+    let isUnknownType (clrType: ClrType) =
+        clrType = null || Utils.SameStrings(clrType.Name,"System.__Canon") || Utils.SameStrings(clrType.Name,"ERROR")
+
+    let typeName (clrType:ClrType) =
+        if isNull clrType then Constants.Unknown else clrType.Name
     /// <summary>
     /// Some reference types have names which might require further investigation.
     /// </summary>
@@ -148,7 +183,10 @@ module Types =
 
     /// Used when we looking for clearly defined type.
     let isTypeUnknown (clrType: ClrType) =
-        clrType = null || isErrorType clrType || isTypeNameVague clrType.Name
+        clrType = null || isErrorType clrType || isTypeNameVague clrType.Name || clrType.IsInterface || isErrorType clrType
+
+    let isConreteType (clrType:ClrType) =
+        not (isTypeUnknown clrType)
 
     let tryGetType (heap:ClrHeap) (clrType:ClrType) (obj:Object) =
         if isTypeNameVague clrType.Name then
@@ -156,8 +194,9 @@ module Types =
                 let objAsAddr = unbox<uint64>(obj)
                 let aType =  heap.GetObjectType(objAsAddr)
                 if isNull aType then
-                    clrType
-                else
+                    let mt = heap.GetMethodTable(objAsAddr)
+                    heap.GetTypeByMethodTable(mt)
+                 else
                     aType
             with
                 | exn -> clrType
@@ -170,6 +209,12 @@ module Types =
         else
             let valueObj = fld.GetValue(addr,intr)
             tryGetType heap fld.Type valueObj
+
+    let tryGetType'' (heap:ClrHeap) (addr:address) (intr:bool) (fld:ClrInstanceField) =
+        if fld.IsValueClass then
+            fld.Type
+        else
+            tryGetType heap fld.Type addr
 
     ///
     let tryGetFieldType (heap:ClrHeap) (addr:address) (fld:ClrInstanceField) =

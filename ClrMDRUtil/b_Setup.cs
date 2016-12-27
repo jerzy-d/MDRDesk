@@ -26,9 +26,10 @@ namespace ClrMDRIndex
 		public static string GraphDbJar { get; private set; }
 		public static int GraphPort { get; private set; }
 
-        public static string TypesDisplayMode { get; private set; }
+		public static string TypesDisplayMode { get; private set; }
+		public static int ShortReportLineCount { get; private set; }
 
-        public static void SetDacFolder(string folder)
+		public static void SetDacFolder(string folder)
 		{
 			DacFolder = folder;
 		}
@@ -47,7 +48,18 @@ namespace ClrMDRIndex
 	        TypesDisplayMode = mode;
 	    }
 
-	    public static void AddRecentFileList(string path, RecentFiles files )
+		public static void SetShortReportLineCount(string count)
+		{
+			if (!string.IsNullOrWhiteSpace(count))
+			{
+				int cnt;
+				if (Int32.TryParse(count,out cnt))
+					ShortReportLineCount = cnt;
+			}
+		}
+
+
+		public static void AddRecentFileList(string path, RecentFiles files )
 	    {
             if (files == RecentFiles.Adhoc)
             {
@@ -135,8 +147,19 @@ namespace ClrMDRIndex
 						{
 							TypesDisplayMode = appSettings.Settings[key].Value.Trim();
 						}
+						else if (Utils.SameStrings(ky, "shortreportcount"))
+						{
+							int count = 100;
+							var intStr = appSettings.Settings[key].Value.Trim();
+							if (!string.IsNullOrWhiteSpace(intStr))
+							{
+								if (!Int32.TryParse(intStr, out count))
+									count = 100;
+							}
+							ShortReportLineCount = count;
+						}
 					}
-                }
+				}
                 else
                 {
                     error = "The appSettings section is empty.";
@@ -172,8 +195,9 @@ namespace ClrMDRIndex
             try
             {
                 var config = ConfigurationManager.OpenExeConfiguration(ConfigurationUserLevel.None);
-                config.AppSettings.Settings["typedisplaymode"].Value = TypesDisplayMode;
-                config.AppSettings.Settings["recentindices"].Value = JoinSemicolonDelimitedList(RecentIndexList);
+				config.AppSettings.Settings["typedisplaymode"].Value = TypesDisplayMode;
+				config.AppSettings.Settings["shortreportcount"].Value = ShortReportLineCount.ToString();
+				config.AppSettings.Settings["recentindices"].Value = JoinSemicolonDelimitedList(RecentIndexList);
 				config.AppSettings.Settings["recentadhocs"].Value = JoinSemicolonDelimitedList(RecentAdhocList);
 				config.AppSettings.Settings["dacfolder"].Value = DacFolder;
 				config.AppSettings.Settings["mapfolder"].Value = DumpsFolder;

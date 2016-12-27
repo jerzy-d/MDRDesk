@@ -385,6 +385,112 @@ module CollectionContent =
             ndx <- ndx + 1
         (elemType.Name, count, values.ToArray())
 
+        (*
+        System.Collections.Generic.HashSet<T>
+        private int[] m_buckets;
+        private Slot[] m_slots;
+        private int m_count;
+        private int m_lastIndex;
+        private int m_freeList;
+        private IEqualityComparer<T> m_comparer;
+        private int m_version;
+        internal struct Slot {
+            internal int hashCode;      // Lower 31 bits of hash code, -1 if unused
+            internal T value;
+            internal int next;          // Index of next entry, -1 if last
+        }
+
+        *)
+    let getHashValueFieldOffset hashOff nextOff valOff =
+        if valOff > 0 then
+            valOff
+        elif hashOff + nextOff = 4 then
+            8
+        elif nextOff = 0 || hashOff = 0 then
+            4
+        else
+            0
+
+    let getHashSetInfoDataType  (heap:ClrHeap) (hashSetAddr:address) (addr:address) (slots:ClrType) (lastIndex:int) : ClrInstanceField * ClrInstanceField * ClrType * int32 =
+        let mutable index = 0;
+        let elemType = slots.ComponentType;
+        let hashCodeFld = elemType.GetFieldByName("hashCode")
+        let valueFld = elemType.GetFieldByName("value")
+        let nextFld = elemType.GetFieldByName("next")
+        let valOff = getHashValueFieldOffset hashCodeFld.Offset nextFld.Offset valueFld.Offset
+        let mutable valType:ClrType = null
+        if (isConreteType valueFld.Type) then
+            (hashCodeFld,valueFld,valueFld.Type,valOff)
+        else
+            let mt = ValueExtractor.ReadUlongAtAddress(hashSetAddr + (uint64)96, heap);
+            valType <- heap.GetTypeByMethodTable(mt)
+            if valType=null then
+                let mutable notFound = true
+                while (notFound && index < lastIndex) do
+                    let elemAddr = slots.GetArrayElementAddress(addr,index)
+
+                    let hash = getIntValue elemAddr hashCodeFld true
+                    if hash >= 0 then
+                        let dataVal = valueFld.GetValue(elemAddr,true)
+                        let valAddr = getReferenceFieldAddress elemAddr valueFld true
+                        valType <- tryGetType'' heap valAddr true valueFld
+                        if valType <> null then
+                            notFound <- false
+                        else
+                            index <- index + 1
+            (hashCodeFld,valueFld,valType,valOff)
+
+    let getHashSetInfo (heap:ClrHeap) (addr:address) (setType:ClrType) : ClrType * address * ClrInstanceField * ClrInstanceField * ClrType * int * int * int * KeyValuePair<string,string> array =
+        let count = getFieldIntValue heap addr setType "m_count"
+        let lastIndex = getFieldIntValue heap addr setType "m_lastIndex"
+        let version = getFieldIntValue heap addr setType "m_version"
+        let slots = setType.GetFieldByName("m_slots")
+        let slotsAddress = getReferenceFieldAddress addr slots false
+        let slotsType = heap.GetObjectType slotsAddress
+        let slotType = slotsType.ComponentType;
+        let hashFld, valFld, valType, valOff = if count > 0 then getHashSetInfoDataType  heap addr slotsAddress slotsType lastIndex else (null,null,null,0)
+        
+
+        let slotsCount = slots.Type.GetArrayLength(slotsAddress)
+        let description = [|
+                            new KeyValuePair<string,string>("Type Name",setType.Name)
+                            new KeyValuePair<string,string>("Value Type Name", typeName valType)
+                            new KeyValuePair<string,string>("Count",count.ToString())
+                            new KeyValuePair<string,string>("Capacity",slotsCount.ToString())
+                            new KeyValuePair<string,string>("Version",version.ToString())
+                            |]
+        
+        (slotsType, slotsAddress, hashFld, valFld, valType, valOff, lastIndex, count, description)
+
+    let getHashSetContent (heap:ClrHeap) (addr:address) : string * string array * KeyValuePair<string,string> array =
+        try
+            let setType = heap.GetObjectType(addr)
+            if isNull setType then
+                ("There is no valid object at address: " + Utils.RealAddressString(addr), null, null)
+            elif not (setType.Name.StartsWith("System.Collections.Generic.HashSet<")) then
+                ("Expected HashSet<T> type at address: " + Utils.RealAddressString(addr) + ", there's " + setType.Name + " instead.", null, null)
+            else
+                let slotsType, slotsAddress, hashFld, valFld, valType, valOff, lastIndex, count, description = getHashSetInfo heap addr setType
+
+                if count > 0 then
+                    let kind = typeKind valType
+                    let mutable index = 0
+                    let values = new ResizeArray<string>(count)
+                    while index < lastIndex do
+                        let elemAddr = slotsType.GetArrayElementAddress(slotsAddress,index)
+                        let hash = getIntValue slotsAddress hashFld true
+                        if hash >= 0 then
+                            let dataVal = getTypeValue heap (elemAddr + (uint64)valOff) valType valFld kind true
+                            values.Add(dataVal)
+                        index <- index + 1
+
+                    (null,values.ToArray(),description)
+                else
+                    (null,Utils.EmptyArray<string>.Value,description)
+        with
+            | exn -> (exn.ToString(),null,null)
+
+
 //    let getArrayContent (heap:ClrHeap) (addr:uint64) : string * string * int32 * string array =
 //        let error, clrSidekick = Types.getTypeSidekickAtAddress heap  addr
 //        if error <> null then 

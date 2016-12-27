@@ -213,7 +213,6 @@ namespace ClrMDRIndex
 		{
 			ulong address = br.ReadUInt64();
 			ulong teb = br.ReadUInt64();
-			int blkCnt = br.ReadInt32();
 			int[] blks = ReadIntArray(br);
 			int traits = br.ReadInt32();
 			uint osId = br.ReadUInt32();

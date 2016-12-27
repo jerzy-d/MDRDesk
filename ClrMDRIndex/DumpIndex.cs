@@ -258,19 +258,20 @@ namespace ClrMDRIndex
 		{
 			error = null;
 			BinaryReader br = null;
+			int i;
 			try
 			{
 				var path = _fileMoniker.GetFilePath(_currentRuntimeIndex, Constants.MapThreadsAndBlocksFilePostfix);
 				br = new BinaryReader(File.Open(path, FileMode.Open));
 				int threadCnt = br.ReadInt32();
 				_threads = new ClrtThread[threadCnt];
-				for (int i = 0; i < threadCnt; ++i)
+				for (i = 0; i < threadCnt; ++i)
 				{
 					_threads[i] = ClrtThread.Load(br);
 				}
 				int blockCnt = br.ReadInt32();
 				_blocks = new ClrtBlkObject[blockCnt];
-				for (int i = 0; i < blockCnt; ++i)
+				for (i = 0; i < blockCnt; ++i)
 				{
 					_blocks[i] = ClrtBlkObject.Load(br);
 				}

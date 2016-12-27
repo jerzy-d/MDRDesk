@@ -1049,7 +1049,7 @@ namespace ClrMDRIndex
 
 		#region indexing helpers
 
-		public static void MarkAsRooted(ulong addr, int addrNdx, ulong[] instances, int[][] references)
+		public static void MarkAsRootedOld(ulong addr, int addrNdx, ulong[] instances, int[][] references)
 		{
 			if (Utils.IsRooted(addr)) return;
 			instances[addrNdx] = Utils.SetAsRooted(addr);
@@ -1064,6 +1064,39 @@ namespace ClrMDRIndex
 						instances[refr] = Utils.SetAsRooted(address);
 						MarkAsRooted(address, refr, instances, references);
 					}
+			}
+		}
+
+		public static void MarkAsRooted(ulong addr, int addrNdx, ulong[] instances, int[][] references)
+		{
+			if (Utils.IsRooted(addr)) return;
+			instances[addrNdx] = Utils.SetAsRooted(addr);
+			if (references[addrNdx] == null) return;
+			Queue<KeyValuePair<ulong, int>> que = new Queue<KeyValuePair<ulong, int>>(1024);
+			for (int i = 0, icnt = references[addrNdx].Length; i < icnt; ++i)
+			{
+				var refr = references[addrNdx][i];
+				var address = instances[refr];
+				if (Utils.IsRooted(address) || address == 0UL) continue;
+				instances[refr] = Utils.SetAsRooted(address);
+				que.Enqueue(new KeyValuePair<ulong, int>(address,refr));
+			}
+			while (que.Count > 0)
+			{
+				var kv = que.Dequeue();
+				var address = kv.Key;
+				if (Utils.IsRooted(address)) continue;
+				var refr = kv.Value;
+				instances[refr] = Utils.SetAsRooted(address);
+				if (references[refr] == null) return;
+				for (int i = 0, icnt = references[addrNdx].Length; i < icnt; ++i)
+				{
+					refr = references[addrNdx][i];
+					address = instances[refr];
+					if (Utils.IsRooted(address) || address == 0UL) continue;
+					instances[refr] = Utils.SetAsRooted(address);
+					que.Enqueue(new KeyValuePair<ulong, int>(address, refr));
+				}
 			}
 		}
 

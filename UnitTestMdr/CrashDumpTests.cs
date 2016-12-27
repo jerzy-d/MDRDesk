@@ -220,12 +220,13 @@ namespace UnitTestMdr
 		[TestMethod]
 		public void TestGetDictionaryContent()
 		{
-			ulong dctAddr = 0x0002189f5b2ec0;
+			ulong dctAddr = 0x00015e80012f58;
 			var dmp = OpenDump(1);
 			using (dmp)
 			{
 				var heap = dmp.Heap;
 				var clrType = heap.GetObjectType(dctAddr);
+				if (!clrType.Name.StartsWith("System.Collections.Generic.Dictionary<")) return;
 				var result = CollectionContent.getDictionaryInfo(heap, dctAddr, clrType);
 				Assert.IsNotNull(result);
 
@@ -243,7 +244,7 @@ namespace UnitTestMdr
 		[TestMethod]
 		public void TestGetSortedDictionaryContent()
 		{
-			ulong dctAddr = 0x0001e7e5273000;
+			ulong dctAddr = 0x00015e80013030;
 			var dmp = OpenDump(1);
 			using (dmp)
 			{
@@ -255,6 +256,116 @@ namespace UnitTestMdr
 		}
 
 		#endregion System.Collections.Generic.SortedDictionary<TKey,TValue> content
+
+		#region System.Collections.Generic.HashSet<T> content
+
+		[TestMethod]
+		public void TestGetHashSetContent()
+		{
+			ulong[] dctAddrs =new ulong[]
+			{
+				0x00023f00013130, // string
+				0x00023f00013170, // decimal
+				0x00023f00013238, // DateTime
+				0x00023f00013300, // TimeSpan
+				0x00023f000133c8, // Guid
+				0x00023f00013490, // float, System.Single
+				0x00023f00013558, // double
+				0x00023f00013620, // char
+
+			};
+
+			string[] valTypeNames = new string[dctAddrs.Length];
+			string[][] values = new string[dctAddrs.Length][];
+			var dmp = OpenDump(1);
+			int index = 0;
+			using (dmp)
+			{
+				var heap = dmp.Heap;
+				FQry.heapWarmup(heap);
+				ClrType setType = null;
+				for (int i = 0, icnt = dctAddrs.Length; i < icnt; ++i)
+				{
+					setType = heap.GetObjectType(dctAddrs[i]);
+
+					ClrInstanceField slotsFld = setType.GetFieldByName("m_slots");
+					ulong slotsAddr = (ulong) slotsFld.GetValue(dctAddrs[i]);
+					ClrType slotsType = heap.GetObjectType(slotsAddr);
+					var lastIndex = Auxiliaries.getFieldIntValue(heap, dctAddrs[i], setType, "m_lastIndex");
+					var setCount = Auxiliaries.getFieldIntValue(heap, dctAddrs[i], setType, "m_count");
+					ClrType compType = slotsType.ComponentType;
+
+					var hashCodeFld = compType.GetFieldByName("hashCode");
+					var valueFld = compType.GetFieldByName("value");
+
+
+					var valType = valueFld.Type;
+					if (valType.Name == "ERROR" || valType.Name=="System.__Canon")
+					{
+						var mt = ValueExtractor.ReadUlongAtAddress(dctAddrs[i] + 96, heap);
+						var tp = heap.GetTypeByMethodTable(mt);
+						if (tp != null)
+						{
+							valType = tp;
+						}
+						else
+						{
+							index = 0;
+							while (index < lastIndex)
+							{
+
+								var elemAddr = slotsType.GetArrayElementAddress(slotsAddr, index);
+								var hash = Auxiliaries.getIntValue(elemAddr, hashCodeFld, true);
+								if (hash >= 0)
+								{
+									var valAddr = Auxiliaries.getReferenceFieldAddress(elemAddr, valueFld, true);
+									tp = heap.GetObjectType(valAddr);
+									if (tp != null)
+									{
+										valType = tp;
+										break;
+									}
+								}
+
+								++index;
+							}
+						}
+					}
+					var kind = TypeKinds.GetTypeKind(valType);
+					values[i] = new string[setCount];
+					index = 0;
+					var valIndex = 0;
+					while (index < lastIndex)
+					{
+
+						var elemAddr = slotsType.GetArrayElementAddress(slotsAddr, index);
+						var hash = Auxiliaries.getIntValue(elemAddr, hashCodeFld, true);
+						if (hash >= 0)
+						{
+							string value = Types.getFieldValue(heap, elemAddr, true, valueFld, kind);
+							values[i][valIndex++] = value;
+						}
+
+						++index;
+					}
+
+					valTypeNames[i] = valType.Name;
+				}
+
+				return;
+
+				for (int i = 1, icnt = dctAddrs.Length; i < icnt; ++i)
+				{
+					var setResult = CollectionContent.getHashSetContent(heap, dctAddrs[i]);
+					Assert.IsNotNull(setResult);
+					Assert.IsNull(setResult.Item1);
+				}
+
+			}
+		}
+
+		#endregion  System.Collections.Generic.HashSet<T> content
+
 
 		#region System.Text.StringBuilder
 
