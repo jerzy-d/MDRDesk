@@ -454,7 +454,7 @@ namespace ClrMDRIndex
 		public int GetTypeId(ulong addr)
 		{
 			var instanceIndex = GetInstanceIndex(addr);
-			return instanceIndex == Constants.InvalidIndex 
+			return instanceIndex == Constants.InvalidIndex
 				? Constants.InvalidIndex
 				: _instanceTypes[instanceIndex];
 		}
@@ -548,7 +548,7 @@ namespace ClrMDRIndex
 				string typeName = _typeNames[i];
 				if (typeName.StartsWith(prefix, StringComparison.Ordinal))
 				{
-					if (!includeArrays && typeName.EndsWith("[]",StringComparison.Ordinal))
+					if (!includeArrays && typeName.EndsWith("[]", StringComparison.Ordinal))
 						continue;
 					lst.Add(i);
 				}
@@ -594,6 +594,7 @@ namespace ClrMDRIndex
 			}
 			return result;
 		}
+
 		//private int[] RemoveArrayType(int[] typeIds)
 		//{
 		//	int cntToRemove = 0;
@@ -654,7 +655,7 @@ namespace ClrMDRIndex
 					}
 
 				}
-				var dataAry = new string[typeDct.Count * 6];
+				var dataAry = new string[typeDct.Count*6];
 				var infoAry = new listing<string>[typeDct.Count];
 				int off = 0;
 				int ndx = 0;
@@ -665,7 +666,7 @@ namespace ClrMDRIndex
 					ulong totSz = kv.Value.Second;
 					ulong maxSz = kv.Value.Third;
 					ulong minSz = kv.Value.Forth;
-					double avg = (double)totSz / (double)(cnt);
+					double avg = (double) totSz/(double) (cnt);
 					ulong uavg = Convert.ToUInt64(avg);
 
 					dataAry[off++] = Utils.LargeNumberString(cnt);
@@ -688,8 +689,8 @@ namespace ClrMDRIndex
 				Array.Sort(infoAry, new ListingNumCmpDesc(0));
 
 				string descr = "Type Count: " + Utils.CountString(typeDct.Count) + Environment.NewLine
-							   + "Instance Count: " + Utils.CountString(_instances.Length) + Environment.NewLine
-							   + "Grand Total Size: " + Utils.LargeNumberString(grandTotal) + Environment.NewLine;
+				               + "Instance Count: " + Utils.CountString(_instances.Length) + Environment.NewLine
+				               + "Grand Total Size: " + Utils.LargeNumberString(grandTotal) + Environment.NewLine;
 
 				return new ListingInfo(null, infoAry, colInfos, descr);
 
@@ -745,7 +746,7 @@ namespace ClrMDRIndex
 					}
 					else
 					{
-						dct.Add(typeId, new List<pair<ulong, int>>(32) { new pair<ulong, int>(addr, aryCnt) });
+						dct.Add(typeId, new List<pair<ulong, int>>(32) {new pair<ulong, int>(addr, aryCnt)});
 					}
 				}
 
@@ -1250,6 +1251,33 @@ namespace ClrMDRIndex
 				.AppendLine();
 
 			return new ListingInfo(null, items, colInfos, sb.ToString());
+		}
+
+		public InstanceValue GetInstanceValue(ulong addr, out string error)
+		{
+			error = null;
+			try
+			{
+				var realAddr = Utils.RealAddress(addr);
+				var typeId = GetTypeId(addr);
+				var heap = Dump.Heap;
+				var clrType = heap.GetObjectType(realAddr);
+				if (clrType == null)
+				{
+					// TODO JRD
+					return null;
+				}
+				var kind = TypeKinds.GetTypeKind(clrType);
+				var val = Types.getTypeValue(heap, realAddr, clrType,kind);
+
+				return new InstanceValue(typeId, addr, clrType.Name, string.Empty, val);
+			}
+			catch (Exception ex)
+			{
+				error = Utils.GetExceptionErrorString(ex);
+				return null;
+			}
+			
 		}
 
 		#endregion instance references
@@ -2510,7 +2538,7 @@ namespace ClrMDRIndex
 							switch (TypeKinds.GetParticularTypeKind(fldKinds[j]))
 							{
 								case TypeKind.Decimal:
-									var dec = ValueExtractor.GetDecimal(addr, fields[j]);
+									var dec = ValueExtractor.GetDecimal(addr, fields[j],intrnl);
 									if (dec == 0m)
 									{
 										counts[j] = counts[j] + 1;
@@ -2526,7 +2554,7 @@ namespace ClrMDRIndex
 									}
 									break;
 								case TypeKind.TimeSpan:
-									var ts = ValueExtractor.GetTimeSpan(addr, fields[j]);
+									var ts = ValueExtractor.GetTimeSpan(addr, fields[j],intrnl);
 									if (ts.TotalMilliseconds == 0.0)
 									{
 										counts[j] = counts[j] + 1;
@@ -2534,7 +2562,7 @@ namespace ClrMDRIndex
 									}
 									break;
 								case TypeKind.Guid:
-									if (ValueExtractor.IsGuidEmpty(addr, fields[j]))
+									if (ValueExtractor.IsGuidEmpty(addr, fields[j],intrnl))
 									{
 										counts[j] = counts[j] + 1;
 										++totalDefValues;

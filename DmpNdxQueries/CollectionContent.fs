@@ -46,14 +46,14 @@ module CollectionContent =
         if elemAddr = Constants.InvalidAddress then
             Constants.NullValue
         else
-            ValueExtractor.GetDateTimeValue( elemAddr, elemType,null)
+            ValueExtractor.GetDateTimeValue( elemAddr, elemType,elemType.IsValueClass,null)
 
     let aryElemDatetimeR (heap:ClrHeap) (addr:address) (aryType:ClrType) (elemType:ClrType) (ndx:int) =
         let elemAddr = aryType.GetArrayElementAddress(addr,ndx)
         if elemAddr = Constants.InvalidAddress then
             Constants.NullValue
         else
-            ValueExtractor.GetDateTimeValue( heap, elemAddr, null)
+            ValueExtractor.GetDateTimeValue(elemAddr, elemType, elemType.IsValueClass,null)
 
     let aryElemTimespanR (heap:ClrHeap) (addr:address) (aryType:ClrType) (elemType:ClrType) (ndx:int) =
         let elemAddr = aryType.GetArrayElementAddress(addr,ndx)
@@ -330,7 +330,7 @@ module CollectionContent =
         else
              match TypeKinds.GetParticularTypeKind(kind) with
                 | TypeKind.DateTime ->
-                    ValueExtractor.GetDateTimeValue( elemAddr, elemType, null)
+                    ValueExtractor.GetDateTimeValue( elemAddr, elemType, elemType.IsValueClass, null)
                 | TypeKind.TimeSpan ->
                     ValueExtractor.GetTimeSpanValue( elemAddr, elemType)
                 | TypeKind.Decimal ->
@@ -411,16 +411,15 @@ module CollectionContent =
         else
             0
 
-    let getHashSetInfoDataType  (heap:ClrHeap) (hashSetAddr:address) (addr:address) (slots:ClrType) (lastIndex:int) : ClrInstanceField * ClrInstanceField * ClrType * int32 =
+    let getHashSetInfoDataType  (heap:ClrHeap) (hashSetAddr:address) (addr:address) (slots:ClrType) (lastIndex:int) : ClrInstanceField * ClrInstanceField * ClrType =
         let mutable index = 0;
         let elemType = slots.ComponentType;
         let hashCodeFld = elemType.GetFieldByName("hashCode")
         let valueFld = elemType.GetFieldByName("value")
         let nextFld = elemType.GetFieldByName("next")
-        let valOff = getHashValueFieldOffset hashCodeFld.Offset nextFld.Offset valueFld.Offset
         let mutable valType:ClrType = null
         if (isConreteType valueFld.Type) then
-            (hashCodeFld,valueFld,valueFld.Type,valOff)
+            (hashCodeFld,valueFld,valueFld.Type)
         else
             let mt = ValueExtractor.ReadUlongAtAddress(hashSetAddr + (uint64)96, heap);
             valType <- heap.GetTypeByMethodTable(mt)
@@ -438,9 +437,9 @@ module CollectionContent =
                             notFound <- false
                         else
                             index <- index + 1
-            (hashCodeFld,valueFld,valType,valOff)
+            (hashCodeFld,valueFld,valType)
 
-    let getHashSetInfo (heap:ClrHeap) (addr:address) (setType:ClrType) : ClrType * address * ClrInstanceField * ClrInstanceField * ClrType * int * int * int * KeyValuePair<string,string> array =
+    let getHashSetInfo (heap:ClrHeap) (addr:address) (setType:ClrType) : ClrType * address * ClrInstanceField * ClrInstanceField * ClrType * int * int * KeyValuePair<string,string> array =
         let count = getFieldIntValue heap addr setType "m_count"
         let lastIndex = getFieldIntValue heap addr setType "m_lastIndex"
         let version = getFieldIntValue heap addr setType "m_version"
@@ -448,7 +447,7 @@ module CollectionContent =
         let slotsAddress = getReferenceFieldAddress addr slots false
         let slotsType = heap.GetObjectType slotsAddress
         let slotType = slotsType.ComponentType;
-        let hashFld, valFld, valType, valOff = if count > 0 then getHashSetInfoDataType  heap addr slotsAddress slotsType lastIndex else (null,null,null,0)
+        let hashFld, valFld, valType = if count > 0 then getHashSetInfoDataType  heap addr slotsAddress slotsType lastIndex else (null,null,null)
         
 
         let slotsCount = slots.Type.GetArrayLength(slotsAddress)
@@ -460,7 +459,7 @@ module CollectionContent =
                             new KeyValuePair<string,string>("Version",version.ToString())
                             |]
         
-        (slotsType, slotsAddress, hashFld, valFld, valType, valOff, lastIndex, count, description)
+        (slotsType, slotsAddress, hashFld, valFld, valType, lastIndex, count, description)
 
     let getHashSetContent (heap:ClrHeap) (addr:address) : string * string array * KeyValuePair<string,string> array =
         try
@@ -470,7 +469,7 @@ module CollectionContent =
             elif not (setType.Name.StartsWith("System.Collections.Generic.HashSet<")) then
                 ("Expected HashSet<T> type at address: " + Utils.RealAddressString(addr) + ", there's " + setType.Name + " instead.", null, null)
             else
-                let slotsType, slotsAddress, hashFld, valFld, valType, valOff, lastIndex, count, description = getHashSetInfo heap addr setType
+                let slotsType, slotsAddress, hashFld, valFld, valType, lastIndex, count, description = getHashSetInfo heap addr setType
 
                 if count > 0 then
                     let kind = typeKind valType
@@ -478,9 +477,9 @@ module CollectionContent =
                     let values = new ResizeArray<string>(count)
                     while index < lastIndex do
                         let elemAddr = slotsType.GetArrayElementAddress(slotsAddress,index)
-                        let hash = getIntValue slotsAddress hashFld true
+                        let hash = getIntValue elemAddr hashFld true
                         if hash >= 0 then
-                            let dataVal = getTypeValue heap (elemAddr + (uint64)valOff) valType valFld kind true
+                            let dataVal = Types.getFieldValue heap elemAddr true valFld kind
                             values.Add(dataVal)
                         index <- index + 1
 

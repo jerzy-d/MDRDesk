@@ -712,23 +712,23 @@ namespace UnitTestMdr
 			}
 		}
 
-		[TestMethod]
-		public void TestTypeSizeHierarchy()
-		{
-			//ulong rootAddr = 0x0000a12d115ba8;
-			//ulong rootAddr = 0x0000a12d116110;
-			ulong rootAddr = 0x0000a12d116320;
-			string error = null;
-			using (var clrDump = GetDump(@"D:\Jerzy\WinDbgStuff\dumps\Analytics\Baly\AnalyticsLatencyDump06062016 03354291.dmp"))
-			{
-				var runtime = clrDump.Runtimes[0];
+		//[TestMethod]
+		//public void TestTypeSizeHierarchy()
+		//{
+		//	//ulong rootAddr = 0x0000a12d115ba8;
+		//	//ulong rootAddr = 0x0000a12d116110;
+		//	ulong rootAddr = 0x0000a12d116320;
+		//	string error = null;
+		//	using (var clrDump = GetDump(@"D:\Jerzy\WinDbgStuff\dumps\Analytics\Baly\AnalyticsLatencyDump06062016 03354291.dmp"))
+		//	{
+		//		var runtime = clrDump.Runtimes[0];
 
-				InstanceSizeNode root;
-				ulong totalSize;
-				var ok = ClrtDump.GetInstanceSizeHierarchy(runtime, rootAddr, out root, out totalSize, out error);
-				Assert.IsTrue(ok);
-			}
-		}
+		//		InstanceSizeNode root;
+		//		ulong totalSize;
+		//		var ok = ClrtDump.GetInstanceSizeHierarchy(runtime, rootAddr, out root, out totalSize, out error);
+		//		Assert.IsTrue(ok);
+		//	}
+		//}
 
 		#endregion Memory
 

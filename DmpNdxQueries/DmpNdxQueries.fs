@@ -299,7 +299,7 @@ module FQry =
         let value =
             match TypeKinds.GetParticularTypeKind(kind) with
             | TypeKind.Decimal  -> ValueExtractor.GetDecimalValue(addr,clrType,null)
-            | TypeKind.DateTime -> ValueExtractor.GetDateTimeValue(addr,clrType)
+            | TypeKind.DateTime -> ValueExtractor.GetDateTimeValue(addr,clrType,true)
             | TypeKind.TimeSpan -> ValueExtractor.GetTimeSpanValue(addr,clrType)
             | TypeKind.Guid     -> ValueExtractor.GetGuidValue(addr,clrType)
             | _ ->
@@ -344,7 +344,9 @@ module FQry =
         | _ ->
             for fldNdx = 0 to fldCount-1 do
                 let fld = clrType.Fields.[fldNdx]
-                let clrValue = ValueExtractor.TryGetPrimitiveValue(heap, addr, fld, internalAddresses)
+                let fldType = fld.Type
+                let kind = typeKind fldType
+                let clrValue = getFieldValue heap addr clrType.IsValueClass fld kind
                 match Utils.IsNonValue(clrValue) with
                 | true ->
                     match internalAddresses with
@@ -439,7 +441,7 @@ module FQry =
                 let mutable dispTypes:ClrtDisplayableType[] = Array.create count null
                 for fldNdx in [0..count-1] do
                     let fld = fld.Type.Fields.[fldNdx]
-                    let kind = typeKind clrType
+                    let kind = typeKind fld.Type
                     let typeId = ndxProxy.GetTypeId(fld.Type.Name)
                     dispTypes.[fldNdx] <-  new ClrtDisplayableType(typeId, fldNdx, fld.Type.Name, fld.Name, kind)
                 (null, dispTypes)

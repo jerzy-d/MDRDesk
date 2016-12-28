@@ -1693,14 +1693,37 @@ namespace MDRDesk
 				return Constants.InvalidAddress;
 			}
 			var addr = (ulong)lbAddresses.SelectedItems[0];
+
+
+
 			return addr;
 		}
 
-		private void LbGetInstValueClicked(object sender, RoutedEventArgs e)
+		private async void LbGetInstValueClicked(object sender, RoutedEventArgs e)
 		{
+			AssertIndexIsAvailable();
 			ulong addr = GetAddressFromList(sender);
 			if (addr == Constants.InvalidAddress) return;
 
+			var msg = "Getting object value at: " + Utils.RealAddressString(addr);
+			SetStartTaskMainWindowState(msg);
+
+			var result = await Task.Run(() =>
+			{
+				string error;
+				var instVal = CurrentIndex.GetInstanceValue(addr, out error);
+				return new Tuple<string, InstanceValue>(error,instVal);
+			});
+
+			SetEndTaskMainWindowState(result.Item1 == null
+				? "val at: " + Utils.RealAddressString(addr) + ", " + result.Item2.Value.ToString()
+				: msg + " failed.");
+
+			if (result.Item1 != null)
+			{
+				ShowError(result.Item1);
+				return;
+			}
 
 		}
 

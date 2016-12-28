@@ -351,6 +351,9 @@
   <ItemGroup>
     <Resource Include="Images\Question_16x.png" />
   </ItemGroup>
+  <ItemGroup>
+    <Resource Include="Images\EnumItem_exp_16x.png" />
+  </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <PropertyGroup>
     <PostBuildEvent>

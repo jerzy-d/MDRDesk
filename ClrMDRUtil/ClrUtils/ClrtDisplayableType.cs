@@ -150,6 +150,7 @@ namespace ClrMDRIndex
 					}
 				case TypeKind.ReferenceKind:
 					return true;
+				case TypeKind.EnumKind:
 				case TypeKind.PrimitiveKind:
 					msg = Constants.PrimitiveHeader + "Cannot get fields, this type is primitive.";
 					return false;

@@ -182,6 +182,8 @@ namespace ClrMDRIndex
 				case ClrElementType.Unknown:
 					return TypeKind.Unknown;
 				default:
+					if (clrType.IsEnum)
+						return kind | TypeKind.EnumKind | TypeKind.ValueKind | TypeKind.Primitive;
 					return kind | TypeKind.PrimitiveKind | TypeKind.ValueKind | TypeKind.Primitive;
 			}
 		}

@@ -284,7 +284,8 @@ namespace UnitTestMdr
 				var heap = dmp.Heap;
 				FQry.heapWarmup(heap);
 				ClrType setType = null;
-				for (int i = 0, icnt = dctAddrs.Length; i < icnt; ++i)
+				//goto GET_CONTENT;
+				for (int i = 3, icnt = dctAddrs.Length; i < 4; ++i)
 				{
 					setType = heap.GetObjectType(dctAddrs[i]);
 
@@ -353,12 +354,13 @@ namespace UnitTestMdr
 				}
 
 				return;
-
-				for (int i = 1, icnt = dctAddrs.Length; i < icnt; ++i)
+GET_CONTENT:
+				for (int i = 0, icnt = dctAddrs.Length; i < icnt; ++i)
 				{
 					var setResult = CollectionContent.getHashSetContent(heap, dctAddrs[i]);
 					Assert.IsNotNull(setResult);
 					Assert.IsNull(setResult.Item1);
+					values[i] = setResult.Item2;
 				}
 
 			}

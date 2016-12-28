@@ -36,7 +36,11 @@ module Types =
             | "System.Guid"      -> subKind ||| TypeKind.Guid ||| TypeKind.ValueKind
             | _                  -> subKind
         | ClrElementType.Unknown -> TypeKind.Unknown
-        | _                      -> kind ||| TypeKind.PrimitiveKind ||| TypeKind.ValueKind  ||| TypeKind.Primitive;
+        | _                      -> 
+            if clrType.IsEnum then
+                kind ||| TypeKind.EnumKind ||| TypeKind.ValueKind  ||| TypeKind.Primitive;
+            else
+                kind ||| TypeKind.PrimitiveKind ||| TypeKind.ValueKind  ||| TypeKind.Primitive;
 
     let clrElementType kind : ClrElementType = TypeKinds.GetClrElementType(kind)
     let valueKind kind = TypeKinds.GetValueTypeKind(kind)
@@ -65,39 +69,39 @@ module Types =
     let getFields (heap:ClrHeap) (addr:address) =
         ()
 
-    let getTypeValue (heap:ClrHeap) (addr:address) (clrType:ClrType) (fld:ClrInstanceField) (kind:TypeKind) (intr:bool) : string =
-        match mainKind kind with
-        | TypeKind.ValueKind ->
-            match specificKind kind with
-            | TypeKind.Primitive ->
-                "primitive value"
-            | _ ->
-                Constants.NullValue
-        | TypeKind.StringKind ->
-            let fldAddr = unbox<uint64>(fld.GetValue(addr,intr,false))
-            ValueExtractor.GetStringAtAddress(fldAddr,heap)
-        | TypeKind.ReferenceKind ->
-            Utils.RealAddressString(addr)
-        | TypeKind.ArrayKind ->
-            Constants.NullValue
-        | TypeKind.StructKind ->
-            match specificKind kind with
-            | TypeKind.Decimal ->
-                ValueExtractor.GetDecimalValue(heap, addr, null)
-            | TypeKind.DateTime ->
-                ValueExtractor.GetDateTimeValue(addr, clrType, null)
-            | TypeKind.TimeSpan ->
-                ValueExtractor.GetTimeSpanValue(addr, clrType)
-            | TypeKind.Guid ->
-                ValueExtractor.GetGuidValue(addr, clrType)
-            | _ ->
-                Constants.NullValue
-        | TypeKind.EnumKind ->
-            Constants.NullValue
-        | TypeKind.InterfaceKind ->
-            Constants.NullValue
-        | _ ->
-            Constants.NullValue
+//    let getTypeValue (heap:ClrHeap) (addr:address) (clrType:ClrType) (fld:ClrInstanceField) (kind:TypeKind) (intr:bool) : string =
+//        match mainKind kind with
+//        | TypeKind.ValueKind ->
+//            match specificKind kind with
+//            | TypeKind.Primitive ->
+//                "primitive value"
+//            | _ ->
+//                Constants.NullValue
+//        | TypeKind.StringKind ->
+//            let fldAddr = unbox<uint64>(fld.GetValue(addr,intr,false))
+//            ValueExtractor.GetStringAtAddress(fldAddr,heap)
+//        | TypeKind.ReferenceKind ->
+//            Utils.RealAddressString(addr)
+//        | TypeKind.ArrayKind ->
+//            Constants.NullValue
+//        | TypeKind.StructKind ->
+//            match specificKind kind with
+//            | TypeKind.Decimal ->
+//                ValueExtractor.GetDecimalValue(heap, addr, null)
+//            | TypeKind.DateTime ->
+//                ValueExtractor.GetDateTimeValue(addr, clrType, null)
+//            | TypeKind.TimeSpan ->
+//                ValueExtractor.GetTimeSpanValue(addr, clrType)
+//            | TypeKind.Guid ->
+//                ValueExtractor.GetGuidValue(addr, clrType)
+//            | _ ->
+//                Constants.NullValue
+//        | TypeKind.EnumKind ->
+//            Constants.NullValue
+//        | TypeKind.InterfaceKind ->
+//            Constants.NullValue
+//        | _ ->
+//            Constants.NullValue
 
     let getFieldValue (heap:ClrHeap) (addr:address) (intr:bool) (fld:ClrInstanceField) (kind:TypeKind) : string =
         match mainKind kind with
@@ -120,21 +124,57 @@ module Types =
         | TypeKind.StructKind ->
             match specificKind kind with
             | TypeKind.Decimal ->
-                ValueExtractor.GetDecimalValue(addr, fld)
+                ValueExtractor.GetDecimalValue(addr, fld,intr)
             | TypeKind.DateTime ->
                 ValueExtractor.GetDateTimeValue(addr, fld, intr)
             | TypeKind.TimeSpan ->
-                ValueExtractor.GetTimeSpanValue(addr, fld)
+                ValueExtractor.GetTimeSpanValue(addr, fld,intr)
             | TypeKind.Guid ->
-                ValueExtractor.GetGuidValue(addr, fld)
+                ValueExtractor.GetGuidValue(addr, fld,intr)
             | _ ->
                 Constants.NullValue
         | TypeKind.EnumKind ->
+            ValueExtractor.GetEnumValue(addr, fld, intr)
+        | TypeKind.InterfaceKind ->
+            ValueExtractor.GetPrimitiveValue(addr, fld, intr)
+        | TypeKind.PrimitiveKind ->
+            ValueExtractor.GetPrimitiveValue(addr, fld, intr)
+        | _ ->
             Constants.NullValue
+
+    let getTypeValue (heap:ClrHeap) (addr:address) (clrType:ClrType) (kind:TypeKind) : string =
+        match mainKind kind with
+        | TypeKind.ValueKind ->
+            match specificKind kind with
+            | TypeKind.Primitive ->
+                Constants.Unknown
+            | _ ->
+                Constants.NullValue
+        | TypeKind.StringKind ->
+            ValueExtractor.GetStringAtAddress(addr,heap)
+        | TypeKind.ReferenceKind ->
+            Utils.RealAddressString(addr)
+        | TypeKind.ArrayKind ->
+            Constants.NullValue
+        | TypeKind.StructKind ->
+            match specificKind kind with
+            | TypeKind.Decimal ->
+                ValueExtractor.GetDecimalValue(addr, clrType, null)
+            | TypeKind.DateTime ->
+                ValueExtractor.GetDateTimeValue(addr, clrType, null)
+            | TypeKind.TimeSpan ->
+                ValueExtractor.GetTimeSpanValue(addr, clrType)
+            | TypeKind.Guid ->
+                ValueExtractor.GetGuidValue(addr, clrType)
+            | _ ->
+                Constants.NullValue
+        | TypeKind.EnumKind ->
+            let enumVal = ValueExtractor.GetPrimitiveValue(addr, clrType)
+            ValueExtractor.GetEnumValue(addr, clrType)
         | TypeKind.InterfaceKind ->
             Constants.NullValue
         | TypeKind.PrimitiveKind ->
-            ValueExtractor.TryGetPrimitiveValue(heap, addr, fld, intr)
+            ValueExtractor.GetPrimitiveValue(addr, clrType)
         | _ ->
             Constants.NullValue
 

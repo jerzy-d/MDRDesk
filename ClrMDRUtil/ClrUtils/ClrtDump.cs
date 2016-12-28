@@ -207,174 +207,174 @@ namespace ClrMDRIndex
 
 		#region Memory Sizes
 
-		public static bool GetInstanceSizeHierarchy(ClrRuntime runtime, ulong addr, out InstanceSizeNode root,
-			out ulong totalInstSize, out string error)
-		{
-			error = null;
-			root = null;
-			totalInstSize = 0ul;
-			try
-			{
-				runtime.Flush();
-				var heap = runtime.GetHeap();
-				var refAddresses = new Queue<KeyValuePair<ulong, InstanceSizeNode>>();
-				var done = new HashSet<ulong>();
-				done.Add(addr);
-				ClrType cltType = heap.GetObjectType(addr);
-				if (cltType == null)
-				{
-					error = "No instance type found at address: " + Utils.AddressString(addr);
-					return false;
-				}
-				var clrTypeSize = cltType.GetSize(addr);
-				int nodeId = 0;
-				ulong totSize = clrTypeSize;
+		//public static bool GetInstanceSizeHierarchy(ClrRuntime runtime, ulong addr, out InstanceSizeNode root,
+		//	out ulong totalInstSize, out string error)
+		//{
+		//	error = null;
+		//	root = null;
+		//	totalInstSize = 0ul;
+		//	try
+		//	{
+		//		runtime.Flush();
+		//		var heap = runtime.GetHeap();
+		//		var refAddresses = new Queue<KeyValuePair<ulong, InstanceSizeNode>>();
+		//		var done = new HashSet<ulong>();
+		//		done.Add(addr);
+		//		ClrType cltType = heap.GetObjectType(addr);
+		//		if (cltType == null)
+		//		{
+		//			error = "No instance type found at address: " + Utils.AddressString(addr);
+		//			return false;
+		//		}
+		//		var clrTypeSize = cltType.GetSize(addr);
+		//		int nodeId = 0;
+		//		ulong totSize = clrTypeSize;
 
-				root = new InstanceSizeNode(nodeId++, cltType.Name, cltType.ElementType, string.Empty, Utils.AddressString(addr),
-					clrTypeSize);
+		//		root = new InstanceSizeNode(nodeId++, cltType.Name, cltType.ElementType, string.Empty, Utils.AddressString(addr),
+		//			clrTypeSize);
 
-				List<InstanceSizeNode> fldLst = new List<InstanceSizeNode>(64);
-				for (int i = 0, icnt = cltType.Fields.Count; i < icnt; ++i)
-				{
-					var fld = cltType.Fields[i];
-					var fldName = fld.Name;
-					var fldType = fld.Type;
-					var fldTypeName = fldType?.Name ?? Constants.NullName;
+		//		List<InstanceSizeNode> fldLst = new List<InstanceSizeNode>(64);
+		//		for (int i = 0, icnt = cltType.Fields.Count; i < icnt; ++i)
+		//		{
+		//			var fld = cltType.Fields[i];
+		//			var fldName = fld.Name;
+		//			var fldType = fld.Type;
+		//			var fldTypeName = fldType?.Name ?? Constants.NullName;
 
-					if (fldType.ElementType == ClrElementType.Struct)
-					{
-						string val = string.Empty;
-						ulong sz = 0ul;
-						if (Utils.SameStrings(fldTypeName, "System.Decimal"))
-						{
-							sz = 8;
-							totSize += sz;
-							var faddr = addr + (ulong) fld.Offset;
-							val = ClrMDRIndex.ValueExtractor.GetDecimalValue(faddr, fldType, null);
-							var node = new InstanceSizeNode(nodeId++, fldTypeName, fld.ElementType, fldName, val, sz);
-							fldLst.Add(node);
-						}
-						else if (Utils.SameStrings(fldTypeName, "System.DateTime"))
-						{
-							sz = 8;
-							totSize += sz;
-							var faddr = addr + (ulong) fld.Offset;
-							val = ValueExtractor.GetDateTimeValue(faddr, fldType, null);
-							var node = new InstanceSizeNode(nodeId++, fldTypeName, fld.ElementType, fldName, val, sz);
-							fldLst.Add(node);
-						}
-						else if (Utils.SameStrings(fldTypeName, "System.TimeSpan"))
-						{
-							sz = 8;
-							totSize += sz;
-							var faddr = addr + (ulong) fld.Offset;
-							val = ValueExtractor.GetTimeSpanValue(faddr, fldType);
-							var node = new InstanceSizeNode(nodeId++, fldTypeName, fld.ElementType, fldName, val, sz);
-							fldLst.Add(node);
-						}
-						else if (Utils.SameStrings(fldTypeName, "System.Guid"))
-						{
-							sz = 16;
-							totSize += sz;
-							var faddr = addr + (ulong) fld.Offset;
-							val = ValueExtractor.GetGuidValue(faddr, fldType);
-							var node = new InstanceSizeNode(nodeId++, fldTypeName, fld.ElementType, fldName, val, sz);
-							fldLst.Add(node);
-						}
-						continue;
-					}
+		//			if (fldType.ElementType == ClrElementType.Struct)
+		//			{
+		//				string val = string.Empty;
+		//				ulong sz = 0ul;
+		//				if (Utils.SameStrings(fldTypeName, "System.Decimal"))
+		//				{
+		//					sz = 8;
+		//					totSize += sz;
+		//					var faddr = addr + (ulong) fld.Offset;
+		//					val = ClrMDRIndex.ValueExtractor.GetDecimalValue(faddr, fldType, null);
+		//					var node = new InstanceSizeNode(nodeId++, fldTypeName, fld.ElementType, fldName, val, sz);
+		//					fldLst.Add(node);
+		//				}
+		//				else if (Utils.SameStrings(fldTypeName, "System.DateTime"))
+		//				{
+		//					sz = 8;
+		//					totSize += sz;
+		//					var faddr = addr + (ulong) fld.Offset;
+		//					val = ValueExtractor.GetDateTimeValue(faddr, fldType, innull);
+		//					var node = new InstanceSizeNode(nodeId++, fldTypeName, fld.ElementType, fldName, val, sz);
+		//					fldLst.Add(node);
+		//				}
+		//				else if (Utils.SameStrings(fldTypeName, "System.TimeSpan"))
+		//				{
+		//					sz = 8;
+		//					totSize += sz;
+		//					var faddr = addr + (ulong) fld.Offset;
+		//					val = ValueExtractor.GetTimeSpanValue(faddr, fldType);
+		//					var node = new InstanceSizeNode(nodeId++, fldTypeName, fld.ElementType, fldName, val, sz);
+		//					fldLst.Add(node);
+		//				}
+		//				else if (Utils.SameStrings(fldTypeName, "System.Guid"))
+		//				{
+		//					sz = 16;
+		//					totSize += sz;
+		//					var faddr = addr + (ulong) fld.Offset;
+		//					val = ValueExtractor.GetGuidValue(faddr, fldType);
+		//					var node = new InstanceSizeNode(nodeId++, fldTypeName, fld.ElementType, fldName, val, sz);
+		//					fldLst.Add(node);
+		//				}
+		//				continue;
+		//			}
 
-					var fldObj = fld.GetValue(addr, cltType.ElementType == ClrElementType.Struct, false);
-					if (fldObj == null)
-					{
-						var node = new InstanceSizeNode(nodeId++, fldTypeName, fld.ElementType, fldName, Constants.ZeroAddressStr,
-							(ulong) Constants.PointerSize);
-						totSize += (ulong) Constants.PointerSize;
-						fldLst.Add(node);
-						continue;
-					}
+		//			var fldObj = fld.GetValue(addr, cltType.ElementType == ClrElementType.Struct, false);
+		//			if (fldObj == null)
+		//			{
+		//				var node = new InstanceSizeNode(nodeId++, fldTypeName, fld.ElementType, fldName, Constants.ZeroAddressStr,
+		//					(ulong) Constants.PointerSize);
+		//				totSize += (ulong) Constants.PointerSize;
+		//				fldLst.Add(node);
+		//				continue;
+		//			}
 
-					if (fldType == null)
-					{
-						var node = new InstanceSizeNode(nodeId++, fldTypeName, fld.ElementType, fldName, Constants.ZeroAddressStr,
-							(ulong) Constants.PointerSize);
-						totSize += (ulong) Constants.PointerSize;
-						fldLst.Add(node);
-						continue;
-					}
+		//			if (fldType == null)
+		//			{
+		//				var node = new InstanceSizeNode(nodeId++, fldTypeName, fld.ElementType, fldName, Constants.ZeroAddressStr,
+		//					(ulong) Constants.PointerSize);
+		//				totSize += (ulong) Constants.PointerSize;
+		//				fldLst.Add(node);
+		//				continue;
+		//			}
 
-					if (fldType.IsString)
-					{
-						ulong fldObjAddr = (ulong) fldObj;
-						ulong sz = fldObjAddr == 0
-							? 8
-							: Utils.RoundupToPowerOf2Boundary(fldType.GetSize(fldObjAddr), (ulong) Constants.PointerSize);
-						totSize += sz;
-						var str = fldObjAddr != 0
-							? ValueExtractor.GetStringAtAddress(fldObjAddr, heap)
-							: Constants.NullName;
-						var node = new InstanceSizeNode(nodeId++, fldTypeName, fld.ElementType, fldName, str, sz);
-						fldLst.Add(node);
-						continue;
-					}
-
-
-
-
-					if (fldType.IsArray)
-					{
-						ulong fldObjAddr = (ulong) fldObj;
-						var asz = fldType.GetSize(fldObjAddr);
-						var acnt = fldType.GetArrayLength(fldObjAddr);
-
-						totSize += asz;
-						var node = new InstanceSizeNode(nodeId++, fldTypeName, fld.ElementType, fldName,
-							Utils.AddressString(fldObjAddr) + " [" + acnt + "]", asz);
-						fldLst.Add(node);
-						refAddresses.Enqueue(new KeyValuePair<ulong, InstanceSizeNode>(fldObjAddr, node));
-						continue;
-					}
-
-					if (fldType.IsPrimitive)
-					{
-						var value = ValueExtractor.GetPrimitiveValue(fldObj, fldType.ElementType);
-						var sz = (ulong) ValueExtractor.GetPrimitiveValueSize(fldType.ElementType);
-						totSize += sz;
-						var node = new InstanceSizeNode(nodeId++, fldTypeName, fld.ElementType, fldName, value, sz);
-						fldLst.Add(node);
-						continue;
-					}
+		//			if (fldType.IsString)
+		//			{
+		//				ulong fldObjAddr = (ulong) fldObj;
+		//				ulong sz = fldObjAddr == 0
+		//					? 8
+		//					: Utils.RoundupToPowerOf2Boundary(fldType.GetSize(fldObjAddr), (ulong) Constants.PointerSize);
+		//				totSize += sz;
+		//				var str = fldObjAddr != 0
+		//					? ValueExtractor.GetStringAtAddress(fldObjAddr, heap)
+		//					: Constants.NullName;
+		//				var node = new InstanceSizeNode(nodeId++, fldTypeName, fld.ElementType, fldName, str, sz);
+		//				fldLst.Add(node);
+		//				continue;
+		//			}
 
 
 
-					if (fldType.IsObjectReference)
-					{
-						ulong fldObjAddr = (ulong) fldObj;
 
-						var totSizeResult = GetTotalSize(heap, new[] {fldObjAddr}, done, out error);
-						totSize += totSizeResult.Item1;
+		//			if (fldType.IsArray)
+		//			{
+		//				ulong fldObjAddr = (ulong) fldObj;
+		//				var asz = fldType.GetSize(fldObjAddr);
+		//				var acnt = fldType.GetArrayLength(fldObjAddr);
 
-						var node = new InstanceSizeNode(nodeId++, fldTypeName, fld.ElementType, fldName, Utils.AddressString(fldObjAddr),
-							totSizeResult.Item1);
-						fldLst.Add(node);
-						if (!fldType.IsException && fldName != "System.Object" && fldName != "System.__Canon")
-							refAddresses.Enqueue(new KeyValuePair<ulong, InstanceSizeNode>(fldObjAddr, node));
-						continue;
-					}
-				}
-				root.AddNodes(fldLst.ToArray());
+		//				totSize += asz;
+		//				var node = new InstanceSizeNode(nodeId++, fldTypeName, fld.ElementType, fldName,
+		//					Utils.AddressString(fldObjAddr) + " [" + acnt + "]", asz);
+		//				fldLst.Add(node);
+		//				refAddresses.Enqueue(new KeyValuePair<ulong, InstanceSizeNode>(fldObjAddr, node));
+		//				continue;
+		//			}
 
-				// totSize += GetRootTypeSizeHierarchy(heap, refAddresses, nodeId, done);
+		//			if (fldType.IsPrimitive)
+		//			{
+		//				var value = ValueExtractor.GetPrimitiveValue(fldObj, fldType.ElementType);
+		//				var sz = (ulong) ValueExtractor.GetPrimitiveValueSize(fldType.ElementType);
+		//				totSize += sz;
+		//				var node = new InstanceSizeNode(nodeId++, fldTypeName, fld.ElementType, fldName, value, sz);
+		//				fldLst.Add(node);
+		//				continue;
+		//			}
 
-				totalInstSize = totSize;
-				return true;
-			}
-			catch (Exception ex)
-			{
-				Utils.GetExceptionErrorString(ex);
-				return false;
-			}
-		}
+
+
+		//			if (fldType.IsObjectReference)
+		//			{
+		//				ulong fldObjAddr = (ulong) fldObj;
+
+		//				var totSizeResult = GetTotalSize(heap, new[] {fldObjAddr}, done, out error);
+		//				totSize += totSizeResult.Item1;
+
+		//				var node = new InstanceSizeNode(nodeId++, fldTypeName, fld.ElementType, fldName, Utils.AddressString(fldObjAddr),
+		//					totSizeResult.Item1);
+		//				fldLst.Add(node);
+		//				if (!fldType.IsException && fldName != "System.Object" && fldName != "System.__Canon")
+		//					refAddresses.Enqueue(new KeyValuePair<ulong, InstanceSizeNode>(fldObjAddr, node));
+		//				continue;
+		//			}
+		//		}
+		//		root.AddNodes(fldLst.ToArray());
+
+		//		// totSize += GetRootTypeSizeHierarchy(heap, refAddresses, nodeId, done);
+
+		//		totalInstSize = totSize;
+		//		return true;
+		//	}
+		//	catch (Exception ex)
+		//	{
+		//		Utils.GetExceptionErrorString(ex);
+		//		return false;
+		//	}
+		//}
 
 		private static ulong GetRootTypeSizeHierarchy(ClrHeap heap, Queue<KeyValuePair<ulong, InstanceSizeNode>> instQue,
 			int nodeId, HashSet<ulong> done)
@@ -1465,6 +1465,10 @@ namespace ClrMDRIndex
 		}
 
 		#endregion Strings
+
+		#region values
+
+		#endregion values
 
 		public static Tuple<ulong[],ulong[]> GetFinalizableInstances(ClrHeap heap, out string error)
 		{

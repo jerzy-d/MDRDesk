@@ -2607,6 +2607,9 @@ namespace MDRDesk
 				case TypeKind.ReferenceKind:
 					image.Source = ((SWC.Image)Application.Current.FindResource("ClassPng")).Source;
 					break;
+				case TypeKind.EnumKind:
+					image.Source = ((SWC.Image)Application.Current.FindResource("EnumPng")).Source;
+					break;
 				case TypeKind.PrimitiveKind:
 					image.Source = ((SWC.Image)Application.Current.FindResource("PrimitivePng")).Source;
 					break;
