@@ -43,6 +43,23 @@ namespace ClrMDRIndex
 			return d;
 		}
 
+		public static string GetDecimalValueR(ulong addr, ClrType type, string formatSpec)
+		{
+			decimal d = GetDecimalValueR(addr, type);
+			return formatSpec == null ? d.ToString(CultureInfo.InvariantCulture) : d.ToString(formatSpec);
+		}
+
+		public static decimal GetDecimalValueR(ulong addr, ClrType type)
+		{
+			var flags = (int)type.Fields[0].GetValue(addr, true);
+			var hi = (int)type.Fields[1].GetValue(addr, true);
+			var lo = (int)type.Fields[2].GetValue(addr, true);
+			var mid = (int)type.Fields[3].GetValue(addr, true);
+
+			int[] bits = { lo, mid, hi, flags };
+			return new decimal(bits);
+		}
+
 		public static string GetDecimalValue(ulong addr, ClrType type, string formatSpec)
 		{
 			decimal d = GetDecimalValue(addr, type);
@@ -207,7 +224,7 @@ namespace ClrMDRIndex
 
 		public static string GetDateTimeValue(ulong addr, ClrType clrType, string formatSpec = null)
 		{
-			var data = (ulong)clrType.Fields[0].GetValue(addr, true);
+			var data = (ulong)clrType.Fields[0].GetValue(addr, false);
 			data = data & TicksMask;
 			var dt = DateTime.FromBinary((long)data);
 			return formatSpec == null ? dt.ToString(CultureInfo.InvariantCulture) : dt.ToString(formatSpec);
@@ -283,19 +300,19 @@ namespace ClrMDRIndex
 		{
 			StringBuilder sb = StringBuilderCache.Acquire(64);
 
-			var ival = (int)type.Fields[0].GetValue(addr,true);
+			var ival = (int)type.Fields[0].GetValue(addr, true);
 			sb.AppendFormat("{0:X8}", ival);
 			sb.Append('-');
-			var sval = (short)type.Fields[1].GetValue(addr,true);
+			var sval = (short)type.Fields[1].GetValue(addr, true);
 			sb.AppendFormat("{0:X4}", sval);
 			sb.Append('-');
-			sval = (short)type.Fields[2].GetValue(addr,true);
+			sval = (short)type.Fields[2].GetValue(addr, true);
 			sb.AppendFormat("{0:X4}", sval);
 			sb.Append('-');
 			for (var i = 3; i < 11; ++i)
 			{
 				if (i == 5) sb.Append('-');
-				var val = (byte)type.Fields[i].GetValue(addr,true);
+				var val = (byte)type.Fields[i].GetValue(addr, true);
 				sb.AppendFormat("{0:X2}", val);
 			}
 			return StringBuilderCache.GetStringAndRelease(sb);
@@ -391,21 +408,40 @@ namespace ClrMDRIndex
 		{
 			Debug.Assert(type.IsException);
 
-			if (Utils.IsInvalidAddress(addr)) return Constants.NullValue;
-			var classNameObj = type.GetFieldByName("_className").GetValue(addr);
-			var classNameVal = classNameObj == null ? Constants.NullValue : GetStringAtAddress((ulong)classNameObj, heap);
-
-			var messageObj = type.GetFieldByName("_message").GetValue(addr);
-			var messageVal = messageObj == null ? Constants.NullValue : GetStringAtAddress((ulong)messageObj, heap);
-
-			var hresult = type.GetFieldByName("_HResult");
-			Debug.Assert(hresult.ElementType == ClrElementType.Int32);
-			int hresultValue = (int)hresult.GetValue(addr);
-
+			var exType = heap.GetExceptionObject(addr);
+			string exTypeName = null;
+			int hresult = 0;
+			string message = null;
 			var sb = StringBuilderCache.Acquire(64);
-			sb.Append("[").Append(hresultValue).Append("] ");
-			sb.Append(classNameVal).Append(Constants.NamespaceSepPadded);
+			if (exType != null)
+			{
+				exTypeName = exType.Type != null ? exType.Type.Name : Constants.UnknownTypeName;
+				hresult = exType.HResult;
+				message = exType.Message;
+				sb.Append(Utils.HResultStringHeader(hresult)).Append(Constants.NamespaceSepPadded);
+				sb.Append(message).Append(Constants.NamespaceSepPadded);
+				sb.Append(exTypeName);
+				return StringBuilderCache.GetStringAndRelease(sb);
+			}
+
+
+
+			if (Utils.IsInvalidAddress(addr)) return Constants.NullValue;
+			var classNameFld = type.GetFieldByName("_className");
+			var classNameObj = classNameFld.GetValue(addr, false, true);
+			var classNameVal = classNameObj == null ? Constants.NullValue : classNameObj.ToString();
+
+			var messageFld = type.GetFieldByName("_message");
+			var messageObj = messageFld.GetValue(addr, false, true);
+			var messageVal = messageObj == null ? Constants.NullValue : messageObj.ToString();
+
+			var hresultFld = type.GetFieldByName("_HResult");
+			Debug.Assert(hresultFld.ElementType == ClrElementType.Int32);
+			int hresultValue = (int)hresultFld.GetValue(addr);
+
+			sb.Append(Utils.HResultStringHeader(hresult)).Append(Constants.NamespaceSepPadded);
 			sb.Append(messageVal).Append(Constants.NamespaceSepPadded);
+			sb.Append(classNameVal);
 			return StringBuilderCache.GetStringAndRelease(sb);
 		}
 
@@ -429,7 +465,7 @@ namespace ClrMDRIndex
 				case ClrElementType.Boolean:
 					return ((bool)obj).ToString();
 				case ClrElementType.Char:
-					return ((char)obj).ToString();
+					return Utils.DisplayableChar((char) obj);
 				case ClrElementType.Int8:
 					return ((Byte)obj).ToString();
 				case ClrElementType.Int16:

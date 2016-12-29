@@ -148,6 +148,9 @@
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </ApplicationDefinition>
+    <Compile Include="CollectionDisplay.xaml.cs">
+      <DependentUpon>CollectionDisplay.xaml</DependentUpon>
+    </Compile>
     <Compile Include="Charts\ChartProvider.cs" />
     <Compile Include="Converters.cs" />
     <Compile Include="CreateCrashDump.xaml.cs">
@@ -175,6 +178,10 @@
       <DependentUpon>TypeValueFilterDlg.xaml</DependentUpon>
     </Compile>
     <Compile Include="TypeValuesQuery.cs" />
+    <Page Include="CollectionDisplay.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
     <Page Include="CreateCrashDump.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
@@ -353,6 +360,9 @@
   </ItemGroup>
   <ItemGroup>
     <Resource Include="Images\EnumItem_exp_16x.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <Resource Include="Images\ListView_16x.png" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <PropertyGroup>

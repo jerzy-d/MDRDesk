@@ -3,6 +3,8 @@ Clean up after closing TabItem.
 0002 09/27/16
 Add to index menu => Copy Index Path to Clippboard.
 0003 12/27/16
-Cleanup addresses from display of Show Loaded Module Info
+*** (12/28/16) Cleanup addresses from display of Show Loaded Module Info
 0004 12/27/16
-Fix Instance Value (addresses context menu) for DateTime type
+*** (12/28/16) Fix Instance Value (addresses context menu) for DateTime type
+0005 12/28/16
+Multicolumn sorting of listing report.

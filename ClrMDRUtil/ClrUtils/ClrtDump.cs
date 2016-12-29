@@ -144,6 +144,24 @@ namespace ClrMDRIndex
 			}
 		}
 
+		public void WarmupHeap()
+		{
+			var heap = Heap;
+			int ndx = 0;
+			List<ClrType> lst = new List<ClrType>(1000000);
+			for (int i = 0, icnt = heap.Segments.Count; i < icnt; ++i)
+			{
+				var seg = heap.Segments[i];
+				var addr = seg.FirstObject;
+				while (addr != 0UL)
+				{
+					var clrType = heap.GetObjectType(addr);
+					lst.Add(clrType);
+					addr = seg.NextObject(addr);
+				}
+			}
+		}
+
 		public ClrtDump Clone(out string error)
 		{
 			error = null;

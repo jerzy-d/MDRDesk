@@ -1253,7 +1253,7 @@ namespace ClrMDRIndex
 			return new ListingInfo(null, items, colInfos, sb.ToString());
 		}
 
-		public InstanceValue GetInstanceValue(ulong addr, out string error)
+		public Tuple<InstanceValue,string> GetInstanceValue(ulong addr, out string error)
 		{
 			error = null;
 			try
@@ -1268,9 +1268,33 @@ namespace ClrMDRIndex
 					return null;
 				}
 				var kind = TypeKinds.GetTypeKind(clrType);
-				var val = Types.getTypeValue(heap, realAddr, clrType,kind);
 
-				return new InstanceValue(typeId, addr, clrType.Name, string.Empty, val);
+				if (TypeKinds.IsArray(kind))
+				{
+					var aryResult = CollectionContent.getAryContent(heap, realAddr);
+					if (aryResult.Item1 != null)
+					{
+						error = aryResult.Item1;
+						return null;
+					}
+					//// string * ClrType * ClrType * int * string array 
+					//string aryBaseName = Utils.BaseTypeName(aryResult.Item2.Name);
+					//if (aryBaseName.EndsWith("[]")) aryBaseName = aryBaseName.Substring(0, aryBaseName.Length - 2);
+					//string aval = aryBaseName + "[" + aryResult.Item4 + "]";
+
+					var sb = StringBuilderCache.Acquire(StringBuilderCache.MaxCapacity);
+					sb.Append("Type:      ").AppendLine(aryResult.Item2.Name);
+					sb.Append("Item Type: ").AppendLine(aryResult.Item3.Name);
+					sb.Append("Address:   ").AppendLine(Utils.RealAddressString(addr));
+					sb.Append("Lenght:    ").AppendLine(aryResult.Item4.ToString());
+					var inst = new InstanceValue(typeId, addr, aryResult.Item2.Name, aryResult.Item3.Name, Utils.BaseArrayName(aryResult.Item2.Name,aryResult.Item4));
+					inst.AddArrayValues(aryResult.Item5);
+					return new Tuple<InstanceValue,string>(inst,StringBuilderCache.GetStringAndRelease(sb));
+				}
+
+				var val = Types.getTypeValue(heap, realAddr, clrType,kind);
+				var ainst = new InstanceValue(typeId, addr, clrType.Name, string.Empty, val);
+				return new Tuple<InstanceValue, string>(ainst, string.Empty);
 			}
 			catch (Exception ex)
 			{
@@ -2790,7 +2814,12 @@ namespace ClrMDRIndex
 			try
 			{
 				_clrtDump = new ClrtDump(DumpPath);
-				return _clrtDump.Init(out error);
+				if (_clrtDump.Init(out error))
+				{
+					_clrtDump.WarmupHeap();
+					return true;
+				}
+				return false;
 			}
 			catch (Exception ex)
 			{

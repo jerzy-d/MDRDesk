@@ -284,7 +284,7 @@ namespace UnitTestMdr
 				var heap = dmp.Heap;
 				FQry.heapWarmup(heap);
 				ClrType setType = null;
-				//goto GET_CONTENT;
+				goto GET_CONTENT;
 				for (int i = 3, icnt = dctAddrs.Length; i < 4; ++i)
 				{
 					setType = heap.GetObjectType(dctAddrs[i]);

@@ -24,6 +24,8 @@ module CollectionContent =
         else
             let len = clrType.GetArrayLength(addr)
             let kind = typeKind clrType.ComponentType
+
+
             (null, clrType, clrType.ComponentType, len, kind)
 
     let aryElemString (heap:ClrHeap) (addr:address) (aryType:ClrType) (elemType:ClrType) (ndx:int) =
@@ -39,7 +41,7 @@ module CollectionContent =
         if elemAddr = Constants.InvalidAddress then
             Constants.NullValue
         else
-            ValueExtractor.GetDecimalValue( elemAddr, elemType,null)
+            ValueExtractor.GetDecimalValueR( elemAddr, elemType,null)
 
     let aryElemDatetime (heap:ClrHeap) (addr:address) (aryType:ClrType) (elemType:ClrType) (ndx:int) =
         let elemAddr = aryType.GetArrayElementAddress(addr,ndx)
@@ -75,6 +77,16 @@ module CollectionContent =
             Constants.NullValue
         else
             ValueExtractor.GetPrimitiveValue( elemobj, elemType)
+    
+    let aryElemException (heap:ClrHeap) (addr:address) (aryType:ClrType) (elemType:ClrType) (ndx:int) =
+        let elemAddr = unbox<uint64>(aryType.GetArrayElementValue(addr,ndx))
+        if elemAddr = Constants.InvalidAddress then
+            Constants.NullValue
+        else
+            ValueExtractor.GetShortExceptionValue(elemAddr, elemType, heap)
+
+    let aryElemAddress (heap:ClrHeap) (addr:address) (aryType:ClrType) (elemType:ClrType) (ndx:int) =
+        Utils.RealAddressString(aryType.GetArrayElementAddress(addr,ndx))
 
     let getAryItems (heap:ClrHeap) (addr:address) (aryType:ClrType) (elemType:ClrType) (cnt:int) getter =
         let ary = Array.create cnt null
@@ -91,7 +103,6 @@ module CollectionContent =
                 let values = Array.create count null
                 match valueKind kind with
                 | TypeKind.ValueKind ->
-                    let specKind = specificKind kind
                     match specificKind kind with
                     | TypeKind.Decimal ->
                         (null,clrType,aryElemType,count,getAryItems heap addr clrType aryElemType count aryElemDecimal)
@@ -108,7 +119,15 @@ module CollectionContent =
                     | _ ->
                         (null,clrType,aryElemType,count,null)
                 | _ ->
-                    (null,clrType,aryElemType,count,null)
+                    match mainKind kind with
+                    | TypeKind.ReferenceKind ->
+                        match specificKind kind with
+                        | TypeKind.Exception ->
+                            (null,clrType,aryElemType,count,getAryItems heap addr clrType aryElemType count aryElemException)
+                        | _ -> 
+                            (null,clrType,aryElemType,count,getAryItems heap addr clrType aryElemType count aryElemAddress)
+                    | _ ->
+                        (null,clrType,aryElemType,count,null)
         with
             | exn -> (exn.ToString(),null,null,0,null)
 

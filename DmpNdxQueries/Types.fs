@@ -153,7 +153,11 @@ module Types =
         | TypeKind.StringKind ->
             ValueExtractor.GetStringAtAddress(addr,heap)
         | TypeKind.ReferenceKind ->
-            Utils.RealAddressString(addr)
+            match specificKind kind with
+            | TypeKind.Exception ->
+                ValueExtractor.GetExceptionValue(addr, clrType, heap)
+            | _ ->
+                Utils.RealAddressString(addr)
         | TypeKind.ArrayKind ->
             Constants.NullValue
         | TypeKind.StructKind ->

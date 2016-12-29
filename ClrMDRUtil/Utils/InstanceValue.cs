@@ -14,6 +14,7 @@ namespace ClrMDRIndex
 		private string _typeName;
 		private string _fieldName;
 		private ValueString _value;
+		private string[] _aryValues;
 		private List<InstanceValue> _values;
 
 		public int FieldIndex => _fieldNdx;
@@ -22,6 +23,7 @@ namespace ClrMDRIndex
 		public string FieldName => _fieldName;
         public ValueString Value => _value;
 		public List<InstanceValue> Values => _values;
+		public string[] ArrayValues => _aryValues;
 
 		public InstanceValue(int typeId, ulong addr, string typeName, string fldName, string value, int fldNdx = Constants.InvalidIndex)
 		{
@@ -32,12 +34,18 @@ namespace ClrMDRIndex
 		    _value = new ValueString(value);
 		    _values = new List<InstanceValue>(0);
 			_fieldNdx = fldNdx;
+			_aryValues = null;
 		}
 
 	    public void Addvalue(InstanceValue val)
 	    {
 	        _values.Add(val);
 	    }
+
+		public void AddArrayValues(string[] aryvalues)
+		{
+			_aryValues = aryvalues;
+		}
 
 		public void SortByFieldName()
 		{

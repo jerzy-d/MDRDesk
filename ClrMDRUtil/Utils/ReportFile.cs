@@ -23,115 +23,8 @@ namespace ClrMDRIndex
 			UInt32 = 4,
 			UInt64 = 8,
 			String = 16,
-            Address = 32
+			Address = 32
 		}
-
-		//public static ListingStrCmp1Asc ListingStrCmp1AscInstance = new ListingStrCmp1Asc();
-		//public static ListingStrCmp2Asc ListingStrCmp2AscInstance = new ListingStrCmp2Asc();
-		//public static ListingStrCmp3Asc ListingStrCmp3AscInstance = new ListingStrCmp3Asc();
-		//public static ListingStrCmp4Asc ListingStrCmp4AscInstance = new ListingStrCmp4Asc();
-		//public static ListingStrCmp5Asc ListingStrCmp5AscInstance = new ListingStrCmp5Asc();
-		//public static ListingStrCmp6Asc ListingStrCmp6AscInstance = new ListingStrCmp6Asc();
-		//public static ListingStrCmp7Asc ListingStrCmp7AscInstance = new ListingStrCmp7Asc();
-		//public static ListingStrCmp8Asc ListingStrCmp8AscInstance = new ListingStrCmp8Asc();
-
-		//public static ListingStrCmp1Desc ListingStrCmp1DescInstance = new ListingStrCmp1Desc();
-		//public static ListingStrCmp2Desc ListingStrCmp2DescInstance = new ListingStrCmp2Desc();
-		//public static ListingStrCmp3Desc ListingStrCmp3DescInstance = new ListingStrCmp3Desc();
-		//public static ListingStrCmp4Desc ListingStrCmp4DescInstance = new ListingStrCmp4Desc();
-		//public static ListingStrCmp5Desc ListingStrCmp5DescInstance = new ListingStrCmp5Desc();
-		//public static ListingStrCmp6Desc ListingStrCmp6DescInstance = new ListingStrCmp6Desc();
-		//public static ListingStrCmp7Desc ListingStrCmp7DescInstance = new ListingStrCmp7Desc();
-		//public static ListingStrCmp8Desc ListingStrCmp8DescInstance = new ListingStrCmp8Desc();
-
-		//public static ListingNumCmp1Asc ListingNumCmp1AscInstance = new ListingNumCmp1Asc();
-		//public static ListingNumCmp2Asc ListingNumCmp2AscInstance = new ListingNumCmp2Asc();
-		//public static ListingNumCmp3Asc ListingNumCmp3AscInstance = new ListingNumCmp3Asc();
-		//public static ListingNumCmp4Asc ListingNumCmp4AscInstance = new ListingNumCmp4Asc();
-		//public static ListingNumCmp5Asc ListingNumCmp5AscInstance = new ListingNumCmp5Asc();
-		//public static ListingNumCmp6Asc ListingNumCmp6AscInstance = new ListingNumCmp6Asc();
-		//public static ListingNumCmp7Asc ListingNumCmp7AscInstance = new ListingNumCmp7Asc();
-		//public static ListingNumCmp8Asc ListingNumCmp8AscInstance = new ListingNumCmp8Asc();
-
-		//public static ListingNumCmp1Desc ListingNumCmp1DescInstance = new ListingNumCmp1Desc();
-		//public static ListingNumCmp2Desc ListingNumCmp2DescInstance = new ListingNumCmp2Desc();
-		//public static ListingNumCmp3Desc ListingNumCmp3DescInstance = new ListingNumCmp3Desc();
-		//public static ListingNumCmp4Desc ListingNumCmp4DescInstance = new ListingNumCmp4Desc();
-		//public static ListingNumCmp5Desc ListingNumCmp5DescInstance = new ListingNumCmp5Desc();
-		//public static ListingNumCmp6Desc ListingNumCmp6DescInstance = new ListingNumCmp6Desc();
-		//public static ListingNumCmp7Desc ListingNumCmp7DescInstance = new ListingNumCmp7Desc();
-		//public static ListingNumCmp8Desc ListingNumCmp8DescInstance = new ListingNumCmp8Desc();
-
-		//public static IComparer<listing<string>> GetComparer(ColumnType colType, int colIndex, bool asc)
-		//{
-		//	var cmpId = GetComparerId(colType, colIndex, asc);
-		//	IComparer<listing<string>> cmp;
-		//	if (_comparerDct.TryGetValue(cmpId, out cmp))
-		//	{
-		//		return cmp;
-		//	}
-		//	return null;
-		//}
-
-		//public static IComparer<listing<string>> GetComparer(ColumnInfo colInfo)
-		//{
-		//	var cmpId = GetComparerId(colInfo.ColumnType, colInfo.ColumnIndex, colInfo.Ascending);
-		//	IComparer<listing<string>> cmp;
-		//	if (_comparerDct.TryGetValue(cmpId, out cmp))
-		//	{
-		//		return cmp;
-		//	}
-		//	return null;
-		//}
-
-		//private static int GetComparerId(ColumnType colType, int colIndex, bool asc)
-		//{
-		//	int mask = asc ? 1 : 2;
-		//	mask <<= 8;
-		//	mask |= colType == ColumnType.String ? 1 : 2;
-		//	mask <<= 8;
-		//	mask |= colIndex;
-		//	return mask;
-		//}
-
-		//private static Dictionary<int, IComparer<listing<string>>> _comparerDct = new Dictionary<int, IComparer<listing<string>>>()
-		//{
-		//	{ GetComparerId(ColumnType.String,1,true),ListingStrCmp1AscInstance },
-		//	{ GetComparerId(ColumnType.String,2,true),ListingStrCmp2AscInstance },
-		//	{ GetComparerId(ColumnType.String,3,true),ListingStrCmp3AscInstance },
-		//	{ GetComparerId(ColumnType.String,4,true),ListingStrCmp4AscInstance },
-		//	{ GetComparerId(ColumnType.String,5,true),ListingStrCmp5AscInstance },
-		//	{ GetComparerId(ColumnType.String,6,true),ListingStrCmp6AscInstance },
-		//	{ GetComparerId(ColumnType.String,7,true),ListingStrCmp7AscInstance },
-		//	{ GetComparerId(ColumnType.String,8,true),ListingStrCmp8AscInstance },
-
-		//	{ GetComparerId(ColumnType.String,1,false),ListingStrCmp1DescInstance },
-		//	{ GetComparerId(ColumnType.String,2,false),ListingStrCmp2DescInstance },
-		//	{ GetComparerId(ColumnType.String,3,false),ListingStrCmp3DescInstance },
-		//	{ GetComparerId(ColumnType.String,4,false),ListingStrCmp4DescInstance },
-		//	{ GetComparerId(ColumnType.String,5,false),ListingStrCmp5DescInstance },
-		//	{ GetComparerId(ColumnType.String,6,false),ListingStrCmp6DescInstance },
-		//	{ GetComparerId(ColumnType.String,7,false),ListingStrCmp7DescInstance },
-		//	{ GetComparerId(ColumnType.String,8,false),ListingStrCmp8DescInstance },
-
-		//	{ GetComparerId(ColumnType.Int32,1,true),ListingNumCmp1AscInstance},
-		//	{ GetComparerId(ColumnType.Int32,2,true),ListingNumCmp2AscInstance},
-		//	{ GetComparerId(ColumnType.Int32,3,true),ListingNumCmp3AscInstance},
-		//	{ GetComparerId(ColumnType.Int32,4,true),ListingNumCmp4AscInstance},
-		//	{ GetComparerId(ColumnType.Int32,5,true),ListingNumCmp5AscInstance},
-		//	{ GetComparerId(ColumnType.Int32,6,true),ListingNumCmp6AscInstance},
-		//	{ GetComparerId(ColumnType.Int32,7,true),ListingNumCmp7AscInstance},
-		//	{ GetComparerId(ColumnType.Int32,8,true),ListingNumCmp8AscInstance},
-
-		//	{ GetComparerId(ColumnType.Int32,1,false),ListingNumCmp1DescInstance},
-		//	{ GetComparerId(ColumnType.Int32,2,false),ListingNumCmp2DescInstance},
-		//	{ GetComparerId(ColumnType.Int32,3,false),ListingNumCmp3DescInstance},
-		//	{ GetComparerId(ColumnType.Int32,4,false),ListingNumCmp4DescInstance},
-		//	{ GetComparerId(ColumnType.Int32,5,false),ListingNumCmp5DescInstance},
-		//	{ GetComparerId(ColumnType.Int32,6,false),ListingNumCmp6DescInstance},
-		//	{ GetComparerId(ColumnType.Int32,7,false),ListingNumCmp7DescInstance},
-		//	{ GetComparerId(ColumnType.Int32,8,false),ListingNumCmp8DescInstance},
-		//};
 
 		public static ColumnType GetColumnType(string colType)
 		{
@@ -187,7 +80,7 @@ namespace ClrMDRIndex
 			{
 				int itemCnt = 0;
 				string colSpecs = string.Empty;
-				string[] separators = new string[] { Constants.HeavyAsteriskPadded };
+				string[] separators = new string[] {Constants.HeavyAsteriskPadded};
 				string report = null;
 				sr = new StreamReader(path);
 				string ln = sr.ReadLine();
@@ -221,7 +114,7 @@ namespace ClrMDRIndex
 					else if (ln.StartsWith(SeparatorPrefix))
 					{
 						var sep = ln.Substring(SeparatorPrefix.Length);
-						separators = new[] { sep };
+						separators = new[] {sep};
 						ln = sr.ReadLine();
 					}
 					else
@@ -239,7 +132,7 @@ namespace ClrMDRIndex
 				ColumnType[] colTypes;
 				triple<string, ColumnType, int>[] columns = GetColumnInfo(colSpecs, separators, out colTypes);
 
-				var itemLst = new List<string>(itemCnt * columns.Length);
+				var itemLst = new List<string>(itemCnt*columns.Length);
 
 				while (ln != null)
 				{
@@ -263,9 +156,9 @@ namespace ClrMDRIndex
 				}
 
 				int colCnt = columns.Length;
-				Debug.Assert((itemLst.Count % colCnt) == 0);
+				Debug.Assert((itemLst.Count%colCnt) == 0);
 				var dataAry = itemLst.ToArray();
-				var itemAry = new listing<string>[dataAry.Length / colCnt];
+				var itemAry = new listing<string>[dataAry.Length/colCnt];
 				var dataNdx = 0;
 				for (int i = 0, icnt = dataAry.Length; i < icnt; i += colCnt)
 				{
@@ -305,34 +198,34 @@ namespace ClrMDRIndex
 		public static void SortListingStringArray(ColumnInfo colInfo, listing<string>[] ary)
 		{
 			//Array.Sort(ary, ReportFile.GetComparer(colInfo));
-		    if (colInfo.Ascending)
-		    {
-		        switch (colInfo.ColumnType)
-		        {
-                    case ColumnType.String:
-                        var ascCmpStr = new ListingStrCmpAsc(colInfo.ColumnIndex - 1);
-                        Array.Sort(ary, ascCmpStr);
-                        return;
-                    default:
-		                var ascCmpNum = new ListingNumCmpAsc(colInfo.ColumnIndex - 1);
-                        Array.Sort(ary,ascCmpNum);
-                        return;
-                }
-            }
-		    else
-		    {
-                switch (colInfo.ColumnType)
-                {
-                    case ColumnType.String:
-                        var descCmpStr = new ListingStrCmpDesc(colInfo.ColumnIndex - 1);
-                        Array.Sort(ary, descCmpStr);
-                        return;
-                    default:
-                        var descCmpNum = new ListingNumCmpDesc(colInfo.ColumnIndex - 1);
-                        Array.Sort(ary, descCmpNum);
-                        return;
-                }
-            }
+			if (colInfo.Ascending)
+			{
+				switch (colInfo.ColumnType)
+				{
+					case ColumnType.String:
+						var ascCmpStr = new ListingStrCmpAsc(colInfo.ColumnIndex - 1);
+						Array.Sort(ary, ascCmpStr);
+						return;
+					default:
+						var ascCmpNum = new ListingNumCmpAsc(colInfo.ColumnIndex - 1);
+						Array.Sort(ary, ascCmpNum);
+						return;
+				}
+			}
+			else
+			{
+				switch (colInfo.ColumnType)
+				{
+					case ColumnType.String:
+						var descCmpStr = new ListingStrCmpDesc(colInfo.ColumnIndex - 1);
+						Array.Sort(ary, descCmpStr);
+						return;
+					default:
+						var descCmpNum = new ListingNumCmpDesc(colInfo.ColumnIndex - 1);
+						Array.Sort(ary, descCmpNum);
+						return;
+				}
+			}
 		}
 
 		public static bool ParseReportLine(string ln, string[] sep, ColumnType[] cols, List<string> lst)
@@ -415,9 +308,10 @@ namespace ClrMDRIndex
 			return str;
 		}
 
-		private static triple<string, ColumnType, int>[] GetColumnInfo(string colSpec, string[] seps, out ColumnType[] colTypes)
+		private static triple<string, ColumnType, int>[] GetColumnInfo(string colSpec, string[] seps,
+			out ColumnType[] colTypes)
 		{
-			var charSep = new char[] { '|' };
+			var charSep = new char[] {'|'};
 			var cols = colSpec.Split(seps, StringSplitOptions.None);
 			var colInfos = new triple<string, ColumnType, int>[cols.Length];
 			colTypes = new ColumnType[cols.Length];
@@ -450,7 +344,8 @@ namespace ClrMDRIndex
 		//public const string DescrPrefix = "#### ";
 		//public const string ItemSeparator = Constants.HeavyAsteriskPadded;
 
-		public static bool WriteReport(string path, string report, string title, ColumnInfo[] cols, string[] notes, listing<string>[] lines, out string error)
+		public static bool WriteReport(string path, string report, string title, ColumnInfo[] cols, string[] notes,
+			listing<string>[] lines, out string error)
 		{
 			error = null;
 			StreamWriter sr = null;
@@ -590,7 +485,8 @@ namespace ClrMDRIndex
 			_data = null;
 		}
 
-		public static bool DumpListing(string path, ListingInfo info, string title, out string error, int count = Int32.MaxValue)
+		public static bool DumpListing(string path, ListingInfo info, string title, out string error,
+			int count = Int32.MaxValue)
 		{
 			error = null;
 			StreamWriter sw = null;
@@ -640,314 +536,90 @@ namespace ClrMDRIndex
 		}
 	}
 
-    public class ListingStrCmpAsc : IComparer<listing<string>>
-    {
-        private int _ndx;
+	public class ListingStrCmpAsc : IComparer<listing<string>>
+	{
+		private int _ndx;
 
-        public ListingStrCmpAsc(int ndx)
-        {
-            _ndx = ndx;
-        }
-        public int Compare(listing<string> a, listing<string> b)
-        {
-            return string.Compare(a.Item(_ndx), b.Item(_ndx), StringComparison.Ordinal);
-        }
-    }
+		public ListingStrCmpAsc(int ndx)
+		{
+			_ndx = ndx;
+		}
 
-    public class ListingStrCmpDesc : IComparer<listing<string>>
-    {
-        private int _ndx;
-
-        public ListingStrCmpDesc(int ndx)
-        {
-            _ndx = ndx;
-        }
-        public int Compare(listing<string> a, listing<string> b)
-        {
-            return string.Compare(b.Item(_ndx), a.Item(_ndx), StringComparison.Ordinal);
-        }
-    }
-
-    public class ListingNumCmpAsc : IComparer<listing<string>>
-    {
-        private int _ndx;
-
-        public ListingNumCmpAsc(int ndx)
-        {
-            _ndx = ndx;
-        }
-
-        public int Compare(listing<string> a, listing<string> b)
-        {
-            return Utils.NumStrAscComparer.Compare(a.Item(_ndx), b.Item(_ndx));
-        }
-    }
-
-    public class ListingNumCmpDesc : IComparer<listing<string>>
-    {
-        private int _ndx;
-
-        public ListingNumCmpDesc(int ndx)
-        {
-            _ndx = ndx;
-        }
-
-        public int Compare(listing<string> a, listing<string> b)
-        {
-            return Utils.NumStrAscComparer.Compare(b.Item(_ndx), a.Item(_ndx));
-        }
-    }
-
-
-//    public class ListingStrCmp1Asc : IComparer<listing<string>>
-//	{
-//		public int Compare(listing<string> a, listing<string> b)
-//		{
-//			return string.Compare(a.First, b.First, StringComparison.Ordinal);
-//		}
-//	}
-
-//	public class ListingStrCmp2Asc : IComparer<listing<string>>
-//	{
-//		public int Compare(listing<string> a, listing<string> b)
-//		{
-//			return string.Compare(a.Second, b.Second, StringComparison.Ordinal);
-//		}
-//	}
-//	public class ListingStrCmp3Asc : IComparer<listing<string>>
-//	{
-//		public int Compare(listing<string> a, listing<string> b)
-//		{
-//			return string.Compare(a.Third, b.Third, StringComparison.Ordinal);
-//		}
-//	}
-//	public class ListingStrCmp4Asc : IComparer<listing<string>>
-//	{
-//		public int Compare(listing<string> a, listing<string> b)
-//		{
-//			return string.Compare(a.Forth, b.Forth, StringComparison.Ordinal);
-//		}
-//	}
-
-//	public class ListingStrCmp5Asc : IComparer<listing<string>>
-//	{
-//		public int Compare(listing<string> a, listing<string> b)
-//		{
-//			return string.Compare(a.Fifth, b.Fifth, StringComparison.Ordinal);
-//		}
-//	}
-
-//	public class ListingStrCmp6Asc : IComparer<listing<string>>
-//	{
-//		public int Compare(listing<string> a, listing<string> b)
-//		{
-//			return string.Compare(a.Sixth, b.Sixth, StringComparison.Ordinal);
-//		}
-//	}
-
-//	public class ListingStrCmp7Asc : IComparer<listing<string>>
-//	{
-//		public int Compare(listing<string> a, listing<string> b)
-//		{
-//			return string.Compare(a.Seventh, b.Seventh, StringComparison.Ordinal);
-//		}
-//	}
-
-//	public class ListingStrCmp8Asc : IComparer<listing<string>>
-//	{
-//		public int Compare(listing<string> a, listing<string> b)
-//		{
-//			return string.Compare(a.Eighth, b.Eighth, StringComparison.Ordinal);
-//		}
-//	}
-
-//	public class ListingStrCmp1Desc : IComparer<listing<string>>
-//	{
-//		public int Compare(listing<string> a, listing<string> b)
-//		{
-//			return string.Compare(b.First, a.First, StringComparison.Ordinal);
-//		}
-//	}
-
-//	public class ListingStrCmp2Desc : IComparer<listing<string>>
-//	{
-//		public int Compare(listing<string> a, listing<string> b)
-//		{
-//			return string.Compare(b.Second, a.Second, StringComparison.Ordinal);
-//		}
-//	}
-//	public class ListingStrCmp3Desc : IComparer<listing<string>>
-//	{
-//		public int Compare(listing<string> a, listing<string> b)
-//		{
-//			return string.Compare(b.Third, a.Third, StringComparison.Ordinal);
-//		}
-//	}
-//	public class ListingStrCmp4Desc : IComparer<listing<string>>
-//	{
-//		public int Compare(listing<string> a, listing<string> b)
-//		{
-//			return string.Compare(b.Forth, a.Forth, StringComparison.Ordinal);
-//		}
-//	}
-
-//	public class ListingStrCmp5Desc : IComparer<listing<string>>
-//	{
-//		public int Compare(listing<string> a, listing<string> b)
-//		{
-//			return string.Compare(b.Fifth, a.Fifth, StringComparison.Ordinal);
-//		}
-//	}
-
-//	public class ListingStrCmp6Desc : IComparer<listing<string>>
-//	{
-//		public int Compare(listing<string> a, listing<string> b)
-//		{
-//			return string.Compare(b.Sixth, a.Sixth, StringComparison.Ordinal);
-//		}
-//	}
-
-//	public class ListingStrCmp7Desc : IComparer<listing<string>>
-//	{
-//		public int Compare(listing<string> a, listing<string> b)
-//		{
-//			return string.Compare(b.Seventh, a.Seventh, StringComparison.Ordinal);
-//		}
-//	}
-
-//	public class ListingStrCmp8Desc : IComparer<listing<string>>
-//	{
-//		public int Compare(listing<string> a, listing<string> b)
-//		{
-//			return string.Compare(b.Eighth, a.Eighth, StringComparison.Ordinal);
-//		}
-//	}
-
-//	public class ListingNumCmp1Asc : IComparer<listing<string>>
-//	{
-//		public int Compare(listing<string> a, listing<string> b)
-//		{
-//			return Utils.NumStrAscComparer.Compare(a.First, b.First);
-//		}
-//	}
-
-//	public class ListingNumCmp2Asc : IComparer<listing<string>>
-//	{
-//		public int Compare(listing<string> a, listing<string> b)
-//		{
-//			return Utils.NumStrAscComparer.Compare(a.Second, b.Second);
-//		}
-//	}
-
-//	public class ListingNumCmp3Asc : IComparer<listing<string>>
-//	{
-//		public int Compare(listing<string> a, listing<string> b)
-//		{
-//			return Utils.NumStrAscComparer.Compare(a.Third, b.Third);
-//		}
-//	}
-
-//	public class ListingNumCmp4Asc : IComparer<listing<string>>
-//	{
-//		public int Compare(listing<string> a, listing<string> b)
-//		{
-//			return Utils.NumStrAscComparer.Compare(a.Forth, b.Forth);
-//		}
-//	}
-
-//	public class ListingNumCmp5Asc : IComparer<listing<string>>
-//	{
-//		public int Compare(listing<string> a, listing<string> b)
-//		{
-//			return Utils.NumStrAscComparer.Compare(a.Fifth, b.Fifth);
-//		}
-//	}
-
-//	public class ListingNumCmp6Asc : IComparer<listing<string>>
-//	{
-//		public int Compare(listing<string> a, listing<string> b)
-//		{
-//			return Utils.NumStrAscComparer.Compare(a.Sixth, b.Sixth);
-//		}
-//	}
-
-//	public class ListingNumCmp7Asc : IComparer<listing<string>>
-//	{
-//		public int Compare(listing<string> a, listing<string> b)
-//		{
-//			return Utils.NumStrAscComparer.Compare(a.Seventh, b.Seventh);
-//		}
-//	}
-
-//	public class ListingNumCmp8Asc : IComparer<listing<string>>
-//	{
-//		public int Compare(listing<string> a, listing<string> b)
-//		{
-//			return Utils.NumStrAscComparer.Compare(a.Eighth, b.Eighth);
-//		}
-//	}
-
-//	public class ListingNumCmp1Desc : IComparer<listing<string>>
-//	{
-//		public int Compare(listing<string> a, listing<string> b)
-//		{
-//			return Utils.NumStrDescComparer.Compare(a.First, b.First);
-//		}
-//	}
-
-//	public class ListingNumCmp2Desc : IComparer<listing<string>>
-//	{
-//		public int Compare(listing<string> a, listing<string> b)
-//		{
-//			return Utils.NumStrDescComparer.Compare(a.Second, b.Second);
-//		}
-//	}
-
-//	public class ListingNumCmp3Desc : IComparer<listing<string>>
-//	{
-//		public int Compare(listing<string> a, listing<string> b)
-//		{
-//			return Utils.NumStrDescComparer.Compare(a.Third, b.Third);
-//		}
-//	}
-
-//	public class ListingNumCmp4Desc : IComparer<listing<string>>
-//	{
-//		public int Compare(listing<string> a, listing<string> b)
-//		{
-//			return Utils.NumStrDescComparer.Compare(a.Forth, b.Forth);
-//		}
-//	}
-
-//	public class ListingNumCmp5Desc : IComparer<listing<string>>
-//	{
-//		public int Compare(listing<string> a, listing<string> b)
-//		{
-//			return Utils.NumStrDescComparer.Compare(a.Fifth, b.Fifth);
-//		}
-//	}
-
-//	public class ListingNumCmp6Desc : IComparer<listing<string>>
-//	{
-//		public int Compare(listing<string> a, listing<string> b)
-//		{
-//			return Utils.NumStrDescComparer.Compare(a.Sixth, b.Sixth);
-//		}
-//	}
-
-//	public class ListingNumCmp7Desc : IComparer<listing<string>>
-//	{
-//		public int Compare(listing<string> a, listing<string> b)
-//		{
-//			return Utils.NumStrDescComparer.Compare(a.Seventh, b.Seventh);
-//		}
-//	}
-
-//	public class ListingNumCmp8Desc : IComparer<listing<string>>
-//	{
-//		public int Compare(listing<string> a, listing<string> b)
-//		{
-//			return Utils.NumStrDescComparer.Compare(a.Eighth, b.Eighth);
-//		}
+		public int Compare(listing<string> a, listing<string> b)
+		{
+			return string.Compare(a.Item(_ndx), b.Item(_ndx), StringComparison.Ordinal);
+		}
 	}
-//}
+
+	public class ListingStrCmpDesc : IComparer<listing<string>>
+	{
+		private int _ndx;
+
+		public ListingStrCmpDesc(int ndx)
+		{
+			_ndx = ndx;
+		}
+
+		public int Compare(listing<string> a, listing<string> b)
+		{
+			return string.Compare(b.Item(_ndx), a.Item(_ndx), StringComparison.Ordinal);
+		}
+	}
+
+	public class ListingNumCmpAsc : IComparer<listing<string>>
+	{
+		private int _ndx;
+
+		public ListingNumCmpAsc(int ndx)
+		{
+			_ndx = ndx;
+		}
+
+		public int Compare(listing<string> a, listing<string> b)
+		{
+			return Utils.NumStrAscComparer.Compare(a.Item(_ndx), b.Item(_ndx));
+		}
+	}
+
+	public class ListingNumCmpDesc : IComparer<listing<string>>
+	{
+		private int _ndx;
+
+		public ListingNumCmpDesc(int ndx)
+		{
+			_ndx = ndx;
+		}
+
+		public int Compare(listing<string> a, listing<string> b)
+		{
+			return Utils.NumStrAscComparer.Compare(b.Item(_ndx), a.Item(_ndx));
+		}
+	}
+
+	/// <summary>
+	/// Multicolumn sorting
+	/// </summary>
+
+	public class MultipleListingCmp : IComparer<listing<string>>
+	{
+		private IComparer<listing<string>>[] _cmps;
+		private int[] _indices;
+
+		public MultipleListingCmp(int[] indices, IComparer<listing<string>>[] cmps )
+		{
+			_indices = indices;
+			_cmps = cmps;
+		}
+
+		public int Compare(listing<string> a, listing<string> b)
+		{
+			int cmp = _cmps[0].Compare(a, b);
+			int ndx = 1;
+			while (ndx < _cmps.Length && cmp == 0)
+			{
+				cmp = _cmps[ndx++].Compare(a, b);
+			}
+			return cmp;
+		}
+	}
+}

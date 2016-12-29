@@ -940,7 +940,14 @@ namespace ClrMDRIndex
             }
         }
 
-        public static int[] SortAndGetMap(string[] ary)
+		public static string BaseArrayName(string name, int lenght)
+		{
+			string aryBaseName = Utils.BaseTypeName(name);
+			if (aryBaseName.EndsWith("[]")) aryBaseName = aryBaseName.Substring(0, aryBaseName.Length - 2);
+			return aryBaseName + "[" + lenght + "]";
+		}
+
+		public static int[] SortAndGetMap(string[] ary)
 		{
 			int cnt = ary.Length;
 			var map = new int[cnt];
@@ -1150,6 +1157,43 @@ namespace ClrMDRIndex
 				sb.Append(name[i]);
 			}
 			return StringBuilderCache.GetStringAndRelease(sb);
+		}
+
+		public static string DisplayableChar(char c)
+		{
+			switch (c)
+			{
+				case ' ':
+					return @"' '";
+				case '\u0000': // Null
+					return @"\0";
+				case '\u0007': // Alert
+					return @"\a";
+				case '\u0008': // Backspace
+					return @"\b";
+				case '\u0009': // Horizontal tab
+					return @"\t";
+				case '\u000A': // New line
+					return @"\n";
+				case '\u000B': // Vertical tab
+					return @"\v";
+				case '\u000C': // Form feed
+					return @"\f";
+				case '\u000D': // Carriage retur
+					return @"\r";
+				case '\u0022': // Double quote
+					return @"\""";
+				case '\u0027': // Single quote
+					return @"\'";
+				case '\u005C': // Backslash
+					return @"\\";
+
+				default:
+					if (Char.IsLetterOrDigit(c) || Char.IsPunctuation(c))
+						return c.ToString();
+					else
+						return string.Format(@"\u{0:x4}", (uint) c);
+			}
 		}
 
 		#endregion String Utils
@@ -1599,7 +1643,13 @@ namespace ClrMDRIndex
             return string.Format("[0x{0:x8}] ", num);
         }
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		public static string HResultStringHeader(int num)
+		{
+			return string.Format("[0x{0:x8} {1,8:####}] ", (uint)num,num);
+		}
+
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static string DurationString(TimeSpan ts)
         {
             return string.Format(" {0:00}:{1:00}:{2:00}.{3:00}", ts.Hours, ts.Minutes, ts.Seconds, ts.Milliseconds / 10);
@@ -1633,7 +1683,7 @@ namespace ClrMDRIndex
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static string SortableSizeStringHeader(int sz)
         {
-            return sz == 0 ? "           O" : string.Format("[{0,12:0#,###,###}] ", sz);
+            return sz == 0 ? "[           O] " : string.Format("[{0,12:0#,###,###}] ", sz);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -1642,7 +1692,32 @@ namespace ClrMDRIndex
             return sz == 0 ? "           O" : string.Format("{0,12:#,###,###}", sz);
         }
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		public static string SizeStringHeader(int sz, int digitCount)
+		{
+			if (sz == 0)
+			{
+				if (digitCount < 2)
+					return "[0] ";
+				return "[" + new string(' ', digitCount - 1) + "0] ";
+			}
+			string format = "[{0," + digitCount.ToString() + ":#,###,###}] ";
+			return string.Format(format, sz);
+		}
+
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		public static string SizeStringHeader(int sz, int digitCount, string format)
+		{
+			if (sz == 0)
+			{
+				if (digitCount < 2)
+					return "[0] ";
+				return "[" + new string(' ', digitCount - 1) + "0] ";
+			}
+			return string.Format(format, sz);
+		}
+
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static string SizeString(long sz)
         {
             return sz == 0 ? "           O" : string.Format("{0,12:#,###,###}", sz);
@@ -1776,6 +1851,16 @@ namespace ClrMDRIndex
 			if (val >= 10000) { val /= 10000; n += 4; }
 			if (val >= 100) { val /= 100; n += 2; }
 			if (val >= 10) { val /= 10; n += 1; }
+			return n;
+		}
+
+		public static int NumberOfDigits(int val)
+		{
+			int n = 1;
+			if (val >= 100000000) { n += 8; val /= 100000000; }
+			if (val >= 10000) { n += 4; val /= 10000; }
+			if (val >= 100) { n += 2; val /= 100; }
+			if (val >= 10) { n += 1; }
 			return n;
 		}
 

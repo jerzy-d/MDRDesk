@@ -131,7 +131,7 @@ namespace ClrMDRIndex
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		public static bool IsArray(TypeKind kind)
 		{
-			return (GetMainTypeKind(kind) & kind) == TypeKind.Array;
+			return (GetMainTypeKind(kind) & kind) == TypeKind.ArrayKind;
 		}
 
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]

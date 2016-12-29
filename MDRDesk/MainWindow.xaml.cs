@@ -1712,11 +1712,14 @@ namespace MDRDesk
 			{
 				string error;
 				var instVal = CurrentIndex.GetInstanceValue(addr, out error);
-				return new Tuple<string, InstanceValue>(error,instVal);
+				if (error!=null)
+					return new Tuple<string, InstanceValue, string>(error, null, null);
+				return new Tuple<string, InstanceValue,string>(error,instVal.Item1,instVal.Item2);
 			});
 
+
 			SetEndTaskMainWindowState(result.Item1 == null
-				? "val at: " + Utils.RealAddressString(addr) + ", " + result.Item2.Value.ToString()
+				? "value at " + Utils.RealAddressString(addr) + ":  " + result.Item2.Value.ToString()
 				: msg + " failed.");
 
 			if (result.Item1 != null)
@@ -1725,6 +1728,11 @@ namespace MDRDesk
 				return;
 			}
 
+			if (result.Item2.ArrayValues != null)
+			{
+				var wnd = new CollectionDisplay(result.Item2.ArrayValues,result.Item3) {Owner = this};
+				wnd.Show();
+			}
 		}
 
 		private void LbGetInstHierarchyClicked(object sender, RoutedEventArgs e)

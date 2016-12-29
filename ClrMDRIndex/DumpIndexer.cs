@@ -840,7 +840,7 @@ namespace ClrMDRIndex
                         key = moduleName + Constants.HeavyGreekCrossPadded + module.FileName;
                         ++nameNdx;
                     }
-                    lst[0] = Utils.AddressString(module.ImageBase);
+                    lst[0] = Utils.RealAddressString(module.ImageBase);
                     lst[1] = Utils.SizeString(module.FileSize);
                     lst[2] = module.Version.ToString();
                     var entry = string.Join(Constants.HeavyGreekCrossPadded, lst);
