@@ -8,3 +8,5 @@ Add to index menu => Copy Index Path to Clippboard.
 *** (12/28/16) Fix Instance Value (addresses context menu) for DateTime type
 0005 12/28/16
 Multicolumn sorting of listing report.
+0006 12/29/16
+Heap bytes reading (like dd command).

@@ -8,7 +8,7 @@ namespace ClrMDRIndex
 {
     public class ValueString
     {
-        private const int MaxLength = 64;
+        public const int MaxLength = 40;
         public readonly string Content;
         public readonly string DisplayString;
 

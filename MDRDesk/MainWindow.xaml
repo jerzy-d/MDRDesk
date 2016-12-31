@@ -50,6 +50,8 @@
             <MenuItem x:Name="AddrLstGetInstSizes" Header="Get Instance Sizes" Click="AddrLstGetInstSizesClicked"/>
             <MenuItem x:Name="AddrLstGetInstValue" Header="Get Instance Value" Click="LbGetInstValueClicked"/>
             <MenuItem x:Name="AddrLstGetInstHierarchy" Header="Get Instance Hierarchy" Click="LbGetInstHierarchyClicked"/>
+            <Separator></Separator>
+            <MenuItem x:Name="AddrLstViewMemory" Header="View Memory" Click="AddrLstViewMemoryClicked"/>
         </ContextMenu>
         <ContextMenu x:Key="TypeListContextMenu" x:Shared="False">
             <MenuItem x:Name="TypeListCopyTypeName" Header="Copy Type Name" Click="CopyTypeNameClicked"></MenuItem>

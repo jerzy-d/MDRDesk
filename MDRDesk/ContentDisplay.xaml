@@ -1,13 +1,13 @@
-﻿<Window x:Class="MDRDesk.CollectionDisplay"
+﻿<Window x:Class="MDRDesk.ContentDisplay"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:MDRDesk"
-        mc:Ignorable="d"
         WindowStartupLocation="CenterOwner"
         Closing="Window_Closing"
-        Title="Collection Content" Height="500" Width="300">
+        mc:Ignorable="d"
+        Title="Content Display" Height="300" Width="300">
     <Grid>
         <Grid.RowDefinitions>
             <RowDefinition Height="15*"/>
@@ -15,23 +15,23 @@
             <RowDefinition Height="77*"/>
             <RowDefinition Height="8*"/>
         </Grid.RowDefinitions>
-        <TextBox x:Name="CollectionInfo" Grid.Row="0" Margin="2,2,2,2" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" FontFamily="Consolas" FontSize="11">
+        <TextBox x:Name="ContentInfo" Grid.Row="0" Margin="2,2,2,2" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" FontFamily="Consolas" FontSize="11">
             <TextBox.BorderBrush>BlanchedAlmond</TextBox.BorderBrush>
         </TextBox>
         <GridSplitter Grid.Row="1" VerticalAlignment="Center" HorizontalAlignment="Stretch" Height="5" ShowsPreview="False" Background="DarkGray"></GridSplitter>
-        <ListBox x:Name="CollectionValues" Grid.Row="2" Margin="2,2,2,2" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" FontFamily="Consolas" FontSize="11">
-            <ListBox.BorderBrush>BlanchedAlmond</ListBox.BorderBrush>
-        </ListBox>
+        <TextBox x:Name="ContentValue" Grid.Row="2" Margin="2,2,2,2" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" FontFamily="Consolas" FontSize="11" TextWrapping="Wrap">
+            <TextBox.BorderBrush>BlanchedAlmond</TextBox.BorderBrush>
+        </TextBox>
         <Grid Grid.Row="3" Margin="2,2,2,2">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="80*"/>
                 <ColumnDefinition Width="20*"/>
             </Grid.ColumnDefinitions>
-            <Button  x:Name="ShowArrayIndices" Grid.Column="1" Width="20" Height="20" HorizontalAlignment="Center" VerticalAlignment="Center" BorderThickness="0" Click="ShowArrayIndicesClicked"
+            <Button  x:Name="WordWrapButton" Grid.Column="1" Width="20" Height="20" HorizontalAlignment="Center" VerticalAlignment="Center" BorderThickness="0" Click="WordWrapButtonClicked"
                          Background="AliceBlue">
                 <Button.ToolTip>Show/hide array indices.</Button.ToolTip>
                 <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                    <Image Source=".\Images\ListView_16x.png" Width="16" Height="16" Margin="0,0,0,0" VerticalAlignment="Center" HorizontalAlignment="Center"/>
+                    <Image Source=".\Images\WrapPanel_16x.png" Width="16" Height="16" Margin="0,0,0,0" VerticalAlignment="Center" HorizontalAlignment="Center"/>
                 </StackPanel>
             </Button>
 

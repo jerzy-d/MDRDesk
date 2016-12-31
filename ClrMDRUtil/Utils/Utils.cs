@@ -1804,9 +1804,48 @@ namespace ClrMDRIndex
             return "0 Bytes";
         }
 
-        #endregion Formatting
+		#endregion Formatting
 
-        #region Misc
+		#region Misc
+
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		public static bool HasHexPrefix(string chars)
+		{
+			if (chars.Length > 2)
+			{
+				if (chars[0] == '0' && (chars[1] == 'x' || chars[1] == 'X'))
+					return true;
+			}
+			return false;
+		}
+
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		public static bool IsHex(string chars)
+		{
+			int i = 0;
+			if (HasHexPrefix(chars))
+				i = 2;
+			bool isHex;
+			for (int icnt = chars.Length; i < icnt; ++i)
+			{
+				var c = chars[i];
+				isHex = ((c >= '0' && c <= '9') ||
+						 (c >= 'a' && c <= 'f') ||
+						 (c >= 'A' && c <= 'F'));
+
+				if (!isHex)
+					return false;
+			}
+			return true;
+		}
+
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		public static bool IsHexChar(char c)
+		{
+			return  ((c >= '0' && c <= '9') ||
+						 (c >= 'a' && c <= 'f') ||
+						 (c >= 'A' && c <= 'F'));
+		}
 
 		public static string GetCachedString(string str, Dictionary<string, string> cache)
 		{

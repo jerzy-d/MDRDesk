@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Diagnostics;
@@ -12,7 +13,9 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Data;
 using System.Windows.Forms.Integration;
+using System.Windows.Forms.VisualStyles;
 using System.Windows.Input;
+using System.Windows.Media.Imaging;
 using System.Windows.Threading;
 using ClrMDRIndex;
 using Application = System.Windows.Application;
@@ -47,17 +50,20 @@ namespace MDRDesk
 		private RecentFileList RecentAdhocList;
 
 		public static string BaseTitle;
-		//public static Map CurrentMap; // TODO JRD to be removed
 		public static DumpIndex CurrentIndex;
 		public static ClrtDump CurrentAdhocDump;
-		public static DumpIndex CurrentAdhocIndex;
 		private static Version _myVersion;
+
+		/// <summary>
+		/// List of currently displayed windows.
+		/// Used to close them when index is closing.
+		/// </summary>
+		private ConcurrentDictionary<int, Window> _wndDct = new ConcurrentDictionary<int, Window>();
 
 		#region Ctors/Initialization
 
 		public MainWindow()
 		{
-
 			InitializeComponent();
 			string error;
 			if (!Init(out error))
@@ -83,9 +89,9 @@ namespace MDRDesk
 
 				var result = Setup.GetConfigSettings(out error);
 				if (!result) return false;
-				RecentIndexList = new RecentFileList(RecentIndexMenuItem, (int) Setup.RecentFiles.MaxCount);
+				RecentIndexList = new RecentFileList(RecentIndexMenuItem, (int)Setup.RecentFiles.MaxCount);
 				RecentIndexList.Add(Setup.RecentIndexList);
-				RecentAdhocList = new RecentFileList(RecentAdhocMenuItem, (int) Setup.RecentFiles.MaxCount);
+				RecentAdhocList = new RecentFileList(RecentAdhocMenuItem, (int)Setup.RecentFiles.MaxCount);
 				RecentAdhocList.Add(Setup.RecentAdhocList);
 				SetupDispatcherTimer();
 
@@ -166,13 +172,17 @@ namespace MDRDesk
 		public void MainWindow_Closing(object sender, CancelEventArgs e)
 		{
 			string error;
+			foreach (var kv in _wndDct)
+			{
+				kv.Value.Close();
+			}
+			_wndDct.Clear();
 			if (RecentIndexList != null) Setup.ResetRecentFileList(RecentIndexList.GetPaths(), Setup.RecentFiles.Map);
 			if (RecentAdhocList != null) Setup.ResetRecentFileList(RecentAdhocList.GetPaths(), Setup.RecentFiles.Adhoc);
 			Setup.SaveConfigSettings(out error);
 			var task = Task.Factory.StartNew(() =>
 			{
 				CurrentAdhocDump?.Dispose();
-				CurrentAdhocIndex?.Dispose();
 			});
 			task.Wait();
 		}
@@ -219,7 +229,7 @@ namespace MDRDesk
 
 		private void CreateCrashDumpClicked(object sender, RoutedEventArgs e)
 		{
-			CreateCrashDump dlg = new CreateCrashDump() {Owner = Window.GetWindow(this)};
+			CreateCrashDump dlg = new CreateCrashDump() { Owner = Window.GetWindow(this) };
 			var dlgResult = dlg.ShowDialog();
 			if (dlgResult == true && dlg.IndexDump && System.IO.File.Exists(dlg.DumpPath))
 			{
@@ -386,7 +396,7 @@ namespace MDRDesk
 			});
 
 			SetEndTaskMainWindowState("Index: '" + DumpFileMoniker.GetMapName(path) +
-			                          (result.Item1 == null ? "' is open." : "' open failed."));
+									  (result.Item1 == null ? "' is open." : "' open failed."));
 
 			if (result.Item1 != null)
 			{
@@ -403,13 +413,13 @@ namespace MDRDesk
 
 			//var genInfo = CurrentIndex.GetGenerationTotals();
 			DisplayGeneralInfoGrid(CurrentIndex.DumpInfo);
-			if ((TypeDisplayNamespaceClass.IsChecked ?? (bool) TypeDisplayNamespaceClass.IsChecked) && result.Item3 != null)
+			if ((TypeDisplayNamespaceClass.IsChecked ?? (bool)TypeDisplayNamespaceClass.IsChecked) && result.Item3 != null)
 			{
 				DisplayNamespaceGrid(result.Item3);
 			}
 			else
 			{
-				if ((TypeDisplayClass.IsChecked ?? (bool) TypeDisplayNamespaceClass.IsChecked))
+				if ((TypeDisplayClass.IsChecked ?? (bool)TypeDisplayNamespaceClass.IsChecked))
 					DisplayTypesGrid(true);
 				else
 					DisplayTypesGrid(false);
@@ -613,7 +623,7 @@ namespace MDRDesk
 
 			var taskResult = await Task.Run(() =>
 			{
-				return CurrentIndex.GetStringStats((int) _minStringUsage, addGenerationInfo);
+				return CurrentIndex.GetStringStats((int)_minStringUsage, addGenerationInfo);
 			});
 
 			SetEndTaskMainWindowState(taskResult.Error == null
@@ -668,7 +678,7 @@ namespace MDRDesk
 				case "GENERATION HISTOGRAM":
 					var grid = GetCurrentTabGrid();
 					Dispatcher.CurrentDispatcher.InvokeAsync(
-						() => ExecuteGenerationQuery("Get instance generation", new ulong[] {addr}, grid));
+						() => ExecuteGenerationQuery("Get instance generation", new ulong[] { addr }, grid));
 					break;
 				case "INSTANCE HIERARCHY WALK":
 					Dispatcher.CurrentDispatcher.InvokeAsync(
@@ -776,12 +786,12 @@ namespace MDRDesk
 						return new ListingInfo(error);
 					}
 					var strStats = ClrtDump.GetStringStats(heap, addresses, dumpFilePath, out error);
-					return strStats.GetGridData((int) _minStringUsage, out error);
+					return strStats.GetGridData((int)_minStringUsage, out error);
 				}
 			});
 
 			SetEndTaskMainWindowState("Getting Strings: " + System.IO.Path.GetFileName(dumpFilePath) +
-			                          (taskResult.Error == null ? ", done." : ", failed."));
+									  (taskResult.Error == null ? ", done." : ", failed."));
 			if (taskResult.Error != null)
 			{
 				MessageBox.Show(taskResult.Error, "Getting Strings Failed", MessageBoxButton.OK, MessageBoxImage.Error);
@@ -1181,19 +1191,19 @@ namespace MDRDesk
 				case "IndexSizesInfo":
 					var info = grid.Tag as Tuple<DumpFileMoniker, ulong>;
 					Debug.Assert(info != null);
-					var listView = (ListView) LogicalTreeHelper.FindLogicalNode(grid, "TopListView");
+					var listView = (ListView)LogicalTreeHelper.FindLogicalNode(grid, "TopListView");
 					Debug.Assert(listView != null);
 					var dataAry = listView.ItemsSource as sextuple<int, ulong, ulong, ulong, ulong, string>[];
 					Debug.Assert(dataAry != null);
 					var sortBy = listView.Tag as string;
 					Debug.Assert(sortBy != null);
 					var reportPath = info.Item1.OutputFolder + System.IO.Path.DirectorySeparatorChar + info.Item1.DumpFileName +
-					                 ".TYPESIZES." + sortBy + ".txt";
+									 ".TYPESIZES." + sortBy + ".txt";
 					break;
 				case "IndexStringUsage":
 					var dmpInf = grid.Tag as DumpFileMoniker;
 					Debug.Assert(dmpInf != null);
-					var lstView = (ListView) LogicalTreeHelper.FindLogicalNode(grid, "TopListView");
+					var lstView = (ListView)LogicalTreeHelper.FindLogicalNode(grid, "TopListView");
 					Debug.Assert(lstView != null);
 					var datAry = lstView.ItemsSource as StringStatsDispEntry[];
 					Debug.Assert(datAry != null);
@@ -1201,15 +1211,15 @@ namespace MDRDesk
 					string error;
 					StringStatsDispEntry.WriteShortReport(datAry, repPath, "String usage in: " + CurrentIndex.DumpFileName,
 						datAry.Length,
-						new string[] {"Count"}, null, out error);
+						new string[] { "Count" }, null, out error);
 					break;
 			}
 
-			var listingView = (ListView) LogicalTreeHelper.FindLogicalNode(grid, "TopListView");
-			GridView gridView = (GridView) listingView.View;
+			var listingView = (ListView)LogicalTreeHelper.FindLogicalNode(grid, "TopListView");
+			GridView gridView = (GridView)listingView.View;
 			listing<string>[] data = listingView.ItemsSource as listing<string>[];
 			var colSortInfo = listingView.Tag as Tuple<ListingInfo, string>;
-			var bottomGrid = (Panel) LogicalTreeHelper.FindLogicalNode(grid, "BottomGrid");
+			var bottomGrid = (Panel)LogicalTreeHelper.FindLogicalNode(grid, "BottomGrid");
 			var textBox = bottomGrid.Children[0] as TextBox;
 			var descrLines = GetTextBoxReportNotes(textBox);
 			var gridInfo = grid.Tag as Tuple<string, DumpFileMoniker>;
@@ -1259,20 +1269,20 @@ namespace MDRDesk
 				case "IndexSizesInfo":
 					var info = grid.Tag as Tuple<DumpFileMoniker, ulong>;
 					Debug.Assert(info != null);
-					listView = (ListView) LogicalTreeHelper.FindLogicalNode(grid, "TopListView");
+					listView = (ListView)LogicalTreeHelper.FindLogicalNode(grid, "TopListView");
 					Debug.Assert(listView != null);
 					var dataAry = listView.ItemsSource as sextuple<int, ulong, ulong, ulong, ulong, string>[];
 					Debug.Assert(dataAry != null);
 					var sortBy = listView.Tag as string;
 					Debug.Assert(sortBy != null);
 					var reportPath = info.Item1.OutputFolder + System.IO.Path.DirectorySeparatorChar + info.Item1.DumpFileName +
-					                 ".TYPESIZES.TOP64." + sortBy + ".txt";
+									 ".TYPESIZES.TOP64." + sortBy + ".txt";
 					StreamWriter sw = null;
 					try
 					{
 						sw = new StreamWriter(reportPath);
 						sw.WriteLine("Grand total of all instances base sizes: " + Utils.SizeString(info.Item2) + ", (" +
-						             Utils.FormatBytes((long) info.Item2) + ")");
+									 Utils.FormatBytes((long)info.Item2) + ")");
 						sw.WriteLine(
 							"Columns:  'Count', 'Total Size', 'Max Size', 'Min Size', 'Avg Size', 'Type'    ...all sizes in bytes.");
 						sw.WriteLine();
@@ -1302,18 +1312,18 @@ namespace MDRDesk
 				case "IndexStringUsage":
 					filePathInfo = grid.Tag as DumpFileMoniker;
 					Debug.Assert(filePathInfo != null);
-					listView = (ListView) LogicalTreeHelper.FindLogicalNode(grid, "TopListView");
+					listView = (ListView)LogicalTreeHelper.FindLogicalNode(grid, "TopListView");
 					Debug.Assert(listView != null);
 					var datAry = listView.ItemsSource as StringStatsDispEntry[];
 					Debug.Assert(datAry != null);
 					repPath = filePathInfo.OutputFolder + System.IO.Path.DirectorySeparatorChar + "STRINGUSAGE.txt";
 					StringStatsDispEntry.WriteShortReport(datAry, repPath, "String usage in: " + CurrentIndex.DumpFileName, 100,
-						new string[] {"Count", "TotalSize"}, null, out error);
+						new string[] { "Count", "TotalSize" }, null, out error);
 					break;
 				case "ReportFile":
 					var pathInfo = grid.Tag as Tuple<string, DumpFileMoniker>;
 					Debug.Assert(pathInfo != null);
-					listView = (ListView) LogicalTreeHelper.FindLogicalNode(grid, "TopListView");
+					listView = (ListView)LogicalTreeHelper.FindLogicalNode(grid, "TopListView");
 					Debug.Assert(listView != null);
 					var listingInfo = listView.Tag as Tuple<ListingInfo, string>;
 					Debug.Assert(listingInfo != null);
@@ -1555,9 +1565,9 @@ namespace MDRDesk
 		private ListBox GetTypeAddressesListBox(object sender)
 		{
 			var menuItem = sender as MenuItem;
-			Debug.Assert(menuItem!=null);
+			Debug.Assert(menuItem != null);
 			var contextMenu = menuItem.Parent as ContextMenu;
-			Debug.Assert(contextMenu!=null);
+			Debug.Assert(contextMenu != null);
 			if (contextMenu.Tag is ListBox) return contextMenu.Tag as ListBox;
 
 			var grid = GetCurrentTabGrid();
@@ -1603,7 +1613,7 @@ namespace MDRDesk
 			return lbTypeNames;
 		}
 
-        private async void GenerateSizeDetailsReport(object sender, RoutedEventArgs e) // TODO JRD -- display as ListView (listing)
+		private async void GenerateSizeDetailsReport(object sender, RoutedEventArgs e) // TODO JRD -- display as ListView (listing)
 		{
 			var lbTypeNames = GetTypeNameListBox(sender);
 			var selectedItem = lbTypeNames.SelectedItems[0];
@@ -1699,40 +1709,16 @@ namespace MDRDesk
 			return addr;
 		}
 
-		private async void LbGetInstValueClicked(object sender, RoutedEventArgs e)
+		private void LbGetInstValueClicked(object sender, RoutedEventArgs e)
 		{
 			AssertIndexIsAvailable();
 			ulong addr = GetAddressFromList(sender);
-			if (addr == Constants.InvalidAddress) return;
-
-			var msg = "Getting object value at: " + Utils.RealAddressString(addr);
-			SetStartTaskMainWindowState(msg);
-
-			var result = await Task.Run(() =>
+			if (addr == Constants.InvalidAddress)
 			{
-				string error;
-				var instVal = CurrentIndex.GetInstanceValue(addr, out error);
-				if (error!=null)
-					return new Tuple<string, InstanceValue, string>(error, null, null);
-				return new Tuple<string, InstanceValue,string>(error,instVal.Item1,instVal.Item2);
-			});
-
-
-			SetEndTaskMainWindowState(result.Item1 == null
-				? "value at " + Utils.RealAddressString(addr) + ":  " + result.Item2.Value.ToString()
-				: msg + " failed.");
-
-			if (result.Item1 != null)
-			{
-				ShowError(result.Item1);
 				return;
 			}
-
-			if (result.Item2.ArrayValues != null)
-			{
-				var wnd = new CollectionDisplay(result.Item2.ArrayValues,result.Item3) {Owner = this};
-				wnd.Show();
-			}
+			var msg = "Getting object value at: " + Utils.RealAddressString(addr);
+			Dispatcher.CurrentDispatcher.InvokeAsync(() => ExecuteInstanceValueQuery(msg, addr));
 		}
 
 		private void LbGetInstHierarchyClicked(object sender, RoutedEventArgs e)
@@ -1802,7 +1788,7 @@ namespace MDRDesk
 
 		private void AssertIndexIsAvailable()
 		{
-			Debug.Assert(CurrentIndex!=null);
+			Debug.Assert(CurrentIndex != null);
 		}
 
 		private bool IsIndexAvailable(string caption = null)
@@ -1861,5 +1847,21 @@ namespace MDRDesk
 			}
 		}
 
+		private void AddrLstViewMemoryClicked(object sender, RoutedEventArgs e)
+		{
+			if (!IsIndexAvailable("Cannot view memory, an index is not opened.")) return;
+			ulong addr = GetAddressFromList(sender);
+			if (addr == Constants.InvalidAddress) return;
+			string error;
+			var dumpClone = CurrentIndex.Dump.Clone(out error);
+			var wnd = new HexView(Utils.GetNewID(), _wndDct, dumpClone, addr) {Owner = this};
+			if (!wnd.Init(out error))
+			{
+				wnd.Close();
+				ShowError(error);
+				return;
+			}
+			wnd.Show();
+		}
 	}
 }

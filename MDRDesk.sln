@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 14
-VisualStudioVersion = 14.0.25123.0
+VisualStudioVersion = 14.0.25420.1
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MDRDesk", "MDRDesk\MDRDesk.csproj", "{4BB5B249-E4F1-490F-8F40-214BCC05CE64}"
 	ProjectSection(ProjectDependencies) = postProject
@@ -20,6 +20,8 @@ EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ClrMDRUtil", "ClrMDRUtil\ClrMDRUtil.csproj", "{7B01CCC0-8C10-4AA1-8154-4B55160E322B}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TestApp", "TestApp\TestApp.csproj", "{030465FE-0687-4DE5-800C-55FAC9A8BFD2}"
+EndProject
+Project("{930C7802-8A8C-48F9-8165-68863BCCD9DD}") = "WixMDRDeskInstaller", "WixMDRDeskInstaller\WixMDRDeskInstaller.wixproj", "{0730657F-33F2-429D-8336-33D310A38718}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -103,6 +105,14 @@ Global
 		{030465FE-0687-4DE5-800C-55FAC9A8BFD2}.Release|x64.Build.0 = Release|Any CPU
 		{030465FE-0687-4DE5-800C-55FAC9A8BFD2}.Release|x86.ActiveCfg = Release|Any CPU
 		{030465FE-0687-4DE5-800C-55FAC9A8BFD2}.Release|x86.Build.0 = Release|Any CPU
+		{0730657F-33F2-429D-8336-33D310A38718}.Debug|Any CPU.ActiveCfg = Debug|x86
+		{0730657F-33F2-429D-8336-33D310A38718}.Debug|x64.ActiveCfg = Debug|x86
+		{0730657F-33F2-429D-8336-33D310A38718}.Debug|x86.ActiveCfg = Debug|x86
+		{0730657F-33F2-429D-8336-33D310A38718}.Debug|x86.Build.0 = Debug|x86
+		{0730657F-33F2-429D-8336-33D310A38718}.Release|Any CPU.ActiveCfg = Release|x86
+		{0730657F-33F2-429D-8336-33D310A38718}.Release|x64.ActiveCfg = Release|x86
+		{0730657F-33F2-429D-8336-33D310A38718}.Release|x86.ActiveCfg = Release|x86
+		{0730657F-33F2-429D-8336-33D310A38718}.Release|x86.Build.0 = Release|x86
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

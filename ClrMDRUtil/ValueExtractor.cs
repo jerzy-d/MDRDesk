@@ -383,25 +383,42 @@ namespace ClrMDRIndex
 		{
 			Debug.Assert(type.IsException);
 
-			var classNameObj = type.GetFieldByName("_className").GetValue(addr);
-			var classNameVal = classNameObj == null ? Constants.NullName : GetStringAtAddress((ulong)classNameObj, heap);
-
-			var messageObj = type.GetFieldByName("_message").GetValue(addr);
-			var messageVal = messageObj == null ? Constants.NullName : GetStringAtAddress((ulong)messageObj, heap);
-
-			var stackTraceObj = type.GetFieldByName("_stackTrace").GetValue(addr);
-			var stackTraceVal = stackTraceObj == null ? Constants.NullName : GetStringAtAddress((ulong)stackTraceObj, heap);
-
-			var hresult = type.GetFieldByName("_HResult");
-			Debug.Assert(hresult.ElementType == ClrElementType.Int32);
-			int hresultValue = (int)hresult.GetValue(addr);
+			var exType = heap.GetExceptionObject(addr);
+			if (exType == null)
+			{
+				return "Cannot get exception object";
+			}
 
 			var sb = StringBuilderCache.Acquire(64);
-			sb.Append("[").Append(hresultValue).Append("] ");
-			sb.Append(classNameVal).Append(Constants.NamespaceSepPadded);
-			sb.Append(messageVal).Append(Constants.NamespaceSepPadded);
-			sb.Append(Utils.ReplaceNewlines(stackTraceVal));
+			var exTypeName = exType.Type != null ? exType.Type.Name : Constants.UnknownTypeName;
+			var hresult = exType.HResult;
+			var message = exType.Message;
+			sb.Append("HRESULT: ").AppendLine(Utils.HResultStringHeader(hresult));
+			sb.Append("MESSAGE: ").AppendLine(message);
+			sb.Append("TYPE:    ").Append(exTypeName);
+
+
 			return StringBuilderCache.GetStringAndRelease(sb);
+
+			//var classNameObj = type.GetFieldByName("_className").GetValue(addr);
+			//var classNameVal = classNameObj == null ? Constants.NullName : GetStringAtAddress((ulong)classNameObj, heap);
+
+			//var messageObj = type.GetFieldByName("_message").GetValue(addr);
+			//var messageVal = messageObj == null ? Constants.NullName : GetStringAtAddress((ulong)messageObj, heap);
+
+			//var stackTraceObj = type.GetFieldByName("_stackTrace").GetValue(addr);
+			//var stackTraceVal = stackTraceObj == null ? Constants.NullName : GetStringAtAddress((ulong)stackTraceObj, heap);
+
+			//var hresult = type.GetFieldByName("_HResult");
+			//Debug.Assert(hresult.ElementType == ClrElementType.Int32);
+			//int hresultValue = (int)hresult.GetValue(addr);
+
+			//var sb = StringBuilderCache.Acquire(64);
+			//sb.Append("[").Append(hresultValue).Append("] ");
+			//sb.Append(classNameVal).Append(Constants.NamespaceSepPadded);
+			//sb.Append(messageVal).Append(Constants.NamespaceSepPadded);
+			//sb.Append(Utils.ReplaceNewlines(stackTraceVal));
+			//return StringBuilderCache.GetStringAndRelease(sb);
 		}
 
 		public static string GetShortExceptionValue(ulong addr, ClrType type, ClrHeap heap)

@@ -1,0 +1,110 @@
+﻿<Window x:Class="MDRDesk.HexView"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:MDRDesk"
+        WindowStartupLocation="CenterOwner"
+        Closing="Window_Closing"
+        mc:Ignorable="d"
+        Title="Memory View" Height="600" Width="600">
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="30"/>
+            <RowDefinition Height="100*"/>
+            <RowDefinition Height="30"/>
+        </Grid.RowDefinitions>
+        <Grid Grid.Row="0">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="50"/>
+                <ColumnDefinition Width="70*"/>
+                <ColumnDefinition Width="30"/>
+                <ColumnDefinition Width="50"/>
+                <ColumnDefinition Width="30*"/>
+                <ColumnDefinition Width="30"/>
+            </Grid.ColumnDefinitions>
+            <Label Grid.Row="0" Grid.Column="0"  VerticalAlignment="Center">addr.:</Label>
+            <TextBox x:Name="HexViewHeaders" Grid.Row="0" Grid.Column="1" Margin="2,2,2,2" HorizontalAlignment="Stretch" VerticalAlignment="Center" FontFamily="Consolas" FontSize="11" TextWrapping="NoWrap">
+                <TextBox.BorderBrush>BlanchedAlmond</TextBox.BorderBrush>
+            </TextBox>
+            <Button x:Name="ChangeAddress" Grid.Column="2" Width="20" Height="20" Margin="4,0,4,0" HorizontalAlignment="Center" VerticalAlignment="Center" BorderThickness="0" Click="ChangeAddress_OnClick"
+                         Background="AliceBlue">
+                <Button.ToolTip>Change buffer size.</Button.ToolTip>
+                <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                    <Image Source=".\Images\UpdatePanel_16x.png" Width="16" Height="16" Margin="0,0,0,0" VerticalAlignment="Center" HorizontalAlignment="Center"/>
+                </StackPanel>
+            </Button>
+            <Label Grid.Row="0" Grid.Column="3"  VerticalAlignment="Center">buf size:</Label>
+            <TextBox x:Name="BufferSize" Grid.Row="0" Grid.Column="4" Margin="2,2,2,2" HorizontalAlignment="Stretch" VerticalAlignment="Center" FontFamily="Consolas" FontSize="11" TextWrapping="NoWrap">
+                <TextBox.BorderBrush>BlanchedAlmond</TextBox.BorderBrush>
+            </TextBox>
+            <Button x:Name="ChangeBufferSize" Grid.Column="5" Width="20" Height="20" Margin="4,0,4,0" HorizontalAlignment="Center" VerticalAlignment="Center" BorderThickness="0" Click="ChangeBufferSize_OnClick"
+                         Background="AliceBlue">
+                <Button.ToolTip>Change buffer size.</Button.ToolTip>
+                <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                    <Image Source=".\Images\UpdatePanel_16x.png" Width="16" Height="16" Margin="0,0,0,0" VerticalAlignment="Center" HorizontalAlignment="Center"/>
+                </StackPanel>
+            </Button>
+        </Grid>
+        <TextBox x:Name="HexViewContent" Grid.Row="1" Margin="2,2,2,2" HorizontalAlignment="Stretch" VerticalAlignment="Center" FontFamily="Consolas" FontSize="11" IsReadOnly="True" TextWrapping="NoWrap" VerticalScrollBarVisibility="Visible" HorizontalScrollBarVisibility="Auto">
+            <TextBox.BorderBrush>BlanchedAlmond</TextBox.BorderBrush>
+        </TextBox>
+        <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Stretch">
+            <Button  x:Name="GotoNextButton" Width="20" Height="20" Margin="4,0,4,0" HorizontalAlignment="Center" VerticalAlignment="Center" BorderThickness="0" Click="GotoNextButton_OnClick"
+                         Background="AliceBlue">
+                <Button.ToolTip>Read next address range.</Button.ToolTip>
+                <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                    <Image Source=".\Images\GoToNextInList_16x.png" Width="16" Height="16" Margin="0,0,0,0" VerticalAlignment="Center" HorizontalAlignment="Center"/>
+                </StackPanel>
+            </Button>
+            <Button  x:Name="GotoPreviousButton" Width="20" Height="20" Margin="4,0,4,0" HorizontalAlignment="Center" VerticalAlignment="Center" BorderThickness="0" Click="GotoPreviousButton_OnClick"
+                         Background="AliceBlue">
+                <Button.ToolTip>Read previous address range.</Button.ToolTip>
+                <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                    <Image Source=".\Images\GoToPreviousInList_16x.png" Width="16" Height="16" Margin="0,0,0,0" VerticalAlignment="Center" HorizontalAlignment="Center"/>
+                </StackPanel>
+            </Button>
+            <Label x:Name="WordSizeLabel" Margin="4,0,4,0" VerticalAlignment="Center">word size</Label>
+            <Button x:Name="IncWordSizeButton" Width="20" Height="20" Margin="4,0,4,0" HorizontalAlignment="Center" VerticalAlignment="Center" BorderThickness="0" Click="IncWordSizeButton_OnClick"
+                         Background="AliceBlue">
+                <Button.ToolTip>Increase word length.</Button.ToolTip>
+                <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                    <Image Source=".\Images\Add_grey_16x.png" Width="16" Height="16" Margin="0,0,0,0" VerticalAlignment="Center" HorizontalAlignment="Center"/>
+                </StackPanel>
+            </Button>
+            <Button  x:Name="DecWordSizeButton" Width="20" Height="20" Margin="4,0,4,0" HorizontalAlignment="Center" VerticalAlignment="Center" BorderThickness="0" Click="DecWordSizeButton_OnClick"
+                         Background="AliceBlue">
+                <Button.ToolTip>Decrease word length.</Button.ToolTip>
+                <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                    <Image Source=".\Images\Subtract_16x.png" Width="16" Height="16" Margin="0,0,4,0" VerticalAlignment="Center" HorizontalAlignment="Center"/>
+                </StackPanel>
+            </Button>
+            <Label x:Name="ColumnCountLabel" Margin="4,0,4,0" VerticalAlignment="Center">col count</Label>
+            <Button x:Name="IncColCountButton" Width="20" Height="20" Margin="4,0,4,0" HorizontalAlignment="Center" VerticalAlignment="Center" BorderThickness="0" Click="IncColCountButton_OnClick"
+                         Background="AliceBlue">
+                <Button.ToolTip>Increase word length.</Button.ToolTip>
+                <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                    <Image Source=".\Images\Add_grey_16x.png" Width="16" Height="16" Margin="0,0,0,0" VerticalAlignment="Center" HorizontalAlignment="Center"/>
+                </StackPanel>
+            </Button>
+            <Button  x:Name="DecColCountButton" Width="20" Height="20" Margin="4,0,4,0" HorizontalAlignment="Center" VerticalAlignment="Center" BorderThickness="0" Click="DecColCountButton_OnClick"
+                         Background="AliceBlue">
+                <Button.ToolTip>Decrease word length.</Button.ToolTip>
+                <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                    <Image Source=".\Images\Subtract_16x.png" Width="16" Height="16" Margin="0,0,4,0" VerticalAlignment="Center" HorizontalAlignment="Center"/>
+                </StackPanel>
+            </Button>
+            <RadioButton x:Name ="DisplayModePlain" VerticalAlignment="Center" GroupName="DisplayMode" Checked="DisplayModePlain_OnChecked"  Margin="4,0,4,0" ToolTip="Display memory content as hex numbers.">Plain</RadioButton>
+            <RadioButton x:Name ="DisplayModeAscii" VerticalAlignment="Center" GroupName="DisplayMode" Checked="DisplayModeAscii_OnChecked"  Margin="4,0,4,0" ToolTip="Display memory content as ASCII characters.">Ascii</RadioButton>
+            <RadioButton x:Name ="DisplayModeUnicode" VerticalAlignment="Center" GroupName="DisplayMode" Checked="DisplayModeUnicode_OnChecked"  Margin="4,0,4,0" ToolTip="Display memory content as Unicode characters.">Unicode</RadioButton>
+
+            <Button  x:Name="RefreshButton" Width="20" Height="20" Margin="4,0,4,0" HorizontalAlignment="Right" VerticalAlignment="Center" BorderThickness="0" Click="RefreshButton_OnClick"
+                         Background="AliceBlue">
+                <Button.ToolTip>Refresh display.</Button.ToolTip>
+                <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                    <Image Source=".\Images\Refresh_16x.png" Width="16" Height="16" Margin="0,0,0,0" VerticalAlignment="Center" HorizontalAlignment="Center"/>
+                </StackPanel>
+            </Button>
+        </StackPanel>
+    </Grid>
+</Window>

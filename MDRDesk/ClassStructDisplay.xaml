@@ -1,0 +1,41 @@
+﻿<Window x:Class="MDRDesk.ClassStructDisplay"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:MDRDesk"
+        mc:Ignorable="d"
+        WindowStartupLocation="CenterOwner"
+        Title="Class/Struct Fields" Height="500" Width="500">
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="8*"/>
+            <RowDefinition Height="5"/>
+            <RowDefinition Height="92*"/>
+        </Grid.RowDefinitions>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="90*"/>
+            <ColumnDefinition Width="5"/>
+            <ColumnDefinition Width="5*"/>
+        </Grid.ColumnDefinitions>
+
+        <TextBox x:Name="ClassStructInfo" Grid.Row="0" Grid.Column="0" Margin="2,2,2,2" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" FontFamily="Consolas" FontSize="11">
+            <TextBox.BorderBrush>BlanchedAlmond</TextBox.BorderBrush>
+        </TextBox>
+        <GridSplitter Grid.Row="1" Grid.Column="0" VerticalAlignment="Center" HorizontalAlignment="Stretch" Height="5" ShowsPreview="False" Background="DarkGray"></GridSplitter>
+        <TreeView x:Name="InstHierarchyFieldTreeview" Grid.Row="2" Grid.Column="0" VerticalAlignment="Stretch" HorizontalAlignment="Stretch" Margin="2,2,2,2" FontSize="12" 
+                          MouseDoubleClick="InstHierarchyFieldTreeview_OnMouseDoubleClick">
+            <TreeView.ItemContainerStyle>
+                <Style TargetType="TreeViewItem">
+                    <EventSetter Event="RequestBringIntoView" Handler="EventSetter_OnHandler"/>
+                </Style>
+            </TreeView.ItemContainerStyle>
+            <TreeView.BorderBrush>BlanchedAlmond</TreeView.BorderBrush>
+        </TreeView>
+        <GridSplitter Grid.Row="0" Grid.Column="1" Grid.RowSpan="3" VerticalAlignment="Stretch" HorizontalAlignment="Center" Width="5" ShowsPreview="False" Background="DarkGray"></GridSplitter>
+        <Expander x:Name="CollectionExpander" Margin="0,7,0,0" DockPanel.Dock="Bottom" Header="..." Grid.Row="0" Grid.Column="2" Grid.RowSpan="3" ExpandDirection="Left">
+            <DockPanel x:Name="CollectionExpanderPanel" Margin="3" LastChildFill="True">
+            </DockPanel>
+        </Expander>
+    </Grid>
+</Window>

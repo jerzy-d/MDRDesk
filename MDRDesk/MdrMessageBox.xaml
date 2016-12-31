@@ -5,9 +5,10 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:MDRDesk"
         mc:Ignorable="d"
+        WindowStartupLocation="CenterOwner"
         Title="Custom WPF MessageBox" 
         Width="450"
-        SizeToContent="Height" WindowStartupLocation="CenterScreen" ResizeMode="NoResize" ShowInTaskbar="False" WindowStyle="None"
+        SizeToContent="Height" ResizeMode="NoResize" ShowInTaskbar="False" WindowStyle="None"
         MouseLeftButtonDown="CustomMessagBox_OnMouseLeftButtonDown" 
         BorderThickness="1" BorderBrush="{DynamicResource {x:Static SystemColors.ActiveCaptionBrushKey}}" 
         >

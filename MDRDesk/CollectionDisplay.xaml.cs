@@ -1,5 +1,7 @@
 ﻿using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Diagnostics;
 using System.Linq;
 using System.Text;
@@ -21,35 +23,31 @@ namespace MDRDesk
 	/// </summary>
 	public partial class CollectionDisplay : Window
 	{
+		private int _id;
+		private ConcurrentDictionary<int, Window> _wndDct;
 		private bool _indicesShown;
+		private InstanceValue _instanceValue;
 
-		public CollectionDisplay(string[] values, string descr)
+		public CollectionDisplay(int id, ConcurrentDictionary<int, Window> wndDct, InstanceValue instVal, string descr)
 		{
+			_id = id;
+			_wndDct = wndDct;
 			InitializeComponent();
-			CollectionValues.ItemsSource = values;
+			Debug.Assert(instVal.ArrayValues != null);
+			CollectionValues.ItemsSource = instVal.ArrayValues;
 			CollectionInfo.Text = descr;
+			wndDct.TryAdd(id, this);
 		}
 
 		private void ShowArrayIndicesClicked(object sender, RoutedEventArgs e)
 		{
 			if (_indicesShown)
 			{
-				string[] values = CollectionValues.ItemsSource as string[];
-				Debug.Assert(values != null);
-				int cnt = values.Length;
-				string[] newValues = new string[cnt];
-				for (int i = 0, icnt = values.Length; i < icnt; ++i)
-				{
-					var val = values[i];
-					var pos = val.IndexOf("] ");
-					newValues[i] = val.Substring(pos + "] ".Length);
-				}
-				_indicesShown = false;
-				CollectionValues.ItemsSource = newValues;
+				CollectionValues.ItemsSource = _instanceValue.ArrayValues;
 			}
 			else
 			{
-				string[] values = CollectionValues.ItemsSource as string[];
+				string[] values = _instanceValue.ArrayValues;
 				Debug.Assert(values!=null);
 				int cnt = values.Length;
 				int digitCount = Utils.NumberOfDigits(cnt);
@@ -64,6 +62,12 @@ namespace MDRDesk
 			}
 
 
+		}
+
+		public void Window_Closing(object sender, CancelEventArgs e)
+		{
+			Window wnd;
+			_wndDct.TryRemove(_id, out wnd);
 		}
 	}
 }

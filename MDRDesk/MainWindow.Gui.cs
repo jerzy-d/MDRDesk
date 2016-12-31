@@ -2005,8 +2005,81 @@ namespace MDRDesk
 
 		#endregion type values report
 
+		#region instance value
+
+		private async void ExecuteInstanceValueQuery(string msg, ulong addr)
+		{
+			SetStartTaskMainWindowState(msg);
+
+			var result = await Task.Run(() =>
+			{
+				string error;
+				var instValue = CurrentIndex.GetInstanceValue(addr, out error);
+				if (error != null)
+					return new Tuple<string, InstanceValue, string>(error, null, null);
+				return new Tuple<string, InstanceValue, string>(null, instValue.Item1, instValue.Item2);
+			});
+
+
+			SetEndTaskMainWindowState(result.Item1 == null
+				? "value at " + Utils.RealAddressString(addr) + ":  " + result.Item2.Value.ToString()
+				: msg + " failed.");
+
+			if (result.Item1 != null)
+			{
+				ShowError(result.Item1);
+				return;
+			}
+
+			InstanceValue instVal = result.Item2;
+
+			if (!instVal.HaveInnerValues())
+			{
+				if (instVal.ArrayValues != null)
+				{
+					var wnd = new CollectionDisplay(Utils.GetNewID(),_wndDct, instVal, result.Item3) { Owner = this };
+					wnd.Show();
+					return;
+				}
+
+				if (instVal.Value != null && instVal.Value.Content.Length > ValueString.MaxLength)
+				{
+					var wnd = new ContentDisplay(Utils.GetNewID(), _wndDct, result.Item3, instVal) { Owner = this };
+					wnd.Show();
+					return;
+				}
+			}
+		}
+
+		#endregion instance value
 
 		#region Instance Hierarchy Traversing
+		private async void ExecuteInstanceHierarchyQuery(string statusMessage, ulong addr, int fldNdx)
+		{
+			SetStartTaskMainWindowState(statusMessage + ", please wait...");
+
+			var result = await Task.Run(() =>
+			{
+				string error;
+				InstanceValueAndAncestors instanceInfo = CurrentIndex.GetInstanceInfo(Utils.RealAddress(addr), fldNdx, out error);
+
+				return Tuple.Create(error, instanceInfo);
+			});
+
+			if (result.Item1 != null)
+			{
+				SetEndTaskMainWindowState(statusMessage + ", FAILED.");
+				if (result.Item1[0] == Constants.InformationSymbol)
+					ShowInformation("Instance Hierarchy", "Instance " + Utils.AddressString(addr) + " seatrch failed", result.Item1, null);
+				else
+					ShowError(result.Item1);
+				return;
+			}
+
+			DisplayInstanceHierarchyGrid(result.Item2);
+
+			SetEndTaskMainWindowState(statusMessage + ", DONE.");
+		}
 
 		private void DisplayInstanceHierarchyGrid(InstanceValueAndAncestors instanceInfo)
 		{
@@ -2202,7 +2275,6 @@ namespace MDRDesk
 			InstHierarchyRedoUndo(true);
 		}
 
-
 		private void InstHierarchyRedoClicked(object sender, RoutedEventArgs e)
 		{
 			InstHierarchyRedoUndo(false);
@@ -2284,10 +2356,10 @@ namespace MDRDesk
 				dialog = new MdrMessageBox()
 				{
 					Owner = this,
-					Caption = parts[0],
-					InstructionHeading = parts[1],
-					InstructionText = parts[2],
-					DeatilsText = parts.Length > 3 ? parts[3] : string.Empty
+					Caption = "ERROR",
+					InstructionHeading = parts[0],
+					InstructionText = parts[1],
+					DeatilsText = string.Empty
 				};
 			}
 			else
@@ -2295,9 +2367,9 @@ namespace MDRDesk
 				dialog = new MdrMessageBox()
 				{
 					Owner = this,
-					Caption = parts[0],
-					InstructionHeading = errStr,
-					InstructionText = string.Empty,
+					Caption = "ERROR",
+					InstructionHeading = "ERROR",
+					InstructionText = errStr,
 					DeatilsText = string.Empty
 				};
 			}
@@ -2433,34 +2505,6 @@ namespace MDRDesk
 			expander.IsExpanded = true;
 		}
 
-		private async void ExecuteInstanceHierarchyQuery(string statusMessage, ulong addr, int fldNdx)
-		{
-			SetStartTaskMainWindowState(statusMessage + ", please wait...");
-
-			var result = await Task.Run(() =>
-			{
-				string error;
-				InstanceValueAndAncestors instanceInfo = CurrentIndex.GetInstanceInfo(Utils.RealAddress(addr), fldNdx, out error);
-
-				return Tuple.Create(error, instanceInfo);
-			});
-
-			if (result.Item1 != null)
-			{
-				SetEndTaskMainWindowState(statusMessage + ", FAILED.");
-				if (result.Item1[0] == Constants.InformationSymbol)
-					ShowInformation("Instance Hierarchy", "Instance " + Utils.AddressString(addr) + " seatrch failed", result.Item1, null);
-				else
-					ShowError(result.Item1);
-				return;
-			}
-
-			DisplayInstanceHierarchyGrid(result.Item2);
-
-			SetEndTaskMainWindowState(statusMessage + ", DONE.");
-		}
-
-
 
 		#endregion Map Queries
 
@@ -2469,6 +2513,11 @@ namespace MDRDesk
 		private void CloseCurrentIndex()
 		{
 			MainStatusShowMessage("Closing current index...");
+			foreach (var kv in _wndDct)
+			{
+				kv.Value.Close();
+			}
+			_wndDct.Clear();
 			MainTab.Items.Clear();
 			if (IsIndexAvailable(null))
 			{

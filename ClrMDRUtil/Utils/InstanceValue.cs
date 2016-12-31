@@ -37,6 +37,11 @@ namespace ClrMDRIndex
 			_aryValues = null;
 		}
 
+		public bool HaveInnerValues()
+		{
+			return Values.Count > 0;
+		}
+
 	    public void Addvalue(InstanceValue val)
 	    {
 	        _values.Add(val);

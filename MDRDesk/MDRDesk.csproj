@@ -148,10 +148,16 @@
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </ApplicationDefinition>
+    <Compile Include="ClassStructDisplay.xaml.cs">
+      <DependentUpon>ClassStructDisplay.xaml</DependentUpon>
+    </Compile>
     <Compile Include="CollectionDisplay.xaml.cs">
       <DependentUpon>CollectionDisplay.xaml</DependentUpon>
     </Compile>
     <Compile Include="Charts\ChartProvider.cs" />
+    <Compile Include="ContentDisplay.xaml.cs">
+      <DependentUpon>ContentDisplay.xaml</DependentUpon>
+    </Compile>
     <Compile Include="Converters.cs" />
     <Compile Include="CreateCrashDump.xaml.cs">
       <DependentUpon>CreateCrashDump.xaml</DependentUpon>
@@ -162,6 +168,9 @@
     <Compile Include="Graphs\DlkGraph.cs" />
     <Compile Include="Graphs\DlkGXLogicCore.cs" />
     <Compile Include="GuiUtils.cs" />
+    <Compile Include="HexView.xaml.cs">
+      <DependentUpon>HexView.xaml</DependentUpon>
+    </Compile>
     <Compile Include="MainWindow.Gui.cs" />
     <Compile Include="MDRDeskSetup.xaml.cs">
       <DependentUpon>MDRDeskSetup.xaml</DependentUpon>
@@ -178,11 +187,23 @@
       <DependentUpon>TypeValueFilterDlg.xaml</DependentUpon>
     </Compile>
     <Compile Include="TypeValuesQuery.cs" />
+    <Page Include="ClassStructDisplay.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
     <Page Include="CollectionDisplay.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>
+    <Page Include="ContentDisplay.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
     <Page Include="CreateCrashDump.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="HexView.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>
@@ -363,6 +384,27 @@
   </ItemGroup>
   <ItemGroup>
     <Resource Include="Images\ListView_16x.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <Resource Include="Images\WrapPanel_16x.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <Resource Include="Images\GoToNextInList_16x.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <Resource Include="Images\GoToPreviousInList_16x.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <Resource Include="Images\Add_grey_16x.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <Resource Include="Images\Subtract_16x.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <Resource Include="Images\Refresh_16x.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <Resource Include="Images\UpdatePanel_16x.png" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <PropertyGroup>

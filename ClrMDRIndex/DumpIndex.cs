@@ -1258,15 +1258,26 @@ namespace ClrMDRIndex
 			error = null;
 			try
 			{
+				StringBuilder sb = null;
+				InstanceValue inst = null;
 				var realAddr = Utils.RealAddress(addr);
 				var typeId = GetTypeId(addr);
 				var heap = Dump.Heap;
 				var clrType = heap.GetObjectType(realAddr);
 				if (clrType == null)
 				{
-					// TODO JRD
+					error = "DumpIndex.GetInstanceValue" + Constants.HeavyGreekCrossPadded + "Object at address: " +
+					        Utils.AddressString(addr) + " is null.";
 					return null;
 				}
+
+				if (clrType.Name == "Free" || clrType.Name == "Error")
+				{
+					error = "DumpIndex.GetInstanceValue" + Constants.HeavyGreekCrossPadded + "Invalid object at address: " +
+							Utils.AddressString(addr) + ", type name is: " + clrType.Name + ".";
+					return null;
+				}
+
 				var kind = TypeKinds.GetTypeKind(clrType);
 
 				if (TypeKinds.IsArray(kind))
@@ -1282,19 +1293,23 @@ namespace ClrMDRIndex
 					//if (aryBaseName.EndsWith("[]")) aryBaseName = aryBaseName.Substring(0, aryBaseName.Length - 2);
 					//string aval = aryBaseName + "[" + aryResult.Item4 + "]";
 
-					var sb = StringBuilderCache.Acquire(StringBuilderCache.MaxCapacity);
+					sb = StringBuilderCache.Acquire(StringBuilderCache.MaxCapacity);
 					sb.Append("Type:      ").AppendLine(aryResult.Item2.Name);
 					sb.Append("Item Type: ").AppendLine(aryResult.Item3.Name);
 					sb.Append("Address:   ").AppendLine(Utils.RealAddressString(addr));
 					sb.Append("Lenght:    ").AppendLine(aryResult.Item4.ToString());
-					var inst = new InstanceValue(typeId, addr, aryResult.Item2.Name, aryResult.Item3.Name, Utils.BaseArrayName(aryResult.Item2.Name,aryResult.Item4));
+					inst = new InstanceValue(typeId, addr, aryResult.Item2.Name, aryResult.Item3.Name, Utils.BaseArrayName(aryResult.Item2.Name,aryResult.Item4));
 					inst.AddArrayValues(aryResult.Item5);
 					return new Tuple<InstanceValue,string>(inst,StringBuilderCache.GetStringAndRelease(sb));
 				}
 
 				var val = Types.getTypeValue(heap, realAddr, clrType,kind);
-				var ainst = new InstanceValue(typeId, addr, clrType.Name, string.Empty, val);
-				return new Tuple<InstanceValue, string>(ainst, string.Empty);
+				var typeName = GetTypeName(typeId);
+				sb = StringBuilderCache.Acquire(StringBuilderCache.MaxCapacity);
+				sb.Append("Type:      ").AppendLine(typeName);
+				sb.Append("Address:   ").AppendLine(Utils.RealAddressString(addr));
+				inst = new InstanceValue(typeId, addr, typeName, string.Empty, val);
+				return new Tuple<InstanceValue, string>(inst, StringBuilderCache.GetStringAndRelease(sb));
 			}
 			catch (Exception ex)
 			{
