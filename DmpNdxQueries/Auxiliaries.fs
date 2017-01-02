@@ -78,34 +78,10 @@ module Auxiliaries =
         | Composite of ClrtValue
         | Composites of ClrtValue array
         | Address of uint64
-
-//    type KeyValuePairInfo =
-//        { keyFld: ClrInstanceField;
-//          keyType: ClrType;
-//          keyCat: TypeCategories;
-//          valFld: ClrInstanceField;
-//          valType: ClrType;
-//          valCat: TypeCategories; }
-
-//    type DictionaryValue =
-//        struct
-//            val Error: string
-//            val DctType: string
-//            val Address: address
-//            val KeyType: string
-//            val ValType: string
-//            val Keys: string array
-//            val Values: string array
-//            new(error, dctType, addr, keyType, valType, keys, values) = { Error = error; DctType = dctType; Address = addr; KeyType = keyType; ValType = valType; Keys = keys; Values = values }
-//        end
-
+    
     let kvStringAddressComparer = new KvStringAddressComparer()
 
     let hasInternalAddresses (clrType:ClrType) = clrType.IsValueClass
-
-    /// Convienient categorization of clr types when getting a type instance value.
-//    let inline getTypeCategory (clrType:ClrType) : TypeCategories =
-//        TypeCategories.GetCategories(clrType)
 
     let getFieldName (clrType:ClrType) (ndx:int) =
         match clrType with
@@ -209,6 +185,7 @@ module Auxiliaries =
 //            (null,fld.Type,null)
 //        | _ -> ("Don't know how to get this field type.",null,null)
 //    
+
     let getType (heap:ClrHeap) (addr:address) =
         heap.GetObjectType(addr)
 

@@ -1,5 +1,5 @@
 ﻿0001 09/27/16 
-Clean up after closing TabItem.
+Clean up after closing TabItem. ???
 0002 09/27/16
 Add to index menu => Copy Index Path to Clippboard.
 0003 12/27/16
@@ -9,4 +9,9 @@ Add to index menu => Copy Index Path to Clippboard.
 0005 12/28/16
 Multicolumn sorting of listing report.
 0006 12/29/16
-Heap bytes reading (like dd command).
+*** (12/30/16) Heap bytes reading (like dd command).
+0007 12/30/16
+Implement show roots grid. Header="Show Roots" Click="IndexShowRootsClicked"
+0008 12/30/16
+Implement show roots grid. Header="Show Roots" Click="IndexShowRootsClicked"
+

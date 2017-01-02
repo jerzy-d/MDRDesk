@@ -206,14 +206,18 @@ namespace MDRDesk
 			if (path == null) return;
 
 			string error;
-			var dacFile = ClrtDump.GetRequiredDac(path, out error);
-			if (dacFile == null)
+			var dacFiles = ClrtDump.GetRequiredDac(path, out error);
+			if (dacFiles.Length < 1)
 			{
 				SW.MessageBox.Show(error, "Get Required Dac Failed", MessageBoxButton.OK, MessageBoxImage.Error);
 				return;
 			}
-			SW.Clipboard.SetText(dacFile);
-			ShowInformation("Required Dac File", dacFile, "Dac file name (shown above) is copied to Clipboard.", string.Empty);
+			SW.Clipboard.SetText(dacFiles[dacFiles.Length-1]);
+			string lst = string.Join("\n", dacFiles);
+			if (dacFiles.Length > 1)
+				ShowInformation("Required Dac Files", lst, "Last dac file name (shown above) is copied to Clipboard.", string.Empty);
+			else
+				ShowInformation("Required Dac File", lst, "Dac file name (shown above) is copied to Clipboard.", string.Empty);
 		}
 
 		private void AddDacFileClicked(object sender, RoutedEventArgs e)
@@ -1814,14 +1818,13 @@ namespace MDRDesk
 
 
 		private List<ulong> _lbTypeAddressesLastselections = new List<ulong>();
-		private int lbTypeAddressesLastselectedIndex = 0;
+
 		private void Selector_OnSelectionChanged(object sender, SelectionChangedEventArgs e)
 		{
 			ListBox lb = sender as ListBox;
 			Debug.Assert(lb != null);
 			if (lb.SelectedItems.Count > 0)
 			{
-				lbTypeAddressesLastselectedIndex = lb.SelectedIndex;
 				_lbTypeAddressesLastselections.Clear();
 				foreach (var sel in lb.SelectedItems)
 				{
@@ -1839,7 +1842,6 @@ namespace MDRDesk
 			int typeId = Constants.InvalidIndex;
 			if (listBox != null && listBox.SelectedItems.Count > 0)
 			{
-				string error;
 				var sel = listBox.SelectedItems[0];
 				typeName = GetTypeNameFromSelection(sel, out typeId);
 
@@ -1852,9 +1854,20 @@ namespace MDRDesk
 			if (!IsIndexAvailable("Cannot view memory, an index is not opened.")) return;
 			ulong addr = GetAddressFromList(sender);
 			if (addr == Constants.InvalidAddress) return;
+			ShowMemoryViewWindow(addr);
+		}
+
+		private void ShowMemoryViewWindow(ulong addr)
+		{
+			if (!IsIndexAvailable("Show Memory View")) return;
 			string error;
 			var dumpClone = CurrentIndex.Dump.Clone(out error);
-			var wnd = new HexView(Utils.GetNewID(), _wndDct, dumpClone, addr) {Owner = this};
+			if (dumpClone == null)
+			{
+				ShowError(error);
+				return;
+			}
+			var wnd = new HexView(Utils.GetNewID(), _wndDct, dumpClone, addr) { Owner = this };
 			if (!wnd.Init(out error))
 			{
 				wnd.Close();
@@ -1862,6 +1875,14 @@ namespace MDRDesk
 				return;
 			}
 			wnd.Show();
+		}
+
+		private void IndexViewMemoryClicked(object sender, RoutedEventArgs e)
+		{
+			ulong addr;
+			if (!GetUserEnteredAddress("Memory Address", "Enter memory address, if not hex format prefix with n/N.", out addr))
+				return;
+			ShowMemoryViewWindow(addr);
 		}
 	}
 }

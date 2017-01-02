@@ -984,6 +984,27 @@ namespace UnitTestMdr
 
 		#endregion get list of specific clr objects
 
+		#region misc
+
+		[TestMethod]
+		public void TestKnownTypes()
+		{
+			string[] typeNames = new string[]
+			{
+				"System.Collections.Generic.Dictionary<System.Type,System.String>",
+				"System.Collections.Generic.SortedDictionary<System.Int64,System.Int64>",
+				"System.Collections.Generic.HashSet<System.Int32>",
+				"System.Text.StringBuilder",
+			};
+
+			for (int i = 0, icnt = typeNames.Length; i < icnt; ++i)
+			{
+				Assert.IsTrue(ValueExtractor.IsKnownType(typeNames[i]));
+			}
+		}
+
+		#endregion misc
+
 		#region template
 
 		[TestMethod]

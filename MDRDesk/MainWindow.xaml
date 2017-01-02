@@ -615,6 +615,8 @@
                         <MenuItem x:Name="IndexCompareSizeInformation" Header="Type Sizes Comparison (with other dump)..." Click="IndexCompareSizeInformationClicked"/>
                         <MenuItem x:Name="IndexCompareStringInformation" Header="Strings Comparison (with other dump)..." Click="IndexCompareStringInformationClicked"/>
                         <Separator></Separator>
+                        <MenuItem x:Name="IndexViewMemory" Header="View Memory" Click="IndexViewMemoryClicked"/>
+                        <Separator></Separator>
                         <MenuItem x:Name="RecentIndexMenuItem" Header="Recent Indices" Click="RecentIndicesClicked"/>
                     </MenuItem>
                 <MenuItem x:Name="AdhocQueries" Header="Ad-hoc Queries" Background="LightBlue" VerticalAlignment="Center">

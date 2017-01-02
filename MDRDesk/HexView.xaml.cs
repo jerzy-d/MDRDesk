@@ -1,20 +1,11 @@
 ﻿using System;
 using System.Collections.Concurrent;
-using System.Collections.Generic;
 using System.ComponentModel;
 using System.Diagnostics;
 using System.Globalization;
-using System.Linq;
 using System.Text;
-using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Data;
-using System.Windows.Documents;
-using System.Windows.Input;
-using System.Windows.Media;
-using System.Windows.Media.Imaging;
-using System.Windows.Shapes;
 using ClrMDRIndex;
 using Microsoft.Diagnostics.Runtime;
 
@@ -23,7 +14,7 @@ namespace MDRDesk
 	/// <summary>
 	/// Interaction logic for HexView.xaml
 	/// </summary>
-	public partial class HexView : Window
+	public partial class HexView
 	{
 		private enum DisplayMode
 		{
@@ -67,7 +58,6 @@ namespace MDRDesk
 
 		public bool Init( out string error)
 		{
-			error = null;
 			if (!ReadMemory(out error))
 			{
 				return false;
@@ -116,21 +106,21 @@ namespace MDRDesk
 				sb.AppendLine();
 				col = -1;
 			}
-			if (col > 0) // did not cut off cleanly
-			{
-				string padding = new string('?', _wordLenght);
-				while (col <= _colCount)
-				{
+			if (col <= 0) return sb.ToString();
 
-					sb.Append(padding).Append("???? ");
-					++col;
-				}
-				sb.AppendLine();
+			// did not go to the end of the last line
+			//
+			string padding = new string('?', _wordLenght*2);
+			while (col <= _colCount)
+			{
+				sb.Append(padding).Append(" ");
+				++col;
 			}
+			sb.AppendLine();
 			return sb.ToString();
 		}
 
-		private string MemoryString(byte[] bytes, ulong addr)
+		private string MemoryString()
 		{
 			switch (_displayMode)
 			{
@@ -169,16 +159,17 @@ namespace MDRDesk
 				asb.Clear();
 				col = -1;
 			}
-			if (col > 0) // did not cut off cleanly
+			if (col <= 0) return sb.ToString();
+
+			// did not go to the end of the last line
+			//
+			while (col <= _colCount)
 			{
-				while (col <= _colCount)
-				{
-					sb.Append("?? ");
-					asb.Append(".");
-					++col;
-				}
-				sb.Append(" | ").AppendLine(asb.ToString());
+				sb.Append("?? ");
+				asb.Append(".");
+				++col;
 			}
+			sb.Append(" | ").AppendLine(asb.ToString());
 			return sb.ToString();
 		}
 
@@ -211,16 +202,17 @@ namespace MDRDesk
 				asb.Clear();
 				col = -1;
 			}
-			if (col > 0) // did not cut off cleanly
+			if (col <= 0) return sb.ToString();
+
+			// did not go to the end of the last line
+			//
+			while (col <= _colCount)
 			{
-				while (col <= _colCount)
-				{
-					sb.Append("???? ");
-					asb.Append(".");
-					++col;
-				}
-				sb.Append(" | ").AppendLine(asb.ToString());
+				sb.Append("???? ");
+				asb.Append(".");
+				++col;
 			}
+			sb.Append(" | ").AppendLine(asb.ToString());
 			return sb.ToString();
 		}
 
@@ -233,17 +225,31 @@ namespace MDRDesk
 
 		private void GotoNextButton_OnClick(object sender, RoutedEventArgs e)
 		{
+			string error;
+			var lastCurrentAddr = _currentAddr;
 			_currentAddr += (ulong) (_bytes.Length - _wordLenght*_colCount);
-			_heap.ReadMemory(_currentAddr, _bytes, 0, _byteBufSize);
-			HexViewContent.Text = MemoryString(_bytes, _currentAddr);
+			if (!ReadMemory(out error))
+			{
+				MessageBox.Show(error, "FAILED TO READ MEMORY", MessageBoxButton.OK, MessageBoxImage.Error);
+				return;
+			}
+			_currentAddr = lastCurrentAddr;
+			HexViewContent.Text = MemoryString();
 			DisplayAddressRange();
 		}
 
 		private void GotoPreviousButton_OnClick(object sender, RoutedEventArgs e)
 		{
+			string error;
+			var lastCurrentAddr = _currentAddr;
 			_currentAddr -= (ulong) (_bytes.Length - _wordLenght*_colCount);
-			_heap.ReadMemory(_currentAddr, _bytes, 0, _byteBufSize);
-			HexViewContent.Text = MemoryString(_bytes, _currentAddr);
+			if (!ReadMemory(out error))
+			{
+				MessageBox.Show(error, "FAILED TO READ MEMORY", MessageBoxButton.OK, MessageBoxImage.Error);
+				return;
+			}
+			_currentAddr = lastCurrentAddr;
+			HexViewContent.Text = MemoryString();
 			DisplayAddressRange();
 		}
 
@@ -263,7 +269,7 @@ namespace MDRDesk
 
 		private void RefreshButton_OnClick(object sender, RoutedEventArgs e)
 		{
-			HexViewContent.Text = MemoryString(_bytes, _currentAddr);
+			HexViewContent.Text = MemoryString();
 			DisplayAddressRange();
 		}
 
@@ -285,33 +291,27 @@ namespace MDRDesk
 		{
 			RadioButton button = sender as RadioButton;
 			Debug.Assert(button != null);
-			if (button.IsChecked.Value)
-			{
-				_displayMode = DisplayMode.JustNumbers;
-				HexViewContent.Text = MemoryString(_bytes, _currentAddr);
-			}
+			if (button.IsChecked == null || !button.IsChecked.Value) return;
+			_displayMode = DisplayMode.JustNumbers;
+			HexViewContent.Text = MemoryString();
 		}
 
 		private void DisplayModeAscii_OnChecked(object sender, RoutedEventArgs e)
 		{
 			RadioButton button = sender as RadioButton;
 			Debug.Assert(button != null);
-			if (button.IsChecked.Value)
-			{
-				_displayMode = DisplayMode.Ascii;
-				HexViewContent.Text = MemoryString(_bytes, _currentAddr);
-			}
+			if (button.IsChecked == null || !button.IsChecked.Value) return;
+			_displayMode = DisplayMode.Ascii;
+			HexViewContent.Text = MemoryString();
 		}
 
 		private void DisplayModeUnicode_OnChecked(object sender, RoutedEventArgs e)
 		{
 			RadioButton button = sender as RadioButton;
 			Debug.Assert(button != null);
-			if (button.IsChecked.Value)
-			{
-				_displayMode = DisplayMode.Unicode;
-				HexViewContent.Text = MemoryString(_bytes, _currentAddr);
-			}
+			if (button.IsChecked == null || !button.IsChecked.Value) return;
+			_displayMode = DisplayMode.Unicode;
+			HexViewContent.Text = MemoryString();
 		}
 
 		private void DisplayAddressRange()
@@ -348,7 +348,7 @@ namespace MDRDesk
 				}
 				DisplayBufferSize();
 				DisplayAddressRange();
-				HexViewContent.Text = MemoryString(_bytes, _currentAddr);
+				HexViewContent.Text = MemoryString();
 			}
 		}
 
@@ -370,6 +370,7 @@ namespace MDRDesk
 			}
 
 			ulong newAddr;
+			ulong lastCurrentAddr = _currentAddr;
 			if (ulong.TryParse(txt, NumberStyles.HexNumber, CultureInfo.InvariantCulture, out newAddr))
 			{
 				if (newAddr > 0UL)
@@ -381,11 +382,13 @@ namespace MDRDesk
 			string error;
 			if (!ReadMemory(out error))
 			{
+				_currentAddr = lastCurrentAddr;
+				DisplayAddressRange();
 				MessageBox.Show(error, "FAILED TO READ MEMORY", MessageBoxButton.OK, MessageBoxImage.Error);
 				return;
 			}
 			DisplayAddressRange();
-			HexViewContent.Text = MemoryString(_bytes, _currentAddr);
+			HexViewContent.Text = MemoryString();
 		}
 
 		private bool ReadMemory(out string error)

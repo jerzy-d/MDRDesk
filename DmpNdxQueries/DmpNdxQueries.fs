@@ -168,7 +168,7 @@ module FQry =
                 ndx <- ndx + 1
             (null,result)
          with
-            | exn -> (exn.ToString(),null)
+            | exn -> (Utils.GetExceptionErrorString(exn),null)
 
     let getTypeWithMethodTables (heap: ClrHeap) =
         let dct = new SortedDictionary<KeyValuePair<string,address>,int>(kvStringAddressComparer)

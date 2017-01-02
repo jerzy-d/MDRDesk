@@ -2031,6 +2031,7 @@ namespace MDRDesk
 				return;
 			}
 
+			Debug.Assert(result.Item2 != null);
 			InstanceValue instVal = result.Item2;
 
 			if (!instVal.HaveInnerValues())
@@ -2049,6 +2050,10 @@ namespace MDRDesk
 					return;
 				}
 			}
+
+			var awnd = new ClassStructDisplay(Utils.GetNewID(), _wndDct, result.Item3, instVal) { Owner = this };
+			awnd.Show();
+
 		}
 
 		#endregion instance value
@@ -2109,7 +2114,7 @@ namespace MDRDesk
 			stackPanel.Children.Add(textBlk);
 			tvRoot = new TreeViewItem
 			{
-				Header = GetInstanceValueStackPanel(instVal),
+				Header = GuiUtils.GetInstanceValueStackPanel(instVal),
 				Tag = instVal
 			};
 
@@ -2126,7 +2131,7 @@ namespace MDRDesk
 					var descNode = descendants[i];
 					var tvNode = new TreeViewItem
 					{
-						Header = GetInstanceValueStackPanel(descNode),
+						Header = GuiUtils.GetInstanceValueStackPanel(descNode),
 						Tag = descNode
 					};
 					tvParentNode.Items.Add(tvNode);
@@ -2668,51 +2673,10 @@ namespace MDRDesk
 			}
 
 			stackPanel.Children.Add(image);
-			stackPanel.Children.Add(GetClrtDisplayableTypeTextBlock(dispType));
+			stackPanel.Children.Add(GuiUtils.GetClrtDisplayableTypeTextBlock(dispType));
 			return stackPanel;
 		}
 
-		private TextBlock GetClrtDisplayableTypeTextBlock(ClrtDisplayableType val)
-		{
-			var txtBlk = new TextBlock();
-			txtBlk.Inlines.Add("   ");
-			var selection = val.SelectionStr();
-			if (!string.IsNullOrEmpty(selection))
-				txtBlk.Inlines.Add(new Bold(new Run(selection + "  ")) { Foreground = Brushes.DarkGreen });
-			if (!string.IsNullOrEmpty(val.FieldName))
-				txtBlk.Inlines.Add(new Italic(new Run(val.FieldName + "  ") { Foreground = Brushes.DarkRed }));
-			txtBlk.Inlines.Add(new Run("  " + val.TypeName));
-			return txtBlk;
-			//        return string.IsNullOrEmpty(_fieldName)
-			//? TypeHeader() + _typeName
-			//: SelectionStr() + _fieldName + FilterStr(_valueFilter) + TypeHeader() + _typeName;
-
-		}
-
-		private StackPanel GetInstanceValueStackPanel(InstanceValue val)
-		{
-			var stackPanel = new StackPanel() { Orientation = Orientation.Horizontal };
-			stackPanel.Children.Add(GetInstanceValueTextBlock(val));
-			return stackPanel;
-		}
-
-		private TextBlock GetInstanceValueTextBlock(InstanceValue val)
-		{
-			var txtBlk = new TextBlock();
-			if (!string.IsNullOrWhiteSpace(val.FieldName))
-				txtBlk.Inlines.Add(new Italic(new Run(val.FieldName + "   ") { Foreground = Brushes.DarkRed }));
-			txtBlk.Inlines.Add(new Bold(new Run(InstanceValueValueString(val))));
-			txtBlk.Inlines.Add(new Run("   " + val.TypeName));
-			return txtBlk;
-		}
-
-		private string InstanceValueValueString(InstanceValue val)
-		{
-			var value = val.Value.Content;
-			return ((value.Length > 0 && value[0] == Constants.NonValueChar)
-						? (Constants.FancyKleeneStar.ToString() + Utils.RealAddressString(val.Address))
-						: val.Value.ToString());
-		}
 
 		#endregion Utils
 

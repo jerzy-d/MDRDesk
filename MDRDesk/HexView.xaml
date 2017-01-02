@@ -29,7 +29,7 @@
             </TextBox>
             <Button x:Name="ChangeAddress" Grid.Column="2" Width="20" Height="20" Margin="4,0,4,0" HorizontalAlignment="Center" VerticalAlignment="Center" BorderThickness="0" Click="ChangeAddress_OnClick"
                          Background="AliceBlue">
-                <Button.ToolTip>Change buffer size.</Button.ToolTip>
+                <Button.ToolTip>Change starting address. Replace first address in the range. Use hex digits.</Button.ToolTip>
                 <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
                     <Image Source=".\Images\UpdatePanel_16x.png" Width="16" Height="16" Margin="0,0,0,0" VerticalAlignment="Center" HorizontalAlignment="Center"/>
                 </StackPanel>
@@ -82,14 +82,14 @@
             <Label x:Name="ColumnCountLabel" Margin="4,0,4,0" VerticalAlignment="Center">col count</Label>
             <Button x:Name="IncColCountButton" Width="20" Height="20" Margin="4,0,4,0" HorizontalAlignment="Center" VerticalAlignment="Center" BorderThickness="0" Click="IncColCountButton_OnClick"
                          Background="AliceBlue">
-                <Button.ToolTip>Increase word length.</Button.ToolTip>
+                <Button.ToolTip>Increase column count.</Button.ToolTip>
                 <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
                     <Image Source=".\Images\Add_grey_16x.png" Width="16" Height="16" Margin="0,0,0,0" VerticalAlignment="Center" HorizontalAlignment="Center"/>
                 </StackPanel>
             </Button>
             <Button  x:Name="DecColCountButton" Width="20" Height="20" Margin="4,0,4,0" HorizontalAlignment="Center" VerticalAlignment="Center" BorderThickness="0" Click="DecColCountButton_OnClick"
                          Background="AliceBlue">
-                <Button.ToolTip>Decrease word length.</Button.ToolTip>
+                <Button.ToolTip>Decrease column count.</Button.ToolTip>
                 <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
                     <Image Source=".\Images\Subtract_16x.png" Width="16" Height="16" Margin="0,0,4,0" VerticalAlignment="Center" HorizontalAlignment="Center"/>
                 </StackPanel>
@@ -99,7 +99,7 @@
             <RadioButton x:Name ="DisplayModeUnicode" VerticalAlignment="Center" GroupName="DisplayMode" Checked="DisplayModeUnicode_OnChecked"  Margin="4,0,4,0" ToolTip="Display memory content as Unicode characters.">Unicode</RadioButton>
 
             <Button  x:Name="RefreshButton" Width="20" Height="20" Margin="4,0,4,0" HorizontalAlignment="Right" VerticalAlignment="Center" BorderThickness="0" Click="RefreshButton_OnClick"
-                         Background="AliceBlue">
+                         Background="LightGray">
                 <Button.ToolTip>Refresh display.</Button.ToolTip>
                 <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
                     <Image Source=".\Images\Refresh_16x.png" Width="16" Height="16" Margin="0,0,0,0" VerticalAlignment="Center" HorizontalAlignment="Center"/>

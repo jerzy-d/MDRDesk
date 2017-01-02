@@ -103,6 +103,28 @@ module Types =
 //        | _ ->
 //            Constants.NullValue
 
+    let knownType (clrType:ClrType) (kind:TypeKind) =
+        match mainKind kind with
+        | TypeKind.StringKind ->
+            true
+        | TypeKind.StructKind ->
+            match specificKind kind with
+            | TypeKind.Decimal | TypeKind.DateTime | TypeKind.TimeSpan | TypeKind.Guid ->
+                true
+            | _ ->
+                false
+        | TypeKind.ReferenceKind ->
+            match specificKind kind with
+            | TypeKind.Exception ->
+                true
+            | _ ->
+                ValueExtractor.IsKnownType(clrType.Name)
+        | TypeKind.PrimitiveKind | TypeKind.EnumKind ->
+            true
+        | _ ->
+            false
+
+
     let getFieldValue (heap:ClrHeap) (addr:address) (intr:bool) (fld:ClrInstanceField) (kind:TypeKind) : string =
         match mainKind kind with
         | TypeKind.ValueKind ->
@@ -155,7 +177,7 @@ module Types =
         | TypeKind.ReferenceKind ->
             match specificKind kind with
             | TypeKind.Exception ->
-                ValueExtractor.GetExceptionValue(addr, clrType, heap)
+                ValueExtractor.GetShortExceptionValue(addr, clrType, heap)
             | _ ->
                 Utils.RealAddressString(addr)
         | TypeKind.ArrayKind ->
@@ -208,6 +230,8 @@ module Types =
                 getStructgFields heap addr (new ClrTypeSidekick(clrType,kind,null))
         | _ ->
             EmptyClrTypeSidekick.Value
+
+
 
     /// We get get this one, in good heaps. Why?
     let isErrorType (clrType: ClrType) =
@@ -427,3 +451,29 @@ module Types =
         build t
         sb.ToString()
 
+    let getClassStructValue (ndxProxy:IndexProxy) (heap:ClrHeap) (decoratedAddr:address) (clrType:ClrType) (kind:TypeKind) (fldNdx:int) : string * InstanceValue =
+        try
+            let addr = Utils.RealAddress(decoratedAddr)
+            let fldCount = fieldCount clrType
+            let internalAddresses = hasInternalAddresses clrType
+            let mutable instVal = InstanceValue(ndxProxy.GetTypeId(clrType.Name), addr, clrType.Name, String.Empty, Utils.RealAddressString(addr));
+
+            if fldCount = 0 then
+                (clrType.Name + " is not struct/class with fields.",null)
+            else
+                for fldNdx = 0 to fldCount-1 do
+                    let fld = clrType.Fields.[fldNdx]
+                    let fldTypeName = if fld.Type = null then Constants.UnknownTypeName else fld.Type.Name
+                    let fldKind = typeKind fld.Type
+                    let fldVal = getFieldValue heap addr internalAddresses fld fldKind
+                    let typeId = ndxProxy.GetTypeId(fldTypeName)
+                    let mainKind = TypeKinds.GetMainTypeKind(fldKind)
+                    match mainKind with
+                    | TypeKind.ReferenceKind ->
+                        let fldAddr = getReferenceFieldAddress addr fld internalAddresses
+                        instVal.Addvalue(new InstanceValue(typeId, fldAddr, fldTypeName, fld.Name, fldVal))
+                    | _ ->
+                        instVal.Addvalue(new InstanceValue(typeId, Constants.InvalidAddress, fldTypeName, fld.Name, fldVal, fldNdx))
+                (null,instVal)
+        with
+            | exn -> (Utils.GetExceptionErrorString(exn),null)

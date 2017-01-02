@@ -11,6 +11,24 @@ namespace ClrMDRIndex
 	{
 		public static bool Is64Bit = Environment.Is64BitOperatingSystem;
 
+		private static readonly string[] KnownTypes = new string[]
+		{
+			"System.Collections.Generic.Dictionary<",
+			"System.Collections.Generic.HashSet<",
+			"System.Collections.Generic.SortedDictionary<",
+			"System.Text.StringBuilder",
+		};
+
+		public static bool IsKnownType(string typeName)
+		{
+			for (int i = 0, icnt = KnownTypes.Length; i < icnt; ++i)
+			{
+				if (typeName.StartsWith(KnownTypes[i], StringComparison.Ordinal))
+					return true;
+			}
+			return false;
+		}
+
 		//
 		// System.Decimal
 		//

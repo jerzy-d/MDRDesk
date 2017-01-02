@@ -127,6 +127,31 @@ namespace ClrMDRIndex
 			return (kind & TypeKind.ValueTypeKindMask);
 		}
 
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		public static bool IsClassStruct(TypeKind kind)
+		{
+			var subKind = GetMainTypeKind(kind);
+			switch (subKind)
+			{
+				case TypeKind.InterfaceKind:
+				case TypeKind.ReferenceKind:
+					return true;
+				case TypeKind.StructKind:
+					var specificKind = GetParticularTypeKind(kind);
+					switch (specificKind)
+					{
+						case TypeKind.Decimal:
+						case TypeKind.DateTime:
+						case TypeKind.TimeSpan:
+						case TypeKind.Guid:
+							return false;
+						default:
+							return true;
+					}
+				default:
+					return false;
+			}
+		}
 
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		public static bool IsArray(TypeKind kind)

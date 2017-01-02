@@ -11,6 +11,8 @@ module CollectionContent =
     open Microsoft.Diagnostics.Runtime
     open ClrMDRIndex
 
+
+
     (*
         Arrays.
     *)
@@ -129,7 +131,7 @@ module CollectionContent =
                     | _ ->
                         (null,clrType,aryElemType,count,null)
         with
-            | exn -> (exn.ToString(),null,null,0,null)
+            | exn -> (Utils.GetExceptionErrorString(exn),null,null,0,null)
 
     let getIntAry (heap:ClrHeap) (addr:address) (clrType:ClrType) : string * int array =
         try
@@ -139,7 +141,7 @@ module CollectionContent =
                 ary.[i] <- unbox<int32>(clrType.GetArrayElementValue(addr,i))
             (null,ary)
         with
-            | exn -> (exn.ToString(),null)
+            | exn -> (Utils.GetExceptionErrorString(exn),null)
 
     (*
         System.Text.StringBuilder TODO JRD add chunk count
@@ -224,7 +226,7 @@ module CollectionContent =
                 index <- index + 1
             (null, fldDescription, count, dctType, Entry_keyType, Entry_valueType, entryList.ToArray())
         with
-            | exn -> (exn.ToString(),null,0,null,null,null,null)
+            | exn -> (Utils.GetExceptionErrorString(exn),null,0,null,null,null,null)
 
 
     let getDictionaryCount (heap:ClrHeap) (addr:address) =
@@ -269,7 +271,7 @@ module CollectionContent =
                 let rootType = heap.GetObjectType(rootFldAddr)
                 (null,description,count,rootType,rootFldAddr)
         with
-            | exn -> (exn.ToString(),null,0,null,0UL)
+            | exn -> (Utils.GetExceptionErrorString(exn),null,0,null,0UL)
 
     let getSortedDictionaryItemTypes (heap:ClrHeap) (nodeAddr:address) (itemFld:ClrInstanceField) =
         let keyFld = itemFld.Type.GetFieldByName("key")
@@ -506,7 +508,7 @@ module CollectionContent =
                 else
                     (null,Utils.EmptyArray<string>.Value,description)
         with
-            | exn -> (exn.ToString(),null,null)
+            | exn -> (Utils.GetExceptionErrorString(exn),null,null)
 
 
 //    let getArrayContent (heap:ClrHeap) (addr:uint64) : string * string * int32 * string array =

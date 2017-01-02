@@ -3,9 +3,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Text;
 using System.IO;
-using System.Linq;
 using Microsoft.Diagnostics.Runtime;
-using Microsoft.SqlServer.Server;
 
 namespace ClrMDRIndex
 {
@@ -125,7 +123,7 @@ namespace ClrMDRIndex
 					StringBuilder sb = new StringBuilder(256);
 					for (int i = 0, icnt = _clrInfos.Length; i < icnt; ++i)
 					{
-						sb.AppendLine(_clrInfos[i].ToString() + ": dac " + _requiredDacs[i] + " -> " + (_dacPaths[i] ?? "not found"));
+						sb.AppendLine(_clrInfos[i] + ": dac " + _requiredDacs[i] + " -> " + (_dacPaths[i] ?? "not found"));
 						_clrInfos[i] = null;
 					}
 					error = Utils.GetErrorString("Index Creation Failed", "Creating runtimes failed.", _dumpPath, sb.ToString());
@@ -144,10 +142,9 @@ namespace ClrMDRIndex
 			}
 		}
 
-		public void WarmupHeap()
+		public int WarmupHeap()
 		{
 			var heap = Heap;
-			int ndx = 0;
 			List<ClrType> lst = new List<ClrType>(1000000);
 			for (int i = 0, icnt = heap.Segments.Count; i < icnt; ++i)
 			{
@@ -160,11 +157,11 @@ namespace ClrMDRIndex
 					addr = seg.NextObject(addr);
 				}
 			}
+			return lst.Count;
 		}
 
 		public ClrtDump Clone(out string error)
 		{
-			error = null;
 			var dmp = new ClrtDump(_dumpPath);
 			if (dmp.Init(out error)) return dmp;
 			return null;
@@ -172,7 +169,6 @@ namespace ClrMDRIndex
 
 		public static ClrtDump OpenDump(string dmpPath, out string error)
 		{
-			error = null;
 			try
 			{
 				var dmp = new ClrtDump(dmpPath);
@@ -189,19 +185,20 @@ namespace ClrMDRIndex
 			}
 		}
 
-		public static string GetRequiredDac(string dump, out string error)
+		public static string[] GetRequiredDac(string dump, out string error)
 		{
 			error = null;
 			try
 			{
+				List<string> lst = new List<string>(4);
 				using (var dataTarget = DataTarget.LoadCrashDump(dump))
 				{
-					ClrInfo latest = null;
 					foreach (var version in dataTarget.ClrVersions)
 					{
-						latest = version;
+						if (version.DacInfo != null && !string.IsNullOrWhiteSpace(version.DacInfo.FileName))
+							lst.Add(version.DacInfo.FileName);
 					}
-					return latest.DacInfo.FileName;
+					return lst.ToArray();
 				}
 			}
 			catch (Exception ex)
@@ -394,6 +391,14 @@ namespace ClrMDRIndex
 		//	}
 		//}
 
+		/// <summary>
+		/// ???
+		/// </summary>
+		/// <param name="heap"></param>
+		/// <param name="instQue"></param>
+		/// <param name="nodeId"></param>
+		/// <param name="done"></param>
+		/// <returns></returns>
 		private static ulong GetRootTypeSizeHierarchy(ClrHeap heap, Queue<KeyValuePair<ulong, InstanceSizeNode>> instQue,
 			int nodeId, HashSet<ulong> done)
 		{
@@ -1531,7 +1536,7 @@ namespace ClrMDRIndex
 
 		#region Dispose
 
-		volatile bool _disposed = false;
+		volatile bool _disposed;
 
 		public void Dispose()
 		{
