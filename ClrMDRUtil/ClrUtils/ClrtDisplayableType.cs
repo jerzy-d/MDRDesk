@@ -1,14 +1,11 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using Microsoft.Diagnostics.Runtime;
 
 namespace ClrMDRIndex
 {
 	public class ClrtDisplayableType
 	{
+		private ClrtDisplayableType _parent;
 		private readonly int _typeId;
 		private readonly int _fieldIndex;
 		private readonly string _typeName;
@@ -20,6 +17,8 @@ namespace ClrMDRIndex
 		public int FieldIndex => _fieldIndex;
 		public string TypeName => _typeName;
 		public string FieldName => _fieldName;
+		public FilterValue Filter => _valueFilter;
+		public ClrtDisplayableType Parent => _parent;
 
 		private TypeKind _kind;
         public TypeKind Kind => _kind;
@@ -27,8 +26,9 @@ namespace ClrMDRIndex
         private ClrtDisplayableType[] _fields;
 		public ClrtDisplayableType[] Fields => _fields;
 
-		public ClrtDisplayableType(int typeId, int fieldIndex, string typeName, string fieldName, TypeKind kind)
+		public ClrtDisplayableType(ClrtDisplayableType parent, int typeId, int fieldIndex, string typeName, string fieldName, TypeKind kind)
 		{
+			_parent = parent;
 			_typeId = typeId;
 			_fieldIndex = fieldIndex;
 			_typeName = typeName;
@@ -37,6 +37,17 @@ namespace ClrMDRIndex
 			_fields = Utils.EmptyArray<ClrtDisplayableType>.Value;
 			_valueFilter = null;
 			_getValue = false;
+		}
+
+		public string GetDescription()
+		{
+			return _typeName + Environment.NewLine
+			       + (HasFields() ? "Field Count: " + _fields.Length : string.Empty);
+		}
+
+		public bool HasFields()
+		{
+			return _fields != null && _fields.Length > 0;
 		}
 
 		public void AddFields(ClrtDisplayableType[] fields)

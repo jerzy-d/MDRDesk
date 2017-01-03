@@ -1685,6 +1685,12 @@ namespace MDRDesk
 
 		#region type values report
 
+		private void DoDisplayTypeValueReportSetup(ClrtDisplayableType dispType)
+		{
+			var dlg = new TypeValuesReportSetup(dispType) {Owner = this};
+			dlg.ShowDialog();
+		}
+
 		private void DisplayTypeValueSetupGrid(ClrtDisplayableType dispType)
 		{
 			var mainGrid = this.TryFindResource("TypeValueReportSetupGrid") as Grid;
@@ -1706,25 +1712,25 @@ namespace MDRDesk
 			MainTab.UpdateLayout();
 		}
 
-		private TreeViewItem GetTypeValueSetupTreeViewItem(ClrtDisplayableType dispType)
-		{
-			var txtBlk = GetClrtDisplayableTypeStackPanel(dispType);
-			var node = new TreeViewItem
-			{
-				Header = txtBlk,
-				Tag = dispType,
-			};
-			txtBlk.Tag = node;
-			return node;
-		}
+		//private TreeViewItem GetTypeValueSetupTreeViewItem(ClrtDisplayableType dispType)
+		//{
+		//	var txtBlk = GetClrtDisplayableTypeStackPanel(dispType);
+		//	var node = new TreeViewItem
+		//	{
+		//		Header = txtBlk,
+		//		Tag = dispType,
+		//	};
+		//	txtBlk.Tag = node;
+		//	return node;
+		//}
 
-		private void UpdateTypeValueSetupTreeViewItem(TreeViewItem node, ClrtDisplayableType dispType)
-		{
-			var txtBlk = GetClrtDisplayableTypeStackPanel(dispType);
-			node.Header = txtBlk;
-			node.Tag = dispType;
-			txtBlk.Tag = node;
-		}
+		//private void UpdateTypeValueSetupTreeViewItem(TreeViewItem node, ClrtDisplayableType dispType)
+		//{
+		//	var txtBlk = GetClrtDisplayableTypeStackPanel(dispType);
+		//	node.Header = txtBlk;
+		//	node.Tag = dispType;
+		//	txtBlk.Tag = node;
+		//}
 
 		private TreeView UpdateTypeValueSetupGrid(ClrtDisplayableType dispType, Grid mainGrid, TreeViewItem root)
 		{
@@ -1732,13 +1738,13 @@ namespace MDRDesk
 			if (root == null)
 			{
 				realRoot = true;
-				root = GetTypeValueSetupTreeViewItem(dispType);
+				root = GuiUtils.GetTypeValueSetupTreeViewItem(dispType);
 			}
 			var fields = dispType.Fields;
 			for (int i = 0, icnt = fields.Length; i < icnt; ++i)
 			{
 				var fld = fields[i];
-				var node = GetTypeValueSetupTreeViewItem(fld);
+				var node = GuiUtils.GetTypeValueSetupTreeViewItem(fld);
 				root.Items.Add(node);
 			}
 
@@ -1806,7 +1812,7 @@ namespace MDRDesk
 			for (int i = 0, icnt = fields.Length; i < icnt; ++i)
 			{
 				var fld = fields[i];
-				var node = GetTypeValueSetupTreeViewItem(fld);
+				var node = GuiUtils.GetTypeValueSetupTreeViewItem(fld);
 				selItem.Items.Add(node);
 			}
 			selItem.ExpandSubtree();
@@ -1933,7 +1939,7 @@ namespace MDRDesk
 				var dispType = curSelectionInfo.CurrentTreeViewItem.Tag as ClrtDisplayableType;
 				Debug.Assert(dispType != null);
 				dispType.ToggleGetValue();
-				UpdateTypeValueSetupTreeViewItem(curSelectionInfo.CurrentTreeViewItem, dispType);
+				GuiUtils.UpdateTypeValueSetupTreeViewItem(curSelectionInfo.CurrentTreeViewItem, dispType);
 			}
 		}
 
@@ -2627,55 +2633,55 @@ namespace MDRDesk
 		//	catch { }
 		//}
 
-		private StackPanel GetClrtDisplayableTypeStackPanel(ClrtDisplayableType dispType)
-		{
-			var stackPanel = new StackPanel() { Orientation = Orientation.Horizontal };
-			var kind = dispType.Kind;
-			SWC.Image image = new SWC.Image();
+		//private StackPanel GetClrtDisplayableTypeStackPanel(ClrtDisplayableType dispType)
+		//{
+		//	var stackPanel = new StackPanel() { Orientation = Orientation.Horizontal };
+		//	var kind = dispType.Kind;
+		//	SWC.Image image = new SWC.Image();
 
-			switch (TypeKinds.GetMainTypeKind(kind))
-			{
-				case TypeKind.StringKind:
-					image.Source = ((SWC.Image)Application.Current.FindResource("PrimitivePng")).Source;
-					break;
-				case TypeKind.InterfaceKind:
-					image.Source = ((SWC.Image)Application.Current.FindResource("InterfacePng")).Source;
-					break;
-				case TypeKind.ArrayKind:
-					image.Source = ((SWC.Image)Application.Current.FindResource("ArrayPng")).Source;
-					break;
-				case TypeKind.StructKind:
-					switch (TypeKinds.GetParticularTypeKind(kind))
-					{
-						case TypeKind.DateTime:
-						case TypeKind.Decimal:
-						case TypeKind.Guid:
-						case TypeKind.TimeSpan:
-							image.Source = ((SWC.Image)Application.Current.FindResource("PrimitivePng")).Source;
-							break;
-						default:
-							image.Source = ((SWC.Image)Application.Current.FindResource("StructPng")).Source;
-							break;
-					}
-					break;
-				case TypeKind.ReferenceKind:
-					image.Source = ((SWC.Image)Application.Current.FindResource("ClassPng")).Source;
-					break;
-				case TypeKind.EnumKind:
-					image.Source = ((SWC.Image)Application.Current.FindResource("EnumPng")).Source;
-					break;
-				case TypeKind.PrimitiveKind:
-					image.Source = ((SWC.Image)Application.Current.FindResource("PrimitivePng")).Source;
-					break;
-				default:
-					image.Source = ((SWC.Image)Application.Current.FindResource("QuestionPng")).Source;
-					break;
-			}
+		//	switch (TypeKinds.GetMainTypeKind(kind))
+		//	{
+		//		case TypeKind.StringKind:
+		//			image.Source = ((SWC.Image)Application.Current.FindResource("PrimitivePng")).Source;
+		//			break;
+		//		case TypeKind.InterfaceKind:
+		//			image.Source = ((SWC.Image)Application.Current.FindResource("InterfacePng")).Source;
+		//			break;
+		//		case TypeKind.ArrayKind:
+		//			image.Source = ((SWC.Image)Application.Current.FindResource("ArrayPng")).Source;
+		//			break;
+		//		case TypeKind.StructKind:
+		//			switch (TypeKinds.GetParticularTypeKind(kind))
+		//			{
+		//				case TypeKind.DateTime:
+		//				case TypeKind.Decimal:
+		//				case TypeKind.Guid:
+		//				case TypeKind.TimeSpan:
+		//					image.Source = ((SWC.Image)Application.Current.FindResource("PrimitivePng")).Source;
+		//					break;
+		//				default:
+		//					image.Source = ((SWC.Image)Application.Current.FindResource("StructPng")).Source;
+		//					break;
+		//			}
+		//			break;
+		//		case TypeKind.ReferenceKind:
+		//			image.Source = ((SWC.Image)Application.Current.FindResource("ClassPng")).Source;
+		//			break;
+		//		case TypeKind.EnumKind:
+		//			image.Source = ((SWC.Image)Application.Current.FindResource("EnumPng")).Source;
+		//			break;
+		//		case TypeKind.PrimitiveKind:
+		//			image.Source = ((SWC.Image)Application.Current.FindResource("PrimitivePng")).Source;
+		//			break;
+		//		default:
+		//			image.Source = ((SWC.Image)Application.Current.FindResource("QuestionPng")).Source;
+		//			break;
+		//	}
 
-			stackPanel.Children.Add(image);
-			stackPanel.Children.Add(GuiUtils.GetClrtDisplayableTypeTextBlock(dispType));
-			return stackPanel;
-		}
+		//	stackPanel.Children.Add(image);
+		//	stackPanel.Children.Add(GuiUtils.GetClrtDisplayableTypeTextBlock(dispType));
+		//	return stackPanel;
+		//}
 
 
 		#endregion Utils

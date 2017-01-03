@@ -1,9 +1,5 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.IO;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Documents;
@@ -48,7 +44,7 @@ namespace MDRDesk
 				dlg.Multiselect = false;
 				if (initialDir != null)
 				{
-					string path = System.IO.Path.GetFullPath(initialDir);
+					string path = Path.GetFullPath(initialDir);
 					if (Directory.Exists(path))
 					{
 						dlg.InitialDirectory = path;
@@ -72,7 +68,7 @@ namespace MDRDesk
 				dlg.Multiselect = true;
 				if (initialDir != null)
 				{
-					string path = System.IO.Path.GetFullPath(initialDir);
+					string path = Path.GetFullPath(initialDir);
 					if (Directory.Exists(path))
 					{
 						dlg.InitialDirectory = path;
@@ -136,6 +132,84 @@ namespace MDRDesk
 			txtBlk.Inlines.Add(new Run("   " + val.TypeName));
 			return txtBlk;
 		}
+
+		#region displayable type
+
+
+		public static TreeViewItem GetTypeValueSetupTreeViewItem(ClrtDisplayableType dispType)
+		{
+			var txtBlk = GetClrtDisplayableTypeStackPanel(dispType);
+			var node = new TreeViewItem
+			{
+				Header = txtBlk,
+				Tag = dispType,
+			};
+			txtBlk.Tag = node;
+			return node;
+		}
+
+		public static void UpdateTypeValueSetupTreeViewItem(TreeViewItem node, ClrtDisplayableType dispType)
+		{
+			var txtBlk = GetClrtDisplayableTypeStackPanel(dispType);
+			node.Header = txtBlk;
+			node.Tag = dispType;
+			txtBlk.Tag = node;
+		}
+
+		public static StackPanel GetClrtDisplayableTypeStackPanel(ClrtDisplayableType dispType)
+		{
+			var stackPanel = new StackPanel() { Orientation = Orientation.Horizontal };
+			var kind = dispType.Kind;
+			Image image = new Image();
+
+			switch (TypeKinds.GetMainTypeKind(kind))
+			{
+				case TypeKind.StringKind:
+					image.Source = ((Image)Application.Current.FindResource("PrimitivePng")).Source;
+					break;
+				case TypeKind.InterfaceKind:
+					image.Source = ((Image)Application.Current.FindResource("InterfacePng")).Source;
+					break;
+				case TypeKind.ArrayKind:
+					image.Source = ((Image)Application.Current.FindResource("ArrayPng")).Source;
+					break;
+				case TypeKind.StructKind:
+					switch (TypeKinds.GetParticularTypeKind(kind))
+					{
+						case TypeKind.DateTime:
+						case TypeKind.Decimal:
+						case TypeKind.Guid:
+						case TypeKind.TimeSpan:
+							image.Source = ((Image)Application.Current.FindResource("PrimitivePng")).Source;
+							break;
+						default:
+							image.Source = ((Image)Application.Current.FindResource("StructPng")).Source;
+							break;
+					}
+					break;
+				case TypeKind.ReferenceKind:
+					image.Source = ((Image)Application.Current.FindResource("ClassPng")).Source;
+					break;
+				case TypeKind.EnumKind:
+					image.Source = ((Image)Application.Current.FindResource("EnumPng")).Source;
+					break;
+				case TypeKind.PrimitiveKind:
+					image.Source = ((Image)Application.Current.FindResource("PrimitivePng")).Source;
+					break;
+				default:
+					image.Source = ((Image)Application.Current.FindResource("QuestionPng")).Source;
+					break;
+			}
+
+			stackPanel.Children.Add(image);
+			stackPanel.Children.Add(GetClrtDisplayableTypeTextBlock(dispType));
+			return stackPanel;
+		}
+
+
+		#endregion
+
+
 
 		public static string InstanceValueValueString(InstanceValue val)
 		{

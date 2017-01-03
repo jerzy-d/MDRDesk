@@ -1440,7 +1440,7 @@ namespace ClrMDRIndex
 					return null;
 				}
 
-				var result = DmpNdxQueries.FQry.getDisplayableFieldType(_indexProxy, Dump.Heap, instances[0], dispTypeField.FieldIndex);
+				var result = DmpNdxQueries.FQry.getDisplayableFieldType(_indexProxy, Dump.Heap, dispType, instances[0], dispTypeField.FieldIndex);
 				if (result.Item1 != null)
 				{
 					error = Constants.InformationSymbolHeader + result.Item1;

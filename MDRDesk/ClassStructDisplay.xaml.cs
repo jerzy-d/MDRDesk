@@ -2,17 +2,10 @@
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Linq;
-using System.Text;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Data;
-using System.Windows.Documents;
 using System.Windows.Input;
-using System.Windows.Media;
-using System.Windows.Media.Imaging;
-using System.Windows.Shapes;
 using ClrMDRIndex;
 
 namespace MDRDesk
@@ -24,17 +17,15 @@ namespace MDRDesk
 	{
 		private int _id;
 		private ConcurrentDictionary<int, Window> _wndDct;
-		private InstanceValue _instanceValue;
-		private TreeViewItem _root;
 
 		public ClassStructDisplay(int id, ConcurrentDictionary<int, Window> wndDct, string description, InstanceValue instValue)
 		{
+			TreeViewItem root;
 			_id = id;
 			_wndDct = wndDct;
 			InitializeComponent();
-			_instanceValue = instValue;
 			ClassStructInfo.Text = description;
-			UpdateInstanceValue(_instanceValue, out _root);
+			UpdateInstanceValue(instValue, out root);
 			wndDct.TryAdd(id, this);
 		}
 

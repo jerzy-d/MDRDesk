@@ -3,7 +3,6 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-        xmlns:local="clr-namespace:MDRDesk"
         WindowStartupLocation="CenterOwner"
         mc:Ignorable="d"
         Title="Type Value Filter" Height="170" Width="400">
@@ -16,6 +15,7 @@
         <Label Name="LbTypeName" Grid.Row="0" FontSize="14">...</Label>
         <TextBox Name="TbTypeValue" Grid.Column="0" Grid.Row="1" MinWidth="250" Margin="23,0,27,0" FontSize="14"></TextBox>
         <WrapPanel Grid.Row="2" Grid.ColumnSpan="2" HorizontalAlignment="Right" Margin="0,15,10,0">
+            <Label Margin="0,0,10,0">To remove filter clear text box content.</Label>
             <Button IsDefault="True" x:Name="BtnDialogOk" Click="DialogOkClicked" MinWidth="60" Margin="0,0,10,0" Content="_Ok"/>
             <Button IsCancel="True" MinWidth="60" Content="_Cancel"/>
         </WrapPanel>

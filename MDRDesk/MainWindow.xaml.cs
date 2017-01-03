@@ -1685,14 +1685,18 @@ namespace MDRDesk
 				return new Tuple<string, ClrtDisplayableType>(null, dispType);
 			});
 
+			SetEndTaskMainWindowState("Getting type details for: '" + baseTypeName + "', done");
+
 			if (result.Item1 != null)
 			{
-				// TODO JRD
+				GuiUtils.ShowError(result.Item1,this);
 				return;
 			}
 
-			DisplayTypeValueSetupGrid(result.Item2);
-			SetEndTaskMainWindowState("Getting type details for: '" + baseTypeName + "', done");
+			//DisplayTypeValueSetupGrid(result.Item2);
+
+			Dispatcher.CurrentDispatcher.InvokeAsync(() => DoDisplayTypeValueReportSetup(result.Item2));
+
 		}
 
 

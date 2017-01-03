@@ -123,8 +123,10 @@ namespace ClrMDRIndex
 		public const string PrimitiveHeader = " \u2119\u279C "; // ℙ DOUBLE-STRUCK CAPITAL P
 		public const char ArrayChar = '\u213F'; // ℿ DOUBLE-STRUCK CAPITAL PI
 		public const string ArrayHeader = " \u213F\u279C "; // ℿ DOUBLE-STRUCK CAPITAL PI
-        public const char FilterChar = '\u2132'; // Ⅎ TURNED CAPITAL F
-        public const string FilterHeader = " \u2132\u279C "; // Ⅎ TURNED CAPITAL F
+		//public const char FilterChar = '\u2132'; // Ⅎ TURNED CAPITAL F
+		//public const string FilterHeader = " \u2132\u279C "; // Ⅎ TURNED CAPITAL F
+		public const char FilterChar = '\u2718'; // ✘ HEAVY BALLOT X
+		public const string FilterHeader = " \u2718 "; // ✘ HEAVY BALLOT X
 
 		public const char RightSolidArrow = '\u279E'; // ➞ HEAVY TRIANGLE-HEADED RIGHTWARDS ARROW
 		public const string RightSolidArrowPadded = " \u279E "; // ➞ HEAVY TRIANGLE-HEADED RIGHTWARDS ARROW
