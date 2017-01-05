@@ -2834,6 +2834,21 @@ namespace ClrMDRIndex
 			return Utils.BaseTypeName(GetTypeName(blk.TypeId));
 		}
 
+		public Tuple<ClrtThread[],string[]> GetThreads(out string error)
+		{
+			error = null;
+			try
+			{
+				var path = _fileMoniker.GetFilePath(_currentRuntimeIndex, Constants.TxtThreadFrameDescriptionFilePostfix);
+				var frameDescrs = Utils.GetStringListFromFile(path, out error);
+				return new Tuple<ClrtThread[], string[]>(_threads,frameDescrs);
+			}
+			catch (Exception ex)
+			{
+				error = Utils.GetExceptionErrorString(ex);
+				return null;
+			}
+		}
 
 		#endregion threads/blocking objects
 

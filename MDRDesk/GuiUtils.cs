@@ -219,6 +219,23 @@ namespace MDRDesk
 						: val.Value.ToString());
 		}
 
+		public static void ShowInformation(string caption, string header, string text, string details, Window wnd)
+		{
+			var dialog = new MdrMessageBox()
+			{
+				Owner = wnd,
+				Caption = string.IsNullOrWhiteSpace(caption) ? "Message" : caption,
+				InstructionHeading = string.IsNullOrWhiteSpace(header) ? "???" : header,
+				InstructionText = string.IsNullOrWhiteSpace(text) ? String.Empty : text,
+				DeatilsText = string.IsNullOrWhiteSpace(details) ? String.Empty : details
+			};
+			dialog.SetButtonsPredefined(EnumPredefinedButtons.Ok);
+			dialog.DetailsExpander.Visibility = string.IsNullOrEmpty(details) ? Visibility.Collapsed : Visibility.Visible;
+			dialog.ShowDialog();
+		}
+
+
+
 		public static void ShowError(string errStr, Window wnd)
 		{
 			string[] parts = errStr.Split(new[] { Constants.HeavyGreekCrossPadded }, StringSplitOptions.None);

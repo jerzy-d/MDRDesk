@@ -1196,6 +1196,16 @@ namespace ClrMDRIndex
 			}
 		}
 
+		public static bool StartsWith(StringBuilder sb, string s)
+		{
+			if (s.Length > sb.Length) return false;
+			for (int i = 0, icnt = s.Length; i < icnt; ++i)
+			{
+				if (sb[i] != s[i]) return false;
+			}
+			return true;
+		}
+
 		#endregion String Utils
 
 		#region Comparers
@@ -1804,6 +1814,21 @@ namespace ClrMDRIndex
             return "0 Bytes";
         }
 
+		public static string GetDigitsString(long val, int maxLen, char[] ary)
+		{
+			Debug.Assert(ary.Length==maxLen);
+
+			long div = 10;
+			for (int i = maxLen-1; i >= 0; --i)
+			{
+				long digit = val%div;
+				ary[i] = (char)('0' + digit);
+				val /= div;
+				div *= 10;
+			}
+			return new string(ary);
+		}
+
 		#endregion Formatting
 
 		#region Misc
@@ -2354,7 +2379,7 @@ namespace ClrMDRIndex
 		#endregion Misc
 	}
 
-	//internal class KeyValuePairComparer<KeyValuePair<T, U>> : IComparer<KeyValuePair<T, U>>
+	//internal class KeyValuePairComparer : Comparer<KeyValuePair<TKey, TValue>>
 	//{
 	//	internal IComparer<T> keyComparer;
 
@@ -2370,7 +2395,7 @@ namespace ClrMDRIndex
 	//		}
 	//	}
 
-	//	public override int Compare(KeyValuePair<TKey, TValue> x, KeyValuePair<TKey, TValue> y)
+	//	public override int Compare(KeyValuePair<T, U> x, KeyValuePair<T, U> y)
 	//	{
 	//		return keyComparer.Compare(x.Key, y.Key);
 	//	}

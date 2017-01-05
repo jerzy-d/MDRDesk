@@ -20,11 +20,17 @@
     <Window.Resources>
         <!--<Style x:Key="comboBoxStyle">
             <Style.Resources>
-                --><!-- Background of selected item when focussed --><!--
+                -->
+        <!-- Background of selected item when focussed -->
+        <!--
                 <SolidColorBrush x:Key="{x:Static SystemColors.HighlightBrushKey}" Color="LightGray" />
-                --><!-- Background of selected item when not focussed --><!--
+                -->
+        <!-- Background of selected item when not focussed -->
+        <!--
                 <SolidColorBrush x:Key="{x:Static SystemColors.ControlBrushKey}" Color="LightGray" />
-                --><!--SolidColorBrush x:Key="{x:Static SystemColors.ControlBrush}" Color="Gray"/--><!--
+                -->
+        <!--SolidColorBrush x:Key="{x:Static SystemColors.ControlBrush}" Color="Gray"/-->
+        <!--
             </Style.Resources>
         </Style>-->
 
@@ -93,7 +99,7 @@
             </Grid>
         </ControlTemplate>
 
-        <Grid x:Key="ThreadView" x:Shared="False">
+        <Grid x:Key="ThreadViewGrid" x:Shared="False">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="60*"/>
                 <ColumnDefinition Width="5"/>
@@ -105,7 +111,7 @@
                     <RowDefinition Height="5"/>
                     <RowDefinition Height="20*"/>
                 </Grid.RowDefinitions>
-                <ListView  Name="ThreadListingView" Grid.Row="0" VerticalAlignment="Stretch" HorizontalAlignment="Stretch" Margin="2,2,2,2" GridViewColumnHeader.Click="ListViewBottomGridHeaderClick">
+                <ListView  Name="ThreadListingView" Grid.Row="0" VerticalAlignment="Stretch" HorizontalAlignment="Stretch" Margin="2,2,2,2" GridViewColumnHeader.Click="ListingInfoListViewHeaderClick">
                     <ListView.ItemContainerStyle>
                         <Style TargetType="ListViewItem">
                             <Setter Property="HorizontalContentAlignment" Value="Left" />
@@ -150,7 +156,7 @@
         <Grid x:Key="GeneralInfoView" Name="GeneralInfoView" x:Shared="False">
             <Grid.RowDefinitions>
                 <RowDefinition Height="80*"/>
-                 <RowDefinition Height="20*"/>
+                <RowDefinition Height="20*"/>
             </Grid.RowDefinitions>
             <TextBlock Name="GeneralInfoText" Grid.Row="0" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" FontFamily="Consolas"></TextBlock>
             <!--<Label Name="GenerationInfoLabel" Grid.Row="1" FontWeight="Bold" FontSize="12"></Label>-->
@@ -210,7 +216,7 @@
                 <ColumnDefinition Width="16*"/>
             </Grid.ColumnDefinitions>
             <ToolBarTray Grid.Row="0" Grid.Column="0" Margin="4,0,4,0">
-                
+
             </ToolBarTray>
             <Label Name="lbTpNsTypeInfo" Margin="4,0,4,0" Grid.Row="0" Grid.Column="2" FontWeight="Bold" FontSize="14" Foreground="Black" Background="DarkGray" VerticalAlignment="Center"/>
             <ListBox Grid.Row="1" Grid.Column="0" Margin="4,4,4,4" Name="lbTpNamespaces"  HorizontalAlignment="Stretch" SelectionChanged="lbTpNamespacesSelectionChange" SelectionMode="Single" DisplayMemberPath="Key"  FontFamily="Consolas" FontSize="12">
@@ -221,10 +227,10 @@
             <GridSplitter Grid.Row="1"  Grid.Column="3" VerticalAlignment="Stretch" HorizontalAlignment="Center" Width="5" ShowsPreview="False" Background="DarkGray"></GridSplitter>
             <ListBox Grid.Row="1" Grid.Column="4" Margin="4,4,4,4" Name="lbTypeNamespaceAddresses" HorizontalAlignment="Stretch" SelectionMode="Single" ContextMenu="{StaticResource AddresListContextMenu}"  FontFamily="Consolas" FontSize="12">
                 <ListBox.ItemTemplate>
-                <DataTemplate>
-                    <TextBlock Text="{Binding Converter={StaticResource LongHexConverter}}"/>
-                </DataTemplate>
-            </ListBox.ItemTemplate>
+                    <DataTemplate>
+                        <TextBlock Text="{Binding Converter={StaticResource LongHexConverter}}"/>
+                    </DataTemplate>
+                </ListBox.ItemTemplate>
             </ListBox>
             <Label Name="lTpNsCount" Margin="4,0,4,0" Grid.Row="2" Grid.Column="0" FontWeight="Bold" FontSize="14" Foreground="DarkSlateGray" VerticalAlignment="Top"/>
             <Label Name="lTpClassCount" Margin="4,0,4,0" Grid.Row="2" Grid.Column="2" FontWeight="Bold" FontSize="14" Foreground="DarkSlateGray" VerticalAlignment="Top"/>
@@ -279,11 +285,11 @@
             </Grid.ColumnDefinitions>
             <ListView x:Name="FinalizerQueueListView" Grid.Row="0" v4:Grid.Column="0" SelectionMode="Single" ItemsSource="{Binding}" SelectionChanged="FinalizerQueueSelectionChanged" GridViewColumnHeader.Click="FinalizerQueueViewHeaderClick">
                 <ListView.View>
-                <GridView>
-                    <GridViewColumn DisplayMemberBinding="{Binding Path=TotalCount}" Header="Total Count" Width="150"/>
-                    <GridViewColumn DisplayMemberBinding="{Binding Path=NotRootedCount}" Header="Unrooted Count" Width="150"/>
-                    <GridViewColumn DisplayMemberBinding="{Binding Path=TypeName}" Header="Type Name" Width="150"/>
-                </GridView>
+                    <GridView>
+                        <GridViewColumn DisplayMemberBinding="{Binding Path=TotalCount}" Header="Total Count" Width="150"/>
+                        <GridViewColumn DisplayMemberBinding="{Binding Path=NotRootedCount}" Header="Unrooted Count" Width="150"/>
+                        <GridViewColumn DisplayMemberBinding="{Binding Path=TypeName}" Header="Type Name" Width="150"/>
+                    </GridView>
                 </ListView.View>
             </ListView>
             <GridSplitter Grid.Row="0" v4:Grid.Column="1" VerticalAlignment="Center" HorizontalAlignment="Stretch" Height="5" ShowsPreview="False" Background="DarkGray"></GridSplitter>
@@ -384,7 +390,7 @@
                         <TextBlock Text="{Binding Converter={StaticResource LongHexConverter}}"/>
                     </DataTemplate>
                 </ListBox.ItemTemplate>
-                </ListBox>
+            </ListBox>
             <ListBox Name="WeakReferenceRootAddresses" v4:Grid.Row="1" v4:Grid.Column="2" Margin="2,2,2,2"  ContextMenu="{StaticResource AddresListContextMenu}">
                 <ListBox.ItemTemplate>
                     <DataTemplate>
@@ -432,10 +438,10 @@
             <Grid x:Name="InstHierarchyAncestorsGrid" Grid.Row="1" Grid.Column="0">
                 <Grid>
                     <Grid.RowDefinitions>
-                     <RowDefinition Height="50*"/>
-                    <RowDefinition Height="5"/>
-                    <RowDefinition Height="45*"/>
-                     </Grid.RowDefinitions>
+                        <RowDefinition Height="50*"/>
+                        <RowDefinition Height="5"/>
+                        <RowDefinition Height="45*"/>
+                    </Grid.RowDefinitions>
                     <ListBox x:Name="InstHierarchyAncestorNames" Grid.Row="0" Margin="2,2,2,2" SelectionChanged="InstHierarchyAncestorChanged">
                         <ListBox.BorderBrush>
                             BlanchedAlmond
@@ -456,13 +462,13 @@
             <Grid x:Name="InstHierarchyFieldGrid" Grid.Row="1" Grid.Column="2">
                 <TreeView x:Name="InstHierarchyFieldTreeview" VerticalAlignment="Stretch" HorizontalAlignment="Stretch" Margin="2,2,2,2" FontSize="12" 
                           MouseDoubleClick="InstHierarchyTreeViewDoubleClicked">
-                        <TreeView.ItemContainerStyle>
-                            <Style TargetType="TreeViewItem">
-                                <EventSetter Event="RequestBringIntoView" Handler="TreeViewItem_RequestBringIntoView"/>
-                            </Style>
-                        </TreeView.ItemContainerStyle>
-                     <TreeView.BorderBrush>BlanchedAlmond</TreeView.BorderBrush>
-                    </TreeView>
+                    <TreeView.ItemContainerStyle>
+                        <Style TargetType="TreeViewItem">
+                            <EventSetter Event="RequestBringIntoView" Handler="TreeViewItem_RequestBringIntoView"/>
+                        </Style>
+                    </TreeView.ItemContainerStyle>
+                    <TreeView.BorderBrush>BlanchedAlmond</TreeView.BorderBrush>
+                </TreeView>
             </Grid>
             <GridSplitter Grid.Row="1" Grid.Column="3" VerticalAlignment="Stretch" HorizontalAlignment="Center" Width="5" ShowsPreview="False" Background="DarkGray"></GridSplitter>
             <Expander x:Name="CollectionExpander" Margin="0,7,0,0" DockPanel.Dock="Bottom" Header="..." Grid.Row="1" Grid.Column="4" ExpandDirection="Left">
@@ -511,7 +517,7 @@
                     <RowDefinition Height="35*"/>
                 </Grid.RowDefinitions>
                 <ListBox x:Name="TypeValueReportSelectedList" Grid.Row="0">
-                    
+
                 </ListBox>
                 <GridSplitter Grid.Row="1" VerticalAlignment="Center" HorizontalAlignment="Stretch" Height="5" ShowsPreview="False" Background="DarkGray"></GridSplitter>
                 <ListBox  x:Name="TypeValueReportFilterList" Grid.Row="2">
@@ -523,9 +529,9 @@
         </Grid>
         <Grid x:Key="DeadlockGraphXGrid" x:Shared="False">
             <DockPanel>
-            <gx:ZoomControl x:Name="DlkZoomCtrl" Visibility="Visible">
-                <local:DlkGraphArea x:Name="DlkGraphArea"/>
-            </gx:ZoomControl>
+                <gx:ZoomControl x:Name="DlkZoomCtrl" Visibility="Visible">
+                    <local:DlkGraphArea x:Name="DlkGraphArea"/>
+                </gx:ZoomControl>
             </DockPanel>
         </Grid>
         <Grid x:Key="ThreadBlockingGraphXGrid" x:Shared="False">
@@ -573,14 +579,14 @@
             <local:RecentFileList x:Key="RecentDumps"/>
         </Grid.Resources>-->
         <ToolBarTray x:Name="MainToolbarTray" Height="40" Grid.Row="0" Margin="1,0,1,0">
-        <ToolBar x:Name="MainToolbar" HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
-            <Menu x:Name="MainMenu" HorizontalAlignment="Center" VerticalContentAlignment="Center" Height="38" Margin="1,1,1,1" VerticalAlignment="Center" FontFamily="Consolas" FontSize="14">
-                <MenuItem x:Name="File" Header="File" VerticalAlignment="Center">
+            <ToolBar x:Name="MainToolbar" HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
+                <Menu x:Name="MainMenu" HorizontalAlignment="Center" VerticalContentAlignment="Center" Height="38" Margin="1,1,1,1" VerticalAlignment="Center" FontFamily="Consolas" FontSize="14">
+                    <MenuItem x:Name="File" Header="File" VerticalAlignment="Center">
                         <MenuItem x:Name="FileOpenListViewFile" Header="Open Report File..." Click="FileOpenReportFileClicked"/>
                         <Separator></Separator>
                         <MenuItem x:Name="Exit" Header="Exit" Click="ExitClicked"/>
-                </MenuItem>
-                <MenuItem x:Name="Dump" Header="Dump" Background="LightBlue" VerticalAlignment="Center">
+                    </MenuItem>
+                    <MenuItem x:Name="Dump" Header="Dump" Background="LightBlue" VerticalAlignment="Center">
                         <MenuItem x:Name="CrashDumpRequiredDac" Header="Crash Dump Required Dac..." Click="CrashDumpRequiredDacClicked"/>
                         <MenuItem x:Name="AddDacFile" Header="Add Dac File..." Click="AddDacFileClicked"/>
                         <MenuItem x:Name="TryOpenCrashDump" Header="Try Open Dump..." Click="TryOpenCrashDumpClicked"/>
@@ -589,29 +595,30 @@
                         <!--<MenuItem x:Name="RecentDumpsMenuItem" Header="Recent Files" ItemsSource="{StaticResource RecentDumps}" DataContext="{StaticResource RecentDumps}"/>-->
                         <!--<MenuItem x:Name="RecentDumpsMenuItem" Header="Recent Dumps"/>-->
                     </MenuItem>
-                <MenuItem x:Name="Index" Header="Index" VerticalAlignment="Center">
-                    <MenuItem x:Name="CreateDumpIndex" Header="Create Dump Index..." Click="CreateDumpIndexClicked"/>
-                    <MenuItem x:Name="OpenDumpIndex" Header="Open Dump Index..." Click="OpenDumpIndexClicked"/>
-                    <MenuItem x:Name="CloseDumpIndex" Header="Close Current Index..." Click="CloseDumpIndexClicked"/>
+                    <MenuItem x:Name="Index" Header="Index" VerticalAlignment="Center">
+                        <MenuItem x:Name="CreateDumpIndex" Header="Create Dump Index..." Click="CreateDumpIndexClicked"/>
+                        <MenuItem x:Name="OpenDumpIndex" Header="Open Dump Index..." Click="OpenDumpIndexClicked"/>
+                        <MenuItem x:Name="CloseDumpIndex" Header="Close Current Index..." Click="CloseDumpIndexClicked"/>
                         <Separator></Separator>
                         <MenuItem x:Name="IndexShowModuleInfos" Header="Show Loaded Modules Infos" Click="IndexShowModuleInfosClicked"/>
                         <MenuItem x:Name="IndexShowFinalizerQueue" Header="Show Finalizer Queue" Click="IndexShowFinalizerQueueClicked"/>
                         <MenuItem x:Name="IndexShowRoots" Header="Show Roots" Click="IndexShowRootsClicked"/>
                         <MenuItem x:Name="IndexShowWeakReferences" Header="Show WeakReference Instances" Click="IndexShowWeakReferencesClicked"/>
                         <MenuItem x:Name="IndexShowBlockingThreads" Header="Show Blocks and Threads Graph" Click="IndexShowBlockingThreadsClicked"/>
+                        <MenuItem x:Name="IndexShowThreads" Header="Show Threads" Click="IndexShowThreadsClicked"/>
                         <MenuItem x:Name="IndexGetSizeInformation" Header="Type Sizes Information" Click="IndexGetSizeInformationClicked"/>
                         <MenuItem x:Name="IndexGetBaseSizeInformation" Header="Type Base Sizes Information" Click="IndexGetBaseSizeInformationClicked"/>
                         <MenuItem x:Name="IndexStringUsage" Header="String Usage" Click="IndexStringUsageClicked"/>
                         <MenuItem x:Name="IndexStringUsageGen" Header="String Usage with GC Generations" Click="IndexStringUsageClicked"/>
                         <Separator></Separator>
-                    <MenuItem x:Name="InstanceInfo" Header="Get Instance Information">
-                        <MenuItem x:Name="InstImmediateReference" Header="Parent References" Click="InstReferenceClicked"/>
-                        <!--<MenuItem x:Name="InstNLevelReferences" Header="N Parents Reference" Click="InstReferenceClicked"/>
+                        <MenuItem x:Name="InstanceInfo" Header="Get Instance Information">
+                            <MenuItem x:Name="InstImmediateReference" Header="Parent References" Click="InstReferenceClicked"/>
+                            <!--<MenuItem x:Name="InstNLevelReferences" Header="N Parents Reference" Click="InstReferenceClicked"/>
                         <MenuItem x:Name="InstAllReferences" Header="All Parents Reference" Click="InstReferenceClicked"/>-->
-                        <MenuItem x:Name="InstGenDistribution" Header="Generation Histogram" Click="InstReferenceClicked"/>
-                        <MenuItem x:Name="InstHierarchyWalk" Header="Instance Hierarchy Walk" Click="InstReferenceClicked"/>
-                    </MenuItem>
-                    <Separator></Separator>
+                            <MenuItem x:Name="InstGenDistribution" Header="Generation Histogram" Click="InstReferenceClicked"/>
+                            <MenuItem x:Name="InstHierarchyWalk" Header="Instance Hierarchy Walk" Click="InstReferenceClicked"/>
+                        </MenuItem>
+                        <Separator></Separator>
                         <MenuItem x:Name="IndexCompareSizeInformation" Header="Type Sizes Comparison (with other dump)..." Click="IndexCompareSizeInformationClicked"/>
                         <MenuItem x:Name="IndexCompareStringInformation" Header="Strings Comparison (with other dump)..." Click="IndexCompareStringInformationClicked"/>
                         <Separator></Separator>
@@ -619,57 +626,57 @@
                         <Separator></Separator>
                         <MenuItem x:Name="RecentIndexMenuItem" Header="Recent Indices" Click="RecentIndicesClicked"/>
                     </MenuItem>
-                <MenuItem x:Name="AdhocQueries" Header="Ad-hoc Queries" Background="LightBlue" VerticalAlignment="Center">
-                    <MenuItem x:Name="AhqStringUsage" Header="String Usage..." Click="StringUsageClicked"/>
-                    <MenuItem x:Name="AhqTypeCount" Header="Type Count..." Click="AhqTypeCountClicked"/>
-                    <MenuItem x:Name="AhqCollectionContent" Header="Collection Content">
-                        <MenuItem x:Name="AhqArray" Header="Array..." Click="AhqCollectionContentArray"/>
-                    </MenuItem>
-                    <!--<Separator></Separator>
+                    <MenuItem x:Name="AdhocQueries" Header="Ad-hoc Queries" Background="LightBlue" VerticalAlignment="Center">
+                        <MenuItem x:Name="AhqStringUsage" Header="String Usage..." Click="StringUsageClicked"/>
+                        <MenuItem x:Name="AhqTypeCount" Header="Type Count..." Click="AhqTypeCountClicked"/>
+                        <MenuItem x:Name="AhqCollectionContent" Header="Collection Content">
+                            <MenuItem x:Name="AhqArray" Header="Array..." Click="AhqCollectionContentArray"/>
+                        </MenuItem>
+                        <!--<Separator></Separator>
                     <MenuItem x:Name="AhqInstanceRefs" Header="Instance Reference Map">
                             <MenuItem x:Name="AhqCreateInstanceRefs" Header="Create Instance Reference Map..." Click="AhqCreateInstanceRefsClicked"/>
                             <MenuItem x:Name="AhqOpenInstanceRefs" Header="Open Instance Reference Map..." Click="AhqOpenInstanceRefsClicked"/>
                     </MenuItem>-->
-                    <!--
+                        <!--
                     <MenuItem Header="{Binding ElementName=CbAdHocDump, Path=SelectedItem}" >
                     </MenuItem>
                     -->
-                     <Separator></Separator>
-                     <MenuItem x:Name="RecentAdhocMenuItem" Header="Recent Dumps"/>
+                        <Separator></Separator>
+                        <MenuItem x:Name="RecentAdhocMenuItem" Header="Recent Dumps"/>
                     </MenuItem>
-                <MenuItem x:Name="FileReport" HorizontalContentAlignment="Center" HorizontalAlignment="Center" Click="FileReportClicked">
-                    <MenuItem.Icon>
+                    <MenuItem x:Name="FileReport" HorizontalContentAlignment="Center" HorizontalAlignment="Center" Click="FileReportClicked">
+                        <MenuItem.Icon>
                             <Image Source="./Images/WriteToHistory_32x.png" ToolTip="Write detailed report, from current tab." ToolTipService.HasDropShadow="True" Height="32" Width="32" HorizontalAlignment="Center" VerticalAlignment="Center" Margin="16,0,0,0"></Image>
-                    </MenuItem.Icon>
-                </MenuItem>
-                <MenuItem x:Name="FileReportShort" Background="LightBlue" HorizontalContentAlignment="Center" HorizontalAlignment="Center" Click="FileReportShortClicked">
-                    <MenuItem.Icon>
+                        </MenuItem.Icon>
+                    </MenuItem>
+                    <MenuItem x:Name="FileReportShort" Background="LightBlue" HorizontalContentAlignment="Center" HorizontalAlignment="Center" Click="FileReportShortClicked">
+                        <MenuItem.Icon>
                             <Image Source="./Images/WriteToHistory_16x.png" ToolTip="Write short report, from current tab." ToolTipService.HasDropShadow="True" Height="16" Width="16" HorizontalAlignment="Center" VerticalAlignment="Center" Margin="16,0,0,0"></Image>
-                    </MenuItem.Icon>
-                </MenuItem>
-                <MenuItem x:Name="Settings" HorizontalContentAlignment="Center" HorizontalAlignment="Center" Click="SettingsClicked">
-                    <MenuItem.Icon>
+                        </MenuItem.Icon>
+                    </MenuItem>
+                    <MenuItem x:Name="Settings" HorizontalContentAlignment="Center" HorizontalAlignment="Center" Click="SettingsClicked">
+                        <MenuItem.Icon>
                             <Image Source="./Images/Settings_32x.png" ToolTip="MDR Desk settings/configuration" ToolTipService.HasDropShadow="True" Height="32" Width="32" HorizontalAlignment="Center" VerticalAlignment="Center" Margin="16,0,0,0"></Image>
-                    </MenuItem.Icon>
-                </MenuItem>
+                        </MenuItem.Icon>
+                    </MenuItem>
                     <MenuItem x:Name="ForceGC" Background="LightBlue" HorizontalContentAlignment="Center" HorizontalAlignment="Center" Click="ForceGCClicked">
-                    <MenuItem.Icon>
-                         <Image Source="./Images/ClearWindowContent_16x.png" ToolTip="Force GC" ToolTipService.HasDropShadow="True" Height="16" Width="16" HorizontalAlignment="Center" VerticalAlignment="Center" Margin="16,0,0,0"></Image>
-                    </MenuItem.Icon>
-                </MenuItem>
+                        <MenuItem.Icon>
+                            <Image Source="./Images/ClearWindowContent_16x.png" ToolTip="Force GC" ToolTipService.HasDropShadow="True" Height="16" Width="16" HorizontalAlignment="Center" VerticalAlignment="Center" Margin="16,0,0,0"></Image>
+                        </MenuItem.Icon>
+                    </MenuItem>
                     <!--
                 <Label x:Name="LbCurrentAdHocDump" HorizontalAlignment="Right" Width="Auto" VerticalAlignment="Center" Content="{Binding ElementName=CbAdHocDump, Path=SelectedItem}"></Label>
                 -->
-             </Menu>
+                </Menu>
             </ToolBar>
             <ToolBar HorizontalAlignment="Right">
-            <Label x:Name="ProcessMemory" HorizontalAlignment="Right" HorizontalContentAlignment="Right"  VerticalAlignment="Center" Content="Working Set (Memory)" FontFamily="Consolas" FontSize="11" FontWeight="Bold" FontStyle="Italic" Foreground="Brown">
-                <Label.ToolTip>
-                 <ToolTip Style="{StaticResource MenuTooltip}">
-                        <TextBlock>"This app Working and Peak Working Set."</TextBlock>
-                 </ToolTip>
+                <Label x:Name="ProcessMemory" HorizontalAlignment="Right" HorizontalContentAlignment="Right"  VerticalAlignment="Center" Content="Working Set (Memory)" FontFamily="Consolas" FontSize="11" FontWeight="Bold" FontStyle="Italic" Foreground="Brown">
+                    <Label.ToolTip>
+                        <ToolTip Style="{StaticResource MenuTooltip}">
+                            <TextBlock>"This app Working and Peak Working Set."</TextBlock>
+                        </ToolTip>
                     </Label.ToolTip>
-            </Label>
+                </Label>
             </ToolBar>
         </ToolBarTray>
         <ToolBarTray x:Name="SuplementalToolbarTray" Grid.Row="1" Margin="1,0,1,0">

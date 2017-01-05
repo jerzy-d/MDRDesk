@@ -54,11 +54,14 @@ namespace ClrMDRIndex
 		public int ManagedThreadId => _managedId;
 		public uint LockCount => _lockCount;
 		public int[] BlockingObjects => _blkObjects;
+		public int[] Frames => _frames;
 
 		public bool IsAlive => (_traits & (int)Traits.Alive) != 0;
 		public bool IsGC => (_traits & (int)Traits.GC) != 0;
 		public bool IsFinalizer => (_traits & (int)Traits.Finalizer) != 0;
 		public bool IsThreadpoolWorker => (_traits & (int)Traits.ThreadpoolWorker) != 0;
+
+		
 
 		public ClrtThread(ClrThread thrd, BlockingObject[] blkObjects, BlockingObjectCmp blkCmp)
 		{
@@ -176,7 +179,29 @@ namespace ClrMDRIndex
 				trait <<= 1;
 			}
 			if (sb.Length > 0) sb.Remove(sb.Length - 2, 2);
+			if (Utils.StartsWith(sb, "Alive, "))
+				sb.Remove(0, "Alive, ".Length);
+			else
+				sb.Insert(0, "Dead, ");
 			return StringBuilderCache.GetStringAndRelease(sb);
+		}
+
+		public string GetTraitsString(StringBuilder sb)
+		{
+			int trait = 1;
+			while (trait < (int)Traits.END)
+			{
+				if ((_traits & trait) != 0)
+				{
+					sb.Append((Traits)trait).Append(", ");
+				}
+				trait <<= 1;
+			}
+			if (sb.Length > 0) sb.Remove(sb.Length - 2, 2);
+			if (Utils.StartsWith(sb, "Alive, "))
+				sb.Remove(0, "Alive, ".Length);
+			else
+				sb.Insert(0, "Dead, "); return sb.ToString();
 		}
 
 		public void Dump(BinaryWriter bw)

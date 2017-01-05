@@ -33,6 +33,7 @@ namespace MDRDesk
 			_id = id;
 			_wndDct = wndDct;
 			InitializeComponent();
+			_instanceValue = instVal;
 			Debug.Assert(instVal.ArrayValues != null);
 			CollectionValues.ItemsSource = instVal.ArrayValues;
 			CollectionInfo.Text = descr;
@@ -44,6 +45,7 @@ namespace MDRDesk
 			if (_indicesShown)
 			{
 				CollectionValues.ItemsSource = _instanceValue.ArrayValues;
+				_indicesShown = false;
 			}
 			else
 			{

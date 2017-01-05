@@ -72,7 +72,7 @@
     </Reference>
     <Reference Include="Microsoft.Diagnostics.Runtime, Version=0.8.31.1, Culture=neutral, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\ClrMd\Debug\Microsoft.Diagnostics.Runtime.dll</HintPath>
+      <HintPath>..\ClrMd\Release\Microsoft.Diagnostics.Runtime.dll</HintPath>
     </Reference>
     <Reference Include="System" />
     <Reference Include="System.Configuration" />

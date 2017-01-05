@@ -7,6 +7,7 @@ using System.Diagnostics;
 using System.Drawing;
 using System.Globalization;
 using System.Linq;
+using System.Text;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
@@ -42,7 +43,7 @@ using SubgraphDictionary =
 
 namespace MDRDesk
 {
-	public partial class MainWindow : Window
+	public partial class MainWindow
 	{
 		#region reports
 
@@ -76,6 +77,8 @@ namespace MDRDesk
 
 		private const string DeadlockGraphGrid = "DeadlockGraphGrid";
 		private const string ThreadBlockingGraphGrid = "ThreadBlockingGraphGrid";
+
+		private const string ThreadViewGrid = "ThreadViewGrid";
 
 		private const string GridFinalizerQueue = "FinalizerQueueGrid";
 		private const string WeakReferenceViewGrid = "WeakReferenceViewGrid";
@@ -797,7 +800,7 @@ namespace MDRDesk
 
 		private void DisplayTab(char prefix, string reportTitle, Grid grid, string name)
 		{
-			var tab = new CloseableTabItem() { Header = prefix + " " + reportTitle, Content = grid, Name = name + Utils.GetNewID() };
+			var tab = new CloseableTabItem() { Header = prefix + " " + reportTitle, Content = grid, Name = name + "__" + Utils.GetNewID() };
 			MainTab.Items.Add(tab);
 			MainTab.SelectedItem = tab;
 			MainTab.UpdateLayout();
@@ -1519,7 +1522,7 @@ namespace MDRDesk
 
 		private void DisplayListingGrid(ListingInfo info, char prefix, string name, string reportTitle, SWC.MenuItem[] menuItems = null, string filePath = null)
 		{
-			var grid = this.TryFindResource("ListingGrid") as Grid;
+			var grid = TryFindResource("ListingGrid") as Grid;
 			grid.Name = name + "__" + Utils.GetNewID();
 			Debug.Assert(grid != null);
 			string path;
@@ -2064,6 +2067,116 @@ namespace MDRDesk
 
 		#endregion instance value
 
+		#region threads
+
+		private async void ExecuteGetThreadinfos()
+		{
+
+			SetStartTaskMainWindowState("Getting thread infos, please wait...");
+			var result = await Task.Run(() =>
+			{
+				string error = null;
+				var info = CurrentIndex.GetThreads(out error);
+				return new Tuple<string, ClrtThread[], string[]>(error, info.Item1,info.Item2);
+			});
+
+			string msg = result.Item1 != null ? "Getting thread infos failed." : "Getting thread infos succeeded.";
+			SetEndTaskMainWindowState(msg);
+			if (result.Item1 != null)
+			{
+				GuiUtils.ShowError(result.Item1,this);
+				return;
+			}
+
+			var threads = result.Item2;
+			var framesMethods = result.Item3;
+
+			string[] frameKeys = new string[threads.Length];
+			int digitCount = Utils.NumberOfDigits(framesMethods.Length);
+			char[] buf = new char[digitCount];
+			var sb = new StringBuilder(128);
+
+			const int ColumnCount = 4;
+			string[] data = new string[threads.Length * ColumnCount];
+			listing<string>[] items = new listing<string>[threads.Length];
+			int dataNdx = 0;
+			int itemNdx = 0;
+
+			for (int i = 0, icnt = threads.Length; i < icnt; ++i)
+			{
+				var thrd = threads[i];
+				var osIdStr = thrd.OSThreadId.ToString();
+				var mngIdStr = thrd.ManagedThreadId.ToString();
+
+				var frameIds = thrd.Frames;
+				sb.Clear();
+				for (int j = 0, jcnt = frameIds.Length; j < jcnt; ++j)
+				{
+					var s = Utils.GetDigitsString(frameIds[j], digitCount, buf);
+					sb.Append(s).Append('|');
+				}
+				var thFrames = string.Empty;
+				if (sb.Length > 0)
+				{
+					sb.Remove(sb.Length - 1, 1);
+					thFrames = sb.ToString();
+				}
+				sb.Clear();
+				var traits = thrd.GetTraitsString(sb);
+
+				items[itemNdx++] = new listing<string>(data, dataNdx, ColumnCount);
+				data[dataNdx++] = osIdStr;
+				data[dataNdx++] = mngIdStr;
+				data[dataNdx++] = traits;
+				data[dataNdx++] = thFrames;
+
+
+			}
+
+			ColumnInfo[] colInfos = new[]
+			{
+				new ColumnInfo("OS Id", ReportFile.ColumnType.Int32, 150, 1, true),
+				new ColumnInfo("Mng Id", ReportFile.ColumnType.Int32, 150, 2, true),
+				new ColumnInfo("Traits", ReportFile.ColumnType.String, 300, 3, true),
+				new ColumnInfo("Frames", ReportFile.ColumnType.String, 400, 4, true),
+			};
+
+			sb.Clear();
+			sb.Append(ReportFile.DescrPrefix).Append("Thread Count ").Append(threads.Length).AppendLine();
+			var listing = new ListingInfo(null, items, colInfos, sb.ToString());
+
+
+
+
+			var grid = TryFindResource(ThreadViewGrid) as Grid;
+			var listView = (ListView)LogicalTreeHelper.FindLogicalNode(grid, "ThreadListingView");
+			listView.Tag = new Tuple<ListingInfo, string>(listing, "Thread View");
+
+			GridView gridView = (GridView)listView.View;
+
+			for (int i = 0, icnt = listing.ColInfos.Length; i < icnt; ++i)
+			{
+				var gridColumn = new GridViewColumn
+				{
+					Header = listing.ColInfos[i].Name,
+					DisplayMemberBinding = new Binding(listing<string>.PropertyNames[i]),
+					Width = listing.ColInfos[i].Width,
+				};
+				gridView.Columns.Add(gridColumn);
+			}
+			listView.Items.Clear();
+			listView.ItemsSource = listing.Items;
+
+			var txtBox = (TextBox)LogicalTreeHelper.FindLogicalNode(grid, "ThreadListingInformation");
+			txtBox.Text = listing.Notes;
+
+			Debug.Assert(grid != null);
+			grid.Name = ThreadViewGrid + "__" + Utils.GetNewID();
+			DisplayTab(Constants.BlackDiamond, "Threads", grid, ThreadViewGrid);
+		}
+
+		#endregion threads
+
 		#region Instance Hierarchy Traversing
 		private async void ExecuteInstanceHierarchyQuery(string statusMessage, ulong addr, int fldNdx)
 		{
@@ -2327,6 +2440,7 @@ namespace MDRDesk
 
 		#endregion Instance Hierarchy Traversing
 
+
 		#endregion Display Grids
 
 		#region MessageBox
@@ -2343,7 +2457,7 @@ namespace MDRDesk
 			};
 			dialog.SetButtonsPredefined(EnumPredefinedButtons.Ok);
 			dialog.DetailsExpander.Visibility = string.IsNullOrEmpty(details) ? Visibility.Collapsed : Visibility.Visible;
-			var result = dialog.ShowDialog();
+			dialog.ShowDialog();
 		}
 
 		private void ShowError(string errStr)

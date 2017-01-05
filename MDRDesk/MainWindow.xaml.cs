@@ -227,7 +227,45 @@ namespace MDRDesk
 
 		private void TryOpenCrashDumpClicked(object sender, RoutedEventArgs e)
 		{
+			ClrtDump dump = null;
+			string error = null;
+			string path = string.Empty;
+			try
+			{
+				path = GuiUtils.SelectCrashDumpFile();
+				if (path == null) return;
+				dump = ClrtDump.OpenDump(path, out error);
+			}
+			catch (Exception ex)
+			{
+				error = Utils.GetExceptionErrorString(ex);
+			}
+			finally
+			{
+				string[] dacFiles = null;
+				if (dump != null)
+				{
+					dacFiles = dump.DacPaths;
+				}
+				dump?.Dispose();
+				if (error != null)
+				{
+					MainStatusLabel.Content = "Open crash dump failed: " + path;
+					var pos = error.IndexOf(Constants.HeavyGreekCrossPadded,StringComparison.Ordinal);
+					if (pos > 0)
+					{
+						error = "Open Crash Dump Failed" + error.Substring(pos);
+					}
 
+					GuiUtils.ShowError(error, this);
+				}
+				else
+				{
+					MainStatusLabel.Content = "Open crash dump succeeded: " + path;
+					string dacs = dacFiles == null || dacFiles.Length < 1 ? "No dac file?" : string.Join(Environment.NewLine, dacFiles);
+					GuiUtils.ShowInformation("Try Open Crash Dump", "Open Crash Dump Succeeded", dacs, null, this);
+				}
+			}
 		}
 
 
@@ -572,6 +610,12 @@ namespace MDRDesk
 				ShowError(error);
 			}
 			return;
+		}
+
+		private void IndexShowThreadsClicked(object sender, RoutedEventArgs e)
+		{
+			if (!IsIndexAvailable("Cannot view threads, an index is not opened.")) return;
+			Dispatcher.CurrentDispatcher.InvokeAsync(ExecuteGetThreadinfos);
 		}
 
 		private void IndexGetSizeInformationClicked(object sender, RoutedEventArgs e)
@@ -1440,6 +1484,38 @@ namespace MDRDesk
 			return (MainTab.SelectedItem as CloseableTabItem)?.Content as Grid;
 		}
 
+		private void ListingInfoListViewHeaderClick(object sender, RoutedEventArgs e)
+		{
+			GridViewColumnHeader column = e.OriginalSource as GridViewColumnHeader;
+			if (column == null) return;
+			if (column.Role == GridViewColumnHeaderRole.Padding) return;
+
+			var mapListView = sender as ListView;
+			if (mapListView == null) return;
+			if (!(mapListView.Tag != null && mapListView.Tag is Tuple<ListingInfo, string>)) return;
+
+			var aryToSort = mapListView.ItemsSource as listing<string>[];
+			string header = column.Column.Header.ToString();
+			var info = mapListView.Tag as Tuple<ListingInfo, string>;
+			int foundNdx = -1;
+			for (int i = 0, icnt = info.Item1.ColInfos.Length; i < icnt; ++i)
+			{
+				if (info.Item1.ColInfos[i].Name == header)
+				{
+					foundNdx = i;
+					break;
+				}
+			}
+			if (foundNdx >= 0)
+			{
+				info.Item1.ColInfos[foundNdx].ReverseOrder();
+				ReportFile.SortListingStringArray(info.Item1.ColInfos[foundNdx], aryToSort);
+				mapListView.ItemsSource = aryToSort;
+				ICollectionView dataView = CollectionViewSource.GetDefaultView(mapListView.ItemsSource);
+				dataView.Refresh();
+			}
+		}
+
 		#endregion GUI Helpers
 
 		#region Dialogs
@@ -1888,5 +1964,7 @@ namespace MDRDesk
 				return;
 			ShowMemoryViewWindow(addr);
 		}
+
+
 	}
 }

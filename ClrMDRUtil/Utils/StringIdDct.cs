@@ -84,6 +84,7 @@ namespace ClrMDRUtil.Utils
 				var ary = _dct.ToArray();
 				Array.Sort(ary, (a, b) => a.Value < b.Value ? -1 : (a.Value > b.Value ? 1 : 0));
 				var len = ary.Length;
+				wr.WriteLine(len.ToString());
 				for (var i = 0; i < len; ++i)
 				{
 					wr.WriteLine(ary[i].Key);
