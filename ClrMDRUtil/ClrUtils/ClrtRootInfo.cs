@@ -68,7 +68,7 @@ namespace ClrMDRIndex
 					
 					if (rootAddr != 0Ul)
 					{
-						rootAddr = Utils.SetAsRoot(root.Address);
+						rootAddr = Utils.SetRooted(root.Address);
 						ulong addr;
 						if (addrDct.TryGetValue(root.Address, out addr))
 						{
@@ -96,7 +96,7 @@ namespace ClrMDRIndex
 						}
 						else
 						{
-							objAddr = Utils.SetAsRoot(objAddr);
+							objAddr = Utils.SetRooted(objAddr);
 							if (addrDct.TryGetValue(root.Object, out addr))
 							{
 								addrDct[root.Object] = addr | objAddr;
@@ -366,8 +366,8 @@ namespace ClrMDRIndex
 		{
 			ulong raddr = root.Address;
 			ulong obj = root.Object;
-			Address = raddr == 0UL ? 0UL : Utils.SetAsRoot(raddr);
-			Object = (raddr == 0UL) ? obj : Utils.SetAsRootPointee(root.Object);
+			Address = raddr == 0UL ? 0UL : Utils.SetRooted(raddr);
+			Object = (raddr == 0UL) ? obj : Utils.SetRooted(root.Object);
 			
 			TypeId = typeId;
 			NameId = nameId;

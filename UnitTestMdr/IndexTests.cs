@@ -990,19 +990,17 @@ namespace UnitTestMdr
 			Assert.IsNotNull(index);
 			TestContext.WriteLine(index.DumpFileName + " INDEX OPEN DURATION: " + Utils.StopAndGetDurationString(stopWatch));
 
+			stopWatch.Restart();
 			using (index)
 			{
 				var rootAddresses = index.RootAddresses;
 				var finalizerAddresses = index.FinalizerAddresses;
-				var instances = index.Instances;
+				Assert.IsTrue(Utils.IsSorted(finalizerAddresses));
+				var ndxInstances = index.Instances;
+				var instances = Utils.GetRealAddresses(ndxInstances);
 				index.Dump.WarmupHeap();
 				var heap = index.Dump.Heap;
 
-				//for (int i = 0, icnt = instances.Length; i < icnt; ++i)
-				//{
-				//	var addr = Utils.RealAddress(instances[i]);
-				//	var rndx = Array.BinarySearch(rootAddresses, addr);
-				//}
 				List<ulong> rootLst = new List<ulong>(1024*10);
 				for (int i = 0, icnt = rootAddresses.Length; i < icnt; ++i)
 				{
@@ -1015,12 +1013,14 @@ namespace UnitTestMdr
 				var fldRefList = new List<KeyValuePair<ulong, int>>(64);
 				var rootAry = rootLst.ToArray();
 				rootLst = null;
+
 				HashSet<ulong> rooted = new HashSet<ulong>();
 				Queue<ulong> que = new Queue<ulong>(1024*1024*10);
 				SortedDictionary<ulong, ulong[]> objRefs = new SortedDictionary<ulong, ulong[]>();
 				SortedDictionary<ulong, List<ulong>> fldRefs = new SortedDictionary<ulong, List<ulong>>();
 				var emptyFlds = 0;
 				var maxFlds = 0;
+				var maxRefs = 1;
 
 				for (int i = 0, icnt = rootAry.Length; i < icnt; ++i)
 				{
@@ -1053,7 +1053,11 @@ namespace UnitTestMdr
 							{
 								var fndx = lst.BinarySearch(raddr);
 								if (fndx < 0)
-									lst.Insert(~fndx,raddr);
+								{
+									lst.Insert(~fndx, raddr);
+									if (maxRefs < lst.Count)
+										maxRefs = lst.Count;
+								}
 							}
 							else
 							{
@@ -1095,7 +1099,11 @@ namespace UnitTestMdr
 						{
 							var fndx = lst.BinarySearch(addr);
 							if (fndx < 0)
+							{
 								lst.Insert(~fndx, addr);
+								if (maxRefs < lst.Count)
+									maxRefs = lst.Count;
+							}
 						}
 						else
 						{
@@ -1104,9 +1112,19 @@ namespace UnitTestMdr
 					}
 				}
 
+				var rootedAry = rooted.ToArray();
+				Array.Sort(rootedAry);
+				Utils.SetAddressBit(rootedAry, instances, (ulong)Utils.RootBits.Rooted);
+				Utils.SetAddressBit(finalizerAddresses, instances, (ulong)Utils.RootBits.Finalizer);
+
+
+
 			}
 
+
+
 			Assert.IsNull(error, error);
+			TestContext.WriteLine(index.DumpFileName + " ROOTS SCAN DURATION: " + Utils.StopAndGetDurationString(stopWatch));
 		}
 
 

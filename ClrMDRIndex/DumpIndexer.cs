@@ -1058,7 +1058,7 @@ namespace ClrMDRIndex
 			{
 				var refr = references[addrNdx][i];
 				var address = instances[refr];
-				if (Utils.IsNotRooted(address))
+				if (!Utils.IsRooted(address))
 					if (address != 0UL)
 					{
 						instances[refr] = Utils.SetAsRooted(address);

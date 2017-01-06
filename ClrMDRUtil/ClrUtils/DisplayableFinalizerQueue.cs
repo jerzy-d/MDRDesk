@@ -111,7 +111,7 @@ namespace ClrMDRIndex
 				typeAddresses.Add(addr);
 				++typeCount;
 				++totalCount;
-				if (Utils.IsNotRooted(addr))
+				if (!Utils.IsRooted(addr))
 				{
 					++notRooted;
 					++totalUnrootedCount;

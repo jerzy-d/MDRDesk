@@ -21,22 +21,115 @@ namespace ClrMDRIndex
 
 		public enum RootBits : ulong
 		{
-			Mask =        0xFF00000000000000,
-			RootedMask =  0xF000000000000000,
-			AddressMask = 0x00FFFFFFFFFFFFFF,
-			Root =        0x8000000000000000,
-			RootPointee = 0x4000000000000000,
-			Rooted =      0x2000000000000000,
-			Finalizer =   0x0800000000000000,
+			Mask =			0xF000000000000000,
+			RootedMask =	0xC000000000000000,
+			FinalizerMask = 0x3000000000000000,
+			AddressMask =	0x0FFFFFFFFFFFFFFF,
+			Rooted =		0x8000000000000000,
+			Finalizer =		0x4000000000000000,
 		}
+
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		public static ulong SetAsFinalizer(ulong addr)
+		{
+			return addr |= (ulong)RootBits.Finalizer;
+		}
+
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		public static ulong SetAsRooted(ulong addr)
+		{
+			return addr |= (ulong)RootBits.Rooted;
+		}
+
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		public static ulong RealAddress(ulong addr)
+		{
+			return addr & (ulong)RootBits.AddressMask;
+		}
+
+		public static ulong[] GetRealAddresses(ulong[] addrs)
+		{
+			ulong[] ary = new ulong[addrs.Length];
+			for (int i = 0, icnt = addrs.Length; i < icnt; ++i)
+			{
+				ary[i] = RealAddress(addrs[i]);
+			}
+			return ary;
+		}
+
+		/// <summary>
+		/// Marking of the instance addresses.
+		/// Setting top bits of instance addresses, this way we will know if instances is rooted or belong to finalizer queue.
+		/// </summary>
+		/// <param name="bitSetters">Array of special addresses, instances known to be rooted, or belonging to finalizer queue.</param>
+		/// <param name="addresses">Instance array to be marked.</param>
+		/// <param name="bit">Marking bitmask.</param>
+		public static void SetAddressBit(ulong[] bitSetters, ulong[] addresses, ulong bit)
+		{
+			Debug.Assert(bitSetters.Length <= addresses.Length);
+			int bNdx = 0, bLen = bitSetters.Length, aNdx = 0, aLen = addresses.Length;
+			while (bNdx < bLen && aNdx < aLen)
+			{
+				var addr = addresses[aNdx];
+				if (bitSetters[bNdx] > addr)
+				{
+					++aNdx;
+					continue;
+				}
+				if (bitSetters[bNdx] < addr)
+				{
+					++bNdx;
+					continue;
+				}
+				addresses[aNdx] = addr | bit;
+				++aNdx;
+				++bNdx;
+			}
+		}
+
 
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		public static string AddressString(ulong addr)
         {
-            ulong realAddr = RealAddress(addr);
-            return IsRooted(addr)
-				? (IsFinalizer(addr) ? string.Format("0x\u2718{0:x13}", realAddr) : string.Format("0x{0:x14} ", realAddr))
-				: (IsFinalizer(addr) ? string.Format("0\u2714\u2718{0:x13}", realAddr) : string.Format("0\u2714{0:x14} ", realAddr));
+			ulong realAddr = RealAddress(addr);
+			string format = GetAddressFormat(addr);
+			return string.Format(format, realAddr);
+        }
+
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		public static string AddressStringHeader(ulong addr)
+		{
+			ulong realAddr = RealAddress(addr);
+			string format = GetAddressHeaderFormat(addr);
+			return string.Format(format, realAddr);
+		}
+
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		public static string GetAddressFormat(ulong addr)
+		{
+			bool isFinalizer = IsFinalizer(addr);
+			bool isRooted = IsRooted(addr);
+			if (!isRooted && isFinalizer)
+				return "0\u2714\u2718{0:x13}";
+			if (isFinalizer)
+				return "0x\u2718{0:x13}";
+			if (isRooted)
+				return "0x{0:x14}";
+			return "0\u2714{0:x14}";
+		}
+
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		public static string GetAddressHeaderFormat(ulong addr)
+		{
+			bool isFinalizer = IsFinalizer(addr);
+			bool isRooted = IsRooted(addr);
+			if (!isRooted && isFinalizer)
+				return "0\u2714\u2718{0:x13} ";
+			if (isFinalizer)
+				return "0x\u2718{0:x13} ";
+			if (isRooted)
+				return "0x{0:x14} ";
+			return "0\u2714{0:x14} ";
 		}
 
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -59,21 +152,17 @@ namespace ClrMDRIndex
 			return string.Format("\u275A{0}\u275A", Utils.LargeNumberString(addrCount));
 		}
 
-		[MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static string AddressStringHeader(ulong addr)
-        {
-            ulong realAddr = RealAddress(addr);
-            return IsRooted(addr)
-                ? (IsFinalizer(addr) ? string.Format("0x\u2718{0:x13} ", realAddr) : string.Format("0x{0:x14} ", realAddr))
-                : (IsFinalizer(addr) ? string.Format("0\u2714\u2718{0:x13} ", realAddr) : string.Format("0\u2714{0:x14} ", realAddr));
-        }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-		public static ulong SetRooted(ulong addr, bool isRoot, bool isPointee)
+		public static ulong SetRooted(ulong addr)
 		{
-			if (isRoot) addr |= (ulong)RootBits.Root;
-			if (isPointee) addr |= (ulong)RootBits.RootPointee;
-			return addr;
+			return addr | (ulong)RootBits.Rooted;
+		}
+
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		public static ulong SetFinalizer(ulong addr)
+		{
+			return addr | (ulong)RootBits.Finalizer;
 		}
 
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -88,41 +177,7 @@ namespace ClrMDRIndex
 			return (addr & (ulong)RootBits.RootedMask) > 0;
 		}
 
-		[MethodImpl(MethodImplOptions.AggressiveInlining)]
-		public static bool IsNotRooted(ulong addr)
-		{
-			return (addr & (ulong)RootBits.RootedMask) == 0;
-		}
 
-		[MethodImpl(MethodImplOptions.AggressiveInlining)]
-		public static ulong SetAsRoot(ulong addr)
-		{
-			return addr |= (ulong)RootBits.Root;
-		}
-
-		[MethodImpl(MethodImplOptions.AggressiveInlining)]
-		public static ulong SetAsRootPointee(ulong addr)
-		{
-			return addr |= (ulong)RootBits.RootPointee;
-		}
-
-		[MethodImpl(MethodImplOptions.AggressiveInlining)]
-		public static ulong SetAsFinalizer(ulong addr)
-		{
-			return addr |= (ulong)RootBits.Finalizer;
-		}
-
-		[MethodImpl(MethodImplOptions.AggressiveInlining)]
-		public static ulong SetAsRooted(ulong addr)
-		{
-			return addr |= (ulong)RootBits.Rooted;
-		}
-
-		[MethodImpl(MethodImplOptions.AggressiveInlining)]
-		public static ulong RealAddress(ulong addr)
-		{
-			return addr & (ulong)RootBits.AddressMask;
-		}
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void SortAddresses(ulong[] addresses)

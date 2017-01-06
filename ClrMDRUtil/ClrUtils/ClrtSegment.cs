@@ -298,7 +298,7 @@ namespace ClrMDRIndex
 			{
 				for (int i = 0, icnt = instances.Length; i < icnt; ++i)
 				{
-					if (Utils.IsNotRooted(instances[i]))
+					if (!Utils.IsRooted(instances[i]))
 					{
 						var addr = instances[i];
 						var seg = ClrtSegment.FindSegment(segments, addr);

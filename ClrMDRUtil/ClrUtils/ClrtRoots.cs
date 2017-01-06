@@ -56,7 +56,7 @@ namespace ClrMDRIndex
 				ulong objAddr = root.Object;
 				if (rootAddr != 0Ul)
 				{
-					rootAddr = Utils.SetAsRoot(root.Address);
+					rootAddr = Utils.SetRooted(root.Address);
 					ulong addr;
 					if (dct.TryGetValue(root.Address, out addr))
 					{
@@ -73,7 +73,7 @@ namespace ClrMDRIndex
 					{
 						objAddr = Utils.SetAsFinalizer(root.Object);
 					}
-					objAddr = Utils.SetAsRoot(objAddr);
+					objAddr = Utils.SetRooted(objAddr);
 					ulong addr;
 					if (dct.TryGetValue(root.Object, out addr))
 					{
