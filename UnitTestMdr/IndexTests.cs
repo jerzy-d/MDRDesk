@@ -978,6 +978,140 @@ namespace UnitTestMdr
 
 		#endregion type default values
 
+		#region roots
+
+		[TestMethod]
+		public void TestRootScan()
+		{
+			string error = null;
+			Stopwatch stopWatch = new Stopwatch();
+			stopWatch.Start();
+			var index = OpenIndex();
+			Assert.IsNotNull(index);
+			TestContext.WriteLine(index.DumpFileName + " INDEX OPEN DURATION: " + Utils.StopAndGetDurationString(stopWatch));
+
+			using (index)
+			{
+				var rootAddresses = index.RootAddresses;
+				var finalizerAddresses = index.FinalizerAddresses;
+				var instances = index.Instances;
+				index.Dump.WarmupHeap();
+				var heap = index.Dump.Heap;
+
+				//for (int i = 0, icnt = instances.Length; i < icnt; ++i)
+				//{
+				//	var addr = Utils.RealAddress(instances[i]);
+				//	var rndx = Array.BinarySearch(rootAddresses, addr);
+				//}
+				List<ulong> rootLst = new List<ulong>(1024*10);
+				for (int i = 0, icnt = rootAddresses.Length; i < icnt; ++i)
+				{
+					var addr = Utils.RealAddress(rootAddresses[i]);
+					var rndx = Utils.AddressSearch(instances, addr);
+					if (rndx >= 0)
+						rootLst.Add(addr);
+				}
+
+				var fldRefList = new List<KeyValuePair<ulong, int>>(64);
+				var rootAry = rootLst.ToArray();
+				rootLst = null;
+				HashSet<ulong> rooted = new HashSet<ulong>();
+				Queue<ulong> que = new Queue<ulong>(1024*1024*10);
+				SortedDictionary<ulong, ulong[]> objRefs = new SortedDictionary<ulong, ulong[]>();
+				SortedDictionary<ulong, List<ulong>> fldRefs = new SortedDictionary<ulong, List<ulong>>();
+				var emptyFlds = 0;
+				var maxFlds = 0;
+
+				for (int i = 0, icnt = rootAry.Length; i < icnt; ++i)
+				{
+					var raddr = rootAry[i];
+					var clrType = heap.GetObjectType(raddr);
+					Assert.IsNotNull(clrType);
+					fldRefList.Clear();
+					clrType.EnumerateRefsOfObjectCarefully(raddr, (address, off) =>
+					{
+						fldRefList.Add(new KeyValuePair<ulong, int>(address, off));
+					});
+					if (rooted.Add(raddr))
+					{
+						if (fldRefList.Count < 1)
+						{
+							++emptyFlds;
+							continue;
+						}
+						var fldAry = fldRefList.Select(kv=>kv.Key).ToArray();
+						if (fldAry.Length > maxFlds)
+							maxFlds = fldAry.Length;
+						Array.Sort(fldAry);
+						objRefs.Add(raddr,fldAry);
+						for (int j = 0; j < fldAry.Length; ++j)
+						{
+							var faddr = fldAry[j];
+							que.Enqueue(faddr);
+							List<ulong> lst;
+							if (fldRefs.TryGetValue(faddr, out lst))
+							{
+								var fndx = lst.BinarySearch(raddr);
+								if (fndx < 0)
+									lst.Insert(~fndx,raddr);
+							}
+							else
+							{
+								fldRefs.Add(faddr, new List<ulong>() { raddr });
+							}
+						}
+					}
+				}
+				while (que.Count>0)
+				{
+					var addr = que.Dequeue();
+					if (!rooted.Add(addr)) continue;
+
+					var clrType = heap.GetObjectType(addr);
+					Assert.IsNotNull(clrType);
+					fldRefList.Clear();
+					clrType.EnumerateRefsOfObjectCarefully(addr, (address, off) =>
+					{
+						fldRefList.Add(new KeyValuePair<ulong, int>(address, off));
+					});
+					if (fldRefList.Count < 1)
+					{
+						++emptyFlds;
+						continue;
+					}
+					var fldAry = fldRefList.Select(kv => kv.Key).ToArray();
+					if (fldAry.Length > maxFlds)
+						maxFlds = fldAry.Length;
+					Array.Sort(fldAry);
+					if (!objRefs.ContainsKey(addr))
+						objRefs.Add(addr, fldAry);
+
+					for (int j = 0; j < fldAry.Length; ++j)
+					{
+						var faddr = fldAry[j];
+						que.Enqueue(faddr);
+						List<ulong> lst;
+						if (fldRefs.TryGetValue(faddr, out lst))
+						{
+							var fndx = lst.BinarySearch(addr);
+							if (fndx < 0)
+								lst.Insert(~fndx, addr);
+						}
+						else
+						{
+							fldRefs.Add(faddr,new List<ulong>() {addr});
+						}
+					}
+				}
+
+			}
+
+			Assert.IsNull(error, error);
+		}
+
+
+		#endregion roots
+
 		#region get list of specific clr objects
 
 

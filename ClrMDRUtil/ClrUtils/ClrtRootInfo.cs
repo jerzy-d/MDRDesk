@@ -18,6 +18,9 @@ namespace ClrMDRIndex
 		private readonly ulong[] _rootAddresses; // unique root addresses, sorted, with out finalizer
 		private readonly ulong[] _finalizerAddresses; // unique finalizer addresses, sorted, with out finalizer
 
+		public ulong[] RootAddresses => _rootAddresses;
+		public ulong[] FinalizerAddresses => _finalizerAddresses;
+
 
 		public ClrtRootInfo(ClrtRoot[][] roots, ulong[] rootAddresses, ulong[] finalizerAddresses, ulong[] fque)
 		{
