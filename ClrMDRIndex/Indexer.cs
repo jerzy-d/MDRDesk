@@ -857,27 +857,29 @@ namespace ClrMDRIndex
 			}
 		}
 
-		public static Thread StartFieldRefInfoPersiter(string instancePath, BlockingCollection<KeyValuePair<int, int[]>> que, List<string> errors)
-		{
-			Thread thread = new Thread(InstanceReferences.WriteFieldReferences) {Name = "FieldRefInfoPersiter_" + Utils.GetNewID()};
-			thread.Start(new Tuple<string, BlockingCollection<KeyValuePair<int, int[]>>,List<string>>(
-																							instancePath,
-																							que,
-																							errors
-																						));
-			return thread;
-		}
+		// old
+		//public static Thread StartFieldRefInfoPersiter(string instancePath, BlockingCollection<KeyValuePair<int, int[]>> que, List<string> errors)
+		//{
+		//	Thread thread = new Thread(InstanceReferences.WriteFieldReferences) {Name = "FieldRefInfoPersiter_" + Utils.GetNewID()};
+		//	thread.Start(new Tuple<string, BlockingCollection<KeyValuePair<int, int[]>>,List<string>>(
+		//																					instancePath,
+		//																					que,
+		//																					errors
+		//																				));
+		//	return thread;
+		//}
 
-		public static Thread StartFieldReference(string instancePath, BlockingCollection<KeyValuePair<int, int[]>> que, List<string> errors)
-		{
-			Thread thread = new Thread(InstanceReferences.WriteFieldReferences) {Name = "FieldRefBuilder_" + Utils.GetNewID() };
-			thread.Start(new Tuple<string, BlockingCollection<KeyValuePair<int, int[]>>, List<string>>(
-																							instancePath,
-																							que,
-																							errors
-																						));
-			return thread;
-		}
+		// old
+		//public static Thread StartFieldReference(string instancePath, BlockingCollection<KeyValuePair<int, int[]>> que, List<string> errors)
+		//{
+		//	Thread thread = new Thread(InstanceReferences.WriteFieldReferences) {Name = "FieldRefBuilder_" + Utils.GetNewID() };
+		//	thread.Start(new Tuple<string, BlockingCollection<KeyValuePair<int, int[]>>, List<string>>(
+		//																					instancePath,
+		//																					que,
+		//																					errors
+		//																				));
+		//	return thread;
+		//}
 
 
 		/// <summary>

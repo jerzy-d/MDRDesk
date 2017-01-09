@@ -8,16 +8,22 @@
         Title="Reference Search Setup" Height="300" Width="500"
         FontFamily="Consolas" FontSize="14"
         WindowStartupLocation="CenterOwner" ResizeMode="NoResize" ShowInTaskbar="False" WindowStyle="ToolWindow">
-    <Grid Margin="2,2,2,2">
+    <Grid Margin="2,2,2,-84">
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="177*"/>
+            <ColumnDefinition Width="68*"/>
+        </Grid.ColumnDefinitions>
         <Grid.RowDefinitions>
-            <RowDefinition Height="15*"/>
-            <RowDefinition Height="15*"/>
-            <RowDefinition Height="15*"/>
+            <RowDefinition Height="10*"/>
+            <RowDefinition Height="10*"/>
+            <RowDefinition Height="10*"/>
+            <RowDefinition Height="10*"/>
+            <RowDefinition Height="10*"/>
             <RowDefinition Height="40*"/>
-            <RowDefinition Height="15*"/>
+            <RowDefinition Height="10*"/>
         </Grid.RowDefinitions>
-        <Label x:Name="RefSearchInformation" Grid.Row="0" VerticalAlignment="Center" HorizontalAlignment="Center">description...</Label>
-        <Grid Grid.Row="1" VerticalAlignment="Stretch" HorizontalAlignment="Stretch">
+        <Label x:Name="RefSearchInformation" Grid.Row="0" VerticalAlignment="Center" HorizontalAlignment="Center" Margin="186,4,50.155,5">description...</Label>
+        <Grid Grid.Row="1" VerticalAlignment="Stretch" HorizontalAlignment="Stretch" Grid.ColumnSpan="2">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="40*"/>
                 <ColumnDefinition Width="20*"/>
@@ -29,7 +35,31 @@
             <RadioButton x:Name ="RefSearchDisplayTree" GroupName="RefSearchDisplayMode" Grid.Column="2" HorizontalAlignment="Left" VerticalAlignment="Center" Margin="4,0,4,0" FontWeight="Bold">Tree</RadioButton>
             <RadioButton x:Name ="RefSearchDisplayGraph" GroupName="RefSearchDisplayMode" Grid.Column="3" HorizontalAlignment="Left" VerticalAlignment="Center" Margin="4,0,4,0" FontWeight="Bold" IsEnabled="False">Graph</RadioButton>
         </Grid>
-        <Grid Grid.Row="2">
+        <Grid Grid.Row="2" VerticalAlignment="Stretch" HorizontalAlignment="Stretch" Grid.ColumnSpan="2">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="40*"/>
+                <ColumnDefinition Width="20*"/>
+                <ColumnDefinition Width="20*"/>
+                <ColumnDefinition Width="20*"/>
+            </Grid.ColumnDefinitions>
+            <Label Grid.Column="0" HorizontalAlignment="Left" VerticalAlignment="Center" FontFamily="Consolas" FontWeight="Bold" Margin="8,0,0,0">Fields -> class/struct:</Label>
+            <RadioButton x:Name ="RefSearchRooted" GroupName="RefSearchDataSource" Grid.Column="1" HorizontalAlignment="Left" VerticalAlignment="Center" Margin="4,0,4,0" FontWeight="Bold" >Rooted</RadioButton>
+            <RadioButton x:Name ="RefSearchNotRooted" GroupName="RefSearchDataSource" Grid.Column="2" HorizontalAlignment="Left" VerticalAlignment="Center" Margin="4,0,4,0" FontWeight="Bold" IsEnabled="False">Unrooted</RadioButton>
+            <RadioButton x:Name ="RefSearchBoth" GroupName="RefSearchDataSource" Grid.Column="3" HorizontalAlignment="Left" VerticalAlignment="Center" Margin="4,0,4,0" FontWeight="Bold" IsEnabled="False">Both</RadioButton>
+        </Grid>
+        <Grid Grid.Row="3" VerticalAlignment="Stretch" HorizontalAlignment="Stretch" Grid.ColumnSpan="2">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="40*"/>
+                <ColumnDefinition Width="20*"/>
+                <ColumnDefinition Width="20*"/>
+                <ColumnDefinition Width="20*"/>
+            </Grid.ColumnDefinitions>
+            <Label Grid.Column="0" HorizontalAlignment="Left" VerticalAlignment="Center" FontFamily="Consolas" FontWeight="Bold" Margin="8,0,0,0">Class/struct -> fields:</Label>
+            <RadioButton x:Name ="RefSearchPrntRooted" GroupName="RefSearchDataSource" Grid.Column="1" HorizontalAlignment="Left" VerticalAlignment="Center" Margin="4,0,4,0" FontWeight="Bold" >Rooted</RadioButton>
+            <RadioButton x:Name ="RefSearchPrntNotRooted" GroupName="RefSearchDataSource" Grid.Column="2" HorizontalAlignment="Left" VerticalAlignment="Center" Margin="4,0,4,0" FontWeight="Bold" IsEnabled="False">Unrooted</RadioButton>
+            <RadioButton x:Name ="RefSearchPrntBoth" GroupName="RefSearchDataSource" Grid.Column="3" HorizontalAlignment="Left" VerticalAlignment="Center" Margin="4,0,4,0" FontWeight="Bold" IsEnabled="False">Both</RadioButton>
+        </Grid>
+        <Grid Grid.Row="4" Grid.ColumnSpan="2">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="20*"/>
                 <ColumnDefinition Width="20*"/>
@@ -39,10 +69,10 @@
             <Label Grid.Column="1" VerticalAlignment="Center" FontFamily="Consolas" FontSize="11" FontWeight="DemiBold">Enter Search Depth Level:</Label>
             <TextBox x:Name="RefSearchLevel" Grid.Column="2" Margin="16,8,4,8" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" Background="Azure"></TextBox>
         </Grid>
-        <TextBlock Grid.Row="3" Margin="2,2,2,2" Background="LightGray"></TextBlock>
-        <WrapPanel Grid.Row="4" HorizontalAlignment="Right" VerticalAlignment="Center" Margin="2,2,2,2">
-                <Button IsDefault="True" Name="btnDialogOk" Click="DialogOkClicked" MinWidth="60" Margin="0,0,10,0">_Ok</Button>
-                <Button IsCancel="True" MinWidth="60" HorizontalAlignment="Right">_Cancel</Button>
-            </WrapPanel>
+        <TextBlock Grid.Row="5" Margin="2,2,2,2" Background="LightGray" Grid.ColumnSpan="2"></TextBlock>
+        <WrapPanel Grid.Row="6" HorizontalAlignment="Right" VerticalAlignment="Center" Margin="0,7,2,8" Grid.Column="1">
+            <Button IsDefault="True" Name="btnDialogOk" Click="DialogOkClicked" MinWidth="60" Margin="0,0,10,0">_Ok</Button>
+            <Button IsCancel="True" MinWidth="60" HorizontalAlignment="Right">_Cancel</Button>
+        </WrapPanel>
     </Grid>
 </Window>

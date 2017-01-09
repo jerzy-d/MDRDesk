@@ -154,6 +154,7 @@ namespace ClrMDRIndex
 			return Utils.EmptyArray<ulong>.Value;
 		}
 
+
 		public static StringStats GetStringStats(SortedDictionary<string, KeyValuePair<uint, List<ulong>>> infoDct, string strFilePath, string dataFilePath, out string error)
 		{
 			error = null;

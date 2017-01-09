@@ -66,7 +66,7 @@ namespace ClrMDRIndex
 		public KeyValuePair<string, KeyValuePair<string, int>[]>[] TypeNamespaces => _typeNamespaces;
 		public int UsedTypeCount => _displayableTypeNames.Length;
 
-		private InstanceReferences _instanceReferences;
+		private References _references;
 
 		public WeakReference<StringStats> _stringStats;
 		public WeakReference<uint[]> _sizes;
@@ -195,9 +195,14 @@ namespace ClrMDRIndex
 					_typeNamespaces = GetTypeNamespaceOrdering(_reversedTypeNames);
 				}
 
-				_instanceReferences = new InstanceReferences(_fileMoniker.Path, _currentRuntimeIndex, _instances,
-					_instanceTypes, _typeNames);
-				_instanceReferences.Init(out error);
+				// old
+				//_instanceReferences = new InstanceReferences(_fileMoniker.Path, _currentRuntimeIndex, _instances,
+				//	_instanceTypes, _typeNames);
+				//_instanceReferences.Init(out error);
+				// new 1/7/17
+				_references = new References(_fileMoniker.Path,_currentRuntimeIndex);
+				_references.Init(out error);
+
 				if (error != null) return false;
 
 				// threads and blocks
@@ -214,6 +219,7 @@ namespace ClrMDRIndex
 				return false;
 			}
 		}
+
 
 		private bool LoadThreadBlockGraph(out string error)
 		{
@@ -414,6 +420,19 @@ namespace ClrMDRIndex
 			return Utils.AddressSearch(_instances, address);
 		}
 
+		private int[] GetInstanceIndices(ulong[] addresses)
+		{
+			List<int> indices = new List<int>(addresses.Length);
+			for (int i = 0, icnt = addresses.Length; i < icnt; ++i)
+			{
+				var ndx = Utils.AddressSearch(_instances, addresses[i]);
+				if (ndx < 0) continue;
+				indices.Add(ndx);
+			}
+			return indices.ToArray();
+		}
+
+
 		private string GetAddressString(IList<int> instIndices)
 		{
 			int cnt = instIndices != null ? 0 : instIndices.Count;
@@ -428,9 +447,20 @@ namespace ClrMDRIndex
 
 		#region io
 
+		/// <summary>
+		/// Get full path of one of the index files.
+		/// </summary>
+		/// <param name="r">Index of a runtime.</param>
+		/// <param name="postfix">Canned file name postix.</param>
+		/// <returns>Full path to a index file.</returns>
 		public string GetFilePath(int r, string postfix)
 		{
 			return _fileMoniker.GetFilePath(r, postfix);
+		}
+
+		public string GetAdHocPath(string fileName)
+		{
+			return _fileMoniker.OutputFolder + Path.DirectorySeparatorChar + fileName;
 		}
 
 		#endregion io
@@ -778,8 +808,16 @@ namespace ClrMDRIndex
 
 		public KeyValuePair<string, int>[] GetParents(ulong address, out string error)
 		{
-			var parents = _instanceReferences.GetFieldParents(address, out error);
+			var instNdx = GetInstanceIndex(address);
+			if (instNdx < 0)
+			{
+				error = "Instance at address: " + Utils.AddressString(address) + ", not found.";
+				return null;
+			}
+
+			var parents = _references.GetRootedFieldParents(instNdx, out error);
 			if (error != null) return Utils.EmptyArray<KeyValuePair<string, int>>.Value;
+
 			SortedDictionary<string, int> dct = new SortedDictionary<string, int>();
 			for (int i = 0, icnt = parents.Length; i < icnt; ++i)
 			{
@@ -799,8 +837,16 @@ namespace ClrMDRIndex
 
 		public KeyValuePair<string, ulong>[] GetParentDetails(ulong address, out string error)
 		{
-			var parents = _instanceReferences.GetFieldParents(address, out error);
+			var instNdx = GetInstanceIndex(address);
+			if (instNdx < 0)
+			{
+				error = "Instance at address: " + Utils.AddressString(address) + ", not found.";
+				return null;
+			}
+
+			var parents = _references.GetRootedFieldParents(instNdx, out error);
 			if (error != null) return Utils.EmptyArray<KeyValuePair<string, ulong>>.Value;
+
 			var result = new List<KeyValuePair<string, ulong>>(32);
 			for (int i = 0, icnt = parents.Length; i < icnt; ++i)
 			{
@@ -819,112 +865,112 @@ namespace ClrMDRIndex
 		/// <param name="error">Error message if any.</param>
 		/// <param name="maxLevel">Output tree height limit. </param>
 		/// <returns>Tuple of: (IndexNode tree, node count, back reference list).</returns>
-		public Tuple<IndexNode, int, int[]> GetParentReferences(ulong address, out string error,
-			int maxLevel = Int32.MaxValue)
-		{
-			error = null;
-			try
-			{
-				var addrNdx = GetInstanceIndex(address);
-				if (addrNdx < 0)
-				{
-					error = "No object found at: " + Utils.AddressString(address);
-					return null;
-				}
-				var rootNode = new IndexNode(addrNdx, 0); // we at level 0
-				var uniqueSet = new HashSet<int>();
-				var que = new Queue<IndexNode>(256);
-				var backReferences = new List<int>();
-				que.Enqueue(rootNode);
-				uniqueSet.Add(addrNdx);
-				int nodeCount = 0; // do not count root node
-				while (que.Count > 0)
-				{
-					var curNode = que.Dequeue();
-					++nodeCount;
-					if (curNode.Level >= maxLevel || nodeCount > MaxNodes) continue;
-					var parents = _instanceReferences.GetFieldParents(curNode.Index, out error);
-					if (parents.Length > 0)
-					{
-						var nodes = new IndexNode[parents.Length];
-						curNode.AddNodes(nodes);
-						for (int i = 0, icnt = parents.Length; i < icnt; ++i)
-						{
-							var parentNdx = parents[i];
-							var cnode = new IndexNode(parentNdx, curNode.Level + 1);
-							nodes[i] = cnode;
-							if (!uniqueSet.Add(parentNdx))
-							{
-								backReferences.Add(parentNdx);
-								++nodeCount;
-								continue;
-							}
-							que.Enqueue(cnode);
-						}
-					}
-				}
-				return Tuple.Create(rootNode, nodeCount, backReferences.ToArray());
-			}
-			catch (Exception ex)
-			{
-				error = Utils.GetExceptionErrorString(ex);
-				return null;
-			}
-		}
+		//public Tuple<IndexNode, int, int[]> GetParentReferences(ulong address, out string error,
+		//	int maxLevel = Int32.MaxValue)
+		//{
+		//	error = null;
+		//	try
+		//	{
+		//		var addrNdx = GetInstanceIndex(address);
+		//		if (addrNdx < 0)
+		//		{
+		//			error = "No object found at: " + Utils.AddressString(address);
+		//			return null;
+		//		}
+		//		var rootNode = new IndexNode(addrNdx, 0); // we at level 0
+		//		var uniqueSet = new HashSet<int>();
+		//		var que = new Queue<IndexNode>(256);
+		//		var backReferences = new List<int>();
+		//		que.Enqueue(rootNode);
+		//		uniqueSet.Add(addrNdx);
+		//		int nodeCount = 0; // do not count root node
+		//		while (que.Count > 0)
+		//		{
+		//			var curNode = que.Dequeue();
+		//			++nodeCount;
+		//			if (curNode.Level >= maxLevel || nodeCount > MaxNodes) continue;
+		//			var parents = _instanceReferences.GetFieldParents(curNode.Index, out error);
+		//			if (parents.Length > 0)
+		//			{
+		//				var nodes = new IndexNode[parents.Length];
+		//				curNode.AddNodes(nodes);
+		//				for (int i = 0, icnt = parents.Length; i < icnt; ++i)
+		//				{
+		//					var parentNdx = parents[i];
+		//					var cnode = new IndexNode(parentNdx, curNode.Level + 1);
+		//					nodes[i] = cnode;
+		//					if (!uniqueSet.Add(parentNdx))
+		//					{
+		//						backReferences.Add(parentNdx);
+		//						++nodeCount;
+		//						continue;
+		//					}
+		//					que.Enqueue(cnode);
+		//				}
+		//			}
+		//		}
+		//		return Tuple.Create(rootNode, nodeCount, backReferences.ToArray());
+		//	}
+		//	catch (Exception ex)
+		//	{
+		//		error = Utils.GetExceptionErrorString(ex);
+		//		return null;
+		//	}
+		//}
 
-		public KeyValuePair<IndexNode, int>[] GetParentReferences(int[] instIndices, out string error,
-			int maxLevel = Int32.MaxValue)
-		{
-			error = null;
-			try
-			{
-				var uniqueSet = new HashSet<int>();
-				var que = new Queue<IndexNode>(256);
-				List<KeyValuePair<IndexNode, int>> lst = new List<KeyValuePair<IndexNode, int>>(instIndices.Length);
-				for (int inst = 0, instCnt = instIndices.Length; inst < instCnt; ++inst)
-				{
-					var instNdx = instIndices[inst];
-					var rootNode = new IndexNode(instNdx, 0); // we at level 0
-					uniqueSet.Clear();
-					que.Clear();
-					que.Enqueue(rootNode);
-					uniqueSet.Add(instNdx);
-					int nodeCount = 0; // do not count root node
-					while (que.Count > 0)
-					{
-						var curNode = que.Dequeue();
-						++nodeCount;
-						if (curNode.Level >= maxLevel || nodeCount > MaxNodes) continue;
-						var parents = _instanceReferences.GetFieldParents(curNode.Index, out error);
-						if (parents.Length > 0)
-						{
-							var nodes = new IndexNode[parents.Length];
-							curNode.AddNodes(nodes);
-							for (int i = 0, icnt = parents.Length; i < icnt; ++i)
-							{
-								var parentNdx = parents[i];
-								var cnode = new IndexNode(parentNdx, curNode.Level + 1);
-								nodes[i] = cnode;
-								if (!uniqueSet.Add(parentNdx))
-								{
-									++nodeCount;
-									continue;
-								}
-								que.Enqueue(cnode);
-							}
-						}
-					}
-					lst.Add(new KeyValuePair<IndexNode, int>(rootNode, nodeCount));
-				}
+		//public KeyValuePair<IndexNode, int>[] GetParentReferences(int[] instIndices, out string error,
+		//	int maxLevel = Int32.MaxValue)
+		//{
+		//	error = null;
+		//	try
+		//	{
+		//		var uniqueSet = new HashSet<int>();
+		//		var que = new Queue<IndexNode>(256);
+		//		List<KeyValuePair<IndexNode, int>> lst = new List<KeyValuePair<IndexNode, int>>(instIndices.Length);
+		//		for (int inst = 0, instCnt = instIndices.Length; inst < instCnt; ++inst)
+		//		{
+		//			var instNdx = instIndices[inst];
+		//			var rootNode = new IndexNode(instNdx, 0); // we at level 0
+		//			uniqueSet.Clear();
+		//			que.Clear();
+		//			que.Enqueue(rootNode);
+		//			uniqueSet.Add(instNdx);
+		//			int nodeCount = 0; // do not count root node
+		//			while (que.Count > 0)
+		//			{
+		//				var curNode = que.Dequeue();
+		//				++nodeCount;
+		//				if (curNode.Level >= maxLevel || nodeCount > MaxNodes) continue;
+		//				var parents = _instanceReferences.GetFieldParents(curNode.Index, out error);
+		//				if (parents.Length > 0)
+		//				{
+		//					var nodes = new IndexNode[parents.Length];
+		//					curNode.AddNodes(nodes);
+		//					for (int i = 0, icnt = parents.Length; i < icnt; ++i)
+		//					{
+		//						var parentNdx = parents[i];
+		//						var cnode = new IndexNode(parentNdx, curNode.Level + 1);
+		//						nodes[i] = cnode;
+		//						if (!uniqueSet.Add(parentNdx))
+		//						{
+		//							++nodeCount;
+		//							continue;
+		//						}
+		//						que.Enqueue(cnode);
+		//					}
+		//				}
+		//			}
+		//			lst.Add(new KeyValuePair<IndexNode, int>(rootNode, nodeCount));
+		//		}
 
-				return lst.ToArray();
-			}
-			catch (Exception ex)
-			{
-				error = Utils.GetExceptionErrorString(ex);
-				return null;
-			}
-		}
+		//		return lst.ToArray();
+		//	}
+		//	catch (Exception ex)
+		//	{
+		//		error = Utils.GetExceptionErrorString(ex);
+		//		return null;
+		//	}
+		//}
 
 		public Tuple<string, AncestorNode> GetParentTree(ulong address, int levelMax)
 		{
@@ -1028,7 +1074,9 @@ namespace ClrMDRIndex
 					{
 						var inst = instances[i];
 						if (!set.Add(inst)) continue;
-						var ancestors = _instanceReferences.GetFieldParents(inst, out error);
+
+
+						var ancestors = _references.GetRootedFieldParents(inst, out error);
 						for (int j = 0, jcnt = ancestors.Length; j < jcnt; ++j)
 						{
 							var ancestor = ancestors[j];
@@ -1128,12 +1176,19 @@ namespace ClrMDRIndex
 		public ListingInfo GetParentReferencesReport(ulong addr, int level = Int32.MaxValue)
 		{
 			string error;
-			Tuple<IndexNode, int, int[]> result = GetParentReferences(addr, out error, level);
+			var instNdx = GetInstanceIndex(addr);
+			if (instNdx < 0)
+			{
+				error = "No object found at: " + Utils.AddressString(addr);
+				return new ListingInfo(error);
+			}
+
+			KeyValuePair<IndexNode, int> result = _references.GetReferences(instNdx, References.DataSource.RootedFields, out error, level);
 			if (!string.IsNullOrEmpty(error) && error[0] != Constants.InformationSymbol)
 			{
 				return new ListingInfo(error);
 			}
-			return OneInstanceParentsReport(result.Item1, result.Item2);
+			return OneInstanceParentsReport(result.Key, result.Value);
 		}
 
 		public ListingInfo GetParentReferencesReport(int typeId, int level = Int32.MaxValue)
@@ -1142,7 +1197,7 @@ namespace ClrMDRIndex
 
 			int[] typeInstances = GetTypeInstanceIndices(typeId);
 
-			KeyValuePair<IndexNode, int>[] result = GetParentReferences(typeInstances, out error, level);
+			KeyValuePair<IndexNode, int>[] result = _references.GetReferences(typeInstances, References.DataSource.RootedFields, out error, level);
 			if (!string.IsNullOrEmpty(error) && error[0] != Constants.InformationSymbol)
 			{
 				return new ListingInfo(error);
@@ -1355,9 +1410,15 @@ namespace ClrMDRIndex
 			{
 				// get ancestors
 				//
-				var ancestors = _instanceReferences.GetFieldParents(addr, out error);
-				if (error != null && !Utils.IsInformation(error)) return null;
-				AncestorDispRecord[] ancestorInfos = GroupAddressesByTypesForDisplay(ancestors);
+				AncestorDispRecord[] ancestorInfos = Utils.EmptyArray<AncestorDispRecord>.Value;
+				var instNdx = GetInstanceIndex(addr);
+				if (instNdx >= 0)
+				{
+					var ancestors = _references.GetRootedFieldParents(instNdx, out error);
+					if (error != null && !Utils.IsInformation(error)) return null;
+					if (ancestors != null && ancestors.Length > 0)
+						ancestorInfos = GroupAddressesByTypesForDisplay(ancestors);
+				}
 
 				// get instance info: fields and values
 				//
@@ -2025,7 +2086,9 @@ namespace ClrMDRIndex
 				}
 
 				List<string> errors = new List<string>();
-				KeyValuePair<int, int[]>[] parentInfos = _instanceReferences.GetMultiFieldParents(addresses, errors);
+
+				var indices = GetInstanceIndices(addresses);
+				KeyValuePair<int, int[]>[] parentInfos = _references.GetMultiFieldParents(indices,References.DataSource.RootedFields, errors);
 
 
 				var dct = new SortedDictionary<string, List<KeyValuePair<ulong, ulong>>>(StringComparer.Ordinal);

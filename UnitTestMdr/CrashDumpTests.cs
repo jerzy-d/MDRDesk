@@ -1,10 +1,12 @@
 ﻿using System;
 using System.Text;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Net.Sockets;
 using ClrMDRIndex;
+using ClrMDRUtil.Utils;
 using DmpNdxQueries;
 using Microsoft.Diagnostics.Runtime;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
@@ -34,17 +36,12 @@ namespace UnitTestMdr
 		///</summary>
 		public TestContext TestContext
 		{
-			get
-			{
-				return testContextInstance;
-			}
-			set
-			{
-				testContextInstance = value;
-			}
+			get { return testContextInstance; }
+			set { testContextInstance = value; }
 		}
 
 		#region Additional test attributes
+
 		//
 		// You can use the following additional attributes as you write your tests:
 		//
@@ -64,9 +61,21 @@ namespace UnitTestMdr
 		// [TestCleanup()]
 		// public void MyTestCleanup() { }
 		//
+
 		#endregion
 
 		#endregion ctrs/context/initialization
+
+		#region misc
+
+		[TestMethod]
+		public void TestMisc()
+		{
+			ulong x = Utils.RootBits.Finalizer;
+			ulong y = Utils.RootBits.Rooted;
+		}
+
+		#endregion misc
 
 		#region collection content
 
@@ -90,7 +99,7 @@ namespace UnitTestMdr
 				Assert.IsTrue(NoNullEntries(strings));
 				var aryresult = CollectionContent.getAryContent(heap, aryAddr);
 				Assert.IsNull(aryresult.Item1);
-				Assert.IsTrue(Utils.SameStringArrays(strings,aryresult.Item5));
+				Assert.IsTrue(Utils.SameStringArrays(strings, aryresult.Item5));
 			}
 		}
 
@@ -262,7 +271,7 @@ namespace UnitTestMdr
 		[TestMethod]
 		public void TestGetHashSetContent()
 		{
-			ulong[] dctAddrs =new ulong[]
+			ulong[] dctAddrs = new ulong[]
 			{
 				0x00023f00013130, // string
 				0x00023f00013170, // decimal
@@ -301,7 +310,7 @@ namespace UnitTestMdr
 
 
 					var valType = valueFld.Type;
-					if (valType.Name == "ERROR" || valType.Name=="System.__Canon")
+					if (valType.Name == "ERROR" || valType.Name == "System.__Canon")
 					{
 						var mt = ValueExtractor.ReadUlongAtAddress(dctAddrs[i] + 96, heap);
 						var tp = heap.GetTypeByMethodTable(mt);
@@ -354,7 +363,7 @@ namespace UnitTestMdr
 				}
 
 				return;
-GET_CONTENT:
+				GET_CONTENT:
 				for (int i = 0, icnt = dctAddrs.Length; i < icnt; ++i)
 				{
 					var setResult = CollectionContent.getHashSetContent(heap, dctAddrs[i]);
@@ -391,6 +400,144 @@ GET_CONTENT:
 		#endregion System.Text.StringBuilder
 
 		#endregion collection content
+
+		#region roots/instances/references
+
+		[TestMethod]
+		public void TestIndexing()
+		{
+			string error;
+			string dumpPath = Setup.RecentAdhocList[0];
+			var dmp = OpenDump(dumpPath);
+			var fileMoniker = new DumpFileMoniker(dumpPath);
+			var strIds = new StringIdDct();
+
+			using (dmp)
+			{
+				var heap = dmp.Heap;
+				ulong[] instances = DumpIndexer.GetHeapAddressesCount(heap);
+				string[] typeNames = DumpIndexer.GetTypeNames(heap, out error);
+				var rootAddrInfo = ClrtRootInfo.GetRootAddresses(0, heap, typeNames, strIds, fileMoniker, out error);
+				Assert.IsNull(error);
+				Assert.IsTrue(Utils.IsSorted(rootAddrInfo.Item1));
+				Assert.IsTrue(Utils.IsSorted(rootAddrInfo.Item2));
+				var rootAddresses = Utils.MergeAddressesRemove0s(rootAddrInfo.Item1, rootAddrInfo.Item2);
+				Assert.IsTrue(Utils.AreAllInExcept0(rootAddresses, rootAddrInfo.Item1));
+				Assert.IsTrue(Utils.AreAllInExcept0(rootAddresses, rootAddrInfo.Item2));
+				Assert.IsTrue(Utils.AreAllDistinct(rootAddresses));
+				Assert.IsTrue(Utils.IsSorted(rootAddresses));
+				rootAddresses = Utils.GetRealAddresses(rootAddresses);
+				HashSet<ulong> done = new HashSet<ulong>();
+				SortedDictionary<ulong, List<ulong>> objRefs = new SortedDictionary<ulong, List<ulong>>();
+				SortedDictionary<ulong, List<ulong>> fldRefs = new SortedDictionary<ulong, List<ulong>>();
+				bool result = References.GetRefrences(heap, rootAddresses, objRefs, fldRefs, done, out error);
+				Assert.IsTrue(result);
+				Assert.IsNull(error);
+
+				string path = fileMoniker.GetFilePath(0, Constants.MapParentFieldsRootedPostfix);
+				result = DumpReferences(path, objRefs, instances, out error);
+				Assert.IsTrue(result);
+				Assert.IsNull(error);
+				path = fileMoniker.GetFilePath(0, Constants.MapFieldParentsRootedPostfix);
+				result = DumpReferences(path, fldRefs, instances, out error);
+				Assert.IsTrue(result);
+				Assert.IsNull(error);
+
+				var rootedAry = done.ToArray(); // for later
+				Array.Sort(rootedAry);
+				done.Clear();
+				objRefs.Clear();
+				fldRefs.Clear();
+				var remaining = Utils.Difference(instances, rootedAry);
+				result = References.GetRefrences(heap, remaining, objRefs, fldRefs, done, out error);
+				Assert.IsTrue(result);
+				Assert.IsNull(error);
+				path = fileMoniker.GetFilePath(0, Constants.MapParentFieldsNotRootedPostfix);
+				result = DumpReferences(path, objRefs, instances, out error);
+				Assert.IsTrue(result);
+				Assert.IsNull(error);
+				path = fileMoniker.GetFilePath(0, Constants.MapFieldParentsNotRootedPostfix);
+				result = DumpReferences(path, fldRefs, instances, out error);
+				Assert.IsTrue(result);
+				Assert.IsNull(error);
+
+				var roots = ClrtRootInfo.Load(0, fileMoniker, out error);
+				Assert.IsNull(error);
+				Assert.IsNotNull(roots);
+
+				ulong[] finalizer = Utils.GetRealAddresses(roots.FinalizerAddresses);
+				Assert.IsTrue(Utils.IsSorted(finalizer));
+
+				int fcnt = 0;
+				for (int i = 0, icnt = finalizer.Length; i < icnt; ++i)
+				{
+					if (Utils.AddressSearch(instances,finalizer[i]) < 0) continue;
+					++fcnt;
+				}
+
+				Utils.SetAddressBit(rootedAry, instances, Utils.RootBits.Rooted);
+				Utils.SetAddressBit(finalizer, instances, Utils.RootBits.Finalizer);
+
+				TestContext.WriteLine("INSTANCE COUNT: " + Utils.LargeNumberString(instances.Length));
+				TestContext.WriteLine("ROOTED ARY COUNT: " + Utils.LargeNumberString(rootedAry.Length));
+				TestContext.WriteLine("UNROOTED ARY COUNT: " + Utils.LargeNumberString(done.Count));
+				TestContext.WriteLine("FINALIZER COUNT: " + Utils.LargeNumberString(finalizer.Length));
+
+				var markedRoooted = 0;
+				var markedFinalizer = 0;
+				for (int i = 0, icnt = instances.Length; i < icnt; ++i)
+				{
+					var addr = instances[i];
+					if (Utils.IsRooted(addr)) ++markedRoooted;
+					if (Utils.IsFinalizer(addr)) ++markedFinalizer;
+				}
+				TestContext.WriteLine("MARKED ROOTED COUNT: " + Utils.LargeNumberString(markedRoooted));
+				TestContext.WriteLine("MARKED FINALIZER COUNT: " + Utils.LargeNumberString(markedFinalizer));
+
+
+
+			} // using dump
+		}
+
+
+
+		private bool DumpReferences(string path, SortedDictionary<ulong, List<ulong>> refs, ulong[] instances,
+			out string error)
+		{
+			error = null;
+			BinaryWriter bw = null;
+			try
+			{
+				bw = new BinaryWriter(File.Open(path, FileMode.Create));
+				bw.Write(refs.Count);
+				foreach (var kv in refs)
+				{
+					var ndx = Array.BinarySearch(instances, kv.Key);
+					Debug.Assert(ndx >= 0);
+					var lst = kv.Value;
+					bw.Write(ndx);
+					bw.Write(lst.Count);
+					for (int i = 0, icnt = lst.Count; i < icnt; ++i)
+					{
+						ndx = Array.BinarySearch(instances, lst[i]);
+						Debug.Assert(ndx >= 0);
+						bw.Write(ndx);
+					}
+				}
+				return true;
+			}
+			catch (Exception ex)
+			{
+				error = Utils.GetExceptionErrorString(ex);
+				return false;
+			}
+			finally
+			{
+				bw?.Close();
+			}
+		}
+
+		#endregion roots/instances/references
 
 		#region threads
 
@@ -628,5 +775,20 @@ GET_CONTENT:
 		}
 
 		#endregion open dump
+
+		#region template
+
+		[TestMethod]
+		public void TestTemplate()
+		{
+			var dmp = OpenDump();
+			using (dmp)
+			{
+				var heap = dmp.Heap;
+
+			}
+		}
+
+		#endregion template
 	}
 }

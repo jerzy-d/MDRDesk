@@ -627,29 +627,29 @@ namespace UnitTestMdr
 			}
 		}
 
-		[TestMethod]
-		public void TestInstanceReferences()
-		{
+		//[TestMethod]
+		//public void TestInstanceReferences()
+		//{
 
-			string error;
-			var version = Assembly.GetExecutingAssembly().GetName().Version;
-			Stopwatch stopWatch = new Stopwatch();
-			string dmpPath = @"D:\Jerzy\WinDbgStuff\dumps\TestApp\TestApp.exe_161031_093521.dmp";
-			//string dmpPath = @"D:\Jerzy\WinDbgStuff\dumps\Analytics\ConvergEx\Analytics_Post.dmp";
-			var index = DumpIndex.OpenIndexInstanceReferences(version, dmpPath, 0, out error);
-			Assert.IsNotNull(index);
-			ulong addr1 = 0x00000000029ff798;
-			ulong addr2 = 0x0000000002a25398;
-			using (index)
-			{
-				var typeName1 = index.GetTypeName(addr1);
-				var result1 = index.GetParents(addr1, out error);
-				var typeName2 = index.GetTypeName(addr2);
-				var result2 = index.GetParents(addr2, out error);
-				var details = index.GetParentDetails(addr2, out error);
-				var refrences = index.GetParentReferences(addr2, out error);
-			}
-		}
+		//	string error;
+		//	var version = Assembly.GetExecutingAssembly().GetName().Version;
+		//	Stopwatch stopWatch = new Stopwatch();
+		//	string dmpPath = @"D:\Jerzy\WinDbgStuff\dumps\TestApp\TestApp.exe_161031_093521.dmp";
+		//	//string dmpPath = @"D:\Jerzy\WinDbgStuff\dumps\Analytics\ConvergEx\Analytics_Post.dmp";
+		//	var index = DumpIndex.OpenIndexInstanceReferences(version, dmpPath, 0, out error);
+		//	Assert.IsNotNull(index);
+		//	ulong addr1 = 0x00000000029ff798;
+		//	ulong addr2 = 0x0000000002a25398;
+		//	using (index)
+		//	{
+		//		var typeName1 = index.GetTypeName(addr1);
+		//		var result1 = index.GetParents(addr1, out error);
+		//		var typeName2 = index.GetTypeName(addr2);
+		//		var result2 = index.GetParents(addr2, out error);
+		//		var details = index.GetParentDetails(addr2, out error);
+		//		var refrences = index.GetParentReferences(addr2, out error);
+		//	}
+		//}
 
 		[TestMethod]
 		public void TestInstanceAddresses()

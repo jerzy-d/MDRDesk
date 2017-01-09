@@ -10,7 +10,7 @@ using System.Threading.Tasks;
 
 namespace ClrMDRIndex
 {
-	public class InstanceReferences
+	public class InstanceReferencesOld
 	{
 		#region fields/properties
 
@@ -35,7 +35,7 @@ namespace ClrMDRIndex
 
 		#region ctors/initialization
 
-		public InstanceReferences(string dumpPath, int runtimeIndex, ulong[] instances, int[] instanceTypes, string[] typeNames)
+		public InstanceReferencesOld(string dumpPath, int runtimeIndex, ulong[] instances, int[] instanceTypes, string[] typeNames)
 		{
 			_dumpPath = dumpPath;
 			_runtimeIndex = runtimeIndex;

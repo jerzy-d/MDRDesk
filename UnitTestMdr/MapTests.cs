@@ -1271,108 +1271,108 @@ namespace UnitTestMdr
 			}
 		}
 
-		[TestMethod]
-		public void TestDictionaryCounts()
-		{
-			const string typeName0 = "System.Decimal";
-			const string typeName1 = "System.Collections.Generic.Dictionary+Entry<System.String,System.Object>[]";
-			const string typeName2 = "System.Collections.Generic.Dictionary<System.String,System.Object>";
+		//[TestMethod]
+		//public void TestDictionaryCounts()
+		//{
+		//	const string typeName0 = "System.Decimal";
+		//	const string typeName1 = "System.Collections.Generic.Dictionary+Entry<System.String,System.Object>[]";
+		//	const string typeName2 = "System.Collections.Generic.Dictionary<System.String,System.Object>";
 
-			string error = null;
-			SortedDictionary<string, int> dct = new SortedDictionary<string, int>(StringComparer.Ordinal);
-			int nullFieldCount = 0;
-			StringBuilder sb = new StringBuilder(256);
-			using (var index = OpenMap(@"D:\Jerzy\WinDbgStuff\dumps\Analytics\Lou\Analytics1.dmp.map"))
-			{
-				try
-				{
-					int typeId0 = index.GetTypeId(typeName0);
-					int typeId1 = index.GetTypeId(typeName1);
-					int typeId2 = index.GetTypeId(typeName2);
+		//	string error = null;
+		//	SortedDictionary<string, int> dct = new SortedDictionary<string, int>(StringComparer.Ordinal);
+		//	int nullFieldCount = 0;
+		//	StringBuilder sb = new StringBuilder(256);
+		//	using (var index = OpenMap(@"D:\Jerzy\WinDbgStuff\dumps\Analytics\Lou\Analytics1.dmp.map"))
+		//	{
+		//		try
+		//		{
+		//			int typeId0 = index.GetTypeId(typeName0);
+		//			int typeId1 = index.GetTypeId(typeName1);
+		//			int typeId2 = index.GetTypeId(typeName2);
 
-					var instNdxs = index.GetTypeInstanceIndices(typeId0);
-					KeyValuePair<IndexNode, int>[] parentTree = index.GetParentReferences(instNdxs, out error, 3);
+		//			var instNdxs = index.GetTypeInstanceIndices(typeId0);
+		//			KeyValuePair<IndexNode, int>[] parentTree = index.GetParentReferences(instNdxs, out error, 3);
 
-					int notRootedCount = 0;
-					var set = new HashSet<ulong>();
-					for (int i = 0, icnt = parentTree.Length; i < icnt; ++i)
-					{
-						var node = parentTree[i].Key;
-						if (node.Nodes.Length < 1)
-						{
-							++notRootedCount;
-							continue;
-						}
-						for (int j = 0, jcnt = node.Nodes.Length; j < jcnt; ++j)
-						{
-							int typeId = index.GetTypeId(node.Nodes[j].Index);
-							if (typeId == typeId1)
-							{
-								var nodes = node.Nodes[j].Nodes;
-								for (int k = 0, kcnt = nodes.Length; k < kcnt; ++k)
-								{
-									int tpId = index.GetTypeId(nodes[k].Index);
-									if (tpId == typeId2)
-									{
-										var addr = index.GetInstanceAddress(nodes[k].Index);
-										set.Add(Utils.RealAddress(addr));
-									}
-								}
-							}
-						}
-					}
+		//			int notRootedCount = 0;
+		//			var set = new HashSet<ulong>();
+		//			for (int i = 0, icnt = parentTree.Length; i < icnt; ++i)
+		//			{
+		//				var node = parentTree[i].Key;
+		//				if (node.Nodes.Length < 1)
+		//				{
+		//					++notRootedCount;
+		//					continue;
+		//				}
+		//				for (int j = 0, jcnt = node.Nodes.Length; j < jcnt; ++j)
+		//				{
+		//					int typeId = index.GetTypeId(node.Nodes[j].Index);
+		//					if (typeId == typeId1)
+		//					{
+		//						var nodes = node.Nodes[j].Nodes;
+		//						for (int k = 0, kcnt = nodes.Length; k < kcnt; ++k)
+		//						{
+		//							int tpId = index.GetTypeId(nodes[k].Index);
+		//							if (tpId == typeId2)
+		//							{
+		//								var addr = index.GetInstanceAddress(nodes[k].Index);
+		//								set.Add(Utils.RealAddress(addr));
+		//							}
+		//						}
+		//					}
+		//				}
+		//			}
 
-					ulong[] addresses = set.ToArray();
-					Array.Sort(addresses);
-					var heap = index.GetFreshHeap();
+		//			ulong[] addresses = set.ToArray();
+		//			Array.Sort(addresses);
+		//			var heap = index.GetFreshHeap();
 
-					int maxCount = 0;
-					int minCount = Int32.MaxValue;
-					int emptyCount = 0;
-					long countSum = 0L;
+		//			int maxCount = 0;
+		//			int minCount = Int32.MaxValue;
+		//			int emptyCount = 0;
+		//			long countSum = 0L;
 
-					for (int i = 0, icnt = addresses.Length; i < icnt; ++i)
-					{
-						var result = CollectionContent.getDictionaryCount(heap, addresses[i]);
-						var count = result.Item2;
-						if (count > maxCount) maxCount = count;
-						if (count < minCount) minCount = count;
-						countSum += count;
-					}
+		//			for (int i = 0, icnt = addresses.Length; i < icnt; ++i)
+		//			{
+		//				var result = CollectionContent.getDictionaryCount(heap, addresses[i]);
+		//				var count = result.Item2;
+		//				if (count > maxCount) maxCount = count;
+		//				if (count < minCount) minCount = count;
+		//				countSum += count;
+		//			}
 
-					double avgCount = (double) countSum/addresses.Length;
+		//			double avgCount = (double) countSum/addresses.Length;
 
-					int a = 0;
+		//			int a = 0;
 
-					//StreamWriter sw = null;
-					//try
-					//{
+		//			//StreamWriter sw = null;
+		//			//try
+		//			//{
 
-					//	sw = new StreamWriter(index.AdhocFolder + Path.DirectorySeparatorChar + "EzeBitVector.txt");
-					//	sw.WriteLine("#### Total EzeBitVector Instance Count: " + Utils.SizeString(addresses.Length));
-					//	sw.WriteLine("#### Total EzeBitVector Unique Count: " + Utils.SizeString(dct.Count));
-					//	sw.WriteLine("#### Columns: duplicate count, ulong[] size, vector content");
-					//	foreach (var kv in dct)
-					//	{
-					//		var pos = kv.Key.IndexOf('_');
-					//		int aryCount = Int32.Parse(kv.Key.Substring(0, pos));
-					//		sw.WriteLine(Utils.CountStringHeader(kv.Value) + Utils.CountStringHeader(aryCount) + kv.Key.Substring(pos + 1));
-					//	}
+		//			//	sw = new StreamWriter(index.AdhocFolder + Path.DirectorySeparatorChar + "EzeBitVector.txt");
+		//			//	sw.WriteLine("#### Total EzeBitVector Instance Count: " + Utils.SizeString(addresses.Length));
+		//			//	sw.WriteLine("#### Total EzeBitVector Unique Count: " + Utils.SizeString(dct.Count));
+		//			//	sw.WriteLine("#### Columns: duplicate count, ulong[] size, vector content");
+		//			//	foreach (var kv in dct)
+		//			//	{
+		//			//		var pos = kv.Key.IndexOf('_');
+		//			//		int aryCount = Int32.Parse(kv.Key.Substring(0, pos));
+		//			//		sw.WriteLine(Utils.CountStringHeader(kv.Value) + Utils.CountStringHeader(aryCount) + kv.Key.Substring(pos + 1));
+		//			//	}
 
-					//}
-					//catch (Exception ex)
-					//{
-					//	Assert.IsTrue(false, ex.ToString());
-					//}
-					//finally { sw?.Close(); }
+		//			//}
+		//			//catch (Exception ex)
+		//			//{
+		//			//	Assert.IsTrue(false, ex.ToString());
+		//			//}
+		//			//finally { sw?.Close(); }
 
-				}
-				catch (Exception ex)
-				{
-					Assert.IsTrue(false, ex.ToString());
-				}
-			}
-		}
+		//		}
+		//		catch (Exception ex)
+		//		{
+		//			Assert.IsTrue(false, ex.ToString());
+		//		}
+		//	}
+		//}
 
 
 		[TestMethod]

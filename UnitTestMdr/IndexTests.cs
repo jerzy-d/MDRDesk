@@ -571,7 +571,7 @@ namespace UnitTestMdr
 				BinaryWriter bw = null;
 				try
 				{
-					var path = index.GetFilePath(0,Constants.MapThreadsAndBlocksGraphFilePostfix);
+					var path = index.GetFilePath(0, Constants.MapThreadsAndBlocksGraphFilePostfix);
 					bw = new BinaryWriter(File.Open(path, FileMode.Create));
 					bw.Write(cycles.Length);
 					for (int i = 0, icnt = cycles.Length; i < icnt; ++i)
@@ -610,7 +610,7 @@ namespace UnitTestMdr
 					bw.Write(threads.Length);
 					for (int i = 0, icnt = threads.Length; i < icnt; ++i)
 					{
-						var clrtThread = new ClrtThread(threads[i],blocks,blkCmp);
+						var clrtThread = new ClrtThread(threads[i], blocks, blkCmp);
 						Assert.IsNotNull(clrtThread);
 						clrtThread.Dump(bw);
 					}
@@ -618,7 +618,7 @@ namespace UnitTestMdr
 					for (int i = 0, icnt = blocks.Length; i < icnt; ++i)
 					{
 						var blk = blocks[i];
-						var ndx = Array.BinarySearch(blkBlockAry,blk,blkCmp);
+						var ndx = Array.BinarySearch(blkBlockAry, blk, blkCmp);
 						var typeId = index.GetTypeId(blk.Object);
 						var clrtBlock = new ClrtBlkObject(blk, ndx, typeId);
 						Assert.IsNotNull(clrtBlock);
@@ -671,7 +671,7 @@ namespace UnitTestMdr
 			{
 				try
 				{
-					
+
 					var runtime = index.Runtime;
 					var heap = runtime.GetHeap();
 					var stackTraceLst = new List<ClrStackFrame>();
@@ -679,7 +679,7 @@ namespace UnitTestMdr
 					var threadLocalDeadVars = new ClrRoot[threads.Length][];
 					var threadLocalAliveVars = new ClrRoot[threads.Length][];
 					var threadFrames = new ClrStackFrame[threads.Length][];
-					var frames = new SortedDictionary<string,int>();
+					var frames = new SortedDictionary<string, int>();
 					var stackObjects = new SortedDictionary<string, int>();
 					var totalStaclObjectsCount = 0;
 					for (int i = 0, icnt = threads.Length; i < icnt; ++i)
@@ -767,7 +767,7 @@ namespace UnitTestMdr
 							}
 							else
 							{
-								stackObjects.Add(stackObj,1);
+								stackObjects.Add(stackObj, 1);
 							}
 						}
 						for (int j = 0, jcnt = threadFrames[i].Length; j < jcnt; ++j)
@@ -788,7 +788,7 @@ namespace UnitTestMdr
 								}
 								else
 								{
-									frames.Add(frameStr,1);
+									frames.Add(frameStr, 1);
 								}
 
 							}
@@ -856,7 +856,7 @@ namespace UnitTestMdr
 
 					var frames = new StringIdDct();
 					var stObjCmp = new Utils.KVIntUlongCmpAsc();
-					var stackObject = new SortedDictionary<KeyValuePair<int,ulong>,int>(stObjCmp);
+					var stackObject = new SortedDictionary<KeyValuePair<int, ulong>, int>(stObjCmp);
 
 					for (int i = 0, icnt = threads.Length; i < icnt; ++i)
 					{
@@ -910,7 +910,7 @@ namespace UnitTestMdr
 							if (!stackObject.TryGetValue(new KeyValuePair<int, ulong>(typeId, root.Object), out stackId))
 							{
 								stackId = stackObject.Count;
-								stackObject.Add(new KeyValuePair<int, ulong>(typeId,root.Object),stackId);
+								stackObject.Add(new KeyValuePair<int, ulong>(typeId, root.Object), stackId);
 							}
 							deadIds.Add(stackId);
 						}
@@ -978,6 +978,32 @@ namespace UnitTestMdr
 
 		#endregion type default values
 
+		#region references
+
+		[TestMethod]
+		public void TestReferences()
+		{
+			string error = null;
+			Stopwatch stopWatch = new Stopwatch();
+			stopWatch.Start();
+			var index = OpenIndex();
+			TestContext.WriteLine(index.DumpFileName + " INDEX OPEN DURATION: " + Utils.StopAndGetDurationString(stopWatch));
+
+			using (index)
+			{
+				string path = index.GetFilePath(0, Constants.MapFieldParentsRootedPostfix);
+				int[] rootedParents;
+				int[][] rootedRefs;
+				References.LoadReferences(path, out rootedParents, out rootedRefs, out error);
+				Assert.IsNull(error);
+
+			}
+
+	Assert.IsNull(error, error);
+		}
+
+		#endregion references
+
 		#region roots
 
 		[TestMethod]
@@ -994,6 +1020,7 @@ namespace UnitTestMdr
 			using (index)
 			{
 				var rootAddresses = index.RootAddresses;
+				Assert.IsTrue(Utils.IsSorted(rootAddresses));
 				var finalizerAddresses = index.FinalizerAddresses;
 				Assert.IsTrue(Utils.IsSorted(finalizerAddresses));
 				var ndxInstances = index.Instances;
@@ -1039,11 +1066,11 @@ namespace UnitTestMdr
 							++emptyFlds;
 							continue;
 						}
-						var fldAry = fldRefList.Select(kv=>kv.Key).ToArray();
+						var fldAry = fldRefList.Select(kv => kv.Key).ToArray();
 						if (fldAry.Length > maxFlds)
 							maxFlds = fldAry.Length;
 						Array.Sort(fldAry);
-						objRefs.Add(raddr,fldAry);
+						objRefs.Add(raddr, fldAry);
 						for (int j = 0; j < fldAry.Length; ++j)
 						{
 							var faddr = fldAry[j];
@@ -1061,12 +1088,12 @@ namespace UnitTestMdr
 							}
 							else
 							{
-								fldRefs.Add(faddr, new List<ulong>() { raddr });
+								fldRefs.Add(faddr, new List<ulong>() {raddr});
 							}
 						}
 					}
 				}
-				while (que.Count>0)
+				while (que.Count > 0)
 				{
 					var addr = que.Dequeue();
 					if (!rooted.Add(addr)) continue;
@@ -1107,26 +1134,85 @@ namespace UnitTestMdr
 						}
 						else
 						{
-							fldRefs.Add(faddr,new List<ulong>() {addr});
+							fldRefs.Add(faddr, new List<ulong>() {addr});
 						}
 					}
 				}
 
 				var rootedAry = rooted.ToArray();
 				Array.Sort(rootedAry);
-				Utils.SetAddressBit(rootedAry, instances, (ulong)Utils.RootBits.Rooted);
-				Utils.SetAddressBit(finalizerAddresses, instances, (ulong)Utils.RootBits.Finalizer);
+				Utils.SetAddressBit(rootedAry, instances, (ulong) Utils.RootBits.Rooted);
+				Utils.SetAddressBit(finalizerAddresses, instances, (ulong) Utils.RootBits.Finalizer);
 
-
+				DumpDiffs(index, ndxInstances, instances, @"RootedDiffs.txt", (ulong)Utils.RootBits.Rooted);
+				DumpDiffs(index, ndxInstances, instances, @"FinilizeDiffs.txt", (ulong)Utils.RootBits.Finalizer);
 
 			}
-
-
 
 			Assert.IsNull(error, error);
 			TestContext.WriteLine(index.DumpFileName + " ROOTS SCAN DURATION: " + Utils.StopAndGetDurationString(stopWatch));
 		}
 
+		void DumpDiffs(DumpIndex index, ulong[] ary1, ulong[] ary2, string fileName, ulong bit)
+		{
+			Assert.IsTrue(ary1.Length == ary2.Length,"Address arrays have different length.");
+			var path = index.GetAdHocPath(fileName);
+			StreamWriter sw = null;
+			try
+			{
+				sw = new StreamWriter(path);
+				for (int i = 0, icnt = ary1.Length; i < icnt; ++i)
+				{
+					var addr1 = ary1[i];
+					var raddr1 = Utils.RealAddress(addr1);
+					var addr2 = ary2[i];
+					var raddr2 = Utils.RealAddress(addr2);
+					Assert.IsTrue(raddr2 == raddr1, "Addresses are different!"); // should not happen
+					bool ary1On = Utils.HasBit(addr1, bit);
+					bool ary2On = Utils.HasBit(addr2, bit);
+					if ((ary1On && ary2On) || (!ary1On && !ary2On)) continue;
+
+					string typeName = index.GetTypeName(raddr1);
+					sw.WriteLine(Utils.RealAddressStringHeader(raddr1) + "  " + Convert.ToInt32(ary1On) + "  " + Convert.ToInt32(ary2On) + "  " + typeName);
+				}
+			}
+			catch (Exception ex)
+			{
+				Assert.IsTrue(false, ex.ToString());
+			}
+			finally
+			{
+				sw?.Close();
+			}
+		}
+
+
+		[TestMethod]
+		public void TestIndexRoots()
+		{
+			string error = null;
+			Stopwatch stopWatch = new Stopwatch();
+			stopWatch.Start();
+			var index = OpenIndex();
+			Assert.IsNotNull(index);
+			TestContext.WriteLine(index.DumpFileName + " INDEX OPEN DURATION: " + Utils.StopAndGetDurationString(stopWatch));
+			stopWatch.Restart();
+			using (index)
+			{
+				var instances = index.Instances;
+				var markedRoooted = 0;
+				var markedFinalizer = 0;
+				for (int i = 0, icnt = instances.Length; i < icnt; ++i)
+				{
+					var addr = instances[i];
+					if (Utils.IsRooted(addr)) ++markedRoooted;
+					if (Utils.IsFinalizer(addr)) ++markedFinalizer;
+				}
+				TestContext.WriteLine("INSTANCE COUNT: " + Utils.LargeNumberString(instances.Length));
+				TestContext.WriteLine("MARKED ROOTED COUNT: " + Utils.LargeNumberString(markedRoooted));
+				TestContext.WriteLine("MARKED FINALIZER COUNT: " + Utils.LargeNumberString(markedFinalizer));
+			}
+		}
 
 		#endregion roots
 
@@ -1134,11 +1220,12 @@ namespace UnitTestMdr
 
 
 
-		#endregion get list of specific clr objects
+			#endregion get list of specific clr objects
 
 		#region misc
 
-		[TestMethod]
+			[
+			TestMethod]
 		public void TestKnownTypes()
 		{
 			string[] typeNames = new string[]

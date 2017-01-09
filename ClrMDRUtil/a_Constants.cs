@@ -207,6 +207,16 @@ namespace ClrMDRIndex
 		public const string MapFieldRefOffsetsFilePostfix = ".`FIELDREFOFFSETS[0].bin";
 		public const string MapFieldParentsPostfix = ".`FIELDPARENTS[0].bin";
 
+		public const string MapParentsRootedPostfix = ".`PARENTSROOTED[0].bin";
+		public const string MapParentFieldsRootedPostfix = ".`PARENTFIELDSROOTED[0].bin";
+		public const string MapFieldsRootedPostfix = ".`FIELDSROOTED[0].bin";
+		public const string MapFieldParentsRootedPostfix = ".`FIELDPARENTSROOTED[0].bin";
+
+		public const string MapParentsNotRootedPostfix = ".`PARENTS!ROOTED[0].bin";
+		public const string MapParentFieldsNotRootedPostfix = ".`PARENTFIELDS!ROOTED[0].bin";
+		public const string MapFieldsNotRootedPostfix = ".`FIELDS!ROOTED[0].bin";
+		public const string MapFieldParentsNotRootedPostfix = ".`FIELDPARENTS!ROOTED[0].bin";
+
 		public const string TxtCommonStringIdsPostfix = ".`STRINGIDS[0].txt"; // list of strings, ordered by ids
 
 		public const string MapThreadsAndBlocksFilePostfix = ".`THREADSANDBLOCKS[0].bin";

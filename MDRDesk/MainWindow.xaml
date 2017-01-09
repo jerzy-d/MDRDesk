@@ -18,22 +18,6 @@
         Closing="MainWindow_Closing">
 
     <Window.Resources>
-        <!--<Style x:Key="comboBoxStyle">
-            <Style.Resources>
-                -->
-        <!-- Background of selected item when focussed -->
-        <!--
-                <SolidColorBrush x:Key="{x:Static SystemColors.HighlightBrushKey}" Color="LightGray" />
-                -->
-        <!-- Background of selected item when not focussed -->
-        <!--
-                <SolidColorBrush x:Key="{x:Static SystemColors.ControlBrushKey}" Color="LightGray" />
-                -->
-        <!--SolidColorBrush x:Key="{x:Static SystemColors.ControlBrush}" Color="Gray"/-->
-        <!--
-            </Style.Resources>
-        </Style>-->
-
         <Style x:Key="MenuTooltip" TargetType="{x:Type ToolTip}">
             <Setter Property="HorizontalOffset" Value="50" />
             <Setter Property="VerticalOffset" Value="-50" />

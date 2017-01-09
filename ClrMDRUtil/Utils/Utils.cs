@@ -19,14 +19,14 @@ namespace ClrMDRIndex
 	{
 		#region Address Handling
 
-		public enum RootBits : ulong
+		public struct RootBits
 		{
-			Mask =			0xF000000000000000,
-			RootedMask =	0xC000000000000000,
-			FinalizerMask = 0x3000000000000000,
-			AddressMask =	0x0FFFFFFFFFFFFFFF,
-			Rooted =		0x8000000000000000,
-			Finalizer =		0x4000000000000000,
+			public static ulong Mask = 0xF000000000000000;
+			public static ulong RootedMask = 0xC000000000000000;
+			public static ulong FinalizerMask = 0x3000000000000000;
+			public static ulong AddressMask = 0x0FFFFFFFFFFFFFFF;
+			public static ulong Rooted = 0x8000000000000000;
+			public static ulong Finalizer = 0x4000000000000000;
 		}
 
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -57,6 +57,15 @@ namespace ClrMDRIndex
 			return ary;
 		}
 
+		public static ulong[] GetRealAddressesInPlace(ulong[] addrs)
+		{
+			for (int i = 0, icnt = addrs.Length; i < icnt; ++i)
+			{
+				addrs[i] = RealAddress(addrs[i]);
+			}
+			return addrs;
+		}
+
 		/// <summary>
 		/// Marking of the instance addresses.
 		/// Setting top bits of instance addresses, this way we will know if instances is rooted or belong to finalizer queue.
@@ -70,18 +79,19 @@ namespace ClrMDRIndex
 			int bNdx = 0, bLen = bitSetters.Length, aNdx = 0, aLen = addresses.Length;
 			while (bNdx < bLen && aNdx < aLen)
 			{
-				var addr = addresses[aNdx];
-				if (bitSetters[bNdx] > addr)
+				var addr = Utils.RealAddress(addresses[aNdx]);
+				var baddr = Utils.RealAddress(bitSetters[bNdx]);
+				if (baddr > addr)
 				{
 					++aNdx;
 					continue;
 				}
-				if (bitSetters[bNdx] < addr)
+				if (baddr < addr)
 				{
 					++bNdx;
 					continue;
 				}
-				addresses[aNdx] = addr | bit;
+				addresses[aNdx] |= bit;
 				++aNdx;
 				++bNdx;
 			}
@@ -177,9 +187,13 @@ namespace ClrMDRIndex
 			return (addr & (ulong)RootBits.RootedMask) > 0;
 		}
 
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		public static bool HasBit(ulong addr, ulong bit)
+		{
+			return (addr & bit) > 0;
+		}
 
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void SortAddresses(ulong[] addresses)
         {
             Array.Sort(addresses, new AddressCmpAcs());
@@ -2172,13 +2186,137 @@ namespace ClrMDRIndex
             return bad.Length < 1 ? true : false;
         }
 
-        public static bool IsSorted<T>(IList<T> lst) where T : System.IComparable<T>
+		public static bool AreAddressesSorted(IList<ulong> lst)
+		{
+			for (int i = 1, icnt = lst.Count; i < icnt; ++i)
+			{
+				if (RealAddress(lst[i-1]) > RealAddress(lst[i])) return false;
+			}
+			return true;
+		}
+
+
+		public static bool IsSorted<T>(IList<T> lst) where T : System.IComparable<T>
 		{
 			for (int i = 1, icnt = lst.Count; i < icnt; ++i)
 			{
 				if (lst[i - 1].CompareTo(lst[i]) > 0) return false;
 			}
 			return true;
+		}
+
+		public static bool AreAllDistinct(ulong[] ary)
+		{
+			Debug.Assert(IsSorted(ary));
+			for (int i = 1, icnt = ary.Length; i < icnt; ++i)
+			{
+				if (ary[i-1] == ary[i])
+					return false;
+			}
+			return true;
+		}
+
+		public static bool AreAllInExcept0(ulong[] main, ulong[] subAry)
+		{
+			Debug.Assert(IsSorted(main));
+			Debug.Assert(IsSorted(subAry));
+			Debug.Assert(main.Length >= subAry.Length);
+			for (int i = 0, icnt = subAry.Length; i < icnt; ++i)
+			{
+				if (subAry[i] == 0) continue;
+				var ndx = Array.BinarySearch(main, subAry[i]);
+				if (ndx < 0) return false;
+			}
+			return true;
+		}
+
+		/// <summary>
+		/// Get all items in main array which are not in sub array.
+		/// </summary>
+		/// <param name="main">Instance od ulong array.</param>
+		/// <param name="sub">Instance od ulong array.</param>
+		/// <returns>Set difference.</returns>
+		/// <remarks>Length of main array should be greater or equal to syb array length. Both arrays must be sorted.</remarks>
+		public static ulong[] Difference(ulong[] main, ulong[] sub)
+		{
+			Debug.Assert(main!=null && sub!=null && main.Length >= sub.Length);
+			Debug.Assert(Utils.IsSorted(main) && Utils.IsSorted(sub));
+			var lst = new List<ulong>(main.Length - sub.Length);
+			int sNdx = 0, sLen = sub.Length;
+			for (int i = 0, icnt = main.Length; i < icnt; ++i)
+			{
+				var addr = main[i];
+				if (sNdx < sLen)
+				{
+					if (addr == sub[sNdx])
+					{
+						++sNdx;
+						continue;
+					}
+					if (addr < sub[sNdx])
+					{
+						lst.Add(addr);
+						continue;
+					}
+					while (sNdx < sLen && addr > sub[sNdx]) ++sNdx;
+					continue;
+				}
+				lst.Add(addr);
+			}
+			return lst.ToArray();
+		}
+
+		public static ulong[] MergeAddressesRemove0s(ulong[] ary1, ulong[] ary2)
+		{
+			Debug.Assert(IsSorted(ary1));
+			Debug.Assert(IsSorted(ary2));
+			ulong[] longer = ary1.Length < ary2.Length ? ary2 : ary1;
+			ulong[] shorter = ary1.Length < ary2.Length ? ary1 : ary2;
+			int lNdx = 0, sNdx = 0, lLen = longer.Length, sLen = shorter.Length;
+			var lst = new List<ulong>(lLen +sLen);
+			while (RealAddress(shorter[sNdx]) == 0UL) ++sNdx;
+			while (RealAddress(longer[sNdx]) == 0UL) ++lNdx;
+
+			while (lNdx < lLen || sNdx < sLen)
+			{
+				if (sNdx < sLen && lNdx < lLen)
+				{
+					var sAddr = RealAddress(shorter[sNdx]);
+					var lAddr = RealAddress(longer[lNdx]);
+					if (sAddr < lAddr)
+					{
+						AddUnique(lst, shorter[sNdx]);
+						++sNdx;
+						continue;
+					}
+					if (lAddr < sAddr)
+					{
+						AddUnique(lst, longer[lNdx]);
+						++lNdx;
+						continue;
+					}
+					AddUnique(lst, shorter[sNdx]);
+					++sNdx;
+					++lNdx;
+					continue;
+				}
+				if (lNdx < lLen)
+				{
+					AddUnique(lst, longer[lNdx]);
+					++lNdx;
+					continue;
+				}
+				AddUnique(lst, shorter[sNdx]);
+				++sNdx;
+			}
+			return lst.ToArray();
+		}
+
+		public static void AddUnique(List<ulong> lst, ulong val)
+		{
+			int cnt = lst.Count;
+			if (cnt > 0 && RealAddress(lst[cnt - 1]) == RealAddress(val)) return;
+			lst.Add(val);
 		}
 
 		public static int[] GetIntArrayMapping(int[] ary, out int[] offs)
