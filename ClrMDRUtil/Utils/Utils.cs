@@ -47,14 +47,58 @@ namespace ClrMDRIndex
 			return addr & (ulong)RootBits.AddressMask;
 		}
 
-		public static ulong[] GetRealAddresses(ulong[] addrs)
+		public static int[] GetAddressIndices(ulong[] addrs, ulong[] all)
 		{
-			ulong[] ary = new ulong[addrs.Length];
-			for (int i = 0, icnt = addrs.Length; i < icnt; ++i)
+			Debug.Assert(Utils.AreAddressesSorted(addrs));
+			Debug.Assert(Utils.AreAddressesSorted(all));
+			List<int> lst = new List<int>(addrs.Length);
+			int andx = 0, lndx=0, alen=addrs.Length, llen=all.Length;
+			while (andx < alen && lndx < llen)
 			{
-				ary[i] = RealAddress(addrs[i]);
+				if (addrs[andx] == all[lndx])
+				{
+					lst.Add(lndx);
+					++lndx;
+					++andx;
+					continue;
+				}
+				if (addrs[andx] < all[lndx])
+				{
+					++andx;
+					continue;
+				}
+				++lndx;
+
 			}
-			return ary;
+			return lst.ToArray();
+		}
+
+		public static int[] GetAddressIndicesAndRest(ulong[] addrs, ulong[] all, out int[] rest)
+		{
+			Debug.Assert(Utils.AreAddressesSorted(addrs));
+			Debug.Assert(Utils.AreAddressesSorted(all));
+			List<int> lst = new List<int>(addrs.Length);
+			List<int> rlst = new List<int>(all.Length-addrs.Length);
+			int andx = 0, lndx = 0, alen = addrs.Length, llen = all.Length;
+			while (andx < alen && lndx < llen)
+			{
+				if (addrs[andx] == all[lndx])
+				{
+					lst.Add(lndx);
+					++lndx;
+					++andx;
+					continue;
+				}
+				if (addrs[andx] < all[lndx])
+				{
+					++andx;
+					continue;
+				}
+				rlst.Add(lndx);
+				++lndx;
+			}
+			rest = rlst.ToArray();
+			return lst.ToArray();
 		}
 
 		public static ulong[] GetRealAddressesInPlace(ulong[] addrs)
@@ -65,6 +109,17 @@ namespace ClrMDRIndex
 			}
 			return addrs;
 		}
+
+		public static ulong[] GetRealAddresses(ulong[] addrs)
+		{
+			ulong[] ary = new ulong[addrs.Length];
+			for (int i = 0, icnt = addrs.Length; i < icnt; ++i)
+			{
+				ary[i] = RealAddress(addrs[i]);
+			}
+			return ary;
+		}
+
 
 		/// <summary>
 		/// Marking of the instance addresses.
@@ -1392,6 +1447,14 @@ namespace ClrMDRIndex
             }
         }
 
+		public class KVUlongIntKCmp : IComparer<KeyValuePair<ulong, int>>
+		{
+			public int Compare(KeyValuePair<ulong, int> a, KeyValuePair<ulong, int> b)
+			{
+				return a.Key < b.Key ? -1 : (a.Key > b.Key ? 1 : 0);
+			}
+		}
+
 		public class KVIntUlongCmpAsc : IComparer<KeyValuePair<int, ulong>>
 		{
 			public int Compare(KeyValuePair<int, ulong> a, KeyValuePair<int, ulong> b)
@@ -2156,6 +2219,32 @@ namespace ClrMDRIndex
 			return ary;
 		}
 
+		public static void GetPermutations(int[] list, int k, int m, List<int[]> result)
+		{
+
+			if (k == m)
+			{
+				result.Add(list.ToArray());
+			}
+			else
+				for (int i = k; i <= m; i++)
+				{
+					Swap(ref list[k], ref list[i]);
+					GetPermutations(list, k + 1, m, result);
+					Swap(ref list[k], ref list[i]);
+				}
+		}
+
+		private static void Swap(ref int a, ref int b)
+		{
+			if (a == b) return;
+
+			a ^= b;
+			b ^= a;
+			a ^= b;
+		}
+
+
 		public static bool IsSorted(IList<string> lst, out Tuple<string,string> badCouple)
 		{
 			badCouple = null;
@@ -2216,6 +2305,17 @@ namespace ClrMDRIndex
 			return true;
 		}
 
+		public static bool AreAllDistinct(int[] ary)
+		{
+			Debug.Assert(IsSorted(ary));
+			for (int i = 1, icnt = ary.Length; i < icnt; ++i)
+			{
+				if (ary[i - 1] == ary[i])
+					return false;
+			}
+			return true;
+		}
+
 		public static bool AreAllInExcept0(ulong[] main, ulong[] subAry)
 		{
 			Debug.Assert(IsSorted(main));
@@ -2224,8 +2324,35 @@ namespace ClrMDRIndex
 			for (int i = 0, icnt = subAry.Length; i < icnt; ++i)
 			{
 				if (subAry[i] == 0) continue;
-				var ndx = Array.BinarySearch(main, subAry[i]);
+				var ndx = Utils.AddressSearch(main, subAry[i]);
 				if (ndx < 0) return false;
+			}
+			return true;
+		}
+
+		public static bool DoesNotContain(ulong[] ary, ulong val)
+		{
+			for (int i = 0, icnt = ary.Length; i < icnt; ++i)
+			{
+				if (ary[i] == val) return false;
+			}
+			return true;
+		}
+
+		public static bool DoesNotContain(int[] ary, int val)
+		{
+			for (int i = 0, icnt = ary.Length; i < icnt; ++i)
+			{
+				if (ary[i] == val) return false;
+			}
+			return true;
+		}
+
+		public static bool IsSorted(IList<int> lst)
+		{
+			for (int i = 1, icnt = lst.Count; i < icnt; ++i)
+			{
+				if (lst[i - 1] > lst[i]) return false;
 			}
 			return true;
 		}

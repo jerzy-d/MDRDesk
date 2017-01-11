@@ -6,6 +6,7 @@ using System.IO;
 using System.Linq;
 using System.Net.Sockets;
 using ClrMDRIndex;
+using ClrMDRUtil;
 using ClrMDRUtil.Utils;
 using DmpNdxQueries;
 using Microsoft.Diagnostics.Runtime;
@@ -73,6 +74,37 @@ namespace UnitTestMdr
 		{
 			ulong x = Utils.RootBits.Finalizer;
 			ulong y = Utils.RootBits.Rooted;
+
+
+
+			List<int[]> lst = new List<int[]>();
+			int[] ary = new[] {1, 2, 3, 16, 17};
+			Utils.GetPermutations(ary,0,ary.Length-1,lst);
+			IntArrayStore rToF = new IntArrayStore(lst.Count+2);
+			for (int i = 0, icnt = lst.Count; i < icnt; ++i)
+			{
+				var lary = lst[i];
+				for (int j = 0, jcnt = lary.Length; j < jcnt; ++j)
+				{
+					rToF.Add(i, lary[j]);
+				}
+			}
+
+			for (int i = 0, icnt = lst.Count; i < icnt; ++i)
+			{
+				var lary = lst[i];
+				var sary = rToF.GetEntry(i);
+				Assert.IsTrue(Utils.IsSorted(sary));
+			}
+
+			//rToF.Add(1, 16);
+			//rToF.Add(1, 2);
+			//rToF.Add(1, 3);
+			//rToF.Add(1, 1);
+			//rToF.Add(1, 0);
+
+			//rToF.Add(1, 16);
+
 		}
 
 		#endregion misc
@@ -426,7 +458,7 @@ namespace UnitTestMdr
 				Assert.IsTrue(Utils.AreAllInExcept0(rootAddresses, rootAddrInfo.Item2));
 				Assert.IsTrue(Utils.AreAllDistinct(rootAddresses));
 				Assert.IsTrue(Utils.IsSorted(rootAddresses));
-				rootAddresses = Utils.GetRealAddresses(rootAddresses);
+				rootAddresses = Utils.GetRealAddressesInPlace(rootAddresses);
 				HashSet<ulong> done = new HashSet<ulong>();
 				SortedDictionary<ulong, List<ulong>> objRefs = new SortedDictionary<ulong, List<ulong>>();
 				SortedDictionary<ulong, List<ulong>> fldRefs = new SortedDictionary<ulong, List<ulong>>();
@@ -465,7 +497,7 @@ namespace UnitTestMdr
 				Assert.IsNull(error);
 				Assert.IsNotNull(roots);
 
-				ulong[] finalizer = Utils.GetRealAddresses(roots.FinalizerAddresses);
+				ulong[] finalizer = Utils.GetRealAddressesInPlace(roots.FinalizerAddresses);
 				Assert.IsTrue(Utils.IsSorted(finalizer));
 
 				int fcnt = 0;
@@ -499,6 +531,113 @@ namespace UnitTestMdr
 			} // using dump
 		}
 
+		[TestMethod]
+		public void TestIndexing2()
+		{
+			string error;
+			string dumpPath = Setup.RecentAdhocList[0];
+			var dmp = OpenDump(dumpPath);
+			var fileMoniker = new DumpFileMoniker(dumpPath);
+			var strIds = new StringIdDct();
+
+			using (dmp)
+			{
+				var heap = dmp.Heap;
+				ulong[] instances = DumpIndexer.GetHeapAddressesCount(heap);
+				string[] typeNames = DumpIndexer.GetTypeNames(heap, out error);
+				var rootAddrInfo = ClrtRootInfo.GetRootAddresses(0, heap, typeNames, strIds, fileMoniker, out error);
+				Utils.GetRealAddressesInPlace(rootAddrInfo.Item1);
+				Utils.GetRealAddressesInPlace(rootAddrInfo.Item2);
+
+				Assert.IsNull(error);
+				Assert.IsTrue(Utils.AreAddressesSorted(rootAddrInfo.Item1));
+				Assert.IsTrue(Utils.AreAddressesSorted(rootAddrInfo.Item2));
+
+				var rootAddresses = Utils.MergeAddressesRemove0s(rootAddrInfo.Item1, rootAddrInfo.Item2);
+
+				Assert.IsTrue(Utils.AreAllInExcept0(rootAddresses, rootAddrInfo.Item1));
+				Assert.IsTrue(Utils.AreAllInExcept0(rootAddresses, rootAddrInfo.Item2));
+				Assert.IsTrue(Utils.AreAllDistinct(rootAddresses));
+				Assert.IsTrue(Utils.IsSorted(rootAddresses));
+
+				rootAddresses = Utils.GetRealAddressesInPlace(rootAddresses);
+				Bitset bitset = new Bitset(instances.Length);
+				var rootAddressNdxs = Utils.GetAddressIndices(rootAddresses, instances);
+
+				string path1 = fileMoniker.GetFilePath(0, Constants.MapParentFieldsRootedPostfix);
+				string path2 = fileMoniker.GetFilePath(0, Constants.MapFieldParentsRootedPostfix);
+				bool result = References.GetRefrences(heap, rootAddressNdxs, instances, bitset, path1, path2, out error);
+				Assert.IsTrue(result);
+				Assert.IsNull(error);
+
+				int[] head;
+				int[][] lists;
+				result = References.LoadReferences(path2, out head, out lists, out error);
+
+				for (int i = 0, icnt = lists.Length; i < icnt; ++i)
+				{
+					var lst = lists[i];
+					Assert.IsTrue(Utils.IsSorted(lst));
+					Assert.IsTrue(Utils.AreAllDistinct(lst));
+					Assert.IsTrue(Utils.DoesNotContain(lst,Int32.MaxValue));
+				}
+
+				Assert.IsTrue(result);
+				Assert.IsNull(error);
+
+
+
+				//var remaining = Utils.Difference(instances, rootedAry);
+
+				//result = References.GetRefrences(heap, remaining, objRefs, fldRefs, done, out error);
+				//Assert.IsTrue(result);
+				//Assert.IsNull(error);
+				//path = fileMoniker.GetFilePath(0, Constants.MapParentFieldsNotRootedPostfix);
+				//result = DumpReferences(path, objRefs, instances, out error);
+				//Assert.IsTrue(result);
+				//Assert.IsNull(error);
+				//path = fileMoniker.GetFilePath(0, Constants.MapFieldParentsNotRootedPostfix);
+				//result = DumpReferences(path, fldRefs, instances, out error);
+				//Assert.IsTrue(result);
+				//Assert.IsNull(error);
+
+				//var roots = ClrtRootInfo.Load(0, fileMoniker, out error);
+				//Assert.IsNull(error);
+				//Assert.IsNotNull(roots);
+
+				//ulong[] finalizer = Utils.GetRealAddresses(roots.FinalizerAddresses);
+				//Assert.IsTrue(Utils.IsSorted(finalizer));
+
+				//int fcnt = 0;
+				//for (int i = 0, icnt = finalizer.Length; i < icnt; ++i)
+				//{
+				//	if (Utils.AddressSearch(instances, finalizer[i]) < 0) continue;
+				//	++fcnt;
+				//}
+
+				//Utils.SetAddressBit(rootedAry, instances, Utils.RootBits.Rooted);
+				//Utils.SetAddressBit(finalizer, instances, Utils.RootBits.Finalizer);
+
+				TestContext.WriteLine("INSTANCE COUNT: " + Utils.LargeNumberString(instances.Length));
+				//TestContext.WriteLine("ROOTED ARY COUNT: " + Utils.LargeNumberString(rootedAry.Length));
+				//TestContext.WriteLine("UNROOTED ARY COUNT: " + Utils.LargeNumberString(done.Count));
+				//TestContext.WriteLine("FINALIZER COUNT: " + Utils.LargeNumberString(finalizer.Length));
+
+				var markedRoooted = 0;
+				var markedFinalizer = 0;
+				for (int i = 0, icnt = instances.Length; i < icnt; ++i)
+				{
+					var addr = instances[i];
+					if (Utils.IsRooted(addr)) ++markedRoooted;
+					if (Utils.IsFinalizer(addr)) ++markedFinalizer;
+				}
+				TestContext.WriteLine("MARKED ROOTED COUNT: " + Utils.LargeNumberString(markedRoooted));
+				TestContext.WriteLine("MARKED FINALIZER COUNT: " + Utils.LargeNumberString(markedFinalizer));
+
+
+
+			} // using dump
+		}
 
 
 		private bool DumpReferences(string path, SortedDictionary<ulong, List<ulong>> refs, ulong[] instances,

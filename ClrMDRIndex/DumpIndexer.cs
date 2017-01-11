@@ -243,7 +243,7 @@ namespace ClrMDRIndex
 						progress?.Report("Waiting for thread info worker... Prev. action/total durations: " + GetIndexingDurationString(indexingStopWatch, indexingActionTimeSpan, out indexingActionTimeSpan));
 						extraWorker.Join();
 
-						ulong[] finalizer = Utils.GetRealAddresses(rootAddrInfo.Item2);
+						ulong[] finalizer = Utils.GetRealAddressesInPlace(rootAddrInfo.Item2);
 						Utils.SetAddressBit(rootedAry, addresses, Utils.RootBits.Rooted);
 						Utils.SetAddressBit(finalizer, addresses, Utils.RootBits.Finalizer);
 						path = _fileMoniker.GetFilePath(r, Constants.MapInstancesFilePostfix);

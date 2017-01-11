@@ -5,10 +5,10 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:MDRDesk"
         mc:Ignorable="d"
-        Title="Reference Search Setup" Height="300" Width="500"
+        Title="Reference Search Setup" Height="400" Width="550"
         FontFamily="Consolas" FontSize="14"
         WindowStartupLocation="CenterOwner" ResizeMode="NoResize" ShowInTaskbar="False" WindowStyle="ToolWindow">
-    <Grid Margin="2,2,2,-84">
+    <Grid Margin="2,2,2,2">
         <Grid.ColumnDefinitions>
             <ColumnDefinition Width="177*"/>
             <ColumnDefinition Width="68*"/>
@@ -69,10 +69,10 @@
             <Label Grid.Column="1" VerticalAlignment="Center" FontFamily="Consolas" FontSize="11" FontWeight="DemiBold">Enter Search Depth Level:</Label>
             <TextBox x:Name="RefSearchLevel" Grid.Column="2" Margin="16,8,4,8" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" Background="Azure"></TextBox>
         </Grid>
-        <TextBlock Grid.Row="5" Margin="2,2,2,2" Background="LightGray" Grid.ColumnSpan="2"></TextBlock>
-        <WrapPanel Grid.Row="6" HorizontalAlignment="Right" VerticalAlignment="Center" Margin="0,7,2,8" Grid.Column="1">
-            <Button IsDefault="True" Name="btnDialogOk" Click="DialogOkClicked" MinWidth="60" Margin="0,0,10,0">_Ok</Button>
-            <Button IsCancel="True" MinWidth="60" HorizontalAlignment="Right">_Cancel</Button>
+        <TextBlock Grid.Row="5" Margin="2,2,2,2" Background="LightGray" Grid.Column="0" Grid.ColumnSpan="2" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" ></TextBlock>
+        <WrapPanel Grid.Row="6" HorizontalAlignment="Stretch" VerticalAlignment="Center" Margin="2,2,2,2" Grid.Column="1" Orientation="Horizontal">
+            <Button IsDefault="True" Name="btnDialogOk" Click="DialogOkClicked" MinWidth="60" Margin="0,0,10,0" HorizontalAlignment="Right" FontFamily="Consolas" FontSize="11">_Ok</Button>
+            <Button IsCancel="True" MinWidth="60" HorizontalAlignment="Right" FontFamily="Consolas" FontSize="11">_Cancel</Button>
         </WrapPanel>
     </Grid>
 </Window>

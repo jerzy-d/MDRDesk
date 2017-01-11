@@ -1188,6 +1188,11 @@ namespace ClrMDRIndex
 			{
 				return new ListingInfo(error);
 			}
+			if (result.Key == null)
+			{
+				return new ListingInfo("Could not get any information for: " + Utils.RealAddress(addr) + ", this looks like a bug. Please let know development about it.");
+			}
+
 			return OneInstanceParentsReport(result.Key, result.Value);
 		}
 

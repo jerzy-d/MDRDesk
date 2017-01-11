@@ -115,7 +115,11 @@
     <Compile Include="Utils\AncestorDispRecord.cs" />
     <Compile Include="Utils\AncestorNode.cs" />
     <Compile Include="Utils\Arena.cs" />
+    <Compile Include="Utils\FileReader.cs" />
+    <Compile Include="Utils\FileWriter.cs" />
+    <Compile Include="Utils\IntArrayStore.cs" />
     <Compile Include="Utils\BinaryHeap.cs" />
+    <Compile Include="Utils\Bitset.cs" />
     <Compile Include="Utils\DependencyNode.cs" />
     <Compile Include="Utils\IndexNode.cs" />
     <Compile Include="Utils\IndexValue.cs" />

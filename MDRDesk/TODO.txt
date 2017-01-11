@@ -15,3 +15,12 @@ Implement show roots grid. Header="Show Roots" Click="IndexShowRootsClicked"
 0008 12/30/16
 Implement show roots grid. Header="Show Roots" Click="IndexShowRootsClicked"
 
+        /// <summary>
+        /// When you enumerate a object, the offset within the object is returned.  This offset might represent
+        /// nested fields (obj.Field1.Field2).    GetFieldOffset returns the first of these field (Field1), 
+        /// and 'remaining' offset with the type of Field1 (which must be a struct type).   Calling 
+        /// GetFieldForOffset repeatedly until the childFieldOffset is 0 will retrieve the whole chain.  
+        /// </summary>
+        /// <returns>true if successful.  Will fail if it 'this' is an array type</returns>
+        abstract public bool GetFieldForOffset(int fieldOffset, bool inner, out ClrInstanceField childField, out int childFieldOffset);
+

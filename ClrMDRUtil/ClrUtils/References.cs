@@ -1,8 +1,11 @@
 ﻿using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Threading;
+using ClrMDRUtil;
 using Microsoft.Diagnostics.Runtime;
 
 namespace ClrMDRIndex
@@ -59,19 +62,6 @@ namespace ClrMDRIndex
 			_runtimeIndex = runtimeIndex;
 			_accessorLock = new object();
 		}
-
-		//public References(string dumpPath, int runtimeIndex, ulong[] instances, int[] instanceTypes, string[] typeNames,
-		//	int[] typeInstanceMap, KeyValuePair<int, int>[] typeInstanceOffsets)
-		//{
-		//	_dumpPath = dumpPath;
-		//	_runtimeIndex = runtimeIndex;
-		//	_instances = instances;
-		//	_instanceTypes = instanceTypes;
-		//	_typeNames = typeNames;
-		//	_typeInstanceMap = typeInstanceMap;
-		//	_typeInstanceOffsets = typeInstanceOffsets;
-		//	_accessorLock = new object();
-		//}
 
 		public bool Init(out string error)
 		{
@@ -283,6 +273,99 @@ namespace ClrMDRIndex
 
 		}
 
+		public static bool GetRefrences(ClrHeap heap, int[] indices, ulong[] instances, Bitset bitset, string rToFPath, string fToRPath, out string error)
+		{
+			error = null;
+			try
+			{
+				var fldRefList = new List<KeyValuePair<ulong, int>>(64);
+				var fldRefIndices = new List<int>(64);
+				var que = new Queue<KeyValuePair<int,ulong>>(1024 * 1024 * 10);
+				Utils.KVUlongIntKCmp kvCmp = new Utils.KVUlongIntKCmp();
+
+				BlockingCollection<KeyValuePair<int,int[]>> dataToPersist = new BlockingCollection<KeyValuePair<int, int[]>>();
+				ReferencePersistor persistor = new ReferencePersistor(rToFPath,fToRPath,instances.Length,dataToPersist);
+				persistor.Start();
+
+				for (int i = 0, icnt = indices.Length; i < icnt; ++i)
+				{
+					var rndx = indices[i];
+					var raddr = Utils.RealAddress(instances[rndx]);
+					var clrType = heap.GetObjectType(raddr);
+					if (clrType == null) continue;
+					if (bitset.IsSet(rndx)) continue;
+					bitset.Set(rndx); // mark it
+
+					fldRefList.Clear();
+					clrType.EnumerateRefsOfObjectCarefully(raddr, (address, off) =>
+					{
+						fldRefList.Add(new KeyValuePair<ulong, int>(address, off));
+					});
+					if (fldRefList.Count < 1) continue;
+					fldRefList.Sort(kvCmp);
+					fldRefIndices.Clear();
+					for (int j = 0, jcnt = fldRefList.Count; j < jcnt; ++j)
+					{
+						var faddr = fldRefList[j].Key;
+						var ndx = Array.BinarySearch(instances, faddr);
+						if (ndx < 0) continue;
+						fldRefIndices.Add(ndx);
+						que.Enqueue(new KeyValuePair<int, ulong>(ndx,faddr)); 
+						// save ndx -> rndx pair
+					}
+					if (fldRefIndices.Count < 1) continue;
+
+					// save rndx -> ndx[] relation
+					dataToPersist.Add(new KeyValuePair<int, int[]>(rndx,fldRefIndices.ToArray()));
+
+					// go down the hierarchy
+					while (que.Count > 0)
+					{
+						var kv = que.Dequeue();
+						if (bitset.IsSet(kv.Key)) continue;
+						rndx = kv.Key;
+						bitset.Set(rndx);  // mark it
+						raddr = kv.Value;
+						clrType = heap.GetObjectType(raddr);
+						if (clrType == null) continue;
+						fldRefList.Clear();
+						clrType.EnumerateRefsOfObjectCarefully(raddr, (address, off) =>
+						{
+							fldRefList.Add(new KeyValuePair<ulong, int>(address, off));
+						});
+						if (fldRefList.Count < 1) continue;
+						fldRefList.Sort(kvCmp);
+						fldRefIndices.Clear();
+						for (int j = 0, jcnt = fldRefList.Count; j < jcnt; ++j)
+						{
+							var faddr = fldRefList[j].Key;
+							var ndx = Array.BinarySearch(instances, faddr);
+							if (ndx < 0) continue;
+							fldRefIndices.Add(ndx);
+							que.Enqueue(new KeyValuePair<int, ulong>(ndx, faddr));
+							// save ndx -> rndx pair
+						}
+						if (fldRefIndices.Count < 1) continue;
+
+						// save rndx -> ndx[] relation
+						dataToPersist.Add(new KeyValuePair<int, int[]>(rndx, fldRefIndices.ToArray()));
+					}
+				}
+
+				// save results in files
+				dataToPersist.Add(new KeyValuePair<int, int[]>(-1,null));
+				persistor.Wait();
+				error = persistor.Error;
+
+				return error == null;
+			}
+			catch (Exception ex)
+			{
+				error = Utils.GetExceptionErrorString(ex);
+				return false;
+			}
+
+		}
 
 		#endregion ctors/initialization
 
@@ -375,24 +458,6 @@ namespace ClrMDRIndex
 				int[] heads;
 				int[][] refs;
 				if (!SelectArrays(dataSource, out heads, out refs, out error)) return null;
-
-				//if (rooted)
-				//{
-				//	heads = parents ? _rootedParents : _rootedFields;
-				//	refs = parents
-				//		? GetReferenceLists(_rootedParentsPath, _rootedParentReferences, out error)
-				//		: GetReferenceLists(_rootedFieldsPath, _rootedFiledsReferences, out error);
-				//	if (error != null) return null;
-
-				//}
-				//else
-				//{
-				//	heads = parents ? _nonrootedParents : _nonrootedFields;
-				//	refs = parents
-				//		? GetReferenceLists(_nonrootedParentsPath, _nonrootedParentReferences, out error)
-				//		: GetReferenceLists(_nonrootedFieldsPath, _nonrootedFiledsReferences, out error);
-				//	if (error != null) return null;
-				//}
 				var results = new List<KeyValuePair<IndexNode, int>>(addrNdxs.Length);
 				var uniqueSet = new HashSet<int>();
 				var que = new Queue<IndexNode>(256);
@@ -477,19 +542,19 @@ namespace ClrMDRIndex
 				case DataSource.RootedParents:
 					heads = _rootedParents;
 					refs = GetReferenceLists(_rootedParentsPath, _rootedParentReferences, out error);
-					return error != null;
+					return error == null;
 				case DataSource.RootedFields:
 					heads = _rootedFields;
 					refs = GetReferenceLists(_rootedFieldsPath, _rootedFiledsReferences, out error);
-					return error != null;
+					return error == null;
 				case DataSource.UnrootedParents:
 					heads = _nonrootedParents;
 					refs = GetReferenceLists(_nonrootedParentsPath, _nonrootedParentReferences, out error);
-					return error != null;
+					return error == null;
 				case DataSource.UnrootedFields:
 					heads = _nonrootedFields;
 					refs = GetReferenceLists(_nonrootedFieldsPath, _nonrootedFiledsReferences, out error);
-					return error != null;
+					return error == null;
 				default:
 					heads = null;
 					refs = null;
@@ -602,5 +667,84 @@ namespace ClrMDRIndex
 
 		#endregion io
 
+	}
+
+	public class ReferencePersistor
+	{
+		private string _error;
+		public string Error => _error;
+		const int Treshold = 20000000; // 20,000,000
+		private BlockingCollection<KeyValuePair<int, int[]>> _dataQue;
+		private int _totalCount;
+		private Thread _thread;
+		private string _rToFPath;
+		private string _fToRPath;
+
+
+		public ReferencePersistor(string rToFPath, string fToRPath, int count, BlockingCollection<KeyValuePair<int,int[]>> dataQue)
+		{
+			_dataQue = dataQue;
+			_totalCount = count;
+			_rToFPath = rToFPath;
+			_fToRPath = fToRPath;
+		}
+
+		public void Start()
+		{
+			if (_totalCount <= Treshold)
+			{
+				_thread = new Thread(InMemory) {IsBackground = true, Name = "ReferencePersistor"};
+				_thread.Start();
+			}
+		}
+
+		public void Wait()
+		{
+			_dataQue.Add(new KeyValuePair<int, int[]>(-1,null));
+			if (_thread != null)
+				_thread.Join();
+		}
+
+		private void InMemory()
+		{
+			try
+			{
+				IntArrayStore rToF = new IntArrayStore(_totalCount);
+				IntArrayStore fToR = new IntArrayStore(_totalCount);
+
+				while (true)
+				{
+					var kv = _dataQue.Take();
+					if (kv.Key < 0)
+					{
+						break;
+					}
+
+					rToF.Add(kv.Key, kv.Value);
+					for (int i = 0, icnt = kv.Value.Length; i < icnt; ++i)
+					{
+						fToR.Add(kv.Value[i], kv.Key);
+						if(!Utils.IsSorted(fToR.GetEntry(kv.Value[i]))) // TODO JRD -- remove
+						{
+							int a = 1;
+						}
+					}
+				}
+
+				if (!rToF.Dump(_rToFPath, out _error))
+				{
+					return;
+				}
+				if (!fToR.Dump(_fToRPath, out _error))
+				{
+					return;
+				}
+
+			}
+			catch (Exception ex)
+			{
+				_error = Utils.GetExceptionErrorString(ex);
+			}
+		}
 	}
 }
