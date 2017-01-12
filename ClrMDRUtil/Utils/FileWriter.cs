@@ -10,7 +10,7 @@ namespace ClrMDRIndex
 
 		public FileWriter(string path)
 		{
-			_file = new FileStream(path, FileMode.CreateNew, FileAccess.ReadWrite, FileShare.None);
+			_file = new FileStream(path, FileMode.Create, FileAccess.ReadWrite, FileShare.None);
 			_buffer = new byte[8];
 		}
 

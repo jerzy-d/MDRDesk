@@ -14,70 +14,76 @@ namespace ClrMDRIndex
 			_buffer = new byte[8];
 		}
 
+		public FileReader(string path,int bufSize, FileOptions fopt)
+		{
+			_file = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read, bufSize, fopt);
+			_buffer = new byte[8];
+		}
+
 		// public void Write(int value)
-  //       {
-  //           _buffer[0] = (byte) value;
-  //           _buffer[1] = (byte) (value >> 8);
-  //           _buffer[2] = (byte) (value >> 16);
-  //           _buffer[3] = (byte) (value >> 24);
-  //           _file.Write(_buffer, 0, 4);
-  //       }
+		//       {
+		//           _buffer[0] = (byte) value;
+		//           _buffer[1] = (byte) (value >> 8);
+		//           _buffer[2] = (byte) (value >> 16);
+		//           _buffer[3] = (byte) (value >> 24);
+		//           _file.Write(_buffer, 0, 4);
+		//       }
 
 		// public void Write(uint value)
-  //       {
-  //           _buffer[0] = (byte) value;
-  //           _buffer[1] = (byte) (value >> 8);
-  //           _buffer[2] = (byte) (value >> 16);
-  //           _buffer[3] = (byte) (value >> 24);
-  //           _file.Write(_buffer, 0, 4);
-  //       }
+		//       {
+		//           _buffer[0] = (byte) value;
+		//           _buffer[1] = (byte) (value >> 8);
+		//           _buffer[2] = (byte) (value >> 16);
+		//           _buffer[3] = (byte) (value >> 24);
+		//           _file.Write(_buffer, 0, 4);
+		//       }
 
 		// public void Write(long value)
-  //       {
-  //           _buffer[0] = (byte) value;
-  //           _buffer[1] = (byte) (value >> 8);
-  //           _buffer[2] = (byte) (value >> 16);
-  //           _buffer[3] = (byte) (value >> 24);
-  //           _buffer[4] = (byte) (value >> 32);
-  //           _buffer[5] = (byte) (value >> 40);
-  //           _buffer[6] = (byte) (value >> 48);
-  //           _buffer[7] = (byte) (value >> 56);
-  //           _file.Write(_buffer, 0, 8);
-  //       }
- 
+		//       {
+		//           _buffer[0] = (byte) value;
+		//           _buffer[1] = (byte) (value >> 8);
+		//           _buffer[2] = (byte) (value >> 16);
+		//           _buffer[3] = (byte) (value >> 24);
+		//           _buffer[4] = (byte) (value >> 32);
+		//           _buffer[5] = (byte) (value >> 40);
+		//           _buffer[6] = (byte) (value >> 48);
+		//           _buffer[7] = (byte) (value >> 56);
+		//           _file.Write(_buffer, 0, 8);
+		//       }
+
 		// public void Write(ulong value)
-  //       {
-  //           _buffer[0] = (byte) value;
-  //           _buffer[1] = (byte) (value >> 8);
-  //           _buffer[2] = (byte) (value >> 16);
-  //           _buffer[3] = (byte) (value >> 24);
-  //           _buffer[4] = (byte) (value >> 32);
-  //           _buffer[5] = (byte) (value >> 40);
-  //           _buffer[6] = (byte) (value >> 48);
-  //           _buffer[7] = (byte) (value >> 56);
-  //           _file.Write(_buffer, 0, 8);
-  //       }
+		//       {
+		//           _buffer[0] = (byte) value;
+		//           _buffer[1] = (byte) (value >> 8);
+		//           _buffer[2] = (byte) (value >> 16);
+		//           _buffer[3] = (byte) (value >> 24);
+		//           _buffer[4] = (byte) (value >> 32);
+		//           _buffer[5] = (byte) (value >> 40);
+		//           _buffer[6] = (byte) (value >> 48);
+		//           _buffer[7] = (byte) (value >> 56);
+		//           _file.Write(_buffer, 0, 8);
+		//       }
 
-  //       public void Write(int head, int[] data, byte[] buffer)
-  //       {
-  //       	int totalLen = sizeof(int)*2 + sizeof(int)*data.Lenght;
-  //       	if ( buffer.Lenght < totalLen)
-  //       		buffer = new byte[totalLen];
-  //       	int off = 0;
-  //       	FillBuffer(head,buffer,off);
-  //       	off += 4;
-  //       	int len = data.Lenght;
-  //       	FillBuffer(len,buffer,off);
-  //       	off += 4;
-  //       	for (int i = 0; i < len; ++i)
-  //       	{
-  //       		FillBuffer(data[i],buffer,off);
-  //       		off += 4;
-  //       	}
-  //           _file.Write(buffer, 0, totalLen);
-  //       }
+		//       public void Write(int head, int[] data, byte[] buffer)
+		//       {
+		//       	int totalLen = sizeof(int)*2 + sizeof(int)*data.Lenght;
+		//       	if ( buffer.Lenght < totalLen)
+		//       		buffer = new byte[totalLen];
+		//       	int off = 0;
+		//       	FillBuffer(head,buffer,off);
+		//       	off += 4;
+		//       	int len = data.Lenght;
+		//       	FillBuffer(len,buffer,off);
+		//       	off += 4;
+		//       	for (int i = 0; i < len; ++i)
+		//       	{
+		//       		FillBuffer(data[i],buffer,off);
+		//       		off += 4;
+		//       	}
+		//           _file.Write(buffer, 0, totalLen);
+		//       }
 
-        public int ReadInt32()
+		public int ReadInt32()
         {
         	_file.Read(_buffer,0,4);
         	return (int)(_buffer[0] | _buffer[1] << 8 | _buffer[2] << 16 | _buffer[3] << 24);

@@ -707,11 +707,17 @@ namespace ClrMDRIndex
 
 		private void InMemory()
 		{
+			string error = null;
+			FileWriter fw = null;
+
 			try
 			{
-				IntArrayStore rToF = new IntArrayStore(_totalCount);
+				//IntArrayStore rToF = new IntArrayStore(_totalCount);
 				IntArrayStore fToR = new IntArrayStore(_totalCount);
-
+				fw = new FileWriter(_rToFPath);
+				byte[] fwBuffer = new byte[4096];
+				fw.Write(0);
+				int recCount = 0;
 				while (true)
 				{
 					var kv = _dataQue.Take();
@@ -720,21 +726,20 @@ namespace ClrMDRIndex
 						break;
 					}
 
-					rToF.Add(kv.Key, kv.Value);
+					//rToF.Add(kv.Key, kv.Value);
+					fw.Write(kv.Key,kv.Value,fwBuffer);
+					++recCount;
 					for (int i = 0, icnt = kv.Value.Length; i < icnt; ++i)
 					{
 						fToR.Add(kv.Value[i], kv.Key);
-						if(!Utils.IsSorted(fToR.GetEntry(kv.Value[i]))) // TODO JRD -- remove
-						{
-							int a = 1;
-						}
 					}
 				}
-
-				if (!rToF.Dump(_rToFPath, out _error))
-				{
-					return;
-				}
+				fw.GotoBegin();
+				fw.Write(recCount);
+				//if (!rToF.Dump(_rToFPath, out _error))
+				//{
+				//	return;
+				//}
 				if (!fToR.Dump(_fToRPath, out _error))
 				{
 					return;
@@ -744,6 +749,118 @@ namespace ClrMDRIndex
 			catch (Exception ex)
 			{
 				_error = Utils.GetExceptionErrorString(ex);
+			}
+			finally
+			{
+				fw.Dispose();
+			}
+		}
+
+		private void OnDisk()
+		{
+			string error = null;
+			FileWriter pfw = null;
+			FileWriter tfw = null;
+			FileWriter ffw = null;
+			FileReader fr = null;
+
+			try
+			{
+				//IntArrayStore rToF = new IntArrayStore(_totalCount);
+				//IntArrayStore fToR = new IntArrayStore(_totalCount);
+				pfw = new FileWriter(_rToFPath);
+				var fcounts = new int[_totalCount];
+				long totSize = sizeof(int); // entries count
+				byte[] fwBuffer = new byte[4096];
+				pfw.Write(0);
+				int recCount = 0;
+				while (true)
+				{
+					var kv = _dataQue.Take();
+					if (kv.Key < 0)
+					{
+						break;
+					}
+
+					//rToF.Add(kv.Key, kv.Value);
+					pfw.Write(kv.Key, kv.Value, fwBuffer);
+					++recCount;
+					for (int i = 0, icnt = kv.Value.Length; i < icnt; ++i)
+					{
+						var fndx = kv.Value[i];
+						var fcnt = fcounts[fndx];
+						if (fcnt == 0)
+						{
+							totSize += sizeof (int)*2;
+						}
+						totSize += sizeof (int);
+						fcounts[fndx] = fcnt + 1;
+						fcounts[fndx] = fcnt;
+						//fToR.Add(kv.Value[i], kv.Key);
+					}
+				}
+				pfw.GotoBegin();
+				pfw.Write(recCount);
+				pfw.Dispose();
+				pfw = null;
+
+				long[] offsets = new long[_totalCount];
+				long curOff = sizeof(int); // it after record count entry
+				for (int i = 0, icnt = _totalCount; i < icnt; ++i)
+				{
+					if (fcounts[i] == 0) continue;
+					offsets[i] = curOff;
+					curOff += (fcounts[i] + 2)*sizeof (int);
+				}
+
+
+				ffw = new FileWriter(_fToRPath + ".temp");
+				ffw.Write(0);
+				long totOff = 0L;
+				for (int i = 0, icnt = _totalCount; i < icnt; ++i)
+				{
+					if (fcounts[i]==0L) continue;
+					var cnt = fcounts[i];
+
+
+				}
+
+
+
+				fr = new FileReader(_rToFPath, 8192, FileOptions.SequentialScan);
+				var totRcnt = fr.ReadInt32();
+				for (int i = 0; i < totRcnt; ++i)
+				{
+					var rndx = fr.ReadInt32();
+					var rcnt = fr.ReadInt32();
+					for (int j = 0; j < rcnt; ++j)
+					{
+						
+
+
+					}
+
+				}
+
+				//if (!rToF.Dump(_rToFPath, out _error))
+				//{
+				//	return;
+				//}
+				//if (!fToR.Dump(_fToRPath, out _error))
+				//{
+				//	return;
+				//}
+
+			}
+			catch (Exception ex)
+			{
+				_error = Utils.GetExceptionErrorString(ex);
+			}
+			finally
+			{
+				pfw?.Dispose();
+				ffw?.Dispose();
+				fr?.Dispose();
 			}
 		}
 	}
