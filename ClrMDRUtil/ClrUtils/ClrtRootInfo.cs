@@ -13,7 +13,6 @@ namespace ClrMDRIndex
 {
 	public class ClrtRootInfo
 	{
-		private readonly ulong[] _freachableQue; // is it? from ClrHeap.EnumerateFinalizerQueueObjectAddresses()
 		private readonly ClrtRoot[][] _roots; // rooots by Kind
 		private readonly ulong[] _rootAddresses; // unique root addresses, sorted, with out finalizer
 		private readonly ulong[] _finalizerAddresses; // unique finalizer addresses, sorted, with out finalizer
@@ -22,15 +21,14 @@ namespace ClrMDRIndex
 		public ulong[] FinalizerAddresses => _finalizerAddresses;
 
 
-		public ClrtRootInfo(ClrtRoot[][] roots, ulong[] rootAddresses, ulong[] finalizerAddresses, ulong[] fque)
+		public ClrtRootInfo(ClrtRoot[][] roots, ulong[] rootAddresses, ulong[] finalizerAddresses)
 		{
 			_roots = roots;
 			_rootAddresses = rootAddresses;
 			_finalizerAddresses = finalizerAddresses;
-			_freachableQue = fque;
 		}
 
-		public static Tuple<ulong[],ulong[]> GetRootAddresses(int rtm, ClrHeap heap, string[] typeNames, StringIdDct strIds, DumpFileMoniker fileMoniker, out string error)
+		public static Tuple<ulong[],ulong[]> GetRootAddresses(int rtm, ClrRuntime runTm, ClrHeap heap, string[] typeNames, StringIdDct strIds, DumpFileMoniker fileMoniker, out string error)
 		{
 			error = null;
 			try
@@ -53,7 +51,7 @@ namespace ClrMDRIndex
 					if (root.Type == null)
 					{
 						var clrType = heap.GetObjectType(objAddr);
-						typeName = clrType == null ? null : clrType.Name;
+						typeName = clrType?.Name;
 					}
 					else
 					{
@@ -109,10 +107,6 @@ namespace ClrMDRIndex
 					}
 				}
 
-				// TODO JRD -- does that make sense?
-				//
-				ulong[] fque = heap.EnumerateFinalizableObjectAddresses().ToArray();
-				Array.Sort(fque);
 				// root infos TODO JRD -- Fix this
 				//
 				var rootCmp = new ClrtRootObjCmp();
@@ -131,7 +125,7 @@ namespace ClrMDRIndex
 
 				var result = new Tuple<ulong[], ulong[]>(addrAry, finlAry);
 
-				if (!ClrtRootInfo.Save(rtm, ourRoots, result, fque, fileMoniker, out error)) return null;
+				if (!ClrtRootInfo.Save(rtm, ourRoots, result, fileMoniker, out error)) return null;
 
 				return result;
 
@@ -145,7 +139,7 @@ namespace ClrMDRIndex
 
 		#region save/load
 
-		public static bool Save(int rtm, List<ClrtRoot>[] ourRoots, Tuple<ulong[], ulong[]> rootAddrInfo, ulong[] fque, DumpFileMoniker fileMoniker, out string error)
+		public static bool Save(int rtm, List<ClrtRoot>[] ourRoots, Tuple<ulong[], ulong[]> rootAddrInfo, DumpFileMoniker fileMoniker, out string error)
 		{
 			error = null;
 			BinaryWriter bw = null;
@@ -154,6 +148,24 @@ namespace ClrMDRIndex
 				var path = fileMoniker.GetFilePath(rtm, Constants.MapRootsInfoFilePostfix);
 				bw = new BinaryWriter(File.Open(path, FileMode.Create));
 
+				// finalyzer queue first - sorted and marked
+				//
+				bw.Write(rootAddrInfo.Item2.Length);
+				for (int i = 0, icnt = rootAddrInfo.Item2.Length; i < icnt; ++i)
+				{
+					bw.Write(rootAddrInfo.Item2[i]);
+				}
+
+				// unique root addresses, sorted and marked
+				//
+				bw.Write(rootAddrInfo.Item1.Length);
+				for (int i = 0, icnt = rootAddrInfo.Item1.Length; i < icnt; ++i)
+				{
+					bw.Write(rootAddrInfo.Item1[i]);
+				}
+
+				// root details by kind
+				//
 				bw.Write(ourRoots.Length);
 				for (int i = 0, icnt = ourRoots.Length; i < icnt; ++i)
 				{
@@ -164,25 +176,6 @@ namespace ClrMDRIndex
 						kindRoots[j].Dump(bw);
 					}
 				}
-
-				bw.Write(rootAddrInfo.Item1.Length);
-				for (int i = 0, icnt = rootAddrInfo.Item1.Length; i < icnt; ++i)
-				{
-					bw.Write(rootAddrInfo.Item1[i]);
-				}
-
-				bw.Write(rootAddrInfo.Item2.Length);
-				for (int i = 0, icnt = rootAddrInfo.Item2.Length; i < icnt; ++i)
-				{
-					bw.Write(rootAddrInfo.Item2[i]);
-				}
-
-				bw.Write(fque.Length); // TODO JRD -- maybe not needed
-				for (int i = 0, icnt = fque.Length; i < icnt; ++i)
-				{
-					bw.Write(fque[i]);
-				}
-
 				return true;
 			}
 			catch (Exception ex)
@@ -196,6 +189,33 @@ namespace ClrMDRIndex
 			}
 		}
 
+		public static bool FinalyzerAddressFixup(int rtm, ulong[] finalyzerAddresses, DumpFileMoniker fileMoniker, out string error)
+		{
+			error = null;
+			FileWriter fw = null;
+			try
+			{
+				var path = fileMoniker.GetFilePath(rtm, Constants.MapRootsInfoFilePostfix);
+				fw = new FileWriter(path, FileMode.Open, FileAccess.Write, FileShare.None);
+				fw.Seek(sizeof (int), SeekOrigin.Begin);
+
+				for (int i = 0, icnt = finalyzerAddresses.Length; i < icnt; ++i)
+				{
+					fw.Write(finalyzerAddresses[i]);
+				}
+				return true;
+			}
+			catch (Exception ex)
+			{
+				error = Utils.GetExceptionErrorString(ex);
+				return false;
+			}
+			finally
+			{
+				fw?.Dispose();
+			}
+		}
+
 		public static ClrtRootInfo Load(int rtm, DumpFileMoniker fileMoniker, out string error)
 		{
 			error = null;
@@ -205,7 +225,27 @@ namespace ClrMDRIndex
 				var path = fileMoniker.GetFilePath(rtm, Constants.MapRootsInfoFilePostfix);
 				bw = new BinaryReader(File.Open(path, FileMode.Open));
 
+				// finalizer queue
+				//
 				int count = bw.ReadInt32();
+				ulong[] finlAddresses = new ulong[count];
+				for (int i = 0; i < count; ++i)
+				{
+					finlAddresses[i] = bw.ReadUInt64();
+				}
+
+				// rest of root addresses
+				//
+				count = bw.ReadInt32();
+				ulong[] rootAddresses = new ulong[count];
+				for (int i = 0; i < count; ++i)
+				{
+					rootAddresses[i] = bw.ReadUInt64();
+				}
+
+				// root details
+				//
+				count = bw.ReadInt32();
 				ClrtRoot[][] roots = new ClrtRoot[count][];
 				for (int i = 0; i < count; ++i)
 				{
@@ -216,29 +256,7 @@ namespace ClrMDRIndex
 						roots[i][j] = ClrtRoot.Load(bw);
 					}
 				}
-
-				count = bw.ReadInt32();
-				ulong[] rootAddresses = new ulong[count];
-				for (int i = 0; i < count; ++i)
-				{
-					rootAddresses[i] = bw.ReadUInt64();
-				}
-
-				count = bw.ReadInt32();
-				ulong[] finlAddresses = new ulong[count];
-				for (int i = 0; i < count; ++i)
-				{
-					finlAddresses[i] = bw.ReadUInt64();
-				}
-
-				count = bw.ReadInt32(); // TODO JRD -- maybe not needed
-				ulong[] fque = new ulong[count];
-				for (int i = 0; i < count; ++i)
-				{
-					fque[i] = bw.ReadUInt64();
-				}
-
-				return new ClrtRootInfo(roots,rootAddresses,finlAddresses,fque);
+				return new ClrtRootInfo(roots,rootAddresses,finlAddresses);
 			}
 			catch (Exception ex)
 			{

@@ -108,7 +108,7 @@ namespace ClrMDRIndex
 						// get roots
 						//
 						progress?.Report(runtimeIndexHeader + "Getting roots... Prev. action/total durations: " + GetIndexingDurationString(indexingStopWatch, indexingActionTimeSpan, out indexingActionTimeSpan));
-						var rootAddrInfo = ClrtRootInfo.GetRootAddresses(r, heap, typeNames, strIds, _fileMoniker, out error);
+						var rootAddrInfo = ClrtRootInfo.GetRootAddresses(r, runtime, heap, typeNames, strIds, _fileMoniker, out error);
 						Debug.Assert(error == null);
 
 						// get addresses and types
@@ -249,6 +249,11 @@ namespace ClrMDRIndex
 						path = _fileMoniker.GetFilePath(r, Constants.MapInstancesFilePostfix);
 						Utils.WriteUlongArray(path, addresses, out error);
 
+						Utils.SetAddressBit(rootedAry, finalizer, Utils.RootBits.Rooted);
+						if (ClrtRootInfo.FinalyzerAddressFixup(r, finalizer, _fileMoniker, out error))
+						{
+							AddError(_currentRuntimeIndex, "Finalyzer Address Fixup failed." + Environment.NewLine + error);
+						}
 
 						runtime.Flush();
 						heap = null;

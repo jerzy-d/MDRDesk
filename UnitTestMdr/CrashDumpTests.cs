@@ -449,7 +449,7 @@ namespace UnitTestMdr
 				var heap = dmp.Heap;
 				ulong[] instances = DumpIndexer.GetHeapAddressesCount(heap);
 				string[] typeNames = DumpIndexer.GetTypeNames(heap, out error);
-				var rootAddrInfo = ClrtRootInfo.GetRootAddresses(0, heap, typeNames, strIds, fileMoniker, out error);
+				var rootAddrInfo = ClrtRootInfo.GetRootAddresses(0, dmp.Runtimes[0], heap, typeNames, strIds, fileMoniker, out error);
 				Assert.IsNull(error);
 				Assert.IsTrue(Utils.IsSorted(rootAddrInfo.Item1));
 				Assert.IsTrue(Utils.IsSorted(rootAddrInfo.Item2));
@@ -543,9 +543,10 @@ namespace UnitTestMdr
 			using (dmp)
 			{
 				var heap = dmp.Heap;
+				var runtm = dmp.Runtimes[0];
 				ulong[] instances = DumpIndexer.GetHeapAddressesCount(heap);
 				string[] typeNames = DumpIndexer.GetTypeNames(heap, out error);
-				var rootAddrInfo = ClrtRootInfo.GetRootAddresses(0, heap, typeNames, strIds, fileMoniker, out error);
+				var rootAddrInfo = ClrtRootInfo.GetRootAddresses(0, runtm, heap, typeNames, strIds, fileMoniker, out error);
 				Utils.GetRealAddressesInPlace(rootAddrInfo.Item1);
 				Utils.GetRealAddressesInPlace(rootAddrInfo.Item2);
 

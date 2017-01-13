@@ -28,12 +28,6 @@ namespace ClrMDRIndex
 		const int MaxNodes = 10000;
 
 		private int _runtimeIndex;
-		private string _dumpPath;
-		//private ulong[] _instances;
-		//private int[] _instanceTypes;
-		//private string[] _typeNames;
-		//private int[] _typeInstanceMap;
-		//private KeyValuePair<int, int>[] _typeInstanceOffsets;
 
 		private DumpFileMoniker _fileMoniker;
 
@@ -56,10 +50,10 @@ namespace ClrMDRIndex
 
 		#region ctors/initialization
 
-		public References(string dumpPath, int runtimeIndex)
+		public References(int runtimeIndex, DumpFileMoniker fileMoniker)
 		{
-			_dumpPath = dumpPath;
 			_runtimeIndex = runtimeIndex;
+			_fileMoniker = fileMoniker;
 			_accessorLock = new object();
 		}
 
@@ -68,22 +62,20 @@ namespace ClrMDRIndex
 			error = null;
 			try
 			{
-				DumpFileMoniker fileMoniker = new DumpFileMoniker(_dumpPath);
-
-				_rootedParentsPath = fileMoniker.GetFilePath(_runtimeIndex, Constants.MapParentFieldsRootedPostfix);
+				_rootedParentsPath = _fileMoniker.GetFilePath(_runtimeIndex, Constants.MapParentFieldsRootedPostfix);
 				int[][] lists;
 				LoadReferences(_rootedParentsPath, out _rootedParents, out lists, out error);
 				_rootedParentReferences = new WeakReference<int[][]>(lists);
 
-				_rootedFieldsPath = fileMoniker.GetFilePath(_runtimeIndex, Constants.MapFieldParentsRootedPostfix);
+				_rootedFieldsPath = _fileMoniker.GetFilePath(_runtimeIndex, Constants.MapFieldParentsRootedPostfix);
 				LoadReferences(_rootedFieldsPath, out _rootedFields, out lists, out error);
 				_rootedFiledsReferences = new WeakReference<int[][]>(lists);
 
-				_nonrootedParentsPath = fileMoniker.GetFilePath(_runtimeIndex, Constants.MapParentFieldsNotRootedPostfix);
+				_nonrootedParentsPath = _fileMoniker.GetFilePath(_runtimeIndex, Constants.MapParentFieldsNotRootedPostfix);
 				LoadReferences(_nonrootedParentsPath, out _nonrootedParents, out lists, out error);
 				_nonrootedParentReferences = new WeakReference<int[][]>(lists);
 
-				_nonrootedFieldsPath = fileMoniker.GetFilePath(_runtimeIndex, Constants.MapFieldParentsNotRootedPostfix);
+				_nonrootedFieldsPath = _fileMoniker.GetFilePath(_runtimeIndex, Constants.MapFieldParentsNotRootedPostfix);
 				LoadReferences(_rootedFieldsPath, out _rootedFields, out lists, out error);
 				_rootedFiledsReferences = new WeakReference<int[][]>(lists);
 
@@ -171,11 +163,7 @@ namespace ClrMDRIndex
 			}
 		}
 
-		public static bool GetRefrences(ClrHeap heap, ulong[] addresses,
-	SortedDictionary<ulong, List<ulong>> objRefs,
-	SortedDictionary<ulong, List<ulong>> fldRefs,
-	HashSet<ulong> done,
-	out string error)
+		public static bool GetRefrences(ClrHeap heap, ulong[] addresses, SortedDictionary<ulong, List<ulong>> objRefs, SortedDictionary<ulong, List<ulong>> fldRefs, HashSet<ulong> done,out string error)
 		{
 			error = null;
 			try
@@ -669,185 +657,4 @@ namespace ClrMDRIndex
 
 	}
 
-	public class ReferencePersistor
-	{
-		private string _error;
-		public string Error => _error;
-		const int Treshold = 20000000; // 20,000,000
-		private BlockingCollection<KeyValuePair<int, int[]>> _dataQue;
-		private int _totalCount;
-		private Thread _thread;
-		private string _rToFPath;
-		private string _fToRPath;
-
-		public ReferencePersistor(string rToFPath, string fToRPath, int count, BlockingCollection<KeyValuePair<int,int[]>> dataQue)
-		{
-			_dataQue = dataQue;
-			_totalCount = count;
-			_rToFPath = rToFPath;
-			_fToRPath = fToRPath;
-		}
-
-		public void Start()
-		{
-			if (_totalCount <= Treshold)
-			{
-				_thread = new Thread(InMemory) {IsBackground = true, Name = "ReferencePersistor"};
-				_thread.Start();
-			}
-		}
-
-		public void Wait()
-		{
-			_dataQue.Add(new KeyValuePair<int, int[]>(-1,null));
-			if (_thread != null)
-				_thread.Join();
-		}
-
-		private void InMemory()
-		{
-			string error = null;
-			FileWriter fw = null;
-
-			try
-			{
-				IntArrayStore fToR = new IntArrayStore(_totalCount);
-				fw = new FileWriter(_rToFPath);
-				byte[] fwBuffer = new byte[4096];
-				fw.Write(0);
-				int recCount = 0;
-				while (true)
-				{
-					var kv = _dataQue.Take();
-					if (kv.Key < 0)
-					{
-						break;
-					}
-
-					fw.Write(kv.Key,kv.Value,fwBuffer);
-					++recCount;
-					for (int i = 0, icnt = kv.Value.Length; i < icnt; ++i)
-					{
-						fToR.Add(kv.Value[i], kv.Key);
-					}
-				}
-				fw.GotoBegin();
-				fw.Write(recCount);
-				if (!fToR.Dump(_fToRPath, out _error))
-				{
-					return; // TODO JRD
-				}
-			}
-			catch (Exception ex)
-			{
-				_error = Utils.GetExceptionErrorString(ex);
-			}
-			finally
-			{
-				fw.Dispose();
-			}
-		}
-
-		private void OnDisk()
-		{
-			string error = null;
-			FileWriter pfw = null;
-			FileWriter tfw = null;
-			FileWriter ffw = null;
-			FileReader fr = null;
-
-			try
-			{
-				pfw = new FileWriter(_rToFPath);
-				var fcounts = new int[_totalCount];
-				long totSize = sizeof(int); // entries count
-				byte[] fwBuffer = new byte[4096];
-				pfw.Write(0);
-				int recCount = 0;
-				while (true)
-				{
-					var kv = _dataQue.Take();
-					if (kv.Key < 0)
-					{
-						break;
-					}
-
-					pfw.Write(kv.Key, kv.Value, fwBuffer);
-					++recCount;
-					for (int i = 0, icnt = kv.Value.Length; i < icnt; ++i)
-					{
-						var fndx = kv.Value[i];
-						var fcnt = fcounts[fndx];
-						if (fcnt == 0)
-						{
-							totSize += sizeof (int)*2;
-						}
-						totSize += sizeof (int);
-						fcounts[fndx] = fcnt + 1;
-						fcounts[fndx] = fcnt;
-					}
-				}
-				pfw.GotoBegin();
-				pfw.Write(recCount);
-				pfw.Dispose();
-				pfw = null;
-
-				long[] offsets = new long[_totalCount];
-				long curOff = sizeof(int); // it after record count entry
-				for (int i = 0, icnt = _totalCount; i < icnt; ++i)
-				{
-					if (fcounts[i] == 0) continue;
-					offsets[i] = curOff;
-					curOff += (fcounts[i] + 2)*sizeof (int);
-				}
-
-				byte[] buffer = new byte[8192];
-				ffw = new FileWriter(_fToRPath);
-				ffw.SetLength(totSize);
-				ffw.GotoBegin();
-				ffw.Write(0);
-
-				fr = new FileReader(_rToFPath, 8192, FileOptions.SequentialScan);
-				var totRcnt = fr.ReadInt32();
-				int totfcnt = 0;
-				for (int i = 0; i < totRcnt; ++i)
-				{
-					fr.ReadInt32Bytes(buffer,0);
-					var rcnt = fr.ReadInt32();
-					for (int j = 0; j < rcnt; ++j)
-					{
-						var n = fr.ReadInt32();
-						var off = offsets[n];
-						ffw.Seek(off, SeekOrigin.Begin);
-						var fcnt = fcounts[n];
-						if (fcnt > 0)
-						{
-							ffw.Write(n);
-							ffw.Write(fcounts[n]);
-							ffw.WriteBytes(buffer,0,4);
-							offsets[n] = off + sizeof(int)*3;
-							fcounts[n] = -(fcnt - 1);
-							++totfcnt;
-							continue;
-						}
-						ffw.WriteBytes(buffer,0,4);
-						offsets[n] = off + sizeof(int);
-						fcounts[n] = fcnt + 1;
-					}
-				}
-				ffw.GotoBegin();
-				ffw.Write(totfcnt);
-			}
-			catch (Exception ex)
-			{
-				_error = Utils.GetExceptionErrorString(ex);
-			}
-			finally
-			{
-				pfw?.Dispose();
-				ffw?.Dispose();
-				fr?.Dispose();
-			}
-		}
-	}
 }

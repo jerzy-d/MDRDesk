@@ -130,7 +130,6 @@ namespace ClrMDRIndex
 		/// <param name="bit">Marking bitmask.</param>
 		public static void SetAddressBit(ulong[] bitSetters, ulong[] addresses, ulong bit)
 		{
-			Debug.Assert(bitSetters.Length <= addresses.Length);
 			int bNdx = 0, bLen = bitSetters.Length, aNdx = 0, aLen = addresses.Length;
 			while (bNdx < bLen && aNdx < aLen)
 			{

@@ -14,6 +14,12 @@ namespace ClrMDRIndex
 			_buffer = new byte[8];
 		}
 
+		public FileWriter(string path, FileMode fileMode, FileAccess fileAccess, FileShare fileShare)
+		{
+			_file = new FileStream(path, fileMode, fileAccess, fileShare);
+			_buffer = new byte[8];
+		}
+
 		public void Write(int value)
         {
             _buffer[0] = (byte) value;

@@ -200,7 +200,7 @@ namespace ClrMDRIndex
 				//	_instanceTypes, _typeNames);
 				//_instanceReferences.Init(out error);
 				// new 1/7/17
-				_references = new References(_fileMoniker.Path,_currentRuntimeIndex);
+				_references = new References(_currentRuntimeIndex, _fileMoniker);
 				_references.Init(out error);
 
 				if (error != null) return false;

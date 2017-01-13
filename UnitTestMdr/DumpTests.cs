@@ -585,7 +585,7 @@ namespace UnitTestMdr
 					//
 					StringIdDct strIds = new StringIdDct();
 					stopWatch.Restart();
-					var rootAddresses = ClrtRootInfo.GetRootAddresses(0, heap, typeNames, strIds, fileMoniker, out error);
+					var rootAddresses = ClrtRootInfo.GetRootAddresses(0, clrtDump.Runtimes[0], heap, typeNames, strIds, fileMoniker, out error);
 					Assert.IsNull(error, error);
 					ClrtRootInfo clrtRootInfo = ClrtRootInfo.Load(0,fileMoniker,out error);
 					Assert.IsNull(error, error);
