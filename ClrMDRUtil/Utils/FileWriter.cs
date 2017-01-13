@@ -77,6 +77,11 @@ namespace ClrMDRIndex
             _file.Write(buffer, 0, totalLen);
         }
 
+		public void WriteBytes(byte[] buffer, int start, int len)
+		{
+			_file.Write(buffer,start,len);
+		}
+
         public int ReadInt32()
         {
         	_file.Read(_buffer,0,4);
@@ -103,7 +108,7 @@ namespace ClrMDRIndex
             return ((ulong)hi) << 32 | lo;
         }
 
-        private void FillBuffer(int val, byte[] buffer, int off)
+        public void FillBuffer(int val, byte[] buffer, int off)
         {
             buffer[off+0] = (byte) val;
             buffer[off+1] = (byte) (val >> 8);

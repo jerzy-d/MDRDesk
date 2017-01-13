@@ -89,7 +89,12 @@ namespace ClrMDRIndex
         	return (int)(_buffer[0] | _buffer[1] << 8 | _buffer[2] << 16 | _buffer[3] << 24);
         }
 
-        public uint ReadUInt32()
+		public void ReadInt32Bytes(byte[] buffer, int start)
+		{
+			_file.Read(buffer, start, 4);
+		}
+
+		public uint ReadUInt32()
         {
         	_file.Read(_buffer,0,4);
         	return (uint)(_buffer[0] | _buffer[1] << 8 | _buffer[2] << 16 | _buffer[3] << 24);

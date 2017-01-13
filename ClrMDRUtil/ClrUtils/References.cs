@@ -680,7 +680,6 @@ namespace ClrMDRIndex
 		private string _rToFPath;
 		private string _fToRPath;
 
-
 		public ReferencePersistor(string rToFPath, string fToRPath, int count, BlockingCollection<KeyValuePair<int,int[]>> dataQue)
 		{
 			_dataQue = dataQue;
@@ -712,7 +711,6 @@ namespace ClrMDRIndex
 
 			try
 			{
-				//IntArrayStore rToF = new IntArrayStore(_totalCount);
 				IntArrayStore fToR = new IntArrayStore(_totalCount);
 				fw = new FileWriter(_rToFPath);
 				byte[] fwBuffer = new byte[4096];
@@ -726,7 +724,6 @@ namespace ClrMDRIndex
 						break;
 					}
 
-					//rToF.Add(kv.Key, kv.Value);
 					fw.Write(kv.Key,kv.Value,fwBuffer);
 					++recCount;
 					for (int i = 0, icnt = kv.Value.Length; i < icnt; ++i)
@@ -736,15 +733,10 @@ namespace ClrMDRIndex
 				}
 				fw.GotoBegin();
 				fw.Write(recCount);
-				//if (!rToF.Dump(_rToFPath, out _error))
-				//{
-				//	return;
-				//}
 				if (!fToR.Dump(_fToRPath, out _error))
 				{
-					return;
+					return; // TODO JRD
 				}
-
 			}
 			catch (Exception ex)
 			{
@@ -766,8 +758,6 @@ namespace ClrMDRIndex
 
 			try
 			{
-				//IntArrayStore rToF = new IntArrayStore(_totalCount);
-				//IntArrayStore fToR = new IntArrayStore(_totalCount);
 				pfw = new FileWriter(_rToFPath);
 				var fcounts = new int[_totalCount];
 				long totSize = sizeof(int); // entries count
@@ -782,7 +772,6 @@ namespace ClrMDRIndex
 						break;
 					}
 
-					//rToF.Add(kv.Key, kv.Value);
 					pfw.Write(kv.Key, kv.Value, fwBuffer);
 					++recCount;
 					for (int i = 0, icnt = kv.Value.Length; i < icnt; ++i)
@@ -796,7 +785,6 @@ namespace ClrMDRIndex
 						totSize += sizeof (int);
 						fcounts[fndx] = fcnt + 1;
 						fcounts[fndx] = fcnt;
-						//fToR.Add(kv.Value[i], kv.Key);
 					}
 				}
 				pfw.GotoBegin();
@@ -813,44 +801,42 @@ namespace ClrMDRIndex
 					curOff += (fcounts[i] + 2)*sizeof (int);
 				}
 
-
-				ffw = new FileWriter(_fToRPath + ".temp");
+				byte[] buffer = new byte[8192];
+				ffw = new FileWriter(_fToRPath);
+				ffw.SetLength(totSize);
+				ffw.GotoBegin();
 				ffw.Write(0);
-				long totOff = 0L;
-				for (int i = 0, icnt = _totalCount; i < icnt; ++i)
-				{
-					if (fcounts[i]==0L) continue;
-					var cnt = fcounts[i];
-
-
-				}
-
-
 
 				fr = new FileReader(_rToFPath, 8192, FileOptions.SequentialScan);
 				var totRcnt = fr.ReadInt32();
+				int totfcnt = 0;
 				for (int i = 0; i < totRcnt; ++i)
 				{
-					var rndx = fr.ReadInt32();
+					fr.ReadInt32Bytes(buffer,0);
 					var rcnt = fr.ReadInt32();
 					for (int j = 0; j < rcnt; ++j)
 					{
-						
-
-
+						var n = fr.ReadInt32();
+						var off = offsets[n];
+						ffw.Seek(off, SeekOrigin.Begin);
+						var fcnt = fcounts[n];
+						if (fcnt > 0)
+						{
+							ffw.Write(n);
+							ffw.Write(fcounts[n]);
+							ffw.WriteBytes(buffer,0,4);
+							offsets[n] = off + sizeof(int)*3;
+							fcounts[n] = -(fcnt - 1);
+							++totfcnt;
+							continue;
+						}
+						ffw.WriteBytes(buffer,0,4);
+						offsets[n] = off + sizeof(int);
+						fcounts[n] = fcnt + 1;
 					}
-
 				}
-
-				//if (!rToF.Dump(_rToFPath, out _error))
-				//{
-				//	return;
-				//}
-				//if (!fToR.Dump(_fToRPath, out _error))
-				//{
-				//	return;
-				//}
-
+				ffw.GotoBegin();
+				ffw.Write(totfcnt);
 			}
 			catch (Exception ex)
 			{
