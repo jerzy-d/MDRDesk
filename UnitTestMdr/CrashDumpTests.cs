@@ -450,19 +450,26 @@ namespace UnitTestMdr
 				ulong[] instances = DumpIndexer.GetHeapAddressesCount(heap);
 				string[] typeNames = DumpIndexer.GetTypeNames(heap, out error);
 				var rootAddrInfo = ClrtRootInfo.GetRootAddresses(0, dmp.Runtimes[0], heap, typeNames, strIds, fileMoniker, out error);
+
 				Assert.IsNull(error);
 				Assert.IsTrue(Utils.IsSorted(rootAddrInfo.Item1));
 				Assert.IsTrue(Utils.IsSorted(rootAddrInfo.Item2));
+
 				var rootAddresses = Utils.MergeAddressesRemove0s(rootAddrInfo.Item1, rootAddrInfo.Item2);
+
 				Assert.IsTrue(Utils.AreAllInExcept0(rootAddresses, rootAddrInfo.Item1));
 				Assert.IsTrue(Utils.AreAllInExcept0(rootAddresses, rootAddrInfo.Item2));
 				Assert.IsTrue(Utils.AreAllDistinct(rootAddresses));
 				Assert.IsTrue(Utils.IsSorted(rootAddresses));
+
 				rootAddresses = Utils.GetRealAddressesInPlace(rootAddresses);
+
 				HashSet<ulong> done = new HashSet<ulong>();
 				SortedDictionary<ulong, List<ulong>> objRefs = new SortedDictionary<ulong, List<ulong>>();
 				SortedDictionary<ulong, List<ulong>> fldRefs = new SortedDictionary<ulong, List<ulong>>();
+
 				bool result = References.GetRefrences(heap, rootAddresses, objRefs, fldRefs, done, out error);
+
 				Assert.IsTrue(result);
 				Assert.IsNull(error);
 
@@ -554,10 +561,10 @@ namespace UnitTestMdr
 				Assert.IsTrue(Utils.AreAddressesSorted(rootAddrInfo.Item1));
 				Assert.IsTrue(Utils.AreAddressesSorted(rootAddrInfo.Item2));
 
-				var rootAddresses = Utils.MergeAddressesRemove0s(rootAddrInfo.Item1, rootAddrInfo.Item2);
+				var rootAddresses = rootAddrInfo.Item1;
 
-				Assert.IsTrue(Utils.AreAllInExcept0(rootAddresses, rootAddrInfo.Item1));
-				Assert.IsTrue(Utils.AreAllInExcept0(rootAddresses, rootAddrInfo.Item2));
+				//Assert.IsTrue(Utils.AreAllInExcept0(rootAddresses, rootAddrInfo.Item1));
+				//Assert.IsTrue(Utils.AreAllInExcept0(rootAddresses, rootAddrInfo.Item2));
 				Assert.IsTrue(Utils.AreAllDistinct(rootAddresses));
 				Assert.IsTrue(Utils.IsSorted(rootAddresses));
 
@@ -568,25 +575,43 @@ namespace UnitTestMdr
 				string path1 = fileMoniker.GetFilePath(0, Constants.MapParentFieldsRootedPostfix);
 				string path2 = fileMoniker.GetFilePath(0, Constants.MapFieldParentsRootedPostfix);
 				bool result = References.GetRefrences(heap, rootAddressNdxs, instances, bitset, path1, path2, out error);
+
 				Assert.IsTrue(result);
 				Assert.IsNull(error);
 
-				int[] head;
-				int[][] lists;
-				result = References.LoadReferences(path2, out head, out lists, out error);
+				int[] head1;
+				int[][] lists1;
+				result = References.LoadReferences(path1, out head1, out lists1, out error);
+				Assert.IsTrue(Utils.IsSorted(head1));
 
-				for (int i = 0, icnt = lists.Length; i < icnt; ++i)
+				for (int i = 0, icnt = lists1.Length; i < icnt; ++i)
 				{
-					var lst = lists[i];
+					var lst = lists1[i];
 					Assert.IsTrue(Utils.IsSorted(lst));
 					Assert.IsTrue(Utils.AreAllDistinct(lst));
 					Assert.IsTrue(Utils.DoesNotContain(lst,Int32.MaxValue));
 				}
-
 				Assert.IsTrue(result);
 				Assert.IsNull(error);
 
+				int[] head2;
+				int[][] lists2;
+				result = References.LoadReferences(path2, out head2, out lists2, out error);
+				Assert.IsTrue(Utils.IsSorted(head2));
 
+				for (int i = 0, icnt = lists2.Length; i < icnt; ++i)
+				{
+					var lst = lists2[i];
+					Assert.IsTrue(Utils.IsSorted(lst));
+					Assert.IsTrue(Utils.AreAllDistinct(lst));
+					Assert.IsTrue(Utils.DoesNotContain(lst, Int32.MaxValue));
+				}
+				Assert.IsTrue(result);
+				Assert.IsNull(error);
+
+				int badHead1, badHead2;
+				//result = Utils.CheckInverted(head1, lists1, head2, lists2, out badHead1, out badHead2);
+				Assert.IsTrue(result);
 
 				//var remaining = Utils.Difference(instances, rootedAry);
 
@@ -640,6 +665,48 @@ namespace UnitTestMdr
 			} // using dump
 		}
 
+		[TestMethod]
+		public void TestIndexingBig()
+		{
+			string error;
+			string dumpPath = @"C:\WinDbgStuff\Dumps\Analytics\BigOne\Analytics11_042015_2.Big.dmp";
+			var dmp = OpenDump(dumpPath);
+			var fileMoniker = new DumpFileMoniker(dumpPath);
+			var strIds = new StringIdDct();
+
+			using (dmp)
+			{
+				var heap = dmp.Heap;
+				var runtm = dmp.Runtimes[0];
+				ulong[] instances = DumpIndexer.GetHeapAddressesCount(heap);
+				string[] typeNames = DumpIndexer.GetTypeNames(heap, out error);
+				var rootAddrInfo = ClrtRootInfo.GetRootAddresses(0, runtm, heap, typeNames, strIds, fileMoniker, out error);
+				Utils.GetRealAddressesInPlace(rootAddrInfo.Item1);
+				Utils.GetRealAddressesInPlace(rootAddrInfo.Item2);
+
+				Assert.IsNull(error);
+				Assert.IsTrue(Utils.AreAddressesSorted(rootAddrInfo.Item1));
+				Assert.IsTrue(Utils.AreAddressesSorted(rootAddrInfo.Item2));
+
+				var rootAddresses = rootAddrInfo.Item1;
+
+				//Assert.IsTrue(Utils.AreAllInExcept0(rootAddresses, rootAddrInfo.Item1));
+				//Assert.IsTrue(Utils.AreAllInExcept0(rootAddresses, rootAddrInfo.Item2));
+				Assert.IsTrue(Utils.AreAllDistinct(rootAddresses));
+				Assert.IsTrue(Utils.IsSorted(rootAddresses));
+
+				rootAddresses = Utils.GetRealAddressesInPlace(rootAddresses);
+				Bitset bitset = new Bitset(instances.Length);
+				var rootAddressNdxs = Utils.GetAddressIndices(rootAddresses, instances);
+
+				string path1 = fileMoniker.GetFilePath(0, Constants.MapParentFieldsRootedPostfix);
+				string path2 = fileMoniker.GetFilePath(0, Constants.MapFieldParentsRootedPostfix);
+				bool result = References.GetRefrences(heap, rootAddressNdxs, instances, bitset, path1, path2, out error);
+
+				Assert.IsTrue(result);
+				Assert.IsNull(error);
+			} // using dump
+		}
 
 		private bool DumpReferences(string path, SortedDictionary<ulong, List<ulong>> refs, ulong[] instances,
 			out string error)

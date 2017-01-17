@@ -291,6 +291,7 @@ namespace ClrMDRIndex
 					});
 					if (fldRefList.Count < 1) continue;
 					fldRefList.Sort(kvCmp);
+					Utils.RemoveDuplicates(fldRefList, kvCmp);
 					fldRefIndices.Clear();
 					for (int j = 0, jcnt = fldRefList.Count; j < jcnt; ++j)
 					{
@@ -323,6 +324,7 @@ namespace ClrMDRIndex
 						});
 						if (fldRefList.Count < 1) continue;
 						fldRefList.Sort(kvCmp);
+						Utils.RemoveDuplicates(fldRefList, kvCmp);
 						fldRefIndices.Clear();
 						for (int j = 0, jcnt = fldRefList.Count; j < jcnt; ++j)
 						{

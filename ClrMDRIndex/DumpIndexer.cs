@@ -250,7 +250,7 @@ namespace ClrMDRIndex
 						Utils.WriteUlongArray(path, addresses, out error);
 
 						Utils.SetAddressBit(rootedAry, finalizer, Utils.RootBits.Rooted);
-						if (ClrtRootInfo.FinalyzerAddressFixup(r, finalizer, _fileMoniker, out error))
+						if (!ClrtRootInfo.FinalyzerAddressFixup(r, finalizer, _fileMoniker, out error))
 						{
 							AddError(_currentRuntimeIndex, "Finalyzer Address Fixup failed." + Environment.NewLine + error);
 						}

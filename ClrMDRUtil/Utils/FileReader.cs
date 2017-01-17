@@ -1,9 +1,10 @@
+using System.Collections.Generic;
 using System.IO;
 
 namespace ClrMDRIndex
 {
 
-	public class FileReader
+	public sealed class FileReader
 	{
 		FileStream _file;
 		byte[] _buffer;
@@ -100,22 +101,82 @@ namespace ClrMDRIndex
         	return (uint)(_buffer[0] | _buffer[1] << 8 | _buffer[2] << 16 | _buffer[3] << 24);
         }
 
-        public virtual long ReadInt64() {
+        public long ReadInt64() {
         	_file.Read(_buffer,0,8);
             uint lo = (uint)(_buffer[0] | _buffer[1] << 8 | _buffer[2] << 16 | _buffer[3] << 24);
             uint hi = (uint)(_buffer[4] | _buffer[5] << 8 | _buffer[6] << 16 | _buffer[7] << 24);
             return (long) ((ulong)hi) << 32 | lo;
         }
 
-        public virtual ulong ReadUInt64() {
+        public ulong ReadUInt64() {
         	_file.Read(_buffer,0,8);
             uint lo = (uint)(_buffer[0] | _buffer[1] << 8 | _buffer[2] << 16 | _buffer[3] << 24);
             uint hi = (uint)(_buffer[4] | _buffer[5] << 8 | _buffer[6] << 16 | _buffer[7] << 24);
             return ((ulong)hi) << 32 | lo;
         }
 
+		public int[] ReadList(long offset, byte[] buffer)
+		{
+			Seek(offset, SeekOrigin.Begin);
+			int cnt = ReadInt32();
+			int bufsize = cnt*sizeof(int);
+			if (buffer.Length < bufsize)
+				buffer = new byte[bufsize];
+			_file.Read(buffer, 0, bufsize);
+			int[] lst = new int[cnt];
+			int off = 0;
+			for (int i = 0; i < cnt; ++i)
+			{
+				lst[i] = GetInt32(buffer, off);
+				off += 4;
+			}
+			return lst;
+		}
 
-        private void FillBuffer(int val, byte[] buffer, int off)
+		public KeyValuePair<int,int[]> ReadList(long offset, int[] ibuf, byte[] buffer)
+		{
+			Seek(offset, SeekOrigin.Begin);
+			int cnt = ReadInt32();
+			int bufsize = cnt * sizeof(int);
+			if (buffer.Length < bufsize)
+			{
+				ibuf = new int[cnt];
+				buffer = new byte[bufsize];
+			}
+			_file.Read(buffer, 0, bufsize);
+			int off = 0;
+			for (int i = 0; i < cnt; ++i)
+			{
+				ibuf[i] = GetInt32(buffer, off);
+				off += 4;
+			}
+			return new KeyValuePair<int, int[]>(cnt,ibuf);
+		}
+
+		public int[] ReadHeadAndList(byte[] buffer, out int head)
+		{
+			head = ReadInt32();
+			int cnt = ReadInt32();
+			int bufsize = cnt * sizeof(int);
+			if (buffer.Length < bufsize)
+				buffer = new byte[bufsize];
+			_file.Read(buffer, 0, bufsize);
+			int[] lst = new int[cnt];
+			int off = 0;
+			for (int i = 0; i < cnt; ++i)
+			{
+				lst[i] = GetInt32(buffer, off);
+				off += 4;
+			}
+			return lst;
+		}
+
+		private int GetInt32(byte[] buffer, int offset)
+		{
+			return (int)(buffer[offset] | buffer[offset+1] << 8 | buffer[offset+2] << 16 | buffer[offset+3] << 24);
+		}
+
+		private void FillBuffer(int val, byte[] buffer, int off)
         {
             buffer[off+0] = (byte) val;
             buffer[off+1] = (byte) (val >> 8);

@@ -5,6 +5,7 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using ClrMDRIndex;
 
 namespace ClrMDRUtil
 {
@@ -66,6 +67,21 @@ namespace ClrMDRUtil
 			}
 		}
 
+		public void InitSlots(int[] counts)
+		{
+			Debug.Assert(_array.Length == counts.Length);
+			for (int i = 0, icnt = counts.Length; i < icnt; ++i)
+			{
+				int cnt = counts[i];
+				if (cnt == 0) continue;
+				var ary = new int[cnt];
+				for (int j = 0; j < cnt; ++j)
+					ary[j] = Int32.MaxValue;
+				_array[i] = ary;
+			}
+
+		}
+
 		public void Add(int ndx, int[] data)
 		{
 			Debug.Assert(ndx >= 0 && ndx < _array.Length);
@@ -121,6 +137,21 @@ namespace ClrMDRUtil
 			{
 				bw?.Close();
 			}
+		}
+
+		public bool ListHaveNoDuplicates()
+		{
+			for (int i = 0, icnt = _array.Length; i < icnt; ++i)
+			{
+				if (_array[i] == null) continue;
+				var ary = _array[i];
+				var len = DataLen(ary);
+				for (int j = 1; j < len; ++j)
+				{
+					if (ary[j - 1] == ary[j]) return false;
+				}
+			}
+			return true;
 		}
 	}
 }

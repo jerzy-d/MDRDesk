@@ -2315,6 +2315,19 @@ namespace ClrMDRIndex
 			return true;
 		}
 
+		public static int[] RemoveDuplicates(int[] ary)
+		{
+			Debug.Assert(IsSorted(ary));
+			List<int> lst = new List<int>(ary.Length);
+			lst.Add(ary[0]);
+			for (int i = 1; i < ary.Length; ++i)
+			{
+				if (ary[i - 1] == ary[i]) continue;
+				lst.Add(ary[i]);
+			}
+			return lst.ToArray();
+		}
+
 		public static bool AreAllInExcept0(ulong[] main, ulong[] subAry)
 		{
 			Debug.Assert(IsSorted(main));
@@ -2354,6 +2367,31 @@ namespace ClrMDRIndex
 				if (lst[i - 1] > lst[i]) return false;
 			}
 			return true;
+		}
+
+		public static bool IsSorted<T>(IList<T> lst, IComparer<T> cmp)
+		{
+			for (int i = 1, icnt = lst.Count; i < icnt; ++i)
+			{
+				if (cmp.Compare(lst[i - 1],lst[i]) > 0) return false;
+			}
+			return true;
+		}
+
+		public static int RemoveDuplicates<T>(List<T> lst, IComparer<T> cmp)
+		{
+			Debug.Assert(IsSorted(lst,cmp));
+			int removedCount = 0;
+			for (int i = 1; i < lst.Count; ++i)
+			{
+				if (cmp.Compare(lst[i - 1], lst[i]) == 0)
+				{
+					lst.RemoveAt(i);
+					--i;
+					++removedCount;
+				}
+			}
+			return removedCount;
 		}
 
 		/// <summary>
@@ -2436,6 +2474,36 @@ namespace ClrMDRIndex
 				++sNdx;
 			}
 			return lst.ToArray();
+		}
+
+		public static bool CheckInverted(int[] head1, int[][] list1, int[] head2, int[][] list2, out int badHead1, out int badHead2)
+		{
+			badHead1 = Constants.InvalidIndex;
+			badHead2 = Constants.InvalidIndex;
+			for (int i = 0, icnt = head1.Length; i < icnt; ++i)
+			{
+				var lst1 = list1[i];
+				for (int j = 0, jcnt = lst1.Length; j < jcnt; ++j)
+				{
+					var ndx1 = Array.BinarySearch(head2, lst1[j]);
+					if (ndx1 < 0)
+					{
+						badHead1 = i;
+						return false;
+					}
+					var lst2 = list2[ndx1];
+					for (int k = 0, kcnt = lst2.Length; k < kcnt; ++k)
+					{
+						var ndx2 = Array.BinarySearch(head1, lst2[k]);
+						if (ndx2 < 0)
+						{
+							badHead2 = ndx1;
+							return false;
+						}
+					}
+				}
+			}
+			return true;
 		}
 
 		public static void AddUnique(List<ulong> lst, ulong val)

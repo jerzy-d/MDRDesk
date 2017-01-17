@@ -20,6 +20,12 @@ namespace ClrMDRIndex
 			_buffer = new byte[8];
 		}
 
+		public FileWriter(string path, int bufSize, FileOptions fopt)
+		{
+			_file = new FileStream(path, FileMode.Create, FileAccess.ReadWrite, FileShare.None, bufSize, fopt);
+			_buffer = new byte[8];
+		}
+
 		public void Write(int value)
         {
             _buffer[0] = (byte) value;
@@ -82,6 +88,43 @@ namespace ClrMDRIndex
         	}
             _file.Write(buffer, 0, totalLen);
         }
+
+		public void Write(int head, int dcnt, int[] data, byte[] buffer)
+		{
+			int totalLen = sizeof(int) * 2 + sizeof(int) * dcnt;
+			if (buffer.Length < totalLen)
+				buffer = new byte[totalLen];
+			int off = 0;
+			FillBuffer(head, buffer, off);
+			off += 4;
+			FillBuffer(dcnt, buffer, off);
+			off += 4;
+			for (int i = 0; i < dcnt; ++i)
+			{
+				FillBuffer(data[i], buffer, off);
+				off += 4;
+			}
+			_file.Write(buffer, 0, totalLen);
+		}
+
+		public int Write(int[] data, byte[] buffer)
+		{
+			int totalLen = sizeof(int) + sizeof(int) * data.Length;
+			if (buffer.Length < totalLen)
+				buffer = new byte[totalLen];
+			int off = 0;
+			int len = data.Length;
+			FillBuffer(len, buffer, off);
+			off += 4;
+			FillBuffer(len, buffer, off);
+			for (int i = 0; i < len; ++i)
+			{
+				FillBuffer(data[i], buffer, off);
+				off += 4;
+			}
+			_file.Write(buffer, 0, totalLen);
+			return totalLen;
+		}
 
 		public void WriteBytes(byte[] buffer, int start, int len)
 		{
