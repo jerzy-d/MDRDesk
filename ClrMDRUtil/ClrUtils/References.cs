@@ -94,12 +94,14 @@ namespace ClrMDRIndex
 			rootedAry = null;
 			try
 			{
-				var rootAddresses = Utils.MergeAddressesRemove0s(rootAddrInfo.Item1, rootAddrInfo.Item2);
+				var rootAddresses = Utils.Remove0sFromSorted(rootAddrInfo.Item1);
 				rootAddresses = Utils.GetRealAddressesInPlace(rootAddresses);
 				Debug.Assert(Utils.AreAddressesSorted(rootAddresses));
+
 				HashSet<ulong> done = new HashSet<ulong>();
 				SortedDictionary<ulong, List<ulong>> objRefs = new SortedDictionary<ulong, List<ulong>>();
 				SortedDictionary<ulong, List<ulong>> fldRefs = new SortedDictionary<ulong, List<ulong>>();
+
 				bool result = GetRefrences(heap, rootAddresses, objRefs, fldRefs, done, out error);
 				if (!result) return false;
 				string path = fileMoniker.GetFilePath(0, Constants.MapParentFieldsRootedPostfix);
@@ -261,6 +263,34 @@ namespace ClrMDRIndex
 
 		}
 
+		public static bool CreateReferences(int runNdx, ClrHeap heap, ulong[] roots, ulong[] instances, Bitset bitset, DumpFileMoniker fileMoniker, out string error)
+		{
+			error = null;
+			try
+			{
+				roots = Utils.GetRealAddressesInPlace(roots);
+				var rootAddressNdxs = Utils.GetAddressIndices(roots, instances);
+				string rToFPath = fileMoniker.GetFilePath(runNdx, Constants.MapParentFieldsRootedPostfix);
+				string fToRPath = fileMoniker.GetFilePath(runNdx, Constants.MapFieldParentsRootedPostfix);
+				if (!GetRefrences(heap, rootAddressNdxs, instances, bitset, rToFPath, fToRPath, out error))
+					return false;
+				int[] unrootedNdxs = bitset.GetUnsetIndices();
+				rToFPath = fileMoniker.GetFilePath(runNdx, Constants.MapParentFieldsNotRootedPostfix);
+				fToRPath = fileMoniker.GetFilePath(runNdx, Constants.MapFieldParentsNotRootedPostfix);
+
+				if (!GetRefrences(heap, unrootedNdxs, instances, bitset, rToFPath, fToRPath, out error))
+					return false;
+
+
+				return true;
+			}
+			catch (Exception ex)
+			{
+				error = Utils.GetExceptionErrorString(ex);
+				return false;
+			}
+		}
+
 		public static bool GetRefrences(ClrHeap heap, int[] indices, ulong[] instances, Bitset bitset, string rToFPath, string fToRPath, out string error)
 		{
 			error = null;
@@ -283,6 +313,7 @@ namespace ClrMDRIndex
 					if (clrType == null) continue;
 					if (bitset.IsSet(rndx)) continue;
 					bitset.Set(rndx); // mark it
+					//instances[rndx] |= Utils.RootBits.Rooted;
 
 					fldRefList.Clear();
 					clrType.EnumerateRefsOfObjectCarefully(raddr, (address, off) =>
@@ -296,7 +327,7 @@ namespace ClrMDRIndex
 					for (int j = 0, jcnt = fldRefList.Count; j < jcnt; ++j)
 					{
 						var faddr = fldRefList[j].Key;
-						var ndx = Array.BinarySearch(instances, faddr);
+						var ndx = Utils.AddressSearch(instances, faddr);
 						if (ndx < 0) continue;
 						fldRefIndices.Add(ndx);
 						que.Enqueue(new KeyValuePair<int, ulong>(ndx,faddr)); 
@@ -314,6 +345,7 @@ namespace ClrMDRIndex
 						if (bitset.IsSet(kv.Key)) continue;
 						rndx = kv.Key;
 						bitset.Set(rndx);  // mark it
+						//instances[rndx] |= Utils.RootBits.Rooted;
 						raddr = kv.Value;
 						clrType = heap.GetObjectType(raddr);
 						if (clrType == null) continue;
@@ -329,7 +361,7 @@ namespace ClrMDRIndex
 						for (int j = 0, jcnt = fldRefList.Count; j < jcnt; ++j)
 						{
 							var faddr = fldRefList[j].Key;
-							var ndx = Array.BinarySearch(instances, faddr);
+							var ndx = Utils.AddressSearch(instances, faddr);
 							if (ndx < 0) continue;
 							fldRefIndices.Add(ndx);
 							que.Enqueue(new KeyValuePair<int, ulong>(ndx, faddr));
@@ -344,6 +376,13 @@ namespace ClrMDRIndex
 
 				// save results in files
 				dataToPersist.Add(new KeyValuePair<int, int[]>(-1,null));
+				que.Clear();
+				que = null;
+				fldRefList.Clear();
+				fldRefList = null;
+				fldRefIndices.Clear();
+				fldRefIndices = null;
+
 				persistor.Wait();
 				error = persistor.Error;
 
@@ -594,6 +633,8 @@ namespace ClrMDRIndex
 				br = new BinaryReader(File.Open(path, FileMode.Open));
 
 				int cnt = br.ReadInt32();
+				bool sortAfter = cnt < 0;
+				cnt = Math.Abs(cnt);
 				headAry = new int[cnt];
 				lists = new int[cnt][];
 				for (int i = 0; i < cnt; ++i)
@@ -607,6 +648,8 @@ namespace ClrMDRIndex
 					}
 					lists[i] = lstAry;
 				}
+				if (sortAfter)
+					Array.Sort(headAry,lists);
 				return true;
 			}
 			catch (Exception ex)

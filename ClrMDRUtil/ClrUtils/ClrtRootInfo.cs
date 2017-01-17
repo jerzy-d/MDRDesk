@@ -271,6 +271,116 @@ namespace ClrMDRIndex
 
 		#endregion save/load
 
+		#region test dump
+
+		public static bool DumpRootInfo(string dumpPath, ClrRuntime runTm, ClrHeap heap, ulong[] instances, out string error)
+		{
+			error = null;
+			StreamWriter sw = null;
+			try
+			{
+				var addrSet = new HashSet<ulong>();
+				var objsSet = new HashSet<ulong>();
+				var fnlsSet = new HashSet<ulong>();
+				var addrDct = new Dictionary<ulong, ulong>(1024*4);
+				var finlDct = new Dictionary<ulong, ulong>(1024*4);
+				List<ClrRoot>[] ourRoots = new List<ClrRoot>[(int) GCRootKind.Max + 1];
+				for (int i = 0, icnt = (int) GCRootKind.Max + 1; i < icnt; ++i)
+				{
+					ourRoots[i] = new List<ClrRoot>();
+				}
+
+				var roots = heap.EnumerateRoots(true);
+				foreach (var root in roots)
+				{
+					ulong rootAddr = root.Address;
+					ulong objAddr = root.Object;
+
+					ourRoots[(int) root.Kind].Add(root);
+
+					if (rootAddr != 0Ul)
+					{
+						addrSet.Add(rootAddr);
+					}
+					if (objAddr != 0UL)
+					{
+						if (root.Kind == GCRootKind.Finalizer)
+						{
+							fnlsSet.Add(objAddr);
+						}
+						else
+						{
+							objsSet.Add(objAddr);
+						}
+					}
+				}
+
+				var rootCmp = new ClrRootNameCmp();
+				int rootCount = 0;
+				int fnlCount = 0;
+				for (int i = 0, icnt = (int) GCRootKind.Max + 1; i < icnt; ++i)
+				{
+					if (ourRoots[i].Count == 0) continue;
+					if (ourRoots[i][0].Kind == GCRootKind.Finalizer)
+						fnlCount += ourRoots[i].Count;
+					else
+						rootCount += ourRoots[i].Count;
+					ourRoots[i].Sort(rootCmp);
+				}
+
+				int fnlObjCount = 0;
+				int fnlRootCount = 0;
+				foreach (var addr in fnlsSet)
+				{
+					if (objsSet.Contains(addr))
+						++fnlObjCount;
+					if (addrSet.Contains(addr))
+						++fnlRootCount;
+				}
+
+				string path = DumpFileMoniker.GetAndCreateOutFolder(dumpPath, out error);
+				if (error != null) return false;
+				path = path + Path.DirectorySeparatorChar + "RootDump.txt";
+				sw = new StreamWriter(path);
+				sw.WriteLine("Root Count: " + Utils.SizeString(rootCount) + ", Finalizer Count: " + Utils.SizeString(fnlCount));
+				sw.WriteLine("Finalizer Rooted Object Count: " + Utils.SizeString(fnlObjCount) + ", Root Count: " + Utils.SizeString(fnlRootCount));
+				for (int i = 0, icnt = (int)GCRootKind.Max + 1; i < icnt; ++i)
+				{
+					if (ourRoots[i].Count == 0) continue;
+					var lst = ourRoots[i];
+					sw.WriteLine("#### " + ((GCRootKind)i).ToString() + "  COUNT: " + Utils.SizeString(lst.Count));
+					for (int j = 0, jcnt = lst.Count; j < jcnt; ++j)
+					{
+						var clrRoot = lst[j];
+						var rname = clrRoot.Name ?? string.Empty;
+						var oname = clrRoot.Type == null ? string.Empty : (clrRoot.Type.Name ?? string.Empty);
+						if (oname == String.Empty)
+						{
+							var clrType = heap.GetObjectType(clrRoot.Object);
+							if (clrType != null) oname = "* " + clrType.Name;
+						}
+						sw.Write(Utils.RealAddressStringHeader(clrRoot.Address) + Utils.RealAddressString(clrRoot.Object));
+						sw.WriteLine(" " + rname + " -> " + oname);
+					}
+				}
+
+
+
+				return true;
+			}
+			catch (Exception ex)
+			{
+				error = Utils.GetExceptionErrorString(ex);
+				return false;
+			}
+			finally
+			{
+				sw?.Close();
+			}
+		}
+
+		#endregion test dump
+
 		public void GetFinalizerInfo(string[] typeNames)
 		{
 			var finals = _roots[(int)GCRootKind.Finalizer];
@@ -476,6 +586,23 @@ namespace ClrMDRIndex
 		public int Compare(ClrRoot a, ClrRoot b)
 		{
 			return a.Object < b.Object ? -1 : (a.Object > b.Object ? 1 : 0);
+		}
+	}
+
+	public class ClrRootNameCmp : IComparer<ClrRoot>
+	{
+		public int Compare(ClrRoot a, ClrRoot b)
+		{
+			var aname = a.Name ?? string.Empty;
+			var bname = b.Name ?? string.Empty;
+			int cmp = string.Compare(aname, bname, StringComparison.Ordinal);
+			if (cmp == 0)
+			{
+				aname = a.Type == null ? string.Empty : (a.Type.Name ?? string.Empty);
+				bname = b.Type == null ? string.Empty : (b.Type.Name ?? string.Empty);
+				return string.Compare(aname, bname, StringComparison.Ordinal);
+			}
+			return cmp;
 		}
 	}
 

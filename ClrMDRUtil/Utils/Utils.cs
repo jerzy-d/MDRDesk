@@ -128,9 +128,9 @@ namespace ClrMDRIndex
 		/// <param name="bitSetters">Array of special addresses, instances known to be rooted, or belonging to finalizer queue.</param>
 		/// <param name="addresses">Instance array to be marked.</param>
 		/// <param name="bit">Marking bitmask.</param>
-		public static void SetAddressBit(ulong[] bitSetters, ulong[] addresses, ulong bit)
+		public static int SetAddressBit(ulong[] bitSetters, ulong[] addresses, ulong bit)
 		{
-			int bNdx = 0, bLen = bitSetters.Length, aNdx = 0, aLen = addresses.Length;
+			int bNdx = 0, bLen = bitSetters.Length, aNdx = 0, aLen = addresses.Length, setCount=0;
 			while (bNdx < bLen && aNdx < aLen)
 			{
 				var addr = Utils.RealAddress(addresses[aNdx]);
@@ -146,9 +146,41 @@ namespace ClrMDRIndex
 					continue;
 				}
 				addresses[aNdx] |= bit;
+				++setCount;
 				++aNdx;
 				++bNdx;
 			}
+			return setCount;
+		}
+
+
+
+		public static int SetAddressBitIfSet(ulong[] bitSetters, ulong[] addresses, ulong bit)
+		{
+			int bNdx = 0, bLen = bitSetters.Length, aNdx = 0, aLen = addresses.Length, setCount = 0;
+			while (bNdx < bLen && aNdx < aLen)
+			{
+				var addr = Utils.RealAddress(addresses[aNdx]);
+				var baddr = Utils.RealAddress(bitSetters[bNdx]);
+				if (baddr > addr)
+				{
+					++aNdx;
+					continue;
+				}
+				if (baddr < addr)
+				{
+					++bNdx;
+					continue;
+				}
+				if ((bitSetters[bNdx] & bit) > 0)
+				{
+					addresses[aNdx] |= bit;
+					++setCount;
+				}
+				++aNdx;
+				++bNdx;
+			}
+			return setCount;
 		}
 
 
@@ -2243,6 +2275,51 @@ namespace ClrMDRIndex
 			a ^= b;
 		}
 
+		public static bool AreEqual(int[] ary1, int[] ary2)
+		{
+			if (ary1 == null && ary2 == null) return true;
+			if (ary1 == null || ary2 == null) return false;
+			if (ary1.Length != ary2.Length) return false;
+			for (int i = 0, icnt = ary1.Length; i < icnt; ++i)
+			{
+				if (ary1[i] != ary2[i]) return false;
+			}
+			return true;
+		}
+
+		/// <summary>
+		/// First array has all the elements of the second one.
+		/// </summary>
+		/// <param name="ary1">Super set, elements are sorted.</param>
+		/// <param name="ary2">Subset of ary1, elements are sorted.</param>
+		/// <returns>True if ary1 contains all the element of ary2.</returns>
+		public static bool Contains(int[] ary1, int[] ary2)
+		{
+			if (ary1 == null && ary2 == null) return true;
+			if (ary1 == null || ary2 == null) return false;
+			Debug.Assert(IsSorted(ary1));
+			Debug.Assert(IsSorted(ary2));
+			if (ary1.Length < ary2.Length) return false;
+
+			int ndx1 = 0, ndx2 = 0, len1 = ary1.Length, len2 = ary2.Length, found = 0;
+			while (ndx1 < len1 && ndx2 < len2)
+			{
+				if (ary1[ndx1] < ary2[ndx2])
+				{
+					++ndx1;
+					continue;
+				}
+				if (ary1[ndx1] > ary2[ndx2])
+				{
+					++ndx2;
+					continue;
+				}
+				++ndx1;
+				++ndx2;
+				++found;
+			}
+			return found == len2;
+		}
 
 		public static bool IsSorted(IList<string> lst, out Tuple<string,string> badCouple)
 		{
@@ -2474,6 +2551,24 @@ namespace ClrMDRIndex
 				++sNdx;
 			}
 			return lst.ToArray();
+		}
+
+		public static ulong[] Remove0sFromSorted(ulong[] ary)
+		{
+			if (ary == null) return ary;
+			Debug.Assert(IsSorted(ary));
+			int i = 0, len = ary.Length;
+
+			for (; i < len; ++i)
+			{
+				if (ary[i] != 0UL) break;
+			}
+			if (i == 0) return ary;
+			if (i == len) return Utils.EmptyArray<ulong>.Value;
+
+			var newAry = new ulong[len - i];
+			Buffer.BlockCopy(ary,i*sizeof(ulong), newAry, 0, len - i);
+			return newAry;
 		}
 
 		public static bool CheckInverted(int[] head1, int[][] list1, int[] head2, int[][] list2, out int badHead1, out int badHead2)

@@ -109,21 +109,23 @@ namespace ClrMDRIndex
 
 		public int Write(int[] data, byte[] buffer)
 		{
-			int totalLen = sizeof(int) + sizeof(int) * data.Length;
-			if (buffer.Length < totalLen)
-				buffer = new byte[totalLen];
-			int off = 0;
 			int len = data.Length;
-			FillBuffer(len, buffer, off);
-			off += 4;
-			FillBuffer(len, buffer, off);
+			int bufLen = buffer.Length;
+			FillBuffer(len, buffer, 0);
+			int off = 4;
 			for (int i = 0; i < len; ++i)
 			{
+				if (off >= bufLen)
+				{
+					_file.Write(buffer, 0, off);
+					off = 0;
+				}
 				FillBuffer(data[i], buffer, off);
 				off += 4;
 			}
-			_file.Write(buffer, 0, totalLen);
-			return totalLen;
+			if (off > 0)
+				_file.Write(buffer, 0, off);
+			return sizeof(int) * (len+1); ;
 		}
 
 		public void WriteBytes(byte[] buffer, int start, int len)

@@ -576,12 +576,19 @@ namespace UnitTestMdr
 				string path2 = fileMoniker.GetFilePath(0, Constants.MapFieldParentsRootedPostfix);
 				bool result = References.GetRefrences(heap, rootAddressNdxs, instances, bitset, path1, path2, out error);
 
+
+
+				int markRootCount = Utils.SetAddressBitIfSet(instances, rootAddrInfo.Item2, Utils.RootBits.Rooted);
+				int markFnlzCount = Utils.SetAddressBit(rootAddrInfo.Item2, instances, Utils.RootBits.Finalizer);
+
 				Assert.IsTrue(result);
 				Assert.IsNull(error);
 
 				int[] head1;
 				int[][] lists1;
 				result = References.LoadReferences(path1, out head1, out lists1, out error);
+				Assert.IsTrue(result);
+				Assert.IsNull(error);
 				Assert.IsTrue(Utils.IsSorted(head1));
 
 				for (int i = 0, icnt = lists1.Length; i < icnt; ++i)
@@ -591,12 +598,28 @@ namespace UnitTestMdr
 					Assert.IsTrue(Utils.AreAllDistinct(lst));
 					Assert.IsTrue(Utils.DoesNotContain(lst,Int32.MaxValue));
 				}
+
+				string path1a = fileMoniker.GetFilePath(0, ".`PARENTFIELDSROOTED[0].BEFORE.NOFIN.bin");
+				int[] head1a;
+				int[][] lists1a;
+				result = References.LoadReferences(path1a, out head1a, out lists1a, out error);
 				Assert.IsTrue(result);
 				Assert.IsNull(error);
+
+				for (int i = 0, icnt = lists1a.Length; i < icnt; ++i)
+				{
+					var lst = lists1a[i];
+					Assert.IsTrue(Utils.IsSorted(lst));
+					//Assert.IsTrue(Utils.AreAllDistinct(lst));
+					Assert.IsTrue(Utils.DoesNotContain(lst, Int32.MaxValue));
+					Assert.IsTrue(Utils.Contains(lst,lists1[i]));
+				}
 
 				int[] head2;
 				int[][] lists2;
 				result = References.LoadReferences(path2, out head2, out lists2, out error);
+				Assert.IsTrue(result);
+				Assert.IsNull(error);
 				Assert.IsTrue(Utils.IsSorted(head2));
 
 				for (int i = 0, icnt = lists2.Length; i < icnt; ++i)
@@ -606,43 +629,22 @@ namespace UnitTestMdr
 					Assert.IsTrue(Utils.AreAllDistinct(lst));
 					Assert.IsTrue(Utils.DoesNotContain(lst, Int32.MaxValue));
 				}
+
+
+				string path2a = fileMoniker.GetFilePath(0, ".`FIELDPARENTSROOTED[0].BEFORE.NOFIN.bin");
+				int[] head2a;
+				int[][] lists2a;
+				result = References.LoadReferences(path2a, out head2a, out lists2a, out error);
 				Assert.IsTrue(result);
 				Assert.IsNull(error);
 
-				int badHead1, badHead2;
-				//result = Utils.CheckInverted(head1, lists1, head2, lists2, out badHead1, out badHead2);
-				Assert.IsTrue(result);
-
-				//var remaining = Utils.Difference(instances, rootedAry);
-
-				//result = References.GetRefrences(heap, remaining, objRefs, fldRefs, done, out error);
-				//Assert.IsTrue(result);
-				//Assert.IsNull(error);
-				//path = fileMoniker.GetFilePath(0, Constants.MapParentFieldsNotRootedPostfix);
-				//result = DumpReferences(path, objRefs, instances, out error);
-				//Assert.IsTrue(result);
-				//Assert.IsNull(error);
-				//path = fileMoniker.GetFilePath(0, Constants.MapFieldParentsNotRootedPostfix);
-				//result = DumpReferences(path, fldRefs, instances, out error);
-				//Assert.IsTrue(result);
-				//Assert.IsNull(error);
-
-				//var roots = ClrtRootInfo.Load(0, fileMoniker, out error);
-				//Assert.IsNull(error);
-				//Assert.IsNotNull(roots);
-
-				//ulong[] finalizer = Utils.GetRealAddresses(roots.FinalizerAddresses);
-				//Assert.IsTrue(Utils.IsSorted(finalizer));
-
-				//int fcnt = 0;
-				//for (int i = 0, icnt = finalizer.Length; i < icnt; ++i)
-				//{
-				//	if (Utils.AddressSearch(instances, finalizer[i]) < 0) continue;
-				//	++fcnt;
-				//}
-
-				//Utils.SetAddressBit(rootedAry, instances, Utils.RootBits.Rooted);
-				//Utils.SetAddressBit(finalizer, instances, Utils.RootBits.Finalizer);
+				for (int i = 0, icnt = lists2a.Length; i < icnt; ++i)
+				{
+					var lst = lists2a[i];
+					Assert.IsTrue(Utils.IsSorted(lst));
+					Assert.IsTrue(Utils.DoesNotContain(lst, Int32.MaxValue));
+					Assert.IsTrue(Utils.Contains(lst, lists2[i]));
+				}
 
 				TestContext.WriteLine("INSTANCE COUNT: " + Utils.LargeNumberString(instances.Length));
 				//TestContext.WriteLine("ROOTED ARY COUNT: " + Utils.LargeNumberString(rootedAry.Length));
@@ -659,8 +661,6 @@ namespace UnitTestMdr
 				}
 				TestContext.WriteLine("MARKED ROOTED COUNT: " + Utils.LargeNumberString(markedRoooted));
 				TestContext.WriteLine("MARKED FINALIZER COUNT: " + Utils.LargeNumberString(markedFinalizer));
-
-
 
 			} // using dump
 		}
@@ -703,6 +703,24 @@ namespace UnitTestMdr
 				string path2 = fileMoniker.GetFilePath(0, Constants.MapFieldParentsRootedPostfix);
 				bool result = References.GetRefrences(heap, rootAddressNdxs, instances, bitset, path1, path2, out error);
 
+				Assert.IsTrue(result);
+				Assert.IsNull(error);
+			} // using dump
+		}
+
+		[TestMethod]
+		public void TestRootInfo()
+		{
+			string error;
+			string dumpPath = @"D:\Jerzy\WinDbgStuff\dumps\Analytics\Highline\analyticsdump111.dlk.dmp";
+			var dmp = OpenDump(dumpPath);
+
+			using (dmp)
+			{
+				var heap = dmp.Heap;
+				var runtm = dmp.Runtimes[0];
+				ulong[] instances = DumpIndexer.GetHeapAddressesCount(heap);
+				var result = ClrtRootInfo.DumpRootInfo(dumpPath, runtm, heap, instances, out error);
 				Assert.IsTrue(result);
 				Assert.IsNull(error);
 			} // using dump

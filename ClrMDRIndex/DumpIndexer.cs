@@ -138,6 +138,8 @@ namespace ClrMDRIndex
 						//
 						progress?.Report(runtimeIndexHeader + "Creating instance reference data... Prev. action/total durations: " + GetIndexingDurationString(indexingStopWatch, indexingActionTimeSpan, out indexingActionTimeSpan));
 
+
+
 						// new 1/7/17
 						ulong[] rootedAry;
 						References.CreateReferences(heap, _fileMoniker, rootAddrInfo, addresses, out rootedAry, out error);
