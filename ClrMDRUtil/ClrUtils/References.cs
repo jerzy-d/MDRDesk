@@ -277,11 +277,9 @@ namespace ClrMDRIndex
 				int[] unrootedNdxs = bitset.GetUnsetIndices();
 				rToFPath = fileMoniker.GetFilePath(runNdx, Constants.MapParentFieldsNotRootedPostfix);
 				fToRPath = fileMoniker.GetFilePath(runNdx, Constants.MapFieldParentsNotRootedPostfix);
-
-				if (!GetRefrences(heap, unrootedNdxs, instances, bitset, rToFPath, fToRPath, out error))
+				Bitset bs = new Bitset(instances.Length);
+				if (!GetRefrences(heap, unrootedNdxs, instances, bs, rToFPath, fToRPath, out error))
 					return false;
-
-
 				return true;
 			}
 			catch (Exception ex)

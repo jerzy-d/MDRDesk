@@ -141,8 +141,12 @@ namespace ClrMDRIndex
 
 
 						// new 1/7/17
-						ulong[] rootedAry;
-						References.CreateReferences(heap, _fileMoniker, rootAddrInfo, addresses, out rootedAry, out error);
+						Bitset bitset = new Bitset(addresses.Length);
+						if (!References.CreateReferences(r, heap, rootAddrInfo.Item1, addresses, bitset, _fileMoniker, out error))
+						{
+							AddError(r, "CreateReferences failed." + Environment.NewLine + error);
+							return false;
+						}
 
 						// old
 						//var instanceFldRefs = _fileMoniker.GetFilePath(0, Constants.MapFieldRefInstancesPostfix);
@@ -199,7 +203,7 @@ namespace ClrMDRIndex
 
 						//fldRefQue.Add(new KeyValuePair<int, int[]>(-1, null));
 
-//							threadFldRefPersister.Join();
+						//							threadFldRefPersister.Join();
 						progress?.Report(runtimeIndexHeader + "Building type instance map... Prev. action/total durations: " + GetIndexingDurationString(indexingStopWatch, indexingActionTimeSpan, out indexingActionTimeSpan));
 
 						// build type/instance map
@@ -246,12 +250,12 @@ namespace ClrMDRIndex
 						extraWorker.Join();
 
 						ulong[] finalizer = Utils.GetRealAddressesInPlace(rootAddrInfo.Item2);
-						Utils.SetAddressBit(rootedAry, addresses, Utils.RootBits.Rooted);
+						Utils.SetAddressBit(bitset, addresses, Utils.RootBits.Rooted);
 						Utils.SetAddressBit(finalizer, addresses, Utils.RootBits.Finalizer);
 						path = _fileMoniker.GetFilePath(r, Constants.MapInstancesFilePostfix);
 						Utils.WriteUlongArray(path, addresses, out error);
 
-						Utils.SetAddressBit(rootedAry, finalizer, Utils.RootBits.Rooted);
+						Utils.SetAddressBitIfSet(addresses, finalizer, Utils.RootBits.Rooted);
 						if (!ClrtRootInfo.FinalyzerAddressFixup(r, finalizer, _fileMoniker, out error))
 						{
 							AddError(_currentRuntimeIndex, "Finalyzer Address Fixup failed." + Environment.NewLine + error);

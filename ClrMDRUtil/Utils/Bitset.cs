@@ -12,7 +12,9 @@ namespace ClrMDRIndex
 
 		private ulong[] _bits;
 		private int _size;
+		public int Size => _size;
 		private int _setCount;
+		public int SetCount => _setCount;
 
 		public Bitset(int size)
 		{

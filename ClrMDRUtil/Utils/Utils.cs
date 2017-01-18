@@ -154,6 +154,21 @@ namespace ClrMDRIndex
 		}
 
 
+		public static int SetAddressBit(Bitset bitset, ulong[] addresses, ulong bit)
+		{
+			Debug.Assert(bitset.Size == addresses.Length);
+			int count = 0;
+			for (int i = 0, icnt = bitset.Size; i < icnt; ++i)
+			{
+				if (bitset.IsSet(i))
+				{
+					addresses[i] |= bit;
+					++count;
+				}
+			}
+			return count;
+		}
+
 
 		public static int SetAddressBitIfSet(ulong[] bitSetters, ulong[] addresses, ulong bit)
 		{
