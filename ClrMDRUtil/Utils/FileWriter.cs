@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using System.IO;
 
 namespace ClrMDRIndex
@@ -70,11 +71,10 @@ namespace ClrMDRIndex
             _file.Write(_buffer, 0, 8);
         }
 
-        public void Write(int head, int[] data, byte[] buffer)
+        public int Write(int head, int[] data, byte[] buffer)
         {
-        	int totalLen = sizeof(int)*2 + sizeof(int)*data.Length;
-        	if ( buffer.Length < totalLen)
-        		buffer = new byte[totalLen];
+			Debug.Assert(buffer.Length > 12);
+        	int bufLen = buffer.Length;
         	int off = 0;
         	FillBuffer(head,buffer,off);
         	off += 4;
@@ -83,17 +83,23 @@ namespace ClrMDRIndex
         	off += 4;
         	for (int i = 0; i < len; ++i)
         	{
-        		FillBuffer(data[i],buffer,off);
+				if (off >= bufLen)
+				{
+					_file.Write(buffer, 0, off);
+					off = 0;
+				}
+				FillBuffer(data[i],buffer,off);
         		off += 4;
         	}
-            _file.Write(buffer, 0, totalLen);
-        }
+			if (off > 0)
+				_file.Write(buffer, 0, off);
+			return sizeof(int) * (len + 2); ;
+		}
 
-		public void Write(int head, int dcnt, int[] data, byte[] buffer)
+		public int Write(int head, int dcnt, int[] data, byte[] buffer)
 		{
-			int totalLen = sizeof(int) * 2 + sizeof(int) * dcnt;
-			if (buffer.Length < totalLen)
-				buffer = new byte[totalLen];
+			Debug.Assert(buffer.Length > 12);
+			int bufLen = buffer.Length;
 			int off = 0;
 			FillBuffer(head, buffer, off);
 			off += 4;
@@ -101,10 +107,17 @@ namespace ClrMDRIndex
 			off += 4;
 			for (int i = 0; i < dcnt; ++i)
 			{
+				if (off >= bufLen)
+				{
+					_file.Write(buffer, 0, off);
+					off = 0;
+				}
 				FillBuffer(data[i], buffer, off);
 				off += 4;
 			}
-			_file.Write(buffer, 0, totalLen);
+			if (off > 0)
+				_file.Write(buffer, 0, off);
+			return sizeof(int) * (dcnt + 2); ;
 		}
 
 		public int Write(int[] data, byte[] buffer)

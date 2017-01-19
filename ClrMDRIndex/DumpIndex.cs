@@ -815,7 +815,7 @@ namespace ClrMDRIndex
 				return null;
 			}
 
-			var parents = _references.GetRootedFieldParents(instNdx, out error);
+			var parents = _references.GetFieldParents(instNdx, out error);
 			if (error != null) return Utils.EmptyArray<KeyValuePair<string, int>>.Value;
 
 			SortedDictionary<string, int> dct = new SortedDictionary<string, int>();
@@ -844,7 +844,7 @@ namespace ClrMDRIndex
 				return null;
 			}
 
-			var parents = _references.GetRootedFieldParents(instNdx, out error);
+			var parents = _references.GetFieldParents(instNdx, out error);
 			if (error != null) return Utils.EmptyArray<KeyValuePair<string, ulong>>.Value;
 
 			var result = new List<KeyValuePair<string, ulong>>(32);
@@ -1076,7 +1076,7 @@ namespace ClrMDRIndex
 						if (!set.Add(inst)) continue;
 
 
-						var ancestors = _references.GetRootedFieldParents(inst, out error);
+						var ancestors = _references.GetFieldParents(inst, out error);
 						for (int j = 0, jcnt = ancestors.Length; j < jcnt; ++j)
 						{
 							var ancestor = ancestors[j];
@@ -1419,7 +1419,7 @@ namespace ClrMDRIndex
 				var instNdx = GetInstanceIndex(addr);
 				if (instNdx >= 0)
 				{
-					var ancestors = _references.GetRootedFieldParents(instNdx, out error);
+					var ancestors = _references.GetFieldParents(instNdx, out error);
 					if (error != null && !Utils.IsInformation(error)) return null;
 					if (ancestors != null && ancestors.Length > 0)
 						ancestorInfos = GroupAddressesByTypesForDisplay(ancestors);
@@ -1555,7 +1555,7 @@ namespace ClrMDRIndex
 			string error = null;
 			try
 			{
-				var dispFinlQue = FinalizerQueueDisplayableItem.GetDisplayableFinalizerQueue(_roots.GetFinalizerItems(), _instances, _typeNames,
+				var dispFinlQue = FinalizerQueueDisplayableItem.GetDisplayableFinalizerQueue(_roots.GetFinalizerItems(), _roots.FinalizerAddresses, _typeNames,
 					_fileMoniker);
 				return new Tuple<string, DisplayableFinalizerQueue>(error, dispFinlQue);
 			}

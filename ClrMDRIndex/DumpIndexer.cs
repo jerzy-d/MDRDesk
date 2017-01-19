@@ -142,7 +142,7 @@ namespace ClrMDRIndex
 
 						// new 1/7/17
 						Bitset bitset = new Bitset(addresses.Length);
-						if (!References.CreateReferences(r, heap, rootAddrInfo.Item1, addresses, bitset, _fileMoniker, out error))
+						if (!References.CreateReferences2(r, heap, rootAddrInfo.Item1, addresses, bitset, _fileMoniker, progress, out error))
 						{
 							AddError(r, "CreateReferences failed." + Environment.NewLine + error);
 							return false;
@@ -249,13 +249,14 @@ namespace ClrMDRIndex
 						progress?.Report("Waiting for thread info worker... Prev. action/total durations: " + GetIndexingDurationString(indexingStopWatch, indexingActionTimeSpan, out indexingActionTimeSpan));
 						extraWorker.Join();
 
-						ulong[] finalizer = Utils.GetRealAddressesInPlace(rootAddrInfo.Item2);
-						Utils.SetAddressBit(bitset, addresses, Utils.RootBits.Rooted);
-						Utils.SetAddressBit(finalizer, addresses, Utils.RootBits.Finalizer);
+						ulong[] finalizer = rootAddrInfo.Item2;
+						Debug.Assert(Utils.IsSorted(finalizer));
+						int rootedCnt = Utils.SetAddressBit(bitset, addresses, Utils.RootBits.Rooted);
+						int fnlzrCnt = Utils.SetAddressBit(finalizer, addresses, Utils.RootBits.Finalizer);
 						path = _fileMoniker.GetFilePath(r, Constants.MapInstancesFilePostfix);
 						Utils.WriteUlongArray(path, addresses, out error);
 
-						Utils.SetAddressBitIfSet(addresses, finalizer, Utils.RootBits.Rooted);
+						int fnlRootedCnt = Utils.SetAddressBitIfSet(addresses, finalizer, Utils.RootBits.Rooted);
 						if (!ClrtRootInfo.FinalyzerAddressFixup(r, finalizer, _fileMoniker, out error))
 						{
 							AddError(_currentRuntimeIndex, "Finalyzer Address Fixup failed." + Environment.NewLine + error);

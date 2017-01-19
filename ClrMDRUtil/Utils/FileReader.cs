@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 
 namespace ClrMDRIndex
@@ -155,18 +156,26 @@ namespace ClrMDRIndex
 
 		public int[] ReadHeadAndList(byte[] buffer, out int head)
 		{
+			Debug.Assert(buffer.Length > 12 && (buffer.Length%4)==0);
 			head = ReadInt32();
 			int cnt = ReadInt32();
-			int bufsize = cnt * sizeof(int);
-			if (buffer.Length < bufsize)
-				buffer = new byte[bufsize];
-			_file.Read(buffer, 0, bufsize);
+			int buflen = buffer.Length;
 			int[] lst = new int[cnt];
-			int off = 0;
-			for (int i = 0; i < cnt; ++i)
+			int read = 0;
+			int ndx = 0;
+			while (read < cnt)
 			{
-				lst[i] = GetInt32(buffer, off);
-				off += 4;
+				var maxBytes = (cnt - read)*sizeof (int);
+				if (maxBytes > buflen)
+					maxBytes = buflen;
+				read += maxBytes/4;
+				_file.Read(buffer, 0, maxBytes);
+				int off = 0;
+				for (int i = 0; i < read; ++i)
+				{
+					lst[ndx++] = GetInt32(buffer, off);
+					off += 4;
+				}
 			}
 			return lst;
 		}

@@ -24,6 +24,14 @@ namespace ClrMDRIndex
 			_setCount = 0;
 		}
 
+		public Bitset(int size, ulong[] bits)
+		{
+			int cnt = size / BitCount + ((size % BitCount) > 0 ? 1 : 0);
+			_bits = bits;
+			_size = size;
+			_setCount = 0;
+		}
+
 		public int[] GetUnsetIndices()
 		{
 			if (_setCount < 1) return Utils.EmptyArray<int>.Value;
@@ -52,6 +60,13 @@ namespace ClrMDRIndex
 		public bool IsSet(int i)
 		{
 			return (_bits[i / BitCount] & (1UL << (i % BitCount))) != 0;
+		}
+
+		public Bitset Clone()
+		{
+			ulong[] newbits = new ulong[_bits.Length];
+			Buffer.BlockCopy(_bits,0,newbits,0,_bits.Length*sizeof(ulong));
+			return new Bitset(_size,newbits);
 		}
 	}
 }

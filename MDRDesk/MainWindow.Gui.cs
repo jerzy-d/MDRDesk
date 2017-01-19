@@ -1431,6 +1431,9 @@ namespace MDRDesk
 				Debug.Assert(listBox != null);
 				listBox.ItemsSource = listItem.Addresses;
 				listBox.SelectedIndex = 0;
+				var label = (Label)LogicalTreeHelper.FindLogicalNode(grid, "FinalizerQueAddressesCounts");
+				Debug.Assert(label!=null);
+				label.Content = listItem.TotalCount + ", unrooted: " + listItem.NotRootedCount;
 			}
 		}
 
@@ -2096,6 +2099,38 @@ namespace MDRDesk
 			char[] buf = new char[digitCount];
 			var sb = new StringBuilder(128);
 
+			for (int i = 0, icnt = threads.Length; i < icnt; ++i)
+			{
+				var thrd = threads[i];
+				var frameIds = thrd.Frames;
+				sb.Clear();
+				for (int j = 0, jcnt = frameIds.Length; j < jcnt; ++j)
+				{
+					var s = Utils.GetDigitsString(frameIds[j], digitCount, buf);
+					sb.Append(s).Append('|');
+				}
+				if (sb.Length > 0)
+				{
+					sb.Remove(sb.Length - 1, 1);
+					frameKeys[i] = sb.ToString();
+				}
+				else
+				{
+					frameKeys[i] = string.Empty;
+				}
+				sb.Clear();
+			}
+			int[] frMap = Utils.Iota(frameKeys.Length);
+			Array.Sort(frameKeys,frMap,StringComparer.Ordinal);
+			int fid = 1;
+			string prevFr = string.Empty;
+			for (int i = 1, icnt = frameKeys.Length; i < icnt; ++i)
+			{
+				if (frameKeys[i] == string.Empty) continue;
+
+			}
+
+
 			const int ColumnCount = 4;
 			string[] data = new string[threads.Length * ColumnCount];
 			listing<string>[] items = new listing<string>[threads.Length];
@@ -2108,19 +2143,19 @@ namespace MDRDesk
 				var osIdStr = thrd.OSThreadId.ToString();
 				var mngIdStr = thrd.ManagedThreadId.ToString();
 
-				var frameIds = thrd.Frames;
-				sb.Clear();
-				for (int j = 0, jcnt = frameIds.Length; j < jcnt; ++j)
-				{
-					var s = Utils.GetDigitsString(frameIds[j], digitCount, buf);
-					sb.Append(s).Append('|');
-				}
-				var thFrames = string.Empty;
-				if (sb.Length > 0)
-				{
-					sb.Remove(sb.Length - 1, 1);
-					thFrames = sb.ToString();
-				}
+				//var frameIds = thrd.Frames;
+				//sb.Clear();
+				//for (int j = 0, jcnt = frameIds.Length; j < jcnt; ++j)
+				//{
+				//	var s = Utils.GetDigitsString(frameIds[j], digitCount, buf);
+				//	sb.Append(s).Append('|');
+				//}
+				//var thFrames = string.Empty;
+				//if (sb.Length > 0)
+				//{
+				//	sb.Remove(sb.Length - 1, 1);
+				//	thFrames = sb.ToString();
+				//}
 				sb.Clear();
 				var traits = thrd.GetTraitsString(sb);
 
@@ -2128,7 +2163,7 @@ namespace MDRDesk
 				data[dataNdx++] = osIdStr;
 				data[dataNdx++] = mngIdStr;
 				data[dataNdx++] = traits;
-				data[dataNdx++] = thFrames;
+				data[dataNdx++] = frameKeys[i];
 
 
 			}
@@ -2137,7 +2172,7 @@ namespace MDRDesk
 			{
 				new ColumnInfo("OS Id", ReportFile.ColumnType.Int32, 150, 1, true),
 				new ColumnInfo("Mng Id", ReportFile.ColumnType.Int32, 150, 2, true),
-				new ColumnInfo("Traits", ReportFile.ColumnType.String, 300, 3, true),
+				new ColumnInfo("Properties", ReportFile.ColumnType.String, 300, 3, true),
 				new ColumnInfo("Frames", ReportFile.ColumnType.String, 400, 4, true),
 			};
 

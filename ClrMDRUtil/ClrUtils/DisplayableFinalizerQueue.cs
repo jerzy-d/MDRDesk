@@ -1,9 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Dynamic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace ClrMDRIndex
 {
@@ -13,7 +9,7 @@ namespace ClrMDRIndex
 		public int TotalCount { get; private set; }
 		public int TotalUnrootedCount { get; private set; }
 		public string Information { get; private set; }
-	
+
 
 		public DisplayableFinalizerQueue()
 		{
@@ -26,8 +22,8 @@ namespace ClrMDRIndex
 			TotalCount = totalCount;
 			TotalUnrootedCount = totalUnrootedCount;
 			Information = "Crash dump: " + fileMoniker.DumpFileName
-			              + Environment.NewLine + "Total count: " + Utils.CountString(totalCount)
-			              + Environment.NewLine + "Total unrooted count: " + Utils.CountString(totalUnrootedCount);
+						  + Environment.NewLine + "Total count: " + Utils.CountString(totalCount)
+						  + Environment.NewLine + "Total unrooted count: " + Utils.CountString(totalUnrootedCount);
 		}
 	}
 
@@ -58,7 +54,7 @@ namespace ClrMDRIndex
 					break;
 				default:
 					cmp = _asc
-						? string.Compare(a.TypeName,b.TypeName, StringComparison.Ordinal)
+						? string.Compare(a.TypeName, b.TypeName, StringComparison.Ordinal)
 						: string.Compare(b.TypeName, a.TypeName, StringComparison.Ordinal);
 					break;
 			}
@@ -87,7 +83,7 @@ namespace ClrMDRIndex
 
 			int prevTypeId = data[0].TypeId;
 			List<FinalizerQueueDisplayableItem> items = new List<FinalizerQueueDisplayableItem>(1024);
-			List<KeyValuePair<int,int>> lst = new List<KeyValuePair<int, int>>(256);
+			List<KeyValuePair<int, int>> lst = new List<KeyValuePair<int, int>>(256);
 			List<ulong> typeAddresses = new List<ulong>(1024);
 			int totalCount = 0;
 			int totalUnrootedCount = 0;
@@ -124,8 +120,8 @@ namespace ClrMDRIndex
 				items.Add(item);
 			}
 			var itemsAry = items.ToArray();
-			Array.Sort(itemsAry,new FinalizerQueueDisplayableItemCmp(2,true));
-			return new DisplayableFinalizerQueue(items.ToArray(), totalCount, totalUnrootedCount,fileMoniker);
+			Array.Sort(itemsAry, new FinalizerQueueDisplayableItemCmp(2, true));
+			return new DisplayableFinalizerQueue(items.ToArray(), totalCount, totalUnrootedCount, fileMoniker);
 		}
 
 	}

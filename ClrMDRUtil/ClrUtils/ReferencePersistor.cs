@@ -23,14 +23,16 @@ namespace ClrMDRIndex
 		private Thread _thread;
 		private readonly string _rToFPath;
 		private readonly string _fToRPath;
+		private IProgress<string> _progress;
 
 		public ReferencePersistor(string rToFPath, string fToRPath, int count,
-			BlockingCollection<KeyValuePair<int, int[]>> dataQue)
+			BlockingCollection<KeyValuePair<int, int[]>> dataQue, IProgress<string> progress=null)
 		{
 			_dataQue = dataQue;
 			_totalCount = count;
 			_rToFPath = rToFPath;
 			_fToRPath = fToRPath;
+			_progress = progress;
 		}
 
 		public void Start()
@@ -91,22 +93,23 @@ namespace ClrMDRIndex
 				byte[] buffer = new byte[FileBufferSize];
 				int recCount = 0;
 				fw.Write(recCount);
+				int[] fieldRefCounts = new int[_totalCount];
 				while (true)
 				{
 					var kv = _dataQue.Take();
 					if (kv.Key < 0) break; // end of data
 					++recCount;
+					int rndx = kv.Key;
 					int[] fary = kv.Value;
-#if DEBUG
-					if (fary.Length > 250000)
-					{
-						int a = 1;
-					}
-#endif
 					Debug.Assert(Utils.IsSorted(fary));
 					Debug.Assert(Utils.AreAllDistinct(fary));
-					fw.Write(kv.Key);
-					fw.Write(kv.Value, buffer);
+					fw.Write(rndx, fary, buffer);
+					for (int i = 0, icnt = fary.Length; i < icnt;  ++i)
+					{
+						var fndx = fary[i];
+						var fcnt = fieldRefCounts[fndx];
+						fieldRefCounts[fndx] = fcnt + 1;
+					}
 				}
 				fw.GotoBegin();
 				fw.Write(-recCount); // mark as not sorted
@@ -114,6 +117,7 @@ namespace ClrMDRIndex
 				fw = null;
 
 				IntArrayStore fToR = new IntArrayStore(_totalCount);
+				fToR.InitSlots(fieldRefCounts);
 
 				fr = new FileReader(_rToFPath, FileBufferSize, FileOptions.SequentialScan);
 				var totRcnt = fr.ReadInt32();

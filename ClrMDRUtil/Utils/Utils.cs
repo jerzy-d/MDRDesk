@@ -285,7 +285,7 @@ namespace ClrMDRIndex
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		public static bool IsRooted(ulong addr)
 		{
-			return (addr & (ulong)RootBits.RootedMask) > 0;
+			return (addr & (ulong)RootBits.Rooted) > 0;
 		}
 
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]

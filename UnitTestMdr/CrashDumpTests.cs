@@ -435,108 +435,108 @@ namespace UnitTestMdr
 
 		#region roots/instances/references
 
-		[TestMethod]
-		public void TestIndexing()
-		{
-			string error;
-			string dumpPath = Setup.RecentAdhocList[0];
-			var dmp = OpenDump(dumpPath);
-			var fileMoniker = new DumpFileMoniker(dumpPath);
-			var strIds = new StringIdDct();
+		//[TestMethod]
+		//public void TestIndexing()
+		//{
+		//	string error;
+		//	string dumpPath = Setup.RecentAdhocList[0];
+		//	var dmp = OpenDump(dumpPath);
+		//	var fileMoniker = new DumpFileMoniker(dumpPath);
+		//	var strIds = new StringIdDct();
 
-			using (dmp)
-			{
-				var heap = dmp.Heap;
-				ulong[] instances = DumpIndexer.GetHeapAddressesCount(heap);
-				string[] typeNames = DumpIndexer.GetTypeNames(heap, out error);
-				var rootAddrInfo = ClrtRootInfo.GetRootAddresses(0, dmp.Runtimes[0], heap, typeNames, strIds, fileMoniker, out error);
+		//	using (dmp)
+		//	{
+		//		var heap = dmp.Heap;
+		//		ulong[] instances = DumpIndexer.GetHeapAddressesCount(heap);
+		//		string[] typeNames = DumpIndexer.GetTypeNames(heap, out error);
+		//		var rootAddrInfo = ClrtRootInfo.GetRootAddresses(0, dmp.Runtimes[0], heap, typeNames, strIds, fileMoniker, out error);
 
-				Assert.IsNull(error);
-				Assert.IsTrue(Utils.IsSorted(rootAddrInfo.Item1));
-				Assert.IsTrue(Utils.IsSorted(rootAddrInfo.Item2));
+		//		Assert.IsNull(error);
+		//		Assert.IsTrue(Utils.IsSorted(rootAddrInfo.Item1));
+		//		Assert.IsTrue(Utils.IsSorted(rootAddrInfo.Item2));
 
-				var rootAddresses = Utils.MergeAddressesRemove0s(rootAddrInfo.Item1, rootAddrInfo.Item2);
+		//		var rootAddresses = Utils.MergeAddressesRemove0s(rootAddrInfo.Item1, rootAddrInfo.Item2);
 
-				Assert.IsTrue(Utils.AreAllInExcept0(rootAddresses, rootAddrInfo.Item1));
-				Assert.IsTrue(Utils.AreAllInExcept0(rootAddresses, rootAddrInfo.Item2));
-				Assert.IsTrue(Utils.AreAllDistinct(rootAddresses));
-				Assert.IsTrue(Utils.IsSorted(rootAddresses));
+		//		Assert.IsTrue(Utils.AreAllInExcept0(rootAddresses, rootAddrInfo.Item1));
+		//		Assert.IsTrue(Utils.AreAllInExcept0(rootAddresses, rootAddrInfo.Item2));
+		//		Assert.IsTrue(Utils.AreAllDistinct(rootAddresses));
+		//		Assert.IsTrue(Utils.IsSorted(rootAddresses));
 
-				rootAddresses = Utils.GetRealAddressesInPlace(rootAddresses);
+		//		rootAddresses = Utils.GetRealAddressesInPlace(rootAddresses);
 
-				HashSet<ulong> done = new HashSet<ulong>();
-				SortedDictionary<ulong, List<ulong>> objRefs = new SortedDictionary<ulong, List<ulong>>();
-				SortedDictionary<ulong, List<ulong>> fldRefs = new SortedDictionary<ulong, List<ulong>>();
+		//		HashSet<ulong> done = new HashSet<ulong>();
+		//		SortedDictionary<ulong, List<ulong>> objRefs = new SortedDictionary<ulong, List<ulong>>();
+		//		SortedDictionary<ulong, List<ulong>> fldRefs = new SortedDictionary<ulong, List<ulong>>();
 
-				bool result = References.GetRefrences(heap, rootAddresses, objRefs, fldRefs, done, out error);
+		//		bool result = References.GetRefrences(heap, rootAddresses, objRefs, fldRefs, done, out error);
 
-				Assert.IsTrue(result);
-				Assert.IsNull(error);
+		//		Assert.IsTrue(result);
+		//		Assert.IsNull(error);
 
-				string path = fileMoniker.GetFilePath(0, Constants.MapParentFieldsRootedPostfix);
-				result = DumpReferences(path, objRefs, instances, out error);
-				Assert.IsTrue(result);
-				Assert.IsNull(error);
-				path = fileMoniker.GetFilePath(0, Constants.MapFieldParentsRootedPostfix);
-				result = DumpReferences(path, fldRefs, instances, out error);
-				Assert.IsTrue(result);
-				Assert.IsNull(error);
+		//		string path = fileMoniker.GetFilePath(0, Constants.MapParentFieldsRootedPostfix);
+		//		result = DumpReferences(path, objRefs, instances, out error);
+		//		Assert.IsTrue(result);
+		//		Assert.IsNull(error);
+		//		path = fileMoniker.GetFilePath(0, Constants.MapFieldParentsRootedPostfix);
+		//		result = DumpReferences(path, fldRefs, instances, out error);
+		//		Assert.IsTrue(result);
+		//		Assert.IsNull(error);
 
-				var rootedAry = done.ToArray(); // for later
-				Array.Sort(rootedAry);
-				done.Clear();
-				objRefs.Clear();
-				fldRefs.Clear();
-				var remaining = Utils.Difference(instances, rootedAry);
-				result = References.GetRefrences(heap, remaining, objRefs, fldRefs, done, out error);
-				Assert.IsTrue(result);
-				Assert.IsNull(error);
-				path = fileMoniker.GetFilePath(0, Constants.MapParentFieldsNotRootedPostfix);
-				result = DumpReferences(path, objRefs, instances, out error);
-				Assert.IsTrue(result);
-				Assert.IsNull(error);
-				path = fileMoniker.GetFilePath(0, Constants.MapFieldParentsNotRootedPostfix);
-				result = DumpReferences(path, fldRefs, instances, out error);
-				Assert.IsTrue(result);
-				Assert.IsNull(error);
+		//		var rootedAry = done.ToArray(); // for later
+		//		Array.Sort(rootedAry);
+		//		done.Clear();
+		//		objRefs.Clear();
+		//		fldRefs.Clear();
+		//		var remaining = Utils.Difference(instances, rootedAry);
+		//		result = References.GetRefrences(heap, remaining, objRefs, fldRefs, done, out error);
+		//		Assert.IsTrue(result);
+		//		Assert.IsNull(error);
+		//		path = fileMoniker.GetFilePath(0, Constants.MapParentFieldsNotRootedPostfix);
+		//		result = DumpReferences(path, objRefs, instances, out error);
+		//		Assert.IsTrue(result);
+		//		Assert.IsNull(error);
+		//		path = fileMoniker.GetFilePath(0, Constants.MapFieldParentsNotRootedPostfix);
+		//		result = DumpReferences(path, fldRefs, instances, out error);
+		//		Assert.IsTrue(result);
+		//		Assert.IsNull(error);
 
-				var roots = ClrtRootInfo.Load(0, fileMoniker, out error);
-				Assert.IsNull(error);
-				Assert.IsNotNull(roots);
+		//		var roots = ClrtRootInfo.Load(0, fileMoniker, out error);
+		//		Assert.IsNull(error);
+		//		Assert.IsNotNull(roots);
 
-				ulong[] finalizer = Utils.GetRealAddressesInPlace(roots.FinalizerAddresses);
-				Assert.IsTrue(Utils.IsSorted(finalizer));
+		//		ulong[] finalizer = Utils.GetRealAddressesInPlace(roots.FinalizerAddresses);
+		//		Assert.IsTrue(Utils.IsSorted(finalizer));
 
-				int fcnt = 0;
-				for (int i = 0, icnt = finalizer.Length; i < icnt; ++i)
-				{
-					if (Utils.AddressSearch(instances,finalizer[i]) < 0) continue;
-					++fcnt;
-				}
+		//		int fcnt = 0;
+		//		for (int i = 0, icnt = finalizer.Length; i < icnt; ++i)
+		//		{
+		//			if (Utils.AddressSearch(instances,finalizer[i]) < 0) continue;
+		//			++fcnt;
+		//		}
 
-				Utils.SetAddressBit(rootedAry, instances, Utils.RootBits.Rooted);
-				Utils.SetAddressBit(finalizer, instances, Utils.RootBits.Finalizer);
+		//		Utils.SetAddressBit(rootedAry, instances, Utils.RootBits.Rooted);
+		//		Utils.SetAddressBit(finalizer, instances, Utils.RootBits.Finalizer);
 
-				TestContext.WriteLine("INSTANCE COUNT: " + Utils.LargeNumberString(instances.Length));
-				TestContext.WriteLine("ROOTED ARY COUNT: " + Utils.LargeNumberString(rootedAry.Length));
-				TestContext.WriteLine("UNROOTED ARY COUNT: " + Utils.LargeNumberString(done.Count));
-				TestContext.WriteLine("FINALIZER COUNT: " + Utils.LargeNumberString(finalizer.Length));
+		//		TestContext.WriteLine("INSTANCE COUNT: " + Utils.LargeNumberString(instances.Length));
+		//		TestContext.WriteLine("ROOTED ARY COUNT: " + Utils.LargeNumberString(rootedAry.Length));
+		//		TestContext.WriteLine("UNROOTED ARY COUNT: " + Utils.LargeNumberString(done.Count));
+		//		TestContext.WriteLine("FINALIZER COUNT: " + Utils.LargeNumberString(finalizer.Length));
 
-				var markedRoooted = 0;
-				var markedFinalizer = 0;
-				for (int i = 0, icnt = instances.Length; i < icnt; ++i)
-				{
-					var addr = instances[i];
-					if (Utils.IsRooted(addr)) ++markedRoooted;
-					if (Utils.IsFinalizer(addr)) ++markedFinalizer;
-				}
-				TestContext.WriteLine("MARKED ROOTED COUNT: " + Utils.LargeNumberString(markedRoooted));
-				TestContext.WriteLine("MARKED FINALIZER COUNT: " + Utils.LargeNumberString(markedFinalizer));
+		//		var markedRoooted = 0;
+		//		var markedFinalizer = 0;
+		//		for (int i = 0, icnt = instances.Length; i < icnt; ++i)
+		//		{
+		//			var addr = instances[i];
+		//			if (Utils.IsRooted(addr)) ++markedRoooted;
+		//			if (Utils.IsFinalizer(addr)) ++markedFinalizer;
+		//		}
+		//		TestContext.WriteLine("MARKED ROOTED COUNT: " + Utils.LargeNumberString(markedRoooted));
+		//		TestContext.WriteLine("MARKED FINALIZER COUNT: " + Utils.LargeNumberString(markedFinalizer));
 
 
 
-			} // using dump
-		}
+		//	} // using dump
+		//}
 
 		[TestMethod]
 		public void TestIndexing2()

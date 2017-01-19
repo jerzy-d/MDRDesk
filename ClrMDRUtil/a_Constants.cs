@@ -29,9 +29,9 @@ namespace ClrMDRIndex
 		public const string NullValue = "null";
 		public const int NullNameId = 0;
 
-        public const string NullTypeName = "!!!NullType";
-        public const string UnknownTypeName = "!!!UnknownType";
-        public const string FreeTypeName = "Free";
+		public const string NullTypeName = "!!!NullType";
+		public const string UnknownTypeName = "!!!UnknownType";
+		public const string FreeTypeName = "Free";
 		public const string ErrorTypeName = "ERROR";
 
 		public const string ErrorStr = "ERROR";
@@ -60,16 +60,16 @@ namespace ClrMDRIndex
 		public const char HeavyAsterisk = '\u2731'; // ✱ heavy asterisk		
 		public const string HeavyAsteriskPadded = " \u2731 "; // ✱  heavy asterisk		
 		public const string NamespaceSepPadded = " \u2731 "; // ✱  heavy asterisk		
-        public const char FancyKleeneStar = '\u2734'; // 2734 ✴ EIGHT POINTED BLACK STAR
-        public const char NonValueChar = '\u2734'; // 2734 ✴ EIGHT POINTED BLACK STAR
-        public const string NonValue = "\u2734"; // 2734 ✴ EIGHT POINTED BLACK STAR
-                                                   //public const string FieldSymbolPadded = " \u1D4D5 "; // 𝓕 MATHEMATICAL BOLD SCRIPT CAPITAL F
-        public const string FieldSymbolPadded = " \u2131 "; // ℱ SCRIPT CAPITAL F
-                                                            //public const string InformationSymbolPadded = " \u2111 "; // ℑ BLACK-LETTER CAPITAL I
-                                                            // 2139 ℹ INFORMATION SOURCE
-        public const string InformationSymbolHeader = "\u2110 "; // ℐ SCRIPT CAPITAL I
-        public const char InformationSymbol = '\u2110'; // ℐ SCRIPT CAPITAL I
-        public const char HeavyRightArrow = '\u279C'; // ➜ HEAVY ROUND-TIPPED RIGHTWARDS ARROW
+		public const char FancyKleeneStar = '\u2734'; // 2734 ✴ EIGHT POINTED BLACK STAR
+		public const char NonValueChar = '\u2734'; // 2734 ✴ EIGHT POINTED BLACK STAR
+		public const string NonValue = "\u2734"; // 2734 ✴ EIGHT POINTED BLACK STAR
+												 //public const string FieldSymbolPadded = " \u1D4D5 "; // 𝓕 MATHEMATICAL BOLD SCRIPT CAPITAL F
+		public const string FieldSymbolPadded = " \u2131 "; // ℱ SCRIPT CAPITAL F
+															//public const string InformationSymbolPadded = " \u2111 "; // ℑ BLACK-LETTER CAPITAL I
+															// 2139 ℹ INFORMATION SOURCE
+		public const string InformationSymbolHeader = "\u2110 "; // ℐ SCRIPT CAPITAL I
+		public const char InformationSymbol = '\u2110'; // ℐ SCRIPT CAPITAL I
+		public const char HeavyRightArrow = '\u279C'; // ➜ HEAVY ROUND-TIPPED RIGHTWARDS ARROW
 		public const string HeavyRightArrowPadded = " \u279C "; // ➜ HEAVY ROUND-TIPPED RIGHTWARDS ARROW
 		public const string HeavyRightArrowHeader = "\u279C "; // ➜ HEAVY ROUND-TIPPED RIGHTWARDS ARROW
 		public const string FailureSymbolHeader = "\u2132 "; // Ⅎ TURNED CAPITAL F
@@ -79,9 +79,9 @@ namespace ClrMDRIndex
 		public const char UnixNewLineChar = '\u27A6'; // ➦ HEAVY BLACK CURVED UPWARDS AND RIGHTWARDS ARROW
 
 		public const char HeavyCheckMark = '\u2714'; // ✔ HEAVY CHECK MARK
-        public const string HeavyCheckMarkPadded = " \u2714 ";  // ✔ HEAVY CHECK MARK
-        public const string HeavyCheckMarkHeader = "\u2714 ";  // ✔ HEAVY CHECK MARK
-        public const char BlackDiamond = '\u2756'; // ❖ BLACK DIAMOND MINUS WHITE X 
+		public const string HeavyCheckMarkPadded = " \u2714 ";  // ✔ HEAVY CHECK MARK
+		public const string HeavyCheckMarkHeader = "\u2714 ";  // ✔ HEAVY CHECK MARK
+		public const char BlackDiamond = '\u2756'; // ❖ BLACK DIAMOND MINUS WHITE X 
 		public const string BlackDiamondPadded = " \u2756 "; // ❖ BLACK DIAMOND MINUS WHITE X 
 		public const char HeavyVerticalBar = '\u275A'; // ❚ HEAVY VERTICAL BAR
 		public const char MediumVerticalBar = '\u2759'; // ❙ MEDIUM VERTICAL BAR
@@ -96,7 +96,7 @@ namespace ClrMDRIndex
 		public const string ReturnDisp = "\u27a7 "; // ➧ SQUAT BLACK RIGHTWARDS ARROW
 		public const char NewLineDispChar = '\u2B92'; // NEWLINE LEFT
 		public const char RightSquatArrow = '\u27a7'; // ➧ SQUAT BLACK RIGHTWARDS ARROW
-		//public const char RightArrow = '\u2B95'; // RIGHTWARDS BLACK ARROW
+													  //public const char RightArrow = '\u2B95'; // RIGHTWARDS BLACK ARROW
 		public const string RightTrianglePadded = " \u23F5 "; // BLACK MEDIUM RIGHT-POINTING TRIANGLE
 		public const char LeftCurlyBracket = '\u2774'; // ❴ MEDIUM LEFT CURLY BRACKET ORNAMENT
 		public const char RightCurlyBracket = '\u2775'; // ❵ MEDIUM RIGHT CURLY BRACKET ORNAMENT
@@ -123,8 +123,8 @@ namespace ClrMDRIndex
 		public const string PrimitiveHeader = " \u2119\u279C "; // ℙ DOUBLE-STRUCK CAPITAL P
 		public const char ArrayChar = '\u213F'; // ℿ DOUBLE-STRUCK CAPITAL PI
 		public const string ArrayHeader = " \u213F\u279C "; // ℿ DOUBLE-STRUCK CAPITAL PI
-		//public const char FilterChar = '\u2132'; // Ⅎ TURNED CAPITAL F
-		//public const string FilterHeader = " \u2132\u279C "; // Ⅎ TURNED CAPITAL F
+															//public const char FilterChar = '\u2132'; // Ⅎ TURNED CAPITAL F
+															//public const string FilterHeader = " \u2132\u279C "; // Ⅎ TURNED CAPITAL F
 		public const char FilterChar = '\u2718'; // ✘ HEAVY BALLOT X
 		public const string FilterHeader = " \u2718 "; // ✘ HEAVY BALLOT X
 
@@ -141,7 +141,7 @@ namespace ClrMDRIndex
 		{
 			'\u2080', // ₀ SUBSCRIPT ZERO
 		};
-		
+
 
 		public const string Unknown = "UNKNOWN";
 
@@ -154,13 +154,13 @@ namespace ClrMDRIndex
 
 		public const ulong InvalidAddress = 0ul;
 
-	    public const string ReportPath = @"ad-hoc.queries";
+		public const string ReportPath = @"ad-hoc.queries";
 
 		public const string TxtStringIdsPostfix = ".STRINGIDS[0].txt"; // list of strings, ordered by ids
 		public const string MapTypeInfosFilePostfix = ".TYPEINFOS[0].map"; // type infos, see ClrtTypes class
 		public const string MapInstanceFilePostfix = ".INSTANCES[0].map"; // instance addresses and corresponding type ids
 		public const string MapTypeInstancesFilePostfix = ".TYPEINSTANCES[0].map"; // mapping of ordered type ids onto instances
-		//public const string MapFieldsAndParentsFilePostfix = ".FIELDSANDPARENTS[0].map";
+																				   //public const string MapFieldsAndParentsFilePostfix = ".FIELDSANDPARENTS[0].map";
 
 		public const string MapFieldOffsetsFilePostfix = ".FIELDOFFSETS[0].map";
 		public const string MapFieldInstancesPostfix = ".FIELDINSTANCES[0].map";
@@ -204,18 +204,22 @@ namespace ClrMDRIndex
 		// instance references
 		//
 		public const string MapFieldRefInstancesPostfix = ".`FIELDREFINSTANCES[0].bin";
-		public const string MapFieldRefOffsetsFilePostfix = ".`FIELDREFOFFSETS[0].bin";
-		public const string MapFieldParentsPostfix = ".`FIELDPARENTS[0].bin";
+		public const string MapFieldRefOffsetsFilePostfix = ".`FIELDREFOFFSETS[0].bin"; // TODO JRD -- remove
+		public const string MapFieldParentsPostfix = ".`FIELDPARENTS[0].bin"; // TODO JRD -- remove
 
-		public const string MapParentsRootedPostfix = ".`PARENTSROOTED[0].bin";
-		public const string MapParentFieldsRootedPostfix = ".`PARENTFIELDSROOTED[0].bin";
-		public const string MapFieldsRootedPostfix = ".`FIELDSROOTED[0].bin";
-		public const string MapFieldParentsRootedPostfix = ".`FIELDPARENTSROOTED[0].bin";
+		public const string MapParentsRootedPostfix = ".`PARENTSROOTED[0].bin"; // TODO JRD -- remove
+		public const string MapParentFieldsRootedPostfix = ".`PARENTFIELDSROOTED[0].bin"; // TODO JRD -- remove
+		public const string MapFieldsRootedPostfix = ".`FIELDSROOTED[0].bin"; // TODO JRD -- remove
+		public const string MapFieldParentsRootedPostfix = ".`FIELDPARENTSROOTED[0].bin"; // TODO JRD -- remove
 
-		public const string MapParentsNotRootedPostfix = ".`PARENTS!ROOTED[0].bin";
-		public const string MapParentFieldsNotRootedPostfix = ".`PARENTFIELDS!ROOTED[0].bin";
-		public const string MapFieldsNotRootedPostfix = ".`FIELDS!ROOTED[0].bin";
-		public const string MapFieldParentsNotRootedPostfix = ".`FIELDPARENTS!ROOTED[0].bin";
+		public const string MapRefsObjectFieldPostfix = ".`REFSOBJECTFIELD[0].bin";
+		public const string MapRefsFieldObjectPostfix = ".`REFSFIELDOBJECT[0].bin";
+
+
+		public const string MapParentsNotRootedPostfix = ".`PARENTS!ROOTED[0].bin"; // TODO JRD -- remove
+		public const string MapParentFieldsNotRootedPostfix = ".`PARENTFIELDS!ROOTED[0].bin"; // TODO JRD -- remove
+		public const string MapFieldsNotRootedPostfix = ".`FIELDS!ROOTED[0].bin"; // TODO JRD -- remove
+		public const string MapFieldParentsNotRootedPostfix = ".`FIELDPARENTS!ROOTED[0].bin"; // TODO JRD -- remove
 
 		public const string TxtCommonStringIdsPostfix = ".`STRINGIDS[0].txt"; // list of strings, ordered by ids
 
@@ -234,9 +238,6 @@ namespace ClrMDRIndex
 
 		public const string TxtTargetModulesPostfix = ".~TARGETMODULES.txt";
 		public const string TxtIndexInfoFilePostfix = ".~INDEXINFO.txt";
-
-
-
 
 		public const string MapArrayInstanceFilePostfix = ".ARRAYINSTANCES[0].map";
 
@@ -294,6 +295,6 @@ namespace ClrMDRIndex
 		public const string TxtThreadsAndBlocksFilePostfix = ".THREADSANDBLOCKS[0].txt";
 		//public const string MapThreadsAndBlocksFilePostfix = ".THREADSANDBLOCKS[0].map";
 
-        
+
 	}
 }
