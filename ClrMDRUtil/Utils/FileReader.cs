@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
@@ -178,6 +179,34 @@ namespace ClrMDRIndex
 				}
 			}
 			return lst;
+		}
+
+		public int ReadRecord(byte[] bbuffer, int[] ibuffer, out int head, out int count)
+		{
+			head = ReadInt32();
+			count = ReadInt32();
+			int toread = Math.Min(ibuffer.Length, count);
+			_file.Read(bbuffer, 0, toread*sizeof(int));
+			int off = 0;
+			for (int i = 0; i < toread; ++i)
+			{
+				ibuffer[i] = GetInt32(bbuffer, off);
+				off += sizeof(int);
+			}
+			return toread;
+		}
+
+		public int ReadInts(byte[] bbuffer, int[] ibuffer, int count)
+		{
+			int toread = Math.Min(ibuffer.Length, count);
+			_file.Read(bbuffer, 0, toread * sizeof(int));
+			int off = 0;
+			for (int i = 0; i < toread; ++i)
+			{
+				ibuffer[i] = GetInt32(bbuffer, off);
+				off += sizeof(int);
+			}
+			return toread;
 		}
 
 		private int GetInt32(byte[] buffer, int offset)

@@ -94,12 +94,13 @@ namespace ClrMDRIndex
 				int recCount = 0;
 				fw.Write(recCount);
 				int[] fieldRefCounts = new int[_totalCount];
+				int rndx, rcnt;
 				while (true)
 				{
 					var kv = _dataQue.Take();
 					if (kv.Key < 0) break; // end of data
 					++recCount;
-					int rndx = kv.Key;
+					rndx = kv.Key;
 					int[] fary = kv.Value;
 					Debug.Assert(Utils.IsSorted(fary));
 					Debug.Assert(Utils.AreAllDistinct(fary));
@@ -116,20 +117,32 @@ namespace ClrMDRIndex
 				fw.Dispose();
 				fw = null;
 
+				// revert fToR file
+
 				IntArrayStore fToR = new IntArrayStore(_totalCount);
 				fToR.InitSlots(fieldRefCounts);
+				int[] ibuffer = new int[FileBufferSize/sizeof(int)];
 
-				fr = new FileReader(_rToFPath, FileBufferSize, FileOptions.SequentialScan);
+				fr = new FileReader(_rToFPath, FileBufferSize*4, FileOptions.SequentialScan);
 				var totRcnt = fr.ReadInt32();
+
 				totRcnt = Math.Abs(totRcnt);
 				for (int i = 0; i < totRcnt; ++i)
 				{
-					var rndx = fr.ReadInt32();
-					var rcnt = fr.ReadInt32();
-					for (int j = 0; j < rcnt; ++j)
+					int read = fr.ReadRecord(buffer, ibuffer, out rndx, out rcnt);
+					for (int j = 0; j < read; ++j)
 					{
-						var n = fr.ReadInt32();
-						fToR.Add(n,rndx);
+						fToR.Add(ibuffer[j], rndx);
+					}
+					rcnt -= read;
+					while (rcnt > 0)
+					{
+						read = fr.ReadInts(buffer, ibuffer,rcnt);
+						for (int j = 0; j < read; ++j)
+						{
+							fToR.Add(ibuffer[j], rndx);
+						}
+						rcnt -= read;
 					}
 				}
 				fr.Dispose();

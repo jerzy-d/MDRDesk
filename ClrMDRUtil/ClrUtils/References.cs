@@ -565,7 +565,7 @@ namespace ClrMDRIndex
 						var kv = que.Dequeue();
 						rndx = kv.Key;
 						if (bitset2.IsSet(rndx)) continue;
-						bitset.Set(rndx);  // mark it
+						bitset2.Set(rndx);  // mark it
 										   //instances[rndx] |= Utils.RootBits.Rooted;
 						raddr = kv.Value;
 						clrType = heap.GetObjectType(raddr);
