@@ -4,15 +4,9 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
-using System.Runtime.InteropServices;
-using System.Security.Permissions;
 using System.Text;
-using System.Threading;
-using System.Threading.Tasks;
-using ClrMDRUtil.Utils;
 using DmpNdxQueries;
 using Microsoft.Diagnostics.Runtime;
-using Microsoft.Diagnostics.Runtime.ICorDebug;
 
 namespace ClrMDRIndex
 {
@@ -806,56 +800,56 @@ namespace ClrMDRIndex
 
 		#region instance references
 
-		public KeyValuePair<string, int>[] GetParents(ulong address, out string error)
-		{
-			var instNdx = GetInstanceIndex(address);
-			if (instNdx < 0)
-			{
-				error = "Instance at address: " + Utils.AddressString(address) + ", not found.";
-				return null;
-			}
+		//public KeyValuePair<string, int>[] GetParents(ulong address, out string error)
+		//{
+		//	var instNdx = GetInstanceIndex(address);
+		//	if (instNdx < 0)
+		//	{
+		//		error = "Instance at address: " + Utils.AddressString(address) + ", not found.";
+		//		return null;
+		//	}
 
-			var parents = _references.GetFieldParents(instNdx, out error);
-			if (error != null) return Utils.EmptyArray<KeyValuePair<string, int>>.Value;
+		//	var parents = _references.GetFieldParents(instNdx, out error);
+		//	if (error != null) return Utils.EmptyArray<KeyValuePair<string, int>>.Value;
 
-			SortedDictionary<string, int> dct = new SortedDictionary<string, int>();
-			for (int i = 0, icnt = parents.Length; i < icnt; ++i)
-			{
-				var typeName = _typeNames[_instanceTypes[parents[i]]];
-				int cnt;
-				if (dct.TryGetValue(typeName, out cnt))
-				{
-					dct[typeName] = cnt + 1;
-				}
-				else
-				{
-					dct.Add(typeName, 1);
-				}
-			}
-			return dct.ToArray();
-		}
+		//	SortedDictionary<string, int> dct = new SortedDictionary<string, int>();
+		//	for (int i = 0, icnt = parents.Length; i < icnt; ++i)
+		//	{
+		//		var typeName = _typeNames[_instanceTypes[parents[i]]];
+		//		int cnt;
+		//		if (dct.TryGetValue(typeName, out cnt))
+		//		{
+		//			dct[typeName] = cnt + 1;
+		//		}
+		//		else
+		//		{
+		//			dct.Add(typeName, 1);
+		//		}
+		//	}
+		//	return dct.ToArray();
+		//}
 
-		public KeyValuePair<string, ulong>[] GetParentDetails(ulong address, out string error)
-		{
-			var instNdx = GetInstanceIndex(address);
-			if (instNdx < 0)
-			{
-				error = "Instance at address: " + Utils.AddressString(address) + ", not found.";
-				return null;
-			}
+		//public KeyValuePair<string, ulong>[] GetParentDetails(ulong address, out string error)
+		//{
+		//	var instNdx = GetInstanceIndex(address);
+		//	if (instNdx < 0)
+		//	{
+		//		error = "Instance at address: " + Utils.AddressString(address) + ", not found.";
+		//		return null;
+		//	}
 
-			var parents = _references.GetFieldParents(instNdx, out error);
-			if (error != null) return Utils.EmptyArray<KeyValuePair<string, ulong>>.Value;
+		//	var parents = _references.GetFieldParents(instNdx, out error);
+		//	if (error != null) return Utils.EmptyArray<KeyValuePair<string, ulong>>.Value;
 
-			var result = new List<KeyValuePair<string, ulong>>(32);
-			for (int i = 0, icnt = parents.Length; i < icnt; ++i)
-			{
-				var typeName = _typeNames[_instanceTypes[parents[i]]];
-				var paddr = _instances[parents[i]];
-				result.Add(new KeyValuePair<string, ulong>(typeName, paddr));
-			}
-			return result.ToArray();
-		}
+		//	var result = new List<KeyValuePair<string, ulong>>(32);
+		//	for (int i = 0, icnt = parents.Length; i < icnt; ++i)
+		//	{
+		//		var typeName = _typeNames[_instanceTypes[parents[i]]];
+		//		var paddr = _instances[parents[i]];
+		//		result.Add(new KeyValuePair<string, ulong>(typeName, paddr));
+		//	}
+		//	return result.ToArray();
+		//}
 
 
 		/// <summary>
@@ -1076,7 +1070,7 @@ namespace ClrMDRIndex
 						if (!set.Add(inst)) continue;
 
 
-						var ancestors = _references.GetFieldParents(inst, out error);
+						var ancestors = _references.GetFieldParents(inst, References.Direction.FieldParent, References.DataSource.All, out error);
 						for (int j = 0, jcnt = ancestors.Length; j < jcnt; ++j)
 						{
 							var ancestor = ancestors[j];
@@ -1183,7 +1177,7 @@ namespace ClrMDRIndex
 				return new ListingInfo(error);
 			}
 
-			KeyValuePair<IndexNode, int> result = _references.GetReferences(instNdx, References.DataSource.RootedFields, out error, level);
+			KeyValuePair<IndexNode, int> result = _references.GetReferences(instNdx, References.Direction.FieldParent, References.DataSource.All, out error, level);
 			if (!string.IsNullOrEmpty(error) && error[0] != Constants.InformationSymbol)
 			{
 				return new ListingInfo(error);
@@ -1202,7 +1196,7 @@ namespace ClrMDRIndex
 
 			int[] typeInstances = GetTypeInstanceIndices(typeId);
 
-			KeyValuePair<IndexNode, int>[] result = _references.GetReferences(typeInstances, References.DataSource.RootedFields, out error, level);
+			KeyValuePair<IndexNode, int>[] result = _references.GetReferences(typeInstances, References.Direction.FieldParent, References.DataSource.All, out error, level);
 			if (!string.IsNullOrEmpty(error) && error[0] != Constants.InformationSymbol)
 			{
 				return new ListingInfo(error);
@@ -1419,7 +1413,7 @@ namespace ClrMDRIndex
 				var instNdx = GetInstanceIndex(addr);
 				if (instNdx >= 0)
 				{
-					var ancestors = _references.GetFieldParents(instNdx, out error);
+					var ancestors = _references.GetFieldParents(instNdx, References.Direction.FieldParent, References.DataSource.All, out error);
 					if (error != null && !Utils.IsInformation(error)) return null;
 					if (ancestors != null && ancestors.Length > 0)
 						ancestorInfos = GroupAddressesByTypesForDisplay(ancestors);
@@ -2093,7 +2087,7 @@ namespace ClrMDRIndex
 				List<string> errors = new List<string>();
 
 				var indices = GetInstanceIndices(addresses);
-				KeyValuePair<int, int[]>[] parentInfos = _references.GetMultiFieldParents(indices,References.DataSource.RootedFields, errors);
+				KeyValuePair<int, int[]>[] parentInfos = _references.GetMultiFieldParents(indices, References.Direction.FieldParent, References.DataSource.All, errors);
 
 
 				var dct = new SortedDictionary<string, List<KeyValuePair<ulong, ulong>>>(StringComparer.Ordinal);

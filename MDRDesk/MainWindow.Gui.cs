@@ -1356,6 +1356,8 @@ namespace MDRDesk
 			if (dlg.Cancelled) return;
 			int level = dlg.GetAllReferences ? Int32.MaxValue : dlg.SearchDepthLevel;
 			var dispMode = dlg.DisplayMode;
+			var direction = dlg.Direction;
+			var dataSource = dlg.DataSource;
 
 			string msg = "Getting parent references for: '" + Utils.RealAddressString(addr) + "', ";
 			if (dispMode == ReferenceSearchSetup.DispMode.List)

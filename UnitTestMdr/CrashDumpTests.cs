@@ -574,9 +574,8 @@ namespace UnitTestMdr
 
 				string path1 = fileMoniker.GetFilePath(0, Constants.MapParentFieldsRootedPostfix);
 				string path2 = fileMoniker.GetFilePath(0, Constants.MapFieldParentsRootedPostfix);
-				bool result = References.GetRefrences(heap, rootAddressNdxs, instances, bitset, path1, path2, out error);
-
-
+				//bool result = References.GetRefrences(heap, rootAddressNdxs, instances, bitset, path1, path2, out error);
+				bool result = References.CreateReferences2(0, heap, rootAddrInfo.Item1, instances, bitset, fileMoniker, null, out error);
 
 				int markRootCount = Utils.SetAddressBitIfSet(instances, rootAddrInfo.Item2, Utils.RootBits.Rooted);
 				int markFnlzCount = Utils.SetAddressBit(rootAddrInfo.Item2, instances, Utils.RootBits.Finalizer);
@@ -701,8 +700,8 @@ namespace UnitTestMdr
 
 				string path1 = fileMoniker.GetFilePath(0, Constants.MapParentFieldsRootedPostfix);
 				string path2 = fileMoniker.GetFilePath(0, Constants.MapFieldParentsRootedPostfix);
-				bool result = References.GetRefrences(heap, rootAddressNdxs, instances, bitset, path1, path2, out error);
 
+				bool result = References.CreateReferences2(0, heap, rootAddrInfo.Item1, instances, bitset, fileMoniker, null, out error);
 				Assert.IsTrue(result);
 				Assert.IsNull(error);
 			} // using dump

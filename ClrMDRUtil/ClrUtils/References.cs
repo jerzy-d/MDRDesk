@@ -15,21 +15,25 @@ namespace ClrMDRIndex
 		public enum DataSource
 		{
 			Unknown,
-			RootedParents,
-			RootedFields,
-			UnrootedParents,
-			UnrootedFields,
-			AllParents,
-			AllFields
+			Rooted,
+			Unrooted,
+			All,
+		}
+
+		public enum Direction
+		{
+			Unknown,
+			FieldParent,
+			ParentField
 		}
 
 		#region fields/properties
 
 		const int MaxNodes = 10000;
 
-		private int _runtimeIndex;
+		private readonly int _runtimeIndex;
 
-		private DumpFileMoniker _fileMoniker;
+		private readonly DumpFileMoniker _fileMoniker;
 
 		// TODO JRD -- remove all below
 		//private int[] _rootedParents;
@@ -53,7 +57,7 @@ namespace ClrMDRIndex
 		private int[] _fields;
 		private WeakReference<int[][]> _fieldReferences;
 
-		private object _accessorLock;
+		private readonly object _accessorLock;
 
 		#endregion fields/properties
 
@@ -329,111 +333,111 @@ namespace ClrMDRIndex
 		}
 
 
-		public static bool GetRefrences(ClrHeap heap, int[] indices, ulong[] instances, Bitset bitset, string rToFPath, string fToRPath, out string error)
-		{
-			error = null;
-			try
-			{
-				var fldRefList = new List<KeyValuePair<ulong, int>>(64);
-				var fldRefIndices = new List<int>(64);
-				var que = new Queue<KeyValuePair<int,ulong>>(1024 * 1024 * 10);
-				Utils.KVUlongIntKCmp kvCmp = new Utils.KVUlongIntKCmp();
+		//public static bool GetRefrences(ClrHeap heap, int[] indices, ulong[] instances, Bitset bitset, string rToFPath, string fToRPath, out string error)
+		//{
+		//	error = null;
+		//	try
+		//	{
+		//		var fldRefList = new List<KeyValuePair<ulong, int>>(64);
+		//		var fldRefIndices = new List<int>(64);
+		//		var que = new Queue<KeyValuePair<int,ulong>>(1024 * 1024 * 10);
+		//		Utils.KVUlongIntKCmp kvCmp = new Utils.KVUlongIntKCmp();
 
-				BlockingCollection<KeyValuePair<int,int[]>> dataToPersist = new BlockingCollection<KeyValuePair<int, int[]>>();
-				ReferencePersistor persistor = new ReferencePersistor(rToFPath,fToRPath,instances.Length,dataToPersist);
-				persistor.Start();
+		//		BlockingCollection<KeyValuePair<int,int[]>> dataToPersist = new BlockingCollection<KeyValuePair<int, int[]>>();
+		//		ReferencePersistor persistor = new ReferencePersistor(rToFPath,fToRPath,instances.Length,dataToPersist);
+		//		persistor.Start();
 
-				for (int i = 0, icnt = indices.Length; i < icnt; ++i)
-				{
-					var rndx = indices[i];
-					if (bitset.IsSet(rndx)) continue;
-					var raddr = Utils.RealAddress(instances[rndx]);
-					var clrType = heap.GetObjectType(raddr);
-					if (clrType == null) continue;
-					bitset.Set(rndx); // mark it
+		//		for (int i = 0, icnt = indices.Length; i < icnt; ++i)
+		//		{
+		//			var rndx = indices[i];
+		//			if (bitset.IsSet(rndx)) continue;
+		//			var raddr = Utils.RealAddress(instances[rndx]);
+		//			var clrType = heap.GetObjectType(raddr);
+		//			if (clrType == null) continue;
+		//			bitset.Set(rndx); // mark it
 
-					fldRefList.Clear();
-					clrType.EnumerateRefsOfObjectCarefully(raddr, (address, off) =>
-					{
-						fldRefList.Add(new KeyValuePair<ulong, int>(address, off));
-					});
-					if (fldRefList.Count < 1) continue;
-					fldRefList.Sort(kvCmp);
-					Utils.RemoveDuplicates(fldRefList, kvCmp);
-					fldRefIndices.Clear();
-					for (int j = 0, jcnt = fldRefList.Count; j < jcnt; ++j)
-					{
-						var faddr = fldRefList[j].Key;
-						var ndx = Utils.AddressSearch(instances, faddr);
-						if (ndx < 0) continue;
-						fldRefIndices.Add(ndx);
-						que.Enqueue(new KeyValuePair<int, ulong>(ndx,faddr)); 
-						// save ndx -> rndx pair
-					}
-					if (fldRefIndices.Count < 1) continue;
+		//			fldRefList.Clear();
+		//			clrType.EnumerateRefsOfObjectCarefully(raddr, (address, off) =>
+		//			{
+		//				fldRefList.Add(new KeyValuePair<ulong, int>(address, off));
+		//			});
+		//			if (fldRefList.Count < 1) continue;
+		//			fldRefList.Sort(kvCmp);
+		//			Utils.RemoveDuplicates(fldRefList, kvCmp);
+		//			fldRefIndices.Clear();
+		//			for (int j = 0, jcnt = fldRefList.Count; j < jcnt; ++j)
+		//			{
+		//				var faddr = fldRefList[j].Key;
+		//				var ndx = Utils.AddressSearch(instances, faddr);
+		//				if (ndx < 0) continue;
+		//				fldRefIndices.Add(ndx);
+		//				que.Enqueue(new KeyValuePair<int, ulong>(ndx,faddr)); 
+		//				// save ndx -> rndx pair
+		//			}
+		//			if (fldRefIndices.Count < 1) continue;
 
-					// save rndx -> ndx[] relation
-					dataToPersist.Add(new KeyValuePair<int, int[]>(rndx,fldRefIndices.ToArray()));
+		//			// save rndx -> ndx[] relation
+		//			dataToPersist.Add(new KeyValuePair<int, int[]>(rndx,fldRefIndices.ToArray()));
 
-					// go down the hierarchy
-					while (que.Count > 0)
-					{
-						var kv = que.Dequeue();
-						if (bitset.IsSet(kv.Key)) continue;
-						rndx = kv.Key;
-						bitset.Set(rndx);  // mark it
-						//instances[rndx] |= Utils.RootBits.Rooted;
-						raddr = kv.Value;
-						clrType = heap.GetObjectType(raddr);
-						if (clrType == null) continue;
-						fldRefList.Clear();
-						clrType.EnumerateRefsOfObjectCarefully(raddr, (address, off) =>
-						{
-							fldRefList.Add(new KeyValuePair<ulong, int>(address, off));
-						});
-						if (fldRefList.Count < 1) continue;
-						fldRefList.Sort(kvCmp);
-						Utils.RemoveDuplicates(fldRefList, kvCmp);
-						fldRefIndices.Clear();
-						for (int j = 0, jcnt = fldRefList.Count; j < jcnt; ++j)
-						{
-							var faddr = fldRefList[j].Key;
-							var ndx = Utils.AddressSearch(instances, faddr);
-							if (ndx < 0) continue;
-							fldRefIndices.Add(ndx);
-							que.Enqueue(new KeyValuePair<int, ulong>(ndx, faddr));
-							// save ndx -> rndx pair
-						}
-						if (fldRefIndices.Count < 1) continue;
+		//			// go down the hierarchy
+		//			while (que.Count > 0)
+		//			{
+		//				var kv = que.Dequeue();
+		//				if (bitset.IsSet(kv.Key)) continue;
+		//				rndx = kv.Key;
+		//				bitset.Set(rndx);  // mark it
+		//				//instances[rndx] |= Utils.RootBits.Rooted;
+		//				raddr = kv.Value;
+		//				clrType = heap.GetObjectType(raddr);
+		//				if (clrType == null) continue;
+		//				fldRefList.Clear();
+		//				clrType.EnumerateRefsOfObjectCarefully(raddr, (address, off) =>
+		//				{
+		//					fldRefList.Add(new KeyValuePair<ulong, int>(address, off));
+		//				});
+		//				if (fldRefList.Count < 1) continue;
+		//				fldRefList.Sort(kvCmp);
+		//				Utils.RemoveDuplicates(fldRefList, kvCmp);
+		//				fldRefIndices.Clear();
+		//				for (int j = 0, jcnt = fldRefList.Count; j < jcnt; ++j)
+		//				{
+		//					var faddr = fldRefList[j].Key;
+		//					var ndx = Utils.AddressSearch(instances, faddr);
+		//					if (ndx < 0) continue;
+		//					fldRefIndices.Add(ndx);
+		//					que.Enqueue(new KeyValuePair<int, ulong>(ndx, faddr));
+		//					// save ndx -> rndx pair
+		//				}
+		//				if (fldRefIndices.Count < 1) continue;
 
-						// save rndx -> ndx[] relation
-						dataToPersist.Add(new KeyValuePair<int, int[]>(rndx, fldRefIndices.ToArray()));
-					}
-				}
+		//				// save rndx -> ndx[] relation
+		//				dataToPersist.Add(new KeyValuePair<int, int[]>(rndx, fldRefIndices.ToArray()));
+		//			}
+		//		}
 
-				// save results in files
-				dataToPersist.Add(new KeyValuePair<int, int[]>(-1,null));
-				que.Clear();
-				que = null;
-				fldRefList.Clear();
-				fldRefList = null;
-				fldRefIndices.Clear();
-				fldRefIndices = null;
+		//		// save results in files
+		//		dataToPersist.Add(new KeyValuePair<int, int[]>(-1,null));
+		//		que.Clear();
+		//		que = null;
+		//		fldRefList.Clear();
+		//		fldRefList = null;
+		//		fldRefIndices.Clear();
+		//		fldRefIndices = null;
 
-				Utils.ForceGcWithCompaction();
+		//		Utils.ForceGcWithCompaction();
 
-				persistor.Wait();
-				error = persistor.Error;
+		//		persistor.Wait();
+		//		error = persistor.Error;
 
-				return error == null;
-			}
-			catch (Exception ex)
-			{
-				error = Utils.GetExceptionErrorString(ex);
-				return false;
-			}
+		//		return error == null;
+		//	}
+		//	catch (Exception ex)
+		//	{
+		//		error = Utils.GetExceptionErrorString(ex);
+		//		return false;
+		//	}
 
-		}
+		//}
 
 
 		public static bool GetRefrences2(ClrHeap heap, int[] indices, ulong[] instances, Bitset bitset, string refsObjFldPath, string refsFldObjPath, IProgress<string> progress, out string error)
@@ -626,7 +630,7 @@ namespace ClrMDRIndex
 
 		#region queries
 
-		public int[] GetFieldParents(int instNdx, out string error)
+		public int[] GetFieldParents(int instNdx, Direction direction, DataSource dataSource, out string error)
 		{
 			var hNdx = Array.BinarySearch(_fields, instNdx);
 			if (hNdx < 0)
@@ -640,11 +644,11 @@ namespace ClrMDRIndex
 			return refs[hNdx];
 		}
 
-		public int[] GetParents(int instNdx, DataSource dataSource, out string error)
+		public int[] GetParents(int instNdx, Direction direction, DataSource dataSource, out string error)
 		{
 			int[] heads;
 			int[][] refs;
-			if (!SelectArrays(dataSource, out heads, out refs, out error)) return null;
+			if (!SelectArrays(direction, out heads, out refs, out error)) return null;
 
 			var hNdx = Array.BinarySearch(heads, instNdx);
 			if (hNdx < 0)
@@ -655,14 +659,14 @@ namespace ClrMDRIndex
 			return refs[hNdx];
 		}
 
-		public KeyValuePair<IndexNode, int> GetReferences(int addrNdx, DataSource dataSource, out string error, int maxLevel = Int32.MaxValue)
+		public KeyValuePair<IndexNode, int> GetReferences(int addrNdx, Direction direction, DataSource dataSource, out string error, int maxLevel = Int32.MaxValue)
 		{
 			error = null;
 			try
 			{
 				int[] heads;
 				int[][] refs;
-				if (!SelectArrays(dataSource, out heads, out refs, out error)) return new KeyValuePair<IndexNode, int>(null, 0);
+				if (!SelectArrays(direction, out heads, out refs, out error)) return new KeyValuePair<IndexNode, int>(null, 0);
 
 				var rootNode = new IndexNode(addrNdx, 0); // we at level 0
 				var uniqueSet = new HashSet<int>();
@@ -705,14 +709,14 @@ namespace ClrMDRIndex
 			}
 		}
 
-		public KeyValuePair<IndexNode, int>[] GetReferences(int[] addrNdxs, DataSource dataSource, out string error, int maxLevel = Int32.MaxValue)
+		public KeyValuePair<IndexNode, int>[] GetReferences(int[] addrNdxs, Direction direction, DataSource dataSource, out string error, int maxLevel = Int32.MaxValue)
 		{
 			error = null;
 			try
 			{
 				int[] heads;
 				int[][] refs;
-				if (!SelectArrays(dataSource, out heads, out refs, out error)) return null;
+				if (!SelectArrays(direction, out heads, out refs, out error)) return null;
 
 
 				var results = new List<KeyValuePair<IndexNode, int>>(addrNdxs.Length);
@@ -765,7 +769,7 @@ namespace ClrMDRIndex
 			}
 		}
 
-		public KeyValuePair<int, int[]>[] GetMultiFieldParents(int[] indices, DataSource dataSource, List<string> errors)
+		public KeyValuePair<int, int[]>[] GetMultiFieldParents(int[] indices, Direction direction, DataSource dataSource, List<string> errors)
 		{
 			try
 			{
@@ -774,7 +778,7 @@ namespace ClrMDRIndex
 
 				for (int i = 0, icnt = indices.Length; i < icnt; ++i)
 				{
-					int[] refs = GetParents(indices[i], dataSource, out error);
+					int[] refs = GetParents(indices[i], direction, dataSource, out error);
 					if (refs != null && refs.Length > 0)
 					{
 						lst.Add(new KeyValuePair<int, int[]>(indices[i], refs));
@@ -791,27 +795,23 @@ namespace ClrMDRIndex
 			}
 		}
 
-		private bool SelectArrays(DataSource ds, out int[] heads, out int[][] refs, out string error)
+		private bool SelectArrays(Direction direction, out int[] heads, out int[][] refs, out string error)
 		{
 			error = null;
-			switch (ds)
+			switch (direction)
 			{
-				case DataSource.AllParents:
-				case DataSource.UnrootedParents:
-				case DataSource.RootedParents:
+				case Direction.ParentField:
 					heads = _objects;
 					refs = GetReferenceLists(_refsObjFldPath, _objectReferences, out error);
 					return error == null;
-				case DataSource.AllFields:
-				case DataSource.UnrootedFields:
-				case DataSource.RootedFields:
+				case Direction.FieldParent:
 					heads = _fields;
 					refs = GetReferenceLists(_refsFldObjPath, _fieldReferences, out error);
 					return error == null;
 				default:
 					heads = null;
 					refs = null;
-					error = "Unknown data source.";
+					error = "Unknown direction.";
 					return false;
 			}
 		}

@@ -1,16 +1,5 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using System.Windows;
-using System.Windows.Controls;
-using System.Windows.Data;
-using System.Windows.Documents;
-using System.Windows.Input;
-using System.Windows.Media;
-using System.Windows.Media.Imaging;
-using System.Windows.Shapes;
 using ClrMDRIndex;
 
 namespace MDRDesk
@@ -18,7 +7,7 @@ namespace MDRDesk
 	/// <summary>
 	/// Interaction logic for ReferenceSearchSetup.xaml
 	/// </summary>
-	public partial class ReferenceSearchSetup : Window
+	public partial class ReferenceSearchSetup
 	{
 		public enum DispMode
 		{
@@ -26,13 +15,17 @@ namespace MDRDesk
 		}
 
 		private static int _searchDepthLevel = 4;
-		private bool _okExit = false;
+		private bool _okExit;
 		private static DispMode _displayMode = DispMode.Tree;
-		private static References.DataSource _dataSource = References.DataSource.RootedFields;
+		public DispMode DisplayMode => _displayMode;
+		private static References.DataSource _dataSource = References.DataSource.All;
+		public References.DataSource DataSource => _dataSource;
+		private static References.Direction _direction = References.Direction.FieldParent;
+		public References.Direction Direction => _direction;
 
 		public bool Cancelled => !_okExit;
-		public DispMode DisplayMode => _displayMode;
-		public bool GetAllReferences => (bool)RefSearchAll.IsChecked;
+		public bool GetAllReferences => RefSearchAll.IsChecked != null && (bool) RefSearchAll.IsChecked;
+
 		public int SearchDepthLevel => _searchDepthLevel;
 
 		public ReferenceSearchSetup(string descr)
@@ -52,29 +45,36 @@ namespace MDRDesk
 				case DispMode.Graph:
 					RefSearchDisplayGraph.IsChecked = true;
 					break;
+				default:
+					RefSearchDisplayTree.IsChecked = true;
+					break;
 			}
 			switch (_dataSource)
 			{
-				case References.DataSource.RootedParents:
-					RefSearchPrntRooted.IsChecked = true;
-					break;
-				case References.DataSource.RootedFields:
+				case References.DataSource.Rooted:
 					RefSearchRooted.IsChecked = true;
 					break;
-				case References.DataSource.AllFields:
+				case References.DataSource.All:
 					RefSearchBoth.IsChecked = true;
 					break;
-				case References.DataSource.UnrootedParents:
-					RefSearchPrntNotRooted.IsChecked = true;
-					break;
-				case References.DataSource.UnrootedFields:
-					RefSearchPrntNotRooted.IsChecked = true;
-					break;
-				case References.DataSource.AllParents:
-					RefSearchPrntBoth.IsChecked = true;
+				case References.DataSource.Unrooted:
+					RefSearchNotRooted.IsChecked = true;
 					break;
 				default:
-					RefSearchRooted.IsChecked = true;
+					RefSearchBoth.IsChecked = true;
+					break;
+			}
+
+			switch (_direction)
+			{
+				case References.Direction.FieldParent:
+					RefSearchFieldParents.IsChecked = true;
+					break;
+				case References.Direction.ParentField:
+					RefSearchParentFields.IsChecked = true;
+					break;
+				default:
+					RefSearchFieldParents.IsChecked = true;
 					break;
 			}
 		}
@@ -82,30 +82,33 @@ namespace MDRDesk
 		private void DialogOkClicked(object sender, RoutedEventArgs e)
 		{
 			_okExit = true;
+
 			int level;
-			if (Int32.TryParse(RefSearchLevel.Text, out level))
-			{
-				_searchDepthLevel = level;
-			}
+			if (Int32.TryParse(RefSearchLevel.Text, out level)) _searchDepthLevel = level;
+			else _searchDepthLevel = 4;
+
 			if (RefSearchDisplayList.IsChecked == true) _displayMode = DispMode.List;
 			else if (RefSearchDisplayTree.IsChecked == true) _displayMode = DispMode.Tree;
 			else if (RefSearchDisplayGraph.IsChecked == true) _displayMode = DispMode.Graph;
+			else _displayMode = DispMode.Tree;
 
-			if (RefSearchPrntRooted.IsChecked == true)
-				_dataSource = References.DataSource.RootedParents;
-			else if (RefSearchRooted.IsChecked == true)
-				_dataSource = References.DataSource.RootedFields;
+			if (RefSearchRooted.IsChecked == true)
+				_dataSource = References.DataSource.Rooted;
 			else if (RefSearchBoth.IsChecked == true)
-				_dataSource = References.DataSource.AllFields;
+				_dataSource = References.DataSource.All;
+			else if (RefSearchNotRooted.IsChecked == true)
+				_dataSource = References.DataSource.Unrooted;
+			else
+				_dataSource = References.DataSource.All;
 
-			else if (RefSearchPrntNotRooted.IsChecked == true)
-				_dataSource = References.DataSource.UnrootedParents;
-			else if (RefSearchPrntNotRooted.IsChecked == true)
-				_dataSource = References.DataSource.UnrootedFields;
-			else if (RefSearchPrntBoth.IsChecked == true)
-				_dataSource = References.DataSource.AllParents;
+			if (RefSearchFieldParents.IsChecked == true)
+				_direction = References.Direction.FieldParent;
+			else if (RefSearchParentFields.IsChecked == true)
+				_direction = References.Direction.ParentField;
+			else
+				_direction = References.Direction.FieldParent;
 
-			this.DialogResult = true;
+			DialogResult = true;
 		}
 	}
 }
