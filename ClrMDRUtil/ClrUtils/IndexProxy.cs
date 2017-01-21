@@ -12,13 +12,16 @@ namespace ClrMDRIndex
 		public readonly ulong[] Instances;
 		public readonly int[] InstanceTypes;
 		public readonly string[] TypeNames;
+		public readonly ClrtRootInfo Roots;
 
-		public IndexProxy(ClrtDump dump, ulong[] instances, int[] instanceTypes, string[] typeNames)
+		public IndexProxy(ClrtDump dump, ulong[] instances, int[] instanceTypes, string[] typeNames, ClrtRootInfo roots)
 		{
 			Dump = dump;
 			Instances = instances;
 			InstanceTypes = instanceTypes;
 			TypeNames = typeNames;
+			Roots = roots;
+
 		}
 
 		public int GetTypeId(string typeName)

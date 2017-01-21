@@ -57,6 +57,8 @@ namespace ClrMDRIndex
 		private int[] _fields;
 		private WeakReference<int[][]> _fieldReferences;
 
+		private IndexProxy _index;
+
 		private readonly object _accessorLock;
 
 		#endregion fields/properties
@@ -108,6 +110,11 @@ namespace ClrMDRIndex
 				error = Utils.GetExceptionErrorString(ex);
 				return false;
 			}
+		}
+
+		public void SetIndexProxy(IndexProxy index)
+		{
+			_index = index;
 		}
 
 		//public static bool CreateReferences(ClrHeap heap, DumpFileMoniker fileMoniker, Tuple<ulong[],ulong[]> rootAddrInfo, ulong[] instances, out ulong[] rootedAry, out string error)
@@ -630,21 +637,7 @@ namespace ClrMDRIndex
 
 		#region queries
 
-		public int[] GetFieldParents(int instNdx, Direction direction, DataSource dataSource, out string error)
-		{
-			var hNdx = Array.BinarySearch(_fields, instNdx);
-			if (hNdx < 0)
-			{
-				error = Constants.InformationSymbolHeader + "Parents , not found.";
-				return Utils.EmptyArray<int>.Value;
-			}
-
-			var refs = GetReferenceLists(_refsFldObjPath, _fieldReferences, out error);
-			if (refs == null) return Utils.EmptyArray<int>.Value;
-			return refs[hNdx];
-		}
-
-		public int[] GetParents(int instNdx, Direction direction, DataSource dataSource, out string error)
+		public int[] GetReferences(int instNdx, Direction direction, DataSource dataSource, out string error)
 		{
 			int[] heads;
 			int[][] refs;
@@ -659,7 +652,19 @@ namespace ClrMDRIndex
 			return refs[hNdx];
 		}
 
-		public KeyValuePair<IndexNode, int> GetReferences(int addrNdx, Direction direction, DataSource dataSource, out string error, int maxLevel = Int32.MaxValue)
+		public int[] GetReferences(int instNdx, int[] heads, int[][] refs, out string error)
+		{
+			error = null;
+			var hNdx = Array.BinarySearch(heads, instNdx);
+			if (hNdx < 0)
+			{
+				error = Constants.InformationSymbolHeader + "Parents , not found.";
+				return null;
+			}
+			return refs[hNdx];
+		}
+
+		public KeyValuePair<IndexNode, int> GetReferenceNodes(int addrNdx, Direction direction, DataSource dataSource, out string error, int maxLevel = Int32.MaxValue)
 		{
 			error = null;
 			try
@@ -709,7 +714,7 @@ namespace ClrMDRIndex
 			}
 		}
 
-		public KeyValuePair<IndexNode, int>[] GetReferences(int[] addrNdxs, Direction direction, DataSource dataSource, out string error, int maxLevel = Int32.MaxValue)
+		public KeyValuePair<IndexNode, int>[] GetReferenceNodes(int[] addrNdxs, Direction direction, DataSource dataSource, out string error, int maxLevel = Int32.MaxValue)
 		{
 			error = null;
 			try
@@ -769,16 +774,20 @@ namespace ClrMDRIndex
 			}
 		}
 
-		public KeyValuePair<int, int[]>[] GetMultiFieldParents(int[] indices, Direction direction, DataSource dataSource, List<string> errors)
+		public KeyValuePair<int, int[]>[] GetMultireferences(int[] indices, Direction direction, DataSource dataSource, List<string> errors)
 		{
+			string error;
 			try
 			{
-				string error;
+				int[] heads;
+				int[][] refLists;
+				if (!SelectArrays(direction, out heads, out refLists, out error)) return null;
+
 				var lst = new List<KeyValuePair<int, int[]>>(indices.Length);
 
 				for (int i = 0, icnt = indices.Length; i < icnt; ++i)
 				{
-					int[] refs = GetParents(indices[i], direction, dataSource, out error);
+					int[] refs = GetReferences(indices[i], heads, refLists, out error);
 					if (refs != null && refs.Length > 0)
 					{
 						lst.Add(new KeyValuePair<int, int[]>(indices[i], refs));

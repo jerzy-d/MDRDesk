@@ -643,9 +643,9 @@ namespace UnitTestMdr
 		//	using (index)
 		//	{
 		//		var typeName1 = index.GetTypeName(addr1);
-		//		var result1 = index.GetParents(addr1, out error);
+		//		var result1 = index.GetReferences(addr1, out error);
 		//		var typeName2 = index.GetTypeName(addr2);
-		//		var result2 = index.GetParents(addr2, out error);
+		//		var result2 = index.GetReferences(addr2, out error);
 		//		var details = index.GetParentDetails(addr2, out error);
 		//		var refrences = index.GetParentReferences(addr2, out error);
 		//	}

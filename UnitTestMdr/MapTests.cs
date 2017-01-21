@@ -513,7 +513,7 @@ namespace UnitTestMdr
 		//		//HashSet<ulong> parents = new HashSet<ulong>();
 		//		//for (int i = 0, icnt = specKeyAryAddr.Length; i < icnt; ++i)
 		//		//{
-		//		//	var pars = map.GetParents(specKeyAryAddr[i], out error);
+		//		//	var pars = map.GetReferences(specKeyAryAddr[i], out error);
 		//		//	for (int j = 0, jcnt = pars.Length; j < jcnt; ++j)
 		//		//	{
 		//		//		parents.Add(pars[j].Key);
