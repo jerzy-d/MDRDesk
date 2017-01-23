@@ -1,15 +1,8 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Data;
-using System.Windows.Documents;
-using System.Windows.Input;
 using ClrMDRIndex;
 
 namespace MDRDesk
@@ -89,8 +82,6 @@ namespace MDRDesk
 				sw.WriteLine(_infoText.Text);
 				sw.WriteLine(InfoSeparator);
 				sw.WriteLine(_progressText.Text);
-				_progressText.Clear();
-				_progressText = null;
 			}
 			catch (Exception)
 			{
