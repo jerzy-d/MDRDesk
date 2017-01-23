@@ -48,6 +48,19 @@ namespace ClrMDRIndex
 			return outFolder + System.IO.Path.DirectorySeparatorChar + dmpName + postfix;
 		}
 
+		public static string GetFilePath(int runtimeIndex, string dmpFilePath, string pathPostfix)
+		{
+			var dmpName = System.IO.Path.GetFileName(dmpFilePath);
+			var indexDir = System.IO.Path.GetDirectoryName(dmpFilePath) // dump file directory
+								   + System.IO.Path.DirectorySeparatorChar
+								   + System.IO.Path.GetFileName(dmpFilePath) + ".map";
+
+			string postfix = runtimeIndex > 0 && pathPostfix.IndexOf("[0]", StringComparison.Ordinal) > 0
+				? pathPostfix.Replace("[0]", "[" + runtimeIndex + "]")
+				: pathPostfix;
+			return indexDir + System.IO.Path.DirectorySeparatorChar + dmpName + postfix;
+		}
+
 		public static Tuple<string, string> GetAndCreateMapFolders(string dmpFilePath, out string error)
 		{
 			error = null;

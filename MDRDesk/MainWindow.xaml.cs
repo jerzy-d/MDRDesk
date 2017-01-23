@@ -89,9 +89,9 @@ namespace MDRDesk
 
 				var result = Setup.GetConfigSettings(out error);
 				if (!result) return false;
-				RecentIndexList = new RecentFileList(RecentIndexMenuItem, (int)Setup.RecentFiles.MaxCount);
+				RecentIndexList = new RecentFileList(RecentIndexMenuItem, (int) Setup.RecentFiles.MaxCount);
 				RecentIndexList.Add(Setup.RecentIndexList);
-				RecentAdhocList = new RecentFileList(RecentAdhocMenuItem, (int)Setup.RecentFiles.MaxCount);
+				RecentAdhocList = new RecentFileList(RecentAdhocMenuItem, (int) Setup.RecentFiles.MaxCount);
 				RecentAdhocList.Add(Setup.RecentAdhocList);
 				SetupDispatcherTimer();
 
@@ -212,7 +212,7 @@ namespace MDRDesk
 				SW.MessageBox.Show(error, "Get Required Dac Failed", MessageBoxButton.OK, MessageBoxImage.Error);
 				return;
 			}
-			SW.Clipboard.SetText(dacFiles[dacFiles.Length-1]);
+			SW.Clipboard.SetText(dacFiles[dacFiles.Length - 1]);
 			string lst = string.Join("\n", dacFiles);
 			if (dacFiles.Length > 1)
 				ShowInformation("Required Dac Files", lst, "Last dac file name (shown above) is copied to Clipboard.", string.Empty);
@@ -230,11 +230,13 @@ namespace MDRDesk
 			ClrtDump dump = null;
 			string error = null;
 			string path = string.Empty;
+			string[] dacFiles = null;
 			try
 			{
 				path = GuiUtils.SelectCrashDumpFile();
 				if (path == null) return;
-				dump = ClrtDump.OpenDump(path, out error);
+				dump = TryOpenCrashDump(path, out error, out dacFiles);
+				if (dump != null) dacFiles = dump.DacPaths;
 			}
 			catch (Exception ex)
 			{
@@ -242,16 +244,11 @@ namespace MDRDesk
 			}
 			finally
 			{
-				string[] dacFiles = null;
-				if (dump != null)
-				{
-					dacFiles = dump.DacPaths;
-				}
 				dump?.Dispose();
 				if (error != null)
 				{
 					MainStatusLabel.Content = "Open crash dump failed: " + path;
-					var pos = error.IndexOf(Constants.HeavyGreekCrossPadded,StringComparison.Ordinal);
+					var pos = error.IndexOf(Constants.HeavyGreekCrossPadded, StringComparison.Ordinal);
 					if (pos > 0)
 					{
 						error = "Open Crash Dump Failed" + error.Substring(pos);
@@ -268,15 +265,72 @@ namespace MDRDesk
 			}
 		}
 
+		private ClrtDump TryOpenCrashDump(string path, out string error, out string[] dacFiles)
+		{
+			ClrtDump dump = null;
+			error = null;
+			dacFiles = null;
+			try
+			{
+				if (path == null) return null;
+				dump = ClrtDump.OpenDump(path, out error);
+				return dump;
+			}
+			catch (Exception ex)
+			{
+				error = Utils.GetExceptionErrorString(ex);
+				return null;
+			}
+			finally
+			{
+				if (dump != null)
+				{
+					dacFiles = dump.DacPaths;
+				}
+				if (error != null)
+				{
+					var pos = error.IndexOf(Constants.HeavyGreekCrossPadded, StringComparison.Ordinal);
+					if (pos > 0)
+					{
+						error = "Open Crash Dump Failed" + error.Substring(pos);
+					}
+					dump?.Dispose();
+				}
+				else
+				{
+					string dacs = (dacFiles == null || dacFiles.Length < 1)
+						? "No dac file?"
+						: string.Join(Environment.NewLine, dacFiles);
+				}
+			}
+		}
+
 
 		private void CreateCrashDumpClicked(object sender, RoutedEventArgs e)
 		{
-			CreateCrashDump dlg = new CreateCrashDump() { Owner = Window.GetWindow(this) };
-			var dlgResult = dlg.ShowDialog();
-			if (dlgResult == true && dlg.IndexDump && System.IO.File.Exists(dlg.DumpPath))
+			ClrtDump dump = null;
+			string error = null;
+			string[] dacFiles = null;
+			try
 			{
-				if (IsIndexAvailable(null)) CloseCurrentIndex();
-				Dispatcher.CurrentDispatcher.InvokeAsync(() => DoCreateDumpIndex(dlg.DumpPath));
+				CreateCrashDump dlg = new CreateCrashDump() {Owner = Window.GetWindow(this)};
+				var dlgResult = dlg.ShowDialog();
+				if (dlgResult == true && dlg.IndexDump && System.IO.File.Exists(dlg.DumpPath))
+				{
+					dump = TryOpenCrashDump(dlg.DumpPath, out error, out dacFiles);
+					if (dump != null)
+					{
+						dump.Dispose(); // TODO JRD -- pass dump to indexer
+						dump = null;
+						if (IsIndexAvailable(null)) CloseCurrentIndex();
+						Dispatcher.CurrentDispatcher.InvokeAsync(() => DoCreateDumpIndex(dlg.DumpPath));
+					}
+				}
+
+			}
+			catch (Exception ex)
+			{
+				ShowError(Utils.GetExceptionErrorString(ex));
 			}
 		}
 
@@ -372,18 +426,26 @@ namespace MDRDesk
 		{
 			Debug.Assert(path != null && System.IO.File.Exists(path));
 			var dmpFileName = Path.GetFileNameWithoutExtension(path);
-			var progressHandler = new Progress<string>(MainStatusShowMessage);
-			var progress = progressHandler as IProgress<string>;
+			// setup progress
+			var indexingProgress = new IndexingProgress();
+
+			indexingProgress.Init(this, GetFileInfo(path));
+
 			SetStartTaskMainWindowState("Indexing: " + dmpFileName + ", please wait.");
+			SetTitle(dmpFileName);
 
 			var result = await Task.Run(() =>
 			{
 				string error;
 				string indexPath;
 				var indexer = new DumpIndexer(path);
-				var ok = indexer.CreateDumpIndex(_myVersion, progress, DumpIndexer.IndexingArguments.All, out indexPath, out error);
+				var ok = indexer.CreateDumpIndex(_myVersion, indexingProgress.Progress, DumpIndexer.IndexingArguments.All,
+					out indexPath, out error);
 				return new Tuple<bool, string, string>(ok, error, indexPath);
 			});
+
+
+			indexingProgress.Close(DumpFileMoniker.GetFilePath(-1, path, Constants.TxtIndexingInfoFilePostfix));
 
 			Utils.ForceGcWithCompaction();
 			SetEndTaskMainWindowState(result.Item1
@@ -398,7 +460,19 @@ namespace MDRDesk
 			Dispatcher.CurrentDispatcher.InvokeAsync(() => DoOpenDumpIndex(0, result.Item3));
 		}
 
-		private async void OpenDumpIndexClicked(object sender, RoutedEventArgs e)
+		private string GetFileInfo(string path)
+		{
+			Debug.Assert(System.IO.File.Exists(path));
+			System.IO.FileInfo fi = new System.IO.FileInfo(path);
+			var sb = StringBuilderCache.Acquire(StringBuilderCache.MaxCapacity);
+			sb.Append(path).AppendLine();
+			sb.Append("File size: ").AppendLine(Utils.SizeString(fi.Length));
+			var dt = fi.LastWriteTime.ToUniversalTime();
+			sb.Append("Last write time (UTC): ").Append(dt.ToLongDateString()).Append(" ").AppendLine(dt.ToLongTimeString());
+			return StringBuilderCache.GetStringAndRelease(sb);
+		}
+
+	private async void OpenDumpIndexClicked(object sender, RoutedEventArgs e)
 		{
 			if (IsIndexAvailable(null)) CloseCurrentIndex();
 			string path = null;
@@ -512,13 +586,29 @@ namespace MDRDesk
 				//MainTab.UpdateLayout();
 
 			}
-			this.Title = BaseTitle + Constants.BlackDiamondPadded + CurrentIndex.DumpFileName;
+			Title = BaseTitle + Constants.BlackDiamondPadded + CurrentIndex.DumpFileName;
 			RecentIndexList.Add(CurrentIndex.IndexFolder);
+		}
+
+		public void SetTitle(string dmpName)
+		{
+			Title = BaseTitle + Constants.BlackDiamondPadded + dmpName;
 		}
 
 		private void CloseDumpIndexClicked(object sender, RoutedEventArgs e)
 		{
 			if (IsIndexAvailable(null)) CloseCurrentIndex();
+		}
+
+		private void IndexShowIndexingInfoClicked(object sender, RoutedEventArgs e)
+		{
+			if (!IsIndexAvailable("Show Indexing Info")) return;
+			var path = CurrentIndex.GetFilePath(-1, Constants.TxtIndexingInfoFilePostfix);
+			string error;
+			if (!IndexingProgress.ShowIndexingInfo(this, path, out error))
+			{
+				ShowError(error);
+			}
 		}
 
 		private void IndexShowModuleInfosClicked(object sender, RoutedEventArgs e)
@@ -909,40 +999,6 @@ namespace MDRDesk
 				return;
 			var progressHandler = new Progress<string>(MainStatusShowMessage);
 			var progress = progressHandler as IProgress<string>;
-
-		}
-
-		private async void AhqCreateInstanceRefsClicked(object sender, RoutedEventArgs e)
-		{
-			var dumpFilePath = GuiUtils.SelectCrashDumpFile();
-			if (dumpFilePath == null) return;
-
-			var progressHandler = new Progress<string>(MainStatusShowMessage);
-			var progress = progressHandler as IProgress<string>;
-			var dmpFileName = Path.GetFileName(dumpFilePath);
-			SetStartTaskMainWindowState("Indexing: " + dmpFileName + ", please wait.");
-
-			var result = await Task.Run(() =>
-			{
-				string error;
-				string indexPath;
-				var indexer = new DumpIndexer(dumpFilePath);
-				//var ok = indexer.Index(_myVersion, progress, out indexPath, out error);
-				var ok = indexer.CreateDumpIndex(_myVersion, progress, DumpIndexer.IndexingArguments.JustInstanceRefs, out indexPath,
-					out error);
-				return new Tuple<bool, string, string>(ok, error, indexPath);
-			});
-
-			Utils.ForceGcWithCompaction();
-			SetEndTaskMainWindowState(result.Item1
-				? "Indexing: " + dmpFileName + " done."
-				: "Indexing: " + dmpFileName + " failed.");
-
-			if (!result.Item1)
-			{
-				ShowError(result.Item2);
-				return;
-			}
 
 		}
 
@@ -1964,7 +2020,6 @@ namespace MDRDesk
 				return;
 			ShowMemoryViewWindow(addr);
 		}
-
 
 	}
 }

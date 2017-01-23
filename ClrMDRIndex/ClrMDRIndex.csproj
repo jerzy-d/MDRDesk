@@ -84,7 +84,6 @@
   <ItemGroup>
     <Compile Include="DumpIndex.cs" />
     <Compile Include="DumpIndexer.cs" />
-    <Compile Include="Indexer.cs" />
     <Compile Include="Map.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>

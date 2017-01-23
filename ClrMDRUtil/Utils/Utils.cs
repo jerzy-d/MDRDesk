@@ -27,6 +27,7 @@ namespace ClrMDRIndex
 			public static ulong AddressMask = 0x0FFFFFFFFFFFFFFF;
 			public static ulong Rooted = 0x8000000000000000;
 			public static ulong Finalizer = 0x4000000000000000;
+			public static ulong Root = 0x2000000000000000;
 		}
 
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -39,6 +40,12 @@ namespace ClrMDRIndex
 		public static ulong SetAsRooted(ulong addr)
 		{
 			return addr |= (ulong)RootBits.Rooted;
+		}
+
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		public static ulong SetAsRoot(ulong addr)
+		{
+			return addr |= (ulong)RootBits.Root;
 		}
 
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -218,29 +225,39 @@ namespace ClrMDRIndex
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		public static string GetAddressFormat(ulong addr)
 		{
+			bool isRoot = IsRoot(addr);
 			bool isFinalizer = IsFinalizer(addr);
+			if (isRoot && isFinalizer)
+				return "\u25BC\u2718{0:x14}";
+			if (isRoot)
+				return "\u25BCx{0:x14}";
 			bool isRooted = IsRooted(addr);
 			if (!isRooted && isFinalizer)
-				return "0\u2714\u2718{0:x13}";
+				return "\u2714\u2718{0:x14}";
 			if (isFinalizer)
-				return "0x\u2718{0:x13}";
+				return "\u2718x{0:x14}";
 			if (isRooted)
 				return "0x{0:x14}";
-			return "0\u2714{0:x14}";
+			return "\u2714x{0:x14}";
 		}
 
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		public static string GetAddressHeaderFormat(ulong addr)
 		{
+			bool isRoot = IsRoot(addr);
 			bool isFinalizer = IsFinalizer(addr);
+			if (isRoot && isFinalizer)
+				return "\u25BC\u2718{0:x14} ";
+			if (isRoot)
+				return "\u25BCx{0:x14} ";
 			bool isRooted = IsRooted(addr);
 			if (!isRooted && isFinalizer)
-				return "0\u2714\u2718{0:x13} ";
+				return "\u2714\u2718{0:x14} ";
 			if (isFinalizer)
-				return "0x\u2718{0:x13} ";
+				return "\u2718x{0:x14} ";
 			if (isRooted)
 				return "0x{0:x14} ";
-			return "0\u2714{0:x14} ";
+			return "\u2714x{0:x14} ";
 		}
 
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -257,11 +274,11 @@ namespace ClrMDRIndex
 			return string.Format("0x{0:x14} ", realAddr);
 		}
 
-		[MethodImpl(MethodImplOptions.AggressiveInlining)]
-		public static string MultiAddressString(int addrCount)
-		{
-			return string.Format("\u275A{0}\u275A", Utils.LargeNumberString(addrCount));
-		}
+		//[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		//public static string MultiAddressString(int addrCount)
+		//{
+		//	return string.Format("\u275A{0}\u275A", Utils.LargeNumberString(addrCount));
+		//}
 
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -286,6 +303,12 @@ namespace ClrMDRIndex
 		public static bool IsRooted(ulong addr)
 		{
 			return (addr & (ulong)RootBits.Rooted) > 0;
+		}
+
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		public static bool IsRoot(ulong addr)
+		{
+			return (addr & (ulong)RootBits.Root) > 0;
 		}
 
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]

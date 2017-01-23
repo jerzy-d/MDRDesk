@@ -450,6 +450,7 @@ namespace ClrMDRIndex
 		public static bool GetRefrences2(ClrHeap heap, int[] indices, ulong[] instances, Bitset bitset, string refsObjFldPath, string refsFldObjPath, IProgress<string> progress, out string error)
 		{
 			error = null;
+			const int reportInterval = 1000000;
 			try
 			{
 				var fldRefList = new List<KeyValuePair<ulong, int>>(64);
@@ -457,7 +458,7 @@ namespace ClrMDRIndex
 				var que = new Queue<KeyValuePair<int, ulong>>(1024 * 1024 * 10);
 				Utils.KVUlongIntKCmp kvCmp = new Utils.KVUlongIntKCmp();
 
-				progress?.Report("REFS Building rooted references, root count: " + indices.Length);
+				progress?.Report("Building rooted references, root/object counts: " + Utils.CountString(indices.Length) + "/" + Utils.CountString(instances.Length));
 
 				BlockingCollection<KeyValuePair<int, int[]>> dataToPersist = new BlockingCollection<KeyValuePair<int, int[]>>();
 				ReferencePersistor persistor = new ReferencePersistor(refsObjFldPath, refsFldObjPath, instances.Length, dataToPersist, progress);
@@ -471,6 +472,10 @@ namespace ClrMDRIndex
 					var clrType = heap.GetObjectType(raddr);
 					if (clrType == null) continue;
 					bitset.Set(rndx); // mark it
+					if ((bitset.SetCount % reportInterval) == 0)
+						progress?.Report("Rooted references, processed: " + Utils.CountString(bitset.SetCount)
+							+ ", current instance [" + Utils.CountString(i)
+							+ "] " + Utils.RealAddressString(instances[i]));
 
 					fldRefList.Clear();
 					clrType.EnumerateRefsOfObjectCarefully(raddr, (address, off) =>
@@ -503,6 +508,10 @@ namespace ClrMDRIndex
 						if (bitset.IsSet(rndx)) continue;
 						bitset.Set(rndx);  // mark it
 										   //instances[rndx] |= Utils.RootBits.Rooted;
+						if ((bitset.SetCount % reportInterval) == 0)
+							progress?.Report("Rooted references, processed: " + Utils.CountString(bitset.SetCount)
+								+ ", current instance [" + Utils.CountString(i)
+								+ "] " + Utils.RealAddressString(instances[i]));
 						raddr = kv.Value;
 						clrType = heap.GetObjectType(raddr);
 						if (clrType == null) continue;
@@ -531,17 +540,20 @@ namespace ClrMDRIndex
 					}
 				}
 
-
 				//
 				// continue with the rest
 				//
 				var bitset2 = bitset.Clone();
-				progress?.Report("REFS Building unrooted references, root count: " + (instances.Length - bitset2.SetCount));
+				progress?.Report("Building unrooted references, unrooted/object counts: " + Utils.CountString(instances.Length - bitset2.SetCount) + "/" + Utils.CountString(instances.Length));
 
 				for (int i = 0, icnt = instances.Length; i < icnt; ++i)
 				{
 					if (bitset2.IsSet(i)) continue;
 					bitset2.Set(i);
+					if ((bitset2.SetCount % reportInterval) == 0)
+						progress?.Report("Unrooted references, processed: " + Utils.CountString(bitset2.SetCount - bitset.SetCount)
+							+ ", current instance [" + Utils.CountString(i)
+							+ "] " + Utils.RealAddressString(instances[i]));
 					var rndx = i;
 					var raddr = Utils.RealAddress(instances[rndx]);
 					var clrType = heap.GetObjectType(raddr);
@@ -577,7 +589,11 @@ namespace ClrMDRIndex
 						rndx = kv.Key;
 						if (bitset2.IsSet(rndx)) continue;
 						bitset2.Set(rndx);  // mark it
-										   //instances[rndx] |= Utils.RootBits.Rooted;
+											//instances[rndx] |= Utils.RootBits.Rooted;
+						if ((bitset2.SetCount % reportInterval) == 0)
+							progress?.Report("Unrooted references, processed: " + Utils.CountString(bitset2.SetCount - bitset.SetCount) 
+								+ ", current instance [" + Utils.CountString(i)
+								+ "] " + Utils.RealAddressString(instances[i]));
 						raddr = kv.Value;
 						clrType = heap.GetObjectType(raddr);
 						if (clrType == null) continue;
@@ -606,8 +622,6 @@ namespace ClrMDRIndex
 					}
 				}
 
-
-
 				// save results in files
 				dataToPersist.Add(new KeyValuePair<int, int[]>(-1, null));
 				que.Clear();
@@ -616,6 +630,8 @@ namespace ClrMDRIndex
 				fldRefList = null;
 				fldRefIndices.Clear();
 				fldRefIndices = null;
+
+				progress?.Report("The references processing done, rooted/unrooted counts: " + Utils.CountString(bitset.SetCount) + "/" + Utils.CountString(bitset2.SetCount - bitset.SetCount));
 
 				Utils.ForceGcWithCompaction();
 
@@ -646,8 +662,7 @@ namespace ClrMDRIndex
 			var hNdx = Array.BinarySearch(heads, instNdx);
 			if (hNdx < 0)
 			{
-				error = Constants.InformationSymbolHeader + "Parents , not found.";
-				return null;
+				return Utils.EmptyArray<int>.Value;
 			}
 			return refs[hNdx];
 		}
@@ -658,8 +673,7 @@ namespace ClrMDRIndex
 			var hNdx = Array.BinarySearch(heads, instNdx);
 			if (hNdx < 0)
 			{
-				error = Constants.InformationSymbolHeader + "Parents , not found.";
-				return null;
+				return Utils.EmptyArray<int>.Value;
 			}
 			return refs[hNdx];
 		}

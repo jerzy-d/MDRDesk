@@ -798,12 +798,13 @@ namespace MDRDesk
 
 		#region Display Grids
 
-		private void DisplayTab(char prefix, string reportTitle, Grid grid, string name)
+		public CloseableTabItem DisplayTab(char prefix, string reportTitle, Grid grid, string name)
 		{
 			var tab = new CloseableTabItem() { Header = prefix + " " + reportTitle, Content = grid, Name = name + "__" + Utils.GetNewID() };
 			MainTab.Items.Add(tab);
 			MainTab.SelectedItem = tab;
 			MainTab.UpdateLayout();
+			return tab;
 		}
 
 		/// <summary>
@@ -1226,7 +1227,10 @@ namespace MDRDesk
 
 			int instCount = CurrentIndex.GetTypeInstanceCount(typeId);
 
-			ReferenceSearchSetup dlg = new ReferenceSearchSetup(typeName + ", instance count: " + instCount) { Owner = this };
+			string description = "Get references of: " + Environment.NewLine + typeName + Environment.NewLine +
+			                     "Instance count: " + instCount;
+
+			ReferenceSearchSetup dlg = new ReferenceSearchSetup(description) { Owner = this };
 			dlg.ShowDialog();
 			if (dlg.Cancelled) return;
 			int level = dlg.GetAllReferences ? Int32.MaxValue : dlg.SearchDepthLevel;
@@ -1903,7 +1907,7 @@ namespace MDRDesk
 			Debug.Assert(treeView != null);
 			treeView.Items.Add(tvRoot);
 
-			tvRoot.ExpandSubtree();
+			tvRoot.IsExpanded=true;
 
 			var tab = new CloseableTabItem() { Header = Constants.BlackDiamond + " Type References", Content = grid, Name = "HeapIndexTypeViewTab" };
 			MainTab.Items.Add(tab);

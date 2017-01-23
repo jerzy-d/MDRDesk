@@ -226,7 +226,7 @@
         </Grid>
         <!-- display tree view -->
         <Grid x:Key="TreeViewGrid" x:Shared="False">
-            <TreeView x:Name="treeView" VerticalAlignment="Stretch" HorizontalAlignment="Stretch" Margin="2,2,2,90">
+            <TreeView x:Name="treeView" VerticalAlignment="Stretch" HorizontalAlignment="Stretch" Margin="2,2,2,90" FontFamily="Consolas" FontSize="12">
             </TreeView>
         </Grid>
         <!-- display tree view -->
@@ -341,6 +341,16 @@
             </ListView>
             <GridSplitter Grid.Row="1" VerticalAlignment="Center" HorizontalAlignment="Stretch" Height="5" ShowsPreview="False" Background="DarkGray"></GridSplitter>
             <TextBox Name="ListingInformation" v4:Grid.Row="2" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" Margin="2,2,2,2">
+            </TextBox>
+        </Grid>
+        <Grid x:Key="IndexingGrid" x:Shared="False">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="75*"/>
+                <RowDefinition Height="15*"/>
+            </Grid.RowDefinitions>
+            <TextBox  Name="IndexingList" Grid.Row="0" VerticalAlignment="Stretch" HorizontalAlignment="Stretch" VerticalScrollBarVisibility="Auto" Margin="2,2,2,2" FontFamily="Consolas" FontSize="11">
+            </TextBox>
+            <TextBox Name="IndexingInformation" v4:Grid.Row="1" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" Margin="2,2,2,2" FontFamily="Consolas" FontSize="12" Background="LightGray" IsReadOnly="True">
             </TextBox>
         </Grid>
         <Grid x:Key="WeakReferenceViewGrid" x:Shared="False">
@@ -580,7 +590,7 @@
                     <MenuItem x:Name="Dump" Header="Dump" Background="LightBlue" VerticalAlignment="Center">
                         <MenuItem x:Name="CrashDumpRequiredDac" Header="Crash Dump Required Dac..." Click="CrashDumpRequiredDacClicked"/>
                         <MenuItem x:Name="AddDacFile" Header="Add Dac File..." Click="AddDacFileClicked"/>
-                        <MenuItem x:Name="TryOpenCrashDump" Header="Try Open Dump..." Click="TryOpenCrashDumpClicked"/>
+                        <MenuItem x:Name="CrashDumpTryOpen" Header="Try Open Dump..." Click="TryOpenCrashDumpClicked"/>
                         <Separator></Separator>
                         <MenuItem x:Name="CreateCrashDump" Header="Dump Local Process..." Click="CreateCrashDumpClicked"/>
                         <!--<MenuItem x:Name="RecentDumpsMenuItem" Header="Recent Files" ItemsSource="{StaticResource RecentDumps}" DataContext="{StaticResource RecentDumps}"/>-->
@@ -591,6 +601,7 @@
                         <MenuItem x:Name="OpenDumpIndex" Header="Open Dump Index..." Click="OpenDumpIndexClicked"/>
                         <MenuItem x:Name="CloseDumpIndex" Header="Close Current Index..." Click="CloseDumpIndexClicked"/>
                         <Separator></Separator>
+                        <MenuItem x:Name="IndexShowIndexingInfo" Header="Show Indexing Info" Click="IndexShowIndexingInfoClicked"/>
                         <MenuItem x:Name="IndexShowModuleInfos" Header="Show Loaded Modules Infos" Click="IndexShowModuleInfosClicked"/>
                         <MenuItem x:Name="IndexShowFinalizerQueue" Header="Show Finalizer Queue" Click="IndexShowFinalizerQueueClicked"/>
                         <MenuItem x:Name="IndexShowRoots" Header="Show Roots" Click="IndexShowRootsClicked"/>

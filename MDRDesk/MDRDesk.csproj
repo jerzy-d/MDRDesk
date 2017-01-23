@@ -170,6 +170,7 @@
     <Compile Include="HexView.xaml.cs">
       <DependentUpon>HexView.xaml</DependentUpon>
     </Compile>
+    <Compile Include="IndexingProgress.cs" />
     <Compile Include="MainWindow.Gui.cs" />
     <Compile Include="MDRDeskSetup.xaml.cs">
       <DependentUpon>MDRDeskSetup.xaml</DependentUpon>

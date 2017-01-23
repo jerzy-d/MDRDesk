@@ -14,15 +14,15 @@
             <ColumnDefinition Width="68*"/>
         </Grid.ColumnDefinitions>
         <Grid.RowDefinitions>
+            <RowDefinition Height="15*"/>
             <RowDefinition Height="10*"/>
             <RowDefinition Height="10*"/>
             <RowDefinition Height="10*"/>
             <RowDefinition Height="10*"/>
-            <RowDefinition Height="10*"/>
-            <RowDefinition Height="40*"/>
+            <RowDefinition Height="35*"/>
             <RowDefinition Height="10*"/>
         </Grid.RowDefinitions>
-        <Label x:Name="RefSearchInformation" Grid.Row="0" VerticalAlignment="Center" HorizontalAlignment="Left" Margin="4,1,1,1"  FontFamily="Consolas" FontSize="11" FontWeight="DemiBold" FontStyle="Italic" Foreground="DarkBlue">description...</Label>
+        <TextBox x:Name="RefSearchInformation" Grid.Row="0" Grid.ColumnSpan="2" VerticalAlignment="Stretch" HorizontalAlignment="Stretch" Margin="4,1,1,1"  FontFamily="Consolas" FontSize="11" FontWeight="DemiBold" FontStyle="Italic" Foreground="DarkBlue" Background="LightGray" IsReadOnly="True">description...</TextBox>
         <Grid Grid.Row="1" VerticalAlignment="Stretch" HorizontalAlignment="Stretch" Grid.ColumnSpan="2">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="40*"/>
@@ -74,7 +74,7 @@
             <Label Grid.Column="1" VerticalAlignment="Center" FontFamily="Consolas" FontSize="11" FontWeight="DemiBold">Enter Search Depth Level:</Label>
             <TextBox x:Name="RefSearchLevel" Grid.Column="2" Margin="16,8,4,8" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" Background="Azure"></TextBox>
         </Grid>
-        <TextBlock Grid.Row="5" Margin="2,2,2,2" Background="LightGray" Grid.Column="0" Grid.ColumnSpan="2" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" ></TextBlock>
+        <TextBlock Grid.Row="5" Margin="2,2,2,2" Background="LightGray" Grid.Column="0" Grid.ColumnSpan="2" HorizontalAlignment="Stretch" VerticalAlignment="Stretch"></TextBlock>
         <WrapPanel Grid.Row="6" HorizontalAlignment="Stretch" VerticalAlignment="Center" Margin="2,2,2,2" Grid.Column="1" Orientation="Horizontal">
             <Button IsDefault="True" Name="btnDialogOk" Click="DialogOkClicked" MinWidth="60" Margin="0,0,10,0" HorizontalAlignment="Right" FontFamily="Consolas" FontSize="11">_Ok</Button>
             <Button IsCancel="True" MinWidth="60" HorizontalAlignment="Right" FontFamily="Consolas" FontSize="11">_Cancel</Button>

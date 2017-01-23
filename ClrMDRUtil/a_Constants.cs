@@ -238,6 +238,7 @@ namespace ClrMDRIndex
 
 		public const string TxtTargetModulesPostfix = ".~TARGETMODULES.txt";
 		public const string TxtIndexInfoFilePostfix = ".~INDEXINFO.txt";
+		public const string TxtIndexingInfoFilePostfix = ".~INDEXINGINFO.txt";
 
 		public const string MapArrayInstanceFilePostfix = ".ARRAYINSTANCES[0].map";
 

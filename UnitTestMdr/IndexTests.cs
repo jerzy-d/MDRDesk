@@ -986,7 +986,7 @@ namespace UnitTestMdr
 			string error = null;
 			Stopwatch stopWatch = new Stopwatch();
 			stopWatch.Start();
-			var index = OpenIndex();
+			var index = OpenIndex(@"C:\WinDbgStuff\Dumps\Analytics\BigOne\Analytics11_042015_2.Big.dmp.map");
 			TestContext.WriteLine(index.DumpFileName + " INDEX OPEN DURATION: " + Utils.StopAndGetDurationString(stopWatch));
 
 			using (index)
@@ -995,11 +995,37 @@ namespace UnitTestMdr
 				int[] rootedParents;
 				int[][] rootedRefs;
 				References.LoadReferences(path, out rootedParents, out rootedRefs, out error);
+
+
 				Assert.IsNull(error);
 
 			}
 
-	Assert.IsNull(error, error);
+			Assert.IsNull(error, error);
+		}
+
+		[TestMethod]
+		public void TestReferenceFile()
+		{
+			string error = null;
+			string path = @"C:\WinDbgStuff\Dumps\Analytics\BigOne\Analytics11_042015_2.Big.dmp.map\Analytics11_042015_2.Big.dmp.`REFSFIELDOBJECT[0].bin";
+			int[] rootedParents;
+			int[][] rootedRefs;
+			References.LoadReferences(path, out rootedParents, out rootedRefs, out error);
+			for (int i = 1, icnt = rootedParents.Length; i < icnt; ++i)
+			{
+				int a1 = rootedParents[i - 1];
+				int a2 = rootedParents[i];
+				Assert.IsTrue(a1 < a2);
+				var lst = rootedRefs[i];
+				Assert.IsTrue(lst.Length>0);
+				for (int j = 1, jcnt = lst.Length; j < jcnt; ++j)
+				{
+					Assert.IsTrue(lst[j-1] < lst[j]);
+				}
+			}
+
+			Assert.IsNull(error, error);
 		}
 
 		#endregion references

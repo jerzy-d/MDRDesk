@@ -16,8 +16,8 @@ namespace ClrMDRIndex
 	{
 		private string _error;
 		public string Error => _error;
-		private const int MemoryOrDiskTreshold = 5000000; // = 30000000; // 30,000,000 TODO JRD -- get better heuristics
-		private const int FileBufferSize = 1024*4;
+		private const int MemoryOrDiskTreshold = 20000000; // = 30000000; // 30,000,000 TODO JRD -- get better heuristics
+		private const int FileBufferSize = 1024*8;
 		private readonly BlockingCollection<KeyValuePair<int, int[]>> _dataQue;
 		private readonly int _totalCount;
 		private Thread _thread;
@@ -117,7 +117,9 @@ namespace ClrMDRIndex
 				fw.Dispose();
 				fw = null;
 
-				// revert fToR file
+				// revert rToF file
+
+				_progress?.Report("Reverting object to fields reference file.");
 
 				IntArrayStore fToR = new IntArrayStore(_totalCount);
 				fToR.InitSlots(fieldRefCounts);
@@ -127,6 +129,8 @@ namespace ClrMDRIndex
 				var totRcnt = fr.ReadInt32();
 
 				totRcnt = Math.Abs(totRcnt);
+				int reportInterval = totRcnt/10; // 10 progress messages
+				string totRecordStr = ", out of " + Utils.CountString(totRcnt);
 				for (int i = 0; i < totRcnt; ++i)
 				{
 					int read = fr.ReadRecord(buffer, ibuffer, out rndx, out rcnt);
@@ -144,6 +148,8 @@ namespace ClrMDRIndex
 						}
 						rcnt -= read;
 					}
+					if (i>0 && (i% reportInterval)==0)
+						_progress.Report("Reverting file, processed: " + Utils.CountString(i) + totRecordStr);
 				}
 				fr.Dispose();
 				fr = null;

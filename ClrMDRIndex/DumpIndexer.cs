@@ -53,16 +53,12 @@ namespace ClrMDRIndex
 		{
 			error = null;
 			indexPath = _fileMoniker.MapFolder;
-			Stopwatch indexingStopWatch = new Stopwatch();
-			indexingStopWatch.Start();
-			TimeSpan indexingActionTimeSpan = indexingStopWatch.Elapsed;
 			var clrtDump = new ClrtDump(DumpPath);
 			if (!clrtDump.Init(out error)) return false;
-			//Stopwatch stopWatch = new Stopwatch();
-			//string durationStr = string.Empty;
 			_errors = new ConcurrentBag<string>[clrtDump.RuntimeCount];
 			Thread extraWorker = null;
 			ClrtDump dumpClone = clrtDump.Clone(out error);
+			DateTime indexingStart = DateTime.UtcNow;
 
 			using (clrtDump)
 			{
@@ -95,25 +91,25 @@ namespace ClrMDRIndex
 
 						// get heap address count
 						//
-						progress?.Report(runtimeIndexHeader + "Getting instance count...  Prev. action/total durations: " + GetIndexingDurationString(indexingStopWatch, indexingActionTimeSpan, out indexingActionTimeSpan));
-
+						progress?.Report(runtimeIndexHeader + "Getting instance count...");
 						var addrCount = DumpIndexer.GetHeapAddressCount(heap);
+						progress?.Report(runtimeIndexHeader + "Instance count: " + addrCount);
 
 						// get type names
 						//
-						progress?.Report(runtimeIndexHeader + "Getting type names... Prev. action/total durations: " + GetIndexingDurationString(indexingStopWatch, indexingActionTimeSpan, out indexingActionTimeSpan));
+						progress?.Report(runtimeIndexHeader + "Getting type names...");
 						typeNames = DumpIndexer.GetTypeNames(heap, out error);
 						Debug.Assert(error == null);
 
 						// get roots
 						//
-						progress?.Report(runtimeIndexHeader + "Getting roots... Prev. action/total durations: " + GetIndexingDurationString(indexingStopWatch, indexingActionTimeSpan, out indexingActionTimeSpan));
+						progress?.Report(runtimeIndexHeader + "Getting roots...");
 						var rootAddrInfo = ClrtRootInfo.GetRootAddresses(r, runtime, heap, typeNames, strIds, _fileMoniker, out error);
 						Debug.Assert(error == null);
 
 						// get addresses and types
 						//
-						progress?.Report(runtimeIndexHeader + "Getting addresses and types... Prev. action/total durations: " + GetIndexingDurationString(indexingStopWatch, indexingActionTimeSpan, out indexingActionTimeSpan));
+						progress?.Report(runtimeIndexHeader + "Getting addresses and types...");
 						addresses = new ulong[addrCount];
 						typeIds = new int[addrCount];
 						// old
@@ -132,11 +128,11 @@ namespace ClrMDRIndex
 						extraWorker = new Thread(GetThreadsInfos);
 						extraWorker.Start(new Tuple<ClrtDump, ulong[], int[], string[]>(dumpClone, addresses, typeIds, typeNames));
 
-						progress?.Report(runtimeIndexHeader + "Getting threads, blocking objecks information... Prev. action/total durations: " + GetIndexingDurationString(indexingStopWatch, indexingActionTimeSpan, out indexingActionTimeSpan));
+						progress?.Report(runtimeIndexHeader + "Getting threads, blocking objecks information...");
 
 						// field dependencies
 						//
-						progress?.Report(runtimeIndexHeader + "Creating instance reference data... Prev. action/total durations: " + GetIndexingDurationString(indexingStopWatch, indexingActionTimeSpan, out indexingActionTimeSpan));
+						progress?.Report(runtimeIndexHeader + "Creating instance reference data...");
 
 
 
@@ -144,6 +140,7 @@ namespace ClrMDRIndex
 						Bitset bitset = new Bitset(addresses.Length);
 						if (!References.CreateReferences2(r, heap, rootAddrInfo.Item1, addresses, bitset, _fileMoniker, progress, out error))
 						{
+							progress?.Report(runtimeIndexHeader + "Indexing failed, CreateReferences method errored.");
 							AddError(r, "CreateReferences failed." + Environment.NewLine + error);
 							return false;
 						}
@@ -204,7 +201,7 @@ namespace ClrMDRIndex
 						//fldRefQue.Add(new KeyValuePair<int, int[]>(-1, null));
 
 						//							threadFldRefPersister.Join();
-						progress?.Report(runtimeIndexHeader + "Building type instance map... Prev. action/total durations: " + GetIndexingDurationString(indexingStopWatch, indexingActionTimeSpan, out indexingActionTimeSpan));
+						progress?.Report(runtimeIndexHeader + "Building type instance map...");
 
 						// build type/instance map
 						//
@@ -216,7 +213,7 @@ namespace ClrMDRIndex
 
 						// build instance reference map
 						//
-						progress?.Report(runtimeIndexHeader + "Saving data... Prev. action/total durations: " + GetIndexingDurationString(indexingStopWatch, indexingActionTimeSpan, out indexingActionTimeSpan));
+						progress?.Report(runtimeIndexHeader + "Saving data...");
 
 						// old
 						//InstanceReferences.InvertFieldRefs(new Tuple<int, DumpFileMoniker, ConcurrentBag<string>, IProgress<string>>(r,
@@ -246,13 +243,15 @@ namespace ClrMDRIndex
 
 						//if (indexArguments == IndexingArguments.JustInstanceRefs) return true; // we only want instance refs
 
-						progress?.Report("Waiting for thread info worker... Prev. action/total durations: " + GetIndexingDurationString(indexingStopWatch, indexingActionTimeSpan, out indexingActionTimeSpan));
+						progress?.Report("Waiting for thread info worker...");
 						extraWorker.Join();
 
 						ulong[] finalizer = rootAddrInfo.Item2;
-						Debug.Assert(Utils.IsSorted(finalizer));
+						Debug.Assert(Utils.IsSorted(rootAddrInfo.Item2));
 						int rootedCnt = Utils.SetAddressBit(bitset, addresses, Utils.RootBits.Rooted);
 						int fnlzrCnt = Utils.SetAddressBit(finalizer, addresses, Utils.RootBits.Finalizer);
+						int rootCnt = Utils.SetAddressBit(rootAddrInfo.Item1, addresses, Utils.RootBits.Root);
+
 						path = _fileMoniker.GetFilePath(r, Constants.MapInstancesFilePostfix);
 						Utils.WriteUlongArray(path, addresses, out error);
 
@@ -266,8 +265,9 @@ namespace ClrMDRIndex
 						heap = null;
 					}
 
-					var indexingDuration = Utils.StopAndGetDurationString(indexingStopWatch);
-					DumpIndexInfo(version, clrtDump, indexingDuration);
+					var durationStr = Utils.DurationString(DateTime.UtcNow - indexingStart);
+					DumpIndexInfo(version, clrtDump, durationStr);
+					progress?.Report("Indexing done, total duration: " + durationStr);
 					return true;
 				}
 				catch (Exception ex)

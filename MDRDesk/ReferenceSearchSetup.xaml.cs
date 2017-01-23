@@ -31,7 +31,7 @@ namespace MDRDesk
 		public ReferenceSearchSetup(string descr)
 		{
 			InitializeComponent();
-			RefSearchInformation.Content = descr;
+			RefSearchInformation.Text = descr;
 			RefSearchAll.IsChecked = false;
 			RefSearchLevel.Text = _searchDepthLevel.ToString();
 			switch (_displayMode)
