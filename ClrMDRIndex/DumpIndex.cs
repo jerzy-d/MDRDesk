@@ -1133,7 +1133,7 @@ namespace ClrMDRIndex
 					sb = StringBuilderCache.Acquire(StringBuilderCache.MaxCapacity);
 					sb.Append("Type:      ").AppendLine(aryResult.Item2.Name);
 					sb.Append("Item Type: ").AppendLine(aryResult.Item3.Name);
-					sb.Append("Address:   ").AppendLine(Utils.RealAddressString(addr));
+					sb.Append("Address:   ").AppendLine(Utils.AddressString(addr));
 					sb.Append("Lenght:    ").AppendLine(aryResult.Item4.ToString());
 					inst = new InstanceValue(typeId, addr, aryResult.Item2.Name, aryResult.Item3.Name, Utils.BaseArrayName(aryResult.Item2.Name, aryResult.Item4));
 					inst.AddArrayValues(aryResult.Item5);
@@ -1149,7 +1149,7 @@ namespace ClrMDRIndex
 					{
 						sb = StringBuilderCache.Acquire(StringBuilderCache.MaxCapacity);
 						sb.Append("Type:      ").AppendLine(result.Item2.TypeName);
-						sb.Append("Address:   ").AppendLine(Utils.RealAddressString(addr));
+						sb.Append("Address:   ").AppendLine(Utils.AddressString(addr));
 						info = StringBuilderCache.GetStringAndRelease(sb);
 						result.Item2?.SortByFieldName();
 					}
@@ -1160,7 +1160,7 @@ namespace ClrMDRIndex
 				var typeName = GetTypeName(typeId);
 				sb = StringBuilderCache.Acquire(StringBuilderCache.MaxCapacity);
 				sb.Append("Type:      ").AppendLine(typeName);
-				sb.Append("Address:   ").AppendLine(Utils.RealAddressString(addr));
+				sb.Append("Address:   ").AppendLine(Utils.AddressString(addr));
 				inst = new InstanceValue(typeId, addr, typeName, string.Empty, val);
 				return new Tuple<InstanceValue, string>(inst, StringBuilderCache.GetStringAndRelease(sb));
 			}

@@ -93,7 +93,7 @@ namespace ClrMDRIndex
 						//
 						progress?.Report(runtimeIndexHeader + "Getting instance count...");
 						var addrCount = DumpIndexer.GetHeapAddressCount(heap);
-						progress?.Report(runtimeIndexHeader + "Instance count: " + addrCount);
+						progress?.Report(runtimeIndexHeader + "Instance count: " + Utils.CountString(addrCount));
 
 						// get type names
 						//
@@ -138,7 +138,7 @@ namespace ClrMDRIndex
 
 						// new 1/7/17
 						Bitset bitset = new Bitset(addresses.Length);
-						if (!References.CreateReferences2(r, heap, rootAddrInfo.Item1, addresses, bitset, _fileMoniker, progress, out error))
+						if (!References.CreateReferences2(r, heap, rootAddrInfo.Item1, addresses, typeIds, typeNames, bitset, _fileMoniker, progress, out error))
 						{
 							progress?.Report(runtimeIndexHeader + "Indexing failed, CreateReferences method errored.");
 							AddError(r, "CreateReferences failed." + Environment.NewLine + error);
@@ -792,8 +792,8 @@ namespace ClrMDRIndex
 				graph.Dump(bw, out error);
 				bw.Close();
 				bw = null;
-				AddError(_currentRuntimeIndex, "Exception in GetThreadsInfos." + Environment.NewLine + error);
-
+				if (error != null)
+					AddError(_currentRuntimeIndex, "Exception in GetThreadsInfos." + Environment.NewLine + error);
 
 				// get frames info
 				//
@@ -806,7 +806,6 @@ namespace ClrMDRIndex
 				var frameIds = new List<int>();
 				var aliveIds = new List<int>();
 				var deadIds = new List<int>();
-
 
 				// save threads and blocks, generate stack info
 				//
@@ -1354,6 +1353,40 @@ namespace ClrMDRIndex
 			return ary;
 		}
 
+		public static int[] GetExcludedTypes(string[] typeNames, out int freeType)
+		{
+			freeType = -1;
+			Debug.Assert(Utils.IsSorted<string>(typeNames,StringComparer.Ordinal));
+			string[] excludedTypeNames = new[]
+			{
+				"Free",
+				"System.DateTime",
+				"System.Decimal",
+				"System.Guid",
+				"System.String",
+				"System.TimeSpan",
+
+			};
+
+			List<int> lst = new List<int>(excludedTypeNames.Length);
+			for (int i = 0, icnt = excludedTypeNames.Length; i < icnt; ++i)
+			{
+				var ndx = Array.BinarySearch(typeNames, excludedTypeNames[i], StringComparer.Ordinal);
+				if (ndx >= 0)
+				{
+					if (freeType < 0 && Utils.SameStrings(excludedTypeNames[i], "Free"))
+						freeType = ndx;
+					lst.Add(ndx);
+				}
+			}
+			return lst.ToArray();
+		}
+
+		public static int IsExcludedType(int[] typeIds, int id)
+		{
+			int ndx = Array.IndexOf(typeIds, id);
+			return ndx < 0 ? Constants.InvalidIndex : typeIds[ndx];
+		}
 
 		#endregion indexing helpers
 	}
