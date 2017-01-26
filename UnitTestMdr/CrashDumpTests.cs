@@ -976,6 +976,115 @@ namespace UnitTestMdr
 
 		#endregion threads
 
+		#region type references
+
+		[TestMethod]
+		public void TestTypeReferences()
+		{
+			string error;
+			string dumpPath = @"D:\Jerzy\WinDbgStuff\dumps\Analytics\Highline\analyticsdump111.dlk.dmp";
+			//string typeName = "System.String";
+			string typeName = "System.Collections.Concurrent.ConcurrentDictionary<";
+
+			var dmp = OpenDump(dumpPath);
+
+			using (dmp)
+			{
+				var heap = dmp.Heap;
+				var segs = heap.Segments;
+				var fieldAddrOffsetList = new List<KeyValuePair<ulong, int>>(64);
+				for (int i = 0, icnt = segs.Count; i < icnt; ++i)
+				{
+					var seg = segs[i];
+					ulong addr = seg.FirstObject;
+					while (addr != 0ul)
+					{
+						var clrType = heap.GetObjectType(addr);
+						if (clrType == null) goto NEXT_OBJECT;
+						if (clrType.Name.StartsWith(typeName,StringComparison.Ordinal))
+						{
+							fieldAddrOffsetList.Clear();
+							clrType.EnumerateRefsOfObjectCarefully(addr, (address, off) =>
+							{
+								fieldAddrOffsetList.Add(new KeyValuePair<ulong, int>(address, off));
+							});
+						}
+
+						int fieldCount = clrType.Fields.Count;
+
+						NEXT_OBJECT:
+						addr = seg.NextObject(addr);
+					}
+				}
+			} // using dump
+		}
+
+		[TestMethod]
+		public void TestArrayReferences()
+		{
+			string error;
+			string dumpPath = @"D:\Jerzy\WinDbgStuff\dumps\Analytics\Highline\analyticsdump111.dlk.dmp";
+			//string typeName = "System.String";
+			string typeName = "System.Collections.Concurrent.ConcurrentDictionary<";
+
+			var dmp = OpenDump(dumpPath);
+
+			using (dmp)
+			{
+				var heap = dmp.Heap;
+				var segs = heap.Segments;
+				var fieldAddrOffsetList = new List<KeyValuePair<ulong, int>>(64);
+				for (int i = 0, icnt = segs.Count; i < icnt; ++i)
+				{
+					var seg = segs[i];
+					ulong addr = seg.FirstObject;
+					while (addr != 0ul)
+					{
+						var clrType = heap.GetObjectType(addr);
+						if (clrType == null || !clrType.IsArray) goto NEXT_OBJECT;
+						fieldAddrOffsetList.Clear();
+						clrType.EnumerateRefsOfObjectCarefully(addr, (address, off) =>
+						{
+							fieldAddrOffsetList.Add(new KeyValuePair<ulong, int>(address, off));
+						});
+
+						NEXT_OBJECT:
+						addr = seg.NextObject(addr);
+					}
+				}
+			} // using dump
+		}
+
+		[TestMethod]
+		public void TestEnumerateTypeReferences()
+		{
+			string error;
+			string dumpPath = @"D:\Jerzy\WinDbgStuff\dumps\Analytics\Highline\analyticsdump111.dlk.dmp";
+			//ulong addr = 0x00000000800a8d48;
+			ulong addr = 0x00000000800a8c30;
+
+			var dmp = OpenDump(dumpPath);
+
+			using (dmp)
+			{
+				var heap = dmp.Heap;
+				var segs = heap.Segments;
+				var fieldAddrOffsetList = new List<KeyValuePair<ulong, int>>(64);
+				fieldAddrOffsetList.Clear();
+				var clrType = heap.GetObjectType(addr);
+				Assert.IsNotNull(clrType);
+				clrType.EnumerateRefsOfObjectCarefully(addr, (address, off) =>
+				{
+					fieldAddrOffsetList.Add(new KeyValuePair<ulong, int>(address, off));
+				});
+
+				int fieldCount = clrType.Fields.Count;
+
+			} // using dump
+		}
+
+		#endregion type references
+
 		#region open dump
 
 		public static ClrtDump OpenDump(int indexNdx = 0)

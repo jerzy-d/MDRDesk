@@ -1,18 +1,12 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using ClrMDRIndex;
 
 namespace ClrMDRUtil
 {
 	public class IntArrayStore
 	{
-		const int InitialSize = 4;
-
 		private int[][] _array;
 
 		public IntArrayStore(int count)
@@ -32,7 +26,7 @@ namespace ClrMDRUtil
 			int[] ary = _array[ndx];
 			if (ary == null) // empty slot
 			{
-				ary = new int[] {val, Int32.MaxValue, Int32.MaxValue, Int32.MaxValue};
+				ary = new[] {val, Int32.MaxValue, Int32.MaxValue, Int32.MaxValue};
 				_array[ndx] = ary;
 				return;
 			}
@@ -154,4 +148,89 @@ namespace ClrMDRUtil
 			return true;
 		}
 	}
+
+	public class IntStore
+	{
+		private int[] _buffer;
+		private int[] _offsets;
+#if DEBUG
+		public int[] Offsets => _offsets;
+#endif
+		private int[] _counts;
+		private int _recordCount;
+
+		public IntStore(RecordCounter counter)
+		{
+			int size = counter.Size;
+			_recordCount = counter.RecordCount;
+			int totCount = counter.TotalCount;
+			_offsets = new int[size];
+			_counts = counter.Counts;
+			int count = 0;
+			for (int i = 0, icnt = _counts.Length; i < icnt; ++i)
+			{
+				if (_counts[i] == 0) continue;
+				_offsets[i] = count;
+				count += _counts[i];
+			}
+			_buffer = new int[totCount];
+		}
+
+		public void AddItem(int ndx, int item)
+		{
+			_buffer[_offsets[ndx]] = item;
+			_offsets[ndx] += 1;
+		}
+
+		public int[] GetOffsetsCopy()
+		{
+			int[] copy = new int[_offsets.Length];
+			Buffer.BlockCopy(_offsets,0,copy,0,_offsets.Length*sizeof(int));
+			return copy;
+		}
+
+		public void RestoreOffsets()
+		{
+			for (int i = 0, icnt = _counts.Length; i < icnt; ++i)
+			{
+				if (_counts[i] == 0) continue;
+				_offsets[i] -= _counts[i];
+			}
+		}
+
+		//public void AddItems(int ndx, int cnt, int[] items)
+		//{
+		//	Buffer.BlockCopy(items,0,_buffer,_offsets[ndx]*sizeof(int),cnt*sizeof(int));
+		//	_offsets[ndx] += cnt;
+		//}
+
+		public bool Dump(string path, out string error)
+		{
+			FileWriter fw = null;
+			error = null;
+			try
+			{
+				fw = new FileWriter(path,1024*16);
+				fw.Write(_recordCount);
+				for (int i = 0, icnt = _offsets.Length; i < icnt; ++i)
+				{
+					if (_counts[i] == 0) continue;
+					fw.WriteReferenceRecord(i, _counts[i], _offsets[i], _buffer);
+				}
+
+				return true;
+			}
+			catch (Exception ex)
+			{
+				error = ClrMDRIndex.Utils.GetExceptionErrorString(ex);
+				return false;
+			}
+			finally
+			{
+				fw?.Dispose();
+			}
+		}
+
+	}
+
 }

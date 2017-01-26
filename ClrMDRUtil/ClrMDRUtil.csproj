@@ -66,10 +66,6 @@
     <CodeAnalysisRuleSet>MinimumRecommendedRules.ruleset</CodeAnalysisRuleSet>
   </PropertyGroup>
   <ItemGroup>
-    <Reference Include="ClrMDRIndex, Version=1.0.0.0, Culture=neutral, processorArchitecture=AMD64">
-      <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\ClrMDRIndex\bin\x64\Debug\ClrMDRIndex.dll</HintPath>
-    </Reference>
     <Reference Include="Microsoft.Diagnostics.Runtime, Version=0.8.31.1, Culture=neutral, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
       <HintPath>..\ClrMd\Debug\Microsoft.Diagnostics.Runtime.dll</HintPath>
@@ -130,6 +126,7 @@
     <Compile Include="Utils\InstanceTypeNode.cs" />
     <Compile Include="Utils\InstanceValue.cs" />
     <Compile Include="Utils\IntervalHeap.cs" />
+    <Compile Include="Utils\RecordCounter.cs" />
     <Compile Include="Utils\ReportFile.cs" />
     <Compile Include="Utils\Reports.cs" />
     <Compile Include="Utils\StringBuilderCache.cs" />

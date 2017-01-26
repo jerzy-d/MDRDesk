@@ -1403,7 +1403,18 @@ namespace ClrMDRIndex
 
 		#region Comparers
 
-
+		public static bool SameIntArrays(int[] ary1, int[] ary2)
+		{
+			if (ary1 == null && ary2 == null) return true;
+			if (ary1 == null || ary2 == null) return false;
+			if (ary1.Length != ary2.Length) return false;
+			for (int i = 0, icnt = ary1.Length; i < icnt; ++i)
+			{
+				if (ary1[i] != ary2[i])
+					return false;
+			}
+			return true;
+		}
 
 		public class AddressCmpDesc : IComparer<ulong>
         {

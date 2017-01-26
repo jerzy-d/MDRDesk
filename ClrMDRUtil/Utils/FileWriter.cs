@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 
@@ -6,8 +7,11 @@ namespace ClrMDRIndex
 
 	public class FileWriter
 	{
-		FileStream _file;
-		byte[] _buffer;
+		private FileStream _file;
+		private byte[] _buffer;
+		private byte[] _wbuf;
+		private int _wmax;
+		private int _woff;
 
 		public FileWriter(string path)
 		{
@@ -25,6 +29,76 @@ namespace ClrMDRIndex
 		{
 			_file = new FileStream(path, FileMode.Create, FileAccess.ReadWrite, FileShare.None, bufSize, fopt);
 			_buffer = new byte[8];
+		}
+
+		public FileWriter(string path, int bufSize)
+		{
+			_file = new FileStream(path, FileMode.Create, FileAccess.Write, FileShare.None, bufSize*2, FileOptions.SequentialScan);
+			_buffer = new byte[8];
+			_wbuf = new byte[bufSize];
+			_wmax = bufSize;
+			_woff = 0;
+		}
+
+		public void WriteReferenceRecord(int head, IList<int> lst)
+		{
+			int lstCount = lst.Count;
+			if (_woff + sizeof (int)*2 >= _wmax)
+			{
+				_file.Write(_wbuf,0,_woff);
+				_woff = 0;
+			}
+			FillBuffer(head,_wbuf,_woff);
+			_woff += sizeof (int);
+			FillBuffer(lstCount,_wbuf,_woff);
+			_woff += sizeof(int);
+			int toWrite = lstCount*sizeof (int);
+			int ndx = 0;
+			while (toWrite > 0)
+			{
+				if (_woff == _wmax)
+				{
+					_file.Write(_wbuf,0,_woff);
+					_woff = 0;
+				}
+				FillBuffer(lst[ndx++],_wbuf,_woff);
+				_woff += sizeof (int);
+				toWrite -= sizeof (int);
+			}
+		}
+
+		public void WriteReferenceRecord(int head, int count, int off, int[] buf)
+		{
+			if (_woff + sizeof(int) * 2 >= _wmax)
+			{
+				_file.Write(_wbuf, 0, _woff);
+				_woff = 0;
+			}
+			FillBuffer(head, _wbuf, _woff);
+			_woff += sizeof(int);
+			FillBuffer(count, _wbuf, _woff);
+			_woff += sizeof(int);
+			int toWrite = count * sizeof(int);
+			while (toWrite > 0)
+			{
+				if (_woff == _wmax)
+				{
+					_file.Write(_wbuf, 0, _woff);
+					_woff = 0;
+				}
+				FillBuffer(buf[off++], _wbuf, _woff);
+				_woff += sizeof(int);
+				toWrite -= sizeof(int);
+			}
+		}
+
+		public void FlushReference()
+		{
+			if (_woff > 0)
+			{
+				_file.Write(_wbuf,0,_woff);
+				_woff = 0;
+			}
 		}
 
 		public void Write(int value)
@@ -93,7 +167,7 @@ namespace ClrMDRIndex
         	}
 			if (off > 0)
 				_file.Write(buffer, 0, off);
-			return sizeof(int) * (len + 2); ;
+			return sizeof(int) * (len + 2);
 		}
 
 		public int Write(int head, int dcnt, int[] data, byte[] buffer)
@@ -117,7 +191,7 @@ namespace ClrMDRIndex
 			}
 			if (off > 0)
 				_file.Write(buffer, 0, off);
-			return sizeof(int) * (dcnt + 2); ;
+			return sizeof(int) * (dcnt + 2);
 		}
 
 		public int Write(int[] data, byte[] buffer)
@@ -138,7 +212,7 @@ namespace ClrMDRIndex
 			}
 			if (off > 0)
 				_file.Write(buffer, 0, off);
-			return sizeof(int) * (len+1); ;
+			return sizeof(int) * (len+1);
 		}
 
 		public void WriteBytes(byte[] buffer, int start, int len)

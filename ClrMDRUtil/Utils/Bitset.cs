@@ -46,14 +46,14 @@ namespace ClrMDRIndex
 
 		public void Set(int i)
 		{
+			if (!IsSet(i)) ++_setCount;
 			_bits[i/BitCount] |= (1UL << (i%BitCount));
-			++_setCount;
 		}
 
 		public void Reset(int i)
 		{
+			if (IsSet(i)) --_setCount;
 			_bits[i / BitCount] &= ~(1UL << (i % BitCount));
-			--_setCount;
 		}
 
 		public bool IsSet(int i)

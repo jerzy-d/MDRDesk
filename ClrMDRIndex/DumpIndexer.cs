@@ -1353,41 +1353,6 @@ namespace ClrMDRIndex
 			return ary;
 		}
 
-		public static int[] GetExcludedTypes(string[] typeNames, out int freeType)
-		{
-			freeType = -1;
-			Debug.Assert(Utils.IsSorted<string>(typeNames,StringComparer.Ordinal));
-			string[] excludedTypeNames = new[]
-			{
-				"Free",
-				"System.DateTime",
-				"System.Decimal",
-				"System.Guid",
-				"System.String",
-				"System.TimeSpan",
-
-			};
-
-			List<int> lst = new List<int>(excludedTypeNames.Length);
-			for (int i = 0, icnt = excludedTypeNames.Length; i < icnt; ++i)
-			{
-				var ndx = Array.BinarySearch(typeNames, excludedTypeNames[i], StringComparer.Ordinal);
-				if (ndx >= 0)
-				{
-					if (freeType < 0 && Utils.SameStrings(excludedTypeNames[i], "Free"))
-						freeType = ndx;
-					lst.Add(ndx);
-				}
-			}
-			return lst.ToArray();
-		}
-
-		public static int IsExcludedType(int[] typeIds, int id)
-		{
-			int ndx = Array.IndexOf(typeIds, id);
-			return ndx < 0 ? Constants.InvalidIndex : typeIds[ndx];
-		}
-
 		#endregion indexing helpers
 	}
 

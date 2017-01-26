@@ -25,6 +25,9 @@ namespace ClrMDRIndex
 		private readonly string _fToRPath;
 		private IProgress<string> _progress;
 
+		private RecordCounter _counter;
+
+
 		public ReferencePersistor(string rToFPath, string fToRPath, int count,
 			BlockingCollection<KeyValuePair<int, int[]>> dataQue, IProgress<string> progress=null)
 		{
@@ -33,6 +36,14 @@ namespace ClrMDRIndex
 			_rToFPath = rToFPath;
 			_fToRPath = fToRPath;
 			_progress = progress;
+		}
+
+		public ReferencePersistor(string rToFPath, string fToRPath, RecordCounter counter, IProgress<string> progress = null)
+		{
+			_rToFPath = rToFPath;
+			_fToRPath = fToRPath;
+			_progress = progress;
+			_counter = counter;
 		}
 
 		public void Start()
@@ -163,6 +174,85 @@ namespace ClrMDRIndex
 			finally
 			{
 				fw?.Dispose();
+				fr?.Dispose();
+			}
+		}
+	}
+
+	public static class ReferenceFileRevertor
+	{
+		public static Thread RevertFile(string rToFPath, string fToRPath, RecordCounter counter, List<string> errors, IProgress<string> progress = null)
+		{
+			Thread thread = new Thread(RevertFileWork) { IsBackground = true, Name = "ReferenceRevertor" };
+			thread.Start(new Tuple<string, string, RecordCounter, List<string>, IProgress<string>>(rToFPath, fToRPath, counter,errors,progress));
+			return thread;
+		}
+
+		private static void RevertFileWork(object data)
+		{
+			FileReader fr = null;
+			List<string> errors = null;
+			try
+			{
+				var info = data as Tuple<string, string, RecordCounter, List<string>, IProgress<string>>;
+				Debug.Assert(info!=null);
+				string rToFPath = info.Item1;
+				string fToRPath = info.Item2;
+				RecordCounter counter = info.Item3;
+				errors = info.Item4;
+				IProgress<string> progress = info.Item5;
+				const int fileBufferSize = 1024*8;
+
+				IntStore store = new IntStore(counter);
+#if DEBUG
+				int[] offsetsCopy = store.GetOffsetsCopy();
+#endif
+				fr = new FileReader(rToFPath, fileBufferSize, FileOptions.SequentialScan);
+				var totRcnt = fr.ReadInt32();
+
+				totRcnt = Math.Abs(totRcnt);
+				int[] ibuffer = new int[fileBufferSize / sizeof(int)];
+				byte[] buffer = new byte[fileBufferSize];
+				int rndx, rcnt;
+
+				for (int i = 0; i < totRcnt; ++i)
+				{
+					int read = fr.ReadRecord(buffer, ibuffer, out rndx, out rcnt);
+					for (int j = 0; j < read; ++j)
+					{
+						store.AddItem(ibuffer[j],rndx);
+					}
+					//store.AddItems(rndx, read, ibuffer);
+					rcnt -= read;
+					while (rcnt > 0)
+					{
+						read = fr.ReadInts(buffer, ibuffer, rcnt);
+						//store.AddItems(rndx, read, ibuffer);
+						for (int j = 0; j < read; ++j)
+						{
+							store.AddItem(ibuffer[j], rndx);
+						}
+						rcnt -= read;
+					}
+					//if (i > 0 && (i % reportInterval) == 0)
+					//	_progress.Report("Reverting file, processed: " + Utils.CountString(i) + totRecordStr);
+				}
+
+				// restore offsets
+				store.RestoreOffsets();
+#if DEBUG
+				bool same = Utils.SameIntArrays(offsetsCopy, store.Offsets);
+#endif
+				string error;
+				store.Dump(fToRPath, out error);
+				if (error!=null) errors?.Add(error);
+			}
+			catch (Exception ex)
+			{
+				errors?.Add(Utils.GetExceptionErrorString(ex));
+			}
+			finally
+			{
 				fr?.Dispose();
 			}
 		}
