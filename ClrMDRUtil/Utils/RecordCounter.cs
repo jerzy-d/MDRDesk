@@ -23,12 +23,5 @@
 			if (_counts[ndx] == 0) ++_recordCount;
 			_counts[ndx] += 1;
 		}
-
-		public void Add(int ndx, int count)
-		{
-			_totalCount += count;
-			if (_counts[ndx] == 0) ++_recordCount;
-			_counts[ndx] += count;
-		}
 	}
 }

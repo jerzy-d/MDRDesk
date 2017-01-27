@@ -40,6 +40,31 @@ namespace ClrMDRIndex
 			_woff = 0;
 		}
 
+
+		public void WriteIntArray(int[] lst, int count)
+		{
+			Debug.Assert(_woff<=_wmax);
+			if (_woff == _wmax)
+			{
+				_file.Write(_wbuf, 0, _woff);
+				_woff = 0;
+			}
+			int toWrite = count * sizeof(int);
+			int ndx = 0;
+			while (toWrite > 0)
+			{
+				if (_woff == _wmax)
+				{
+					_file.Write(_wbuf, 0, _woff);
+					_woff = 0;
+				}
+				FillBuffer(lst[ndx++], _wbuf, _woff);
+				_woff += sizeof(int);
+				toWrite -= sizeof(int);
+			}
+		}
+
+
 		public void WriteReferenceRecord(int head, IList<int> lst)
 		{
 			int lstCount = lst.Count;
@@ -92,7 +117,7 @@ namespace ClrMDRIndex
 			}
 		}
 
-		public void FlushReference()
+		public void FlushBuffer()
 		{
 			if (_woff > 0)
 			{

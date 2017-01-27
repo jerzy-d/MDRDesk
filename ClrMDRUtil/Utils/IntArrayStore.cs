@@ -173,6 +173,7 @@ namespace ClrMDRUtil
 				_offsets[i] = count;
 				count += _counts[i];
 			}
+			Debug.Assert(totCount == count);
 			_buffer = new int[totCount];
 		}
 
