@@ -856,7 +856,6 @@ namespace ClrMDRIndex
 						var inst = instances[i];
 						if (!set.Add(inst)) continue;
 
-
 						var ancestors = _references.GetReferences(inst, References.Direction.FieldParent, References.DataSource.All, out error);
 						for (int j = 0, jcnt = ancestors.Length; j < jcnt; ++j)
 						{
@@ -877,10 +876,12 @@ namespace ClrMDRIndex
 					foreach (var kv in dct)
 					{
 						nodes[n] = new AncestorNode(currentNodeLevel, kv.Key, kv.Value.Key, kv.Value.Value.ToArray());
+						nodes[n].Sort(AncestorNode.SortAncestors.ByteInstanceCountDesc);
 						que.Enqueue(nodes[n]);
 						++n;
 					}
 					node.AddNodes(nodes);
+					node.Sort(AncestorNode.SortAncestors.ByteInstanceCountDesc);
 				}
 				return new Tuple<string, AncestorNode>(null, rootNode);
 			}
@@ -903,7 +904,7 @@ namespace ClrMDRIndex
 		//        HashSet<ulong> addrSet = new HashSet<ulong>();
 		//        Queue<DependencyNode> que = new Queue<DependencyNode>(1024);
 
-		//        DependencyNode[] nodes = DependencyNode.BuildBranches(Types, Instances, InstanceTypeIds, StringIds, FieldDependencies, root, addresses, out error);
+		//        DependencyNode[] nodes = DependencyNode.BuildBranches(Types, _instances, InstanceTypeIds, StringIds, FieldDependencies, root, addresses, out error);
 		//        for (int i = 0, icnt = nodes.Length; i < icnt; ++i)
 		//        {
 		//            que.Enqueue(nodes[i]);
@@ -915,7 +916,7 @@ namespace ClrMDRIndex
 		//            var node = que.Dequeue();
 		//            if (node.Level == maxLevel) continue;
 
-		//            nodes = DependencyNode.BuildBranches(Types, Instances, InstanceTypeIds, StringIds, FieldDependencies, node, node.Addresses, out error);
+		//            nodes = DependencyNode.BuildBranches(Types, _instances, InstanceTypeIds, StringIds, FieldDependencies, node, node.Addresses, out error);
 		//            for (int i = 0, icnt = nodes.Length; i < icnt; ++i)
 		//            {
 		//                que.Enqueue(nodes[i]);
@@ -1077,7 +1078,7 @@ namespace ClrMDRIndex
 
 			ColumnInfo[] colInfos = new[]
 			{
-				new ColumnInfo("Type Instances", ReportFile.ColumnType.Int32, 150, 1, true),
+				new ColumnInfo("Type _instances", ReportFile.ColumnType.Int32, 150, 1, true),
 				new ColumnInfo("Parents", ReportFile.ColumnType.String, 150, 2, true),
 				new ColumnInfo("Root Info", ReportFile.ColumnType.String, 300, 3, true),
 				new ColumnInfo("Type", ReportFile.ColumnType.String, 700, 4, true),

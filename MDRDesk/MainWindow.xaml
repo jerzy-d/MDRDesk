@@ -55,6 +55,7 @@
             <!--<MenuItem x:Name="TypeListGetBaseHeapSizeReport" Header="Get Type Heap Base Size Report" Click="GetHeapBaseSizeReportClicked"></MenuItem>-->
             <Separator></Separator>
             <MenuItem x:Name="TypeListGetStringUsage" Header="Get String Usage" Click="GetTypeStringUsage"></MenuItem>
+            
             <MenuItem x:Name="TypeListGetParentReferences" Header="Get Parent References" Click="GetParentReferences"></MenuItem>
             <MenuItem x:Name="TypeListGenerateSizeDetailsReport" Header="Generate Size Details Report" Click="GenerateSizeDetailsReport"></MenuItem>
             <MenuItem x:Name="TypeListGetTypeValuesReport" Header="Type Values Report" Click="GetTypeValuesReportClicked"></MenuItem>
@@ -95,7 +96,7 @@
                     <RowDefinition Height="5"/>
                     <RowDefinition Height="20*"/>
                 </Grid.RowDefinitions>
-                <ListView  Name="ThreadListingView" Grid.Row="0" VerticalAlignment="Stretch" HorizontalAlignment="Stretch" Margin="2,2,2,2" GridViewColumnHeader.Click="ListingInfoListViewHeaderClick">
+                <ListView  Name="ThreadListingView" Grid.Row="0" VerticalAlignment="Stretch" HorizontalAlignment="Stretch"  SelectionChanged="ThreadListingView_OnSelectionChanged" Margin="2,2,2,2" GridViewColumnHeader.Click="ListingInfoListViewHeaderClick">
                     <ListView.ItemContainerStyle>
                         <Style TargetType="ListViewItem">
                             <Setter Property="HorizontalContentAlignment" Value="Left" />
@@ -605,7 +606,7 @@
                         <MenuItem x:Name="IndexShowModuleInfos" Header="Show Loaded Modules Infos" Click="IndexShowModuleInfosClicked"/>
                         <MenuItem x:Name="IndexShowFinalizerQueue" Header="Show Finalizer Queue" Click="IndexShowFinalizerQueueClicked"/>
                         <MenuItem x:Name="IndexShowRoots" Header="Show Roots" Click="IndexShowRootsClicked"/>
-                        <MenuItem x:Name="IndexShowWeakReferences" Header="Show WeakReference Instances" Click="IndexShowWeakReferencesClicked"/>
+                        <MenuItem x:Name="IndexShowWeakReferences" Header="Show WeakReference _instances" Click="IndexShowWeakReferencesClicked"/>
                         <MenuItem x:Name="IndexShowBlockingThreads" Header="Show Blocks and Threads Graph" Click="IndexShowBlockingThreadsClicked"/>
                         <MenuItem x:Name="IndexShowThreads" Header="Show Threads" Click="IndexShowThreadsClicked"/>
                         <MenuItem x:Name="IndexGetSizeInformation" Header="Type Sizes Information" Click="IndexGetSizeInformationClicked"/>

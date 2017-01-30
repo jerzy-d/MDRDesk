@@ -848,7 +848,7 @@ namespace MDRDesk
 
 		private async void IndexCompareStringInformationClicked(object sender, RoutedEventArgs e)
 		{
-			if (!IsIndexAvailable("Compare String Instances Information")) return;
+			if (!IsIndexAvailable("Compare String _instances Information")) return;
 			var path = GuiUtils.SelectCrashDumpFile();
 			if (path == null) return;
 			SetStartTaskMainWindowState("Getting string instances to compare. Please wait...");
@@ -1830,8 +1830,7 @@ namespace MDRDesk
 			Dispatcher.CurrentDispatcher.InvokeAsync(() => DoDisplayTypeValueReportSetup(result.Item2));
 
 		}
-
-
+		
 		private ulong GetAddressFromList(object listBox)
 		{
 			AssertIndexIsAvailable();
@@ -1942,16 +1941,12 @@ namespace MDRDesk
 			return true;
 		}
 
-
-
-
 		private void GetDlgString2(string title, string descr, string defValue, out string str)
 		{
 			str = null;
 			InputStringDlg dlg = new InputStringDlg(descr, defValue ?? " ") { Title = title, Owner = Window.GetWindow(this) };
 			var dlgResult = dlg.ShowDialog();
 		}
-
 
 		private List<ulong> _lbTypeAddressesLastselections = new List<ulong>();
 
@@ -2020,6 +2015,7 @@ namespace MDRDesk
 				return;
 			ShowMemoryViewWindow(addr);
 		}
+
 
 	}
 }

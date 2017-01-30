@@ -1596,7 +1596,7 @@ namespace UnitTestMdr
 						wr.WriteLine("### System.Threading.CancellationTokenSource instance count: " + cancelSourceInstances.Length);
 						wr.WriteLine("### Finalizer queue count: " + fqCnt + ", CancellationTokenSource in fin. queue count: " + cancelTokSrcInFinQue.Length);
 						wr.WriteLine();
-						wr.WriteLine("### Instances with CancellationTokenSource field, count: " + dctWithCancelSourceField.Count);
+						wr.WriteLine("### _instances with CancellationTokenSource field, count: " + dctWithCancelSourceField.Count);
 						wr.WriteLine("### instance count, field name, type name");
 						foreach (var kv in dctWithCancelSourceField)
 						{
@@ -1609,7 +1609,7 @@ namespace UnitTestMdr
 						}
 
 						wr.WriteLine();
-						wr.WriteLine("### Instances with CancellationToken field, count: " + dctWithCancelTokenField.Count);
+						wr.WriteLine("### _instances with CancellationToken field, count: " + dctWithCancelTokenField.Count);
 						wr.WriteLine("### instance count, field name, type name");
 						foreach (var kv in dctWithCancelTokenField)
 						{

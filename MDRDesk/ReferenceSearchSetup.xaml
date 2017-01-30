@@ -42,7 +42,7 @@
                 <ColumnDefinition Width="20*"/>
                 <ColumnDefinition Width="20*"/>
             </Grid.ColumnDefinitions>
-            <Label Grid.Column="0" HorizontalAlignment="Left" VerticalAlignment="Center" FontFamily="Consolas" FontWeight="Bold" Margin="8,0,0,0">Instances considered:</Label>
+            <Label Grid.Column="0" HorizontalAlignment="Left" VerticalAlignment="Center" FontFamily="Consolas" FontWeight="Bold" Margin="8,0,0,0">_instances considered:</Label>
             <RadioButton x:Name ="RefSearchBoth" GroupName="RefSearchDataSource" Grid.Column="1" HorizontalAlignment="Left" VerticalAlignment="Center" Margin="4,0,4,0" FontWeight="Bold" IsEnabled="True">All</RadioButton>
             <RadioButton x:Name ="RefSearchRooted" GroupName="RefSearchDataSource" Grid.Column="2" HorizontalAlignment="Left" VerticalAlignment="Center" Margin="4,0,4,0" FontWeight="Bold"  IsEnabled="False">Rooted</RadioButton>
             <RadioButton x:Name ="RefSearchNotRooted" GroupName="RefSearchDataSource" Grid.Column="3" HorizontalAlignment="Left" VerticalAlignment="Center" Margin="4,0,4,0" FontWeight="Bold" IsEnabled="False">Unrooted</RadioButton>

@@ -14,8 +14,8 @@ namespace ClrMDRIndex
 	public class ClrtRootInfo
 	{
 		private readonly ClrtRoot[][] _roots; // rooots by Kind
-		private readonly ulong[] _rootAddresses; // unique root addresses, sorted, with out finalizer
-		private readonly ulong[] _finalizerAddresses; // unique finalizer addresses, sorted, with out finalizer
+		private readonly ulong[] _rootAddresses; // unique root addresses, sorted, without finalizer
+		private readonly ulong[] _finalizerAddresses; // unique finalizer addresses, sorted, without finalizer
 
 		public ulong[] RootAddresses => _rootAddresses;
 		public ulong[] FinalizerAddresses => _finalizerAddresses;
@@ -394,7 +394,45 @@ namespace ClrMDRIndex
 
 		public ClrtRoot[] GetFinalizerItems()
 		{
-			return _roots[(int) GCRootKind.Finalizer];
+			return _roots[(int)GCRootKind.Finalizer];
+		}
+		public ClrtRoot[] GetItems(GCRootKind kind)
+		{
+			return _roots[(int)kind]==null ? Utils.EmptyArray<ClrtRoot>.Value : _roots[(int)kind];
+		}
+		public ulong[] GetAddresses(GCRootKind kind)
+		{
+			var ary = GetItems(kind);
+			if (ary.Length < 1) return Utils.EmptyArray<ulong>.Value;
+			ulong[] addrs = new ulong[ary.Length];
+			for (int i = 0, icnt = ary.Length; i < icnt; ++i)
+			{
+				addrs[i] = ary[i].Address;
+			}
+			return addrs;
+		}
+		public ulong[] GetObjects(GCRootKind kind)
+		{
+			var ary = GetItems(kind);
+			if (ary.Length < 1) return Utils.EmptyArray<ulong>.Value;
+			ulong[] addrs = new ulong[ary.Length];
+			for (int i = 0, icnt = ary.Length; i < icnt; ++i)
+			{
+				addrs[i] = ary[i].Object;
+			}
+			return addrs;
+		}
+
+		public KeyValuePair<ulong,ulong>[] GetAddressObjectPairs(GCRootKind kind)
+		{
+			var ary = GetItems(kind);
+			if (ary.Length < 1) return Utils.EmptyArray<KeyValuePair<ulong, ulong>>.Value;
+			KeyValuePair<ulong, ulong>[] addrs = new KeyValuePair<ulong, ulong>[ary.Length];
+			for (int i = 0, icnt = ary.Length; i < icnt; ++i)
+			{
+				addrs[i] = new KeyValuePair<ulong, ulong>(ary[i].Address,ary[i].Object);
+			}
+			return addrs;
 		}
 	}
 

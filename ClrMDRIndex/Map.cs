@@ -512,7 +512,7 @@ namespace ClrMDRIndex
 
 		#region Queries
 
-		#region Instances
+		#region _instances
 
 		public ulong[] Instances => _instances[_currentRuntime];
 
@@ -522,7 +522,7 @@ namespace ClrMDRIndex
 			return ndx < 0 ? Constants.InvalidIndex : ndx;
 		}
 
-		#endregion Instances
+		#endregion _instances
 
 		#region Types
 
@@ -2537,7 +2537,7 @@ namespace ClrMDRIndex
 				//		sb.AppendLine(objCountAry[i].Key);
 				//	}
 
-				//	sb.AppendLine("Instances duplicates, top 50");
+				//	sb.AppendLine("_instances duplicates, top 50");
 				//	for (int i = 0, icnt = Math.Min(50, objDupCountAry.Length); i < icnt; ++i)
 				//	{
 				//		sb.Append(Utils.AddressStringHeader(objDupCountAry[i].Key));

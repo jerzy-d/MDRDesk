@@ -153,6 +153,7 @@ namespace ClrMDRUtil
 	{
 		private int[] _buffer;
 		private int[] _offsets;
+		private int[] _offsets2;
 #if DEBUG
 		public int[] Offsets => _offsets;
 #endif
@@ -165,14 +166,19 @@ namespace ClrMDRUtil
 			_recordCount = counter.RecordCount;
 			int totCount = counter.TotalCount;
 			_offsets = new int[size];
+			_offsets2 = new int[size];
 			_counts = counter.Counts;
 			int count = 0;
+			int recCount = 0;
 			for (int i = 0, icnt = _counts.Length; i < icnt; ++i)
 			{
 				if (_counts[i] == 0) continue;
 				_offsets[i] = count;
+				_offsets2[i] = count;
 				count += _counts[i];
+				++recCount;
 			}
+			_recordCount = recCount;
 			Debug.Assert(totCount == count);
 			_buffer = new int[totCount];
 		}
@@ -188,6 +194,11 @@ namespace ClrMDRUtil
 			int[] copy = new int[_offsets.Length];
 			Buffer.BlockCopy(_offsets,0,copy,0,_offsets.Length*sizeof(int));
 			return copy;
+		}
+
+		public bool CheckOffsets()
+		{
+			return ClrMDRIndex.Utils.SameIntArrays(_offsets2, _offsets);
 		}
 
 		public void RestoreOffsets()
@@ -211,7 +222,9 @@ namespace ClrMDRUtil
 			error = null;
 			try
 			{
-				fw = new FileWriter(path,1024*16);
+				fw = new FileWriter(path, 1024*16, FileOptions.SequentialScan);
+
+				//fw = new FileWriter(path,1024*16);
 				fw.Write(_recordCount);
 				for (int i = 0, icnt = _offsets.Length; i < icnt; ++i)
 				{
@@ -232,6 +245,39 @@ namespace ClrMDRUtil
 			}
 		}
 
+		public bool DumpTest(string path, out string error)
+		{
+			StreamWriter fw = null;
+			error = null;
+			try
+			{
+				fw = new StreamWriter(path);
+				fw.WriteLine(_recordCount);
+				for (int i = 0, icnt = _offsets.Length; i < icnt; ++i)
+				{
+					if (_counts[i] == 0) continue;
+					fw.Write(i + ",");
+					fw.Write(_counts[i]);
+					for (int j = 0, jcnt = _counts[i]; j < jcnt; ++j)
+					{
+						fw.Write(","+_buffer[_offsets[i]]);
+						_offsets[i] += 1;
+					}
+					fw.WriteLine();
+				}
+
+				return true;
+			}
+			catch (Exception ex)
+			{
+				error = ClrMDRIndex.Utils.GetExceptionErrorString(ex);
+				return false;
+			}
+			finally
+			{
+				fw?.Dispose();
+			}
+		}
 	}
 
 }

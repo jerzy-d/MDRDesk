@@ -120,9 +120,9 @@ namespace MDRDesk
 				var grid = this.TryFindResource("DeadlockGraphXGrid") as Grid;
 				Debug.Assert(grid != null);
 				grid.Name = DeadlockGraphGrid + "__" + Utils.GetNewID();
-				var zoomctrl = (ZoomControl) LogicalTreeHelper.FindLogicalNode(grid, "DlkZoomCtrl");
+				var zoomctrl = (ZoomControl)LogicalTreeHelper.FindLogicalNode(grid, "DlkZoomCtrl");
 				Debug.Assert(zoomctrl != null);
-				var area = (DlkGraphArea) LogicalTreeHelper.FindLogicalNode(grid, "DlkGraphArea");
+				var area = (DlkGraphArea)LogicalTreeHelper.FindLogicalNode(grid, "DlkGraphArea");
 				Debug.Assert(area != null);
 
 				ZoomControl.SetViewFinderVisibility(zoomctrl, Visibility.Visible);
@@ -179,7 +179,7 @@ namespace MDRDesk
 		private void DlkGraphAreaSetup(int[] deadlock, DlkGraphArea area)
 		{
 			//Lets create logic core and filled data graph with edges and vertices
-			var logicCore = new DlkGXLogicCore() {Graph = DlkGraphSetup(deadlock)};
+			var logicCore = new DlkGXLogicCore() { Graph = DlkGraphSetup(deadlock) };
 			//This property sets layout algorithm that will be used to calculate vertices positions
 			//Different algorithms uses different values and some of them uses edge Weight property.
 			logicCore.DefaultLayoutAlgorithm = LayoutAlgorithmTypeEnum.KK;
@@ -228,7 +228,7 @@ namespace MDRDesk
 				var id = deadlock[i];
 				if (!set.Add(id))
 				{
-					vertices[i] = Array.Find(vertices, v => v.ID == (long) id);
+					vertices[i] = Array.Find(vertices, v => v.ID == (long)id);
 					continue;
 				}
 				bool isThread;
@@ -260,9 +260,9 @@ namespace MDRDesk
 				var grid = this.TryFindResource("ThreadBlockingGraphXGrid") as Grid;
 				Debug.Assert(grid != null);
 				grid.Name = DeadlockGraphGrid + "__" + Utils.GetNewID();
-				grid.Tag = new Tuple<Digraph, List<int>, SubgraphDictionary,bool>(digraph, new List<int>(), new SubgraphDictionary(),true);
+				grid.Tag = new Tuple<Digraph, List<int>, SubgraphDictionary, bool>(digraph, new List<int>(), new SubgraphDictionary(), true);
 				var txtBlk = (TextBlock)LogicalTreeHelper.FindLogicalNode(grid, "ThreadBlockingGraphXHelp");
-				Debug.Assert(txtBlk!=null);
+				Debug.Assert(txtBlk != null);
 				SetGraphHelpTextBlock(txtBlk);
 
 				UpdateThreadBlockMap(grid);
@@ -290,9 +290,9 @@ namespace MDRDesk
 			try
 			{
 				SetStartTaskMainWindowState("Generating thread/block graph, please wait...");
-				var zoomctrl = (ZoomControl) LogicalTreeHelper.FindLogicalNode(grid, "TBZoomCtrl");
+				var zoomctrl = (ZoomControl)LogicalTreeHelper.FindLogicalNode(grid, "TBZoomCtrl");
 				Debug.Assert(zoomctrl != null);
-				var area = (DlkGraphArea) LogicalTreeHelper.FindLogicalNode(grid, "TBGraphArea");
+				var area = (DlkGraphArea)LogicalTreeHelper.FindLogicalNode(grid, "TBGraphArea");
 				Debug.Assert(area != null);
 				area.RemoveAllEdges(true);
 				area.RemoveAllVertices(true);
@@ -347,7 +347,7 @@ namespace MDRDesk
 				DlkGraph graph = TBGraphSetup(digraph, currentIds, subgraphsDct, forward, out error);
 				if (graph == null) return false;
 				//Lets create logic core and filled data graph with edges and vertices
-				var logicCore = new DlkGXLogicCore() {Graph = graph};
+				var logicCore = new DlkGXLogicCore() { Graph = graph };
 				//This property sets layout algorithm that will be used to calculate vertices positions
 				//Different algorithms uses different values and some of them uses edge Weight property.
 				logicCore.DefaultLayoutAlgorithm = LayoutAlgorithmTypeEnum.KK;
@@ -736,7 +736,7 @@ namespace MDRDesk
 			var currentIds = graphInfo.Item2;
 			var subgraphsDct = graphInfo.Item3;
 			var forward = graphInfo.Item4;
-			int lastId = currentIds!=null && currentIds.Count > 0 ? currentIds[currentIds.Count - 1] : Int32.MaxValue;
+			int lastId = currentIds != null && currentIds.Count > 0 ? currentIds[currentIds.Count - 1] : Int32.MaxValue;
 			int lastAvailId = subgraphsDct == null || subgraphsDct.Count < 1 ? Int32.MaxValue : subgraphsDct.Last().Key;
 			if (lastAvailId <= lastId) return;
 			if (!forward)
@@ -779,7 +779,7 @@ namespace MDRDesk
 
 		private void SetGraphHelpTextBlock(TextBlock txtBlk)
 		{
-			txtBlk.Inlines.Add(new Run(" thread " ) { Background = Brushes.Chocolate});
+			txtBlk.Inlines.Add(new Run(" thread ") { Background = Brushes.Chocolate });
 			//txtBlk.Inlines.Add(new Bold(new Run("-->")) { FontSize = 18 });
 			txtBlk.Inlines.Add(new Run(Constants.RightDashedArrowPadded) { FontSize = 18 });
 			txtBlk.Inlines.Add(new Run(" blocking obj ") { Background = Brushes.LightGray });
@@ -849,8 +849,8 @@ namespace MDRDesk
 			if (CurrentIndex.DeadlockFound)
 			{
 				txtBlock.Inlines.Add(Environment.NewLine);
-				txtBlock.Inlines.Add(new Run("POSSIBLE THREAD DEADLOCK FOUND!") { FontWeight = FontWeights.Bold, FontSize = 12, Foreground = Brushes.Red});
-				txtBlock.Inlines.Add(new Run(" see threads/blocking objects graph.") { FontWeight = FontWeights.Bold, FontSize = 10, FontStyle = FontStyles.Italic});
+				txtBlock.Inlines.Add(new Run("POSSIBLE THREAD DEADLOCK FOUND!") { FontWeight = FontWeights.Bold, FontSize = 12, Foreground = Brushes.Red });
+				txtBlock.Inlines.Add(new Run(" see threads/blocking objects graph.") { FontWeight = FontWeights.Bold, FontSize = 10, FontStyle = FontStyles.Italic });
 				txtBlock.Inlines.Add(Environment.NewLine);
 			}
 
@@ -863,7 +863,7 @@ namespace MDRDesk
 			if (error != null)
 			{
 				txtBlock.Inlines.Add(new Run("FAILED TO LOAD GENERATION DISTRIBUTIONS!!!" + Environment.NewLine) { FontWeight = FontWeights.Bold, FontSize = 12 });
-				txtBlock.Inlines.Add(new Run(error + Environment.NewLine) { FontWeight = FontWeights.Bold, FontSize = 10, Foreground = Brushes.Red});
+				txtBlock.Inlines.Add(new Run(error + Environment.NewLine) { FontWeight = FontWeights.Bold, FontSize = 10, Foreground = Brushes.Red });
 			}
 			else
 			{
@@ -962,7 +962,7 @@ namespace MDRDesk
 			nsCountLabel.Content = Utils.LargeNumberString(namespaces.Length);
 			var tab = new CloseableTabItem() { Header = Constants.BlackDiamond + " Types", Content = grid, Name = "HeapIndexTypeViewTab" };
 			var addressList = (ListBox)LogicalTreeHelper.FindLogicalNode(grid, @"lbTypeNamespaceAddresses");
-			Debug.Assert(addressList!=null);
+			Debug.Assert(addressList != null);
 			addressList.ContextMenu.Tag = addressList;
 			MainTab.Items.Add(tab);
 			MainTab.SelectedItem = tab;
@@ -1228,7 +1228,7 @@ namespace MDRDesk
 			int instCount = CurrentIndex.GetTypeInstanceCount(typeId);
 
 			string description = "Get references of: " + Environment.NewLine + typeName + Environment.NewLine +
-			                     "Instance count: " + instCount;
+								 "Instance count: " + instCount;
 
 			ReferenceSearchSetup dlg = new ReferenceSearchSetup(description) { Owner = this };
 			dlg.ShowDialog();
@@ -1404,7 +1404,7 @@ namespace MDRDesk
 			grid.Tag = finlQue;
 			var listView = (ListView)LogicalTreeHelper.FindLogicalNode(grid, FinalizerQueueListView);
 			Debug.Assert(listView != null);
-			listView.Tag = new bool[] {false, false, true}; // column current sorting
+			listView.Tag = new bool[] { false, false, true }; // column current sorting
 			listView.Items.Clear();
 			listView.ItemsSource = finlQue.Items;
 
@@ -1438,7 +1438,7 @@ namespace MDRDesk
 				listBox.ItemsSource = listItem.Addresses;
 				listBox.SelectedIndex = 0;
 				var label = (Label)LogicalTreeHelper.FindLogicalNode(grid, "FinalizerQueAddressesCounts");
-				Debug.Assert(label!=null);
+				Debug.Assert(label != null);
 				label.Content = listItem.TotalCount + ", unrooted: " + listItem.NotRootedCount;
 			}
 		}
@@ -1452,14 +1452,14 @@ namespace MDRDesk
 			var listView = sender as ListView;
 			if (listView == null) return;
 			var aryToSort = listView.ItemsSource as FinalizerQueueDisplayableItem[];
-			Debug.Assert(aryToSort!=null);
+			Debug.Assert(aryToSort != null);
 			if (aryToSort.Length < 2) return;
 			int colNdx = Utils.SameStrings(colName, "Total Count")
 				? 0
 				: (Utils.SameStrings(colName, "Unrooted Count") ? 1 : 2);
 			var sorts = listView.Tag as bool[];
 			sorts[colNdx] = !sorts[colNdx];
-			Array.Sort(aryToSort,new FinalizerQueueDisplayableItemCmp(colNdx,sorts[colNdx]));
+			Array.Sort(aryToSort, new FinalizerQueueDisplayableItemCmp(colNdx, sorts[colNdx]));
 			listView.ItemsSource = aryToSort;
 			ICollectionView dataView = CollectionViewSource.GetDefaultView(listView.ItemsSource);
 			dataView.Refresh();
@@ -1660,18 +1660,18 @@ namespace MDRDesk
 			Debug.Assert(listView != null);
 			if (listView.SelectedItem != null)
 			{
-				var listItem = (listing<string>) listView.SelectedItem;
-				int ndx = listItem.Offset/listItem.Count;
+				var listItem = (listing<string>)listView.SelectedItem;
+				int ndx = listItem.Offset / listItem.Count;
 				var dataInfo = listView.Tag as Tuple<ListingInfo, string>;
-				Debug.Assert(dataInfo!=null);
-				var data = dataInfo.Item1.Data as KeyValuePair <ulong,ulong[]>[][];
+				Debug.Assert(dataInfo != null);
+				var data = dataInfo.Item1.Data as KeyValuePair<ulong, ulong[]>[][];
 				Debug.Assert(data != null);
 				var grid = GetCurrentTabGrid();
 				Debug.Assert(grid != null);
 				var listBox = (ListBox)LogicalTreeHelper.FindLogicalNode(grid, "WeakReferenceObjectAddresses");
 				Debug.Assert(listBox != null);
-				listBox.Tag = new Tuple<KeyValuePair<ulong, ulong[]>[][], int>(data,ndx);
-				listBox.ItemsSource = data[ndx].Select((a)=> a.Key);
+				listBox.Tag = new Tuple<KeyValuePair<ulong, ulong[]>[][], int>(data, ndx);
+				listBox.ItemsSource = data[ndx].Select((a) => a.Key);
 				listBox.SelectedIndex = 0;
 			}
 		}
@@ -1686,7 +1686,7 @@ namespace MDRDesk
 				Debug.Assert(selInfo != null);
 				var grid = GetCurrentTabGrid();
 				Debug.Assert(grid != null);
-				var listBox = (ListBox) LogicalTreeHelper.FindLogicalNode(grid, "WeakReferenceRootAddresses");
+				var listBox = (ListBox)LogicalTreeHelper.FindLogicalNode(grid, "WeakReferenceRootAddresses");
 				Debug.Assert(listBox != null);
 				listBox.ItemsSource = selInfo.Item1[selInfo.Item2][lb.SelectedIndex].Value;
 			}
@@ -1699,7 +1699,7 @@ namespace MDRDesk
 
 		private void DoDisplayTypeValueReportSetup(ClrtDisplayableType dispType)
 		{
-			var dlg = new TypeValuesReportSetup(dispType) {Owner = this};
+			var dlg = new TypeValuesReportSetup(dispType) { Owner = this };
 			dlg.ShowDialog();
 		}
 
@@ -1907,7 +1907,7 @@ namespace MDRDesk
 			Debug.Assert(treeView != null);
 			treeView.Items.Add(tvRoot);
 
-			tvRoot.IsExpanded=true;
+			tvRoot.IsExpanded = true;
 
 			var tab = new CloseableTabItem() { Header = Constants.BlackDiamond + " Type References", Content = grid, Name = "HeapIndexTypeViewTab" };
 			MainTab.Items.Add(tab);
@@ -2056,7 +2056,7 @@ namespace MDRDesk
 			{
 				if (instVal.ArrayValues != null)
 				{
-					var wnd = new CollectionDisplay(Utils.GetNewID(),_wndDct, instVal, result.Item3) { Owner = this };
+					var wnd = new CollectionDisplay(Utils.GetNewID(), _wndDct, instVal, result.Item3) { Owner = this };
 					wnd.Show();
 					return;
 				}
@@ -2080,20 +2080,19 @@ namespace MDRDesk
 
 		private async void ExecuteGetThreadinfos()
 		{
-
 			SetStartTaskMainWindowState("Getting thread infos, please wait...");
 			var result = await Task.Run(() =>
 			{
 				string error = null;
 				var info = CurrentIndex.GetThreads(out error);
-				return new Tuple<string, ClrtThread[], string[]>(error, info.Item1,info.Item2);
+				return new Tuple<string, ClrtThread[], string[]>(error, info.Item1, info.Item2);
 			});
 
 			string msg = result.Item1 != null ? "Getting thread infos failed." : "Getting thread infos succeeded.";
 			SetEndTaskMainWindowState(msg);
 			if (result.Item1 != null)
 			{
-				GuiUtils.ShowError(result.Item1,this);
+				GuiUtils.ShowError(result.Item1, this);
 				return;
 			}
 
@@ -2127,15 +2126,13 @@ namespace MDRDesk
 				sb.Clear();
 			}
 			int[] frMap = Utils.Iota(frameKeys.Length);
-			Array.Sort(frameKeys,frMap,StringComparer.Ordinal);
+			Array.Sort(frameKeys, frMap, StringComparer.Ordinal);
 			int fid = 1;
 			string prevFr = string.Empty;
 			for (int i = 1, icnt = frameKeys.Length; i < icnt; ++i)
 			{
 				if (frameKeys[i] == string.Empty) continue;
-
 			}
-
 
 			const int ColumnCount = 4;
 			string[] data = new string[threads.Length * ColumnCount];
@@ -2149,19 +2146,6 @@ namespace MDRDesk
 				var osIdStr = thrd.OSThreadId.ToString();
 				var mngIdStr = thrd.ManagedThreadId.ToString();
 
-				//var frameIds = thrd.Frames;
-				//sb.Clear();
-				//for (int j = 0, jcnt = frameIds.Length; j < jcnt; ++j)
-				//{
-				//	var s = Utils.GetDigitsString(frameIds[j], digitCount, buf);
-				//	sb.Append(s).Append('|');
-				//}
-				//var thFrames = string.Empty;
-				//if (sb.Length > 0)
-				//{
-				//	sb.Remove(sb.Length - 1, 1);
-				//	thFrames = sb.ToString();
-				//}
 				sb.Clear();
 				var traits = thrd.GetTraitsString(sb);
 
@@ -2170,8 +2154,6 @@ namespace MDRDesk
 				data[dataNdx++] = mngIdStr;
 				data[dataNdx++] = traits;
 				data[dataNdx++] = frameKeys[i];
-
-
 			}
 
 			ColumnInfo[] colInfos = new[]
@@ -2184,10 +2166,7 @@ namespace MDRDesk
 
 			sb.Clear();
 			sb.Append(ReportFile.DescrPrefix).Append("Thread Count ").Append(threads.Length).AppendLine();
-			var listing = new ListingInfo(null, items, colInfos, sb.ToString());
-
-
-
+			var listing = new ListingInfo(null, items, colInfos, sb.ToString(),framesMethods);
 
 			var grid = TryFindResource(ThreadViewGrid) as Grid;
 			var listView = (ListView)LogicalTreeHelper.FindLogicalNode(grid, "ThreadListingView");
@@ -2214,6 +2193,11 @@ namespace MDRDesk
 			Debug.Assert(grid != null);
 			grid.Name = ThreadViewGrid + "__" + Utils.GetNewID();
 			DisplayTab(Constants.BlackDiamond, "Threads", grid, ThreadViewGrid);
+		}
+
+		private void ThreadListingView_OnSelectionChanged(object sender, SelectionChangedEventArgs e)
+		{
+			ListView listView = sender as ListView;
 		}
 
 		#endregion threads
@@ -2251,12 +2235,12 @@ namespace MDRDesk
 			var mainGrid = this.TryFindResource("InstanceHierarchyGrid") as Grid;
 			Debug.Assert(mainGrid != null);
 			mainGrid.Name = "InstanceHierarchyGrid__" + Utils.GetNewID();
-			var undoRedoList = new UndoRedoList<InstanceValueAndAncestors,Tuple<ulong,int>>(new InstanceHierarchyKeyEqCmp());
+			var undoRedoList = new UndoRedoList<InstanceValueAndAncestors, Tuple<ulong, int>>(new InstanceHierarchyKeyEqCmp());
 			undoRedoList.Add(instanceInfo);
 			mainGrid.Tag = undoRedoList;
 			TreeViewItem root;
 			TreeView treeView;
-			var ancestorList = UpdateInstanceHierarchyGrid(instanceInfo, mainGrid,out treeView, out root);
+			var ancestorList = UpdateInstanceHierarchyGrid(instanceInfo, mainGrid, out treeView, out root);
 
 			var tab = new CloseableTabItem() { Header = Constants.BlackDiamond + " Instance Hierarchy", Content = mainGrid, Name = "InstanceHierarchyGrid" };
 			MainTab.Items.Add(tab);
@@ -2346,8 +2330,8 @@ namespace MDRDesk
 			if (instValue.Address != Constants.InvalidAddress)
 			{
 				var mainGrid = GetCurrentTabGrid();
-				Debug.Assert(mainGrid!=null);
-				var undoList = mainGrid.Tag as UndoRedoList<InstanceValueAndAncestors,Tuple<ulong,int>>;
+				Debug.Assert(mainGrid != null);
+				var undoList = mainGrid.Tag as UndoRedoList<InstanceValueAndAncestors, Tuple<ulong, int>>;
 				ulong addr = instValue.Address;
 				int fldNdx = instValue.FieldIndex;
 				var existing = undoList.GetExisting(new Tuple<ulong, int>(addr, fldNdx));
@@ -2375,7 +2359,7 @@ namespace MDRDesk
 				}
 				else
 				{
-					result = new Tuple<string, InstanceValueAndAncestors>(null,existing);
+					result = new Tuple<string, InstanceValueAndAncestors>(null, existing);
 				}
 
 				TreeViewItem tvRoot;
@@ -2425,7 +2409,7 @@ namespace MDRDesk
 				}
 				else
 				{
-					result = new Tuple<string, InstanceValueAndAncestors>(null,instanceInfo);
+					result = new Tuple<string, InstanceValueAndAncestors>(null, instanceInfo);
 				}
 				TreeViewItem tvItem;
 				TreeView treeView;
@@ -2695,12 +2679,12 @@ namespace MDRDesk
 
 		private Task<bool> DisposeCurrentIndex()
 		{
-			return  Task.Run(() =>
-			{
-				CurrentIndex.Dispose();
-				CurrentIndex = null;
-				return true;
-			});
+			return Task.Run(() =>
+		   {
+			   CurrentIndex.Dispose();
+			   CurrentIndex = null;
+			   return true;
+		   });
 		}
 
 
@@ -2840,6 +2824,7 @@ namespace MDRDesk
 
 
 		#endregion Utils
+
 
 	}
 

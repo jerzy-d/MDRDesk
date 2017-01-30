@@ -1005,6 +1005,19 @@ namespace UnitTestMdr
 		}
 
 		[TestMethod]
+		public void TestReferencesFile()
+		{
+			string error = null;
+			string path = @"C:\WinDbgStuff\Dumps\Analytics\Highline\analyticsdump111.dlk.dmp.map\analyticsdump111.dlk.dmp.`REFSOBJECTFIELD[0].bin";
+			int[] headAry;
+			int[][] lists;
+			References.LoadReferences(path, out headAry, out lists, out error);
+
+			Assert.IsNull(error, error);
+		}
+
+
+		[TestMethod]
 		public void TestReferenceFile()
 		{
 			string error = null;

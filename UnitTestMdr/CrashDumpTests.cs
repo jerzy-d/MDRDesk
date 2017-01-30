@@ -107,6 +107,92 @@ namespace UnitTestMdr
 
 		}
 
+		[TestMethod]
+		public void TestRevert()
+		{
+			string dataPath = Setup.DumpsFolder + Path.DirectorySeparatorChar + "indexData.txt";
+			string indexPath = Setup.DumpsFolder + Path.DirectorySeparatorChar + "index.txt";
+			StreamWriter sw = null;
+			StreamReader sr = null;
+			Random rnd = new Random(17);
+			RecordCounter counter = new RecordCounter(100);
+			Bitset bitset = new Bitset(100);
+			List<int> valLst = new List<int>(20);
+
+			try
+			{
+				sw = new StreamWriter(dataPath);
+				for (int i = 0; i < 1000; ++i)
+				{
+					var rndx = rnd.Next(0, 100);
+					if ((rndx % 5) == 0) continue;
+					if (bitset.IsSet(rndx)) continue;
+					bitset.Set(rndx);
+					sw.Write(rndx + ",");
+					var cnt = rnd.Next(1, 21);
+					valLst.Clear();
+					for (int j = 0; j < cnt; ++j)
+					{
+						var val = rnd.Next(0, 100);
+						valLst.Add(val);
+					}
+					valLst.Sort();
+					Utils.RemoveDuplicates(valLst, Comparer<int>.Default);
+					sw.Write(valLst.Count);
+					for (int j = 0; j < valLst.Count; ++j)
+					{
+						counter.Add(valLst[j]);
+						sw.Write("," + valLst[j]);
+					}
+					sw.WriteLine();
+				}
+				sw.Close();
+				sw = null;
+
+				IntStore store = new IntStore(counter);
+				Dictionary<int,int[]> dct = new Dictionary<int, int[]>();
+				sr = new StreamReader(dataPath);
+				string ln = sr.ReadLine();
+				int recCount = 0;
+				while (ln!=null)
+				{
+					++recCount;
+					string[] vals = ln.Split(',');
+					var rndx = Int32.Parse(vals[0]);
+					var cnt = Int32.Parse(vals[1]);
+					Assert.IsTrue(cnt == vals.Length-2);
+					int[] ints = new int[cnt];
+					for (int i = 2; i < vals.Length; ++i)
+					{
+						ints[i-2] = Int32.Parse(vals[i]);
+					}
+					dct.Add(rndx,ints);
+					ln = sr.ReadLine();
+				}
+				foreach (var kv in dct)
+				{
+					for (int i = 0; i < kv.Value.Length; ++i)
+					{
+						store.AddItem(kv.Value[i], kv.Key);
+					}
+				}
+				store.RestoreOffsets();
+				Debug.Assert(store.CheckOffsets());
+				string error;
+				store.DumpTest(indexPath, out error);
+				Assert.IsNull(error,error);
+			}
+			catch (Exception ex)
+			{
+				Assert.IsTrue(false,ex.ToString());
+			}
+			finally
+			{
+				sw?.Close();
+				sr?.Close();
+			}
+		}
+
 		#endregion misc
 
 		#region collection content

@@ -124,7 +124,7 @@ namespace UnitTestMdr
 
 
 //					Assert.IsTrue(Utils.IsSorted(fieldAddresses));
-//					var instances = map.Instances;
+//					var instances = map._instances;
 //					var roots = map.Roots;
 //					int offNdx = 0;
 //					int instNdx = 0;

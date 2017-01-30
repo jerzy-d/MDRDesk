@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
+using System.Runtime.CompilerServices;
 
 namespace ClrMDRIndex
 {
@@ -40,7 +41,6 @@ namespace ClrMDRIndex
 			_woff = 0;
 		}
 
-
 		public void WriteIntArray(int[] lst, int count)
 		{
 			Debug.Assert(_woff<=_wmax);
@@ -64,56 +64,23 @@ namespace ClrMDRIndex
 			}
 		}
 
-
 		public void WriteReferenceRecord(int head, IList<int> lst)
 		{
-			int lstCount = lst.Count;
-			if (_woff + sizeof (int)*2 >= _wmax)
+			Write(head);
+			Write(lst.Count);
+			for (int i = 0, icnt = lst.Count; i < icnt; ++i)
 			{
-				_file.Write(_wbuf,0,_woff);
-				_woff = 0;
-			}
-			FillBuffer(head,_wbuf,_woff);
-			_woff += sizeof (int);
-			FillBuffer(lstCount,_wbuf,_woff);
-			_woff += sizeof(int);
-			int toWrite = lstCount*sizeof (int);
-			int ndx = 0;
-			while (toWrite > 0)
-			{
-				if (_woff == _wmax)
-				{
-					_file.Write(_wbuf,0,_woff);
-					_woff = 0;
-				}
-				FillBuffer(lst[ndx++],_wbuf,_woff);
-				_woff += sizeof (int);
-				toWrite -= sizeof (int);
+				Write(lst[i]);
 			}
 		}
 
 		public void WriteReferenceRecord(int head, int count, int off, int[] buf)
 		{
-			if (_woff + sizeof(int) * 2 >= _wmax)
+			Write(head);
+			Write(count);
+			for (int i = 0; i < count; ++i,++off)
 			{
-				_file.Write(_wbuf, 0, _woff);
-				_woff = 0;
-			}
-			FillBuffer(head, _wbuf, _woff);
-			_woff += sizeof(int);
-			FillBuffer(count, _wbuf, _woff);
-			_woff += sizeof(int);
-			int toWrite = count * sizeof(int);
-			while (toWrite > 0)
-			{
-				if (_woff == _wmax)
-				{
-					_file.Write(_wbuf, 0, _woff);
-					_woff = 0;
-				}
-				FillBuffer(buf[off++], _wbuf, _woff);
-				_woff += sizeof(int);
-				toWrite -= sizeof(int);
+				Write(buf[off]);
 			}
 		}
 
@@ -124,6 +91,7 @@ namespace ClrMDRIndex
 				_file.Write(_wbuf,0,_woff);
 				_woff = 0;
 			}
+			_file.Flush();
 		}
 
 		public void Write(int value)

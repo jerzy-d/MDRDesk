@@ -627,25 +627,28 @@ namespace ClrMDRIndex
 		public static bool GetRefrences3(ClrHeap heap, int[] indices, ulong[] instances, int[] typeIds, int[] excludedTypes, int freeTypeId,
 								Bitset bitset, string refsObjFldPath, string refsFldObjPath, IProgress<string> progress, out string error)
 		{
-			const int writeBufferMax = 22000;
 			error = null;
 			int reportInterval = instances.Length / 12;
 			int reportCount = reportInterval;
 			FileWriter fw = null;
-			int[] writeBuffer = new int[writeBufferMax]; // to make sure we are in LOH
 			try
 			{
 				Debug.Assert(freeTypeId >= 0);
+				List<int> ndxList = new List<int>(128);
+				List<ulong> addrList = new List<ulong>(128);
 				var fieldAddrOffsetList = new List<KeyValuePair<ulong, int>>(64);
 				var que = new Queue<KeyValuePair<int, ulong>>(1024 * 1024);
 				Utils.KVUlongIntKCmp kvCmp = new Utils.KVUlongIntKCmp();
 
 				progress?.Report("Building rooted references, root/object counts: " + Utils.CountString(indices.Length) + "/" +
 									Utils.CountString(instances.Length));
-				fw = new FileWriter(refsObjFldPath, FileBufferSize);
+				fw = new FileWriter(refsObjFldPath, FileBufferSize, FileOptions.SequentialScan);
+
 				fw.Write(0);
 				RecordCounter counter = new RecordCounter(instances.Length);
 				List<ulong> notFound = new List<ulong>();
+
+				int recCount = 0;
 
 				for (int i = 0, icnt = indices.Length; i < icnt; ++i)
 				{
@@ -665,6 +668,10 @@ namespace ClrMDRIndex
 					{
 						var kv = que.Dequeue();
 						var refNdx = kv.Key;
+						if (refNdx == 8098)
+						{
+							int a = 1;
+						}
 						if (bitset.IsSet(refNdx)) continue;
 						Debug.Assert(IsExcludedType(excludedTypes, typeIds[refNdx]) < 0);
 						bitset.Set(refNdx); // mark it
@@ -677,6 +684,8 @@ namespace ClrMDRIndex
 							reportCount += reportInterval;
 						}
 
+						// get references from m.d.r
+						//
 						var refAddr = kv.Value;
 						var clrType = heap.GetObjectType(refAddr);
 						if (clrType == null) continue;
@@ -685,44 +694,34 @@ namespace ClrMDRIndex
 						{
 							fieldAddrOffsetList.Add(new KeyValuePair<ulong, int>(address, off));
 						});
-
 						if (fieldAddrOffsetList.Count < 1) continue;
-						fieldAddrOffsetList.Sort(kvCmp);
-						Utils.RemoveDuplicates(fieldAddrOffsetList, kvCmp);
-						writeBuffer[0] = refNdx;
-						writeBuffer[1] = fieldAddrOffsetList.Count;
-						int writeBufferCount = 2;
-						bool haveSome = false;
-						for (int j = 0, jcnt = fieldAddrOffsetList.Count; j < jcnt; ++j)
+
+						// clean and process address list
+						CleanupReferencesList(fieldAddrOffsetList, kvCmp, instances, ndxList, addrList, notFound);
+						if (ndxList.Count > 0)
 						{
-							var faddr = fieldAddrOffsetList[j].Key;
-							var ndx = Utils.AddressSearch(instances, faddr);
-							if (ndx < 0)
+							for (int j = 0, jcnt = ndxList.Count; j < jcnt; ++j)
 							{
-								notFound.Add(faddr);
-								continue;
+								var faddr = addrList[j];
+								var ndx = ndxList[j];
+								counter.Add(ndx);
+								if (bitset.IsSet(ndx)) continue;
+								excluded = IsExcludedType(excludedTypes, typeIds[ndx]);
+								if (excluded >= 0)
+								{
+									if (excluded != freeTypeId) bitset.Set(ndx); // mark it
+									continue;
+								}
+								que.Enqueue(new KeyValuePair<int, ulong>(ndx, faddr));
 							}
-							if (writeBufferCount == writeBufferMax)
+							ndxList.Sort();
+							fw.WriteReferenceRecord(refNdx, ndxList);
+							++recCount;
+							if (refNdx == 8098)
 							{
-								fw.WriteIntArray(writeBuffer, writeBufferCount);
-								writeBufferCount = 0;
-								haveSome = false;
+								int a = 1;
 							}
-							writeBuffer[writeBufferCount++] = ndx;
-							haveSome = true;
-							counter.Add(ndx);
-							if (bitset.IsSet(ndx)) continue;
-							excluded = IsExcludedType(excludedTypes, typeIds[ndx]);
-							if (excluded >= 0)
-							{
-								if (excluded != freeTypeId) bitset.Set(ndx); // mark it
-								continue;
-							}
-							que.Enqueue(new KeyValuePair<int, ulong>(ndx, faddr));
 						}
-						if (!haveSome) continue;
-						Debug.Assert(writeBufferCount > 0);
-						fw.WriteIntArray(writeBuffer, writeBufferCount);
 					}
 				}
 
@@ -752,10 +751,14 @@ namespace ClrMDRIndex
 					while (que.Count > 0)
 					{
 						var kv = que.Dequeue();
-						var rndx = kv.Key;
-						if (bitset2.IsSet(rndx)) continue;
-						Debug.Assert(IsExcludedType(excludedTypes, typeIds[rndx]) < 0);
-						bitset2.Set(rndx); // mark it
+						var refNdx = kv.Key;
+						if (refNdx == 8098)
+						{
+							int a = 1;
+						}
+						if (bitset2.IsSet(refNdx)) continue;
+						Debug.Assert(IsExcludedType(excludedTypes, typeIds[refNdx]) < 0);
+						bitset2.Set(refNdx); // mark it
 						if (bitset2.SetCount > reportCount)
 						{
 							progress?.Report("Unrooted references, processed: " + Utils.CountString(bitset2.SetCount - bitset.SetCount)
@@ -773,58 +776,42 @@ namespace ClrMDRIndex
 						});
 						if (fieldAddrOffsetList.Count < 1) continue;
 
-						fieldAddrOffsetList.Sort(kvCmp);
-						Utils.RemoveDuplicates(fieldAddrOffsetList, kvCmp);
-						writeBuffer[0] = rndx;
-						writeBuffer[1] = fieldAddrOffsetList.Count;
-						int writeBufferCount = 2;
-						bool haveSome = false;
-						for (int j = 0, jcnt = fieldAddrOffsetList.Count; j < jcnt; ++j)
+						// clean and process address list
+						CleanupReferencesList(fieldAddrOffsetList, kvCmp, instances, ndxList, addrList, notFound);
+						if (ndxList.Count > 0)
 						{
-							var faddr = fieldAddrOffsetList[j].Key;
-							var ndx = Utils.AddressSearch(instances, faddr);
-							if (ndx < 0)
+							for (int j = 0, jcnt = ndxList.Count; j < jcnt; ++j)
 							{
-								notFound.Add(faddr);
-								continue;
+								var faddr = addrList[j];
+								var ndx = ndxList[j];
+								counter.Add(ndx);
+								if (bitset2.IsSet(ndx)) continue;
+								excluded = IsExcludedType(excludedTypes, typeIds[ndx]);
+								if (excluded >= 0)
+								{
+									if (excluded != freeTypeId) bitset2.Set(ndx); // mark it
+									continue;
+								}
+								que.Enqueue(new KeyValuePair<int, ulong>(ndx, faddr));
 							}
-							if (writeBufferCount == writeBufferMax)
-							{
-								fw.WriteIntArray(writeBuffer, writeBufferCount);
-								writeBufferCount = 0;
-								haveSome = false;
-							}
-							writeBuffer[writeBufferCount++] = ndx;
-							haveSome = true;
-							counter.Add(ndx);
-							if (bitset2.IsSet(ndx)) continue;
-							excluded = IsExcludedType(excludedTypes, typeIds[ndx]);
-							if (excluded >= 0)
-							{
-								if (excluded != freeTypeId) bitset2.Set(ndx); // mark it
-								continue;
-							}
-							que.Enqueue(new KeyValuePair<int, ulong>(ndx, faddr));
+							ndxList.Sort();
+							fw.WriteReferenceRecord(refNdx, ndxList);
+							++recCount;
 						}
-						if (!haveSome) continue;
-						Debug.Assert(writeBufferCount > 0);
-						fw.WriteIntArray(writeBuffer, writeBufferCount);
 					}
 				}
 
-				fw.FlushBuffer();
 				fw.Flush();
 				fw.Seek(0, SeekOrigin.Begin);
-				fw.Write(counter.RecordCount);
+				fw.Write(-recCount);
 				fw.Flush();
 				fw.Dispose();
-				fw = null;
 
-				que.Clear();
+				fw = null;
 				que = null;
-				fieldAddrOffsetList.Clear();
 				fieldAddrOffsetList = null;
-				writeBuffer = null;
+				ndxList = null;
+				addrList = null;
 
 				var errors = new List<string>();
 				var revertThread = ReferenceFileRevertor.RevertFile(refsObjFldPath, refsFldObjPath, counter, errors, progress);
@@ -850,6 +837,25 @@ namespace ClrMDRIndex
 
 		}
 
+		private static void CleanupReferencesList(List<KeyValuePair<ulong, int>> fieldAddrOffsetList, Utils.KVUlongIntKCmp kvCmp, ulong[] instances, List<int> indices, List<ulong> addresses, List<ulong> notFound)
+		{
+			indices.Clear();
+			addresses.Clear();
+			fieldAddrOffsetList.Sort(kvCmp);
+			Utils.RemoveDuplicates(fieldAddrOffsetList, kvCmp);
+			for (int j = 0, jcnt = fieldAddrOffsetList.Count; j < jcnt; ++j)
+			{
+				var faddr = fieldAddrOffsetList[j].Key;
+				var ndx = Utils.AddressSearch(instances, faddr);
+				if (ndx < 0)
+				{
+					notFound.Add(faddr);
+					continue;
+				}
+				indices.Add(ndx);
+				addresses.Add(faddr);
+			}
+		}
 
 		#endregion ctors/initialization
 
