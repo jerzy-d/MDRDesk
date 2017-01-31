@@ -83,7 +83,48 @@
                 </TextBox>
             </Grid>
         </ControlTemplate>
-
+        <!-- thread grids -->
+        <!-- ############ -->
+        <Grid x:Key="DeadlockGraphXGrid" x:Shared="False">
+            <DockPanel>
+                <gx:ZoomControl x:Name="DlkZoomCtrl" Visibility="Visible">
+                    <local:DlkGraphArea x:Name="DlkGraphArea"/>
+                </gx:ZoomControl>
+            </DockPanel>
+        </Grid>
+        <Grid x:Key="ThreadBlockingGraphXGrid" x:Shared="False">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="32"/>
+                <ColumnDefinition Width="32"/>
+                <ColumnDefinition Width="*"/>
+            </Grid.ColumnDefinitions>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="40"></RowDefinition>
+                <RowDefinition Height="*"></RowDefinition>
+            </Grid.RowDefinitions>
+            <StackPanel v4:Grid.Row="0" v4:Grid.ColumnSpan="3" Background="WhiteSmoke"  Orientation="Horizontal">
+                <Button  x:Name="ThreadBlockingGraphXBack" Margin="2,0,2,0" Width="24" Height="24" HorizontalAlignment="Center" VerticalAlignment="Center" BorderThickness="0" Click="ThreadBlockingGraphXBackClicked"
+                         Background="LightGray">
+                    <Button.ToolTip>Redo</Button.ToolTip>
+                    <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                        <Image Source=".\Images\Backward_16x.png" Width="16" Height="16" Margin="0,0,10,0" VerticalAlignment="Center" HorizontalAlignment="Center"/>
+                        <!--<TextBlock FontWeight="Bold" FontSize="12">Redo</TextBlock>-->
+                    </StackPanel>
+                </Button>
+                <Button x:Name="ThreadBlockingGraphXForward" Margin="2,0,2,0" Width="24" Height="24" HorizontalAlignment="Right" VerticalAlignment="Center" BorderThickness="0" Click="ThreadBlockingGraphXForwardClicked"
+                        Background="LightGray">
+                    <Button.ToolTip>Undo</Button.ToolTip>
+                    <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                        <Image Source=".\Images\Forward_16x.png" Width="16" Height="16" Margin="0,0,10,0" VerticalAlignment="Center" HorizontalAlignment="Center"/>
+                        <!--<TextBlock FontWeight="Bold" FontSize="12">Undo</TextBlock>-->
+                    </StackPanel>
+                </Button>
+                <TextBlock Name="ThreadBlockingGraphXHelp" Margin="32,0,2,0" HorizontalAlignment="Right" VerticalAlignment="Center" FontFamily="Trebuchet MS"  FontSize="12" FontStyle="Italic"></TextBlock>
+            </StackPanel>
+            <gx:ZoomControl x:Name="TBZoomCtrl" Visibility="Visible" v4:Grid.Row="1" v4:Grid.Column="0" v4:Grid.ColumnSpan="3">
+                <local:DlkGraphArea x:Name="TBGraphArea" Margin="2,2,2,2"/>
+            </gx:ZoomControl>
+        </Grid>
         <Grid x:Key="ThreadViewGrid" x:Shared="False">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="60*"/>
@@ -108,8 +149,10 @@
                     </ListView.View>
                 </ListView>
                 <GridSplitter Grid.Row="1" VerticalAlignment="Center" HorizontalAlignment="Stretch" Height="5" ShowsPreview="False" Background="DarkGray"></GridSplitter>
-                <TextBox Name="ThreadListingInformation" v4:Grid.Row="2" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" Margin="2,2,2,2">
-                </TextBox>
+                <!--<TextBox Name="ThreadListingInformation" v4:Grid.Row="2" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" Margin="2,2,2,2">
+                </TextBox>-->
+                <ListBox Name="ThreadListingFrames" v4:Grid.Row="2" Grid.Column="0" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" Margin="2,2,2,2" FontFamily="Consolas">
+                </ListBox>
             </Grid>
             <GridSplitter Grid.Column="1" VerticalAlignment="Stretch" HorizontalAlignment="Center" Width="5" ShowsPreview="False" Background="DarkGray"></GridSplitter>
             <Grid v4:Grid.Column="2">
@@ -120,8 +163,12 @@
                 </Grid.RowDefinitions>
             </Grid>
         </Grid>
+        
         <!-- change ulong value to hex string-->
         <local:LongHexConverter x:Key="LongHexConverter" />
+
+        <!-- instance grids -->
+        <!-- ############ -->
         <Grid x:Key="InstanceHierarchyView" Name="InstanceHierarchyView" x:Shared="False">
             <Grid.RowDefinitions>
                 <RowDefinition Height="5*"/>
@@ -231,7 +278,7 @@
             </TreeView>
         </Grid>
         <!-- display tree view -->
-        <Grid x:Key="TypeTreeViewGrid" x:Shared="False">
+        <!--<Grid x:Key="TypeTreeViewGrid" x:Shared="False">
             <Grid.RowDefinitions>
                 <RowDefinition Height="10*"/>
                 <RowDefinition Height="90*"/>
@@ -246,7 +293,7 @@
             </TreeView>
             <GridSplitter Grid.Row="1" Grid.Column="1" VerticalAlignment="Stretch" HorizontalAlignment="Center" Width="5" ShowsPreview="False" Background="DarkGray"></GridSplitter>
             <ListBox x:Name="TypeArrayValues" Grid.Row="1" Grid.Column="2"></ListBox>
-        </Grid>
+        </Grid>-->
         <!-- display data grid and information text -->
         <Grid x:Key="DataViewGrid" x:Shared="False">
             <Grid.RowDefinitions>
@@ -528,46 +575,6 @@
             </Grid>
             <GridSplitter Grid.Row="3"  Grid.Column="0"  Grid.ColumnSpan="3" VerticalAlignment="Center" HorizontalAlignment="Stretch" Height="5" ShowsPreview="False" Background="DarkGray"></GridSplitter>
             <TextBox x:Name="TypeValueReportBottomTextBox" Grid.Row="4" Grid.Column="0" Grid.ColumnSpan="3" VerticalAlignment="Stretch" HorizontalAlignment="Stretch" Margin="1,1,1,1"/>
-        </Grid>
-        <Grid x:Key="DeadlockGraphXGrid" x:Shared="False">
-            <DockPanel>
-                <gx:ZoomControl x:Name="DlkZoomCtrl" Visibility="Visible">
-                    <local:DlkGraphArea x:Name="DlkGraphArea"/>
-                </gx:ZoomControl>
-            </DockPanel>
-        </Grid>
-        <Grid x:Key="ThreadBlockingGraphXGrid" x:Shared="False">
-            <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="32"/>
-                <ColumnDefinition Width="32"/>
-                <ColumnDefinition Width="*"/>
-            </Grid.ColumnDefinitions>
-            <Grid.RowDefinitions>
-                <RowDefinition Height="40"></RowDefinition>
-                <RowDefinition Height="*"></RowDefinition>
-            </Grid.RowDefinitions>
-            <StackPanel v4:Grid.Row="0" v4:Grid.ColumnSpan="3" Background="WhiteSmoke"  Orientation="Horizontal">
-                <Button  x:Name="ThreadBlockingGraphXBack" Margin="2,0,2,0" Width="24" Height="24" HorizontalAlignment="Center" VerticalAlignment="Center" BorderThickness="0" Click="ThreadBlockingGraphXBackClicked"
-                         Background="LightGray">
-                    <Button.ToolTip>Redo</Button.ToolTip>
-                    <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                        <Image Source=".\Images\Backward_16x.png" Width="16" Height="16" Margin="0,0,10,0" VerticalAlignment="Center" HorizontalAlignment="Center"/>
-                        <!--<TextBlock FontWeight="Bold" FontSize="12">Redo</TextBlock>-->
-                    </StackPanel>
-                </Button>
-                <Button x:Name="ThreadBlockingGraphXForward" Margin="2,0,2,0" Width="24" Height="24" HorizontalAlignment="Right" VerticalAlignment="Center" BorderThickness="0" Click="ThreadBlockingGraphXForwardClicked"
-                        Background="LightGray">
-                    <Button.ToolTip>Undo</Button.ToolTip>
-                    <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                        <Image Source=".\Images\Forward_16x.png" Width="16" Height="16" Margin="0,0,10,0" VerticalAlignment="Center" HorizontalAlignment="Center"/>
-                        <!--<TextBlock FontWeight="Bold" FontSize="12">Undo</TextBlock>-->
-                    </StackPanel>
-                </Button>
-                <TextBlock Name="ThreadBlockingGraphXHelp" Margin="32,0,2,0" HorizontalAlignment="Right" VerticalAlignment="Center" FontFamily="Trebuchet MS"  FontSize="12" FontStyle="Italic"></TextBlock>
-            </StackPanel>
-            <gx:ZoomControl x:Name="TBZoomCtrl" Visibility="Visible" v4:Grid.Row="1" v4:Grid.Column="0" v4:Grid.ColumnSpan="3">
-                <local:DlkGraphArea x:Name="TBGraphArea" Margin="2,2,2,2"/>
-            </gx:ZoomControl>
         </Grid>
     </Window.Resources>
     <Grid x:Name="MainGrid">

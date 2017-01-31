@@ -1849,11 +1849,29 @@ namespace ClrMDRIndex
 			}
 		}
 
-		#endregion Comparers
+		public class IntArrayHeadCmp : IComparer<Int32[]>
+		{
+			public int Compare(int[] a, int[] b)
+			{
+				if ((a == null || a.Length < 1) && (b == null || b.Length < 1)) return 0;
+				if (a == null || a.Length < 1) return -1;
+				if (b == null || b.Length < 1) return 1;
+				var len = Math.Min(a.Length, b.Length);
+				for (int i = 0; i < len; ++i)
+				{
+					if (a[i] < b[i]) return -1;
+					if (a[i] > b[i]) return 1;
+				}
+				return a.Length < b.Length ? -1 : 1;
+			}
+		}
+	
 
-		#region Formatting
+	#endregion Comparers
 
-		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	#region Formatting
+
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		public static string RuntimeStringHeader(int index)
 		{
 			return string.Format("RT[{0}] ",index);

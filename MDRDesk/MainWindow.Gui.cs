@@ -7,6 +7,7 @@ using System.Diagnostics;
 using System.Drawing;
 using System.Globalization;
 using System.Linq;
+using System.Security.Cryptography;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows;
@@ -20,6 +21,7 @@ using ClrMDRIndex;
 using GraphX.Controls;
 using GraphX.PCL.Common.Enums;
 using GraphX.PCL.Logic.Algorithms.LayoutAlgorithms;
+using QuickGraph;
 using Binding = System.Windows.Data.Binding;
 using Brushes = System.Windows.Media.Brushes;
 using Cursors = System.Windows.Input.Cursors;
@@ -2104,9 +2106,34 @@ namespace MDRDesk
 			char[] buf = new char[digitCount];
 			var sb = new StringBuilder(128);
 
+			int[][] frames = new int[threads.Length][];
+
+			for (int i = 0, icnt = threads.Length; i < icnt; ++i)
+			{
+				frames[i] = threads[i].Frames;
+			}
+
+			var frmCmp = new Utils.IntArrayHeadCmp();
+			int[] frMap = Utils.Iota(threads.Length);
+			Array.Sort(frames, frMap, frmCmp);
+			int frmId = 0;
+			for (int i = 1; i < frames.Length; ++i)
+			{
+
+				if (frmCmp.Compare(frames[i-1],frames[i]) == 0) continue;
+				
+			}
+
+
+			SortedDictionary<int[],KeyValuePair<int,int>> dct = new SortedDictionary<int[], KeyValuePair<int, int>>(new Utils.IntArrayHeadCmp());
+
 			for (int i = 0, icnt = threads.Length; i < icnt; ++i)
 			{
 				var thrd = threads[i];
+				if (thrd.ManagedThreadId == 14)
+				{
+					int a = 1;
+				}
 				var frameIds = thrd.Frames;
 				sb.Clear();
 				for (int j = 0, jcnt = frameIds.Length; j < jcnt; ++j)
@@ -2125,14 +2152,17 @@ namespace MDRDesk
 				}
 				sb.Clear();
 			}
-			int[] frMap = Utils.Iota(frameKeys.Length);
-			Array.Sort(frameKeys, frMap, StringComparer.Ordinal);
-			int fid = 1;
-			string prevFr = string.Empty;
-			for (int i = 1, icnt = frameKeys.Length; i < icnt; ++i)
-			{
-				if (frameKeys[i] == string.Empty) continue;
-			}
+
+
+
+			//int[] frMap = Utils.Iota(frameKeys.Length);
+			//Array.Sort(frameKeys, frMap, StringComparer.Ordinal);
+			//int fid = 1;
+			//string prevFr = string.Empty;
+			//for (int i = 1, icnt = frameKeys.Length; i < icnt; ++i)
+			//{
+			//	if (frameKeys[i] == string.Empty) continue;
+			//}
 
 			const int ColumnCount = 4;
 			string[] data = new string[threads.Length * ColumnCount];
@@ -2166,10 +2196,16 @@ namespace MDRDesk
 
 			sb.Clear();
 			sb.Append(ReportFile.DescrPrefix).Append("Thread Count ").Append(threads.Length).AppendLine();
-			var listing = new ListingInfo(null, items, colInfos, sb.ToString(),framesMethods);
+
+			Tuple<ClrtThread[],string[]> dataInfo = new Tuple<ClrtThread[], string[]>(threads,framesMethods);
+
+			var listing = new ListingInfo(null, items, colInfos, sb.ToString(),dataInfo);
 
 			var grid = TryFindResource(ThreadViewGrid) as Grid;
+			Debug.Assert(grid!=null);
 			var listView = (ListView)LogicalTreeHelper.FindLogicalNode(grid, "ThreadListingView");
+			Debug.Assert(listView!=null);
+
 			listView.Tag = new Tuple<ListingInfo, string>(listing, "Thread View");
 
 			GridView gridView = (GridView)listView.View;
@@ -2187,10 +2223,15 @@ namespace MDRDesk
 			listView.Items.Clear();
 			listView.ItemsSource = listing.Items;
 
-			var txtBox = (TextBox)LogicalTreeHelper.FindLogicalNode(grid, "ThreadListingInformation");
-			txtBox.Text = listing.Notes;
-
-			Debug.Assert(grid != null);
+			//var lstBox = (ListBox)LogicalTreeHelper.FindLogicalNode(grid, "ThreadListingFrames");
+			//Debug.Assert(lstBox != null);
+			//int frameCount = threads[0].Frames.Length;
+			//string[] frames = new string[frameCount];
+			//for (int i = 0; i < frameCount; ++i)
+			//{
+			//	frames[i] = framesMethods[threads[0].Frames[i]];
+			//}
+			//lstBox.ItemsSource = frames;
 			grid.Name = ThreadViewGrid + "__" + Utils.GetNewID();
 			DisplayTab(Constants.BlackDiamond, "Threads", grid, ThreadViewGrid);
 		}
@@ -2198,6 +2239,27 @@ namespace MDRDesk
 		private void ThreadListingView_OnSelectionChanged(object sender, SelectionChangedEventArgs e)
 		{
 			ListView listView = sender as ListView;
+			Debug.Assert(listView!=null);
+			if (listView.SelectedItem == null) return;
+			listing<string> selected = (listing < string > )listView.SelectedItem;
+			// get index of data
+			Tuple<ListingInfo, string> info = listView.Tag as Tuple<ListingInfo, string>;
+			Debug.Assert(info != null);
+			Tuple<ClrtThread[], string[]> data = info.Item1.Data as Tuple<ClrtThread[], string[]>;
+			Debug.Assert(data!=null);
+			int dataNdx = selected.Offset/selected.Count;
+			ClrtThread thread = data.Item1[dataNdx];
+			var grid = GetCurrentTabGrid();
+			Debug.Assert(grid != null);
+			var lstBox = (ListBox)LogicalTreeHelper.FindLogicalNode(grid, "ThreadListingFrames");
+			Debug.Assert(lstBox != null);
+			lstBox.Items.Clear();
+			string[] allFrames = data.Item2;
+			int frameCount = thread.Frames.Length;
+			for (int i = 0; i < frameCount; ++i)
+			{
+				lstBox.Items.Add(allFrames[thread.Frames[i]]);
+			}
 		}
 
 		#endregion threads
