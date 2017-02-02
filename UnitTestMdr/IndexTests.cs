@@ -1263,8 +1263,7 @@ namespace UnitTestMdr
 
 		#region misc
 
-			[
-			TestMethod]
+		[TestMethod]
 		public void TestKnownTypes()
 		{
 			string[] typeNames = new string[]
@@ -1278,6 +1277,24 @@ namespace UnitTestMdr
 			for (int i = 0, icnt = typeNames.Length; i < icnt; ++i)
 			{
 				Assert.IsTrue(ValueExtractor.IsKnownType(typeNames[i]));
+			}
+		}
+
+		[TestMethod]
+		public void TestMapping()
+		{
+			char[] chars = new[] {'d', 'a', 'b', 'f', 'h', 'e', 'g', 'c'};
+			int[] map = Utils.Iota(chars.Length);
+			char[] sorted = new char[chars.Length];
+			Buffer.BlockCopy(chars,0,sorted,0,chars.Length*sizeof(char));
+			Array.Sort(sorted,map);
+			int[] map2 = Utils.Iota(map.Length);
+			Array.Sort(map,map2);
+			for (int i = 0, icnt = chars.Length; i < icnt; ++i)
+			{
+				char c1 = chars[i];
+				char c2 = sorted[map2[i]];
+				Assert.AreEqual(c1,c2);
 			}
 		}
 

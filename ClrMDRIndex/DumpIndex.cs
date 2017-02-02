@@ -247,7 +247,7 @@ namespace ClrMDRIndex
 
 				_threadBlockgraph = Digraph.Load(br, out error);
 
-				if (DeadlockFound)
+				//if (DeadlockFound)
 				{
 					LoadThreadsAndBlocks(out error);
 				}

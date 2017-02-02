@@ -1862,7 +1862,7 @@ namespace ClrMDRIndex
 					if (a[i] < b[i]) return -1;
 					if (a[i] > b[i]) return 1;
 				}
-				return a.Length < b.Length ? -1 : 1;
+				return a.Length == b.Length ? 0 : (a.Length < b.Length ? -1 : 1);
 			}
 		}
 	

@@ -2101,74 +2101,54 @@ namespace MDRDesk
 			var threads = result.Item2;
 			var framesMethods = result.Item3;
 
-			string[] frameKeys = new string[threads.Length];
-			int digitCount = Utils.NumberOfDigits(framesMethods.Length);
-			char[] buf = new char[digitCount];
-			var sb = new StringBuilder(128);
-
 			int[][] frames = new int[threads.Length][];
-
 			for (int i = 0, icnt = threads.Length; i < icnt; ++i)
-			{
 				frames[i] = threads[i].Frames;
-			}
 
 			var frmCmp = new Utils.IntArrayHeadCmp();
 			int[] frMap = Utils.Iota(threads.Length);
 			Array.Sort(frames, frMap, frmCmp);
-			int frmId = 0;
+			int cnt, frmId = 0;
+			KeyValuePair<int,int>[] frmCounts = new KeyValuePair<int, int>[frames.Length];
+			frmCounts[0] = new KeyValuePair<int, int>(frmId,1);
 			for (int i = 1; i < frames.Length; ++i)
 			{
-
-				if (frmCmp.Compare(frames[i-1],frames[i]) == 0) continue;
-				
+				if (frmCmp.Compare(frames[i - 1], frames[i]) == 0)
+				{
+					cnt = frmCounts[i-1].Value;
+					frmCounts[i] = new KeyValuePair<int, int>(frmId, cnt+1);
+					continue;
+				}
+				++frmId;
+				frmCounts[i] = new KeyValuePair<int, int>(frmId, 1);
 			}
 
+			int digitCount = Utils.NumberOfDigits(frmId);
+			char[] buf = new char[digitCount];
 
-			SortedDictionary<int[],KeyValuePair<int,int>> dct = new SortedDictionary<int[], KeyValuePair<int, int>>(new Utils.IntArrayHeadCmp());
-
-			for (int i = 0, icnt = threads.Length; i < icnt; ++i)
+			cnt = frmCounts[frmCounts.Length - 1].Value;
+			frmId = frmCounts[frmCounts.Length - 1].Key;
+			for (int i = frmCounts.Length-2; i >= 0; --i)
 			{
-				var thrd = threads[i];
-				if (thrd.ManagedThreadId == 14)
+				if (frmCounts[i].Key == frmId)
 				{
-					int a = 1;
+					frmCounts[i] = new KeyValuePair<int, int>(frmId,cnt);
+					continue;
 				}
-				var frameIds = thrd.Frames;
-				sb.Clear();
-				for (int j = 0, jcnt = frameIds.Length; j < jcnt; ++j)
-				{
-					var s = Utils.GetDigitsString(frameIds[j], digitCount, buf);
-					sb.Append(s).Append('|');
-				}
-				if (sb.Length > 0)
-				{
-					sb.Remove(sb.Length - 1, 1);
-					frameKeys[i] = sb.ToString();
-				}
-				else
-				{
-					frameKeys[i] = string.Empty;
-				}
-				sb.Clear();
+				cnt = frmCounts[i].Value;
+				frmId = frmCounts[i].Key;
 			}
 
-
-
-			//int[] frMap = Utils.Iota(frameKeys.Length);
-			//Array.Sort(frameKeys, frMap, StringComparer.Ordinal);
-			//int fid = 1;
-			//string prevFr = string.Empty;
-			//for (int i = 1, icnt = frameKeys.Length; i < icnt; ++i)
-			//{
-			//	if (frameKeys[i] == string.Empty) continue;
-			//}
+			int[] frMap2 = Utils.Iota(threads.Length);
+			Array.Sort(frMap,frMap2);
+			frMap = null;
 
 			const int ColumnCount = 4;
 			string[] data = new string[threads.Length * ColumnCount];
 			listing<string>[] items = new listing<string>[threads.Length];
 			int dataNdx = 0;
 			int itemNdx = 0;
+			var sb = StringBuilderCache.Acquire(StringBuilderCache.MaxCapacity);
 
 			for (int i = 0, icnt = threads.Length; i < icnt; ++i)
 			{
@@ -2183,7 +2163,13 @@ namespace MDRDesk
 				data[dataNdx++] = osIdStr;
 				data[dataNdx++] = mngIdStr;
 				data[dataNdx++] = traits;
-				data[dataNdx++] = frameKeys[i];
+
+				KeyValuePair<int, int> kv = frmCounts[frMap2[i]];
+				sb.Clear();
+				var id = Utils.GetDigitsString(kv.Key, digitCount, buf);
+				sb.Append(id).Append("/").Append(kv.Value).Append(" thread(s), trace count ").Append(threads[i].Frames.Length); 
+
+				data[dataNdx++] = sb.ToString();
 			}
 
 			ColumnInfo[] colInfos = new[]
@@ -2191,7 +2177,7 @@ namespace MDRDesk
 				new ColumnInfo("OS Id", ReportFile.ColumnType.Int32, 150, 1, true),
 				new ColumnInfo("Mng Id", ReportFile.ColumnType.Int32, 150, 2, true),
 				new ColumnInfo("Properties", ReportFile.ColumnType.String, 300, 3, true),
-				new ColumnInfo("Frames", ReportFile.ColumnType.String, 400, 4, true),
+				new ColumnInfo("Frame Id/Thread and Trace Counts", ReportFile.ColumnType.String, 400, 4, true),
 			};
 
 			sb.Clear();
@@ -2223,15 +2209,8 @@ namespace MDRDesk
 			listView.Items.Clear();
 			listView.ItemsSource = listing.Items;
 
-			//var lstBox = (ListBox)LogicalTreeHelper.FindLogicalNode(grid, "ThreadListingFrames");
-			//Debug.Assert(lstBox != null);
-			//int frameCount = threads[0].Frames.Length;
-			//string[] frames = new string[frameCount];
-			//for (int i = 0; i < frameCount; ++i)
-			//{
-			//	frames[i] = framesMethods[threads[0].Frames[i]];
-			//}
-			//lstBox.ItemsSource = frames;
+			StringBuilderCache.Release(sb);
+
 			grid.Name = ThreadViewGrid + "__" + Utils.GetNewID();
 			DisplayTab(Constants.BlackDiamond, "Threads", grid, ThreadViewGrid);
 		}
