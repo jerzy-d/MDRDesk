@@ -642,6 +642,7 @@ namespace ClrMDRIndex
 		private void GetThreadsInfos(object param)
 		{
 			var parameters = param as Tuple<ClrtDump, ulong[], int[], string[]>;
+			Debug.Assert(parameters!=null);
 			var clrtDump = parameters.Item1;
 			var instances = parameters.Item2;
 			var typeIds = parameters.Item3;
@@ -797,7 +798,6 @@ namespace ClrMDRIndex
 
 				// get frames info
 				//
-
 				var frames = new StringIdDct();
 				var stObjCmp = new Utils.KVIntUlongCmpAsc();
 				var stackObject = new SortedDictionary<KeyValuePair<int, ulong>, int>(stObjCmp);
@@ -888,7 +888,6 @@ namespace ClrMDRIndex
 					Debug.Assert(clrtThread != null);
 					clrtThread.Dump(bw);
 				}
-
 
 				bw.Write(blocks.Length);
 				for (int i = 0, icnt = blocks.Length; i < icnt; ++i)

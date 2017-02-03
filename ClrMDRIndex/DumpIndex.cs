@@ -2668,14 +2668,17 @@ namespace ClrMDRIndex
 			return Utils.BaseTypeName(GetTypeName(blk.TypeId));
 		}
 
-		public Tuple<ClrtThread[], string[]> GetThreads(out string error)
+		public Tuple<ClrtThread[], string[], KeyValuePair<int,ulong>[]> GetThreads(out string error)
 		{
 			error = null;
 			try
 			{
 				var path = _fileMoniker.GetFilePath(_currentRuntimeIndex, Constants.TxtThreadFrameDescriptionFilePostfix);
 				var frameDescrs = Utils.GetStringListFromFile(path, out error);
-				return new Tuple<ClrtThread[], string[]>(_threads, frameDescrs);
+				if (error != null) return null;
+				var stackVars = Utils.ReadKvIntUInt64Array(path, out error);
+
+				return new Tuple<ClrtThread[], string[],KeyValuePair<int,ulong>[]>(_threads, frameDescrs,stackVars);
 			}
 			catch (Exception ex)
 			{

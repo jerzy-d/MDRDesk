@@ -2087,7 +2087,7 @@ namespace MDRDesk
 			{
 				string error = null;
 				var info = CurrentIndex.GetThreads(out error);
-				return new Tuple<string, ClrtThread[], string[]>(error, info.Item1, info.Item2);
+				return new Tuple<string, ClrtThread[], string[],KeyValuePair<int,ulong>[]>(error, info.Item1, info.Item2,info.Item3);
 			});
 
 			string msg = result.Item1 != null ? "Getting thread infos failed." : "Getting thread infos succeeded.";
@@ -2183,7 +2183,7 @@ namespace MDRDesk
 			sb.Clear();
 			sb.Append(ReportFile.DescrPrefix).Append("Thread Count ").Append(threads.Length).AppendLine();
 
-			Tuple<ClrtThread[],string[]> dataInfo = new Tuple<ClrtThread[], string[]>(threads,framesMethods);
+			Tuple<ClrtThread[],string[],KeyValuePair<int,ulong>[]> dataInfo = new Tuple<ClrtThread[], string[], KeyValuePair<int, ulong>[]>(threads,framesMethods,result.Item4);
 
 			var listing = new ListingInfo(null, items, colInfos, sb.ToString(),dataInfo);
 

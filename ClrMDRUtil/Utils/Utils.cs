@@ -598,6 +598,34 @@ namespace ClrMDRIndex
 			}
 		}
 
+		public static KeyValuePair<int, ulong>[] ReadKvIntUInt64Array(string path, out string error)
+		{
+			error = null;
+			BinaryReader br = null;
+			try
+			{
+				br = new BinaryReader(File.Open(path, FileMode.Open));
+				var cnt = br.ReadInt32();
+				var ary = new KeyValuePair<int, ulong>[cnt];
+				for (int i = 0; i < cnt; ++i)
+				{
+					var key = br.ReadInt32();
+					var value = br.ReadUInt64();
+					ary[i] = new KeyValuePair<int, ulong>(key, value);
+				}
+				return ary;
+			}
+			catch (Exception ex)
+			{
+				error = GetExceptionErrorString(ex);
+				return null;
+			}
+			finally
+			{
+				br?.Close();
+			}
+		}
+
 		public static bool WriteKvIntIntArray(string path, IList<KeyValuePair<int, int>> lst, out string error)
 		{
 			error = null;
