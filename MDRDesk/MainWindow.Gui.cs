@@ -2192,10 +2192,20 @@ namespace MDRDesk
 			var listView = (ListView)LogicalTreeHelper.FindLogicalNode(grid, "ThreadListingView");
 			Debug.Assert(listView!=null);
 
+			GuiUtils.AddListViewColumn(grid, "AliveStackObjects", "Alive Stack Objects", 400);
+			GuiUtils.AddListViewColumn(grid, "DeadStackObjects", "Dead Stack Objects", 400);
+
+			//var alistView = (ListView)LogicalTreeHelper.FindLogicalNode(grid, "AliveStackObjects");
+			//GridView agridView = (GridView)alistView.View;
+			//var agridColumn = new GridViewColumn
+			//{
+			//	Header = "Alive Stack Objects",
+			//};
+			//agridView.Columns.Add(agridColumn);
+
+
 			listView.Tag = new Tuple<ListingInfo, string>(listing, "Thread View");
-
 			GridView gridView = (GridView)listView.View;
-
 			for (int i = 0, icnt = listing.ColInfos.Length; i < icnt; ++i)
 			{
 				var gridColumn = new GridViewColumn
@@ -2224,7 +2234,7 @@ namespace MDRDesk
 			// get index of data
 			Tuple<ListingInfo, string> info = listView.Tag as Tuple<ListingInfo, string>;
 			Debug.Assert(info != null);
-			Tuple<ClrtThread[], string[]> data = info.Item1.Data as Tuple<ClrtThread[], string[]>;
+			var data = info.Item1.Data as Tuple<ClrtThread[], string[], KeyValuePair<int, ulong>[]>;
 			Debug.Assert(data!=null);
 			int dataNdx = selected.Offset/selected.Count;
 			ClrtThread thread = data.Item1[dataNdx];
@@ -2239,6 +2249,14 @@ namespace MDRDesk
 			{
 				lstBox.Items.Add(allFrames[thread.Frames[i]]);
 			}
+			var stackVars = CurrentIndex.GetThreadStackVarsStrings(thread.LiveStackObjects, thread.DeadStackObjects, data.Item3);
+			var alistView = (ListView)LogicalTreeHelper.FindLogicalNode(grid, "AliveStackObjects");
+			Debug.Assert(alistView != null);
+			alistView.ItemsSource = stackVars.Key;
+			alistView = (ListView)LogicalTreeHelper.FindLogicalNode(grid, "DeadStackObjects");
+			Debug.Assert(alistView != null);
+			alistView.ItemsSource = stackVars.Value;
+
 		}
 
 		#endregion threads

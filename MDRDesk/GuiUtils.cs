@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Diagnostics;
 using System.IO;
 using System.Windows;
 using System.Windows.Controls;
@@ -209,7 +210,19 @@ namespace MDRDesk
 
 		#endregion
 
-
+		public static void AddListViewColumn(Grid grid, string lstName, string colHeader, int width)
+		{
+			var alist = (ListView)LogicalTreeHelper.FindLogicalNode(grid, lstName);
+			Debug.Assert(alist!=null);
+			GridView gridView = (GridView)alist.View;
+			Debug.Assert(gridView!=null);
+			var gridColumn = new GridViewColumn
+			{
+				Header = colHeader,
+				Width = width
+			};
+			gridView.Columns.Add(gridColumn);
+		}
 
 		public static string InstanceValueValueString(InstanceValue val)
 		{

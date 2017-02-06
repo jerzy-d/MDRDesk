@@ -2676,6 +2676,7 @@ namespace ClrMDRIndex
 				var path = _fileMoniker.GetFilePath(_currentRuntimeIndex, Constants.TxtThreadFrameDescriptionFilePostfix);
 				var frameDescrs = Utils.GetStringListFromFile(path, out error);
 				if (error != null) return null;
+				path = _fileMoniker.GetFilePath(_currentRuntimeIndex, Constants.MapThreadFramesFilePostfix);
 				var stackVars = Utils.ReadKvIntUInt64Array(path, out error);
 
 				return new Tuple<ClrtThread[], string[],KeyValuePair<int,ulong>[]>(_threads, frameDescrs,stackVars);
@@ -2685,6 +2686,27 @@ namespace ClrMDRIndex
 				error = Utils.GetExceptionErrorString(ex);
 				return null;
 			}
+		}
+
+		public KeyValuePair<string[],string[]> GetThreadStackVarsStrings(int[] alive, int[] dead, KeyValuePair<int, ulong>[] stackVars)
+		{
+			var aliveStrs = new string[alive.Length];
+			for (int i = 0, icnt = alive.Length; i < icnt; ++i)
+			{
+				var kv = stackVars[alive[i]];
+				var addrStr = Utils.RealAddressStringHeader(kv.Value);
+				var type = GetTypeName(kv.Key);
+				aliveStrs[i] = addrStr + type;
+			}
+			var deadStrs = new string[dead.Length];
+			for (int i = 0, icnt = dead.Length; i < icnt; ++i)
+			{
+				var kv = stackVars[dead[i]];
+				var addrStr = Utils.RealAddressStringHeader(kv.Value);
+				var type = GetTypeName(kv.Key);
+				deadStrs[i] = addrStr + type;
+			}
+			return new KeyValuePair<string[], string[]>(aliveStrs,deadStrs);
 		}
 
 		#endregion threads/blocking objects

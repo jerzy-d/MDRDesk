@@ -47,7 +47,9 @@ namespace ClrMDRIndex
 		private int[] _blkObjects;
 		private int[] _frames;
 		private int[] _liveStackObjects;
+		public int[] LiveStackObjects => _liveStackObjects;
 		private int[] _deadStackObjects;
+		public int[] DeadStackObjects => _deadStackObjects;
 
 		public ulong Address => _address;
 		public uint OSThreadId => _osId;

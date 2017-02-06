@@ -161,6 +161,29 @@
                     <RowDefinition Height="5"/>
                     <RowDefinition Height="20*"/>
                 </Grid.RowDefinitions>
+                <ListView Name="AliveStackObjects" Grid.Row="0" VerticalAlignment="Stretch" HorizontalAlignment="Stretch" Margin="2,2,2,2">
+                    <ListView.ItemContainerStyle>
+                        <Style TargetType="ListViewItem">
+                            <Setter Property="HorizontalContentAlignment" Value="Left" />
+                        </Style>
+                    </ListView.ItemContainerStyle>
+                    <ListView.View>
+                        <GridView AllowsColumnReorder="True">
+                        </GridView>
+                    </ListView.View>
+                </ListView>
+                <GridSplitter Grid.Row="1" VerticalAlignment="Center" HorizontalAlignment="Stretch" Height="5" ShowsPreview="False" Background="DarkGray"></GridSplitter>
+                <ListView Name="DeadStackObjects" Grid.Row="2" VerticalAlignment="Stretch" HorizontalAlignment="Stretch" Margin="2,2,2,2">
+                    <ListView.ItemContainerStyle>
+                        <Style TargetType="ListViewItem">
+                            <Setter Property="HorizontalContentAlignment" Value="Left" />
+                        </Style>
+                    </ListView.ItemContainerStyle>
+                    <ListView.View>
+                        <GridView AllowsColumnReorder="True">
+                        </GridView>
+                    </ListView.View>
+                </ListView>
             </Grid>
         </Grid>
         
