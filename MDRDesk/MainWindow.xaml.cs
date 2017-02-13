@@ -472,7 +472,7 @@ namespace MDRDesk
 			return StringBuilderCache.GetStringAndRelease(sb);
 		}
 
-	private async void OpenDumpIndexClicked(object sender, RoutedEventArgs e)
+		private async void OpenDumpIndexClicked(object sender, RoutedEventArgs e)
 		{
 			if (IsIndexAvailable(null)) CloseCurrentIndex();
 			string path = null;
@@ -1622,10 +1622,7 @@ namespace MDRDesk
 
 		#endregion Dialogs
 
-		private void RecentDumpSelectionClicked(object sender, RoutedEventArgs e)
-		{
-			int a = 0;
-		}
+		#region Context Menus
 
 		private void CopyAddressSelectionClicked(object sender, RoutedEventArgs e)
 		{
@@ -1676,7 +1673,7 @@ namespace MDRDesk
 			int maxLen = Math.Min(10000, addresses.Length);
 			if (maxLen < 1)
 			{
-				MainStatusShowMessage("No address is copied to Clipboard. Address list is ermpty.");
+				MainStatusShowMessage("No address is copied to Clipboard. Address list is empty.");
 				return;
 			}
 
@@ -1748,6 +1745,142 @@ namespace MDRDesk
 			Debug.Assert(lbTypeNames != null);
 			return lbTypeNames;
 		}
+
+		private void StackObjectCopyAddressClicked(object sender, RoutedEventArgs e)
+		{
+			ListView lv = GetContextMenuListView(sender);
+			Debug.Assert(lv!=null);
+			var selections = lv.SelectedItems;
+			if (selections == null || selections.Count < 1)
+			{
+				MainStatusShowMessage("No address is copied to Clipboard. No item(s) are selected.");
+				return;
+			}
+			var sb = StringBuilderCache.Acquire(StringBuilderCache.MaxCapacity);
+
+			foreach (var selection in selections)
+			{
+				string s = selection.ToString();
+				sb.Append("0x00"); // clean byte first
+				int pos = 4;
+				while (!Char.IsWhiteSpace(s[pos]))
+				{
+					sb.Append(s[pos]);
+					++pos;
+				}
+				sb.AppendLine();
+			}
+			string result = StringBuilderCache.GetStringAndRelease(sb);
+			if (selections.Count == 1) result = result.Trim();
+
+			Clipboard.SetText(result);
+			if (selections.Count == 1)
+			{
+				MainStatusShowMessage("Address: " + result + " is copied to Clipboard.");
+				return;
+			}
+			MainStatusShowMessage(selections.Count + " addresses are copied to Clipboard.");
+
+		}
+
+		private void StackObjectCopyAddressAllClicked(object sender, RoutedEventArgs e)
+		{
+			ListView lv = GetContextMenuListView(sender);
+			Debug.Assert(lv != null);
+			var sb = StringBuilderCache.Acquire(StringBuilderCache.MaxCapacity);
+
+			foreach (var item in lv.Items)
+			{
+				string s = item.ToString();
+				sb.Append("0x00"); // clean byte first
+				int pos = 4;
+				while (!Char.IsWhiteSpace(s[pos]))
+				{
+					sb.Append(s[pos]);
+					++pos;
+				}
+				sb.AppendLine();
+			}
+			string result = StringBuilderCache.GetStringAndRelease(sb);
+			if (lv.Items.Count == 1) result = result.Trim();
+
+			Clipboard.SetText(result);
+			if (lv.Items.Count == 1)
+			{
+				MainStatusShowMessage("Address: " + result + " is copied to Clipboard.");
+				return;
+			}
+			MainStatusShowMessage(lv.Items.Count + " addresses are copied to Clipboard.");
+
+		}
+
+		private void StackObjectGetInstSizesClicked(object sender, RoutedEventArgs e)
+		{
+			var menuItem = sender as MenuItem;
+			Debug.Assert(menuItem != null);
+
+		}
+
+		private void StackObjectInstValueClicked(object sender, RoutedEventArgs e)
+		{
+			ulong addr = GetStackObjectAddress(sender);
+			if (addr == Constants.InvalidAddress) return;
+			Dispatcher.CurrentDispatcher.InvokeAsync(() => ExecuteInstanceValueQuery("Getting stack object value: " + Utils.AddressString(addr), addr));
+		}
+
+		private void StackObjectGetInstHierarchyClicked(object sender, RoutedEventArgs e)
+		{
+			ulong addr = GetStackObjectAddress(sender);
+			if (addr == Constants.InvalidAddress) return;
+			Dispatcher.CurrentDispatcher.InvokeAsync(() => ExecuteInstanceHierarchyQuery("Getting stack object hierarchy: " + Utils.AddressString(addr), addr,Constants.InvalidIndex));
+		}
+
+
+		private ulong GetStackObjectAddress(object sender)
+		{
+			ListView lv = GetContextMenuListView(sender);
+			Debug.Assert(lv != null);
+			var selections = lv.SelectedItems;
+			if (selections == null || selections.Count < 1)
+			{
+				MainStatusShowMessage("No address is copied to Clipboard. No item(s) are selected.");
+				return Constants.InvalidAddress;
+			}
+			var sb = StringBuilderCache.Acquire(StringBuilderCache.MaxCapacity);
+			string s = selections[0].ToString();
+			sb.Append("0x00"); // clean byte first
+			int pos = 4;
+			while (!Char.IsWhiteSpace(s[pos]))
+			{
+				sb.Append(s[pos]);
+				++pos;
+			}
+			string result = StringBuilderCache.GetStringAndRelease(sb);
+			ulong addr = Convert.ToUInt64(result, 16);
+			return addr;
+		}
+
+		private ListView GetContextMenuListView(object sender)
+		{
+			var menuItem = sender as MenuItem;
+			Debug.Assert(menuItem != null);
+			return GetListView(menuItem);
+		}
+
+		private ListView GetListView(MenuItem menuItem)
+		{
+			var contextMenu = menuItem.Parent as ContextMenu;
+			Debug.Assert(contextMenu != null);
+			return (contextMenu.Tag is ListView) ? contextMenu.Tag as ListView : null;
+		}
+
+		#endregion Context Menus
+
+		private void RecentDumpSelectionClicked(object sender, RoutedEventArgs e)
+		{
+			int a = 0;
+		}
+
 
 		private async void GenerateSizeDetailsReport(object sender, RoutedEventArgs e) // TODO JRD -- display as ListView (listing)
 		{
@@ -2015,7 +2148,6 @@ namespace MDRDesk
 				return;
 			ShowMemoryViewWindow(addr);
 		}
-
 
 	}
 }

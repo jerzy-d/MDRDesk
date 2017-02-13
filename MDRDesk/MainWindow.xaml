@@ -43,6 +43,17 @@
             <Separator></Separator>
             <MenuItem x:Name="AddrLstViewMemory" Header="View Memory" Click="AddrLstViewMemoryClicked"/>
         </ContextMenu>
+        <ContextMenu x:Key="StackObjectListContextMenu" x:Shared="False">
+            <MenuItem x:Name="StackObjectCopyAddress" Header="Copy Address (clipboard)" Click="StackObjectCopyAddressClicked" ></MenuItem>
+            <MenuItem x:Name="StackObjectCopyAddressAll" Header="Copy All Addresses (clipboard)" Click="StackObjectCopyAddressAllClicked"></MenuItem>
+            <MenuItem x:Name="StackObjectGetInstSizes" Header="Get Instance Sizes" Click="StackObjectGetInstSizesClicked"/>
+            <MenuItem x:Name="StackObjectGetInstValue" Header="Get Instance Value" Click="StackObjectInstValueClicked"/>
+            <MenuItem x:Name="StackObjectGetInstHierarchy" Header="Get Instance Hierarchy" Click="StackObjectGetInstHierarchyClicked"/>
+            <Separator></Separator>
+            <MenuItem x:Name="StackObjectViewMemory" Header="View Memory" Click="AddrLstViewMemoryClicked"/>
+        </ContextMenu>
+
+
         <ContextMenu x:Key="TypeListContextMenu" x:Shared="False">
             <MenuItem x:Name="TypeListCopyTypeName" Header="Copy Type Name" Click="CopyTypeNameClicked"></MenuItem>
             <MenuItem x:Name="TypeListGenerationDistribution" Header="Generation Ditribution" Click="GenerationDistributionClicked"></MenuItem>
@@ -60,6 +71,7 @@
             <MenuItem x:Name="TypeListGenerateSizeDetailsReport" Header="Generate Size Details Report" Click="GenerateSizeDetailsReport"></MenuItem>
             <MenuItem x:Name="TypeListGetTypeValuesReport" Header="Type Values Report" Click="GetTypeValuesReportClicked"></MenuItem>
         </ContextMenu>
+        
         <ControlTemplate x:Key="ListingGridTemplate" TargetType="Control">
             <Grid x:Name="ListingGrid">
                 <Grid.RowDefinitions>
@@ -161,31 +173,43 @@
                     <RowDefinition Height="5"/>
                     <RowDefinition Height="20*"/>
                 </Grid.RowDefinitions>
-                <ListView Name="AliveStackObjects" Grid.Row="0" VerticalAlignment="Stretch" HorizontalAlignment="Stretch" Margin="2,2,2,2">
+                <ListView Name="AliveStackObjects" Grid.Row="0" VerticalAlignment="Stretch" HorizontalAlignment="Stretch" Margin="2,2,2,2" ContextMenu="{StaticResource StackObjectListContextMenu}">
                     <ListView.ItemContainerStyle>
                         <Style TargetType="ListViewItem">
                             <Setter Property="HorizontalContentAlignment" Value="Left" />
                         </Style>
                     </ListView.ItemContainerStyle>
                     <ListView.View>
-                        <GridView AllowsColumnReorder="True">
+                        <GridView>
+                            <GridViewColumn Width="400">
+                                <GridViewColumn.Header>
+                                    <GridViewColumnHeader Content="Alive Stack Objects" HorizontalContentAlignment="Left" FontStyle="Italic" FontWeight="Bold"/>
+                                </GridViewColumn.Header>
+                            </GridViewColumn>
                         </GridView>
                     </ListView.View>
                 </ListView>
                 <GridSplitter Grid.Row="1" VerticalAlignment="Center" HorizontalAlignment="Stretch" Height="5" ShowsPreview="False" Background="DarkGray"></GridSplitter>
-                <ListView Name="DeadStackObjects" Grid.Row="2" VerticalAlignment="Stretch" HorizontalAlignment="Stretch" Margin="2,2,2,2">
+                <ListView Name="DeadStackObjects" Grid.Row="2" VerticalAlignment="Stretch" HorizontalAlignment="Stretch" Margin="2,2,2,2" ContextMenu="{StaticResource StackObjectListContextMenu}">
                     <ListView.ItemContainerStyle>
                         <Style TargetType="ListViewItem">
                             <Setter Property="HorizontalContentAlignment" Value="Left" />
                         </Style>
                     </ListView.ItemContainerStyle>
                     <ListView.View>
-                        <GridView AllowsColumnReorder="True">
+                        <GridView>
+                            <GridViewColumn Width="400">
+                                <GridViewColumn.Header>
+                                    <GridViewColumnHeader Content="Dead Stack Objects" HorizontalContentAlignment="Left" FontStyle="Italic" FontWeight="Bold"/>
+                                </GridViewColumn.Header>
+                            </GridViewColumn>
                         </GridView>
                     </ListView.View>
                 </ListView>
             </Grid>
         </Grid>
+        <!-- ############ -->
+        <!-- thread grids -->
         
         <!-- change ulong value to hex string-->
         <local:LongHexConverter x:Key="LongHexConverter" />

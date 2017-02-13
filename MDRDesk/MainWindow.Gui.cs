@@ -2192,8 +2192,8 @@ namespace MDRDesk
 			var listView = (ListView)LogicalTreeHelper.FindLogicalNode(grid, "ThreadListingView");
 			Debug.Assert(listView!=null);
 
-			GuiUtils.AddListViewColumn(grid, "AliveStackObjects", "Alive Stack Objects", 400);
-			GuiUtils.AddListViewColumn(grid, "DeadStackObjects", "Dead Stack Objects", 400);
+			//GuiUtils.AddListViewColumn(grid, "AliveStackObjects", "Alive Stack Objects", 400);
+			//GuiUtils.AddListViewColumn(grid, "DeadStackObjects", "Dead Stack Objects", 400);
 
 			//var alistView = (ListView)LogicalTreeHelper.FindLogicalNode(grid, "AliveStackObjects");
 			//GridView agridView = (GridView)alistView.View;
@@ -2219,10 +2219,18 @@ namespace MDRDesk
 			listView.Items.Clear();
 			listView.ItemsSource = listing.Items;
 
+			var alistView = (ListView)LogicalTreeHelper.FindLogicalNode(grid, "AliveStackObjects");
+			Debug.Assert(alistView != null);
+			alistView.ContextMenu.Tag = alistView;
+			alistView = (ListView)LogicalTreeHelper.FindLogicalNode(grid, "DeadStackObjects");
+			Debug.Assert(alistView != null);
+			alistView.ContextMenu.Tag = alistView;
+
 			StringBuilderCache.Release(sb);
 
 			grid.Name = ThreadViewGrid + "__" + Utils.GetNewID();
 			DisplayTab(Constants.BlackDiamond, "Threads", grid, ThreadViewGrid);
+			listView.SelectedIndex = 0;
 		}
 
 		private void ThreadListingView_OnSelectionChanged(object sender, SelectionChangedEventArgs e)

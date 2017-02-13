@@ -219,7 +219,7 @@ namespace MDRDesk
 			var gridColumn = new GridViewColumn
 			{
 				Header = colHeader,
-				Width = width
+				Width = width,
 			};
 			gridView.Columns.Add(gridColumn);
 		}
