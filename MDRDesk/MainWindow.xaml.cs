@@ -1695,6 +1695,38 @@ namespace MDRDesk
 			MainStatusShowMessage(maxLen + " addresses are copied to Clipboard.");
 		}
 
+		private void AddrLstGetInstSizesClicked(object sender, RoutedEventArgs e)
+		{
+			ulong addr = GetAddressFromList(sender);
+			if (addr == Constants.InvalidAddress) return;
+			GetInstSizes(addr);
+		}
+
+		private async void GetInstSizes(ulong addr)
+		{
+			if (addr == Constants.InvalidAddress) return;
+			SetStartTaskMainWindowState("Getting instance[" + Utils.RealAddressString(addr) + "], please wait...");
+
+			var result = await Task.Run(() =>
+			{
+				string error;
+				KeyValuePair<uint, uint> info = CurrentIndex.GetInstanceSizes(addr, out error);
+				return new Tuple<string, KeyValuePair<uint, uint>>(error, info);
+			});
+
+			if (result.Item1 != null)
+			{
+				ShowError(result.Item1);
+				SetEndTaskMainWindowState("Getting instance [" + Utils.RealAddressString(addr) + "] sizes failed.");
+				return;
+			}
+			SetEndTaskMainWindowState("Instance [" + Utils.RealAddressString(addr)
+				+ "] sizes, base: " + Utils.LargeNumberString((ulong)result.Item2.Key)
+				+ ",  total: " + Utils.LargeNumberString((ulong)result.Item2.Value));
+		}
+
+
+
 		private ListBox GetTypeAddressesListBox(object sender)
 		{
 			var menuItem = sender as MenuItem;
@@ -1816,9 +1848,9 @@ namespace MDRDesk
 
 		private void StackObjectGetInstSizesClicked(object sender, RoutedEventArgs e)
 		{
-			var menuItem = sender as MenuItem;
-			Debug.Assert(menuItem != null);
-
+			ulong addr = GetStackObjectAddress(sender);
+			if (addr == Constants.InvalidAddress) return;
+			GetInstSizes(addr);
 		}
 
 		private void StackObjectInstValueClicked(object sender, RoutedEventArgs e)
@@ -1975,9 +2007,6 @@ namespace MDRDesk
 				return Constants.InvalidAddress;
 			}
 			var addr = (ulong)lbAddresses.SelectedItems[0];
-
-
-
 			return addr;
 		}
 
@@ -1998,65 +2027,7 @@ namespace MDRDesk
 			ulong addr = GetAddressFromList(sender);
 			if (addr == Constants.InvalidAddress) return;
 			Dispatcher.CurrentDispatcher.InvokeAsync(() => ExecuteInstanceHierarchyQuery("Get instance hierarchy " + Utils.AddressStringHeader(addr), addr, Constants.InvalidIndex));
-
 		}
-
-		private async void AddrLstGetInstSizesClicked(object sender, RoutedEventArgs e)
-		{
-			ulong addr = GetAddressFromList(sender);
-			if (addr == Constants.InvalidAddress) return;
-			SetStartTaskMainWindowState("Getting instance[" + Utils.RealAddressString(addr) + "], please wait...");
-
-			var result = await Task.Run(() =>
-			{
-				string error;
-				KeyValuePair<uint, uint> info = CurrentIndex.GetInstanceSizes(addr, out error);
-				return new Tuple<string, KeyValuePair<uint, uint>>(error, info);
-			});
-
-			if (result.Item1 != null)
-			{
-				ShowError(result.Item1);
-				SetEndTaskMainWindowState("Getting instance [" + Utils.RealAddressString(addr) + "] sizes failed.");
-				return;
-			}
-			SetEndTaskMainWindowState("Instance [" + Utils.RealAddressString(addr)
-				+ "] sizes, base: " + Utils.LargeNumberString((ulong)result.Item2.Key)
-				+ ",  total: " + Utils.LargeNumberString((ulong)result.Item2.Value));
-		}
-
-
-		///// <summary>
-		///// TODO JRD -- this is Alex instance walker
-		///// </summary>
-		///// <param name="rootNode"></param>
-		//private void DisplayInstanceReferenceTree(InstanceTypeNode rootNode)
-		//{
-		//	var grid = this.TryFindResource("TreeViewGrid") as Grid;
-		//	Debug.Assert(grid != null);
-		//	var treeView = (TreeView)LogicalTreeHelper.FindLogicalNode(grid, @"treeView");
-		//	var viewRoot = new TreeViewItem() { Header = rootNode };
-		//	Queue<TreeViewItem> que = new Queue<TreeViewItem>(64);
-		//	que.Enqueue(viewRoot);
-		//	while (que.Count > 0)
-		//	{
-		//		var item = que.Dequeue();
-		//		var instNode = item.Header as InstanceTypeNode;
-		//		var instances = instNode.TypeNodes;
-		//		for (int i = 0, icnt = instances.Length; i < icnt; ++i)
-		//		{
-		//			var vnode = new TreeViewItem() { Header = instances[i] };
-		//			item.Items.Add(vnode);
-		//			que.Enqueue(vnode);
-		//		}
-		//	}
-
-		//	treeView.Items.Add(viewRoot);
-		//	viewRoot.ExpandSubtree();
-		//	var tab = new CloseableTabItem() { Header = "Parents of: " + Utils.AddressString(rootNode.Address), Content = grid };
-		//	MainTab.Items.Add(tab);
-		//	MainTab.SelectedItem = tab;
-		//}
 
 		private void AssertIndexIsAvailable()
 		{
@@ -2081,7 +2052,7 @@ namespace MDRDesk
 			var dlgResult = dlg.ShowDialog();
 		}
 
-		private List<ulong> _lbTypeAddressesLastselections = new List<ulong>();
+		private readonly List<ulong> _lbTypeAddressesLastselections = new List<ulong>();
 
 		private void Selector_OnSelectionChanged(object sender, SelectionChangedEventArgs e)
 		{
@@ -2094,9 +2065,7 @@ namespace MDRDesk
 				{
 					_lbTypeAddressesLastselections.Add((ulong)sel);
 				}
-				return;
 			}
-
 		}
 
 		private void GetTypeStringUsage(object sender, RoutedEventArgs e)
