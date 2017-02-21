@@ -107,7 +107,8 @@
     <Reference Include="GraphX.WPF.Controls">
       <HintPath>..\GraphX\GraphX.WPF.Controls.dll</HintPath>
     </Reference>
-    <Reference Include="Microsoft.Diagnostics.Runtime">
+    <Reference Include="Microsoft.Diagnostics.Runtime, Version=0.8.31.1, Culture=neutral, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
       <HintPath>..\ClrMd\Release\Microsoft.Diagnostics.Runtime.dll</HintPath>
     </Reference>
     <Reference Include="Microsoft.Msagl, Version=3.0.0.0, Culture=neutral, PublicKeyToken=640c57aa40e7ae7d, processorArchitecture=MSIL">

@@ -802,6 +802,7 @@ namespace ClrMDRIndex
 				var stackTraceLst = new List<ClrStackFrame>();
 				var rootEqCmp = new ClrRootEqualityComparer();
 				var frameIds = new List<int>();
+				var frameStackPtrs = new List<ulong>();
 				var aliveIds = new List<int>();
 				var deadIds = new List<int>();
 
@@ -860,9 +861,11 @@ namespace ClrMDRIndex
 					}
 
 					frameIds.Clear();
+					frameStackPtrs.Clear();
 					for (int j = 0, jcnt = threadFrames.Length; j < jcnt; ++j)
 					{
 						ClrStackFrame fr = threadFrames[j];
+						frameStackPtrs.Add(fr.StackPointer);
 						if (fr.Method != null)
 						{
 							string fullSig = fr.Method.GetFullSignature();
@@ -882,7 +885,7 @@ namespace ClrMDRIndex
 						}
 					}
 
-					var clrtThread = new ClrtThread(thread, blocks, blkCmp, frameIds.ToArray(), aliveIds.ToArray(), deadIds.ToArray());
+					var clrtThread = new ClrtThread(thread, blocks, blkCmp, frameIds.ToArray(), frameStackPtrs.ToArray(), aliveIds.ToArray(), deadIds.ToArray());
 					Debug.Assert(clrtThread != null);
 					clrtThread.Dump(bw);
 				}
