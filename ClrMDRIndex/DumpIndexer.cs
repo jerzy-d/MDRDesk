@@ -134,8 +134,6 @@ namespace ClrMDRIndex
 						//
 						progress?.Report(runtimeIndexHeader + "Creating instance reference data...");
 
-
-
 						// new 1/7/17
 						Bitset bitset = new Bitset(addresses.Length);
 						if (!References.CreateReferences2(r, heap, rootAddrInfo.Item1, addresses, typeIds, typeNames, bitset, _fileMoniker, progress, out error))

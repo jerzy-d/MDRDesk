@@ -1988,13 +1988,13 @@ namespace ClrMDRIndex
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static string SizeString(long sz)
         {
-            return sz == 0 ? "           O" : string.Format("{0,12:#,###,###}", sz);
+            return sz == 0 ? "           0" : string.Format("{0,12:#,###,###}", sz);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static string SizeString(ulong sz)
         {
-            return sz == 0 ? "           O" : string.Format("{0,12:#,###,###}", sz);
+            return sz == 0 ? "           0" : string.Format("{0,12:#,###,###}", sz);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]

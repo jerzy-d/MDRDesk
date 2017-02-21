@@ -7,6 +7,7 @@ using System.Linq;
 using System.Text;
 using DmpNdxQueries;
 using Microsoft.Diagnostics.Runtime;
+using Microsoft.Diagnostics.Runtime.Interop;
 
 namespace ClrMDRIndex
 {
@@ -138,7 +139,8 @@ namespace ClrMDRIndex
 				}
 				if (!index.LoadInstanceReferences(out error)) return null;
 				if (!index.InitDump(out error, progress)) return null;
-				index._indexProxy = new IndexProxy(index.Dump, index._instances, index._instanceTypes, index._typeNames, index._roots);
+				index._indexProxy = new IndexProxy(index.Dump, index._instances, index._instanceTypes, index._typeNames,
+					index._roots);
 				index._references.SetIndexProxy(index.IndexProxy);
 				return index;
 			}
@@ -345,7 +347,7 @@ namespace ClrMDRIndex
 			KeyValuePair<string, int>[] reversedNames)
 		{
 			Debug.Assert(reversedNames != null && reversedNames.Length > 0);
-			string[] splitter = new[] { Constants.NamespaceSepPadded };
+			string[] splitter = new[] {Constants.NamespaceSepPadded};
 			Dictionary<string, string> strCache = new Dictionary<string, string>(StringComparer.Ordinal);
 			var resultDct = new SortedDictionary<string, List<KeyValuePair<string, int>>>(StringComparer.Ordinal);
 
@@ -367,7 +369,7 @@ namespace ClrMDRIndex
 					continue;
 				}
 				resultDct.Add(namesp,
-					new List<KeyValuePair<string, int>>() { new KeyValuePair<string, int>(name, reversedNameInfo.Value) });
+					new List<KeyValuePair<string, int>>() {new KeyValuePair<string, int>(name, reversedNameInfo.Value)});
 			}
 			var result = new KeyValuePair<string, KeyValuePair<string, int>[]>[resultDct.Count];
 			int ndx = 0;
@@ -678,7 +680,7 @@ namespace ClrMDRIndex
 					}
 
 				}
-				var dataAry = new string[typeDct.Count * 6];
+				var dataAry = new string[typeDct.Count*6];
 				var infoAry = new listing<string>[typeDct.Count];
 				int off = 0;
 				int ndx = 0;
@@ -689,7 +691,7 @@ namespace ClrMDRIndex
 					ulong totSz = kv.Value.Second;
 					ulong maxSz = kv.Value.Third;
 					ulong minSz = kv.Value.Forth;
-					double avg = (double)totSz / (double)(cnt);
+					double avg = (double) totSz/(double) (cnt);
 					ulong uavg = Convert.ToUInt64(avg);
 
 					dataAry[off++] = Utils.LargeNumberString(cnt);
@@ -712,8 +714,8 @@ namespace ClrMDRIndex
 				Array.Sort(infoAry, new ListingNumCmpDesc(0));
 
 				string descr = "Type Count: " + Utils.CountString(typeDct.Count) + Environment.NewLine
-							   + "Instance Count: " + Utils.CountString(_instances.Length) + Environment.NewLine
-							   + "Grand Total Size: " + Utils.LargeNumberString(grandTotal) + Environment.NewLine;
+				               + "Instance Count: " + Utils.CountString(_instances.Length) + Environment.NewLine
+				               + "Grand Total Size: " + Utils.LargeNumberString(grandTotal) + Environment.NewLine;
 
 				return new ListingInfo(null, infoAry, colInfos, descr);
 
@@ -769,7 +771,7 @@ namespace ClrMDRIndex
 					}
 					else
 					{
-						dct.Add(typeId, new List<pair<ulong, int>>(32) { new pair<ulong, int>(addr, aryCnt) });
+						dct.Add(typeId, new List<pair<ulong, int>>(32) {new pair<ulong, int>(addr, aryCnt)});
 					}
 				}
 
@@ -809,7 +811,7 @@ namespace ClrMDRIndex
 				}
 				var typeId = _instanceTypes[instanceId];
 				var typeName = _typeNames[typeId];
-				AncestorNode rootNode = new AncestorNode(0, typeId, typeName, new[] { instanceId });
+				AncestorNode rootNode = new AncestorNode(0, typeId, typeName, new[] {instanceId});
 
 				return GetParentTree(rootNode, levelMax);
 			}
@@ -856,7 +858,8 @@ namespace ClrMDRIndex
 						var inst = instances[i];
 						if (!set.Add(inst)) continue;
 
-						var ancestors = _references.GetReferences(inst, References.Direction.FieldParent, References.DataSource.All, out error);
+						var ancestors = _references.GetReferences(inst, References.Direction.FieldParent, References.DataSource.All,
+							out error);
 						for (int j = 0, jcnt = ancestors.Length; j < jcnt; ++j)
 						{
 							var ancestor = ancestors[j];
@@ -868,7 +871,7 @@ namespace ClrMDRIndex
 								kv.Value.Add(ancestor);
 								continue;
 							}
-							dct.Add(typeid, new KeyValuePair<string, List<int>>(typename, new List<int>(16) { ancestor }));
+							dct.Add(typeid, new KeyValuePair<string, List<int>>(typename, new List<int>(16) {ancestor}));
 						}
 					}
 					var nodes = new AncestorNode[dct.Count];
@@ -965,14 +968,17 @@ namespace ClrMDRIndex
 				return new ListingInfo(error);
 			}
 
-			KeyValuePair<IndexNode, int> result = _references.GetReferenceNodes(instNdx, References.Direction.FieldParent, References.DataSource.All, out error, level);
+			KeyValuePair<IndexNode, int> result = _references.GetReferenceNodes(instNdx, References.Direction.FieldParent,
+				References.DataSource.All, out error, level);
 			if (!string.IsNullOrEmpty(error) && error[0] != Constants.InformationSymbol)
 			{
 				return new ListingInfo(error);
 			}
 			if (result.Key == null)
 			{
-				return new ListingInfo("Could not get any information for: " + Utils.RealAddress(addr) + ", this looks like a bug. Please let know development about it.");
+				return
+					new ListingInfo("Could not get any information for: " + Utils.RealAddress(addr) +
+					                ", this looks like a bug. Please let know development about it.");
 			}
 
 			return OneInstanceParentsReport(result.Key, result.Value);
@@ -984,7 +990,8 @@ namespace ClrMDRIndex
 
 			int[] typeInstances = GetTypeInstanceIndices(typeId);
 
-			KeyValuePair<IndexNode, int>[] result = _references.GetReferenceNodes(typeInstances, References.Direction.FieldParent, References.DataSource.All, out error, level);
+			KeyValuePair<IndexNode, int>[] result = _references.GetReferenceNodes(typeInstances, References.Direction.FieldParent,
+				References.DataSource.All, out error, level);
 			if (!string.IsNullOrEmpty(error) && error[0] != Constants.InformationSymbol)
 			{
 				return new ListingInfo(error);
@@ -995,7 +1002,7 @@ namespace ClrMDRIndex
 		public ListingInfo OneInstanceParentsReport(IndexNode rootNode, int nodeCnt)
 		{
 			const int columnCount = 4;
-			string[] data = new string[nodeCnt * columnCount];
+			string[] data = new string[nodeCnt*columnCount];
 			listing<string>[] items = new listing<string>[nodeCnt];
 			var que = new Queue<IndexNode>();
 			que.Enqueue(rootNode);
@@ -1046,7 +1053,7 @@ namespace ClrMDRIndex
 		{
 			const int ColumnCount = 4;
 			int totalNodes = nodes.Sum(kv => kv.Value);
-			string[] data = new string[totalNodes * ColumnCount];
+			string[] data = new string[totalNodes*ColumnCount];
 			listing<string>[] items = new listing<string>[totalNodes];
 			var que = new Queue<IndexNode>();
 			int dataNdx = 0;
@@ -1109,14 +1116,14 @@ namespace ClrMDRIndex
 				if (clrType == null)
 				{
 					error = "DumpIndex.GetInstanceValue" + Constants.HeavyGreekCrossPadded + "Object at address: " +
-							Utils.AddressString(addr) + " is null.";
+					        Utils.AddressString(addr) + " is null.";
 					return null;
 				}
 
 				if (clrType.Name == "Free" || clrType.Name == "Error")
 				{
 					error = "DumpIndex.GetInstanceValue" + Constants.HeavyGreekCrossPadded + "Invalid object at address: " +
-							Utils.AddressString(addr) + ", type name is: " + clrType.Name + ".";
+					        Utils.AddressString(addr) + ", type name is: " + clrType.Name + ".";
 					return null;
 				}
 
@@ -1136,7 +1143,8 @@ namespace ClrMDRIndex
 					sb.Append("Item Type: ").AppendLine(aryResult.Item3.Name);
 					sb.Append("Address:   ").AppendLine(Utils.AddressString(addr));
 					sb.Append("Lenght:    ").AppendLine(aryResult.Item4.ToString());
-					inst = new InstanceValue(typeId, addr, aryResult.Item2.Name, aryResult.Item3.Name, Utils.BaseArrayName(aryResult.Item2.Name, aryResult.Item4));
+					inst = new InstanceValue(typeId, addr, aryResult.Item2.Name, aryResult.Item3.Name,
+						Utils.BaseArrayName(aryResult.Item2.Name, aryResult.Item4));
 					inst.AddArrayValues(aryResult.Item5);
 					return new Tuple<InstanceValue, string>(inst, StringBuilderCache.GetStringAndRelease(sb));
 				}
@@ -1194,7 +1202,8 @@ namespace ClrMDRIndex
 				var instNdx = GetInstanceIndex(addr);
 				if (instNdx >= 0)
 				{
-					var ancestors = _references.GetReferences(instNdx, References.Direction.FieldParent, References.DataSource.All, out error);
+					var ancestors = _references.GetReferences(instNdx, References.Direction.FieldParent, References.DataSource.All,
+						out error);
 					if (error != null && !Utils.IsInformation(error)) return null;
 					if (ancestors != null && ancestors.Length > 0)
 						ancestorInfos = GroupAddressesByTypesForDisplay(ancestors);
@@ -1231,7 +1240,7 @@ namespace ClrMDRIndex
 				}
 				else
 				{
-					dct.Add(key, new List<ulong>(8) { addr });
+					dct.Add(key, new List<ulong>(8) {addr});
 				}
 			}
 			var ary = new AncestorDispRecord[dct.Count];
@@ -1269,7 +1278,8 @@ namespace ClrMDRIndex
 
 		}
 
-		public ClrtDisplayableType GetTypeDisplayableRecord(ClrtDisplayableType dispType, ClrtDisplayableType dispTypeField, out string error)
+		public ClrtDisplayableType GetTypeDisplayableRecord(ClrtDisplayableType dispType, ClrtDisplayableType dispTypeField,
+			out string error)
 		{
 			error = null;
 			try
@@ -1284,7 +1294,8 @@ namespace ClrMDRIndex
 					return null;
 				}
 
-				var result = DmpNdxQueries.FQry.getDisplayableFieldType(_indexProxy, Dump.Heap, dispType, instances[0], dispTypeField.FieldIndex);
+				var result = DmpNdxQueries.FQry.getDisplayableFieldType(_indexProxy, Dump.Heap, dispType, instances[0],
+					dispTypeField.FieldIndex);
 				if (result.Item1 != null)
 				{
 					error = Constants.InformationSymbolHeader + result.Item1;
@@ -1300,7 +1311,73 @@ namespace ClrMDRIndex
 			}
 
 		}
+
 		#endregion Type Value Reports
+
+		#region disassemble
+
+		private Tuple<ClrMethod, MethodCompilationType, ulong, ulong> GetMethodInfo(ClrType clrType, string methodName,
+			out string error)
+		{
+			error = null;
+			try
+			{
+				ClrMethod method = clrType.Methods.Single(m => Utils.SameStrings(m.Name, methodName));
+				MethodCompilationType compilationType = method.CompilationType;
+				ulong startAddr = method.NativeCode;
+				ulong endAddr = method.ILOffsetMap.Select(entry => entry.EndAddress).Max();
+				return new Tuple<ClrMethod, MethodCompilationType, ulong, ulong>(method, compilationType, startAddr, endAddr);
+			}
+			catch (Exception ex)
+			{
+				error = Utils.GetExceptionErrorString(ex);
+				return null;
+			}
+		}
+
+		public string[] Disassemble(ulong addr, string methodName, out string error)
+		{
+			error = null;
+			try
+			{
+				var clrType = Runtime.GetHeap().GetObjectType(addr);
+				Tuple<ClrMethod, MethodCompilationType, ulong, ulong> methodInfo = 
+					GetMethodInfo(clrType, methodName, out error);
+				var lineOfAssembly = new StringBuilder(512);
+				var control = (IDebugControl)Dump.DataTarget.DebuggerInterface;
+				//var control = (IDebugControl)DataTarget.CreateFromDebuggerInterface(client);
+				ulong startOffset = methodInfo.Item3, endOffset;
+				ulong endAddress = methodInfo.Item4;
+				uint disassemblySize;
+				List<string> lst = new List<string>(128);
+				do
+				{
+					var flags = DEBUG_DISASM.EFFECTIVE_ADDRESS; // DEBUG_DISASM.SOURCE_FILE_NAME | DEBUG_DISASM.SOURCE_LINE_NUMBER;
+					var result = control.Disassemble(startOffset, flags, lineOfAssembly, 512, out disassemblySize, out endOffset);
+					startOffset = endOffset;
+					lst.Add(lineOfAssembly.ToString());
+				} while (disassemblySize > 0 && endOffset <= endAddress);
+				return lst.ToArray();
+			}
+			catch (Exception ex)
+			{
+				error = Utils.GetExceptionErrorString(ex);
+				return null;
+			}
+		}
+
+		public string[] GetMethodNames(ulong addr)
+		{
+			var clrType = Runtime.GetHeap().GetObjectType(addr);
+			string[] methods = new string[clrType.Methods.Count];
+			for (int i = 0, icnt = methods.Length; i < icnt; ++i)
+			{
+				methods[i] = clrType.Methods[i].Name;
+			}
+			return methods;
+		}
+
+		#endregion disassemble
 
 		#endregion queries
 

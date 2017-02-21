@@ -35,6 +35,8 @@ using TextBox = System.Windows.Controls.TextBox;
 using TreeView = System.Windows.Controls.TreeView;
 using SW = System.Windows;
 using SWC = System.Windows.Controls;
+using Microsoft.Msagl;
+using Microsoft.Msagl.WpfGraphControl;
 using SubgraphDictionary =
 	System.Collections.Generic.SortedDictionary
 	<int,
@@ -823,6 +825,15 @@ namespace MDRDesk
 			var txtBlock = (TextBlock)LogicalTreeHelper.FindLogicalNode(grid, "GeneralInfoText");
 			Debug.Assert(txtBlock != null);
 
+			if (CurrentIndex.DeadlockFound)
+			{
+				txtBlock.Inlines.Add(Environment.NewLine);
+				txtBlock.Inlines.Add(new Run("POSSIBLE THREAD DEADLOCK FOUND!") { FontWeight = FontWeights.Bold, FontSize = 12, Foreground = Brushes.Red });
+				txtBlock.Inlines.Add(new Run(" see threads/blocking objects graph.") { FontWeight = FontWeights.Bold, FontSize = 10, FontStyle = FontStyles.Italic });
+				txtBlock.Inlines.Add(Environment.NewLine);
+				txtBlock.Inlines.Add(Environment.NewLine);
+			}
+
 			var lines = info.Split(new string[] { Environment.NewLine }, StringSplitOptions.RemoveEmptyEntries);
 			for (int i = 0, icnt = lines.Length; i < icnt; ++i)
 			{
@@ -848,17 +859,7 @@ namespace MDRDesk
 				}
 			}
 
-			if (CurrentIndex.DeadlockFound)
-			{
-				txtBlock.Inlines.Add(Environment.NewLine);
-				txtBlock.Inlines.Add(new Run("POSSIBLE THREAD DEADLOCK FOUND!") { FontWeight = FontWeights.Bold, FontSize = 12, Foreground = Brushes.Red });
-				txtBlock.Inlines.Add(new Run(" see threads/blocking objects graph.") { FontWeight = FontWeights.Bold, FontSize = 10, FontStyle = FontStyles.Italic });
-				txtBlock.Inlines.Add(Environment.NewLine);
-			}
-
 			txtBlock.Inlines.Add(Environment.NewLine);
-
-			string[] genNames = new[] { "Gen0", "Gen1", "Gen2", " LOH" };
 
 			string error;
 			var genDistributions = CurrentIndex.GetTotalGenerationDistributions(out error);
@@ -869,31 +870,20 @@ namespace MDRDesk
 			}
 			else
 			{
-				txtBlock.Inlines.Add(new Run("GENERATION DISTRIBUTIONS:" + Environment.NewLine) { FontWeight = FontWeights.Bold, FontSize = 12 });
+				DisplayableGeneration[] generations = new DisplayableGeneration[6];
+				generations[0] = new DisplayableGeneration("Object Counts", genDistributions.Item1);
+				generations[1] = new DisplayableGeneration("Object Sizes", genDistributions.Item2);
+				generations[2] = new DisplayableGeneration("Unrooted Counts", genDistributions.Item5);
+				generations[3] = new DisplayableGeneration("Unrooted Sizes", genDistributions.Item6);
+				generations[4] = new DisplayableGeneration("Free Counts", genDistributions.Item3);
+				generations[5] = new DisplayableGeneration("Free Sizes", genDistributions.Item4);
 
-
-				txtBlock.Inlines.Add(new Run("Object Counts ") { FontWeight = FontWeights.Bold, FontSize = 12 });
-				DisplayGenerationLine(txtBlock, genNames, genDistributions.Item1);
-				txtBlock.Inlines.Add(Environment.NewLine);
-				txtBlock.Inlines.Add(new Run("Object Sizes ") { FontWeight = FontWeights.Bold, FontSize = 12 });
-				DisplayGenerationLine(txtBlock, genNames, genDistributions.Item2);
-				txtBlock.Inlines.Add(Environment.NewLine);
-				txtBlock.Inlines.Add(new Run("Unrooted Object Counts ") { FontWeight = FontWeights.Bold, FontSize = 12 });
-				DisplayGenerationLine(txtBlock, genNames, genDistributions.Item5);
-				txtBlock.Inlines.Add(Environment.NewLine);
-				txtBlock.Inlines.Add(new Run("Unrooted Object Sizes ") { FontWeight = FontWeights.Bold, FontSize = 12 });
-				DisplayGenerationLine(txtBlock, genNames, genDistributions.Item6);
-				txtBlock.Inlines.Add(Environment.NewLine);
-				txtBlock.Inlines.Add(new Run("Free Counts ") { FontWeight = FontWeights.Bold, FontSize = 12 });
-				DisplayGenerationLine(txtBlock, genNames, genDistributions.Item3);
-				txtBlock.Inlines.Add(Environment.NewLine);
-				txtBlock.Inlines.Add(new Run("Free Sizes ") { FontWeight = FontWeights.Bold, FontSize = 12 });
-				DisplayGenerationLine(txtBlock, genNames, genDistributions.Item4);
-				txtBlock.Inlines.Add(Environment.NewLine);
+				var genDataGrid = (DataGrid)LogicalTreeHelper.FindLogicalNode(grid, "GeneralInfoGenerations");
+				Debug.Assert(genDataGrid!=null);
+				genDataGrid.ItemsSource = generations;
 
 				// display generation charts
 				//
-
 				var chartGrid = (Grid)LogicalTreeHelper.FindLogicalNode(grid, "GeneralInfoChart");
 				Debug.Assert(chartGrid != null);
 
@@ -922,18 +912,6 @@ namespace MDRDesk
 			MainTab.Items.Add(tab);
 			MainTab.SelectedItem = tab;
 			MainTab.UpdateLayout();
-		}
-
-		private void DisplayGenerationLine(TextBlock txtBlock, string[] titles, int[] values)
-		{
-			Debug.Assert(titles.Length == values.Length);
-			int total = 0;
-			for (int i = 0, icnt = titles.Length; i < icnt; ++i)
-			{
-				total += values[i];
-				txtBlock.Inlines.Add(new Run("  " + titles[i] + ": [" + Utils.LargeNumberString(values[i]) + "]"));
-			}
-			txtBlock.Inlines.Add(new Run("    Total Count: " + Utils.LargeNumberString(total)));
 		}
 
 		private void DisplayGenerationLine(TextBlock txtBlock, string[] titles, ulong[] values)
@@ -2532,6 +2510,18 @@ namespace MDRDesk
 
 		#endregion Instance Hierarchy Traversing
 
+		#region masgl graph
+
+		private void DisplayGraph(Digraph digraph)
+		{
+			Grid mainGrid = new Grid();
+			DockPanel graphViewerPanel = new DockPanel();
+			ToolBar toolBar = new ToolBar();
+			GraphViewer graphViewer = new GraphViewer();
+			TextBox statusTextBox;
+		}
+
+		#endregion masgl graph
 
 		#endregion Display Grids
 

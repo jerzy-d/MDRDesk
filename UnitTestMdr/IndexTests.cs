@@ -1255,11 +1255,37 @@ namespace UnitTestMdr
 
 		#endregion roots
 
+		#region disassemble
+
+		[TestMethod]
+		public void TestDisassemble()
+		{
+			string error = null;
+			Stopwatch stopWatch = new Stopwatch();
+			stopWatch.Start();
+			var index = OpenIndex();
+			TestContext.WriteLine(index.DumpFileName + " INDEX OPEN DURATION: " + Utils.StopAndGetDurationString(stopWatch));
+			ulong addr = 0x000000800812a8;
+			using (index)
+			{
+				string[] methods = index.GetMethodNames(addr);
+				string methodName = "LoadConfigurationGlobal";
+				string[] instructions = index.Disassemble(addr, methodName, out error);
+
+			}
+
+			Assert.IsNull(error, error);
+		}
+
+
+
+		#endregion disassemble
+
 		#region get list of specific clr objects
 
 
 
-			#endregion get list of specific clr objects
+		#endregion get list of specific clr objects
 
 		#region misc
 

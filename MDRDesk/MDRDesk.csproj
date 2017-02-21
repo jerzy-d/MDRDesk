@@ -110,6 +110,18 @@
     <Reference Include="Microsoft.Diagnostics.Runtime">
       <HintPath>..\ClrMd\Release\Microsoft.Diagnostics.Runtime.dll</HintPath>
     </Reference>
+    <Reference Include="Microsoft.Msagl, Version=3.0.0.0, Culture=neutral, PublicKeyToken=640c57aa40e7ae7d, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\MSAGL\Microsoft.Msagl.dll</HintPath>
+    </Reference>
+    <Reference Include="Microsoft.Msagl.Drawing, Version=3.0.0.0, Culture=neutral, PublicKeyToken=8a3d7c21d5fa1306, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\MSAGL\Microsoft.Msagl.Drawing.dll</HintPath>
+    </Reference>
+    <Reference Include="Microsoft.Msagl.WpfGraphControl, Version=3.0.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\MSAGL\Microsoft.Msagl.WpfGraphControl.dll</HintPath>
+    </Reference>
     <Reference Include="QuickGraph">
       <HintPath>..\GraphX\QuickGraph.dll</HintPath>
     </Reference>
@@ -161,6 +173,7 @@
     <Compile Include="CreateCrashDump.xaml.cs">
       <DependentUpon>CreateCrashDump.xaml</DependentUpon>
     </Compile>
+    <Compile Include="DisplayableGeneration.cs" />
     <Compile Include="Graphs\DataEdge.cs" />
     <Compile Include="Graphs\DataVertex.cs" />
     <Compile Include="Graphs\DlkGraphArea.cs" />

@@ -1,30 +1,46 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <Wix xmlns="http://schemas.microsoft.com/wix/2006/wi">
-	<Product Id="*" Name="WixMDRDeskInstaller" Language="1033" Version="1.0.0.0" Manufacturer="" UpgradeCode="626e9d9e-72ce-4fea-a38b-2afe926a84e5">
+	<Product Id="*" Name="MDRDeskInstaller" Language="1033" Version="1.0.0.0" Manufacturer="Jerzy Dominczak" UpgradeCode="626e9d9e-72ce-4fea-a38b-2afe926a84e5">
 		<Package InstallerVersion="200" Compressed="yes" InstallScope="perMachine" />
 
 		<MajorUpgrade DowngradeErrorMessage="A newer version of [ProductName] is already installed." />
-		<MediaTemplate />
+		<MediaTemplate EmbedCab="yes"/>
 
-		<Feature Id="ProductFeature" Title="WixMDRDeskInstaller" Level="1">
+		<Feature Id="ProductFeature" Title="MDRDesk Installer" Level="1">
 			<ComponentGroupRef Id="ProductComponents" />
 		</Feature>
 	</Product>
 
 	<Fragment>
 		<Directory Id="TARGETDIR" Name="SourceDir">
-			<Directory Id="ProgramFilesFolder">
-				<Directory Id="INSTALLFOLDER" Name="WixMDRDeskInstaller" />
+			<Directory Id="ProgramFiles64Folder">
+        <Directory Id="INSTALLFOLDER" Name="CrashDumpUtilities">
+          <Directory Id="MDRDeskDir" Name="MDRDesk"></Directory>
+          <Directory Id="DumpsDir" Name="Dumps"></Directory>
+          <Directory Id="DacsDir" Name="mscordacwks"></Directory>
+        </Directory>
 			</Directory>
 		</Directory>
 	</Fragment>
 
 	<Fragment>
-		<ComponentGroup Id="ProductComponents" Directory="INSTALLFOLDER">
-			<!-- TODO: Remove the comments around this Component element and the ComponentRef below in order to add resources to this installer. -->
-			<!-- <Component Id="ProductComponent"> -->
-				<!-- TODO: Insert files, registry keys, and other resources here. -->
-			<!-- </Component> -->
-		</ComponentGroup>
+		<ComponentGroup Id="ProductComponents">
+      <Component Id="MDRDeskExe" Guid="{A33125F8-DD4F-4A3A-8B22-49EAF9E0459F}" Directory="MDRDeskDir">
+        <File Source="$(var.MDRDesk.TargetDir)MDRDesk.exe"/>
+        <CreateFolder/>
+      </Component>
+      <Component Id="ClrMDRUtilDll" Guid="{1D499E95-1A90-4FA1-B375-0B04CCCCD137}" Directory="MDRDeskDir">
+        <File Source="$(var.MDRDesk.TargetDir)ClrMDRUtil.dll"/>
+        <CreateFolder/>
+      </Component>
+      <Component Id="ClrMDRIndexDll" Guid="{05561F7D-8727-4E74-9309-9798DA1CBBAF}" Directory="MDRDeskDir">
+        <File Source="$(var.MDRDesk.TargetDir)ClrMDRIndex.dll"/>
+        <CreateFolder/>
+      </Component>
+      <Component Id="DmpNdxQueriesDll" Guid="{0A073EAA-CE56-4D9A-9D98-EB72AFF0D954}" Directory="MDRDeskDir">
+        <File Source="$(var.MDRDesk.TargetDir)DmpNdxQueries.dll"/>
+        <CreateFolder/>
+      </Component>
+    </ComponentGroup>
 	</Fragment>
 </Wix>

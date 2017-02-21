@@ -33,6 +33,28 @@
             <Setter Property="FontFamily" Value="Verdana"/>
             <Setter Property="FontSize" Value="16"/>
         </Style>
+        <Style x:Key="LeftDataGridCell" TargetType="DataGridCell">
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="DataGridCell">
+                        <Grid Background="{TemplateBinding Background}">
+                            <ContentPresenter HorizontalAlignment="Left" VerticalAlignment="Center"></ContentPresenter>
+                        </Grid>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+        <Style x:Key="RightDataGridCell" TargetType="DataGridCell">
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="DataGridCell">
+                        <Grid Background="{TemplateBinding Background}">
+                            <ContentPresenter HorizontalAlignment="Right" VerticalAlignment="Center"></ContentPresenter>
+                        </Grid>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
         <ContextMenu x:Key="AddresListContextMenu" x:Shared="False">
             <MenuItem x:Name="AddrLstCopyAddress" Header="Copy Address (clipboard)" Click="CopyAddressSelectionClicked" ></MenuItem>
             <MenuItem x:Name="AddrLstCopyAddressAll" Header="Copy All Addresses (clipboard)" Click="CopyAddressAllClicked"></MenuItem>
@@ -234,12 +256,25 @@
         </Grid>
         <Grid x:Key="GeneralInfoView" Name="GeneralInfoView" x:Shared="False">
             <Grid.RowDefinitions>
-                <RowDefinition Height="80*"/>
-                <RowDefinition Height="20*"/>
+                <RowDefinition Height="50*"/>
+                <RowDefinition Height="25*"/>
+                <RowDefinition Height="25*"/>
             </Grid.RowDefinitions>
-            <TextBlock Name="GeneralInfoText" Grid.Row="0" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" FontFamily="Consolas"></TextBlock>
+            <ScrollViewer Grid.Row="0">
+            <TextBlock Name="GeneralInfoText" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" FontFamily="Consolas"></TextBlock>
+            </ScrollViewer>
+            <DataGrid Name="GeneralInfoGenerations" v4:Grid.Row="1" AlternatingRowBackground="LightGray" Width="700" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" IsReadOnly="True" AutoGenerateColumns="False" FontFamily="Consolas">
+                <DataGrid.Columns>
+                    <DataGridTextColumn Header="Instances" Binding="{Binding Instance}" CellStyle="{StaticResource LeftDataGridCell}"></DataGridTextColumn>
+                    <DataGridTextColumn Header="Generation 0" Binding="{Binding Generation0}" CellStyle="{StaticResource RightDataGridCell}"></DataGridTextColumn>
+                    <DataGridTextColumn Header="Generation 1" Binding="{Binding Generation1}" CellStyle="{StaticResource RightDataGridCell}"></DataGridTextColumn>
+                    <DataGridTextColumn Header="Generation 2" Binding="{Binding Generation2}" CellStyle="{StaticResource RightDataGridCell}"></DataGridTextColumn>
+                    <DataGridTextColumn Header="LOH" Binding="{Binding LOH}" CellStyle="{StaticResource RightDataGridCell}"></DataGridTextColumn>
+                    <DataGridTextColumn Header="Total" Binding="{Binding TotalCount}" CellStyle="{StaticResource RightDataGridCell}"></DataGridTextColumn>
+                </DataGrid.Columns>
+            </DataGrid>
             <!--<Label Name="GenerationInfoLabel" Grid.Row="1" FontWeight="Bold" FontSize="12"></Label>-->
-            <Grid Name="GeneralInfoChart" Grid.Row="1" >
+            <Grid Name="GeneralInfoChart" Grid.Row="2">
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="50*"/>
                     <ColumnDefinition Width="50*"/>
