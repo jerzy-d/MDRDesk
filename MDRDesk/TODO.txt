@@ -24,3 +24,5 @@ Implement show roots grid. Header="Show Roots" Click="IndexShowRootsClicked"
         /// <returns>true if successful.  Will fail if it 'this' is an array type</returns>
         abstract public bool GetFieldForOffset(int fieldOffset, bool inner, out ClrInstanceField childField, out int childFieldOffset);
 
+0009 02/23/17
+Value of the instance for a Concurrent.ConcurrentDictionary<TKey, TValue>.m_tables.m_buckets is always null, but should not.

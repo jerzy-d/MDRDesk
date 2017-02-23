@@ -87,6 +87,9 @@ module CollectionContent =
         else
             ValueExtractor.GetShortExceptionValue(elemAddr, elemType, heap)
 
+    let aryElemReferenceAddress (heap:ClrHeap) (addr:address) (aryType:ClrType) (elemType:ClrType) (ndx:int) =
+        unbox<uint64>(aryType.GetArrayElementValue(addr,ndx))
+
     let aryElemAddress (heap:ClrHeap) (addr:address) (aryType:ClrType) (elemType:ClrType) (ndx:int) =
         Utils.RealAddressString(aryType.GetArrayElementAddress(addr,ndx))
 
@@ -520,3 +523,65 @@ module CollectionContent =
 //        else
 //            let elemName, aryCount, values = getArrayValues heap addr clrSidekick
 //            (null, elemName, aryCount, values) 
+
+
+(*
+
+
+System.Collections.Concurrent.ConcurrentDictionary<TKey, TValue>
+Tables m_tables
+public IEnumerator<KeyValuePair<TKey, TValue>> GetEnumerator()
+        {
+            Node[] buckets = m_tables.m_buckets;
+ 
+            for (int i = 0; i < buckets.Length; i++)
+            {
+                // The Volatile.Read ensures that the load of the fields of 'current' doesn't move before the load from buckets[i].
+                Node current = Volatile.Read<Node>(ref buckets[i]);
+ 
+                while (current != null)
+                {
+                    yield return new KeyValuePair<TKey, TValue>(current.m_key, current.m_value);
+                    current = current.m_next;
+                }
+            }
+        }
+ 
+
+*)
+
+    let getConcurrentDictionaryBucketsInfo (heap:ClrHeap) (addr:address) (dctType:ClrType) : string * ClrType * address =
+        let tables = dctType.GetFieldByName("m_tables")
+        let tablesAddress = getReferenceFieldAddress addr tables false
+        let tablesType = heap.GetObjectType tablesAddress
+        let buckets = tablesType.GetFieldByName("m_buckets")
+        let bucketsAddress = getReferenceFieldAddress tablesAddress buckets false
+        let bucketsType = heap.GetObjectType bucketsAddress
+        (null,bucketsType,bucketsAddress)
+
+    let getConcurrentDictionaryContent (heap:ClrHeap) (addr:address) =
+        try
+            let dctType = heap.GetObjectType(addr)
+            if isNull dctType then
+                ("There is no valid object at address: " + Utils.RealAddressString(addr), null, Constants.InvalidAddress)
+            elif not (dctType.Name.StartsWith("System.Collections.Concurrent.ConcurrentDictionary<")) then
+                ("Expected ConcurrentDictionary<TKey, TValue> type at address: " + Utils.RealAddressString(addr) + ", there's " + dctType.Name + " instead.", null, Constants.InvalidAddress)
+            else
+                let error, bucketsType, bucketsAddr = getConcurrentDictionaryBucketsInfo heap addr dctType
+
+                let count = bucketsType.GetArrayLength(bucketsAddr)
+                let elemType = bucketsType.ComponentType
+                let values = new ResizeArray<address>(count)
+                for i = 0 to (count - 1) do
+                    let mutable aryElemAddr = aryElemReferenceAddress heap bucketsAddr bucketsType null i
+                    let mutable aryElemType = heap.GetObjectType(aryElemAddr)
+                    while aryElemType <> null do
+                        values.Add(aryElemAddr)
+                        let fld = aryElemType.GetFieldByName("m_next")
+                        aryElemAddr <- getReferenceFieldAddress aryElemAddr fld false
+                        aryElemType <- heap.GetObjectType(aryElemAddr)
+                    ()
+                (null,bucketsType,bucketsAddr)
+
+        with
+            | exn -> (Utils.GetExceptionErrorString(exn),null,Constants.InvalidAddress)

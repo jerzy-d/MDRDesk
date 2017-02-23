@@ -383,7 +383,7 @@ namespace UnitTestMdr
 		}
 
 		#endregion System.Collections.Generic.SortedDictionary<TKey,TValue> content
-
+		
 		#region System.Collections.Generic.HashSet<T> content
 
 		[TestMethod]
@@ -494,6 +494,20 @@ namespace UnitTestMdr
 		}
 
 		#endregion  System.Collections.Generic.HashSet<T> content
+
+		[TestMethod]
+		public void TestGetConcurrentDictionaryContent()
+		{
+			ulong dctAddr = 0x00000300023760; // 0x000004002fe820; // 0x000001801462b0;
+			var dmp = OpenDump(@"D:\Jerzy\WinDbgStuff\dumps\Analytics\Local\Eze.Analytics.Svc.exe_170131_125914.dmp");
+			using (dmp)
+			{
+				var heap = dmp.Heap;
+				var result = CollectionContent.getConcurrentDictionaryContent(heap, dctAddr);
+				Assert.IsNotNull(result);
+				Assert.IsNull(result.Item1, result.Item1);
+			}
+		}
 
 
 		#region System.Text.StringBuilder
