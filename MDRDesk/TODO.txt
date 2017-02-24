@@ -26,3 +26,10 @@ Implement show roots grid. Header="Show Roots" Click="IndexShowRootsClicked"
 
 0009 02/23/17
 Value of the instance for a Concurrent.ConcurrentDictionary<TKey, TValue>.m_tables.m_buckets is always null, but should not.
+0010 2/24/17
+Recent lists do not work properly.
+0011 2/24/17
+In Type/Instance Reference tree, show in parent number of unique child references [100/3]
+0012 2/24/17
+System.Collections.Generic.List<System.Collections.Generic.KeyValuePair<System.Guid,ECS.Common.HierarchyCache.MarketData.MarketDataSetType>>
+For the type above, check unrooted parents

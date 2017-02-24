@@ -124,6 +124,14 @@ module Types =
         | _ ->
             false
 
+    let getArrayDispValue (heap:ClrHeap) (addr:address) (intr:bool) (fld:ClrInstanceField) =
+        let obj = unbox<uint64>(fld.GetValue(addr,intr,false))
+        let inst = heap.GetObjectType(obj)
+        if inst <> null then
+            let count = inst.GetArrayLength(obj)
+            Utils.RealAddressString(obj) + "\u279C[" + count.ToString() + "]"
+        else
+            Utils.RealAddressString(obj)
 
     let getFieldValue (heap:ClrHeap) (addr:address) (intr:bool) (fld:ClrInstanceField) (kind:TypeKind) : string =
         match mainKind kind with
@@ -142,7 +150,7 @@ module Types =
             let obj = unbox<uint64>(fld.GetValue(addr,intr,false))
             Utils.RealAddressString(obj)
         | TypeKind.ArrayKind ->
-            Constants.NullValue
+            getArrayDispValue heap addr intr fld
         | TypeKind.StructKind ->
             match specificKind kind with
             | TypeKind.Decimal ->
