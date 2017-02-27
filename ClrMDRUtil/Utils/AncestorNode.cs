@@ -59,8 +59,8 @@ namespace ClrMDRIndex
 
 		public override string ToString()
 		{
-			return "[" + _instances.Length + 
-				(ReferenceCount > 0 ? ("/" + ReferenceCount) : string.Empty)
+			return "[" + Utils.CountString(_instances.Length) + 
+				(ReferenceCount > 0 ? ("/" + Utils.CountString(ReferenceCount)) : string.Empty)
 				+ "] " + TypeName;
 		}
 		public class TypeNameCmp : IComparer<AncestorNode>

@@ -378,7 +378,7 @@
                 </TreeView.ItemContainerStyle>
             </TreeView>
             <GridSplitter Grid.Row="0" Grid.Column="1" VerticalAlignment="Stretch" HorizontalAlignment="Center" Width="5" ShowsPreview="False" Background="DarkGray"></GridSplitter>
-            <ListBox x:Name="AncestorAddressList" v4:Grid.Row="0" v4:Grid.Column="2"  ContextMenu="{StaticResource AddresListContextMenu}" >
+            <ListBox x:Name="AncestorAddressList" v4:Grid.Row="0" v4:Grid.Column="2"  ContextMenu="{StaticResource AddresListContextMenu}" FontFamily="Consolas" FontSize="12">
                 <ListBox.ItemTemplate>
                     <DataTemplate>
                         <TextBlock Text="{Binding Converter={StaticResource LongHexConverter}}"/>

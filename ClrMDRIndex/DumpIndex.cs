@@ -471,6 +471,7 @@ namespace ClrMDRIndex
 			{
 				addresses[i] = _instances[instIds[i]];
 			}
+			Utils.SortAddresses(addresses);
 			return addresses;
 		}
 
@@ -557,6 +558,7 @@ namespace ClrMDRIndex
 			{
 				indices[i] = _typeInstanceMap[mapIndex++];
 			}
+			//Array.Sort(indices);
 			return indices;
 		}
 
@@ -854,15 +856,12 @@ namespace ClrMDRIndex
 			{
 				HashSet<int> set = new HashSet<int>();
 				Queue<AncestorNode> que = new Queue<AncestorNode>(Math.Min(1000, rootNode.Instances.Length));
-				//var dct = new SortedDictionary<int, KeyValuePair<string, List<int>>>();
 				var dct = new SortedDictionary<int, quadruple<string, List<int>, int, int>>();
-				//var refCountDct = new Dictionary<int,KeyValuePair<int,int>>();
 				que.Enqueue(rootNode);
 				while (que.Count > 0)
 				{
 					AncestorNode node = que.Dequeue();
 					dct.Clear();
-					//refCountDct.Clear();
 					int currentNodeLevel = node.Level + 1;
 					if (currentNodeLevel >= levelMax) continue;
 					var instances = node.Instances;
@@ -871,14 +870,12 @@ namespace ClrMDRIndex
 						var inst = instances[i];
 						if (!set.Add(inst)) continue;
 
-						var ancestors = _references.GetReferences(inst, References.Direction.FieldParent, References.DataSource.All,
-							out error);
+						var ancestors = _references.GetReferences(inst, References.Direction.FieldParent, References.DataSource.All, out error);
 						for (int j = 0, jcnt = ancestors.Length; j < jcnt; ++j)
 						{
 							var ancestor = ancestors[j];
 							var typeid = _instanceTypes[ancestor];
 							var typename = _typeNames[typeid];
-							//KeyValuePair<string, List<int>> kv;
 							quadruple<string, List<int>, int, int> quad;
 							if (dct.TryGetValue(typeid, out quad))
 							{
@@ -891,7 +888,6 @@ namespace ClrMDRIndex
 								}
 								continue;
 							}
-							//dct.Add(typeid, new KeyValuePair<string, List<int>>(typename, new List<int>(16) { ancestor }));
 							dct.Add(typeid, new quadruple<string, List<int>, int, int>(typename, new List<int>(16) { ancestor }, i+1, 1));
 						}
 					}
@@ -899,8 +895,8 @@ namespace ClrMDRIndex
 					int n = 0;
 					foreach (var kv in dct)
 					{
-						//nodes[n] = new AncestorNode(currentNodeLevel, kv.Value.Second, kv.Key, kv.Value.Key, kv.Value.Value.ToArray());
-						nodes[n] = new AncestorNode(currentNodeLevel, kv.Value.Forth, kv.Key, kv.Value.First, kv.Value.Second.ToArray());
+						var ancestors = Utils.RemoveDuplicates(kv.Value.Second);
+						nodes[n] = new AncestorNode(currentNodeLevel, kv.Value.Forth, kv.Key, kv.Value.First, ancestors);
 						nodes[n].Sort(AncestorNode.SortAncestors.ByteInstanceCountDesc);
 						que.Enqueue(nodes[n]);
 						++n;

@@ -2487,6 +2487,19 @@ namespace ClrMDRIndex
 			return true;
 		}
 
+		public static int[] RemoveDuplicates(List<int> ary)
+		{
+			ary.Sort();
+			List<int> lst = new List<int>(ary.Count);
+			lst.Add(ary[0]);
+			for (int i = 1, icnt = ary.Count; i < icnt; ++i)
+			{
+				if (ary[i - 1] == ary[i]) continue;
+				lst.Add(ary[i]);
+			}
+			return lst.ToArray();
+		}
+
 		public static int[] RemoveDuplicates(int[] ary)
 		{
 			Debug.Assert(IsSorted(ary));
