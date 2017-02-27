@@ -83,6 +83,7 @@ namespace MDRDesk
 		private const string ThreadBlockingGraphGrid = "ThreadBlockingGraphGrid";
 
 		private const string ThreadViewGrid = "ThreadViewGrid";
+		private const string AncestorTreeViewGrid = "AncestorTreeViewGrid";
 
 		private const string GridFinalizerQueue = "FinalizerQueueGrid";
 		private const string WeakReferenceViewGrid = "WeakReferenceViewGrid";
@@ -1856,6 +1857,7 @@ namespace MDRDesk
 
 		private void DisplayTypeAncestorsGrid(AncestorNode root)
 		{
+			// populate tree view
 			TreeViewItem tvRoot = new TreeViewItem();
 			tvRoot.Header = root.ToString();
 			tvRoot.Tag = root;
@@ -1878,21 +1880,50 @@ namespace MDRDesk
 				}
 			}
 
-			var grid = this.TryFindResource("TreeViewGrid") as Grid;
+			// setup grid
+			var grid = this.TryFindResource(AncestorTreeViewGrid) as Grid;
 			Debug.Assert(grid != null);
-			grid.Name = "AncestorsTreeView__" + Utils.GetNewID();
-			var treeView = (TreeView)LogicalTreeHelper.FindLogicalNode(grid, "treeView");
+			grid.Name = AncestorTreeViewGrid + "__" + Utils.GetNewID();
+			var treeView = (TreeView)LogicalTreeHelper.FindLogicalNode(grid, "AncestorTreeView");
 			Debug.Assert(treeView != null);
 			treeView.Tag = root;
 			Debug.Assert(treeView != null);
 			treeView.Items.Add(tvRoot);
-
 			tvRoot.IsExpanded = true;
+
+			// display general information
+			var txtBlk = (TextBlock)LogicalTreeHelper.FindLogicalNode(grid, "AncestorInformation");
+			Debug.Assert(txtBlk!=null);
+			txtBlk.Inlines.Add(new Run(root.TypeName) { FontSize = 16, FontWeight = FontWeights.Bold });
+			txtBlk.Inlines.Add(Environment.NewLine);
+			txtBlk.Inlines.Add(new Run("First number in a node header is the count of instances referenced/referencing.") { Foreground=Brushes.DarkBlue, FontSize = 12, FontStyle = FontStyles.Italic, FontWeight = FontWeights.DemiBold});
+			txtBlk.Inlines.Add(new Run(" Second number is the count of unique instances of the parent node referenced by instances of this node.") { Foreground = Brushes.DarkBlue, FontSize = 12, FontStyle = FontStyles.Italic, FontWeight = FontWeights.DemiBold});
+			txtBlk.Inlines.Add(Environment.NewLine);
+			txtBlk.Inlines.Add(new Run("Instance addresses of the selected node are shown in the list box. To inspect individual instances right click on selected address.") { Foreground = Brushes.DarkBlue, FontSize = 12, FontStyle = FontStyles.Italic, FontWeight = FontWeights.DemiBold });
+			txtBlk.Inlines.Add(Environment.NewLine);
 
 			var tab = new CloseableTabItem() { Header = Constants.BlackDiamond + " Type References", Content = grid, Name = "HeapIndexTypeViewTab" };
 			MainTab.Items.Add(tab);
 			MainTab.SelectedItem = tab;
 			MainTab.UpdateLayout();
+			tvRoot.IsSelected = true;
+		}
+
+		private void AncestorTreeSelectionChanged(object sender, RoutedPropertyChangedEventArgs<object> e)
+		{
+			TreeViewItem item = (TreeViewItem)e.NewValue;
+			Debug.Assert(item!=null, "AncestorTreeSelectionChanged: selected item is null!");
+			// ReSharper disable ConditionIsAlwaysTrueOrFalse
+			if (item == null) return;
+			// ReSharper restore ConditionIsAlwaysTrueOrFalse
+			AncestorNode node = (AncestorNode)item.Tag;
+			var addresses = CurrentIndex.GetInstancesAddresses(node.Instances);
+			Debug.Assert(CurrentIndex != null);
+			var grid = GetCurrentTabGrid();
+			var lbAddresses = (ListBox)LogicalTreeHelper.FindLogicalNode(grid, @"AncestorAddressList");
+			Debug.Assert(lbAddresses!=null);
+			lbAddresses.ItemsSource = addresses;
+
 		}
 
 		private void TypeValueReportMouseDown(object sender, MouseButtonEventArgs e)

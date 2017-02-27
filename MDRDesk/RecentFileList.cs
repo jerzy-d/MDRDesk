@@ -13,13 +13,13 @@ namespace MDRDesk
 	{
 	    private int _maxItems;
 	    private MenuItem _menuItem;
-	    private List<FileInfo> _list;
+//	    private List<FileInfo> _list;
 	    private object _lock;
         public RecentFileList(MenuItem menuItem, int maxItems = 7)
 		{
 		    _maxItems = maxItems;
 		    _menuItem = menuItem;
-            _list = new List<FileInfo>(_maxItems);
+            //_list = new List<FileInfo>(_maxItems);
             _lock = new object();
 		}
 
@@ -27,11 +27,19 @@ namespace MDRDesk
 	    {
 	        lock (_lock)
 	        {
-                string[] lst = new string[_list.Count];
-                for (int i = 0, icnt = lst.Length; i < icnt; ++i)
-                {
-                    lst[i] = _list[i].FilePath;
-                }
+				string[] lst = new string[_menuItem.Items.Count];
+		        int ndx = 0;
+				foreach (var item in _menuItem.Items)
+		        {
+			        var menuItem = item as MenuItem;
+			        FileInfo fileInfo = menuItem.Header as FileInfo;
+			        lst[ndx++] = fileInfo.FilePath;
+		        }
+                //string[] lst = new string[_list.Count];
+                //for (int i = 0, icnt = lst.Length; i < icnt; ++i)
+                //{
+                //    lst[i] = _list[i].FilePath;
+                //}
 	            return lst;
 	        }
         }
@@ -41,8 +49,14 @@ namespace MDRDesk
 	        lock (_lock)
 	        {
                 AddImpl(path);
-	            _menuItem.ItemsSource = _list;
-	        }
+
+	   //         _menuItem.ItemsSource = _list;
+				//foreach (var item in _menuItem.Items)
+				//{
+				//	var menuItem = item as MenuItem;
+				//	menuItem.Click += ((MainWindow)Application.Current.MainWindow).RecentIndicesClicked;
+				//}
+			}
 	    }
 
 	    public void Add(IList<string> lst)
@@ -53,29 +67,44 @@ namespace MDRDesk
                 for (int i =0, icnt = lst.Count; i < icnt; ++i)
                 {
                     AddImpl(lst[i]);
-
+					
                 }
-                _menuItem.ItemsSource = _list;
             }
         }
 
 	    private void AddImpl(string path)
 	    {
             if (!CanAdd(path)) return;
-            if (_list.Count == _maxItems)
+		    int count = _menuItem.Items.Count;
+			if (count == _maxItems)
             {
-                _list.RemoveAt(_list.Count - 1);
+	            var menuItem = _menuItem.Items[count - 1] as MenuItem;
+	            menuItem.Click -= ((MainWindow) Application.Current.MainWindow).RecentIndicesClicked;
+				_menuItem.Items.RemoveAt(count - 1);
             }
-            _list.Insert(0, new FileInfo(path));
+			var menu = new MenuItem();
+		    var fInfo = new FileInfo(path);
+		    menu.Header = fInfo;
+			menu.Click += ((MainWindow)Application.Current.MainWindow).RecentIndicesClicked;
+			_menuItem.Items.Insert(0,menu);
+			//_list.Insert(0, new FileInfo(path));
         }
 
 	    private bool CanAdd(string path)
 	    {
 	        if (!(Directory.Exists(path) || File.Exists(path))) return false;
-	        for (int i = 0, icnt = _list.Count; i < icnt; ++i)
-	        {
-	            if (string.Compare(_list[i].FilePath, path, StringComparison.OrdinalIgnoreCase) == 0) return false;
-	        }
+			foreach (var item in _menuItem.Items)
+			{
+				var menuItem = item as MenuItem;
+				FileInfo fileInfo = menuItem.Header as FileInfo;
+				if (string.Compare(fileInfo.FilePath, path, StringComparison.OrdinalIgnoreCase) == 0) return false;
+			}
+			return true;
+
+			//for (int i = 0, icnt = _list.Count; i < icnt; ++i)
+	  //      {
+	  //          if (string.Compare(_list[i].FilePath, path, StringComparison.OrdinalIgnoreCase) == 0) return false;
+	  //      }
 	        return true;
 	    }
 	}

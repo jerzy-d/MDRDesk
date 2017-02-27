@@ -936,11 +936,21 @@ namespace ClrMDRIndex
 			}
 		}
 
+		/// <summary>
+		/// Get references of the given set of instances.
+		/// </summary>
+		/// <param name="addrNdxs">Ids of instances we want references of.</param>
+		/// <param name="direction">Parents or children.</param>
+		/// <param name="dataSource">Rooted, unrooted or all.</param>
+		/// <param name="error">Failure message.</param>
+		/// <param name="maxLevel">How deep the reference tree should be.</param>
+		/// <returns></returns>
 		public KeyValuePair<IndexNode, int>[] GetReferenceNodes(int[] addrNdxs, Direction direction, DataSource dataSource, out string error, int maxLevel = Int32.MaxValue)
 		{
 			error = null;
 			try
 			{
+				// select desired graph... parents or children
 				int[] heads;
 				int[][] refs;
 				if (!SelectArrays(direction, out heads, out refs, out error)) return null;

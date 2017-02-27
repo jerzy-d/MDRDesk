@@ -18,6 +18,7 @@ namespace ClrMDRIndex
 		}
 
 		public readonly int Level;
+		public readonly int ReferenceCount;
 		public readonly int TypeId;
 		public readonly string TypeName;
 		private int[] _instances;
@@ -25,9 +26,10 @@ namespace ClrMDRIndex
 		private AncestorNode[] _ancestors;
 		public AncestorNode[] Ancestors => _ancestors;
 
-		public AncestorNode(int level, int typeId, string typeName, int[] instances)
+		public AncestorNode(int level, int referenceCount, int typeId, string typeName, int[] instances)
 		{
 			Level = level;
+			ReferenceCount = referenceCount;
 			TypeId = typeId;
 			TypeName = typeName;
 			_instances = instances;
@@ -57,7 +59,9 @@ namespace ClrMDRIndex
 
 		public override string ToString()
 		{
-			return "[" + _instances.Length + "] " + TypeName;
+			return "[" + _instances.Length + 
+				(ReferenceCount > 0 ? ("/" + ReferenceCount) : string.Empty)
+				+ "] " + TypeName;
 		}
 		public class TypeNameCmp : IComparer<AncestorNode>
 		{

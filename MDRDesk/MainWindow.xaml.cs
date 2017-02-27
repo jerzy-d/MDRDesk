@@ -542,49 +542,11 @@ namespace MDRDesk
 			}
 			if (CurrentIndex.DeadlockFound)
 			{
-
 				string error;
 				if (!DisplayDeadlock(CurrentIndex.Deadlock, out error))
 				{
 					ShowError(error);
 				}
-
-				//var grid = this.TryFindResource(DeadlockGraphGrid) as Grid;
-				//Debug.Assert(grid!=null);
-				//var graphHost = (WindowsFormsHost)LogicalTreeHelper.FindLogicalNode(grid, "deadlockViewerHost");
-				//Debug.Assert(graphHost != null);
-				//GViewer graphView = (GViewer) graphHost.Child;
-				//Graph graph = new Graph();
-				//var sugiyamaSettings = (SugiyamaLayoutSettings)graph.LayoutAlgorithmSettings;
-				//sugiyamaSettings.NodeSeparation *= 2;
-				//int[] deadlock = CurrentIndex.Deadlock;
-				//for (int i = 1, icnt = deadlock.Length; i < icnt; ++i)
-				//{
-				//	var id1 = deadlock[i - 1];
-				//	var id1Str = id1.ToString();
-				//	bool isThread1;
-				//	var label1 = CurrentIndex.GetThreadOrBlkLabel(id1, out isThread1);
-				//	var node1 = new Node(id1Str);
-				//	node1.LabelText = (isThread1 ? Constants.HeavyRightArrowHeader : Constants.BlackFourPointedStarHeader) + label1;
-
-				//	var id2 = deadlock[i];
-				//	var id2Str = id2.ToString();
-				//	bool isThread2;
-				//	var label2 = CurrentIndex.GetThreadOrBlkLabel(id2, out isThread2);
-				//	var node2 = new Node(id2Str);
-				//	node2.LabelText = (isThread2 ? Constants.HeavyRightArrowHeader : Constants.BlackFourPointedStarHeader) + label2;
-				//	graph.AddNode(node1);
-				//	graph.AddNode(node2);
-				//	graph.AddEdge(id1Str,id2Str);
-				//}
-				//graphView.Graph = graph;
-				//Debug.Assert(grid != null);
-				//grid.Name = DeadlockGraphGrid + "__" + Utils.GetNewID();
-				//var tab = new CloseableTabItem() { Header = Constants.BlackDiamond + " Deadlock", Content = grid, Name = "GeneralInfoViewTab" };
-				//MainTab.Items.Add(tab);
-				//MainTab.SelectedItem = tab;
-				//MainTab.UpdateLayout();
-
 			}
 			Title = BaseTitle + Constants.BlackDiamondPadded + CurrentIndex.DumpFileName;
 			RecentIndexList.Add(CurrentIndex.IndexFolder);
@@ -871,18 +833,15 @@ namespace MDRDesk
 			DisplayListViewBottomGrid(taskResult, Constants.BlackDiamond, ReportNameSizeDiffs, ReportTitleSizeDiffs);
 		}
 
-		private void RecentIndicesClicked(object sender, RoutedEventArgs e)
+		public void RecentIndicesClicked(object sender, RoutedEventArgs e)
 		{
 			var menuItem = sender as MenuItem;
 			Debug.Assert(menuItem != null);
-			if (menuItem.Items != null && menuItem.Items.Count > 0 && menuItem.Items.CurrentItem != null)
+			var fileInfo = menuItem.Header as FileInfo;
+			if (fileInfo != null)
 			{
-				var fileInfo = menuItem.Items.CurrentItem as FileInfo;
-				if (fileInfo != null)
-				{
-					Dispatcher.CurrentDispatcher.InvokeAsync(
-						() => OpenDumpIndexClicked(menuItem, new RoutedEventArgs(null, fileInfo.FilePath)));
-				}
+				Dispatcher.CurrentDispatcher.InvokeAsync(() => DoOpenDumpIndex(0, fileInfo.FilePath));
+					//OpenDumpIndexClicked(menuItem, new RoutedEventArgs(null, fileInfo.FilePath)));
 			}
 		}
 
@@ -1725,8 +1684,6 @@ namespace MDRDesk
 				+ ",  total: " + Utils.LargeNumberString((ulong)result.Item2.Value));
 		}
 
-
-
 		private ListBox GetTypeAddressesListBox(object sender)
 		{
 			var menuItem = sender as MenuItem;
@@ -1749,6 +1706,9 @@ namespace MDRDesk
 					break;
 				case WeakReferenceViewGrid:
 					listName = "WeakReferenceObjectAddresses";
+					break;
+				case AncestorTreeViewGrid:
+					listName = "AncestorAddressList";
 					break;
 			}
 			if (listName == null) return null;
@@ -1867,7 +1827,6 @@ namespace MDRDesk
 			Dispatcher.CurrentDispatcher.InvokeAsync(() => ExecuteInstanceHierarchyQuery("Getting stack object hierarchy: " + Utils.AddressString(addr), addr,Constants.InvalidIndex));
 		}
 
-
 		private ulong GetStackObjectAddress(object sender)
 		{
 			ListView lv = GetContextMenuListView(sender);
@@ -1912,7 +1871,6 @@ namespace MDRDesk
 		{
 			int a = 0;
 		}
-
 
 		private async void GenerateSizeDetailsReport(object sender, RoutedEventArgs e) // TODO JRD -- display as ListView (listing)
 		{
@@ -2117,6 +2075,5 @@ namespace MDRDesk
 				return;
 			ShowMemoryViewWindow(addr);
 		}
-
 	}
 }

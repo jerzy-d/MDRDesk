@@ -359,6 +359,35 @@
             <TreeView x:Name="treeView" VerticalAlignment="Stretch" HorizontalAlignment="Stretch" Margin="2,2,2,90" FontFamily="Consolas" FontSize="12">
             </TreeView>
         </Grid>
+        <Grid x:Key="AncestorTreeViewGrid" x:Shared="False">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="90*"/>
+                <RowDefinition Height="5"/>
+                <RowDefinition Height="10*"/>
+            </Grid.RowDefinitions>
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="80*"/>
+                <ColumnDefinition Width="5"/>
+                <ColumnDefinition Width="15*"/>
+            </Grid.ColumnDefinitions>
+            <TreeView x:Name="AncestorTreeView" v4:Grid.Row="0" v4:Grid.Column="0" VerticalAlignment="Stretch" HorizontalAlignment="Stretch" Margin="2,2,2,2" FontFamily="Consolas" FontSize="12" SelectedItemChanged="AncestorTreeSelectionChanged">
+                <TreeView.ItemContainerStyle>
+                    <Style TargetType="TreeViewItem">
+                        <EventSetter Event="RequestBringIntoView" Handler="TreeViewItem_RequestBringIntoView"/>
+                    </Style>
+                </TreeView.ItemContainerStyle>
+            </TreeView>
+            <GridSplitter Grid.Row="0" Grid.Column="1" VerticalAlignment="Stretch" HorizontalAlignment="Center" Width="5" ShowsPreview="False" Background="DarkGray"></GridSplitter>
+            <ListBox x:Name="AncestorAddressList" v4:Grid.Row="0" v4:Grid.Column="2"  ContextMenu="{StaticResource AddresListContextMenu}" >
+                <ListBox.ItemTemplate>
+                    <DataTemplate>
+                        <TextBlock Text="{Binding Converter={StaticResource LongHexConverter}}"/>
+                    </DataTemplate>
+                </ListBox.ItemTemplate>
+            </ListBox>
+            <GridSplitter Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="3" VerticalAlignment="Center" HorizontalAlignment="Stretch" Height="5" ShowsPreview="False" Background="DarkGray"></GridSplitter>
+            <TextBlock x:Name="AncestorInformation" v4:Grid.Row="2" v4:Grid.Column="0" v4:Grid.ColumnSpan="3"></TextBlock>
+        </Grid>
         <!-- display tree view -->
         <!--<Grid x:Key="TypeTreeViewGrid" x:Shared="False">
             <Grid.RowDefinitions>
@@ -716,7 +745,7 @@
                         <Separator></Separator>
                         <MenuItem x:Name="IndexViewMemory" Header="View Memory" Click="IndexViewMemoryClicked"/>
                         <Separator></Separator>
-                        <MenuItem x:Name="RecentIndexMenuItem" Header="Recent Indices" Click="RecentIndicesClicked"/>
+                        <MenuItem x:Name="RecentIndexMenuItem" Header="Recent Indices"/>
                     </MenuItem>
                     <MenuItem x:Name="AdhocQueries" Header="Ad-hoc Queries" Background="LightBlue" VerticalAlignment="Center">
                         <MenuItem x:Name="AhqStringUsage" Header="String Usage..." Click="StringUsageClicked"/>

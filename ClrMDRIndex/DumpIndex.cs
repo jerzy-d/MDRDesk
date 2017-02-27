@@ -464,6 +464,16 @@ namespace ClrMDRIndex
 			return Dump.GetFreshHeap();
 		}
 
+		public ulong[] GetInstancesAddresses(int[] instIds)
+		{
+			ulong[] addresses = new ulong[instIds.Length];
+			for (int i = 0, icnt = instIds.Length; i < icnt; ++i)
+			{
+				addresses[i] = _instances[instIds[i]];
+			}
+			return addresses;
+		}
+
 		#endregion heap
 
 		#region types
@@ -811,7 +821,7 @@ namespace ClrMDRIndex
 				}
 				var typeId = _instanceTypes[instanceId];
 				var typeName = _typeNames[typeId];
-				AncestorNode rootNode = new AncestorNode(0, typeId, typeName, new[] {instanceId});
+				AncestorNode rootNode = new AncestorNode(0, 0, typeId, typeName, new[] {instanceId});
 
 				return GetParentTree(rootNode, levelMax);
 			}
@@ -827,7 +837,7 @@ namespace ClrMDRIndex
 			try
 			{
 				string typeName = GetTypeName(typeId);
-				var rootNode = new AncestorNode(0, typeId, typeName, GetTypeInstanceIndices(typeId));
+				var rootNode = new AncestorNode(0, 0, typeId, typeName, GetTypeInstanceIndices(typeId));
 				return GetParentTree(rootNode, levelMax);
 			}
 			catch (Exception ex)
@@ -844,12 +854,15 @@ namespace ClrMDRIndex
 			{
 				HashSet<int> set = new HashSet<int>();
 				Queue<AncestorNode> que = new Queue<AncestorNode>(Math.Min(1000, rootNode.Instances.Length));
-				var dct = new SortedDictionary<int, KeyValuePair<string, List<int>>>();
+				//var dct = new SortedDictionary<int, KeyValuePair<string, List<int>>>();
+				var dct = new SortedDictionary<int, quadruple<string, List<int>, int, int>>();
+				//var refCountDct = new Dictionary<int,KeyValuePair<int,int>>();
 				que.Enqueue(rootNode);
 				while (que.Count > 0)
 				{
 					AncestorNode node = que.Dequeue();
 					dct.Clear();
+					//refCountDct.Clear();
 					int currentNodeLevel = node.Level + 1;
 					if (currentNodeLevel >= levelMax) continue;
 					var instances = node.Instances;
@@ -865,20 +878,29 @@ namespace ClrMDRIndex
 							var ancestor = ancestors[j];
 							var typeid = _instanceTypes[ancestor];
 							var typename = _typeNames[typeid];
-							KeyValuePair<string, List<int>> kv;
-							if (dct.TryGetValue(typeid, out kv))
+							//KeyValuePair<string, List<int>> kv;
+							quadruple<string, List<int>, int, int> quad;
+							if (dct.TryGetValue(typeid, out quad))
 							{
-								kv.Value.Add(ancestor);
+								quad.Second.Add(ancestor);
+								var childNdx = i + 1;
+								if (quad.Third != childNdx)
+								{
+									var childCount = quad.Forth + 1;
+									dct[typeid] = new quadruple<string, List<int>, int, int>(quad.First,quad.Second,childNdx,childCount);
+								}
 								continue;
 							}
-							dct.Add(typeid, new KeyValuePair<string, List<int>>(typename, new List<int>(16) {ancestor}));
+							//dct.Add(typeid, new KeyValuePair<string, List<int>>(typename, new List<int>(16) { ancestor }));
+							dct.Add(typeid, new quadruple<string, List<int>, int, int>(typename, new List<int>(16) { ancestor }, i+1, 1));
 						}
 					}
 					var nodes = new AncestorNode[dct.Count];
 					int n = 0;
 					foreach (var kv in dct)
 					{
-						nodes[n] = new AncestorNode(currentNodeLevel, kv.Key, kv.Value.Key, kv.Value.Value.ToArray());
+						//nodes[n] = new AncestorNode(currentNodeLevel, kv.Value.Second, kv.Key, kv.Value.Key, kv.Value.Value.ToArray());
+						nodes[n] = new AncestorNode(currentNodeLevel, kv.Value.Forth, kv.Key, kv.Value.First, kv.Value.Second.ToArray());
 						nodes[n].Sort(AncestorNode.SortAncestors.ByteInstanceCountDesc);
 						que.Enqueue(nodes[n]);
 						++n;
@@ -984,10 +1006,17 @@ namespace ClrMDRIndex
 			return OneInstanceParentsReport(result.Key, result.Value);
 		}
 
+		/// <summary>
+		/// Get references for all instances of a given type.
+		/// </summary>
+		/// <param name="typeId">Type id.</param>
+		/// <param name="level">How deep reference tree should be.</param>
+		/// <returns></returns>
 		public ListingInfo GetParentReferencesReport(int typeId, int level = Int32.MaxValue)
 		{
 			string error;
 
+			// all type instances
 			int[] typeInstances = GetTypeInstanceIndices(typeId);
 
 			KeyValuePair<IndexNode, int>[] result = _references.GetReferenceNodes(typeInstances, References.Direction.FieldParent,
