@@ -127,7 +127,7 @@ module Types =
     let getArrayDispValue (heap:ClrHeap) (addr:address) (intr:bool) (fld:ClrInstanceField) =
         let obj = unbox<uint64>(fld.GetValue(addr,intr,false))
         let inst = heap.GetObjectType(obj)
-        if inst <> null then
+        if isNull inst then
             let count = inst.GetArrayLength(obj)
             Utils.RealAddressString(obj) + "\u279C[" + count.ToString() + "]"
         else
@@ -246,7 +246,7 @@ module Types =
         Utils.SameStrings(clrType.Name,"ERROR")
 
     let isUnknownType (clrType: ClrType) =
-        clrType = null || Utils.SameStrings(clrType.Name,"System.__Canon") || Utils.SameStrings(clrType.Name,"ERROR")
+        isNull clrType || Utils.SameStrings(clrType.Name,"System.__Canon") || Utils.SameStrings(clrType.Name,"ERROR")
 
     let typeName (clrType:ClrType) =
         if isNull clrType then Constants.Unknown else clrType.Name
@@ -259,7 +259,7 @@ module Types =
 
     /// Used when we looking for clearly defined type.
     let isTypeUnknown (clrType: ClrType) =
-        clrType = null || isErrorType clrType || isTypeNameVague clrType.Name || clrType.IsInterface || isErrorType clrType
+        isNull clrType || isErrorType clrType || isTypeNameVague clrType.Name || clrType.IsInterface || isErrorType clrType
 
     let isConreteType (clrType:ClrType) =
         not (isTypeUnknown clrType)
@@ -471,7 +471,7 @@ module Types =
             else
                 for fldNdx = 0 to fldCount-1 do
                     let fld = clrType.Fields.[fldNdx]
-                    let fldTypeName = if fld.Type = null then Constants.UnknownTypeName else fld.Type.Name
+                    let fldTypeName = if isNull fld.Type then Constants.UnknownTypeName else fld.Type.Name
                     let fldKind = typeKind fld.Type
                     let fldVal = getFieldValue heap addr internalAddresses fld fldKind
                     let typeId = ndxProxy.GetTypeId(fldTypeName)

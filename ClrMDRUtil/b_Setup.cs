@@ -43,6 +43,16 @@ namespace ClrMDRIndex
 			ProcDumpFolder = folder;
 		}
 
+		public static void SetRecentIndexList(List<string> lst)
+		{
+			RecentIndexList = lst;
+		}
+
+		public static void SetRecentAdhocList(List<string> lst)
+		{
+			RecentAdhocList = lst;
+		}
+
 		public static void SetTypesDisplayMode(string mode)
 	    {
 	        TypesDisplayMode = mode;

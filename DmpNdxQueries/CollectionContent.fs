@@ -2,16 +2,9 @@
 [<AutoOpen>]
 module CollectionContent =
     open System
-    open System.Text
-    open System.IO
     open System.Collections.Generic
-    open System.Diagnostics
-    open FSharp.Charting
-    open FSharp.Charting.ChartTypes
     open Microsoft.Diagnostics.Runtime
     open ClrMDRIndex
-
-
 
     (*
         Arrays.
@@ -26,8 +19,6 @@ module CollectionContent =
         else
             let len = clrType.GetArrayLength(addr)
             let kind = typeKind clrType.ComponentType
-
-
             (null, clrType, clrType.ComponentType, len, kind)
 
     let aryElemString (heap:ClrHeap) (addr:address) (aryType:ClrType) (elemType:ClrType) (ndx:int) =
@@ -178,11 +169,11 @@ module CollectionContent =
             
     let getStringBuilderString (heap:ClrHeap) (addr:address) =
         let clrType = heap.GetObjectType(addr)
-        let m_ChunkChars = clrType.GetFieldByName("m_ChunkChars")
-        let m_ChunkPrevious = clrType.GetFieldByName("m_ChunkPrevious")
-        let m_ChunkLength = clrType.GetFieldByName("m_ChunkLength")
-        let m_ChunkOffset = clrType.GetFieldByName("m_ChunkOffset")
-        getStringBuilderContent addr m_ChunkChars m_ChunkPrevious m_ChunkLength m_ChunkOffset
+        let chunkChars = clrType.GetFieldByName("m_ChunkChars")
+        let chunkPrevious = clrType.GetFieldByName("m_ChunkPrevious")
+        let chunkLength = clrType.GetFieldByName("m_ChunkLength")
+        let chunkOffset = clrType.GetFieldByName("m_ChunkOffset")
+        getStringBuilderContent addr chunkChars chunkPrevious chunkLength chunkOffset
 
     (*
         System.Collections.Generic.Dictionary<TKey,TValue>
@@ -202,32 +193,32 @@ module CollectionContent =
         let entriesType = heap.GetObjectType(entriesAddr) // that is address of entries array
         let entryAddr = entriesType.GetArrayElementAddress(entriesAddr,0)
         let entryType = entriesType.ComponentType
-        let Entry_hashCodeFld = entryType.GetFieldByName("hashCode")
-        let Entry_nextFld = entryType.GetFieldByName("next")
-        let Entry_keyFld = entryType.GetFieldByName("key")
-        let Entry_valueFld = entryType.GetFieldByName("value")
-        let Entry_keyType = tryGetFieldType heap (entryAddr + (uint64)Entry_keyFld.Offset) Entry_keyFld 
-        let Entry_valueType = tryGetFieldType heap (entryAddr + (uint64)Entry_valueFld.Offset) Entry_valueFld 
-        (fldDescription, count, entriesType, entriesAddr, Entry_hashCodeFld, Entry_nextFld, Entry_keyFld, Entry_keyType, Entry_valueFld, Entry_valueType)
+        let entryHashCodeFld = entryType.GetFieldByName("hashCode")
+        let entryNextFld = entryType.GetFieldByName("next")
+        let entryKeyFld = entryType.GetFieldByName("key")
+        let entryValueFld = entryType.GetFieldByName("value")
+        let entryKeyType = tryGetFieldType heap (entryAddr + (uint64)entryKeyFld.Offset) entryKeyFld 
+        let entryValueType = tryGetFieldType heap (entryAddr + (uint64)entryValueFld.Offset) entryValueFld 
+        (fldDescription, count, entriesType, entriesAddr, entryHashCodeFld, entryNextFld, entryKeyFld, entryKeyType, entryValueFld, entryValueType)
 
     let dictionaryContent (heap:ClrHeap) (addr:address) =
         try
             let dctType = heap.GetObjectType(addr)
-            let fldDescription, count, entriesType, entriesAddr, Entry_hashCodeFld, Entry_nextFld, Entry_keyFld, Entry_keyType, Entry_valueFld, Entry_valueType
+            let fldDescription, count, entriesType, entriesAddr, entryHashCodeFld, entryNextFld, entryKeyFld, entryKeyType, entryValueFld, entryValueType
                  = getDictionaryInfo heap addr dctType
-            let Entry_keyKind = typeKind Entry_keyType
-            let Entry_valueKind = typeKind Entry_valueType
+            let entryKeyKind = typeKind entryKeyType
+            let entryValueKind = typeKind entryValueType
             let entryList = new ResizeArray<KeyValuePair<string,string>>(count)
             let mutable index:int32 = 0
             while index < count do
                 let entryAddr = entriesType.GetArrayElementAddress(entriesAddr,index)
-                let hashCode = getIntValue entryAddr Entry_hashCodeFld true
+                let hashCode = getIntValue entryAddr entryHashCodeFld true
                 if hashCode >= 0 then
-                    let keyVal = getFieldValue heap entryAddr true Entry_keyFld Entry_keyKind
-                    let valVal = getFieldValue heap entryAddr true Entry_valueFld Entry_valueKind
+                    let keyVal = getFieldValue heap entryAddr true entryKeyFld entryKeyKind
+                    let valVal = getFieldValue heap entryAddr true entryValueFld entryValueKind
                     entryList.Add(new KeyValuePair<string,string>(keyVal,valVal))
                 index <- index + 1
-            (null, fldDescription, count, dctType, Entry_keyType, Entry_valueType, entryList.ToArray())
+            (null, fldDescription, count, dctType, entryKeyType, entryValueType, entryList.ToArray())
         with
             | exn -> (Utils.GetExceptionErrorString(exn),null,0,null,null,null,null)
 
@@ -550,16 +541,35 @@ public IEnumerator<KeyValuePair<TKey, TValue>> GetEnumerator()
 
 *)
 
-    let getConcurrentDictionaryBucketsInfo (heap:ClrHeap) (addr:address) (dctType:ClrType) : string * ClrType * address =
-        let tables = dctType.GetFieldByName("m_tables")
-        let tablesAddress = getReferenceFieldAddress addr tables false
-        let tablesType = heap.GetObjectType tablesAddress
-        let buckets = tablesType.GetFieldByName("m_buckets")
-        let bucketsAddress = getReferenceFieldAddress tablesAddress buckets false
-        let bucketsType = heap.GetObjectType bucketsAddress
-        (null,bucketsType,bucketsAddress)
-
     let getConcurrentDictionaryContent (heap:ClrHeap) (addr:address) =
+
+        let getBucketsInfo (heap:ClrHeap) (addr:address) (dctType:ClrType) : ClrType * address =
+            let tables = dctType.GetFieldByName("m_tables")
+            let tablesAddress = getReferenceFieldAddress addr tables false
+            let tablesType = heap.GetObjectType tablesAddress
+            let buckets = tablesType.GetFieldByName("m_buckets")
+            let bucketsAddress = getReferenceFieldAddress tablesAddress buckets false
+            let bucketsType = heap.GetObjectType bucketsAddress
+            (bucketsType,bucketsAddress)
+
+        let getNodeTypes (heap:ClrHeap) (addr:address) (bucketsType:ClrType) (aryLen:int) =
+            let mutable notDone = true
+            let mutable ndx:int = 0
+            let mutable nodeType:ClrType = null
+            let mutable keyType:ClrType = null
+            let mutable keyField:ClrInstanceField = null
+            let mutable valueType:ClrType = null
+            let mutable valueField:ClrInstanceField = null
+            while notDone && ndx < aryLen do
+                let aryElemAddr = aryElemReferenceAddress heap addr bucketsType null ndx
+                nodeType <- heap.GetObjectType(aryElemAddr)
+                if not (isNull nodeType) then
+                    ()
+                else
+                    ()
+                ndx <- ndx + 1
+            (nodeType, keyType, keyField, valueType, valueField)
+
         try
             let dctType = heap.GetObjectType(addr)
             if isNull dctType then
@@ -567,15 +577,14 @@ public IEnumerator<KeyValuePair<TKey, TValue>> GetEnumerator()
             elif not (dctType.Name.StartsWith("System.Collections.Concurrent.ConcurrentDictionary<")) then
                 ("Expected ConcurrentDictionary<TKey, TValue> type at address: " + Utils.RealAddressString(addr) + ", there's " + dctType.Name + " instead.", null, Constants.InvalidAddress)
             else
-                let error, bucketsType, bucketsAddr = getConcurrentDictionaryBucketsInfo heap addr dctType
-
+                let bucketsType, bucketsAddr = getBucketsInfo heap addr dctType
                 let count = bucketsType.GetArrayLength(bucketsAddr)
-                let elemType = bucketsType.ComponentType
+                let nodeType, keyType, keyField, valueType, valueField = getNodeTypes heap bucketsAddr bucketsType count 
                 let values = new ResizeArray<address>(count)
                 for i = 0 to (count - 1) do
                     let mutable aryElemAddr = aryElemReferenceAddress heap bucketsAddr bucketsType null i
                     let mutable aryElemType = heap.GetObjectType(aryElemAddr)
-                    while aryElemType <> null do
+                    while not (isNull aryElemType) do
                         values.Add(aryElemAddr)
                         let fld = aryElemType.GetFieldByName("m_next")
                         aryElemAddr <- getReferenceFieldAddress aryElemAddr fld false

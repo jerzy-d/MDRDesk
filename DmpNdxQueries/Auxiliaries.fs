@@ -126,7 +126,7 @@ module Auxiliaries =
         
 
     let getDispAddress (objAddr: obj) : string =
-        if objAddr = null then Constants.ZeroAddressStr else Utils.AddressString(unbox<address>objAddr)
+        if isNull objAddr then Constants.ZeroAddressStr else Utils.AddressString(unbox<address>objAddr)
 
 
     let getTypeFieldIndices (clrType:ClrType) (fldNames:string array) =
