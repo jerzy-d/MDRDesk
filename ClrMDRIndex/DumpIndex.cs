@@ -823,7 +823,7 @@ namespace ClrMDRIndex
 				}
 				var typeId = _instanceTypes[instanceId];
 				var typeName = _typeNames[typeId];
-				AncestorNode rootNode = new AncestorNode(0, 0, typeId, typeName, new[] {instanceId});
+				AncestorNode rootNode = new AncestorNode(null, 0, 0, typeId, typeName, new[] {instanceId});
 
 				return GetParentTree(rootNode, levelMax);
 			}
@@ -839,7 +839,7 @@ namespace ClrMDRIndex
 			try
 			{
 				string typeName = GetTypeName(typeId);
-				var rootNode = new AncestorNode(0, 0, typeId, typeName, GetTypeInstanceIndices(typeId));
+				var rootNode = new AncestorNode(null, 0, 0, typeId, typeName, GetTypeInstanceIndices(typeId));
 				return GetParentTree(rootNode, levelMax);
 			}
 			catch (Exception ex)
@@ -860,11 +860,11 @@ namespace ClrMDRIndex
 				que.Enqueue(rootNode);
 				while (que.Count > 0)
 				{
-					AncestorNode node = que.Dequeue();
+					AncestorNode currentNode = que.Dequeue();
 					dct.Clear();
-					int currentNodeLevel = node.Level + 1;
+					int currentNodeLevel = currentNode.Level + 1;
 					if (currentNodeLevel >= levelMax) continue;
-					var instances = node.Instances;
+					var instances = currentNode.Instances;
 					for (int i = 0, icnt = instances.Length; i < icnt; ++i)
 					{
 						var inst = instances[i];
@@ -896,13 +896,13 @@ namespace ClrMDRIndex
 					foreach (var kv in dct)
 					{
 						var ancestors = Utils.RemoveDuplicates(kv.Value.Second);
-						nodes[n] = new AncestorNode(currentNodeLevel, kv.Value.Forth, kv.Key, kv.Value.First, ancestors);
+						nodes[n] = new AncestorNode(currentNode, currentNodeLevel, kv.Value.Forth, kv.Key, kv.Value.First, ancestors);
 						nodes[n].Sort(AncestorNode.SortAncestors.ByteInstanceCountDesc);
 						que.Enqueue(nodes[n]);
 						++n;
 					}
-					node.AddNodes(nodes);
-					node.Sort(AncestorNode.SortAncestors.ByteInstanceCountDesc);
+					currentNode.AddNodes(nodes);
+					currentNode.Sort(AncestorNode.SortAncestors.ByteInstanceCountDesc);
 				}
 				return new Tuple<string, AncestorNode>(null, rootNode);
 			}

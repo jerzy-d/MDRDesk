@@ -552,6 +552,16 @@ public IEnumerator<KeyValuePair<TKey, TValue>> GetEnumerator()
             let bucketsType = heap.GetObjectType bucketsAddress
             (bucketsType,bucketsAddress)
 
+        let getNodeFieldType (heap:ClrHeap) (addr:address) (fld:ClrInstanceField) =
+            if not (isNull fld) then
+                let kind = getFieldMajorKind fld
+                match kind with
+                | TypeKind.ReferenceKind -> tryGetType' heap addr false fld
+                | TypeKind.StructKind -> tryGetFieldType heap (addr + (uint64)fld.Offset) fld
+                | TypeKind.PrimitiveKind -> null
+                | _ -> null
+            else null
+
         let getNodeTypes (heap:ClrHeap) (addr:address) (bucketsType:ClrType) (aryLen:int) =
             let mutable notDone = true
             let mutable ndx:int = 0
@@ -564,33 +574,51 @@ public IEnumerator<KeyValuePair<TKey, TValue>> GetEnumerator()
                 let aryElemAddr = aryElemReferenceAddress heap addr bucketsType null ndx
                 nodeType <- heap.GetObjectType(aryElemAddr)
                 if not (isNull nodeType) then
-                    ()
-                else
-                    ()
+                    keyField <- nodeType.GetFieldByName("m_key")
+                    if not (isNull keyField) then keyType <- getNodeFieldType heap aryElemAddr keyField
+                    else ()
+                    valueField <- nodeType.GetFieldByName("m_value")
+                    if not (isNull valueField) then valueType <- getNodeFieldType heap aryElemAddr valueField
+                    else ()
+                    if not (isNull nodeType) 
+                       && not (isNull keyType) 
+                       && not (isNull keyField)
+                       && not (isNull valueType)
+                       && not (isNull valueField) then
+                            notDone <- false
+                    else ()
+                else ()
                 ndx <- ndx + 1
             (nodeType, keyType, keyField, valueType, valueField)
+
+        let getNodeValue (heap:ClrHeap) (nodeType:ClrType) (nodeAddr:address) (keyType:ClrType) (keyFld:ClrInstanceField)  (valType:ClrType) (valFld:ClrInstanceField) =
+            let keyVal = "keyVal"
+            let valVal = "valVal"
+            Utils.AddressStringHeader(nodeAddr) + keyVal + Constants.HeavyGreekCrossPadded + valVal
 
         try
             let dctType = heap.GetObjectType(addr)
             if isNull dctType then
-                ("There is no valid object at address: " + Utils.RealAddressString(addr), null, Constants.InvalidAddress)
+                ("There is no valid object at address: " + Utils.RealAddressString(addr), null, Constants.InvalidAddress, null)
             elif not (dctType.Name.StartsWith("System.Collections.Concurrent.ConcurrentDictionary<")) then
-                ("Expected ConcurrentDictionary<TKey, TValue> type at address: " + Utils.RealAddressString(addr) + ", there's " + dctType.Name + " instead.", null, Constants.InvalidAddress)
+                ("Expected ConcurrentDictionary<TKey, TValue> type at address: " + Utils.RealAddressString(addr) + ", there's " + dctType.Name + " instead.", null, Constants.InvalidAddress, null)
             else
                 let bucketsType, bucketsAddr = getBucketsInfo heap addr dctType
                 let count = bucketsType.GetArrayLength(bucketsAddr)
                 let nodeType, keyType, keyField, valueType, valueField = getNodeTypes heap bucketsAddr bucketsType count 
-                let values = new ResizeArray<address>(count)
-                for i = 0 to (count - 1) do
-                    let mutable aryElemAddr = aryElemReferenceAddress heap bucketsAddr bucketsType null i
-                    let mutable aryElemType = heap.GetObjectType(aryElemAddr)
-                    while not (isNull aryElemType) do
-                        values.Add(aryElemAddr)
-                        let fld = aryElemType.GetFieldByName("m_next")
-                        aryElemAddr <- getReferenceFieldAddress aryElemAddr fld false
-                        aryElemType <- heap.GetObjectType(aryElemAddr)
-                    ()
-                (null,bucketsType,bucketsAddr)
+                if isNull nodeType || isNull keyType || isNull keyField || isNull valueType || isNull valueField then
+                    ("Cannot resolve ConcurrentDictionary types, at address: " + Utils.RealAddressString(addr), null, Constants.InvalidAddress, null)
+                else
+                    let values = new ResizeArray<string>(count)
+                    let nextFld = nodeType.GetFieldByName("m_next")
+                    for i = 0 to (count - 1) do
+                        let mutable aryElemAddr = aryElemReferenceAddress heap bucketsAddr bucketsType null i
+                        while aryElemAddr <> 0UL do
+                            let nodeValue = getNodeValue heap nodeType aryElemAddr keyType keyField valueType valueField
+                            values.Add(nodeValue)
+                            aryElemAddr <- getReferenceFieldAddress aryElemAddr nextFld false
+                        ()
+                    (null, bucketsType, bucketsAddr, values.ToArray())
 
         with
-            | exn -> (Utils.GetExceptionErrorString(exn),null,Constants.InvalidAddress)
+            | exn -> (Utils.GetExceptionErrorString(exn),null,Constants.InvalidAddress, null)

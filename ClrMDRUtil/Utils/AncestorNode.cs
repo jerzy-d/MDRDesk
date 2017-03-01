@@ -21,13 +21,15 @@ namespace ClrMDRIndex
 		public readonly int ReferenceCount;
 		public readonly int TypeId;
 		public readonly string TypeName;
+		public readonly AncestorNode Parent;
 		private int[] _instances;
 		public int[] Instances => _instances;
 		private AncestorNode[] _ancestors;
 		public AncestorNode[] Ancestors => _ancestors;
 
-		public AncestorNode(int level, int referenceCount, int typeId, string typeName, int[] instances)
+		public AncestorNode(AncestorNode parent, int level, int referenceCount, int typeId, string typeName, int[] instances)
 		{
+			Parent = parent;
 			Level = level;
 			ReferenceCount = referenceCount;
 			TypeId = typeId;

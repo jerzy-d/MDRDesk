@@ -96,12 +96,8 @@ module Auxiliaries =
 
     let isFieldTypeNullOrInterface (field:ClrInstanceField) =
         Debug.Assert(not (isNull field))
-        if isNull field.Type then
-            true
-        elif field.Type.IsInterface then
-            true
-        else
-            false
+        if isNull field.Type then true
+        else field.Type.IsInterface
 
     let getField (clrType:ClrType) (ndx:int) =
         match clrType with
@@ -123,7 +119,6 @@ module Auxiliaries =
         match fld.Type with
         | null -> Constants.Unknown
         | _ -> fld.Type.Name
-        
 
     let getDispAddress (objAddr: obj) : string =
         if isNull objAddr then Constants.ZeroAddressStr else Utils.AddressString(unbox<address>objAddr)

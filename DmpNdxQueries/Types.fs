@@ -47,6 +47,12 @@ module Types =
     let mainKind kind = TypeKinds.GetMainTypeKind(kind)
     let specificKind kind = TypeKinds.GetParticularTypeKind(kind)
 
+    let getFieldMajorKind (fld:ClrInstanceField) =
+        if fld.IsObjectReference then TypeKind.ReferenceKind
+        elif fld.IsValueClass then TypeKind.StructKind
+        elif fld.IsPrimitive then TypeKind.PrimitiveKind
+        else TypeKind.Unknown
+
     let typeDefaultValue (clrType:ClrType) : string =
         let elemType = clrType.ElementType
         match elemType with
@@ -250,6 +256,7 @@ module Types =
 
     let typeName (clrType:ClrType) =
         if isNull clrType then Constants.Unknown else clrType.Name
+
     /// <summary>
     /// Some reference types have names which might require further investigation.
     /// </summary>
