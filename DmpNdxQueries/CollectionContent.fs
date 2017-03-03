@@ -245,7 +245,6 @@ module CollectionContent =
     let getSortedDictionaryInfo (heap:ClrHeap) (addr:address) : string * KeyValuePair<string,string> array * int * ClrType * address =
         try
             let error, dctType = getSpecificType heap addr "System.Collections.Generic.SortedDictionary<"
-            let dctType = heap.GetObjectType addr
             if isNull dctType then
                 (error,null,0,null,0UL)
             else
@@ -387,7 +386,7 @@ module CollectionContent =
                         let raddr2 = ValueExtractor.ReadUlongAtAddress(elemFld2Addr,heap)
                         let tp = heap.GetObjectType(raddr2)
                         let name = if (isNull tp) then Constants.NullTypeName else tp.Name
-                        if (tp<>null) && tp.IsString then
+                        if (not (isNull tp)) && tp.IsString then
                             let vstr = ValueExtractor.GetStringAtAddress(raddr2,heap)
                             value <- sval.ToString() + Constants.HeavyGreekCrossPadded + name + Constants.HeavyGreekCrossPadded + vstr
                         else
@@ -448,7 +447,7 @@ module CollectionContent =
                         let dataVal = valueFld.GetValue(elemAddr,true)
                         let valAddr = getReferenceFieldAddress elemAddr valueFld true
                         valType <- tryGetType'' heap valAddr true valueFld
-                        if valType <> null then
+                        if not (isNull valType) then
                             notFound <- false
                         else
                             index <- index + 1
@@ -541,16 +540,23 @@ public IEnumerator<KeyValuePair<TKey, TValue>> GetEnumerator()
 
 *)
 
-    let getConcurrentDictionaryContent (heap:ClrHeap) (addr:address) =
+    //let getConcurrentDictionaryContent (heap:ClrHeap) (addr:address) : (string * (string * string * string * int) * KeyValuePair<ValueString,ValueString> array) =
+    let getConcurrentDictionaryContent (heap:ClrHeap) (addr:address) : (string * KeyValuePair<string,string> array * KeyValuePair<ValueString,ValueString> array) =
 
-        let getBucketsInfo (heap:ClrHeap) (addr:address) (dctType:ClrType) : ClrType * address =
+        let getBucketsInfo (heap:ClrHeap) (addr:address) (dctType:ClrType) : ClrType * address * int =
             let tables = dctType.GetFieldByName("m_tables")
             let tablesAddress = getReferenceFieldAddress addr tables false
             let tablesType = heap.GetObjectType tablesAddress
             let buckets = tablesType.GetFieldByName("m_buckets")
             let bucketsAddress = getReferenceFieldAddress tablesAddress buckets false
             let bucketsType = heap.GetObjectType bucketsAddress
-            (bucketsType,bucketsAddress)
+            let bucketsAddress = getReferenceFieldAddress tablesAddress buckets false
+            let countPerLock = tablesType.GetFieldByName("m_countPerLock")
+            let countPerLockAddress = getReferenceFieldAddress tablesAddress countPerLock false
+            let countPerLockType = heap.GetObjectType countPerLockAddress
+            let error, counts = getIntAry heap countPerLockAddress countPerLockType
+            let count = if isNull error then Array.sum counts else -1
+            (bucketsType, bucketsAddress, count)
 
         let getNodeFieldType (heap:ClrHeap) (addr:address) (fld:ClrInstanceField) =
             if not (isNull fld) then
@@ -591,34 +597,38 @@ public IEnumerator<KeyValuePair<TKey, TValue>> GetEnumerator()
                 ndx <- ndx + 1
             (nodeType, keyType, keyField, valueType, valueField)
 
-        let getNodeValue (heap:ClrHeap) (nodeType:ClrType) (nodeAddr:address) (keyType:ClrType) (keyFld:ClrInstanceField)  (valType:ClrType) (valFld:ClrInstanceField) =
-            let keyVal = "keyVal"
-            let valVal = "valVal"
-            Utils.AddressStringHeader(nodeAddr) + keyVal + Constants.HeavyGreekCrossPadded + valVal
+        let getNodeValue (heap:ClrHeap) (nodeType:ClrType) (nodeAddr:address) (keyKind:TypeKind) (keyFld:ClrInstanceField) (valKind:TypeKind) (valFld:ClrInstanceField) =
+            let keyVal = getFieldValue heap nodeAddr false keyFld keyKind
+            let valVal = getFieldValue heap nodeAddr false valFld valKind
+            new KeyValuePair<ValueString,ValueString>(new ValueString(keyVal),new ValueString(valVal))
 
         try
             let dctType = heap.GetObjectType(addr)
             if isNull dctType then
-                ("There is no valid object at address: " + Utils.RealAddressString(addr), null, Constants.InvalidAddress, null)
+                ("There is no valid object at address: " + Utils.RealAddressString(addr), null, null)
             elif not (dctType.Name.StartsWith("System.Collections.Concurrent.ConcurrentDictionary<")) then
-                ("Expected ConcurrentDictionary<TKey, TValue> type at address: " + Utils.RealAddressString(addr) + ", there's " + dctType.Name + " instead.", null, Constants.InvalidAddress, null)
+                ("Expected ConcurrentDictionary<TKey, TValue> type at address: " + Utils.RealAddressString(addr) + ", there's " + dctType.Name + " instead.", null, null)
             else
-                let bucketsType, bucketsAddr = getBucketsInfo heap addr dctType
+                let bucketsType, bucketsAddr, dctCount = getBucketsInfo heap addr dctType
                 let count = bucketsType.GetArrayLength(bucketsAddr)
                 let nodeType, keyType, keyField, valueType, valueField = getNodeTypes heap bucketsAddr bucketsType count 
                 if isNull nodeType || isNull keyType || isNull keyField || isNull valueType || isNull valueField then
-                    ("Cannot resolve ConcurrentDictionary types, at address: " + Utils.RealAddressString(addr), null, Constants.InvalidAddress, null)
+                    ("Cannot resolve ConcurrentDictionary types, at address: " + Utils.RealAddressString(addr), null, null)
                 else
-                    let values = new ResizeArray<string>(count)
+                    let values = new ResizeArray<KeyValuePair<ValueString,ValueString>>(count)
+                    let keyKind = typeKind keyType
+                    let valueKind = typeKind valueType
+                    let info = [| new KeyValuePair<string,string>("Dictionary",dctType.Name); new KeyValuePair<string,string>("Keys Type", keyType.Name);
+                                        new KeyValuePair<string,string>("Values Type", valueType.Name); new KeyValuePair<string,string>("Items Count", Utils.CountString(dctCount)) |]
                     let nextFld = nodeType.GetFieldByName("m_next")
                     for i = 0 to (count - 1) do
                         let mutable aryElemAddr = aryElemReferenceAddress heap bucketsAddr bucketsType null i
                         while aryElemAddr <> 0UL do
-                            let nodeValue = getNodeValue heap nodeType aryElemAddr keyType keyField valueType valueField
+                            let nodeValue = getNodeValue heap nodeType aryElemAddr keyKind keyField valueKind valueField
                             values.Add(nodeValue)
                             aryElemAddr <- getReferenceFieldAddress aryElemAddr nextFld false
                         ()
-                    (null, bucketsType, bucketsAddr, values.ToArray())
+                    (null, info, values.ToArray())
 
         with
-            | exn -> (Utils.GetExceptionErrorString(exn),null,Constants.InvalidAddress, null)
+            | exn -> (Utils.GetExceptionErrorString(exn), null, null)

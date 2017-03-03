@@ -41,3 +41,18 @@ Ancestor tree - show types and instances, and directions in 'AncestorTreeViewGri
 Show in address list count of unrooted instances. (in all where this is possible).
 0016 03/01/17
 In AncestorTreeViewGrid display live help (explaning references for current selection).
+0017 03/02/17
+To the Type Sizes grid, bring type context menu from Types grid.
+0018 03/02/17
+Expanding all tree by user.
+0019 03/03/17
+at Microsoft.Diagnostics.Runtime.DbgEngDataReader.GetPointerSize() in D:\Jerzy\projects\csharp\15\clrmd-master\clrmd-master\src\Microsoft.Diagnostics.Runtime\DataTarget.cs:line 1587
+   at Microsoft.Diagnostics.Runtime.MemoryReader..ctor(IDataReader dataReader, Int32 cacheSize) in D:\Jerzy\projects\csharp\15\clrmd-master\clrmd-master\src\Microsoft.Diagnostics.Runtime\internal.cs:line 289
+   at Microsoft.Diagnostics.Runtime.HeapBase..ctor(RuntimeBase runtime) in D:\Jerzy\projects\csharp\15\clrmd-master\clrmd-master\src\Microsoft.Diagnostics.Runtime\ClrHeap.cs:line 677
+   at Microsoft.Diagnostics.Runtime.Desktop.DesktopGCHeap..ctor(DesktopRuntimeBase runtime) in D:\Jerzy\projects\csharp\15\clrmd-master\clrmd-master\src\Microsoft.Diagnostics.Runtime\Desktop\heap.cs:line 19
+   at Microsoft.Diagnostics.Runtime.Desktop.DesktopRuntimeBase.GetHeap() in D:\Jerzy\projects\csharp\15\clrmd-master\clrmd-master\src\Microsoft.Diagnostics.Runtime\Desktop\runtimebase.cs:line 294
+   at ClrMDRIndex.DumpIndex.GetInstanceValue(UInt64 addr, String& error) in D:\Jerzy\projects\csharp\15\MDRDesk\ClrMDRIndex\DumpIndex.cs:line 1132
+   IsPointer64Bit failed: 8000ffff
+0020 03/03/17
+   String Usage context menu issues.
+   Get References throwing exceptions.

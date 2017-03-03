@@ -781,23 +781,5 @@ namespace ClrMDRIndex
 
 			intervals.Add(new triple<bool, ulong, ulong>(false, lastAddr, curLastAddr - lastAddr));
 		}
-
-		public static void GetConcurrentDictionary(ClrHeap heap, ulong address, out string error)
-		{
-			error = null;
-			try
-			{
-				var clrType = heap.GetObjectType(address);
-				var m_tables_fld = clrType.GetFieldByName("m_tables");
-				var m_growLockArray = GetPrimitiveValue(m_tables_fld.GetValue(address), ClrElementType.Boolean);
-				var m_keyRehashCount = GetPrimitiveValue(m_tables_fld.GetValue(address), ClrElementType.Boolean);
-
-
-			}
-			catch (Exception ex)
-			{
-				error = Utils.GetExceptionErrorString(ex);
-			}
-		}
 	}
 }

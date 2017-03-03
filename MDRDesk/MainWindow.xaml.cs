@@ -710,9 +710,10 @@ namespace MDRDesk
 			bool addGenerationInfo = false;
 			MenuItem menuItem = sender as MenuItem;
 			Debug.Assert(menuItem != null);
+
 			if ((menuItem.Header as string).Contains("Generations")) addGenerationInfo = true;
 
-			GetUserEnteredNumber("Minimum String Reference Count", "Enter number, hex format not allowed:", out _minStringUsage);
+			if (!GetUserEnteredNumber("Minimum String Reference Count", "Enter number, hex format not allowed:", out _minStringUsage)) return;
 
 			if (CurrentIndex.AreStringDataFilesAvailable())
 				SetStartTaskMainWindowState("Getting string usage. Please wait...");
@@ -863,7 +864,7 @@ namespace MDRDesk
 			var progressHandler = new Progress<string>(MainStatusShowMessage);
 			var progress = progressHandler as IProgress<string>;
 
-			GetUserEnteredNumber("Minimum String Reference Count", "Enter number, hex format not allowed:", out _minStringUsage);
+			if (!GetUserEnteredNumber("Minimum String Reference Count", "Enter number, hex format not allowed:", out _minStringUsage)) return;
 
 			SetStartTaskMainWindowState("Getting string usage. Please wait...");
 
