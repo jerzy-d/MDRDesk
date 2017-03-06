@@ -51,9 +51,8 @@ namespace UnitTestMdr
 			Assert.AreNotEqual(Constants.InvalidIndex, typeId);
 			var ndxTypeName = index.GetTypeName(typeId);
 			Assert.IsTrue(Utils.SameStrings(typeName, ndxTypeName));
-			var addresses = index.GetTypeInstances(typeId);
-
-
+			int unrootedCount;
+			var addresses = index.GetTypeInstances(typeId,out unrootedCount);
 		}
 
 		#endregion (new) types and instances
@@ -804,7 +803,8 @@ namespace UnitTestMdr
 				try
 				{
 					var typeId = map.GetTypeId(_typeName);
-					var typeInstances = map.GetTypeInstances(typeId);
+					int unrootedCount;
+					var typeInstances = map.GetTypeInstances(typeId,out unrootedCount);
 					var heap = map.Dump.Heap;
 					for (int i = 0, icnt = typeInstances.Length; i < icnt; ++i)
 					{
@@ -839,8 +839,8 @@ namespace UnitTestMdr
 			var map = OpenMap(@"D:\Jerzy\WinDbgStuff\dumps\Analytics\ConvergEx\Analytics.map");
 			using (map)
 			{
-				int totalCount;
-				var result = map.GetTypeWithPrefixAddresses(typeName, true, out totalCount);
+				int totalCount, unrootedCount;
+				var result = map.GetTypeWithPrefixAddresses(typeName, true, out totalCount, out unrootedCount);
 
 				var id = map.GetTypeId(typeName);
 				var tname = map.GetTypeName(id);

@@ -133,7 +133,7 @@ module Types =
     let getArrayDispValue (heap:ClrHeap) (addr:address) (intr:bool) (fld:ClrInstanceField) =
         let obj = unbox<uint64>(fld.GetValue(addr,intr,false))
         let inst = heap.GetObjectType(obj)
-        if isNull inst then
+        if not (isNull inst) then
             let count = inst.GetArrayLength(obj)
             Utils.RealAddressString(obj) + "\u279C[" + count.ToString() + "]"
         else
@@ -484,6 +484,7 @@ module Types =
                     let typeId = ndxProxy.GetTypeId(fldTypeName)
                     let mainKind = TypeKinds.GetMainTypeKind(fldKind)
                     match mainKind with
+                    | TypeKind.ArrayKind
                     | TypeKind.ReferenceKind ->
                         let fldAddr = getReferenceFieldAddress addr fld internalAddresses
                         instVal.Addvalue(new InstanceValue(typeId, fldAddr, fldTypeName, fld.Name, fldVal))

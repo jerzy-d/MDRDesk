@@ -972,16 +972,22 @@ namespace MDRDesk
 			Debug.Assert(CurrentIndex != null);
 			var grid = GetCurrentTabGrid();
 			var lbNamespaceViewTypeNames = (ListBox)LogicalTreeHelper.FindLogicalNode(grid, @"lbNamespaceViewTypeNames");
+			Debug.Assert(lbNamespaceViewTypeNames != null);
 			var selndx = lbNamespaceViewTypeNames.SelectedIndex;
 			if (selndx < 0) return;
 
 			var data = lbNamespaceViewTypeNames.ItemsSource as KeyValuePair<string, int>[];
-			var addresses = CurrentIndex.GetTypeInstances(data[selndx].Value);
+			int unrootedCount;
+			var addresses = CurrentIndex.GetTypeInstances(data[selndx].Value, out unrootedCount);
 			var lbTpNsTypeInfo = (Label)LogicalTreeHelper.FindLogicalNode(grid, @"lbTpNsTypeInfo");
+			Debug.Assert(lbTpNsTypeInfo != null);
 			lbTpNsTypeInfo.Content = data[selndx].Value.ToString();
 			var lbTpAddresses = (ListBox)LogicalTreeHelper.FindLogicalNode(grid, @"lbTypeNamespaceAddresses");
+			Debug.Assert(lbTpAddresses != null);
 			var addrCountLabel = (Label)LogicalTreeHelper.FindLogicalNode(grid, @"lTpAddressCount");
-			addrCountLabel.Content = Utils.LargeNumberString(addresses.Length);
+			Debug.Assert(addrCountLabel!=null);
+			addrCountLabel.Content = Utils.CountString(addresses.Length)
+				+ (unrootedCount > 0 ? (", unrooted: " + Utils.CountString(unrootedCount)) : string.Empty);
 			lbTpAddresses.ItemsSource = addresses;
 
 		}
@@ -1024,10 +1030,12 @@ namespace MDRDesk
 			var selndx = lbNames.SelectedIndex;
 			if (selndx < 0) return;
 			var data = lbNames.ItemsSource as KeyValuePair<string, int>[];
-			var addresses = CurrentIndex.GetTypeInstances(data[selndx].Value);
+			int unrootedCount;
+			var addresses = CurrentIndex.GetTypeInstances(data[selndx].Value,out unrootedCount);
 			var lab = (Label)LogicalTreeHelper.FindLogicalNode(grid, @"lAddressCount");
 			Debug.Assert(lab != null);
-			lab.Content = Utils.LargeNumberString(addresses.Length);
+			lab.Content = Utils.CountString(addresses.Length)
+				+ (unrootedCount > 0 ? (", unrooted: " + Utils.CountString(unrootedCount)) : string.Empty);
 			lbAddresses.ItemsSource = addresses;
 			lbAddresses.SelectedIndex = 0;
 		}
@@ -1891,13 +1899,28 @@ namespace MDRDesk
 			treeView.Items.Add(tvRoot);
 			tvRoot.IsExpanded = true;
 
-			// display general information
+			// display general information, this will be updated when tree selection changes
 			var txtBlk = (TextBlock)LogicalTreeHelper.FindLogicalNode(grid, "AncestorInformation");
 			Debug.Assert(txtBlk!=null);
-			txtBlk.Inlines.Add(new Run(root.TypeName) { FontSize = 16, FontWeight = FontWeights.Bold });
+			if (root.Data is Tuple<string, int>)
+			{
+				txtBlk.Inlines.Add(new Run(root.TypeName + " \"") { FontSize = 16, FontWeight = FontWeights.Bold });
+				var data = root.Data as Tuple<string, int>;
+				var str = data.Item1;
+				var cnt = data.Item2; // TODO JRD
+				txtBlk.Inlines.Add(new Run(ShortenString(str,60)) { FontSize = 12, Foreground = Brushes.Green});
+				txtBlk.Inlines.Add(new Run("\"") { FontSize = 16, FontWeight = FontWeights.Bold });
+			}
+			else
+			{
+				txtBlk.Inlines.Add(new Run(root.TypeName) { FontSize = 16, FontWeight = FontWeights.Bold });
+			}
+
 			txtBlk.Inlines.Add(Environment.NewLine);
-			txtBlk.Inlines.Add(new Run("First number in a node header is the count of instances referenced/referencing.") { Foreground=Brushes.DarkBlue, FontSize = 12, FontStyle = FontStyles.Italic, FontWeight = FontWeights.DemiBold});
-			txtBlk.Inlines.Add(new Run(" Second number is the count of unique instances of the parent node referenced by instances of this node.") { Foreground = Brushes.DarkBlue, FontSize = 12, FontStyle = FontStyles.Italic, FontWeight = FontWeights.DemiBold});
+
+			txtBlk.Inlines.Add(new Run("") { Name = "Child", Foreground=Brushes.DarkBlue, FontSize = 12, FontStyle = FontStyles.Italic, FontWeight = FontWeights.DemiBold});
+			txtBlk.Inlines.Add(Environment.NewLine);
+			txtBlk.Inlines.Add(new Run("") { Name="Parent", Foreground = Brushes.DarkBlue, FontSize = 12, FontStyle = FontStyles.Italic, FontWeight = FontWeights.DemiBold});
 			txtBlk.Inlines.Add(Environment.NewLine);
 			txtBlk.Inlines.Add(new Run("Instance addresses of the selected node are shown in the list box. To inspect individual instances right click on selected address.") { Foreground = Brushes.DarkBlue, FontSize = 12, FontStyle = FontStyles.Italic, FontWeight = FontWeights.DemiBold });
 			txtBlk.Inlines.Add(Environment.NewLine);
@@ -1923,7 +1946,43 @@ namespace MDRDesk
 			var lbAddresses = (ListBox)LogicalTreeHelper.FindLogicalNode(grid, @"AncestorAddressList");
 			Debug.Assert(lbAddresses!=null);
 			lbAddresses.ItemsSource = addresses;
+			var txtBlk = (TextBlock)LogicalTreeHelper.FindLogicalNode(grid, "AncestorInformation");
 
+			// first change information of the selected node
+			UpdateAncestorInfoLine(txtBlk.Inlines, "Child", node.TypeName);
+			if (node.Parent != null)
+			{
+				var txt = Utils.CountString(node.Instances.Length) + " instance(s) of '" + node.TypeName + "' are referencing";
+				UpdateAncestorInfoLine(txtBlk.Inlines, "Child", txt);
+				txt = Utils.CountString(node.ReferenceCount) + " unique instance(s) of '" + node.Parent.TypeName + "'";
+				UpdateAncestorInfoLine(txtBlk.Inlines, "Parent", txt);
+			}
+			else
+			{
+				var txt = Utils.CountString(node.Instances.Length) + " instance(s) of '" + node.TypeName + "' are referenced by";
+				UpdateAncestorInfoLine(txtBlk.Inlines, "Child", txt);
+				txt = Utils.CountString(node.Ancestors.Length) + " types, total referencing instances " + Utils.CountString(node.AncestorInstanceCount());
+				UpdateAncestorInfoLine(txtBlk.Inlines, "Parent", txt);
+			}
+		}
+
+		private void UpdateAncestorInfoLine(InlineCollection lines, string inlineName, string text)
+		{
+			Inline line = null;
+			foreach (var inline in lines)
+			{
+				if (Utils.SameStrings(inline.Name, inlineName))
+				{
+					line = inline;
+					break;
+				}
+			}
+			if (line != null)
+			{
+				var newChildLine = new Run(text) {Name=inlineName, FontSize = 12};
+				lines.InsertAfter(line, newChildLine);
+				lines.Remove(line);
+			}
 		}
 
 		private void TypeValueReportMouseDown(object sender, MouseButtonEventArgs e)
@@ -2843,6 +2902,13 @@ namespace MDRDesk
 			return true;
 		}
 
+
+		private string ShortenString(string str, int len)
+		{
+			if (str.Length > len)
+				return str.Substring(0, len) + "...";
+			return str;
+		}
 		//public static void SetSelectedItem(TreeView control, object item)
 		//{
 		//	try

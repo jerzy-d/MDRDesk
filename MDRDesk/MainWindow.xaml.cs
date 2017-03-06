@@ -1023,6 +1023,7 @@ namespace MDRDesk
 				}
 
 				var entries = lstView.ItemsSource as listing<string>[];
+				Debug.Assert(entries != null);
 				string row = null;
 				string error = null;
 				string headerUpper = menuItem.Header.ToString().ToUpper();
@@ -1056,32 +1057,33 @@ namespace MDRDesk
 							case ReportTitleStringUsage:
 								SetStartTaskMainWindowState("Searching for instances with string field: " + selStr + ", please wait.");
 
-								var task = Task<ListingInfo>.Factory.StartNew(() => CurrentIndex.GetTypesWithSpecificStringFieldListing(selStr));
+								var task = Task<Tuple<string, AncestorNode>>.Factory.StartNew(() => CurrentIndex.GetTypesWithSpecificStringFieldListing(selStr));
 								task.Wait();
-								SetEndTaskMainWindowState(task.Result.Error == null
+
+								SetEndTaskMainWindowState(task.Result.Item1 == null
 									? "Searching for instances with string field done."
 									: "Searching for instances with string field failed.");
-								if (task.Result.Error != null)
+
+								if (task.Result.Item1 != null)
 								{
-									if (task.Result.Error == ListingInfo.EmptyList)
-									{
-										Dispatcher.CurrentDispatcher.InvokeAsync(() =>
-												ShowInformation("Empty List", "Search for string references failed",
-													"References not found for string: " + selStr, null))
-											;
-										return;
-									}
-									Dispatcher.CurrentDispatcher.InvokeAsync(() => ShowError(task.Result.Error));
+									//Dispatcher.CurrentDispatcher.InvokeAsync(() =>
+									//	ShowInformation("Empty List", "Search for string references failed",
+									//			"References not found for string: " + selStr, null));
+									Dispatcher.CurrentDispatcher.InvokeAsync(() => ShowError(task.Result.Item1));
 									return;
 								}
-								SWC.MenuItem[] menuItems = new SWC.MenuItem[]
-								{
-									new SWC.MenuItem {Header = "Copy List Row"},
-									new SWC.MenuItem {Header = "GC Generation Distribution"},
-									new SWC.MenuItem {Header = "Get References"},
-								};
-								DisplayListViewBottomGrid(task.Result, Constants.BlackDiamond, ReportNameTypesWithString,
-									ReportTitleSTypesWithString, menuItems);
+								DisplayTypeAncestorsGrid(task.Result.Item2);
+
+								//{
+
+								//SWC.MenuItem[] menuItems = new SWC.MenuItem[]
+								//{
+								//	new SWC.MenuItem {Header = "Copy List Row"},
+								//	new SWC.MenuItem {Header = "GC Generation Distribution"},
+								//	new SWC.MenuItem {Header = "Get References"},
+								//};
+								//DisplayListViewBottomGrid(task.Result, Constants.BlackDiamond, ReportNameTypesWithString,
+								//	ReportTitleSTypesWithString, menuItems);
 								break;
 							case ReportTitleSTypesWithString:
 								selStr = entries[ndx].Second;

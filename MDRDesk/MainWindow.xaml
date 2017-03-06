@@ -361,9 +361,9 @@
         </Grid>
         <Grid x:Key="AncestorTreeViewGrid" x:Shared="False">
             <Grid.RowDefinitions>
-                <RowDefinition Height="90*"/>
+                <RowDefinition Height="85*"/>
                 <RowDefinition Height="5"/>
-                <RowDefinition Height="10*"/>
+                <RowDefinition Height="15*"/>
             </Grid.RowDefinitions>
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="80*"/>

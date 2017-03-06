@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Collections.Specialized;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -22,6 +23,8 @@ namespace ClrMDRIndex
 		public readonly int TypeId;
 		public readonly string TypeName;
 		public readonly AncestorNode Parent;
+		private object _data;
+		public object Data => _data;
 		private int[] _instances;
 		public int[] Instances => _instances;
 		private AncestorNode[] _ancestors;
@@ -34,13 +37,29 @@ namespace ClrMDRIndex
 			ReferenceCount = referenceCount;
 			TypeId = typeId;
 			TypeName = typeName;
+			_data = null;
 			_instances = instances;
 			_ancestors = Utils.EmptyArray<AncestorNode>.Value;
+		}
+
+		public int AncestorInstanceCount()
+		{
+			int count = 0;
+			for (int i = 0, icnt = _ancestors.Length; i < icnt; ++i)
+			{
+				count += _ancestors[i].Instances.Length;
+			}
+			return count;
 		}
 
 		public void AddNodes(AncestorNode[] ancestors)
 		{
 			_ancestors = ancestors;
+		}
+
+		public void AddData(object data)
+		{
+			_data = data;
 		}
 
 		public void Sort(SortAncestors sortType)
