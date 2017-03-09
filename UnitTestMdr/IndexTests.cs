@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Configuration;
 using System.Diagnostics;
@@ -1004,6 +1005,93 @@ namespace UnitTestMdr
 			Assert.IsNull(error, error);
 		}
 
+
+		[TestMethod]
+		public void TestReferenceRoots()
+		{
+			string error = null;
+			Stopwatch stopWatch = new Stopwatch();
+			stopWatch.Start();
+			// var index = OpenIndex(@"D:\Jerzy\WinDbgStuff\dumps\Analytics\Ellerston\Eze.Analytics.Svc_170223_061555.dmp.map");
+			var index = OpenIndex(@"D:\Jerzy\WinDbgStuff\dumps\Analytics\Ellerston\afterResWithMod.dmp.map");
+			TestContext.WriteLine(index.DumpFileName + " INDEX OPEN DURATION: " + Utils.StopAndGetDurationString(stopWatch));
+			ulong instAddr = 0x0000000341a6c8; // 0x0000f5f11c7f48
+			using (index)
+			{
+
+				var ancestors = index.GetParentTree(instAddr, 1000);
+				Assert.IsNull(ancestors.Item1);
+				List<triple<ulong,string,int>> roots = new List<triple<ulong, string, int>>();
+				var rootList = new List<KeyValuePair<AncestorNode, KeyValuePair<int, ulong>[]>>(128);
+				Queue<AncestorNode> que = new Queue<AncestorNode>();
+				List<KeyValuePair<int,ulong>> addrList = new List<KeyValuePair<int, ulong>>(64);
+				que.Enqueue(ancestors.Item2);
+				var instances = index.Instances;
+				while (que.Count > 0)
+				{
+					var node = que.Dequeue();
+					addrList.Clear();
+					for (int i = 0, icnt = node.Instances.Length; i < icnt; ++i)
+					{
+						var ndx = node.Instances[i];
+						var addr = instances[ndx];
+						if (Utils.IsRoot(addr))
+						{
+							roots.Add(new triple<ulong, string, int>(addr,node.TypeName,node.Level));
+							addrList.Add(new KeyValuePair<int, ulong>(ndx,addr));
+						}
+					}
+					if (addrList.Count > 0)
+					{
+						rootList.Add(new KeyValuePair<AncestorNode, KeyValuePair<int, ulong>[]>(node, addrList.ToArray()));
+					}
+
+					for(int i = 0, icnt = node.Ancestors.Length; i < icnt; ++i)
+						que.Enqueue(node.Ancestors[i]);
+				}
+
+				StreamWriter sw = null;
+				try
+				{
+					var path = index.GetAdHocPath(Utils.RealAddressString(instAddr) + "ReferencingRoots.txt");
+					sw = new StreamWriter(path);
+					for (int i = 0, icnt = rootList.Count; i < icnt; ++i)
+					{
+						var entry = rootList[i];
+						var node = entry.Key;
+						var rlist = entry.Value;
+						var levelStr = Utils.SortableCountStringHeader(node.Level);
+						sw.Write(levelStr);
+						for (int j = 0, jcnt = rlist.Length; j < jcnt; ++j)
+						{
+							sw.Write(Utils.RealAddressStringHeader(rlist[j].Value));
+						}
+						sw.WriteLine(node.TypeName);
+					}
+				}
+				catch (Exception ex)
+				{
+					Assert.IsTrue(false, ex.ToString());
+				}
+				finally
+				{
+					sw?.Close();
+				}
+
+
+				var paths = new AncestorNode[rootList.Count][];
+				for (int i = 0, icnt = rootList.Count; i < icnt; ++i)
+				{
+					paths[i] = index.GetGcRootPath(rootList[i].Key, ancestors.Item2);
+				}
+
+
+
+				int a = 1;
+			}
+
+			Assert.IsNull(error, error);
+		}
 		[TestMethod]
 		public void TestReferencesFile()
 		{

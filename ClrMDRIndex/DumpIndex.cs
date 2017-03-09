@@ -1226,6 +1226,19 @@ namespace ClrMDRIndex
 
 		}
 
+		public AncestorNode[] GetGcRootPath(AncestorNode gcRootNode, AncestorNode targetNode)
+		{
+			List<AncestorNode> lst = new List<AncestorNode>(gcRootNode.Level+1);
+			lst.Add(gcRootNode);
+			var curNode = gcRootNode;
+			while (!Object.ReferenceEquals(curNode, targetNode))
+			{
+				curNode = curNode.Parent;
+				lst.Add(curNode);
+			}
+			return lst.ToArray();
+		}
+
 		#endregion instance references
 
 		#region instance hierarchy 

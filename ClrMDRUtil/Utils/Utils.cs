@@ -1960,7 +1960,13 @@ namespace ClrMDRIndex
             return sz == 0 ? "[           O] " : string.Format("[{0,12:0#,###,###}] ", sz);
         }
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		public static string SortableCountStringHeader(int sz)
+		{
+			return sz == 0 ? "[       O] " : string.Format("[{0,8:0#,###,###}] ", sz);
+		}
+
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static string SizeString(int sz)
         {
             return sz == 0 ? "           O" : string.Format("{0,12:#,###,###}", sz);

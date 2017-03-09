@@ -138,7 +138,7 @@ namespace MDRDesk
 			long wrkSet = proc.WorkingSet64;
 			long peakWrkSet = proc.PeakWorkingSet64;
 
-			ProcessMemory.Content = "Memory: " + Utils.FormatBytes(wrkSet) + " / " + Utils.FormatBytes(peakWrkSet);
+			ProcessMemory.Content = "My Memory: " + Utils.FormatBytes(wrkSet) + " / " + Utils.FormatBytes(peakWrkSet);
 		}
 
 		#endregion Ctors/Initialization

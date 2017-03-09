@@ -1898,6 +1898,7 @@ namespace MDRDesk
 			Debug.Assert(treeView != null);
 			treeView.Items.Add(tvRoot);
 			tvRoot.IsExpanded = true;
+			tvRoot.ExpandSubtree();
 
 			// display general information, this will be updated when tree selection changes
 			var txtBlk = (TextBlock)LogicalTreeHelper.FindLogicalNode(grid, "AncestorInformation");
