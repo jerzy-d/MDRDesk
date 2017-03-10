@@ -979,6 +979,53 @@ namespace UnitTestMdr
 
 		#endregion type default values
 
+		[TestMethod]
+		public void GetTypeSizeHistogram()
+		{
+			string error = null;
+			Stopwatch stopWatch = new Stopwatch();
+			stopWatch.Start();
+			var index = OpenIndex(@"D:\Jerzy\WinDbgStuff\dumps\Analytics\Ellerston\Eze.Analytics.Svc_170309_130146.BIG.dmp.map");
+			TestContext.WriteLine(index.DumpFileName + " INDEX OPEN DURATION: " + Utils.StopAndGetDurationString(stopWatch));
+			string typeName = "Free";
+			int[] genHistogram = new int[5];
+			ulong totalSize = 0ul;
+			SortedDictionary<ulong,int> dct = new SortedDictionary<ulong, int>();
+			using (index)
+			{
+				ClrHeap heap = index.GetHeap();
+				var typeId = index.GetTypeId(typeName);
+				var addresses = index.GetTypeRealAddresses(typeId);
+				for (int i = 0, icnt = addresses.Length; i < icnt; ++i)
+				{
+					var addr = addresses[i];
+					var gen = heap.GetGeneration(addr);
+					genHistogram[gen] += 1;
+					ClrType clrType = heap.GetObjectType(addr);
+					Assert.IsNotNull(clrType);
+					var sz = clrType.GetSize(addr);
+					int cnt;
+					if (dct.TryGetValue(sz, out cnt))
+					{
+						dct[sz] = cnt + 1;
+					}
+					else
+					{
+						dct.Add(sz,1);
+					}
+				}
+
+				index.GetTypeFieldDefaultValues(typeId);
+			}
+
+			Assert.IsNull(error, error);
+		}
+
+
+		#region type sizes and distribution
+
+		#endregion type sizes and distribution
+
 		#region references
 
 		[TestMethod]

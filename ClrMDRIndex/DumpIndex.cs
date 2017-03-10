@@ -464,6 +464,11 @@ namespace ClrMDRIndex
 			return Dump.GetFreshHeap();
 		}
 
+		public ClrHeap GetHeap()
+		{
+			return Runtime.GetHeap();
+		}
+
 		public ulong[] GetInstancesAddresses(int[] instIds)
 		{
 			ulong[] addresses = new ulong[instIds.Length];
