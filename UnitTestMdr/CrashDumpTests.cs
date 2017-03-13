@@ -1076,13 +1076,83 @@ namespace UnitTestMdr
 
 		#endregion threads
 
+		#region types
+
+		[TestMethod]
+		public void TestTypeSizesAndGenerations()
+		{
+			string error;
+			string dumpPath = Setup.DumpsFolder + @"\Analytics\Ellerston\Eze.Analytics.Svc_170309_130146.BIG.dmp";
+			//string typeName = "System.String";
+			//string typeName = "System.Collections.Concurrent.ConcurrentDictionary<";
+			string typeName = "Free";
+
+			var dmp = OpenDump(dumpPath);
+
+			using (dmp)
+			{
+				var heap = dmp.Heap;
+				var segs = heap.Segments;
+				var addresses = new List<ulong>(1024*1024);
+				int[] genHistogram = new int[4];
+				int[] sizeHistogram = new int[Utils.SizeDistributionLenght];
+
+				for (int i = 0, icnt = segs.Count; i < icnt; ++i)
+				{
+					var seg = segs[i];
+					ulong addr = seg.FirstObject;
+					while (addr != 0ul)
+					{
+						var clrType = heap.GetObjectType(addr);
+						if (clrType == null || !Utils.SameStrings(clrType.Name,typeName)) goto NEXT_OBJECT;
+						var sz = clrType.GetSize(addr);
+						Utils.AddSizeDistribution(sizeHistogram,sz);
+						var gen = heap.GetGeneration(addr);
+						genHistogram[gen] += 1;
+						NEXT_OBJECT:
+						addr = seg.NextObject(addr);
+					}
+				}
+
+				string outPath = Setup.DumpsFolder + @"\Analytics\Ellerston\Eze.Analytics.Svc_170309_130146.BIG.dmp.map\ad-hoc.queries\TypeSizesAndGenerations."
+										+ Utils.GetValidFileName(typeName) + ".txt";
+				StreamWriter sw = null;
+				try
+				{
+					sw = new StreamWriter(outPath);
+					sw.Write("GENERATION COUNTS (0 1 2 LOH): ");
+					for (int i = 0; i < 4; ++i)
+						sw.Write(" " + genHistogram[i]);
+					sw.WriteLine();
+					sw.WriteLine("SIZE DISTRIBUTION:");
+					ulong twoPower = 32;
+					for (int i = 0; i < sizeHistogram.Length; ++i)
+					{
+						sw.WriteLine("<= " + twoPower + ": " + sizeHistogram[i]);
+						twoPower *= 2;
+					}
+				}
+				catch (Exception ex)
+				{
+					Assert.IsTrue(false,ex.ToString());
+				}
+				finally
+				{
+					sw?.Close();
+				}
+				int a = 1;
+			} // using dump
+		}
+
+		#endregion types
+
 		#region type references
 
 		[TestMethod]
 		public void TestTypeReferences()
 		{
 			string error;
-			string dumpPath = @"C:\WinDbgStuff\Dumps\Analytics\Ellerstone\Eze.Analytics.Svc_170309_130146.BIG.map";
+			string dumpPath = Setup.DumpsFolder + @"\Analytics\Ellerstone\Eze.Analytics.Svc_170309_130146.BIG.map";
 			//string typeName = "System.String";
 			string typeName = "System.Collections.Concurrent.ConcurrentDictionary<";
 

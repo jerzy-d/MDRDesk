@@ -8,6 +8,7 @@ using System.Linq;
 using System.Resources;
 using System.Runtime;
 using System.Runtime.CompilerServices;
+using System.Security;
 using System.Text;
 using System.Threading;
 using Microsoft.Diagnostics.Runtime;
@@ -522,6 +523,7 @@ namespace ClrMDRIndex
 				br?.Close();
 			}
 		}
+
 		public static int[] ReadIntArray(string path, out string error)
 		{
 			error = null;
@@ -658,6 +660,7 @@ namespace ClrMDRIndex
 				br?.Close();
 			}
 		}
+
 		public static bool WriteStringList(string filePath, IList<string> lst,out string error)
 		{
 			error = null;
@@ -1032,6 +1035,33 @@ namespace ClrMDRIndex
 			{
 				error = Utils.GetExceptionErrorString(ex);
 			}
+		}
+
+
+		public static HashSet<char> InvalidPathChars = new HashSet<char>(Path.GetInvalidPathChars());
+		 
+		public static string GetValidFileName(string name)
+		{
+			bool found = false;
+			for (int i = 0, icnt = name.Length; i < icnt; ++i)
+			{
+				if (InvalidPathChars.Contains(name[i]))
+				{
+					found = true;
+					break;
+				}
+			}
+			if (!found) return name;
+			var sb = StringBuilderCache.Acquire(StringBuilderCache.MaxCapacity);
+			sb.Append(name);
+			for (int i = 0, icnt = name.Length; i < icnt; ++i)
+			{
+				if (InvalidPathChars.Contains(name[i]))
+				{
+					sb[i] = '_';
+				}
+			}
+			return StringBuilderCache.GetStringAndRelease(sb);
 		}
 
 		#endregion IO
@@ -1903,9 +1933,9 @@ namespace ClrMDRIndex
 
 	#endregion Comparers
 
-	#region Formatting
+		#region Formatting
 
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		public static string RuntimeStringHeader(int index)
 		{
 			return string.Format("RT[{0}] ",index);
@@ -2240,7 +2270,6 @@ namespace ClrMDRIndex
 			return (number + powerOf2 - 1) & ~(powerOf2 - 1);
 		}
 
-
 		public static bool IsWhiteSpace(string str)
 		{
 			if (str == null || str.Length == 0) return false;
@@ -2260,7 +2289,6 @@ namespace ClrMDRIndex
 			}
 			return true;
 		}
-
 
 		private const int scanSize = 256;
 
@@ -2466,7 +2494,6 @@ namespace ClrMDRIndex
 			}
 			return true;
 		}
-
 
 		public static bool IsSorted<T>(IList<T> lst) where T : System.IComparable<T>
 		{
@@ -2784,7 +2811,6 @@ namespace ClrMDRIndex
 			return hist;
 		}
 
-
 		public static KeyValuePair<int, string>[] GetHistogram(SortedDictionary<string, int> dct)
 		{
 			KeyValuePair<int, string>[] hist = new KeyValuePair<int, string>[dct.Count];
@@ -2976,6 +3002,46 @@ namespace ClrMDRIndex
 			GC.Collect();
             GC.WaitForPendingFinalizers();
 			GC.Collect();
+		}
+
+
+		public const int SizeDistributionLenght = 34;
+
+		public static void AddSizeDistribution(int[] dist, ulong size)
+		{
+			if (size < 33) dist[0] += 1;
+			else if (size < 65) dist[1] += 1;
+			else if (size < 129) dist[2] += 1;
+			else if (size < 257) dist[3] += 1;
+			else if (size < 513) dist[4] += 1;
+			else if (size < 1025) dist[5] += 1;
+			else if (size < 2049) dist[6] += 1;
+			else if (size < 4097) dist[7] += 1;
+			else if (size < 8193) dist[8] += 1;
+			else if (size < 16385) dist[9] += 1;
+			else if (size < 32769) dist[10] += 1;
+			else if (size < 65537) dist[11] += 1;
+			else if (size < 131073) dist[12] += 1;
+			else if (size < 262145) dist[13] += 1;
+			else if (size < 524289) dist[14] += 1;
+			else if (size < 1048577) dist[15] += 1;
+			else if (size < 2097153) dist[16] += 1;
+			else if (size < 4194305) dist[17] += 1;
+			else if (size < 8388609) dist[18] += 1;
+			else if (size < 16777217) dist[19] += 1;
+			else if (size < 33554433) dist[21] += 1;
+			else if (size < 67108865) dist[22] += 1;
+			else if (size < 134217729) dist[23] += 1;
+			else if (size < 268435457) dist[24] += 1;
+			else if (size < 536870913) dist[25] += 1;
+			else if (size < 1073741825) dist[26] += 1;
+			else if (size < 2147483648) dist[27] += 1;
+			else if (size < 1073741825) dist[28] += 1;
+			else if (size < 4294967297) dist[29] += 1;
+			else if (size < 8589934593) dist[30] += 1;
+			else if (size < 17179869185) dist[31] += 1;
+			else if (size < 34359738368) dist[32] += 1;
+			else dist[33] += 1;
 		}
 
 		#endregion Misc

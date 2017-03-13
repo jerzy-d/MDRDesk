@@ -985,7 +985,7 @@ namespace UnitTestMdr
 			string error = null;
 			Stopwatch stopWatch = new Stopwatch();
 			stopWatch.Start();
-			var index = OpenIndex(@"D:\Jerzy\WinDbgStuff\dumps\Analytics\Ellerston\Eze.Analytics.Svc_170309_130146.BIG.dmp.map");
+			var index = OpenIndex(Setup.DumpsFolder + @"\Analytics\Ellerston\Eze.Analytics.Svc_170309_130146.BIG.dmp.map");
 			TestContext.WriteLine(index.DumpFileName + " INDEX OPEN DURATION: " + Utils.StopAndGetDurationString(stopWatch));
 			string typeName = "Free";
 			int[] genHistogram = new int[5];
