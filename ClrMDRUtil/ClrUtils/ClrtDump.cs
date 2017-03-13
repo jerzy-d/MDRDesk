@@ -58,7 +58,7 @@ namespace ClrMDRIndex
 				if (_dataTarget == null)
 				{
 					error = "Indexing Failed" + Constants.HeavyGreekCrossPadded + "Indexer.Init(..)" + Constants.HeavyGreekCrossPadded +
-					        "DataTarget.LoadCrashDump returned null." + Constants.HeavyGreekCrossPadded + _dumpPath;
+							"DataTarget.LoadCrashDump returned null." + Constants.HeavyGreekCrossPadded + _dumpPath;
 					return false;
 				}
 				// Now check bitness of our program/target:
@@ -66,9 +66,9 @@ namespace ClrMDRIndex
 				if (Environment.Is64BitProcess != isTarget64Bit)
 				{
 					error = "Indexing Failed" + Constants.HeavyGreekCrossPadded + "Indexer.Init(..)" + Constants.HeavyGreekCrossPadded +
-					        string.Format("Architecture mismatch:  MDRDesk process is {0} but target is {1}",
-						        Environment.Is64BitProcess ? "64 bit" : "32 bit", isTarget64Bit ? "64 bit" : "32 bit")
-					        + Environment.NewLine + "Use MDRDesk 32 bit version.";
+							string.Format("Architecture mismatch:  MDRDesk process is {0} but target is {1}",
+								Environment.Is64BitProcess ? "64 bit" : "32 bit", isTarget64Bit ? "64 bit" : "32 bit")
+							+ Environment.NewLine + "Use MDRDesk 32 bit version.";
 					_dataTarget.Dispose();
 					_dataTarget = null;
 					return false;
@@ -474,16 +474,16 @@ namespace ClrMDRIndex
 					if (fldObj == null)
 					{
 						var node = new InstanceSizeNode(nodeId++, fldTypeName, fld.ElementType, fldName, Constants.ZeroAddressStr,
-							(ulong) Constants.PointerSize);
-						totSize += (ulong) Constants.PointerSize;
+							(ulong)Constants.PointerSize);
+						totSize += (ulong)Constants.PointerSize;
 						fldLst.Add(node);
 						continue;
 					}
 					if (fldType == null)
 					{
 						var node = new InstanceSizeNode(nodeId++, fldTypeName, fld.ElementType, fldName, Constants.ZeroAddressStr,
-							(ulong) Constants.PointerSize);
-						totSize += (ulong) Constants.PointerSize;
+							(ulong)Constants.PointerSize);
+						totSize += (ulong)Constants.PointerSize;
 						fldLst.Add(node);
 						continue;
 					}
@@ -491,7 +491,7 @@ namespace ClrMDRIndex
 					if (fldType.IsPrimitive)
 					{
 						var value = ValueExtractor.GetPrimitiveValue(fldObj, fldType.ElementType);
-						var sz = (ulong) ValueExtractor.GetPrimitiveValueSize(fldType.ElementType);
+						var sz = (ulong)ValueExtractor.GetPrimitiveValueSize(fldType.ElementType);
 						totSize += sz;
 						var node = new InstanceSizeNode(nodeId++, fldTypeName, fld.ElementType, fldName, value, sz);
 						fldLst.Add(node);
@@ -500,10 +500,10 @@ namespace ClrMDRIndex
 
 					if (fldType.IsObjectReference)
 					{
-						ulong fldObjAddr = (ulong) fldObj;
-						totSize += (ulong) Constants.PointerSize;
+						ulong fldObjAddr = (ulong)fldObj;
+						totSize += (ulong)Constants.PointerSize;
 						var node = new InstanceSizeNode(nodeId++, fldTypeName, fld.ElementType, fldName, Utils.AddressString(fldObjAddr),
-							(ulong) Constants.PointerSize);
+							(ulong)Constants.PointerSize);
 						fldLst.Add(node);
 						instQue.Enqueue(new KeyValuePair<ulong, InstanceSizeNode>(fldObjAddr, node));
 
@@ -565,7 +565,7 @@ namespace ClrMDRIndex
 					}
 					if (clrType.IsString)
 					{
-						totalSize += Utils.RoundupToPowerOf2Boundary(clrType.GetSize(addr), (ulong) Constants.PointerSize);
+						totalSize += Utils.RoundupToPowerOf2Boundary(clrType.GetSize(addr), (ulong)Constants.PointerSize);
 						continue;
 					}
 					if (clrType.IsObjectReference)
@@ -633,7 +633,7 @@ namespace ClrMDRIndex
 					}
 					else
 					{
-						aryDct.Add(curType.Name, new List<int>(16) {acnt});
+						aryDct.Add(curType.Name, new List<int>(16) { acnt });
 					}
 					ClrType componentType = curType.ComponentType;
 					if (componentType == null || componentType.IsPrimitive || !componentType.ContainsPointers) continue;
@@ -674,7 +674,7 @@ namespace ClrMDRIndex
 
 				if (curType.IsString)
 				{
-					var size = Utils.RoundupToPowerOf2Boundary(curType.GetSize(curAddr), (ulong) Constants.PointerSize);
+					var size = Utils.RoundupToPowerOf2Boundary(curType.GetSize(curAddr), (ulong)Constants.PointerSize);
 					totalSize += size;
 					AddNameCount(curType.Name, size, typeDct);
 					continue;
@@ -683,7 +683,7 @@ namespace ClrMDRIndex
 				if (curType.Fields == null || curType.Fields.Count < 1) continue;
 				ulong sz = curType.GetSize(curAddr);
 				AddNameCount(curType.Name, sz, typeDct);
-				totalSize += Utils.RoundupToPowerOf2Boundary(sz, (ulong) Constants.PointerSize);
+				totalSize += Utils.RoundupToPowerOf2Boundary(sz, (ulong)Constants.PointerSize);
 
 				bool parentIsRef = curType.IsObjectReference;
 				for (int i = 0, icnt = curType.Fields.Count; i < icnt; ++i)
@@ -726,7 +726,7 @@ namespace ClrMDRIndex
 					}
 					if (clrType.IsString)
 					{
-						totalSize += Utils.RoundupToPowerOf2Boundary(clrType.GetSize(addr), (ulong) Constants.PointerSize);
+						totalSize += Utils.RoundupToPowerOf2Boundary(clrType.GetSize(addr), (ulong)Constants.PointerSize);
 						continue;
 					}
 					if (clrType.IsObjectReference)
@@ -810,13 +810,13 @@ namespace ClrMDRIndex
 
 				if (curType.IsString)
 				{
-					totalSize += Utils.RoundupToPowerOf2Boundary(curType.GetSize(curAddr), (ulong) Constants.PointerSize);
+					totalSize += Utils.RoundupToPowerOf2Boundary(curType.GetSize(curAddr), (ulong)Constants.PointerSize);
 					continue;
 				}
 
 				if (curType.Fields == null || curType.Fields.Count < 1) continue;
 				ulong sz = curType.GetSize(curAddr);
-				totalSize += Utils.RoundupToPowerOf2Boundary(sz, (ulong) Constants.PointerSize);
+				totalSize += Utils.RoundupToPowerOf2Boundary(sz, (ulong)Constants.PointerSize);
 
 				bool parentIsRef = curType.IsObjectReference;
 				for (int i = 0, icnt = curType.Fields.Count; i < icnt; ++i)
@@ -842,7 +842,7 @@ namespace ClrMDRIndex
 			}
 
 			ulong sz = curType.GetSize(addr);
-			totalSize += Utils.RoundupToPowerOf2Boundary(sz, (ulong) Constants.PointerSize);
+			totalSize += Utils.RoundupToPowerOf2Boundary(sz, (ulong)Constants.PointerSize);
 			return totalSize;
 		}
 
@@ -854,7 +854,7 @@ namespace ClrMDRIndex
 			{
 				var objAddr = fld.GetValue(parentAddr, internalAddr, false);
 				if (objAddr == null) return;
-				ulong addr = (ulong) objAddr;
+				ulong addr = (ulong)objAddr;
 				if (addr == 0) return;
 				que.Enqueue(addr);
 			}
@@ -916,13 +916,13 @@ namespace ClrMDRIndex
 
 				if (curType.IsString)
 				{
-					totalSize += Utils.RoundupToPowerOf2Boundary(curType.GetSize(curAddr), (ulong) Constants.PointerSize);
+					totalSize += Utils.RoundupToPowerOf2Boundary(curType.GetSize(curAddr), (ulong)Constants.PointerSize);
 					continue;
 				}
 
 				if (curType.Fields == null || curType.Fields.Count < 1) continue;
 				ulong sz = curType.GetSize(curAddr);
-				totalSize += Utils.RoundupToPowerOf2Boundary(sz, (ulong) Constants.PointerSize);
+				totalSize += Utils.RoundupToPowerOf2Boundary(sz, (ulong)Constants.PointerSize);
 
 				for (int i = 0, icnt = curType.Fields.Count; i < icnt; ++i)
 				{
@@ -960,7 +960,7 @@ namespace ClrMDRIndex
 			Debug.Assert(fld.Type.IsObjectReference);
 			var objAddr = fld.GetValue(parentAddr, internalAddr, false);
 			if (objAddr == null) return;
-			ulong addr = (ulong) objAddr;
+			ulong addr = (ulong)objAddr;
 			if (addr == 0) return;
 			ClrType clrType = heap.GetObjectType(addr);
 			if (clrType == null)
@@ -981,21 +981,21 @@ namespace ClrMDRIndex
 			try
 			{
 				var strDct = new SortedDictionary<string, KeyValuePair<uint, List<ulong>>>(StringComparer.Ordinal);
-				ulong dataOffset = (ulong) IntPtr.Size;
+				ulong dataOffset = (ulong)IntPtr.Size;
 				byte[] lenBytes = new byte[4];
 				for (int i = 0, icnt = addresses.Length; i < icnt; ++i)
 				{
 					var addr = Utils.RealAddress(addresses[i]);
 					var clrType = heap.GetObjectType(addr);
 					var hsz = clrType.GetSize(addr);
-					if (hsz > (ulong) UInt32.MaxValue) hsz = (ulong) UInt32.MaxValue; // to be safe
+					if (hsz > (ulong)UInt32.MaxValue) hsz = (ulong)UInt32.MaxValue; // to be safe
 					var off = addr + dataOffset;
 					heap.ReadMemory(off, lenBytes, 0, 4);
 					int len = 0;
 					string str = string.Empty;
 					try
 					{
-						len = BitConverter.ToInt32(lenBytes, 0)*sizeof(char);
+						len = BitConverter.ToInt32(lenBytes, 0) * sizeof(char);
 						byte[] strBuf = new byte[len];
 						heap.ReadMemory(off + 4UL, strBuf, 0, len);
 						str = Encoding.Unicode.GetString(strBuf);
@@ -1013,8 +1013,8 @@ namespace ClrMDRIndex
 					else
 					{
 						strDct.Add(str,
-							new KeyValuePair<uint, List<ulong>>((uint) Utils.RoundupToPowerOf2Boundary(hsz, dataOffset),
-								new List<ulong>() {addr}));
+							new KeyValuePair<uint, List<ulong>>((uint)Utils.RoundupToPowerOf2Boundary(hsz, dataOffset),
+								new List<ulong>() { addr }));
 					}
 				}
 
@@ -1070,8 +1070,8 @@ namespace ClrMDRIndex
 					matchPrefix = true;
 					stringContent = stringContent.Substring(0, stringContent.Length - 1);
 				}
-				var lst = new List<ulong>(4*1024);
-				ulong dataOffset = (ulong) IntPtr.Size;
+				var lst = new List<ulong>(4 * 1024);
+				ulong dataOffset = (ulong)IntPtr.Size;
 				byte[] lenBytes = new byte[4];
 				for (int i = 0, icnt = addresses.Length; i < icnt; ++i)
 				{
@@ -1083,7 +1083,7 @@ namespace ClrMDRIndex
 					string str = Constants.ImprobableString;
 					try
 					{
-						len = BitConverter.ToInt32(lenBytes, 0)*sizeof(char);
+						len = BitConverter.ToInt32(lenBytes, 0) * sizeof(char);
 						byte[] strBuf = new byte[len];
 						heap.ReadMemory(off + 4UL, strBuf, 0, len);
 						str = Encoding.Unicode.GetString(strBuf);
@@ -1126,7 +1126,7 @@ namespace ClrMDRIndex
 			{
 				SortedDictionary<string, KeyValuePair<int, uint>> dct =
 					new SortedDictionary<string, KeyValuePair<int, uint>>(StringComparer.Ordinal);
-				ulong dataOffset = (ulong) IntPtr.Size;
+				ulong dataOffset = (ulong)IntPtr.Size;
 				byte[] lenBytes = new byte[4];
 
 				var segs = heap.Segments;
@@ -1140,14 +1140,14 @@ namespace ClrMDRIndex
 						var clrType = heap.GetObjectType(addr);
 						if (clrType == null || !clrType.IsString) goto NEXT_OBJECT;
 						ulong sz = clrType.GetSize(addr);
-						uint size = sz > UInt32.MaxValue ? UInt32.MaxValue : (uint) sz;
+						uint size = sz > UInt32.MaxValue ? UInt32.MaxValue : (uint)sz;
 						var off = addr + dataOffset;
 						heap.ReadMemory(off, lenBytes, 0, 4);
 						int len = 0;
 						string str = Constants.ImprobableString;
 						try
 						{
-							len = BitConverter.ToInt32(lenBytes, 0)*sizeof(char);
+							len = BitConverter.ToInt32(lenBytes, 0) * sizeof(char);
 							byte[] strBuf = new byte[len];
 							heap.ReadMemory(off + 4UL, strBuf, 0, len);
 							str = Encoding.Unicode.GetString(strBuf);
@@ -1189,7 +1189,7 @@ namespace ClrMDRIndex
 			error = null;
 			try
 			{
-				List<ulong> lst = new List<ulong>(10*1024);
+				List<ulong> lst = new List<ulong>(10 * 1024);
 				var segs = heap.Segments;
 				for (int i = 0, icnt = segs.Count; i < icnt; ++i)
 				{
@@ -1335,7 +1335,7 @@ namespace ClrMDRIndex
 					}
 				}
 
-				var dataAry = new string[typeDct.Count*6];
+				var dataAry = new string[typeDct.Count * 6];
 				var infoAry = new listing<string>[typeDct.Count];
 				int off = 0;
 				int ndx = 0;
@@ -1346,7 +1346,7 @@ namespace ClrMDRIndex
 					ulong totSz = kv.Value.Second;
 					ulong maxSz = kv.Value.Third;
 					ulong minSz = kv.Value.Forth;
-					double avg = (double) totSz/(double) (cnt);
+					double avg = (double)totSz / (double)(cnt);
 					ulong uavg = Convert.ToUInt64(avg);
 
 					dataAry[off++] = Utils.LargeNumberString(cnt);
@@ -1370,8 +1370,8 @@ namespace ClrMDRIndex
 				Array.Sort(infoAry, new ListingNumCmpAsc(0));
 
 				string descr = "Type Count: " + typeDct.Count + Environment.NewLine
-				               + "Instance Count: " + instanceCount + Environment.NewLine
-				               + "Grand Total Size: " + grandTotal + Environment.NewLine;
+							   + "Instance Count: " + instanceCount + Environment.NewLine
+							   + "Grand Total Size: " + grandTotal + Environment.NewLine;
 
 				return new ListingInfo(null, infoAry, colInfos, descr);
 			}
@@ -1402,7 +1402,7 @@ namespace ClrMDRIndex
 				HashSet<ulong>[] fldStrAddresses = new HashSet<ulong>[fldNames.Length];
 				for (int i = 0, icnt = fldStrAddresses.Length; i < icnt; ++i) fldStrAddresses[i] = new HashSet<ulong>();
 				Dictionary<ulong, KeyValuePair<int, int>> addrDct =
-					new Dictionary<ulong, KeyValuePair<int, int>>(addresses.Length*(fldNames.Length/2));
+					new Dictionary<ulong, KeyValuePair<int, int>>(addresses.Length * (fldNames.Length / 2));
 				SortedDictionary<string, int> dupDct = new SortedDictionary<string, int>();
 
 				int nullCount = 0;
@@ -1417,7 +1417,7 @@ namespace ClrMDRIndex
 						for (fldNdx = 0; fldNdx < fldCnt; ++fldNdx)
 						{
 							object addrObj = fields[fldNdx].GetValue(addresses[addrNdx], inner, false);
-							if (addrObj == null || ((ulong) addrObj) == 0)
+							if (addrObj == null || ((ulong)addrObj) == 0)
 							{
 								strAddr = 0;
 								str = null;
@@ -1425,9 +1425,9 @@ namespace ClrMDRIndex
 								++nullCount;
 								continue;
 							}
-							strAddr = (ulong) addrObj;
+							strAddr = (ulong)addrObj;
 							fldStrAddresses[fldNdx].Add(strAddr);
-							str = (string) fields[fldNdx].GetValue(addresses[addrNdx], inner, true);
+							str = (string)fields[fldNdx].GetValue(addresses[addrNdx], inner, true);
 							int cnt;
 							if (dupDct.TryGetValue(str, out cnt))
 							{
@@ -1493,7 +1493,7 @@ namespace ClrMDRIndex
 
 		#endregion values
 
-		public static Tuple<ulong[],ulong[]> GetFinalizableInstances(ClrHeap heap, out string error)
+		public static Tuple<ulong[], ulong[]> GetFinalizableInstances(ClrHeap heap, out string error)
 		{
 			error = null;
 			try
@@ -1523,7 +1523,7 @@ namespace ClrMDRIndex
 						addr = seg.NextObject(addr);
 					}
 				}
-				return new Tuple<ulong[], ulong[]>(finalizable.ToArray(),surpressed.ToArray());
+				return new Tuple<ulong[], ulong[]>(finalizable.ToArray(), surpressed.ToArray());
 			}
 			catch (Exception ex)
 			{

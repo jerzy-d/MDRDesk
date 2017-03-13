@@ -1082,7 +1082,7 @@ namespace UnitTestMdr
 		public void TestTypeReferences()
 		{
 			string error;
-			string dumpPath = @"D:\Jerzy\WinDbgStuff\dumps\Analytics\Highline\analyticsdump111.dlk.dmp";
+			string dumpPath = @"C:\WinDbgStuff\Dumps\Analytics\Ellerstone\Eze.Analytics.Svc_170309_130146.BIG.map";
 			//string typeName = "System.String";
 			string typeName = "System.Collections.Concurrent.ConcurrentDictionary<";
 
