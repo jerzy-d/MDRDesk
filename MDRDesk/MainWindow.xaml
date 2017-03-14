@@ -94,6 +94,16 @@
             <MenuItem x:Name="TypeListGetTypeValuesReport" Header="Type Values Report" Click="GetTypeValuesReportClicked"></MenuItem>
         </ContextMenu>
         
+        <ContextMenu x:Key="TypeTreeContextMenu" x:Shared="False">
+            <MenuItem x:Name="TypeTreeCopyTypeName" Header="Copy Type Name" Click="TypeTreeCopyTypeNameClicked"></MenuItem>
+            <MenuItem x:Name="TypeTreeGenerationDistribution" Header="Generation Ditribution" Click="TypeTreeGenerationDistributionClicked"></MenuItem>
+            <Separator></Separator>
+            <!--MenuItem x:Name="TypeTreeGetTotalHeapSizeReport" Header="Get Type Total Heap Size Report" Click="GetTotalHeapSizeReportClicked"></>-->
+            <MenuItem x:Name="TypeTreeGetBaseHeapSize" Header="Get Type Total Size" Click="TypeTreeGetTypeSizesClicked"></MenuItem>
+            <Separator></Separator>
+            <MenuItem x:Name="TypeTreeGetStringUsage" Header="Get String Usage" Click="TypeTreeGetTypeStringUsageClicked"></MenuItem>
+        </ContextMenu>
+
         <ControlTemplate x:Key="ListingGridTemplate" TargetType="Control">
             <Grid x:Name="ListingGrid">
                 <Grid.RowDefinitions>
@@ -364,13 +374,14 @@
                 <RowDefinition Height="85*"/>
                 <RowDefinition Height="5"/>
                 <RowDefinition Height="15*"/>
+                <RowDefinition Height="30"/>
             </Grid.RowDefinitions>
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="80*"/>
                 <ColumnDefinition Width="5"/>
                 <ColumnDefinition Width="15*"/>
             </Grid.ColumnDefinitions>
-            <TreeView x:Name="AncestorTreeView" v4:Grid.Row="0" v4:Grid.Column="0" VerticalAlignment="Stretch" HorizontalAlignment="Stretch" Margin="2,2,2,2" FontFamily="Consolas" FontSize="12" SelectedItemChanged="AncestorTreeSelectionChanged">
+            <TreeView x:Name="AncestorTreeView" v4:Grid.Row="0" v4:Grid.Column="0" VerticalAlignment="Stretch" HorizontalAlignment="Stretch" Margin="2,2,2,2" FontFamily="Consolas" FontSize="12" SelectedItemChanged="AncestorTreeSelectionChanged"  ContextMenu="{StaticResource TypeTreeContextMenu}" >
                 <TreeView.ItemContainerStyle>
                     <Style TargetType="TreeViewItem">
                         <EventSetter Event="RequestBringIntoView" Handler="TreeViewItem_RequestBringIntoView"/>
@@ -387,6 +398,24 @@
             </ListBox>
             <GridSplitter Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="3" VerticalAlignment="Center" HorizontalAlignment="Stretch" Height="5" ShowsPreview="False" Background="DarkGray"></GridSplitter>
             <TextBlock x:Name="AncestorInformation" v4:Grid.Row="2" v4:Grid.Column="0" v4:Grid.ColumnSpan="3"></TextBlock>
+            <ToolBarTray x:Name="AncestorToolbarTray" Height="30" Grid.Row="3" Grid.Column="0" Grid.ColumnSpan="3" Margin="2,0,2,0" Background="LightGray">
+                <ToolBar HorizontalAlignment="Stretch"  VerticalAlignment="Center">
+                    <Button  x:Name="AncestorExpandAll" Width="20" Height="20" Margin="4,0,4,0" HorizontalAlignment="Center" VerticalAlignment="Center" BorderThickness="0" Click="AncestorExpandAllClick"
+                         Background="AliceBlue">
+                        <Button.ToolTip>Expand all.</Button.ToolTip>
+                        <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                            <Image Source=".\Images\ExpandAll_16x.png" Width="16" Height="16" Margin="0,0,0,0" VerticalAlignment="Center" HorizontalAlignment="Center"/>
+                        </StackPanel>
+                    </Button>
+                    <Button  x:Name="AncestorCollapseAll" Width="20" Height="20" Margin="4,0,4,0" HorizontalAlignment="Center" VerticalAlignment="Center" BorderThickness="0" Click="AncestorExpandAllClick"
+                         Background="AliceBlue">
+                        <Button.ToolTip>Collapse.</Button.ToolTip>
+                        <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                            <Image Source=".\Images\Collapse_16x.png" Width="16" Height="16" Margin="0,0,0,0" VerticalAlignment="Center" HorizontalAlignment="Center"/>
+                        </StackPanel>
+                    </Button>
+                </ToolBar>    
+            </ToolBarTray>
         </Grid>
         <!-- display tree view -->
         <!--<Grid x:Key="TypeTreeViewGrid" x:Shared="False">
@@ -598,9 +627,10 @@
             <Grid x:Name="InstHierarchyAncestorsGrid" Grid.Row="1" Grid.Column="0">
                 <Grid>
                     <Grid.RowDefinitions>
-                        <RowDefinition Height="50*"/>
+                        <RowDefinition Height="35*"/>
                         <RowDefinition Height="5"/>
-                        <RowDefinition Height="45*"/>
+                        <RowDefinition Height="30*"/>
+                        <RowDefinition Height="30" />
                     </Grid.RowDefinitions>
                     <ListBox x:Name="InstHierarchyAncestorNames" Grid.Row="0" Margin="2,2,2,2" SelectionChanged="InstHierarchyAncestorChanged">
                         <ListBox.BorderBrush>

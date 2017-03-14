@@ -2078,5 +2078,6 @@ namespace MDRDesk
 				return;
 			ShowMemoryViewWindow(addr);
 		}
+
 	}
 }

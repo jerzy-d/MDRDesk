@@ -1898,7 +1898,7 @@ namespace MDRDesk
 			Debug.Assert(treeView != null);
 			treeView.Items.Add(tvRoot);
 			tvRoot.IsExpanded = true;
-			tvRoot.ExpandSubtree();
+			//tvRoot.ExpandSubtree();
 
 			// display general information, this will be updated when tree selection changes
 			var txtBlk = (TextBlock)LogicalTreeHelper.FindLogicalNode(grid, "AncestorInformation");
@@ -1966,6 +1966,62 @@ namespace MDRDesk
 				UpdateAncestorInfoLine(txtBlk.Inlines, "Parent", txt);
 			}
 		}
+
+		private void AncestorExpandAllClick(object sender, RoutedEventArgs e)
+		{
+			var btn = sender as Button;
+			Debug.Assert(btn != null);
+			var grid = GetCurrentTabGrid();
+			Debug.Assert(grid != null);
+			var treeView = (TreeView)LogicalTreeHelper.FindLogicalNode(grid, "AncestorTreeView");
+			Debug.Assert(treeView != null);
+			if (treeView.Items != null && treeView.Items.Count > 0)
+			{
+				if (btn.Name == "AncestorExpandAll")
+					(treeView.Items[0] as TreeViewItem).ExpandSubtree();
+				else if (btn.Name== "AncestorCollapseAll")
+				{
+					var root = treeView.Items[0] as TreeViewItem;
+					Stack<TreeViewItem> stack = new Stack<TreeViewItem>();
+					for (int i = 0; i < root.Items.Count; ++i)
+					{
+						stack.Push(root.Items[i] as TreeViewItem);
+					}
+					while(stack.Count > 0)
+					{
+						var current = stack.Pop();
+						current.IsExpanded = false;
+						for (int i = 0; i < current.Items.Count; ++i)
+						{
+							stack.Push(current.Items[i] as TreeViewItem);
+						}
+					}
+				}
+
+			}
+		}
+
+		private void TypeTreeCopyTypeNameClicked(object sender, RoutedEventArgs e)
+		{
+			MessageBox.Show("Not implemented yet.", "TypeTreeCopyTypeNameClicked", MessageBoxButton.OK, MessageBoxImage.Information);
+		}
+
+		private void TypeTreeGenerationDistributionClicked(object sender, RoutedEventArgs e)
+		{
+			MessageBox.Show("Not implemented yet.", "TypeTreeGenerationDistributionClicked", MessageBoxButton.OK, MessageBoxImage.Information);
+		}
+
+		private void TypeTreeGetTypeSizesClicked(object sender, RoutedEventArgs e)
+		{
+			MessageBox.Show("Not implemented yet.", "TypeTreeGetTypeSizesClicked", MessageBoxButton.OK, MessageBoxImage.Information);
+		}
+
+		private void TypeTreeGetTypeStringUsageClicked(object sender, RoutedEventArgs e)
+		{
+			MessageBox.Show("Not implemented yet.", "TypeTreeGetTypeStringUsageClicked", MessageBoxButton.OK, MessageBoxImage.Information);
+		}
+
+
 
 		private void UpdateAncestorInfoLine(InlineCollection lines, string inlineName, string text)
 		{

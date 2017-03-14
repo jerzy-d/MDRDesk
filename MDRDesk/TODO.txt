@@ -44,7 +44,7 @@ Ancestor tree - show types and instances, and directions in 'AncestorTreeViewGri
 0017 03/02/17
 To the Type Sizes grid, bring type context menu from Types grid. (Roshabh)
 0018 03/02/17
-Expanding all tree by user.
+*** Expanding all tree by user. Added collapsing too.
 0019 03/03/17
 at Microsoft.Diagnostics.Runtime.DbgEngDataReader.GetPointerSize() in D:\Jerzy\projects\csharp\15\clrmd-master\clrmd-master\src\Microsoft.Diagnostics.Runtime\DataTarget.cs:line 1587
    at Microsoft.Diagnostics.Runtime.MemoryReader..ctor(IDataReader dataReader, Int32 cacheSize) in D:\Jerzy\projects\csharp\15\clrmd-master\clrmd-master\src\Microsoft.Diagnostics.Runtime\internal.cs:line 289

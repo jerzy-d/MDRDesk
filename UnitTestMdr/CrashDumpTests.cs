@@ -1093,7 +1093,8 @@ namespace UnitTestMdr
 			{
 				var heap = dmp.Heap;
 				var segs = heap.Segments;
-				var addresses = new List<ulong>(1024*1024);
+				var addresses = new List<ulong>(1024 * 1024);
+				var sizes = new List<ulong>(1024 * 1024);
 				int[] genHistogram = new int[4];
 				int[] sizeHistogram = new int[Utils.SizeDistributionLenght];
 
@@ -1109,11 +1110,18 @@ namespace UnitTestMdr
 						Utils.AddSizeDistribution(sizeHistogram,sz);
 						var gen = heap.GetGeneration(addr);
 						genHistogram[gen] += 1;
+						addresses.Add(addr);
+						sizes.Add(sz);
 						NEXT_OBJECT:
 						addr = seg.NextObject(addr);
 					}
 				}
-
+				var adrAry = addresses.ToArray();
+				addresses = null;
+				var szAry = sizes.ToArray();
+				sizes = null;
+				Array.Sort(szAry,adrAry,new Utils.AddressCmpDesc());
+				
 				string outPath = Setup.DumpsFolder + @"\Analytics\Ellerston\Eze.Analytics.Svc_170309_130146.BIG.dmp.map\ad-hoc.queries\TypeSizesAndGenerations."
 										+ Utils.GetValidFileName(typeName) + ".txt";
 				StreamWriter sw = null;
@@ -1130,6 +1138,14 @@ namespace UnitTestMdr
 					{
 						sw.WriteLine("<= " + twoPower + ": " + sizeHistogram[i]);
 						twoPower *= 2;
+					}
+
+					sw.WriteLine();
+					sw.WriteLine("ADDRESSES AND SIZES:");
+
+					for (int i = 0; i < szAry.Length; ++i)
+					{
+						sw.WriteLine(Utils.RealAddressStringHeader(adrAry[i]) + Utils.SizeString(szAry[i]));
 					}
 				}
 				catch (Exception ex)
