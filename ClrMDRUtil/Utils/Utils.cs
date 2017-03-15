@@ -3005,7 +3005,7 @@ namespace ClrMDRIndex
 		}
 
 
-		public const int SizeDistributionLenght = 34;
+		public const int SizeDistributionLenght = 33;
 
 		public static void AddSizeDistribution(int[] dist, ulong size)
 		{
@@ -3029,19 +3029,19 @@ namespace ClrMDRIndex
 			else if (size < 4194305) dist[17] += 1;
 			else if (size < 8388609) dist[18] += 1;
 			else if (size < 16777217) dist[19] += 1;
-			else if (size < 33554433) dist[21] += 1;
-			else if (size < 67108865) dist[22] += 1;
-			else if (size < 134217729) dist[23] += 1;
-			else if (size < 268435457) dist[24] += 1;
-			else if (size < 536870913) dist[25] += 1;
-			else if (size < 1073741825) dist[26] += 1;
-			else if (size < 2147483648) dist[27] += 1;
-			else if (size < 1073741825) dist[28] += 1;
-			else if (size < 4294967297) dist[29] += 1;
-			else if (size < 8589934593) dist[30] += 1;
-			else if (size < 17179869185) dist[31] += 1;
-			else if (size < 34359738368) dist[32] += 1;
-			else dist[33] += 1;
+			else if (size < 33554433) dist[20] += 1;
+			else if (size < 67108865) dist[21] += 1;
+			else if (size < 134217729) dist[22] += 1;
+			else if (size < 268435457) dist[23] += 1;
+			else if (size < 536870913) dist[24] += 1;
+			else if (size < 1073741825) dist[25] += 1;
+			else if (size < 2147483648) dist[26] += 1;
+			else if (size < 1073741825) dist[27] += 1;
+			else if (size < 4294967297) dist[28] += 1;
+			else if (size < 8589934593) dist[29] += 1;
+			else if (size < 17179869185) dist[30] += 1;
+			else if (size < 34359738368) dist[31] += 1;
+			else dist[32] += 1;
 		}
 
 		#endregion Misc

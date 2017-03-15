@@ -60,3 +60,5 @@ at Microsoft.Diagnostics.Runtime.DbgEngDataReader.GetPointerSize() in D:\Jerzy\p
 0021 03/10/17
 D:\Jerzy\WinDbgStuff\dumps\Analytics\Ellerston\Eze.Analytics.Svc_170309_130146.BIG.dmp - Free gen distribution is probably wrong,
 DebugDiag2 gives LOH, me Gen0.
+0022 03/15/17
+Associate stack variables with a stack frame method call.

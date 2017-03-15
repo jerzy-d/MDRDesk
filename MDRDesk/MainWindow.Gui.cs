@@ -2003,7 +2003,15 @@ namespace MDRDesk
 
 		private void TypeTreeCopyTypeNameClicked(object sender, RoutedEventArgs e)
 		{
-			MessageBox.Show("Not implemented yet.", "TypeTreeCopyTypeNameClicked", MessageBoxButton.OK, MessageBoxImage.Information);
+            var grid = GetCurrentTabGrid();
+            Debug.Assert(grid != null);
+            if (grid == null) return;
+            var treeView = (TreeView)LogicalTreeHelper.FindLogicalNode(grid, "AncestorTreeView");
+            var selected = treeView.SelectedItem as TreeViewItem;
+            if (selected == null) return;
+            AncestorNode node = (AncestorNode)selected.Tag;
+            Clipboard.SetText(node.TypeName);
+            MainStatusShowMessage("Copied to Clipboard: " + node.TypeName);
 		}
 
 		private void TypeTreeGenerationDistributionClicked(object sender, RoutedEventArgs e)

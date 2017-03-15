@@ -98,11 +98,12 @@ namespace MDRDesk
 						valStr = BitConverter.ToUInt64(bytes, offfset).ToString(wordFormat);
 						break;
 					case 16:
+                        // TODO JRD -- get 16 byte words ?
 						break;
 				}
 				offfset += _wordLenght;
 				sb.Append(valStr).Append(" ");
-				if (col < _colCount) continue;
+				if (col + 1 < _colCount) continue;
 				sb.AppendLine();
 				col = -1;
 			}
@@ -154,7 +155,7 @@ namespace MDRDesk
 				if (Char.IsWhiteSpace(asciiChar)) asciiChar = '.';
 				asb.Append(asciiChar);
 				++offfset;
-				if (col < _colCount) continue;
+				if (col + 1 < _colCount) continue;
 				sb.Append(" | ").AppendLine(asb.ToString());
 				asb.Clear();
 				col = -1;
@@ -197,7 +198,7 @@ namespace MDRDesk
 				if (Char.IsWhiteSpace(unicodeChar)) unicodeChar = '.';
 				asb.Append(unicodeChar);
 				offfset += 2;
-				if (col < _colCount) continue;
+				if (col + 1 < _colCount) continue;
 				sb.Append(" | ").AppendLine(asb.ToString());
 				asb.Clear();
 				col = -1;
@@ -255,19 +256,21 @@ namespace MDRDesk
 
 		private void IncWordSizeButton_OnClick(object sender, RoutedEventArgs e)
 		{
-			if (_wordLenght > 8) return;
-			_wordLenght *= 2;
+			if (_wordLenght > 4) return; // TODO JRD -- get 16 byte words ? now max is 8
+            _wordLenght *= 2;
 			WordSizeLabel.Content = "word size: " + _wordLenght;
-		}
+            Refresh();
+        }
 
 		private void DecWordSizeButton_OnClick(object sender, RoutedEventArgs e)
 		{
 			if (_wordLenght < 2) return;
 			_wordLenght /= 2;
 			WordSizeLabel.Content = "word size: " + _wordLenght;
-		}
+            Refresh();
+        }
 
-		private void RefreshButton_OnClick(object sender, RoutedEventArgs e)
+        private void RefreshButton_OnClick(object sender, RoutedEventArgs e)
 		{
 			HexViewContent.Text = MemoryString();
 			DisplayAddressRange();
@@ -275,19 +278,21 @@ namespace MDRDesk
 
 		private void IncColCountButton_OnClick(object sender, RoutedEventArgs e)
 		{
-			if (_colCount > 16) return;
+			if (_colCount > 15) return;
 			++_colCount;
 			ColumnCountLabel.Content = "col count: " + _colCount;
-		}
+            Refresh();
+        }
 
-		private void DecColCountButton_OnClick(object sender, RoutedEventArgs e)
+        private void DecColCountButton_OnClick(object sender, RoutedEventArgs e)
 		{
 			if (_colCount < 2) return;
 			--_colCount;
 			ColumnCountLabel.Content = "col count: " + _colCount;
-		}
+            Refresh();
+        }
 
-		private void DisplayModePlain_OnChecked(object sender, RoutedEventArgs e)
+        private void DisplayModePlain_OnChecked(object sender, RoutedEventArgs e)
 		{
 			RadioButton button = sender as RadioButton;
 			Debug.Assert(button != null);
@@ -405,5 +410,13 @@ namespace MDRDesk
 				return false;
 			}
 		}
+
+        private void Refresh()
+        {
+            Application.Current.Dispatcher.BeginInvoke(System.Windows.Threading.DispatcherPriority.Normal, new Action(() =>
+            {
+                RefreshButton_OnClick(null, null);
+            }));
+        }
 	}
 }

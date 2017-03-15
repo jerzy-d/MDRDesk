@@ -951,8 +951,8 @@ namespace UnitTestMdr
 		[TestMethod]
 		public void TestThreadInfo()
 		{
-			const string dumpPath = @"C:\WinDbgStuff\Dumps\Analytics\AnalyticsMemory\A2_noDF.dmp";
-			string error = null;
+            string dumpPath = Setup.DumpsFolder + @"\Analytics\Ellerston\Eze.Analytics.Svc_170309_130146.BIG.dmp";
+            string error = null;
 			StreamWriter sw = null;
 			var rootEqCmp = new ClrRootEqualityComparer();
 			var rootCmp = new ClrRootObjCmp();
@@ -1006,7 +1006,8 @@ namespace UnitTestMdr
 								++dupLocals;
 							}
 							ClrType clrType = heap.GetObjectType(root.Object);
-							sw.Write("    " + Utils.RealAddressStringHeader(root.Object));
+                            sw.Write("    " + Utils.RealAddressStringHeader(root.Address) + "    " + Utils.RealAddressStringHeader(root.Object));
+                            sw.Write(" " + root.Kind.ToString() + " ");
 							if (clrType != null)
 								sw.WriteLine(clrType.Name);
 							else
@@ -1023,7 +1024,7 @@ namespace UnitTestMdr
 								++dupLocals;
 							}
 							ClrType clrType = heap.GetObjectType(root.Object);
-							sw.Write("    " + Utils.RealAddressStringHeader(root.Object));
+							sw.Write("    " + Utils.RealAddressStringHeader(root.Address) + "    " + Utils.RealAddressStringHeader(root.Object));
 							if (clrType != null)
 								sw.WriteLine(clrType.Name);
 							else
@@ -1038,7 +1039,7 @@ namespace UnitTestMdr
 								if (fullSig == null)
 									fullSig = fr.Method.Name;
 								if (fullSig == null) fullSig = "UNKNOWN";
-								sw.WriteLine("  " + Utils.RealAddressStringHeader(fr.InstructionPointer)
+								sw.WriteLine("  " + Utils.RealAddressStringHeader(fr.StackPointer) + "  " + Utils.RealAddressStringHeader(fr.InstructionPointer)
 												+ Utils.RealAddressStringHeader(fr.Method.NativeCode)
 												+ fullSig);
 
@@ -1136,7 +1137,7 @@ namespace UnitTestMdr
 					ulong twoPower = 32;
 					for (int i = 0; i < sizeHistogram.Length; ++i)
 					{
-						sw.WriteLine("<= " + twoPower + ": " + sizeHistogram[i]);
+						sw.WriteLine("<= " + Utils.SizeString(twoPower) + ": " + Utils.CountString(sizeHistogram[i]));
 						twoPower *= 2;
 					}
 

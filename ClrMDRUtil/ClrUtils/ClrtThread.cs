@@ -57,16 +57,16 @@ namespace ClrMDRIndex
 		public int ManagedThreadId => _managedId;
 		public uint LockCount => _lockCount;
 		public int[] BlockingObjects => _blkObjects;
-		public int[] Frames => _frames;
+		public int[] Frames => Frames1;
 
 		public bool IsAlive => (_traits & (int)Traits.Alive) != 0;
 		public bool IsGC => (_traits & (int)Traits.GC) != 0;
 		public bool IsFinalizer => (_traits & (int)Traits.Finalizer) != 0;
 		public bool IsThreadpoolWorker => (_traits & (int)Traits.ThreadpoolWorker) != 0;
 
-		
+        public int[] Frames1 { get => _frames; set => _frames = value; }
 
-		public ClrtThread(ClrThread thrd, BlockingObject[] blkObjects, BlockingObjectCmp blkCmp)
+        public ClrtThread(ClrThread thrd, BlockingObject[] blkObjects, BlockingObjectCmp blkCmp)
 		{
 			_address = thrd.Address;
 			_traits = GetTraits(thrd);
@@ -75,7 +75,7 @@ namespace ClrMDRIndex
 			_lockCount = thrd.LockCount;
 			_teb = thrd.Teb;
 			_blkObjects = GetBlockingObjects(thrd.BlockingObjects, blkObjects, blkCmp);
-			_frames = Utils.EmptyArray<int>.Value;
+			Frames1 = Utils.EmptyArray<int>.Value;
 			_stackPtrs = Utils.EmptyArray<ulong>.Value;
 			_liveStackObjects = Utils.EmptyArray<int>.Value;
 			_deadStackObjects = Utils.EmptyArray<int>.Value;
@@ -90,7 +90,7 @@ namespace ClrMDRIndex
 			_lockCount = thrd.LockCount;
 			_teb = thrd.Teb;
 			_blkObjects = GetBlockingObjects(thrd.BlockingObjects, blkObjects, blkCmp);
-			_frames = frames;
+			Frames1 = frames;
 			_stackPtrs = stackPtrs;
 			_liveStackObjects = aliveStackObjects;
 			_deadStackObjects = deadStackObjects;
@@ -105,7 +105,7 @@ namespace ClrMDRIndex
 			_lockCount = lockCnt;
 			_teb = teb;
 			_blkObjects = blocks;
-			_frames = frames;
+			Frames1 = frames;
 			_stackPtrs = stackPtrs;
 			_liveStackObjects = aliveStackObjects;
 			_deadStackObjects = deadStackObjects;
@@ -209,10 +209,10 @@ namespace ClrMDRIndex
 			bw.Write(_osId);
 			bw.Write(_managedId);
 			bw.Write(_lockCount);
-			bw.Write(_frames.Length);
-			for (int i = 0, icnt = _frames.Length; i < icnt; ++i)
+			bw.Write(Frames1.Length);
+			for (int i = 0, icnt = Frames1.Length; i < icnt; ++i)
 			{
-				bw.Write(_frames[i]);
+				bw.Write(Frames1[i]);
 			}
 			bw.Write(_stackPtrs.Length);
 			for (int i = 0, icnt = _stackPtrs.Length; i < icnt; ++i)
