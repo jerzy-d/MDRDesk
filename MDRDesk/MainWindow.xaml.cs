@@ -1243,11 +1243,35 @@ namespace MDRDesk
 			}
 		}
 
-		#endregion AdhocQueries
+        #endregion AdhocQueries
 
-		#region File Reports
+        #region Extras
 
-		private async void FileReportClicked(object sender, RoutedEventArgs e)
+        // TODO JRD
+        private void ExtrasGetIpAddressValueClicked(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                string value;
+                if (!GetDlgString("Get IP Address Value", "Enter ip address string:", " ", out value)) return;
+            }
+            catch(Exception ex)
+            {
+
+            }
+        }
+
+        // TODO JRD
+        private void ExtrasGetIpValueAddressClicked(object sender, RoutedEventArgs e)
+        {
+
+        }
+
+        #endregion Extras
+
+        #region File Reports
+
+        private async void FileReportClicked(object sender, RoutedEventArgs e)
 		{
 			Grid grid = GetReportGrid(true);
 			if (grid == null) return;
@@ -2078,6 +2102,5 @@ namespace MDRDesk
 				return;
 			ShowMemoryViewWindow(addr);
 		}
-
-	}
+    }
 }

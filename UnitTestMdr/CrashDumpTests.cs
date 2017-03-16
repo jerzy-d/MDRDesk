@@ -1075,11 +1075,24 @@ namespace UnitTestMdr
 			}
 		}
 
-		#endregion threads
+        static (int count, double sum) Tally(IEnumerable<double> values)
+        {
+            int count = 0;
+            double sum = 0.0;
+            foreach (var value in values)
+            {
+                count++;
+                sum += value;
+            }
+            return (count, sum);
+        }
 
-		#region types
 
-		[TestMethod]
+        #endregion threads
+
+        #region types
+
+        [TestMethod]
 		public void TestTypeSizesAndGenerations()
 		{
 			string error;

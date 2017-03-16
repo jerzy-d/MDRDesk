@@ -13,6 +13,7 @@ using System.Text;
 using System.Threading;
 using Microsoft.Diagnostics.Runtime;
 using Microsoft.Diagnostics.Runtime.Interop;
+using System.Net;
 
 namespace ClrMDRIndex
 {
@@ -2133,7 +2134,17 @@ namespace ClrMDRIndex
 
 		#region Misc
 
-		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static long GetIpAddressValue(string ipaddr)
+        {
+            return BitConverter.ToInt64(IPAddress.Parse(ipaddr).GetAddressBytes(), 0);
+        }
+
+        public static string GetIpAddress(long addr)
+        {
+            return new IPAddress(BitConverter.GetBytes(addr)).ToString();
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
 		public static bool HasHexPrefix(string chars)
 		{
 			if (chars.Length > 2)
