@@ -2139,16 +2139,41 @@ namespace ClrMDRIndex
         {
 			var addr = IPAddress.Parse(ipaddr);
 			var bytes = addr.GetAddressBytes();
-			if (bytes.Length == 4)
-				return BitConverter.ToInt32(bytes, 0);
-			return BitConverter.ToInt64(bytes, 0);
+            //if (BitConverter.IsLittleEndian)
+            //    Array.Reverse(bytes);
+
+            if (bytes.Length > 8)
+            {
+                var ipnum = BitConverter.ToUInt64(bytes, 8);
+                ipnum <<= 64;
+                ipnum += BitConverter.ToUInt64(bytes, 0);
+                return (long)ipnum;
+            }
+            else
+            {
+                var ipnum = BitConverter.ToUInt32(bytes, 0);
+                return (long)ipnum;
+            }
 		}
 
 		// TODO JRD -- handle IPV6
 		public static string GetIpAddress(long addr)
         {
-			var bytes = addr > Int32.MaxValue ?	BitConverter.GetBytes(addr) : BitConverter.GetBytes((Int32)addr);
-			return new IPAddress(bytes).ToString();
+		    var bytes = addr > Int32.MaxValue ?	BitConverter.GetBytes(addr) : BitConverter.GetBytes((Int32)addr);
+            //if (System.BitConverter.IsLittleEndian)
+            //    Array.Reverse(bytes);
+            if (bytes.Length > 8)
+            {
+                var ipnum = BitConverter.ToUInt64(bytes, 8);
+                ipnum <<= 64;
+                ipnum += BitConverter.ToUInt64(bytes, 0);
+                return new IPAddress((long)ipnum).ToString();
+            }
+            else
+            {
+                var ipnum = BitConverter.ToUInt32(bytes, 0);
+                return new IPAddress((long)ipnum).ToString();
+            }
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]

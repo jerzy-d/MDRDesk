@@ -487,7 +487,10 @@ module Types =
                     | TypeKind.ArrayKind
                     | TypeKind.ReferenceKind ->
                         let fldAddr = getReferenceFieldAddress addr fld internalAddresses
-                        instVal.Addvalue(new InstanceValue(typeId, fldAddr, fldTypeName, fld.Name, fldVal))
+                        let fldObjType = heap.GetObjectType(fldAddr)
+                        let fldObjName = if isNull fldObjType then fldTypeName else fldObjType.Name
+                        let fldTypeId = ndxProxy.GetTypeId(fldObjName)
+                        instVal.Addvalue(new InstanceValue(fldTypeId, fldAddr, fldObjName, fld.Name, fldVal))
                     | _ ->
                         instVal.Addvalue(new InstanceValue(typeId, Constants.InvalidAddress, fldTypeName, fld.Name, fldVal, fldNdx))
                 (null,instVal)

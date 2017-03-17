@@ -1276,7 +1276,7 @@ namespace MDRDesk
 				long val = Int64.Parse(value);
 				var result = Utils.GetIpAddress(val);
 				Clipboard.SetText(result);
-				MainStatusShowMessage("IPv4 address of " + value + "is: " + result + ". The address is copied to the clipboard.");
+				MainStatusShowMessage("IPv4 address of '" + value + "' is: " + result + ". The address is copied to the clipboard.");
 			}
 			catch (Exception ex)
 			{
