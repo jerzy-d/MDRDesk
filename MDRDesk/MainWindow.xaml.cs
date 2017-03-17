@@ -1253,19 +1253,36 @@ namespace MDRDesk
             try
             {
                 string value;
-                if (!GetDlgString("Get IP Address Value", "Enter ip address string:", " ", out value)) return;
-            }
-            catch(Exception ex)
+                if (!GetDlgString("Get IPv4 Address Value", "Enter IPv4 address (ex.: 192.154.1.4)", "", out value)) return;
+				value = value.Trim();
+				var result = Utils.GetIpAddressValue(value);
+				Clipboard.SetText(result.ToString());
+				MainStatusShowMessage("IPv4 address: " +  value + ", long value is: " + result + ". The value is copied to the clipboard.");
+			}
+			catch (Exception ex)
             {
-
+				ShowError(Utils.GetExceptionErrorString(ex));
             }
         }
 
         // TODO JRD
         private void ExtrasGetIpValueAddressClicked(object sender, RoutedEventArgs e)
         {
-
-        }
+			try
+			{
+				string value;
+				if (!GetDlgString("Get IPv4 Address from Value", "Enter IPv4 address value (ex.: 67214016)", "", out value)) return;
+				value = value.Trim();
+				long val = Int64.Parse(value);
+				var result = Utils.GetIpAddress(val);
+				Clipboard.SetText(result);
+				MainStatusShowMessage("IPv4 address of " + value + "is: " + result + ". The address is copied to the clipboard.");
+			}
+			catch (Exception ex)
+			{
+				ShowError(Utils.GetExceptionErrorString(ex));
+			}
+		}
 
         #endregion Extras
 

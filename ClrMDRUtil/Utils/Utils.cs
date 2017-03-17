@@ -2134,14 +2134,21 @@ namespace ClrMDRIndex
 
 		#region Misc
 
+		// TODO JRD -- handle IPV6
         public static long GetIpAddressValue(string ipaddr)
         {
-            return BitConverter.ToInt64(IPAddress.Parse(ipaddr).GetAddressBytes(), 0);
-        }
+			var addr = IPAddress.Parse(ipaddr);
+			var bytes = addr.GetAddressBytes();
+			if (bytes.Length == 4)
+				return BitConverter.ToInt32(bytes, 0);
+			return BitConverter.ToInt64(bytes, 0);
+		}
 
-        public static string GetIpAddress(long addr)
+		// TODO JRD -- handle IPV6
+		public static string GetIpAddress(long addr)
         {
-            return new IPAddress(BitConverter.GetBytes(addr)).ToString();
+			var bytes = addr > Int32.MaxValue ?	BitConverter.GetBytes(addr) : BitConverter.GetBytes((Int32)addr);
+			return new IPAddress(bytes).ToString();
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
