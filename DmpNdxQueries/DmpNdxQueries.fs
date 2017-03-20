@@ -415,7 +415,8 @@ module FQry =
                 dispTypes.[fldNdx] <- new ClrtDisplayableType(dispType, typeId, fldNdx, typeName, fld.Name, kind)
             dispType.AddFields(dispTypes)
 
-    let getDisplayableType (ndxProxy:IndexProxy) (heap:ClrHeap) (addr: address) =
+    let getDisplayableType (ndxProxy:IndexProxy) (heap:ClrHeap) (addresses: address array) =
+        let addr = addresses.[0]
         let clrType = heap.GetObjectType(addr)
         let typeId = ndxProxy.GetTypeIdAtAddr(addr)
         let kind = typeKind clrType
