@@ -55,6 +55,7 @@
                 </Setter.Value>
             </Setter>
         </Style>
+        <!-- Heap instances context menu. -->
         <ContextMenu x:Key="AddresListContextMenu" x:Shared="False">
             <MenuItem x:Name="AddrLstCopyAddress" Header="Copy Address (clipboard)" Click="CopyAddressSelectionClicked" ></MenuItem>
             <MenuItem x:Name="AddrLstCopyAddressAll" Header="Copy All Addresses (clipboard)" Click="CopyAddressAllClicked"></MenuItem>
@@ -65,6 +66,7 @@
             <Separator></Separator>
             <MenuItem x:Name="AddrLstViewMemory" Header="View Memory" Click="AddrLstViewMemoryClicked"/>
         </ContextMenu>
+        <!-- Stack instances context menu. In thread display grid. -->
         <ContextMenu x:Key="StackObjectListContextMenu" x:Shared="False">
             <MenuItem x:Name="StackObjectCopyAddress" Header="Copy Address (clipboard)" Click="StackObjectCopyAddressClicked" ></MenuItem>
             <MenuItem x:Name="StackObjectCopyAddressAll" Header="Copy All Addresses (clipboard)" Click="StackObjectCopyAddressAllClicked"></MenuItem>
@@ -74,8 +76,7 @@
             <Separator></Separator>
             <MenuItem x:Name="StackObjectViewMemory" Header="View Memory" Click="AddrLstViewMemoryClicked"/>
         </ContextMenu>
-
-
+        <!-- Type list context menu. -->
         <ContextMenu x:Key="TypeListContextMenu" x:Shared="False">
             <MenuItem x:Name="TypeListCopyTypeName" Header="Copy Type Name" Click="CopyTypeNameClicked"></MenuItem>
             <MenuItem x:Name="TypeListGenerationDistribution" Header="Generation Ditribution" Click="GenerationDistributionClicked"></MenuItem>
