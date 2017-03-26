@@ -441,6 +441,32 @@ module Types =
 //            (null,clrs)
 
     (*
+        ClrElementType
+    *)
+    // TODO JRD
+
+    //let getElementKind (clrType:ClrType) : ClrElementKind =
+    //    let mutable kind:uint64 = (1UL <<< (int32)clrType.ElementType)
+    //    let enumKind = (ClrElementKind)kind
+    //    match enumKind with
+    //    | ClrElementKind.Object ->
+    //        if (Utils.SameStrings(clrType.Name,"System.__Canon")) then
+    //            kind <- kind ||| (uint64)ClrElementKind.System__Canon
+    //    | ClrElementKind.Struct -> 
+    //        if Utils.SameStrings(clrType.Name,"System.Decimal") then 
+    //            kind <- kind ||| (uint64)ClrElementKind.Decimal
+    //        elif Utils.SameStrings(clrType.Name,"System.DateTime") then
+    //            kind <- kind ||| (uint64)ClrElementKind.DateTime
+    //        elif Utils.SameStrings(clrType.Name,"System.TimeSpan") then
+    //            kind <- kind ||| (uint64)ClrElementKind.TimeSpan
+    //        elif Utils.SameStrings(clrType.Name,"System.Guid") then
+    //            kind <- kind ||| (uint64)ClrElementKind.Guid
+    //        else 
+    //            kind
+    //    | _ -> kind
+    //    (ClrElementKind)(kind)
+
+    (*
         Misc
     *)
 

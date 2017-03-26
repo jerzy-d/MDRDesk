@@ -4,6 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using Microsoft.Diagnostics.Runtime;
+using System.Collections;
 
 namespace ClrMDRIndex
 {
@@ -21,4 +22,46 @@ namespace ClrMDRIndex
 
 
     }
+
+	public class TypeValueReportInfo
+	{
+		private ulong[] _addresses;
+		private int _typeId;
+
+	}
+
+	public class TypeValueReportInfoItem
+	{
+		private string _fieldName;
+		private ValueFilter _filter;
+
+
+
+		public void SetFilter(ValueFilter filter)
+		{
+			_filter = filter;
+		}
+
+		private TypeValueReportInfoItem _parent;
+		private TypeValueReportInfoItem[] _children;
+
+
+	}
+
+	public class ValueFilter
+	{
+		private object _value;
+		private IComparer _comparer;
+
+		public ValueFilter(object value, IComparer comparer)
+		{
+			_value = value;
+			_comparer = comparer;
+		}
+
+		public bool Accept(object value)
+		{
+			return _comparer.Compare(_value, value) == 0;
+		}
+	}
 }
