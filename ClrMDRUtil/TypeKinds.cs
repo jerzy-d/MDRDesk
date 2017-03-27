@@ -96,6 +96,8 @@ namespace ClrMDRIndex
 			}
 			return kind;
 		}
+
+
 	}
 
 	[Flags]

@@ -44,6 +44,7 @@ using SubgraphDictionary =
 		<System.Collections.Generic.List<System.Collections.Generic.List<int>>,
 			System.Collections.Generic.List<System.Collections.Generic.KeyValuePair<System.Collections.Generic.List<int>, int>>,
 			int>>;
+using System.Collections.Concurrent;
 
 namespace MDRDesk
 {
@@ -1692,26 +1693,26 @@ namespace MDRDesk
 			dlg.ShowDialog();
 		}
 
-		private void DisplayTypeValueSetupGrid(ClrtDisplayableType dispType)
-		{
-			var mainGrid = this.TryFindResource("TypeValueReportSetupGrid") as Grid;
-			Debug.Assert(mainGrid != null);
-			mainGrid.Name = "TypeValueReportSetupGrid__" + Utils.GetNewID();
-			var typeValQry = new TypeValuesQuery();
-			mainGrid.Tag = typeValQry;
-			TreeView treeView = UpdateTypeValueSetupGrid(dispType, mainGrid, null);
-			TreeViewItem treeViewItem = (treeView.Items[0] as TreeViewItem);
-			typeValQry.SetCurrentTreeViewItem(treeViewItem);
-			var tab = new CloseableTabItem() { Header = Constants.BlackDiamond + " Type Value Setup", Content = mainGrid, Name = mainGrid.Name + "_tab" };
-			MainTab.Items.Add(tab);
-			MainTab.SelectedItem = tab;
-			if (treeViewItem != null)
-			{
-				treeViewItem.IsSelected = true;
-			}
+		//private void DisplayTypeValueSetupGrid(ClrtDisplayableType dispType)
+		//{
+		//	var mainGrid = this.TryFindResource("TypeValueReportSetupGrid") as Grid;
+		//	Debug.Assert(mainGrid != null);
+		//	mainGrid.Name = "TypeValueReportSetupGrid__" + Utils.GetNewID();
+		//	var typeValQry = new TypeValuesQuery();
+		//	mainGrid.Tag = typeValQry;
+		//	TreeView treeView = UpdateTypeValueSetupGrid(dispType, mainGrid, null);
+		//	TreeViewItem treeViewItem = (treeView.Items[0] as TreeViewItem);
+		//	typeValQry.SetCurrentTreeViewItem(treeViewItem);
+		//	var tab = new CloseableTabItem() { Header = Constants.BlackDiamond + " Type Value Setup", Content = mainGrid, Name = mainGrid.Name + "_tab" };
+		//	MainTab.Items.Add(tab);
+		//	MainTab.SelectedItem = tab;
+		//	if (treeViewItem != null)
+		//	{
+		//		treeViewItem.IsSelected = true;
+		//	}
 
-			MainTab.UpdateLayout();
-		}
+		//	MainTab.UpdateLayout();
+		//}
 
 		//private TreeViewItem GetTypeValueSetupTreeViewItem(ClrtDisplayableType dispType)
 		//{
@@ -2050,117 +2051,123 @@ namespace MDRDesk
 			}
 		}
 
-		private void TypeValueReportMouseDown(object sender, MouseButtonEventArgs e)
-		{
-			//TreeViewItem item = e.Source as TreeViewItem;
-			Run item = e.Source as Run;
-			StackPanel panel = null;
-			while (item is Run)
-			{
-				if (item.Parent is TextBlock)
-				{
-					var txtBlk = item.Parent as TextBlock;
-					panel = txtBlk.Parent as StackPanel;
-					break;
-				}
-				item = item.Parent as Run;
-			}
-			if (panel != null)
-			{
-				var grid = GetCurrentTabGrid();
-				var curSelectionInfo = grid.Tag as TypeValuesQuery;
-				Debug.Assert(curSelectionInfo != null);
-				curSelectionInfo.SetCurrentTreeViewItem(panel.Tag as TreeViewItem);
-			}
+		//private void TypeValueReportMouseDown(object sender, MouseButtonEventArgs e)
+		//{
+		//	//TreeViewItem item = e.Source as TreeViewItem;
+		//	Run item = e.Source as Run;
+		//	StackPanel panel = null;
+		//	while (item is Run)
+		//	{
+		//		if (item.Parent is TextBlock)
+		//		{
+		//			var txtBlk = item.Parent as TextBlock;
+		//			panel = txtBlk.Parent as StackPanel;
+		//			break;
+		//		}
+		//		item = item.Parent as Run;
+		//	}
+		//	if (panel != null)
+		//	{
+		//		var grid = GetCurrentTabGrid();
+		//		var curSelectionInfo = grid.Tag as TypeValuesQuery;
+		//		Debug.Assert(curSelectionInfo != null);
+		//		curSelectionInfo.SetCurrentTreeViewItem(panel.Tag as TreeViewItem);
+		//	}
 
-		}
+		//}
 
-		private void TypeValueReportSelectClicked(object sender, RoutedEventArgs e)
-		{
-			var grid = GetCurrentTabGrid();
-			Debug.Assert(grid != null);
-			var curSelectionInfo = grid.Tag as TypeValuesQuery;
-			Debug.Assert(curSelectionInfo != null);
-			if (curSelectionInfo.CurrentTreeViewItem != null)
-			{
-				var dispType = curSelectionInfo.CurrentTreeViewItem.Tag as ClrtDisplayableType;
-				Debug.Assert(dispType != null);
-				dispType.ToggleGetValue();
-				GuiUtils.UpdateTypeValueSetupTreeViewItem(curSelectionInfo.CurrentTreeViewItem, dispType);
-			}
-		}
+		//private void TypeValueReportSelectClicked(object sender, RoutedEventArgs e)
+		//{
+		//	var grid = GetCurrentTabGrid();
+		//	Debug.Assert(grid != null);
+		//	var curSelectionInfo = grid.Tag as TypeValuesQuery;
+		//	Debug.Assert(curSelectionInfo != null);
+		//	if (curSelectionInfo.CurrentTreeViewItem != null)
+		//	{
+		//		var dispType = curSelectionInfo.CurrentTreeViewItem.Tag as ClrtDisplayableType;
+		//		Debug.Assert(dispType != null);
+		//		dispType.ToggleGetValue();
+		//		GuiUtils.UpdateTypeValueSetupTreeViewItem(curSelectionInfo.CurrentTreeViewItem, dispType);
+		//	}
+		//}
 
-		private void TypeValueReportMouseOnSelectedItemChanged(object sender, RoutedPropertyChangedEventArgs<object> e)
-		{
-			var item = e.NewValue as TreeViewItem;
-			if (item != null)
-			{
-				var grid = GetCurrentTabGrid();
-				Debug.Assert(grid != null);
-				var curSelectionInfo = grid.Tag as TypeValuesQuery;
-				Debug.Assert(curSelectionInfo != null);
-				curSelectionInfo.SetCurrentTreeViewItem(item);
-				item.BringIntoView();
-			}
+		//private void TypeValueReportMouseOnSelectedItemChanged(object sender, RoutedPropertyChangedEventArgs<object> e)
+		//{
+		//	var item = e.NewValue as TreeViewItem;
+		//	if (item != null)
+		//	{
+		//		var grid = GetCurrentTabGrid();
+		//		Debug.Assert(grid != null);
+		//		var curSelectionInfo = grid.Tag as TypeValuesQuery;
+		//		Debug.Assert(curSelectionInfo != null);
+		//		curSelectionInfo.SetCurrentTreeViewItem(item);
+		//		item.BringIntoView();
+		//	}
 
-		}
+		//}
 
-		private string SetFilterChar(string header, bool set)
-		{
-			if (string.IsNullOrEmpty(header)) return header;
-			if (set)
-			{
-				if (set && header[0] == Constants.HeavyCheckMark && header[1] != Constants.FilterChar)
-				{
-					header = header[0].ToString() + Constants.FilterHeader + header.Substring(2);
-				}
-				else if (header[0] != Constants.FilterChar)
-				{
-					header = Constants.FilterHeader + header;
-				}
-			}
-			return header;
-		}
+		//private string SetFilterChar(string header, bool set)
+		//{
+		//	if (string.IsNullOrEmpty(header)) return header;
+		//	if (set)
+		//	{
+		//		if (set && header[0] == Constants.HeavyCheckMark && header[1] != Constants.FilterChar)
+		//		{
+		//			header = header[0].ToString() + Constants.FilterHeader + header.Substring(2);
+		//		}
+		//		else if (header[0] != Constants.FilterChar)
+		//		{
+		//			header = Constants.FilterHeader + header;
+		//		}
+		//	}
+		//	return header;
+		//}
 
-		private void TypeValueReportFilterClicked(object sender, RoutedEventArgs e)
-		{
-			var grid = GetCurrentTabGrid();
-			Debug.Assert(grid != null);
-			var curSelectionInfo = grid.Tag as TypeValuesQuery;
-			Debug.Assert(curSelectionInfo != null);
-			if (curSelectionInfo.CurrentTreeViewItem != null)
-			{
-				var dlg = new TypeValueFilterDlg(curSelectionInfo.CurrentTreeViewItem.Tag as ClrtDisplayableType)
-				{
-					Owner = this,
+		//private void TypeValueReportFilterClicked(object sender, RoutedEventArgs e)
+		//{
+		//	var grid = GetCurrentTabGrid();
+		//	Debug.Assert(grid != null);
+		//	var curSelectionInfo = grid.Tag as TypeValuesQuery;
+		//	Debug.Assert(curSelectionInfo != null);
+		//	if (curSelectionInfo.CurrentTreeViewItem != null)
+		//	{
+		//		var dlg = new TypeValueFilterDlg(curSelectionInfo.CurrentTreeViewItem.Tag as ClrtDisplayableType)
+		//		{
+		//			Owner = this,
 
-				};
-				bool? dlgResult = dlg.ShowDialog();
-				if (dlgResult == true)
-				{
-					string val = dlg.Value;
+		//		};
+		//		bool? dlgResult = dlg.ShowDialog();
+		//		if (dlgResult == true)
+		//		{
+		//			string val = dlg.Value;
 
-					var dispType = curSelectionInfo.CurrentTreeViewItem.Tag as ClrtDisplayableType;
-					Debug.Assert(dispType != null);
-					dispType.SetFilter(new FilterValue(val));
-					curSelectionInfo.CurrentTreeViewItem.Header = dispType.ToString();
+		//			var dispType = curSelectionInfo.CurrentTreeViewItem.Tag as ClrtDisplayableType;
+		//			Debug.Assert(dispType != null);
+		//			dispType.SetFilter(new FilterValue(val));
+		//			curSelectionInfo.CurrentTreeViewItem.Header = dispType.ToString();
 
-					//string header = curSelectionInfo.CurrentTreeViewItem.Header as string;
-					//               curSelectionInfo.CurrentTreeViewItem.Header = SetFilterChar(header, true);
-				}
+		//			//string header = curSelectionInfo.CurrentTreeViewItem.Header as string;
+		//			//               curSelectionInfo.CurrentTreeViewItem.Header = SetFilterChar(header, true);
+		//		}
 
-				//Debug.Assert(header != null);
-				//curSelectionInfo.CurrentTreeViewItem.Header = (header[0] == Constants.HeavyCheckMark)
-				//    ? header.Substring(2)
-				//    : Constants.HeavyCheckMarkHeader + header;
-			}
-		}
+		//		//Debug.Assert(header != null);
+		//		//curSelectionInfo.CurrentTreeViewItem.Header = (header[0] == Constants.HeavyCheckMark)
+		//		//    ? header.Substring(2)
+		//		//    : Constants.HeavyCheckMarkHeader + header;
+		//	}
+		//}
 
-		#endregion type values report
+        #endregion type values report
 
-		#region instance value
+        #region instance value
 
-		private async void ExecuteInstanceValueQuery(string msg, ulong addr)
+        /// <summary>
+        /// List of currently displayed windows.
+        /// Used to close them when index is closing.
+        /// </summary>
+        private ConcurrentDictionary<int, Window> _wndDct = new ConcurrentDictionary<int, Window>();
+
+        private async void ExecuteInstanceValueQuery(string msg, ulong addr)
 		{
 			SetStartTaskMainWindowState(msg);
 

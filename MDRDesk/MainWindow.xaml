@@ -667,7 +667,7 @@
                 </DockPanel>
             </Expander>
         </Grid>
-        <!-- display tree view -->
+        <!-- display setup of type values report 
         <Grid x:Key="TypeValueReportSetupGrid" x:Shared="False">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="75*"/>
@@ -682,16 +682,14 @@
                 <RowDefinition Height="8*"/>
             </Grid.RowDefinitions>
             <TextBox x:Name="TypeValueReportTopTextBox" Grid.Row="0" Grid.Column="0" Grid.ColumnSpan="2" VerticalAlignment="Stretch" HorizontalAlignment="Stretch" Margin="1,1,1,1"/>
-            <!--<Button x:Name="TypeValueReportRunBottom" Grid.Row="0" Grid.Column="2" Margin="1,1,1,1" Height="36" Width="80" Content="Button" Template="{StaticResource ButtonControlTemplate1}"/>-->
             <Button Grid.Row="0" Grid.Column="2" Style="{StaticResource ButtonStyle5}" Width="115" Margin="0,2,0,2" Content="Run"/>
             <GridSplitter Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="3" VerticalAlignment="Center" HorizontalAlignment="Stretch" Height="5" ShowsPreview="False" Background="DarkGray"></GridSplitter>
             <TreeView x:Name="TypeValueReportTreeView" Grid.Row="2" Grid.Column="0" VerticalAlignment="Stretch" HorizontalAlignment="Stretch" Margin="20,1,1,1" SelectedItemChanged="TypeValueReportMouseOnSelectedItemChanged"
                        MouseDoubleClick="TypeValueReportTreeViewDoubleClicked"  FontSize="12" >
-                <!--MouseDoubleClick="TypeValueReportTreeViewDoubleClicked"  MouseRightButtonDown="TypeValueReportMouseDown"  FontSize="14" >-->
                 <TreeView.ContextMenu>
                     <ContextMenu>
-                        <MenuItem x:Name="TypeValueReportSelectMenuitem" Header="Select/unselect to get value." Click="TypeValueReportSelectClicked"></MenuItem>
-                        <MenuItem x:Name="TypeValueReportFilterMenuitem" Header="Set filter value" Click="TypeValueReportFilterClicked"></MenuItem>
+                        <MenuItem x:Name="TypeValueReportSelectMenuitem" Header="Get Value Select/Unselect" Click="TypeValueReportSelectClicked"></MenuItem>
+                        <MenuItem x:Name="TypeValueReportFilterMenuitem" Header="Set Filter Value..." Click="TypeValueReportFilterClicked"></MenuItem>
                     </ContextMenu>
                 </TreeView.ContextMenu>
                 <TreeView.ItemContainerStyle>
@@ -718,6 +716,7 @@
             <GridSplitter Grid.Row="3"  Grid.Column="0"  Grid.ColumnSpan="3" VerticalAlignment="Center" HorizontalAlignment="Stretch" Height="5" ShowsPreview="False" Background="DarkGray"></GridSplitter>
             <TextBox x:Name="TypeValueReportBottomTextBox" Grid.Row="4" Grid.Column="0" Grid.ColumnSpan="3" VerticalAlignment="Stretch" HorizontalAlignment="Stretch" Margin="1,1,1,1"/>
         </Grid>
+        -->
     </Window.Resources>
     <Grid x:Name="MainGrid">
         <Grid.RowDefinitions>

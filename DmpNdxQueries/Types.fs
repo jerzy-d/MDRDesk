@@ -124,7 +124,7 @@ module Types =
             | TypeKind.Exception ->
                 true
             | _ ->
-                ValueExtractor.IsKnownType(clrType.Name)
+                TypeExtractor.IsKnownType(clrType.Name)
         | TypeKind.PrimitiveKind | TypeKind.EnumKind ->
             true
         | _ ->

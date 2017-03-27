@@ -1341,6 +1341,13 @@ namespace ClrMDRIndex
 
 		}
 
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="dispType"></param>
+        /// <param name="dispTypeField"></param>
+        /// <param name="error"></param>
+        /// <returns></returns>
 		public ClrtDisplayableType GetTypeDisplayableRecord(ClrtDisplayableType dispType, ClrtDisplayableType dispTypeField,
 			out string error)
 		{

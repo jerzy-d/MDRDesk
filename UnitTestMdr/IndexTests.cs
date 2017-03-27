@@ -1437,7 +1437,7 @@ namespace UnitTestMdr
 
 			for (int i = 0, icnt = typeNames.Length; i < icnt; ++i)
 			{
-				Assert.IsTrue(ValueExtractor.IsKnownType(typeNames[i]));
+				Assert.IsTrue(TypeExtractor.IsKnownType(typeNames[i]));
 			}
 		}
 

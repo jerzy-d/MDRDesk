@@ -6,7 +6,7 @@
         xmlns:local="clr-namespace:MDRDesk"
         WindowStartupLocation="CenterOwner"
         mc:Ignorable="d"
-        Title="TypeValuesReportSetup" Height="600" Width="600">
+        Title="Type Field Values Report Setup" Height="600" Width="600">
     <Grid>
         <Grid.ColumnDefinitions>
             <ColumnDefinition Width="75*"/>
@@ -14,9 +14,9 @@
             <ColumnDefinition Width="25*"/>
         </Grid.ColumnDefinitions>
         <Grid.RowDefinitions>
-            <RowDefinition Height="5*"/>
+            <RowDefinition Height="8*"/>
             <RowDefinition Height="5"/>
-            <RowDefinition Height="75*"/>
+            <RowDefinition Height="72*"/>
             <RowDefinition Height="5"/>
             <RowDefinition Height="20"/>
         </Grid.RowDefinitions>
@@ -25,8 +25,8 @@
         <TreeView x:Name="TypeValueReportTreeView" Grid.Row="2" Grid.Column="0" VerticalAlignment="Stretch" HorizontalAlignment="Stretch" Margin="2,2,2,2" MouseDoubleClick="TypeValueReportTreeView_OnMouseDoubleClick"  SelectedItemChanged="TypeValueReportTreeView_OnSelectedItemChanged"  FontSize="11" >
             <TreeView.ContextMenu>
                 <ContextMenu>
-                    <MenuItem x:Name="TypeValueReportSelectMenuitem" Header="Select/unselect to get value." Click="TypeValueReportSelectMenuitem_OnClick"></MenuItem>
-                    <MenuItem x:Name="TypeValueReportFilterMenuitem" Header="Set filter value" Click="TypeValueReportFilterMenuitem_OnClick"></MenuItem>
+                    <MenuItem x:Name="TypeValueReportSelectMenuitem" Header="Get Value Select/Unselect" Click="TypeValueReportSelectMenuitem_OnClick"></MenuItem>
+                    <MenuItem x:Name="TypeValueReportFilterMenuitem" Header="Create Value Filter..." Click="TypeValueReportFilterMenuitem_OnClick"></MenuItem>
                 </ContextMenu>
             </TreeView.ContextMenu>
             <TreeView.ItemContainerStyle>

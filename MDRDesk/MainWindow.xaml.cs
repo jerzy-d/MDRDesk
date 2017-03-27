@@ -54,12 +54,6 @@ namespace MDRDesk
 		public static ClrtDump CurrentAdhocDump;
 		private static Version _myVersion;
 
-		/// <summary>
-		/// List of currently displayed windows.
-		/// Used to close them when index is closing.
-		/// </summary>
-		private ConcurrentDictionary<int, Window> _wndDct = new ConcurrentDictionary<int, Window>();
-
 		#region Ctors/Initialization
 
 		public MainWindow()

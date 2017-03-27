@@ -8,6 +8,15 @@ using System.Collections;
 
 namespace ClrMDRIndex
 {
+   public class TypeValueReportInfo
+    {
+        private ulong[] _addresses;
+        private int _typeId;
+        HeapTypeInfo _typeInfo;
+
+    }
+
+
     public class HeapTypeInfo
     {
         private ClrType _clrType;
@@ -23,27 +32,19 @@ namespace ClrMDRIndex
 
     }
 
-	public class TypeValueReportInfo
-	{
-		private ulong[] _addresses;
-		private int _typeId;
-
-	}
-
 	public class TypeValueReportInfoItem
 	{
-		private string _fieldName;
+        private TypeValueReportInfoItem _parent;
+        private TypeValueReportInfoItem[] _children;
+
+        private string _fieldName;
 		private ValueFilter _filter;
-
-
 
 		public void SetFilter(ValueFilter filter)
 		{
 			_filter = filter;
 		}
 
-		private TypeValueReportInfoItem _parent;
-		private TypeValueReportInfoItem[] _children;
 
 
 	}
@@ -52,11 +53,15 @@ namespace ClrMDRIndex
 	{
 		private object _value;
 		private IComparer _comparer;
+        private bool _skip;
+        public bool Skip => _skip;
+        
 
-		public ValueFilter(object value, IComparer comparer)
+		public ValueFilter(object value, IComparer comparer, bool skip=false)
 		{
 			_value = value;
 			_comparer = comparer;
+            _skip = skip;
 		}
 
 		public bool Accept(object value)

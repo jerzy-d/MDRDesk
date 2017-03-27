@@ -52,6 +52,141 @@
             </summary>
             <returns>The name of this AppDomain.</returns>
         </member>
+        <member name="T:Microsoft.Diagnostics.Runtime.ClrObject">
+            <summary>
+            Represents an object in the target process.
+            </summary>
+        </member>
+        <member name="M:Microsoft.Diagnostics.Runtime.ClrObject.#ctor(System.UInt64,Microsoft.Diagnostics.Runtime.ClrType)">
+            <summary>
+            Constructor.
+            </summary>
+            <param name="address">The address of the object</param>
+            <param name="type">The concrete type of the object.</param>
+        </member>
+        <member name="M:Microsoft.Diagnostics.Runtime.ClrObject.EnumerateObjectReferences(System.Boolean)">
+            <summary>
+            Enumerates all objects that this object references.
+            </summary>
+            <returns>An enumeration of object references.</returns>
+        </member>
+        <member name="P:Microsoft.Diagnostics.Runtime.ClrObject.Address">
+            <summary>
+            The address of the object.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Diagnostics.Runtime.ClrObject.HexAddress">
+            <summary>
+            The address of the object in Hex format.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Diagnostics.Runtime.ClrObject.Type">
+            <summary>
+            The type of the object.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Diagnostics.Runtime.ClrObject.IsNull">
+            <summary>
+            Returns if the object value is null.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Diagnostics.Runtime.ClrObject.Size">
+            <summary>
+            Gets the size of the object.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Diagnostics.Runtime.ClrObject.IsBoxed">
+            <summary>
+            Returns whether this object is actually a boxed primitive or struct.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Diagnostics.Runtime.ClrObject.IsArray">
+            <summary>
+            Returns whether this object is an array or not.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Diagnostics.Runtime.ClrObject.Length">
+            <summary>
+            Returns the count of elements in this array, or throws InvalidOperatonException if this object is not an array.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Diagnostics.Runtime.ClrObject.ContainsPointers">
+            <summary>
+            Returns true if this object possibly contians GC pointers.
+            </summary>
+        </member>
+        <member name="M:Microsoft.Diagnostics.Runtime.ClrObject.ToString">
+            <summary>
+            ToString override.
+            </summary>
+            <returns></returns>
+        </member>
+        <member name="M:Microsoft.Diagnostics.Runtime.ClrObject.GetObjectField(System.String)">
+            <summary>
+            Gets the given object reference field from this ClrObject.  Throws ArgumentException if the given field does
+            not exist in the object.  Throws NullReferenceException if IsNull is true.
+            </summary>
+            <param name="fieldName">The name of the field to retrieve.</param>
+            <returns>A ClrObject of the given field.</returns>
+        </member>
+        <member name="M:Microsoft.Diagnostics.Runtime.ClrObject.GetField``1(System.String)">
+            <summary>
+            Gets the value of a primitive field.  This will throw an InvalidCastException if the type parameter
+            does not match the field's type.
+            </summary>
+            <typeparam name="T">The type of the field itself.</typeparam>
+            <param name="fieldName">The name of the field.</param>
+            <returns>The value of this field.</returns>
+        </member>
+        <member name="M:Microsoft.Diagnostics.Runtime.ClrObject.GetStringField(System.String)">
+            <summary>
+            Gets a string field from the object.  Note that the type must match exactly, as this method
+            will not do type coercion.  This method will throw an ArgumentException if no field matches
+            the given name.  It will throw a NullReferenceException if the target object is null (that is,
+            if (IsNull returns true).  It will throw an InvalidOperationException if the field is not
+            of the correct type.  Lastly, it will throw a MemoryReadException if there was an error reading
+            the value of this field out of the data target.
+            </summary>
+            <param name="fieldName">The name of the field to get the value for.</param>
+            <returns>The value of the given field.</returns>
+        </member>
+        <member name="M:Microsoft.Diagnostics.Runtime.ClrObject.Equals(Microsoft.Diagnostics.Runtime.ClrObject)">
+            <summary>
+            Determines if this instance and another specific <see cref="T:Microsoft.Diagnostics.Runtime.ClrObject"/> have the same value.
+            <para>Instances are considered equal when they have same <see cref="P:Microsoft.Diagnostics.Runtime.ClrObject.Address"/>.</para>
+            </summary>
+            <param name="other">The <see cref="T:Microsoft.Diagnostics.Runtime.ClrObject"/> to compare to this instance.</param>
+            <returns><c>true</c> if the <see cref="P:Microsoft.Diagnostics.Runtime.ClrObject.Address"/> of the parameter is same as <see cref="P:Microsoft.Diagnostics.Runtime.ClrObject.Address"/> in this instance; <c>false</c> otherwise.</returns>
+        </member>
+        <member name="M:Microsoft.Diagnostics.Runtime.ClrObject.Equals(System.Object)">
+            <summary>
+            Determines whether this instance and a specified object, which must also be a <see cref="T:Microsoft.Diagnostics.Runtime.ClrObject"/>, have the same value.
+            </summary>
+            <param name="other">The <see cref="T:Microsoft.Diagnostics.Runtime.ClrObject"/> to compare to this instance.</param>
+            <returns><c>true</c> if <paramref name="other"/> is <see cref="T:Microsoft.Diagnostics.Runtime.ClrObject"/>, and its <see cref="P:Microsoft.Diagnostics.Runtime.ClrObject.Address"/> is same as <see cref="P:Microsoft.Diagnostics.Runtime.ClrObject.Address"/> in this instance; <c>false</c> otherwise.</returns>
+        </member>
+        <member name="M:Microsoft.Diagnostics.Runtime.ClrObject.GetHashCode">
+            <summary>
+            Returns the hash code for this <see cref="T:Microsoft.Diagnostics.Runtime.ClrObject"/> based on its <see cref="P:Microsoft.Diagnostics.Runtime.ClrObject.Address"/>.
+            </summary>
+            <returns>An <see cref="T:System.Int32"/> hash code for this instance.</returns>
+        </member>
+        <member name="M:Microsoft.Diagnostics.Runtime.ClrObject.op_Equality(Microsoft.Diagnostics.Runtime.ClrObject,Microsoft.Diagnostics.Runtime.ClrObject)">
+            <summary>
+            Determines whether two specified <see cref="T:Microsoft.Diagnostics.Runtime.ClrObject"/> have the same value.
+            </summary>
+            <param name="left">First <see cref="T:Microsoft.Diagnostics.Runtime.ClrObject"/> to compare.</param>
+            <param name="right">Second <see cref="T:Microsoft.Diagnostics.Runtime.ClrObject"/> to compare.</param>
+            <returns><c>true</c> if <paramref name="left"/> <see cref="M:Microsoft.Diagnostics.Runtime.ClrObject.Equals(Microsoft.Diagnostics.Runtime.ClrObject)"/> <paramref name="right"/>; <c>false</c> otherwise.</returns>
+        </member>
+        <member name="M:Microsoft.Diagnostics.Runtime.ClrObject.op_Inequality(Microsoft.Diagnostics.Runtime.ClrObject,Microsoft.Diagnostics.Runtime.ClrObject)">
+            <summary>
+            Determines whether two specified <see cref="T:Microsoft.Diagnostics.Runtime.ClrObject"/> have different values.
+            </summary>
+            <param name="left">First <see cref="T:Microsoft.Diagnostics.Runtime.ClrObject"/> to compare.</param>
+            <param name="right">Second <see cref="T:Microsoft.Diagnostics.Runtime.ClrObject"/> to compare.</param>
+            <returns><c>true</c> if the value of <paramref name="left"/> is different from the value of <paramref name="right"/>; <c>false</c> otherwise.</returns>
+        </member>
         <member name="T:Microsoft.Diagnostics.Runtime.VersionInfo">
             <summary>
             Represents the version of a DLL.
@@ -95,12 +230,18 @@
         </member>
         <member name="F:Microsoft.Diagnostics.Runtime.ClrFlavor.CoreCLR">
             <summary>
-            This is a reduced CLR used in other projects.
+            This originally was for Silverlight and other uses of "coreclr", but now
+            there are several flavors of coreclr, some of which are no longer supported.
             </summary>
         </member>
         <member name="F:Microsoft.Diagnostics.Runtime.ClrFlavor.Native">
             <summary>
             Used for .Net Native.
+            </summary>
+        </member>
+        <member name="F:Microsoft.Diagnostics.Runtime.ClrFlavor.Core">
+            <summary>
+            For .Net Core
             </summary>
         </member>
         <member name="T:Microsoft.Diagnostics.Runtime.ClrInfo">
@@ -221,6 +362,25 @@
             <summary>
             Creates an instance of the PdbInfo class with the corresponding properties initialized
             </summary>
+        </member>
+        <member name="M:Microsoft.Diagnostics.Runtime.PdbInfo.GetHashCode">
+            <summary>
+            GetHashCode implementation.
+            </summary>
+            <returns></returns>
+        </member>
+        <member name="M:Microsoft.Diagnostics.Runtime.PdbInfo.Equals(System.Object)">
+            <summary>
+            Override for Equals.  Returns true if the guid, age, and filenames equal.  Note that this compares only the 
+            </summary>
+            <param name="obj"></param>
+            <returns>True if the objects match, false otherwise.</returns>
+        </member>
+        <member name="M:Microsoft.Diagnostics.Runtime.PdbInfo.ToString">
+            <summary>
+            To string implementation.
+            </summary>
+            <returns>Printing friendly version.</returns>
         </member>
         <member name="T:Microsoft.Diagnostics.Runtime.ModuleInfo">
             <summary>
@@ -873,7 +1033,7 @@
         </member>
         <member name="P:Microsoft.Diagnostics.Runtime.Desktop.DesktopAppDomain.Address">
             <summary>
-            Address of the AppDomain.
+            ulong of the AppDomain.
             </summary>
         </member>
         <member name="P:Microsoft.Diagnostics.Runtime.Desktop.DesktopAppDomain.Id">
@@ -916,6 +1076,13 @@
             Given an object reference, fetch the address of the field. 
             </summary>
         </member>
+        <member name="M:Microsoft.Diagnostics.Runtime.Desktop.DesktopRuntimeBase.Flush">
+            <summary>
+            Flushes the dac cache.  This function MUST be called any time you expect to call the same function
+            but expect different results.  For example, after walking the heap, you need to call Flush before
+            attempting to walk the heap again.
+            </summary>
+        </member>
         <member name="P:Microsoft.Diagnostics.Runtime.Desktop.DesktopRuntimeBase.CLRVersion">
             <summary>
             Returns the version of the target process (v2, v4, v45)
@@ -931,12 +1098,6 @@
             Returns the MethodTable for an array of objects.
             </summary>
         </member>
-        <member name="P:Microsoft.Diagnostics.Runtime.Desktop.DesktopRuntimeBase.Threads">
-            <summary>
-            Enumerates all managed threads in the process.  Only threads which have previously run managed
-            code will be enumerated.
-            </summary>
-        </member>
         <member name="P:Microsoft.Diagnostics.Runtime.Desktop.DesktopRuntimeBase.StringMethodTable">
             <summary>
             Returns the MethodTable for string objects.
@@ -945,26 +1106,6 @@
         <member name="P:Microsoft.Diagnostics.Runtime.Desktop.DesktopRuntimeBase.FreeMethodTable">
             <summary>
             Returns the MethodTable for free space markers.
-            </summary>
-        </member>
-        <member name="P:Microsoft.Diagnostics.Runtime.Desktop.DesktopRuntimeBase.SystemDomainAddress">
-            <summary>
-            The address of the system domain in CLR.
-            </summary>
-        </member>
-        <member name="P:Microsoft.Diagnostics.Runtime.Desktop.DesktopRuntimeBase.SharedDomainAddress">
-            <summary>
-            The address of the shared domain in CLR.
-            </summary>
-        </member>
-        <member name="P:Microsoft.Diagnostics.Runtime.Desktop.DesktopRuntimeBase.SystemDomain">
-            <summary>
-            The address of the system domain in CLR.
-            </summary>
-        </member>
-        <member name="P:Microsoft.Diagnostics.Runtime.Desktop.DesktopRuntimeBase.SharedDomain">
-            <summary>
-            The address of the shared domain in CLR.
             </summary>
         </member>
         <member name="M:Microsoft.Diagnostics.Runtime.Desktop.DesktopRuntimeBase.EnumerateMemoryRegions">
@@ -978,13 +1119,6 @@
         <member name="M:Microsoft.Diagnostics.Runtime.Desktop.DesktopRuntimeBase.GetAppDomainByAddress(System.UInt64)">
             <summary>
             Converts an address into an AppDomain.
-            </summary>
-        </member>
-        <member name="M:Microsoft.Diagnostics.Runtime.Desktop.DesktopRuntimeBase.Flush">
-            <summary>
-            Flushes the dac cache.  This function MUST be called any time you expect to call the same function
-            but expect different results.  For example, after walking the heap, you need to call Flush before
-            attempting to walk the heap again.
             </summary>
         </member>
         <member name="M:Microsoft.Diagnostics.Runtime.Desktop.DesktopRuntimeBase.GetTypeName(Microsoft.Diagnostics.Runtime.Desktop.TypeHandle)">
@@ -1147,7 +1281,8 @@
         </member>
         <member name="M:Microsoft.Diagnostics.Runtime.ClrHeap.GetObjectType(System.UInt64)">
             <summary>
-            And the ability to take an address of an object and fetch its type (The type alows further exploration)
+            Obtains the type of an object at the given address.  Returns null if objRef does not point to
+            a valid managed object.
             </summary>
         </member>
         <member name="P:Microsoft.Diagnostics.Runtime.ClrHeap.HasComponentMethodTables">
@@ -1222,6 +1357,45 @@
             Equivalent to EnumerateRoots(true).
             </summary>
         </member>
+        <member name="P:Microsoft.Diagnostics.Runtime.ClrHeap.StackwalkPolicy">
+            <summary>
+            Sets the stackwalk policy for enumerating roots.  See ClrRootStackwalkPolicy for more information.
+            Setting this field can invalidate the root cache.
+            <see cref="T:Microsoft.Diagnostics.Runtime.ClrRootStackwalkPolicy"/>
+            </summary>
+        </member>
+        <member name="M:Microsoft.Diagnostics.Runtime.ClrHeap.CacheHeap(System.Threading.CancellationToken)">
+            <summary>
+            Caches all relevant heap information into memory so future heap operations run faster and
+            do not require touching the debuggee.
+            </summary>
+            <param name="cancelToken">A cancellation token to stop caching the heap.</param>
+        </member>
+        <member name="M:Microsoft.Diagnostics.Runtime.ClrHeap.ClearHeapCache">
+            <summary>
+            Releases all cached object data to reclaim memory.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Diagnostics.Runtime.ClrHeap.IsHeapCached">
+            <summary>
+            Returns true if the heap is cached, false otherwise.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Diagnostics.Runtime.ClrHeap.AreRootsCached">
+            <summary>
+            Returns whether the roots of the process are cached or not.
+            </summary>
+        </member>
+        <member name="M:Microsoft.Diagnostics.Runtime.ClrHeap.CacheRoots(System.Threading.CancellationToken)">
+            <summary>
+            This method caches many roots so that subsequent calls to EnumerateRoots run faster.
+            </summary>
+        </member>
+        <member name="M:Microsoft.Diagnostics.Runtime.ClrHeap.ClearRootCache">
+            <summary>
+            This method clears any previously cached roots to reclaim memory.
+            </summary>
+        </member>
         <member name="M:Microsoft.Diagnostics.Runtime.ClrHeap.GetTypeByName(System.String)">
             <summary>
             Looks up a type by name.
@@ -1245,6 +1419,11 @@
             </summary>
             <param name="methodTable">The ClrType.MethodTable for the requested type.</param>
             <returns>A ClrType object, or null if no such type exists.</returns>
+        </member>
+        <member name="P:Microsoft.Diagnostics.Runtime.ClrHeap.Free">
+            <summary>
+            Returns the ClrType representing free space on the GC heap.
+            </summary>
         </member>
         <member name="M:Microsoft.Diagnostics.Runtime.ClrHeap.EnumerateRoots(System.Boolean)">
             <summary>
@@ -1288,6 +1467,12 @@
             Enumerates all objects on the heap.  This is equivalent to enumerating all segments then walking
             each object with ClrSegment.FirstObject, ClrSegment.NextObject, but in a simple enumerator
             for easier use in linq queries.
+            </summary>
+            <returns>An enumerator for all objects on the heap.</returns>
+        </member>
+        <member name="M:Microsoft.Diagnostics.Runtime.ClrHeap.EnumerateObjects">
+            <summary>
+            Enumerates all objects on the heap.
             </summary>
             <returns>An enumerator for all objects on the heap.</returns>
         </member>
@@ -1348,6 +1533,45 @@
             <param name="addr">The address to read.</param>
             <param name="value">The pointer value.</param>
             <returns>True if we successfully read the value, false if addr is not mapped into the process space.</returns>
+        </member>
+        <member name="P:Microsoft.Diagnostics.Runtime.ClrHeap.TotalObjects">
+            <summary>
+            This might be useful to be public, but we actually don't know the total number objects without walking the entire
+            heap.  This property is only valid if we have cached the heap...which leads to a weird programatic interface (that
+            this simply property would throw InvalidOperationException unless the heap is cached).  I'm leaving this internal
+            until I am convinced there's a good way to surface this.
+            </summary>
+        </member>
+        <member name="T:Microsoft.Diagnostics.Runtime.ClrRootStackwalkPolicy">
+            <summary>
+            This sets the policy for how ClrHeap walks the stack when enumerating roots.  There is a choice here because the 'Exact' stack walking
+            gives the correct answer (without overreporting), but unfortunately is poorly implemented in CLR's debugging layer.
+            This means it could take 10-30 minutes (!) to enumerate roots on crash dumps with 4000+ threads.
+            </summary>
+        </member>
+        <member name="F:Microsoft.Diagnostics.Runtime.ClrRootStackwalkPolicy.Automatic">
+            <summary>
+            The GCRoot class will attempt to select a policy for you based on the number of threads in the process.
+            </summary>
+        </member>
+        <member name="F:Microsoft.Diagnostics.Runtime.ClrRootStackwalkPolicy.Exact">
+            <summary>
+            Use real stack roots.  This is much slower than 'Fast', but provides no false-positives for more accurate
+            results.  Note that this can actually take 10s of minutes to enumerate the roots themselves in the worst
+            case scenario.
+            </summary>
+        </member>
+        <member name="F:Microsoft.Diagnostics.Runtime.ClrRootStackwalkPolicy.Fast">
+            <summary>
+            Walks each pointer alighed address on all stacks and if it points to an object it treats that location
+            as a real root.  This can over-report roots when a value is left on the stack, but the GC does not
+            consider it a real root.
+            </summary>
+        </member>
+        <member name="F:Microsoft.Diagnostics.Runtime.ClrRootStackwalkPolicy.SkipStack">
+            <summary>
+            Do not walk stack roots.
+            </summary>
         </member>
         <member name="T:Microsoft.Diagnostics.Runtime.BlockingObject">
             <summary>
@@ -1505,6 +1729,11 @@
             actually be considered a root by the GC.
             </summary>
         </member>
+        <member name="P:Microsoft.Diagnostics.Runtime.ClrRoot.StackFrame">
+            <summary>
+            Returns the stack frame associated with this stack root.
+            </summary>
+        </member>
         <member name="M:Microsoft.Diagnostics.Runtime.ClrRoot.ToString">
             <summary>
             Returns a string representation of this object.
@@ -1559,12 +1788,23 @@
         </member>
         <member name="P:Microsoft.Diagnostics.Runtime.ClrSegment.FirstObject">
             <summary>
-            If it is possible to move from one object to the 'next' object in the segment. 
-            Then FirstObject returns the first object in the heap (or null if it is not
-            possible to walk the heap.
+            FirstObject returns the first object on this segment or 0 if this segment contains no objects.
             </summary>
         </member>
+        <member name="M:Microsoft.Diagnostics.Runtime.ClrSegment.GetFirstObject(Microsoft.Diagnostics.Runtime.ClrType@)">
+            <summary>
+            FirstObject returns the first object on this segment or 0 if this segment contains no objects.
+            </summary>
+            <param name="type">The type of the first object.</param>
+            <returns>The first object on this segment or 0 if this segment contains no objects.</returns>
+        </member>
         <member name="M:Microsoft.Diagnostics.Runtime.ClrSegment.NextObject(System.UInt64)">
+            <summary>
+            Given an object on the segment, return the 'next' object in the segment.  Returns
+            0 when there are no more objects.   (Or enumeration is not possible)  
+            </summary>
+        </member>
+        <member name="M:Microsoft.Diagnostics.Runtime.ClrSegment.NextObject(System.UInt64,Microsoft.Diagnostics.Runtime.ClrType@)">
             <summary>
             Given an object on the segment, return the 'next' object in the segment.  Returns
             0 when there are no more objects.   (Or enumeration is not possible)  
@@ -1732,6 +1972,123 @@
         <member name="F:Microsoft.Diagnostics.Runtime.GcMode.Preemptive">
             <summary>
             In Preemptive mode the runtime is free to suspend the thread at any time for a GC to occur.
+            </summary>
+        </member>
+        <member name="T:Microsoft.Diagnostics.Runtime.RootPath">
+            <summary>
+            Represents a path of objects from a root to an object.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Diagnostics.Runtime.RootPath.Root">
+            <summary>
+            The location that roots the object.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Diagnostics.Runtime.RootPath.Path">
+            <summary>
+            The path from Root to a given target object.
+            </summary>
+        </member>
+        <member name="T:Microsoft.Diagnostics.Runtime.GCRootProgressEvent">
+            <summary>
+            A delegate for reporting GCRoot progress.
+            </summary>
+            <param name="source">The GCRoot sending the event.</param>
+            <param name="current">The total number of objects processed.</param>
+            <param name="total">The total number of objects in the heap, if that number is known, otherwise -1.</param>
+        </member>
+        <member name="T:Microsoft.Diagnostics.Runtime.GCRoot">
+            <summary>
+            A helper class to find the GC rooting chain for a particular object.
+            </summary>
+        </member>
+        <member name="E:Microsoft.Diagnostics.Runtime.GCRoot.ProgressUpdate">
+            <summary>
+            Since GCRoot can be long running, this event will provide periodic updates to how many objects the algorithm
+            has processed.  Note that in the case where we search all objects and do not find a path, it's unlikely that
+            the number of objects processed will ever reach the total number of objects on the heap.  That's because there
+            will be garbage objects on the heap we can't reach.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Diagnostics.Runtime.GCRoot.Heap">
+            <summary>
+            Returns the heap that's associated with this GCRoot instance.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Diagnostics.Runtime.GCRoot.AllowParallelSearch">
+            <summary>
+            Whether or not to allow GC root to search in parallel or not.  Note that GCRoot does not have to respect this
+            flag.  Parallel searching of roots will only happen if a copy of the stack and heap were built using BuildCache,
+            and if the entire heap was cached.  Note that ClrMD and underlying APIs do NOT support multithreading, so this
+            is only used when we can ensure all relevant data is local memory and we do not need to touch the debuggee.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Diagnostics.Runtime.GCRoot.MaximumTasksAllowed">
+            <summary>
+            The maximum number of tasks allowed to run in parallel, if GCRoot does a parallel search.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Diagnostics.Runtime.GCRoot.IsFullyCached">
+            <summary>
+            Returns true if all relevant heap and root data is locally cached in this process for fast GCRoot processing.
+            </summary>
+        </member>
+        <member name="M:Microsoft.Diagnostics.Runtime.GCRoot.#ctor(Microsoft.Diagnostics.Runtime.ClrHeap)">
+            <summary>
+            Creates a GCRoot helper object for the given heap.
+            </summary>
+            <param name="heap">The heap the object in question is on.</param>
+        </member>
+        <member name="M:Microsoft.Diagnostics.Runtime.GCRoot.EnumerateGCRoots(System.UInt64,System.Threading.CancellationToken)">
+            <summary>
+            Enumerates GCRoots of a given object.  Similar to !gcroot.  Note this function only returns paths that are fully unique.
+            </summary>
+            <param name="target">The target object to search for GC rooting.</param>
+            <param name="cancelToken">A cancellation token to stop enumeration.</param>
+            <returns>An enumeration of all GC roots found for target.</returns>
+        </member>
+        <member name="M:Microsoft.Diagnostics.Runtime.GCRoot.EnumerateGCRoots(System.UInt64,System.Boolean,System.Threading.CancellationToken)">
+            <summary>
+            Enumerates GCRoots of a given object.  Similar to !gcroot.
+            </summary>
+            <param name="target">The target object to search for GC rooting.</param>
+            <param name="unique">Whether to only return fully unique paths.</param>
+            <param name="cancelToken">A cancellation token to stop enumeration.</param>
+            <returns>An enumeration of all GC roots found for target.</returns>
+        </member>
+        <member name="M:Microsoft.Diagnostics.Runtime.GCRoot.FindSinglePath(System.UInt64,System.UInt64,System.Threading.CancellationToken)">
+            <summary>
+            Returns the path from the start object to the end object (or null if no such path exists).
+            </summary>
+            <param name="source">The initial object to start the search from.</param>
+            <param name="target">The object we are searching for.</param>
+            <param name="cancelToken">A cancellation token to stop searching.</param>
+            <returns>A path from 'source' to 'target' if one exists, null if one does not.</returns>
+        </member>
+        <member name="M:Microsoft.Diagnostics.Runtime.GCRoot.EnumerateAllPaths(System.UInt64,System.UInt64,System.Boolean,System.Threading.CancellationToken)">
+            <summary>
+            Returns the path from the start object to the end object (or null if no such path exists).
+            </summary>
+            <param name="source">The initial object to start the search from.</param>
+            <param name="target">The object we are searching for.</param>
+            <param name="unique">Whether to only enumerate fully unique paths.</param>
+            <param name="cancelToken">A cancellation token to stop enumeration.</param>
+            <returns>A path from 'source' to 'target' if one exists, null if one does not.</returns>
+        </member>
+        <member name="M:Microsoft.Diagnostics.Runtime.GCRoot.BuildCache(System.Threading.CancellationToken)">
+            <summary>
+            Builds a cache of the GC heap and roots.  This will consume a LOT of memory, so when calling it you must wrap this in
+            a try/catch for OutOfMemoryException.
+            
+            Note that this function allows you to choose whether we have exact thread callstacks or not.  Exact thread callstacks
+            will essentially force ClrMD to walk the stack as a real GC would, but this can take 10s of minutes when the thread count gets
+            into the 1000s.
+            </summary>
+            <param name="cancelToken">The cancellation token used to cancel the operation if it's taking too long.</param>
+        </member>
+        <member name="M:Microsoft.Diagnostics.Runtime.GCRoot.ClearCache">
+            <summary>
+            Clears all caches, reclaiming most memory held by this GCRoot object.
             </summary>
         </member>
         <member name="T:Microsoft.Diagnostics.Runtime.ICorDebug.CLRDebugging">
@@ -1936,6 +2293,116 @@
             <param name="rva">A relative virtual address in the module.</param>
             <returns>The symbol corresponding to RVA.</returns>
         </member>
+        <member name="T:Microsoft.Diagnostics.Runtime.MemoryReadException">
+            <summary>
+            Thrown when we fail to read memory from the target process.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Diagnostics.Runtime.MemoryReadException.Address">
+            <summary>
+            The address of memory that could not be read.
+            </summary>
+        </member>
+        <member name="M:Microsoft.Diagnostics.Runtime.MemoryReadException.#ctor(System.UInt64)">
+            <summary>
+            Constructor
+            </summary>
+            <param name="address">The address of memory that could not be read.</param>
+        </member>
+        <member name="T:Microsoft.Diagnostics.Runtime.ObjectSet">
+            <summary>
+            This class is a HashSet of ulong for object addresses.
+            </summary>
+        </member>
+        <member name="F:Microsoft.Diagnostics.Runtime.ObjectSet._heap">
+            <summary>
+            The ClrHeap this is an object set over.
+            </summary>
+        </member>
+        <member name="F:Microsoft.Diagnostics.Runtime.ObjectSet._minObjSize">
+            <summary>
+            The minimum object size for this particular heap.
+            </summary>
+        </member>
+        <member name="F:Microsoft.Diagnostics.Runtime.ObjectSet._segments">
+            <summary>
+            The collection of segments and associated objects.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Diagnostics.Runtime.ObjectSet.Count">
+            <summary>
+            Returns the count of objects in this set.
+            </summary>
+        </member>
+        <member name="M:Microsoft.Diagnostics.Runtime.ObjectSet.#ctor(Microsoft.Diagnostics.Runtime.ClrHeap)">
+            <summary>
+            Constructor.
+            </summary>
+            <param name="heap">A ClrHeap to add objects from.</param>
+        </member>
+        <member name="M:Microsoft.Diagnostics.Runtime.ObjectSet.Contains(System.UInt64)">
+            <summary>
+            Returns true if this set contains the given object, false otherwise.  The behavior of this function is undefined if
+            obj lies outside the GC heap.
+            </summary>
+            <param name="obj">The object to check.</param>
+            <returns>True if this set contains the given object, false otherwise.</returns>
+        </member>
+        <member name="M:Microsoft.Diagnostics.Runtime.ObjectSet.Add(System.UInt64)">
+            <summary>
+            Adds the given object to the set.  Returns true if the object was added to the set, returns false if the object was already in the set.
+            </summary>
+            <param name="obj">The object to add to the set.</param>
+            <returns>True if the object was added to the set, returns false if the object was already in the set.</returns>
+        </member>
+        <member name="M:Microsoft.Diagnostics.Runtime.ObjectSet.Remove(System.UInt64)">
+            <summary>
+            Removes the given object from the set.  Returns true if the object was removed, returns false if the object was not in the set.
+            </summary>
+            <param name="obj">The object to remove from the set.</param>
+            <returns>True if the object was removed, returns false if the object was not in the set.</returns>
+        </member>
+        <member name="M:Microsoft.Diagnostics.Runtime.ObjectSet.Clear">
+            <summary>
+            Empties the set.
+            </summary>
+        </member>
+        <member name="M:Microsoft.Diagnostics.Runtime.ObjectSet.GetOffset(System.UInt64,Microsoft.Diagnostics.Runtime.ObjectSet.HeapHashSegment)">
+            <summary>
+            Calculates the offset of an object within a segment.
+            </summary>
+            <param name="obj">The object</param>
+            <param name="seg">The segment</param>
+            <returns>The index into seg.Objects.</returns>
+        </member>
+        <member name="M:Microsoft.Diagnostics.Runtime.ObjectSet.GetSegment(System.UInt64,Microsoft.Diagnostics.Runtime.ObjectSet.HeapHashSegment@)">
+            <summary>
+            Gets the segment for the given object.
+            </summary>
+            <param name="obj">The object in question.</param>
+            <param name="seg">The resulting segment.</param>
+            <returns>True if obj lies within a gc segment, false otherwise.</returns>
+        </member>
+        <member name="T:Microsoft.Diagnostics.Runtime.ObjectSet.HeapHashSegment">
+            <summary>
+            A segment of memory in the heap.
+            </summary>
+        </member>
+        <member name="F:Microsoft.Diagnostics.Runtime.ObjectSet.HeapHashSegment.Objects">
+            <summary>
+            The the objects in the memory range.
+            </summary>
+        </member>
+        <member name="F:Microsoft.Diagnostics.Runtime.ObjectSet.HeapHashSegment.StartAddress">
+            <summary>
+            The start address of the segment.
+            </summary>
+        </member>
+        <member name="F:Microsoft.Diagnostics.Runtime.ObjectSet.HeapHashSegment.EndAddress">
+            <summary>
+            The end address of the segment.
+            </summary>
+        </member>
         <member name="T:Microsoft.Diagnostics.Runtime.ClrDiagnosticsException">
             <summary>
             Exception thrown by Microsoft.Diagnostics.Runtime unless there is a more appropriate
@@ -2110,6 +2577,16 @@
         <member name="M:Microsoft.Diagnostics.Runtime.ClrRuntime.GetHeap">
             <summary>
             Gets the GC heap of the process.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Diagnostics.Runtime.ClrRuntime.Heap">
+            <summary>
+            Gets the GC heap of the process.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Diagnostics.Runtime.ClrRuntime.ThreadPool">
+            <summary>
+            Returns data on the CLR thread pool for this runtime.
             </summary>
         </member>
         <member name="M:Microsoft.Diagnostics.Runtime.ClrRuntime.GetThreadPool">
@@ -2352,7 +2829,7 @@
         </member>
         <member name="P:Microsoft.Diagnostics.Runtime.ClrHandle.Address">
             <summary>
-            The address of the handle itself.  That is, *Address == Object.
+            The address of the handle itself.  That is, *ulong == Object.
             </summary>
         </member>
         <member name="P:Microsoft.Diagnostics.Runtime.ClrHandle.Object">
@@ -4920,6 +5397,14 @@
             we don't loop forever with inconsistent data.
             </summary>
         </member>
+        <member name="M:Microsoft.Diagnostics.Runtime.ClrType.EnumerateObjectReferences(System.UInt64,System.Boolean)">
+            <summary>
+            Enumerates all objects that the given object references.
+            </summary>
+            <param name="obj">The object in question.</param>
+            <param name="carefully">Whether to bounds check along the way (useful in cases where
+            the heap may be in an inconsistent state.)</param>
+        </member>
         <member name="P:Microsoft.Diagnostics.Runtime.ClrType.ContainsPointers">
             <summary>
             Returns true if the type CAN contain references to other objects.  This is used in optimizations 
@@ -5244,6 +5729,11 @@
         <member name="P:Microsoft.Diagnostics.Runtime.ClrField.Name">
             <summary>
             The name of the field.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Diagnostics.Runtime.ClrField.Token">
+            <summary>
+            Returns the type token of this field.
             </summary>
         </member>
         <member name="P:Microsoft.Diagnostics.Runtime.ClrField.Type">
@@ -5647,6 +6137,16 @@
             <param name="addr">The absolute address of the code (not a relative offset).</param>
             <returns>The IL offset of the given address.</returns>
         </member>
+        <member name="P:Microsoft.Diagnostics.Runtime.ClrMethod.IL">
+            <summary>
+            Returns the location in memory of the IL for this method.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Diagnostics.Runtime.ClrMethod.HotColdInfo">
+            <summary>
+            Returns the regions of memory that 
+            </summary>
+        </member>
         <member name="P:Microsoft.Diagnostics.Runtime.ClrMethod.CompilationType">
             <summary>
             Returns the way this method was compiled.
@@ -5722,6 +6222,11 @@
             Returns if this method is abstract.
             </summary>
         </member>
+        <member name="P:Microsoft.Diagnostics.Runtime.ClrMethod.GCInfo">
+            <summary>
+            Returns the location of the GCInfo for this method.
+            </summary>
+        </member>
         <member name="P:Microsoft.Diagnostics.Runtime.ClrMethod.IsConstructor">
             <summary>
             Returns whether this method is an instance constructor.
@@ -5730,6 +6235,61 @@
         <member name="P:Microsoft.Diagnostics.Runtime.ClrMethod.IsClassConstructor">
             <summary>
             Returns whether this method is a static constructor.
+            </summary>
+        </member>
+        <member name="T:Microsoft.Diagnostics.Runtime.HotColdRegions">
+            <summary>
+            Returns the addresses and sizes of the hot and cold regions of a method.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Diagnostics.Runtime.HotColdRegions.HotStart">
+            <summary>
+            Returns the start address of the method's hot region.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Diagnostics.Runtime.HotColdRegions.HotSize">
+            <summary>
+            Returns the size of the hot region.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Diagnostics.Runtime.HotColdRegions.ColdStart">
+            <summary>
+            Returns the start address of the method's cold region.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Diagnostics.Runtime.HotColdRegions.ColdSize">
+            <summary>
+            Returns the size of the cold region.
+            </summary>
+        </member>
+        <member name="T:Microsoft.Diagnostics.Runtime.ILInfo">
+            <summary>
+            Returns information about the IL for a method.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Diagnostics.Runtime.ILInfo.Address">
+            <summary>
+            The address in memory of where the IL for a particular method is located.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Diagnostics.Runtime.ILInfo.Length">
+            <summary>
+            The length (in bytes) of the IL method body.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Diagnostics.Runtime.ILInfo.MaxStack">
+            <summary>
+            The maximum IL stack size in this method.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Diagnostics.Runtime.ILInfo.Flags">
+            <summary>
+            The flags associated with the IL code.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Diagnostics.Runtime.ILInfo.LocalVarSignatureToken">
+            <summary>
+            The local variable signature token for this IL method.
             </summary>
         </member>
         <member name="T:Microsoft.Diagnostics.Runtime.ILToNativeMap">

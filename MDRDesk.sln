@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio 14
-VisualStudioVersion = 14.0.25420.1
+# Visual Studio 15
+VisualStudioVersion = 15.0.26228.9
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MDRDesk", "MDRDesk\MDRDesk.csproj", "{4BB5B249-E4F1-490F-8F40-214BCC05CE64}"
 	ProjectSection(ProjectDependencies) = postProject
@@ -26,6 +26,11 @@ EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{D6F8CC5E-8A6D-4D52-A079-86E90F057621}"
 	ProjectSection(SolutionItems) = preProject
 		README.md = README.md
+	EndProjectSection
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Documentation", "Documentation", "{A32781E3-ED13-4692-8186-B140B2C6E4D9}"
+	ProjectSection(SolutionItems) = preProject
+		Documentation\MainMenu.md = Documentation\MainMenu.md
 	EndProjectSection
 EndProject
 Global
