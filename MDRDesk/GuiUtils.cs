@@ -157,50 +157,68 @@ namespace MDRDesk
 			txtBlk.Tag = node;
 		}
 
-		public static StackPanel GetClrtDisplayableTypeStackPanel(ClrtDisplayableType dispType)
+     
+        /// <summary>
+        /// Get type display panel.
+        /// </summary>
+        /// <param name="dispType">Type information.</param>
+        /// <returns>Adorned panel.</returns>
+        public static StackPanel GetClrtDisplayableTypeStackPanel(ClrtDisplayableType dispType)
 		{
 			var stackPanel = new StackPanel() { Orientation = Orientation.Horizontal };
 			var kind = dispType.Kind;
+            var specKind = TypeExtractor.GetSpecialKind(kind);
 			Image image = new Image();
-
-			switch (TypeKinds.GetMainTypeKind(kind))
-			{
-				case TypeKind.StringKind:
-					image.Source = ((Image)Application.Current.FindResource("PrimitivePng")).Source;
-					break;
-				case TypeKind.InterfaceKind:
-					image.Source = ((Image)Application.Current.FindResource("InterfacePng")).Source;
-					break;
-				case TypeKind.ArrayKind:
-					image.Source = ((Image)Application.Current.FindResource("ArrayPng")).Source;
-					break;
-				case TypeKind.StructKind:
-					switch (TypeKinds.GetParticularTypeKind(kind))
-					{
-						case TypeKind.DateTime:
-						case TypeKind.Decimal:
-						case TypeKind.Guid:
-						case TypeKind.TimeSpan:
-							image.Source = ((Image)Application.Current.FindResource("PrimitivePng")).Source;
-							break;
-						default:
-							image.Source = ((Image)Application.Current.FindResource("StructPng")).Source;
-							break;
-					}
-					break;
-				case TypeKind.ReferenceKind:
-					image.Source = ((Image)Application.Current.FindResource("ClassPng")).Source;
-					break;
-				case TypeKind.EnumKind:
-					image.Source = ((Image)Application.Current.FindResource("EnumPng")).Source;
-					break;
-				case TypeKind.PrimitiveKind:
-					image.Source = ((Image)Application.Current.FindResource("PrimitivePng")).Source;
-					break;
-				default:
-					image.Source = ((Image)Application.Current.FindResource("QuestionPng")).Source;
-					break;
-			}
+            if (specKind != ClrElementKind.Unknown)
+            {
+                switch(specKind)
+                {
+                    case ClrElementKind.Free:
+                    case ClrElementKind.Guid:
+                    case ClrElementKind.DateTime:
+                    case ClrElementKind.TimeSpan:
+                    case ClrElementKind.Decimal:
+                        image.Source = ((Image)Application.Current.FindResource("PrimitivePng")).Source;
+                        break;
+                    case ClrElementKind.Interface:
+                        image.Source = ((Image)Application.Current.FindResource("InterfacePng")).Source;
+                        break;
+                    case ClrElementKind.Enum:
+                        image.Source = ((Image)Application.Current.FindResource("EnumPng")).Source;
+                        break;
+                    case ClrElementKind.System__Canon:
+                    case ClrElementKind.Exception:
+                    case ClrElementKind.Abstract:
+                        image.Source = ((Image)Application.Current.FindResource("ClassPng")).Source;
+                        break;
+                }
+            }
+            else
+            {
+                switch (TypeExtractor.GetStandardKind(kind))
+                {
+                    case ClrElementKind.String:
+                        image.Source = ((Image)Application.Current.FindResource("PrimitivePng")).Source;
+                        break;
+                    case ClrElementKind.SZArray:
+                    case ClrElementKind.Array:
+                        image.Source = ((Image)Application.Current.FindResource("ArrayPng")).Source;
+                        break;
+                    case ClrElementKind.Object:
+                    case ClrElementKind.Class:
+                        image.Source = ((Image)Application.Current.FindResource("ClassPng")).Source;
+                        break;
+                    case ClrElementKind.Struct:
+                        image.Source = ((Image)Application.Current.FindResource("StructPng")).Source;
+                        break;
+                    case ClrElementKind.Unknown:
+                        image.Source = ((Image)Application.Current.FindResource("QuestionPng")).Source;
+                        break;
+                    default:
+                        image.Source = ((Image)Application.Current.FindResource("PrimitivePng")).Source;
+                        break;
+                }
+            }
 
 			stackPanel.Children.Add(image);
 			stackPanel.Children.Add(GetClrtDisplayableTypeTextBlock(dispType));

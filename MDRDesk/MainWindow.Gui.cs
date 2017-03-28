@@ -1693,134 +1693,93 @@ namespace MDRDesk
 			dlg.ShowDialog();
 		}
 
-		//private void DisplayTypeValueSetupGrid(ClrtDisplayableType dispType)
+		//private TreeView UpdateTypeValueSetupGrid(ClrtDisplayableType dispType, Grid mainGrid, TreeViewItem root)
 		//{
-		//	var mainGrid = this.TryFindResource("TypeValueReportSetupGrid") as Grid;
-		//	Debug.Assert(mainGrid != null);
-		//	mainGrid.Name = "TypeValueReportSetupGrid__" + Utils.GetNewID();
-		//	var typeValQry = new TypeValuesQuery();
-		//	mainGrid.Tag = typeValQry;
-		//	TreeView treeView = UpdateTypeValueSetupGrid(dispType, mainGrid, null);
-		//	TreeViewItem treeViewItem = (treeView.Items[0] as TreeViewItem);
-		//	typeValQry.SetCurrentTreeViewItem(treeViewItem);
-		//	var tab = new CloseableTabItem() { Header = Constants.BlackDiamond + " Type Value Setup", Content = mainGrid, Name = mainGrid.Name + "_tab" };
-		//	MainTab.Items.Add(tab);
-		//	MainTab.SelectedItem = tab;
-		//	if (treeViewItem != null)
+		//	bool realRoot = false;
+		//	if (root == null)
 		//	{
-		//		treeViewItem.IsSelected = true;
+		//		realRoot = true;
+		//		root = GuiUtils.GetTypeValueSetupTreeViewItem(dispType);
+		//	}
+		//	var fields = dispType.Fields;
+		//	for (int i = 0, icnt = fields.Length; i < icnt; ++i)
+		//	{
+		//		var fld = fields[i];
+		//		var node = GuiUtils.GetTypeValueSetupTreeViewItem(fld);
+		//		root.Items.Add(node);
 		//	}
 
-		//	MainTab.UpdateLayout();
-		//}
-
-		//private TreeViewItem GetTypeValueSetupTreeViewItem(ClrtDisplayableType dispType)
-		//{
-		//	var txtBlk = GetClrtDisplayableTypeStackPanel(dispType);
-		//	var node = new TreeViewItem
+		//	var treeView = (TreeView)LogicalTreeHelper.FindLogicalNode(mainGrid, "TypeValueReportTreeView");
+		//	Debug.Assert(treeView != null);
+		//	if (realRoot)
 		//	{
-		//		Header = txtBlk,
-		//		Tag = dispType,
-		//	};
-		//	txtBlk.Tag = node;
-		//	return node;
+		//		treeView.Items.Clear();
+		//		treeView.Items.Add(root);
+		//	}
+		//	root.ExpandSubtree();
+		//	return treeView;
 		//}
 
-		//private void UpdateTypeValueSetupTreeViewItem(TreeViewItem node, ClrtDisplayableType dispType)
+		//private async void TypeValueReportTreeViewDoubleClicked(object sender, MouseButtonEventArgs e)
 		//{
-		//	var txtBlk = GetClrtDisplayableTypeStackPanel(dispType);
-		//	node.Header = txtBlk;
-		//	node.Tag = dispType;
-		//	txtBlk.Tag = node;
+		//	TreeView tv = sender as TreeView;
+		//	var selItem = tv.SelectedItem as TreeViewItem;
+		//	Debug.Assert(selItem != null);
+		//	var dispType = selItem.Tag as ClrtDisplayableType;
+		//	Debug.Assert(dispType != null);
+
+		//	string msg;
+		//	if (!dispType.CanGetFields(out msg))
+		//	{
+		//		MainStatusShowMessage("Action failed for: '" + dispType.FieldName + "'. " + msg);
+		//		return;
+		//	}
+
+		//	if (dispType.FieldIndex == Constants.InvalidIndex) // this root type, fields are already displayed
+		//	{
+		//		return;
+		//	}
+
+		//	var parent = selItem.Parent as TreeViewItem;
+		//	Debug.Assert(parent != null);
+		//	var parentDispType = parent.Tag as ClrtDisplayableType;
+		//	Debug.Assert(parentDispType != null);
+
+		//	SetStartTaskMainWindowState("Getting type details for field: '" + dispType.FieldName + "', please wait...");
+
+		//	var result = await Task.Run(() =>
+		//	{
+		//		string error;
+		//		ClrtDisplayableType fldDispType = CurrentIndex.GetTypeDisplayableRecord(parentDispType, dispType, out error);
+		//		if (fldDispType == null)
+		//			return new Tuple<string, ClrtDisplayableType>(error, null);
+		//		return new Tuple<string, ClrtDisplayableType>(null, fldDispType);
+		//	});
+
+		//	if (result.Item1 != null)
+		//	{
+		//		if (Utils.IsInformation(result.Item1))
+		//		{
+		//			SetEndTaskMainWindowState("Action failed for: '" + dispType.FieldName + "'. " + result.Item1);
+		//			return;
+		//		}
+		//		ShowError(result.Item1);
+		//		SetEndTaskMainWindowState("Getting type details for field: '" + dispType.FieldName + "', failed");
+		//		return;
+		//	}
+
+		//	var fields = result.Item2.Fields;
+		//	selItem.Items.Clear();
+		//	for (int i = 0, icnt = fields.Length; i < icnt; ++i)
+		//	{
+		//		var fld = fields[i];
+		//		var node = GuiUtils.GetTypeValueSetupTreeViewItem(fld);
+		//		selItem.Items.Add(node);
+		//	}
+		//	selItem.ExpandSubtree();
+
+		//	SetEndTaskMainWindowState("Getting type details for field: '" + dispType.FieldName + "', done");
 		//}
-
-		private TreeView UpdateTypeValueSetupGrid(ClrtDisplayableType dispType, Grid mainGrid, TreeViewItem root)
-		{
-			bool realRoot = false;
-			if (root == null)
-			{
-				realRoot = true;
-				root = GuiUtils.GetTypeValueSetupTreeViewItem(dispType);
-			}
-			var fields = dispType.Fields;
-			for (int i = 0, icnt = fields.Length; i < icnt; ++i)
-			{
-				var fld = fields[i];
-				var node = GuiUtils.GetTypeValueSetupTreeViewItem(fld);
-				root.Items.Add(node);
-			}
-
-			var treeView = (TreeView)LogicalTreeHelper.FindLogicalNode(mainGrid, "TypeValueReportTreeView");
-			Debug.Assert(treeView != null);
-			if (realRoot)
-			{
-				treeView.Items.Clear();
-				treeView.Items.Add(root);
-			}
-			root.ExpandSubtree();
-			return treeView;
-		}
-
-		private async void TypeValueReportTreeViewDoubleClicked(object sender, MouseButtonEventArgs e)
-		{
-			TreeView tv = sender as TreeView;
-			var selItem = tv.SelectedItem as TreeViewItem;
-			Debug.Assert(selItem != null);
-			var dispType = selItem.Tag as ClrtDisplayableType;
-			Debug.Assert(dispType != null);
-
-			string msg;
-			if (!dispType.CanGetFields(out msg))
-			{
-				MainStatusShowMessage("Action failed for: '" + dispType.FieldName + "'. " + msg);
-				return;
-			}
-
-			if (dispType.FieldIndex == Constants.InvalidIndex) // this root type, fields are already displayed
-			{
-				return;
-			}
-
-			var parent = selItem.Parent as TreeViewItem;
-			Debug.Assert(parent != null);
-			var parentDispType = parent.Tag as ClrtDisplayableType;
-			Debug.Assert(parentDispType != null);
-
-			SetStartTaskMainWindowState("Getting type details for field: '" + dispType.FieldName + "', please wait...");
-
-			var result = await Task.Run(() =>
-			{
-				string error;
-				ClrtDisplayableType fldDispType = CurrentIndex.GetTypeDisplayableRecord(parentDispType, dispType, out error);
-				if (fldDispType == null)
-					return new Tuple<string, ClrtDisplayableType>(error, null);
-				return new Tuple<string, ClrtDisplayableType>(null, fldDispType);
-			});
-
-			if (result.Item1 != null)
-			{
-				if (Utils.IsInformation(result.Item1))
-				{
-					SetEndTaskMainWindowState("Action failed for: '" + dispType.FieldName + "'. " + result.Item1);
-					return;
-				}
-				ShowError(result.Item1);
-				SetEndTaskMainWindowState("Getting type details for field: '" + dispType.FieldName + "', failed");
-				return;
-			}
-
-			var fields = result.Item2.Fields;
-			selItem.Items.Clear();
-			for (int i = 0, icnt = fields.Length; i < icnt; ++i)
-			{
-				var fld = fields[i];
-				var node = GuiUtils.GetTypeValueSetupTreeViewItem(fld);
-				selItem.Items.Add(node);
-			}
-			selItem.ExpandSubtree();
-
-			SetEndTaskMainWindowState("Getting type details for field: '" + dispType.FieldName + "', done");
-		}
 
 
 		private void DisplayDependencyNodeGrid(DependencyNode root)

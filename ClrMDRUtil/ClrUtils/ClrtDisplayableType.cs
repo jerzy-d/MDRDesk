@@ -20,13 +20,13 @@ namespace ClrMDRIndex
 		public FilterValue Filter => _valueFilter;
 		public ClrtDisplayableType Parent => _parent;
 
-		private TypeKind _kind;
-        public TypeKind Kind => _kind;
+		private ClrElementKind _kind;
+        public ClrElementKind Kind => _kind;
 
         private ClrtDisplayableType[] _fields;
 		public ClrtDisplayableType[] Fields => _fields;
 
-		public ClrtDisplayableType(ClrtDisplayableType parent, int typeId, int fieldIndex, string typeName, string fieldName, TypeKind kind)
+		public ClrtDisplayableType(ClrtDisplayableType parent, int typeId, int fieldIndex, string typeName, string fieldName, ClrElementKind kind)
 		{
 			_parent = parent;
 			_typeId = typeId;
@@ -84,29 +84,49 @@ namespace ClrMDRIndex
 
 		private string TypeHeader()
 		{
-			switch (TypeKinds.GetMainTypeKind(_kind))
-			{
-				case TypeKind.StringKind:
-					return Constants.PrimitiveHeader;
-				case TypeKind.InterfaceKind:
-					return Constants.InterfaceHeader;
-				case TypeKind.StructKind:
-					switch (TypeKinds.GetParticularTypeKind(_kind))
-					{
-						case TypeKind.DateTime:
-						case TypeKind.Decimal:
-						case TypeKind.Guid:
-						case TypeKind.TimeSpan:
-							return Constants.PrimitiveHeader;
-						default:
-							return Constants.StructHeader;
-					}
-				case TypeKind.ReferenceKind:
-					return Constants.ClassHeader;
-				default:
-					return Constants.PrimitiveHeader;
-			}
-		}
+            var specKind = TypeExtractor.GetSpecialKind(_kind);
+            if (specKind != ClrElementKind.Unknown)
+            {
+                switch (specKind)
+                {
+                    case ClrElementKind.Free:
+                    case ClrElementKind.Guid:
+                    case ClrElementKind.DateTime:
+                    case ClrElementKind.TimeSpan:
+                    case ClrElementKind.Decimal:
+                        return Constants.PrimitiveHeader;
+
+                    case ClrElementKind.Interface:
+                        return Constants.InterfaceHeader;
+                    case ClrElementKind.Enum:
+                        return Constants.PrimitiveHeader;
+                    case ClrElementKind.System__Canon:
+                    case ClrElementKind.Exception:
+                    case ClrElementKind.Abstract:
+                        return Constants.ClassHeader;
+                }
+                throw new ApplicationException("ClrtDisplayableType.TypeHeader() Not all cases are handled for (specKind != ClrElementKind.Unknown).");
+            }
+            else
+            {
+                switch (TypeExtractor.GetStandardKind(_kind))
+                {
+                    case ClrElementKind.String:
+                        return Constants.PrimitiveHeader;
+                    case ClrElementKind.SZArray:
+                    case ClrElementKind.Array:
+                    case ClrElementKind.Object:
+                    case ClrElementKind.Class:
+                        return Constants.ClassHeader;
+                    case ClrElementKind.Struct:
+                        return Constants.StructHeader;
+                    case ClrElementKind.Unknown:
+                        return Constants.PrimitiveHeader;
+                    default:
+                        return Constants.PrimitiveHeader;
+                }
+            }
+        }
 
 		private string FilterStr(FilterValue filterValue)
 		{
@@ -139,37 +159,58 @@ namespace ClrMDRIndex
 		public bool CanGetFields(out string msg)
 		{
 			msg = null;
-			switch (TypeKinds.GetMainTypeKind(_kind))
-			{
-				case TypeKind.StringKind:
-					msg = Constants.InterfaceHeader + "Cannot get fields, this type is considered primitive.";
-					return false;
-				case TypeKind.InterfaceKind:
-					msg = Constants.InterfaceHeader + "Cannot get fields of interface.";
-					return false;
-				case TypeKind.StructKind:
-					switch (TypeKinds.GetParticularTypeKind(_kind))
-					{
-						case TypeKind.DateTime:
-						case TypeKind.Decimal:
-						case TypeKind.Guid:
-						case TypeKind.TimeSpan:
-							msg = Constants.InterfaceHeader + "Cannot get fields, this type is considered primitive.";
-							return false;
-						default:
-							return true;
-					}
-				case TypeKind.ReferenceKind:
-					return true;
-				case TypeKind.EnumKind:
-				case TypeKind.PrimitiveKind:
-					msg = Constants.PrimitiveHeader + "Cannot get fields, this type is primitive.";
-					return false;
-				default:
-					msg = "Cannot get fields, uknown type.";
-					return false;
-			}
-		}
+            var specKind = TypeExtractor.GetSpecialKind(_kind);
+            if (specKind != ClrElementKind.Unknown)
+            {
+                switch (specKind)
+                {
+                    case ClrElementKind.Free:
+                    case ClrElementKind.Guid:
+                    case ClrElementKind.DateTime:
+                    case ClrElementKind.TimeSpan:
+                    case ClrElementKind.Decimal:
+                        msg = Constants.InterfaceHeader + "Cannot get fields, this type is considered primitive.";
+                        return false;
+                    case ClrElementKind.Interface:
+                        msg = Constants.InterfaceHeader + "Cannot get fields of an interface.";
+                        return false;
+                    case ClrElementKind.Enum:
+                        msg = Constants.PrimitiveHeader + "Cannot get fields, this type is primitive.";
+                        return false;
+                    case ClrElementKind.Exception:
+                        return true;
+                    case ClrElementKind.System__Canon:
+                        msg = Constants.PrimitiveHeader + "Cannot get fields, this is System__Canon type.";
+                        return false;
+                    case ClrElementKind.Abstract:
+                        msg = Constants.PrimitiveHeader + "Cannot get fields, this is abstract class.";
+                        return false;
+                }
+                throw new ApplicationException("ClrtDisplayableType.TypeHeader() Not all cases are handled for (specKind != ClrElementKind.Unknown).");
+            }
+            else
+            {
+                switch (TypeExtractor.GetStandardKind(_kind))
+                {
+                    case ClrElementKind.String:
+                        msg = Constants.InterfaceHeader + "Cannot get fields, this type is considered primitive.";
+                        return false;
+                    case ClrElementKind.SZArray:
+                    case ClrElementKind.Array:
+                    case ClrElementKind.Object:
+                    case ClrElementKind.Class:
+                        return true;
+                    case ClrElementKind.Struct:
+                        return true;
+                    case ClrElementKind.Unknown:
+                        msg = Constants.InterfaceHeader + "Cannot get fields, the type is unknown.";
+                        return false;
+                    default:
+                        msg = Constants.PrimitiveHeader + "Cannot get fields, this type is primitive.";
+                        return false;
+                }
+            }
+        }
 	}
 
 

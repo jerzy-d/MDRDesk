@@ -401,51 +401,51 @@ module FQry =
         Displayable types.
     *)
 
-    let getDisplayableTypeFields (ndxProxy:IndexProxy) (heap:ClrHeap) (addr: address) (clrType:ClrType) (dispType:ClrtDisplayableType) =
-        let fldCount = fieldCount clrType
-        match fldCount with
-        | 0 -> ()
-        | _ ->
-            let mutable dispTypes:ClrtDisplayableType[] = Array.create fldCount null
-            for fldNdx = 0 to fldCount-1 do
-                let fld = clrType.Fields.[fldNdx]
-                let typeName = fieldTypeName fld
-                let typeId = ndxProxy.GetTypeId(typeName)
-                let kind = typeKind fld.Type
-                dispTypes.[fldNdx] <- new ClrtDisplayableType(dispType, typeId, fldNdx, typeName, fld.Name, kind)
-            dispType.AddFields(dispTypes)
+    //let getDisplayableTypeFields (ndxProxy:IndexProxy) (heap:ClrHeap) (addr: address) (clrType:ClrType) (dispType:ClrtDisplayableType) =
+    //    let fldCount = fieldCount clrType
+    //    match fldCount with
+    //    | 0 -> ()
+    //    | _ ->
+    //        let mutable dispTypes:ClrtDisplayableType[] = Array.create fldCount null
+    //        for fldNdx = 0 to fldCount-1 do
+    //            let fld = clrType.Fields.[fldNdx]
+    //            let typeName = fieldTypeName fld
+    //            let typeId = ndxProxy.GetTypeId(typeName)
+    //            let kind = typeKind fld.Type
+    //            dispTypes.[fldNdx] <- new ClrtDisplayableType(dispType, typeId, fldNdx, typeName, fld.Name, kind)
+    //        dispType.AddFields(dispTypes)
 
-    let getDisplayableType (ndxProxy:IndexProxy) (heap:ClrHeap) (addresses: address array) =
-        let addr = addresses.[0]
-        let clrType = heap.GetObjectType(addr)
-        let typeId = ndxProxy.GetTypeIdAtAddr(addr)
-        let kind = typeKind clrType
-        let dispType = new ClrtDisplayableType(null, typeId, Constants.InvalidIndex, clrType.Name, String.Empty, kind)
-        getDisplayableTypeFields ndxProxy heap addr clrType dispType
-        dispType
+    //let getDisplayableType (ndxProxy:IndexProxy) (heap:ClrHeap) (addresses: address array) =
+    //    let addr = addresses.[0]
+    //    let clrType = heap.GetObjectType(addr)
+    //    let typeId = ndxProxy.GetTypeIdAtAddr(addr)
+    //    let kind = typeKind clrType
+    //    let dispType = new ClrtDisplayableType(null, typeId, Constants.InvalidIndex, clrType.Name, String.Empty, kind)
+    //    getDisplayableTypeFields ndxProxy heap addr clrType dispType
+    //    dispType
 
-    let getDisplayableFieldType (ndxProxy:IndexProxy) (heap:ClrHeap) (dispType:ClrtDisplayableType) (addr: address) (fldndx:int) =
-        let clrType = heap.GetObjectType(addr)
-        let fld = getField clrType fldndx
-        if isNull fld then
-            ("Cannot get type field at index: " + fldndx.ToString(), null)
-        else
-            let count = fieldCount fld.Type
-            match count with
-            | 0 ->
-                if (isFieldTypeNullOrInterface fld) then
-                    ("Field type is null or interface", null)
-                else
-                    ("Field type does not have fields",null)
-            | _ ->
-                let flds = fld.Type.Fields
-                let mutable dispTypes:ClrtDisplayableType[] = Array.create count null
-                for fldNdx in [0..count-1] do
-                    let fld = fld.Type.Fields.[fldNdx]
-                    let kind = typeKind fld.Type
-                    let typeId = ndxProxy.GetTypeId(fld.Type.Name)
-                    dispTypes.[fldNdx] <-  new ClrtDisplayableType(dispType,typeId, fldNdx, fld.Type.Name, fld.Name, kind)
-                (null, dispTypes)
+    //let getDisplayableFieldType (ndxProxy:IndexProxy) (heap:ClrHeap) (dispType:ClrtDisplayableType) (addr: address) (fldndx:int) =
+    //    let clrType = heap.GetObjectType(addr)
+    //    let fld = getField clrType fldndx
+    //    if isNull fld then
+    //        ("Cannot get type field at index: " + fldndx.ToString(), null)
+    //    else
+    //        let count = fieldCount fld.Type
+    //        match count with
+    //        | 0 ->
+    //            if (isFieldTypeNullOrInterface fld) then
+    //                ("Field type is null or interface", null)
+    //            else
+    //                ("Field type does not have fields",null)
+    //        | _ ->
+    //            let flds = fld.Type.Fields
+    //            let mutable dispTypes:ClrtDisplayableType[] = Array.create count null
+    //            for fldNdx in [0..count-1] do
+    //                let fld = fld.Type.Fields.[fldNdx]
+    //                let kind = typeKind fld.Type
+    //                let typeId = ndxProxy.GetTypeId(fld.Type.Name)
+    //                dispTypes.[fldNdx] <-  new ClrtDisplayableType(dispType,typeId, fldNdx, fld.Type.Name, fld.Name, kind)
+    //            (null, dispTypes)
 
     (*
         Type values data.
