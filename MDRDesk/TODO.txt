@@ -25,7 +25,7 @@ Implement show roots grid. Header="Show Roots" Click="IndexShowRootsClicked"
         abstract public bool GetFieldForOffset(int fieldOffset, bool inner, out ClrInstanceField childField, out int childFieldOffset);
 
 0009 02/23/17
-Value of the instance for a Concurrent.ConcurrentDictionary<TKey, TValue>.m_tables.m_buckets is always null, but should not.
+*** Value of the instance for a Concurrent.ConcurrentDictionary<TKey, TValue>.m_tables.m_buckets is always null, but should not.
 0010 02/24/17
 ??? Recent lists do not work properly.
 0011 02/24/17
@@ -62,3 +62,7 @@ D:\Jerzy\WinDbgStuff\dumps\Analytics\Ellerston\Eze.Analytics.Svc_170309_130146.B
 DebugDiag2 gives LOH, me Gen0.
 0022 03/15/17
 Associate stack variables with a stack frame method call.
+0023 03/29/17
+Handle System.Void in TypeExtractor, and other places ?
+0024 03/29/17
+Add static variables getters, for types add static variables to types context menu, in instance value add them to value display.

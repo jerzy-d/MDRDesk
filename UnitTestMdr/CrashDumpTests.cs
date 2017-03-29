@@ -72,6 +72,10 @@ namespace UnitTestMdr
 		[TestMethod]
 		public void TestMisc()
 		{
+
+            decimal dd = 0m;
+            var ddstr = dd.ToString();
+
 			ulong x = Utils.RootBits.Finalizer;
 			ulong y = Utils.RootBits.Rooted;
 

@@ -1277,68 +1277,11 @@ namespace MDRDesk
 			var addr = (ulong)lbAddresses.SelectedItems[0];
 
 			DisplayInstanceParentReferences(addr);
-
-			//// get reference search info
-			////
-			//ReferenceSearchSetup dlg = new ReferenceSearchSetup("Get parents of instance: " + Utils.RealAddressString(addr)) { Owner = this };
-			//         dlg.ShowDialog();
-			//         if (dlg.Cancelled) return;
-			//         int level = dlg.GetAllReferences ? Int32.MaxValue : dlg.SearchDepthLevel;
-			//         var dispMode = dlg.DisplayMode;
-
-			//         string msg = "Getting parent references for: '" + Utils.RealAddressString(addr) + "', ";
-			//         if (dispMode == ReferenceSearchSetup.DispMode.List)
-			//         {
-			//             SetStartTaskMainWindowState(msg + "please wait...");
-			//             var report = await Task.Run(() => CurrentIndex.GetParentReferencesReport(addr, level));
-			//             if (report.Error != null)
-			//             {
-			//                 SetEndTaskMainWindowState(msg + "failed.");
-			//                 MessageBox.Show(report.Error, "Action Aborted", MessageBoxButton.OK, MessageBoxImage.Exclamation);
-			//                 return;
-			//             }
-			//             SetEndTaskMainWindowState(msg + "done.");
-			//             DisplayListViewBottomGrid(report, Constants.BlackDiamond, ReportNameInstRef, ReportTitleInstRef);
-			//         }
-			//         if (dispMode == ReferenceSearchSetup.DispMode.Tree)
-			//         {
-			//             SetStartTaskMainWindowState(msg + "please wait...");
-			//             var report = await Task.Run(() => CurrentIndex.GetParentTree(addr, level));
-			//             if (report.Item1 != null)
-			//             {
-			//                 SetEndTaskMainWindowState(msg + "failed.");
-			//                 MessageBox.Show(report.Item1, "Action Aborted", MessageBoxButton.OK, MessageBoxImage.Exclamation);
-			//                 return;
-			//             }
-			//             SetEndTaskMainWindowState(msg + "done.");
-			//             DisplayTypeAncestorsGrid(report.Item2);
-			//         }
 		}
 
 		private async void ExecuteReferenceQuery(ulong addr)
 		{
 			DisplayInstanceParentReferences(addr);
-
-			//MainStatusShowMessage(statusMessage + ", please wait...");
-			//MainToolbarTray.IsEnabled = false;
-			//Mouse.OverrideCursor = Cursors.Wait;
-			//var result = await Task.Run(() =>
-			//{
-			//	return CurrentMap.GetFieldReferencesReport(addr, level);
-			//});
-
-			//Mouse.OverrideCursor = null;
-			//MainToolbarTray.IsEnabled = true;
-
-			//if (result.Error != null)
-			//{
-			//	MainStatusShowMessage(statusMessage + ": FAILED!");
-			//	MessageBox.Show(result.Error, "QUERY FAILED", MessageBoxButton.OK, MessageBoxImage.Error);
-			//	return;
-			//}
-			//MainStatusShowMessage(statusMessage + ": DONE");
-			//DisplayListViewBottomGrid(result, Constants.BlackDiamond, ReportNameInstRef, ReportTitleInstRef);
-
 		}
 
 		private async void DisplayInstanceParentReferences(ulong addr)

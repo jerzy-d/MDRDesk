@@ -95,11 +95,13 @@ namespace ClrMDRIndex
                     case ClrElementKind.TimeSpan:
                     case ClrElementKind.Decimal:
                         return Constants.PrimitiveHeader;
-
                     case ClrElementKind.Interface:
                         return Constants.InterfaceHeader;
                     case ClrElementKind.Enum:
                         return Constants.PrimitiveHeader;
+                    case ClrElementKind.SystemVoid:
+                        return Constants.StructHeader;
+                    case ClrElementKind.SystemObject:
                     case ClrElementKind.System__Canon:
                     case ClrElementKind.Exception:
                     case ClrElementKind.Abstract:
@@ -181,6 +183,12 @@ namespace ClrMDRIndex
                         return true;
                     case ClrElementKind.System__Canon:
                         msg = Constants.PrimitiveHeader + "Cannot get fields, this is System__Canon type.";
+                        return false;
+                    case ClrElementKind.SystemObject:
+                        msg = Constants.PrimitiveHeader + "Cannot get fields, this is System.Object.";
+                        return false;
+                    case ClrElementKind.SystemVoid:
+                        msg = Constants.PrimitiveHeader + "Cannot get fields, this is System.Void.";
                         return false;
                     case ClrElementKind.Abstract:
                         msg = Constants.PrimitiveHeader + "Cannot get fields, this is abstract class.";

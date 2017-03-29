@@ -46,6 +46,7 @@ namespace ClrMDRIndex
         Abstract = 0x00080000,
         Enum = 0x00090000,
         SystemObject = 0x000A0000,
+        SystemVoid = 0x000B0000,
 
         Null = 0x00F00000,
         Free = 0x01000000
@@ -65,6 +66,9 @@ namespace ClrMDRIndex
                     {
                         case "System.Object":
                             kind |= ClrElementKind.SystemObject;
+                            break;
+                        case "System.Void":
+                            kind |= ClrElementKind.SystemVoid;
                             break;
                         case "System.__Canon":
                             kind |= ClrElementKind.System__Canon;
@@ -89,8 +93,9 @@ namespace ClrMDRIndex
                     }
                     break;
             }
-            if (clrType.IsAbstract) kind |= ClrElementKind.Abstract;
-            else if (clrType.IsInterface) kind |= ClrElementKind.Interface;
+
+            if (clrType.IsInterface) kind |= ClrElementKind.Interface;
+            else if (clrType.IsAbstract) kind |= ClrElementKind.Abstract;
             else if (clrType.IsFree) kind |= ClrElementKind.Free;
             else if (clrType.IsException) kind |= ClrElementKind.Exception;
             return kind;
@@ -98,13 +103,13 @@ namespace ClrMDRIndex
 
         public static ClrElementKind GetSpecialKind(ClrElementKind kind)
         {
-            ulong specKind = (ulong)kind & 0xFFFFFFFF00000000UL;
+            int specKind = (int)kind & (int)0x7FFF0000;
             return (ClrElementKind)specKind;
         }
 
         public static ClrElementKind GetStandardKind(ClrElementKind kind)
         {
-            ulong stdKind = (ulong)kind & 0x00000000FFFFFFFFUL;
+            int stdKind = (int)kind & 0x0000FFFF;
             return (ClrElementKind)stdKind;
         }
 
@@ -181,11 +186,13 @@ namespace ClrMDRIndex
                         case ClrElementKind.Decimal:
                             fields[i] = new ClrtDisplayableType(dispType, typeId, i, fldType.Name, fld.Name, kind);
                             break;
+                        case ClrElementKind.SystemVoid:
+                        case ClrElementKind.SystemObject:
                         case ClrElementKind.Interface:
                         case ClrElementKind.Abstract:
                         case ClrElementKind.System__Canon:
                             var fldInfo = TryGetRealType(heap, addr, fld, clrType.IsValueClass);
-                            if (fldInfo.Key == null)
+                            if (fldInfo.Key != null)
                             {
                                 fldType = fldInfo.Key;
                                 typeId = ndxProxy.GetTypeId(fldType.Name);
@@ -258,6 +265,8 @@ namespace ClrMDRIndex
                                 throw new ApplicationException("System__Canon kind is not expected from ClrHeap.GetHeapObject(...) method.");
                             case ClrElementKind.Exception:
                             case ClrElementKind.Abstract:
+                            case ClrElementKind.SystemVoid:
+                            case ClrElementKind.SystemObject:
                                 return new ClrtDisplayableType(null, typeId, Constants.InvalidIndex, clrType.Name, String.Empty, kind);
                         }
                     }

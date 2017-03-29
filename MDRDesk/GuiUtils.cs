@@ -186,6 +186,7 @@ namespace MDRDesk
                     case ClrElementKind.Enum:
                         image.Source = ((Image)Application.Current.FindResource("EnumPng")).Source;
                         break;
+                    case ClrElementKind.SystemObject:
                     case ClrElementKind.System__Canon:
                     case ClrElementKind.Exception:
                     case ClrElementKind.Abstract:
