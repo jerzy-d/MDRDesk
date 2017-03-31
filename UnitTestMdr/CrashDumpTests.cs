@@ -1287,11 +1287,109 @@ namespace UnitTestMdr
 			} // using dump
 		}
 
-		#endregion type references
+        #endregion type references
 
-		#region open dump
+        #region exceptions
 
-		public static ClrtDump OpenDump(int indexNdx = 0)
+        [TestMethod]
+		public void TestExceptionList()
+        {
+            string dumpPath = Setup.DumpsFolder + @"\OMS\Redskull\Analytics_170330_163202.bad.dmp";
+
+            var dmp = OpenDump(dumpPath);
+            using (dmp)
+            {
+                var heap = dmp.Heap;
+                var segs = heap.Segments;
+                var addresses = new List<ulong>(32);
+                var strings = new List<string>(32);
+                for (int i = 0, icnt = segs.Count; i < icnt; ++i)
+                {
+                    var seg = segs[i];
+                    ulong addr = seg.FirstObject;
+                    while (addr != 0ul)
+                    {
+                        var clrType = heap.GetObjectType(addr);
+                        if (clrType == null || !clrType.IsException) goto NEXT_OBJECT;
+                        addresses.Add(addr);
+                        strings.Add(ValueExtractor.GetShortExceptionValue(addr, clrType, heap));
+                        NEXT_OBJECT:
+                        addr = seg.NextObject(addr);
+                    }
+                }
+
+
+            }
+        }
+
+        #endregion exceptions
+
+        [TestMethod]
+        public void Test_ServiceModel_Description_MessageDescription()
+        {
+            string typeName = "System.ServiceModel.Description.MessageDescription";
+            string dumpPath = Setup.DumpsFolder + @"\OMS\Redskull\Analytics_170330_163202.bad.dmp";
+
+            ClrInstanceField itemsFld=null, bodyFld=null, wrapperNameFld=null, encodedFld=null, decodedFld = null;
+            ClrType itemsType = null, bodyType = null, wrapperNameType = null;
+            ulong itemsAddr, bodyAddr, wrapperNameAddr;
+
+            var dmp = OpenDump(dumpPath);
+            using (dmp)
+            {
+                var heap = dmp.Heap;
+                var segs = heap.Segments;
+                var addresses = new List<ulong>(32);
+                var strings = new List<string>(32);
+                for (int i = 0, icnt = segs.Count; i < icnt; ++i)
+                {
+                    var seg = segs[i];
+                    ulong addr = seg.FirstObject;
+                    while (addr != 0ul)
+                    {
+                        var clrType = heap.GetObjectType(addr);
+                        if (clrType == null || !Utils.SameStrings(typeName,clrType.Name)) goto NEXT_OBJECT;
+
+                        (itemsType, itemsFld, itemsAddr) = TypeExtractor.GetReferenceTypeField(heap, clrType, addr, "items");
+                        Assert.IsNotNull(itemsType);
+                        Assert.IsNotNull(itemsFld);
+                        (bodyType, bodyFld, bodyAddr) = TypeExtractor.GetReferenceTypeField(heap, itemsType, itemsAddr, "body");
+                        Assert.IsNotNull(itemsType);
+                        Assert.IsNotNull(itemsFld);
+                        (wrapperNameType, wrapperNameFld, wrapperNameAddr) = TypeExtractor.GetReferenceTypeField(heap, bodyType, bodyAddr, "wrapperName");
+                        Assert.IsNotNull(wrapperNameFld);
+                        if (wrapperNameType == null) wrapperNameType = wrapperNameFld.Type;
+                        Assert.IsNotNull(wrapperNameFld);
+
+                        encodedFld = wrapperNameType.GetFieldByName("encoded");
+                        Assert.IsNotNull(encodedFld);
+                        string encodedVal = (string)encodedFld.GetValue(wrapperNameAddr, false, true) ?? Constants.NullValue;
+                        decodedFld = wrapperNameType.GetFieldByName("decoded");
+                        Assert.IsNotNull(decodedFld);
+                        string decodedVal = (string)encodedFld.GetValue(wrapperNameAddr, false, true) ?? Constants.NullValue;
+
+
+
+                        addresses.Add(addr);
+                        strings.Add(encodedVal);
+                        NEXT_OBJECT:
+                        addr = seg.NextObject(addr);
+                    }
+                }
+
+
+            }
+        }
+
+        #region network
+
+
+
+        #endregion network
+
+        #region open dump
+
+        public static ClrtDump OpenDump(int indexNdx = 0)
 		{
 			string error;
 			var path = Setup.GetRecentAdhocPath(indexNdx);
@@ -1316,9 +1414,9 @@ namespace UnitTestMdr
 		#region template
 
 		[TestMethod]
-		public void TestTemplate()
-		{
-			var dmp = OpenDump();
+        public void TestTemplate()
+        {
+            var dmp = OpenDump();
 			using (dmp)
 			{
 				var heap = dmp.Heap;

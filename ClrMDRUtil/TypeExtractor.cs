@@ -113,6 +113,37 @@ namespace ClrMDRIndex
             return (ClrElementKind)stdKind;
         }
 
+        public static bool IsAmbiguousKind(ClrElementKind kind)
+        {
+            ClrElementKind specKind = GetSpecialKind(kind);
+            switch (specKind)
+            {
+                case ClrElementKind.SystemVoid:
+                case ClrElementKind.SystemObject:
+                case ClrElementKind.Interface:
+                case ClrElementKind.Abstract:
+                case ClrElementKind.System__Canon:
+                    return true;
+                default:
+                    return false;
+            }
+        }
+
+        public static bool IsUncertainKind(ClrElementKind kind)
+        {
+            ClrElementKind specKind = GetSpecialKind(kind);
+            switch (specKind)
+            {
+                case ClrElementKind.SystemVoid:
+                case ClrElementKind.Interface:
+                case ClrElementKind.Abstract:
+                case ClrElementKind.System__Canon:
+                    return true;
+                default:
+                    return false;
+            }
+        }
+
         private static readonly string[] KnownTypes = new string[]
         {
             "System.Collections.Generic.Dictionary<",
@@ -133,7 +164,7 @@ namespace ClrMDRIndex
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static KeyValuePair<ClrType,ClrElementKind> TryGetRealType(ClrHeap heap, ulong addr)
+        public static KeyValuePair<ClrType, ClrElementKind> TryGetRealType(ClrHeap heap, ulong addr)
         {
             ClrType clrType = heap.GetObjectType(addr);
             ClrElementKind kind = clrType == null ? ClrElementKind.Unknown : GetElementKind(clrType);
@@ -295,12 +326,38 @@ namespace ClrMDRIndex
                 }
                 return new ClrtDisplayableType(null, typeId, Constants.InvalidIndex, Constants.NullName, String.Empty, ClrElementKind.Unknown);
             }
-            catch(Exception ex)
+            catch (Exception ex)
             {
                 error = Utils.GetExceptionErrorString(ex);
                 return null;
             }
         }
 
+        public static KeyValuePair<ClrType, ulong> TryGetReferenceType(ClrHeap heap, ulong addr, ClrInstanceField fld)
+        {
+            var valueObj = fld.GetValue(addr, false);
+            Debug.Assert(valueObj is ulong);
+            ulong value = (ulong)valueObj;
+            var clrType = heap.GetObjectType(value);
+            return new KeyValuePair<ClrType, ulong>(clrType, value);
+        }
+
+        public static (ClrType, ClrInstanceField, ulong) GetReferenceTypeField(ClrHeap heap, ClrType clrType, ulong addr, string fldName)
+        {
+            ClrInstanceField fld = clrType.GetFieldByName(fldName);
+            var valueObj = fld.GetValue(addr, false);
+            Debug.Assert(valueObj is ulong);
+            ulong value = (ulong)valueObj;
+            var fldType = heap.GetObjectType(value);
+            return (fldType, fld, value);
+        }
+        public static (ClrType, ClrInstanceField, ulong) GetStructTypeField(ClrHeap heap, ClrType clrType, ulong addr, string fldName)
+        {
+            ClrInstanceField fld = clrType.GetFieldByName(fldName);
+            var value = fld.GetAddress(addr, true);
+            var fldAddr = ValueExtractor.ReadPointerAtAddress(addr, heap);
+            var fldType = heap.GetObjectType(fldAddr);
+            return (fldType, fld, fldAddr);
+        }
     }
 }

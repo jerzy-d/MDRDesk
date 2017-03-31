@@ -437,8 +437,9 @@ namespace ClrMDRIndex
 				hresult = exType.HResult;
 				message = exType.Message;
 				sb.Append(Utils.HResultStringHeader(hresult)).Append(Constants.NamespaceSepPadded);
-				sb.Append(message).Append(Constants.NamespaceSepPadded);
-				sb.Append(exTypeName);
+                if (!string.IsNullOrEmpty(message))
+				    sb.Append("MESSAGE: ").Append(message).Append(Constants.NamespaceSepPadded);
+				sb.Append("TYPE: ").Append(exTypeName);
 				return StringBuilderCache.GetStringAndRelease(sb);
 			}
 
@@ -458,8 +459,9 @@ namespace ClrMDRIndex
 			int hresultValue = (int)hresultFld.GetValue(addr);
 
 			sb.Append(Utils.HResultStringHeader(hresult)).Append(Constants.NamespaceSepPadded);
-			sb.Append(messageVal).Append(Constants.NamespaceSepPadded);
-			sb.Append(classNameVal);
+            if (!string.IsNullOrEmpty(messageVal))
+                sb.Append("MESSAGE: ").Append(messageVal).Append(Constants.NamespaceSepPadded);
+			sb.Append("TYPE: ").Append(classNameVal);
 			return StringBuilderCache.GetStringAndRelease(sb);
 		}
 

@@ -97,9 +97,6 @@ namespace MDRDesk
 					case 8:
 						valStr = BitConverter.ToUInt64(bytes, offfset).ToString(wordFormat);
 						break;
-					case 16:
-                        // TODO JRD -- get 16 byte words ?
-						break;
 				}
 				offfset += _wordLenght;
 				sb.Append(valStr).Append(" ");
@@ -234,7 +231,6 @@ namespace MDRDesk
 				MessageBox.Show(error, "FAILED TO READ MEMORY", MessageBoxButton.OK, MessageBoxImage.Error);
 				return;
 			}
-			_currentAddr = lastCurrentAddr;
 			HexViewContent.Text = MemoryString();
 			DisplayAddressRange();
 		}
@@ -249,7 +245,6 @@ namespace MDRDesk
 				MessageBox.Show(error, "FAILED TO READ MEMORY", MessageBoxButton.OK, MessageBoxImage.Error);
 				return;
 			}
-			_currentAddr = lastCurrentAddr;
 			HexViewContent.Text = MemoryString();
 			DisplayAddressRange();
 		}
