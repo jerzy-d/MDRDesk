@@ -102,15 +102,17 @@ namespace ClrMDRIndex
 		[Flags]
 		public enum Op
 		{
-			Exculde = 1,
+			EXCLUDE = 1,
 			EQ = 1 << 1,
 			LT = 1 << 2,
 			GT = 1 << 3,
 			AND = 1 << 4,
-			OR = 1 << 5,
-		}
+            OR = 1 << 5,
+            IGNORECASE = 1 << 6,
+            REGEX = 1 << 7,
+        }
 
-		private Op _op;
+        private Op _op;
 		private object[] _values;
 		private string _filterString;
 		public string FilterString => _filterString;
@@ -120,7 +122,16 @@ namespace ClrMDRIndex
 			_filterString = filterStr;
 		}
 
-		public FilterValue(Op op, object[] values)
+        public bool IsIgnoreCase()
+        {
+            return (_op & Op.IGNORECASE) != 0;
+        }
+        public bool IsRegex()
+        {
+            return (_op & Op.REGEX) != 0;
+        }
+
+        public FilterValue(Op op, object[] values)
 		{
 			_op = op;
 			_values = values;

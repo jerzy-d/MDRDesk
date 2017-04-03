@@ -112,6 +112,11 @@ namespace ClrMDRIndex
             int stdKind = (int)kind & 0x0000FFFF;
             return (ClrElementKind)stdKind;
         }
+        public static bool IsString(ClrElementKind kind)
+        {
+            int stdKind = (int)kind & 0x0000FFFF;
+            return (ClrElementKind)stdKind == ClrElementKind.String;
+        }
 
         public static bool IsAmbiguousKind(ClrElementKind kind)
         {
@@ -184,6 +189,80 @@ namespace ClrMDRIndex
             return new KeyValuePair<ClrType, ClrElementKind>(clrType, kind);
         }
 
+        public static void TryGetClrtDisplayableTypeFields(IndexProxy ndxProxy, ClrHeap heap, ClrtDisplayableType dispType, ClrType clrType, ulong addr, List<int> ambiguousFields, List<int> ambiguousFields2, ClrtDisplayableType[] fields)
+        {
+            Debug.Assert(clrType.Fields.Count > 0);
+            ambiguousFields2.Clear();
+            for (int i = 0, icnt = ambiguousFields.Count; i < icnt; ++i)
+            {
+                var fld = clrType.Fields[i];
+                var fldType = fld.Type;
+                var kind = GetElementKind(fldType);
+                var specKind = TypeExtractor.GetSpecialKind(kind);
+                if (kind == ClrElementKind.Unknown)
+                {
+                    fields[i] = new ClrtDisplayableType(dispType, Constants.InvalidIndex, i, Constants.NullName, fld.Name, kind);
+                    ambiguousFields2.Add(i);
+                    continue;
+                }
+
+                var typeId = ndxProxy.GetTypeId(fldType.Name);
+                if (specKind != ClrElementKind.Unknown)
+                {
+                    switch (specKind)
+                    {
+                        case ClrElementKind.Exception:
+                        case ClrElementKind.Enum:
+                        case ClrElementKind.Free:
+                        case ClrElementKind.Guid:
+                        case ClrElementKind.DateTime:
+                        case ClrElementKind.TimeSpan:
+                        case ClrElementKind.Decimal:
+                            fields[i] = new ClrtDisplayableType(dispType, typeId, i, fldType.Name, fld.Name, kind);
+                            break;
+                        case ClrElementKind.SystemVoid:
+                        case ClrElementKind.SystemObject:
+                        case ClrElementKind.Interface:
+                        case ClrElementKind.Abstract:
+                        case ClrElementKind.System__Canon:
+                            var fldInfo = TryGetRealType(heap, addr, fld, clrType.IsValueClass);
+                            if (fldInfo.Key != null)
+                            {
+                                fldType = fldInfo.Key;
+                                typeId = ndxProxy.GetTypeId(fldType.Name);
+                                kind = GetElementKind(fldType);
+                            }
+                            else
+                            {
+                                ambiguousFields2.Add(i);
+                            }
+                            fields[i] = new ClrtDisplayableType(dispType, typeId, i, fldType.Name, fld.Name, kind);
+                            break;
+                    }
+                }
+                else
+                {
+                    switch (TypeExtractor.GetStandardKind(kind))
+                    {
+                        case ClrElementKind.Class:
+                        case ClrElementKind.Struct:
+                        case ClrElementKind.SZArray:
+                        case ClrElementKind.Array:
+                        case ClrElementKind.String:
+                            fields[i] = new ClrtDisplayableType(dispType, typeId, i, fldType.Name, fld.Name, kind);
+                            break;
+                        case ClrElementKind.Object:
+                            fields[i] = new ClrtDisplayableType(dispType, typeId, i, fldType.Name, fld.Name, kind);
+                            ambiguousFields2.Add(i);
+                            break;
+                        default:
+                            fields[i] = new ClrtDisplayableType(dispType, typeId, i, fldType.Name, fld.Name, kind);
+                            break;
+                    }
+                }
+            }
+        }
+
 
         public static ClrtDisplayableType[] GetClrtDisplayableTypeFields(IndexProxy ndxProxy, ClrHeap heap, ClrtDisplayableType dispType, ClrType clrType, ulong addr, List<int> ambiguousFields)
         {
@@ -249,8 +328,18 @@ namespace ClrMDRIndex
                             fields[i] = new ClrtDisplayableType(dispType, typeId, i, fldType.Name, fld.Name, kind);
                             break;
                         case ClrElementKind.Object:
+                            var fldInfo = TryGetRealType(heap, addr, fld, clrType.IsValueClass);
+                            if (fldInfo.Key != null)
+                            {
+                                fldType = fldInfo.Key;
+                                typeId = ndxProxy.GetTypeId(fldType.Name);
+                                kind = GetElementKind(fldType);
+                            }
+                            else
+                            {
+                                ambiguousFields.Add(i);
+                            }
                             fields[i] = new ClrtDisplayableType(dispType, typeId, i, fldType.Name, fld.Name, kind);
-                            ambiguousFields.Add(i);
                             break;
                         default:
                             fields[i] = new ClrtDisplayableType(dispType, typeId, i, fldType.Name, fld.Name, kind);
@@ -268,6 +357,7 @@ namespace ClrMDRIndex
             try
             {
                 List<int> ambiguousFields = new List<int>();
+                List<int> ambiguousFields2 = new List<int>();
                 KeyValuePair<ClrType, ClrElementKind> typeInfo = new KeyValuePair<ClrType, ClrElementKind>(null, ClrElementKind.Unknown);
                 for (int i = 0, icnt = addresses.Length; i < icnt; ++i)
                 {
@@ -315,10 +405,22 @@ namespace ClrMDRIndex
                             case ClrElementKind.Class:
                                 var dispType = new ClrtDisplayableType(null, typeId, Constants.InvalidIndex, clrType.Name, String.Empty, kind);
                                 var dispFlds = GetClrtDisplayableTypeFields(ndxProxy, heap, dispType, clrType, addr, ambiguousFields);
-								for (int j = i+1, jcnt = addresses.Length; j < jcnt && ambiguousFields.Count > 0; ++j)
+                                var ambiguousCount = ambiguousFields.Count;
+                                var switchList = false;
+                                for (int j = i+1, jcnt = addresses.Length; j < jcnt && ambiguousCount > 0; ++j)
 								{
-
-								}
+                                    var jaddr = addresses[j];
+                                    if (switchList)
+                                    {
+                                        ambiguousCount = ambiguousFields2.Count;
+                                        switchList = !switchList;
+                                        TryGetClrtDisplayableTypeFields(ndxProxy, heap, dispType, clrType, jaddr, ambiguousFields2, ambiguousFields, dispFlds);
+                                        continue;
+                                    }
+                                    ambiguousCount = ambiguousFields.Count;
+                                    switchList = !switchList;
+                                    TryGetClrtDisplayableTypeFields(ndxProxy, heap, dispType, clrType, jaddr, ambiguousFields, ambiguousFields2, dispFlds);
+                                }
                                 dispType.AddFields(dispFlds);
                                 return dispType;
                             case ClrElementKind.Unknown:

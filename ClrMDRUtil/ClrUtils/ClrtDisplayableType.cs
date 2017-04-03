@@ -154,8 +154,8 @@ namespace ClrMDRIndex
 		public override string ToString()
 		{
 			return string.IsNullOrEmpty(_fieldName)
-				? TypeHeader() + _typeName
-				: SelectionStr() + _fieldName + FilterStr(_valueFilter) + TypeHeader() + _typeName;
+				? _typeName
+				: SelectionStr() + _fieldName + FilterStr(_valueFilter) + _typeName;
 		}
 
 		public bool CanGetFields(out string msg)
@@ -171,27 +171,27 @@ namespace ClrMDRIndex
                     case ClrElementKind.DateTime:
                     case ClrElementKind.TimeSpan:
                     case ClrElementKind.Decimal:
-                        msg = Constants.InterfaceHeader + "Cannot get fields, this type is considered primitive.";
+                        msg = "Cannot get fields, this type is considered primitive.";
                         return false;
                     case ClrElementKind.Interface:
-                        msg = Constants.InterfaceHeader + "Cannot get fields of an interface.";
+                        msg = "Cannot get fields of an interface.";
                         return false;
                     case ClrElementKind.Enum:
-                        msg = Constants.PrimitiveHeader + "Cannot get fields, this type is primitive.";
+                        msg = "Cannot get fields, this type is primitive.";
                         return false;
                     case ClrElementKind.Exception:
                         return true;
                     case ClrElementKind.System__Canon:
-                        msg = Constants.PrimitiveHeader + "Cannot get fields, this is System__Canon type.";
+                        msg = "Cannot get fields, this is System__Canon type.";
                         return false;
                     case ClrElementKind.SystemObject:
-                        msg = Constants.PrimitiveHeader + "Cannot get fields, this is System.Object.";
+                        msg = "Cannot get fields, this is System.Object.";
                         return false;
                     case ClrElementKind.SystemVoid:
-                        msg = Constants.PrimitiveHeader + "Cannot get fields, this is System.Void.";
+                        msg = "Cannot get fields, this is System.Void.";
                         return false;
                     case ClrElementKind.Abstract:
-                        msg = Constants.PrimitiveHeader + "Cannot get fields, this is abstract class.";
+                        msg = "Cannot get fields, this is abstract class.";
                         return false;
                 }
                 throw new ApplicationException("ClrtDisplayableType.TypeHeader() Not all cases are handled for (specKind != ClrElementKind.Unknown).");
@@ -201,7 +201,7 @@ namespace ClrMDRIndex
                 switch (TypeExtractor.GetStandardKind(_kind))
                 {
                     case ClrElementKind.String:
-                        msg = Constants.InterfaceHeader + "Cannot get fields, this type is considered primitive.";
+                        msg = "Cannot get fields, this type is considered primitive.";
                         return false;
                     case ClrElementKind.SZArray:
                     case ClrElementKind.Array:
@@ -211,10 +211,10 @@ namespace ClrMDRIndex
                     case ClrElementKind.Struct:
                         return true;
                     case ClrElementKind.Unknown:
-                        msg = Constants.InterfaceHeader + "Cannot get fields, the type is unknown.";
+                        msg = "Cannot get fields, the type is unknown.";
                         return false;
                     default:
-                        msg = Constants.PrimitiveHeader + "Cannot get fields, this type is primitive.";
+                        msg = "Cannot get fields, this type is primitive.";
                         return false;
                 }
             }
