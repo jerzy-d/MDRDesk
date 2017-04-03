@@ -315,6 +315,10 @@ namespace ClrMDRIndex
                             case ClrElementKind.Class:
                                 var dispType = new ClrtDisplayableType(null, typeId, Constants.InvalidIndex, clrType.Name, String.Empty, kind);
                                 var dispFlds = GetClrtDisplayableTypeFields(ndxProxy, heap, dispType, clrType, addr, ambiguousFields);
+								for (int j = i+1, jcnt = addresses.Length; j < jcnt && ambiguousFields.Count > 0; ++j)
+								{
+
+								}
                                 dispType.AddFields(dispFlds);
                                 return dispType;
                             case ClrElementKind.Unknown:
@@ -333,9 +337,9 @@ namespace ClrMDRIndex
             }
         }
 
-        public static KeyValuePair<ClrType, ulong> TryGetReferenceType(ClrHeap heap, ulong addr, ClrInstanceField fld)
+        public static KeyValuePair<ClrType, ulong> TryGetReferenceType(ClrHeap heap, ulong addr, ClrInstanceField fld, bool intr)
         {
-            var valueObj = fld.GetValue(addr, false);
+            var valueObj = fld.GetValue(addr, intr);
             Debug.Assert(valueObj is ulong);
             ulong value = (ulong)valueObj;
             var clrType = heap.GetObjectType(value);

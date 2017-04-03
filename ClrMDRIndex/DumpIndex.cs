@@ -1331,9 +1331,7 @@ namespace ClrMDRIndex
                     error = "Type instances not found.";
                     return null;
                 }
-
                 return TypeExtractor.GetClrtDisplayableType(_indexProxy, Dump.Heap, typeId, instances, out error);
-                //return DmpNdxQueries.FQry.getDisplayableType(_indexProxy, Dump.Heap, instances);
             }
             catch (Exception ex)
             {
@@ -1359,8 +1357,6 @@ namespace ClrMDRIndex
                 ulong[] instances = GetTypeRealAddresses(dispTypeField.TypeId);
                 if (instances != null && instances.Length > 0)
                     return TypeExtractor.GetClrtDisplayableType(_indexProxy, Dump.Heap, dispTypeField.TypeId, instances, out error);
-                    //return DmpNdxQueries.FQry.getDisplayableType(_indexProxy, Dump.Heap, instances);
-
 
                 instances = GetTypeRealAddresses(dispType.TypeId);
                 if (instances == null || instances.Length < 1)
@@ -1369,8 +1365,7 @@ namespace ClrMDRIndex
                     return null;
                 }
 
-                var result = //DmpNdxQueries.FQry.getDisplayableFieldType(_indexProxy, Dump.Heap, dispType, instances[0],dispTypeField.FieldIndex);
-                             TypeExtractor.GetClrtDisplayableType(_indexProxy, Dump.Heap, dispType.TypeId, instances, out error);
+                var result = TypeExtractor.GetClrtDisplayableType(_indexProxy, Dump.Heap, dispType.TypeId, instances, out error);
 
                 if (error != null)
                 {
