@@ -451,6 +451,8 @@ module CollectionContent =
                             notFound <- false
                         else
                             index <- index + 1
+                    else
+                        index <- index + 1
             (hashCodeFld,valueFld,valType)
 
     let getHashSetInfo (heap:ClrHeap) (addr:address) (setType:ClrType) : ClrType * address * ClrInstanceField * ClrInstanceField * ClrType * int * int * KeyValuePair<string,string> array =

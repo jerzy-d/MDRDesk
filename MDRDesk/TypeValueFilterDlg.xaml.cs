@@ -26,9 +26,7 @@ namespace MDRDesk
 			{
 				TbTypeValue.Text = _dispType.Filter.FilterString;
 			}
-
             InitFilterDescription();
-
         }
 
         private void InitFilterDescription()
@@ -94,6 +92,9 @@ namespace MDRDesk
                     case ClrElementKind.String:
                         break;
                     case ClrElementKind.Object:
+                        TypeValueDescr.Inlines.Add(new Run("Enter address in hex format: "));
+                        TypeValueDescr.Inlines.Add(new Run("0x000083599c5498") { FontWeight = FontWeights.Bold });
+                        TypeValueDescr.Inlines.Add(new Run(", leading zeros are not necessary."));
                         break;
                     default:
                         break;

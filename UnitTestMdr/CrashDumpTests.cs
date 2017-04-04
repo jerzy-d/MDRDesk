@@ -351,17 +351,48 @@ namespace UnitTestMdr
 		[TestMethod]
 		public void TestGetDictionaryContent()
 		{
-			ulong dctAddr = 0x00015e80012f58;
-			var dmp = OpenDump(1);
+			ulong dctAddr = 0x00000084d7ce3988; // 0x000084d7ce3938;
+            var dmp = OpenDump(@"D:\Jerzy\WinDbgStuff\dumps\TradingService\trading_0403207dmp.dmp");
 			using (dmp)
 			{
 				var heap = dmp.Heap;
 				var clrType = heap.GetObjectType(dctAddr);
-				if (!clrType.Name.StartsWith("System.Collections.Generic.Dictionary<")) return;
+				if (!clrType.Name.StartsWith("System.Collections.Generic.Dictionary<")
+                    && !clrType.BaseType.Name.StartsWith("System.Collections.Generic.Dictionary<")) return;
 				var result = CollectionContent.getDictionaryInfo(heap, dctAddr, clrType);
 				Assert.IsNotNull(result);
 
 				var dctResult = CollectionContent.dictionaryContent(heap, dctAddr);
+                var entries = dctResult.Item7;
+
+                StreamWriter sw = null;
+                string error;
+                try
+                {
+                    var path = DumpFileMoniker.GetAndCreateOutFolder(dmp.DumpPath, out error) + Path.DirectorySeparatorChar + "DctHashesContent.txt";
+                    sw = new StreamWriter(path);
+
+                    for (int i = 0; i < entries.Length; ++i)
+                    {
+                        var entry = entries[i];
+                        var hsetAddr = Convert.ToUInt64(entry.Value, 16);
+                        var hcontent = CollectionContent.getHashSetContent(heap, hsetAddr);
+                        sw.Write(entry.Key);
+                        sw.Write(" : ");
+                        for (int j = 0, jcnt = hcontent.Item2.Length; j < jcnt; ++j)
+                        {
+                            sw.Write(" ");
+                            sw.Write(hcontent.Item2[j]);
+                        }
+                        sw.WriteLine();
+                    }
+                }
+                finally
+                {
+                    sw?.Close();
+                }
+
+
 
 				Assert.IsNotNull(dctResult);
 				Assert.IsNull(dctResult.Item1, dctResult.Item1);
