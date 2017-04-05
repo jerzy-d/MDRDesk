@@ -2,6 +2,7 @@
 using ClrMDRIndex;
 using System.Diagnostics;
 using System.Windows.Documents;
+using Brushes = System.Windows.Media.Brushes;
 
 namespace MDRDesk
 {
@@ -51,11 +52,20 @@ namespace MDRDesk
                 switch (specKind)
                 {
                     case ClrElementKind.Exception:
+                        TypeValueDescr.Inlines.Add(new Run("Enter address in hex format: "));
+                        TypeValueDescr.Inlines.Add(new Run("0x000083599c5498") { FontWeight = FontWeights.Bold });
+                        TypeValueDescr.Inlines.Add(new Run(", leading zeros are not necessary."));
+                        break;
                     case ClrElementKind.Enum:
                         TypeValueDescr.Inlines.Add(new Run("Enum format is integral value of enumeration."));
                         break;
                     case ClrElementKind.Free:
+                        TypeValueDescr.Inlines.Add(new Run("Free type should not be filtered!") { FontWeight = FontWeights.Bold, Foreground = Brushes.Red });
+                        break;
                     case ClrElementKind.Guid:
+                        TypeValueDescr.Inlines.Add(new Run("Guid format ex.: "));
+                        TypeValueDescr.Inlines.Add(new Run("00000000-0000-0000-0000-000000000000") { FontWeight = FontWeights.Bold });
+                        break;
                     case ClrElementKind.DateTime:
                         TypeValueDescr.Inlines.Add(new Run("DateTime format ex.: "));
                         TypeValueDescr.Inlines.Add(new Run("2009-06-15T13:45:30") { FontWeight = FontWeights.Bold });
@@ -68,16 +78,25 @@ namespace MDRDesk
                     case ClrElementKind.Decimal:
                         break;
                     case ClrElementKind.SystemVoid:
+                        TypeValueDescr.Inlines.Add(new Run("System.Void -- unexpected type!") { FontWeight = FontWeights.Bold, Foreground = Brushes.Red });
+                        break;
                     case ClrElementKind.SystemObject:
                     case ClrElementKind.Interface:
                     case ClrElementKind.Abstract:
                     case ClrElementKind.System__Canon:
-                         break;
+                        TypeValueDescr.Inlines.Add(new Run("Enter address in hex format: "));
+                        TypeValueDescr.Inlines.Add(new Run("0x000083599c5498") { FontWeight = FontWeights.Bold });
+                        TypeValueDescr.Inlines.Add(new Run(", leading zeros are not necessary."));
+                        break;
+                    default:
+                        TypeValueDescr.Inlines.Add(new Run("Unexpected type!") { FontWeight = FontWeights.Bold, Foreground = Brushes.Red });
+                        break;
                 }
             }
             else
             {
-                switch (TypeExtractor.GetStandardKind(kind))
+                var stdKind = TypeExtractor.GetStandardKind(kind);
+                switch (stdKind)
                 {
                     case ClrElementKind.Boolean:
                         TypeValueDescr.Inlines.Add(new Run("Valid values for this type, are: "));
@@ -89,14 +108,32 @@ namespace MDRDesk
                     case ClrElementKind.Struct:
                     case ClrElementKind.SZArray:
                     case ClrElementKind.Array:
-                    case ClrElementKind.String:
                         break;
                     case ClrElementKind.Object:
                         TypeValueDescr.Inlines.Add(new Run("Enter address in hex format: "));
                         TypeValueDescr.Inlines.Add(new Run("0x000083599c5498") { FontWeight = FontWeights.Bold });
                         TypeValueDescr.Inlines.Add(new Run(", leading zeros are not necessary."));
                         break;
+                    case ClrElementKind.Char:
+                    case ClrElementKind.Int8:
+                    case ClrElementKind.UInt8:
+                    case ClrElementKind.Int16:
+                    case ClrElementKind.UInt16:
+                    case ClrElementKind.Int32:
+                    case ClrElementKind.UInt32:
+                    case ClrElementKind.Int64:
+                    case ClrElementKind.UInt64:
+                    case ClrElementKind.Float:
+                    case ClrElementKind.Double:
+                    case ClrElementKind.String:
+                    case ClrElementKind.Pointer:
+                    case ClrElementKind.NativeInt:
+                    case ClrElementKind.NativeUInt:
+                    case ClrElementKind.FunctionPointer:
+                        TypeValueDescr.Inlines.Add(new Run("Primitive type: " + stdKind.ToString() + ", enter in standard format."));
+                        break;
                     default:
+                        TypeValueDescr.Inlines.Add(new Run("Unexpected type!") {FontWeight = FontWeights.Bold, Foreground = Brushes.Red });
                         break;
                 }
             }

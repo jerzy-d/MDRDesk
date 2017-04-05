@@ -17,7 +17,7 @@ namespace ClrMDRIndex
         Char = ClrElementType.Char,
         Int8 = ClrElementType.Int8,
         UInt8 = ClrElementType.UInt8,
-        Int16 = ClrElementType.UInt16,
+        Int16 = ClrElementType.Int16,
         UInt16 = ClrElementType.UInt16,
         Int32 = ClrElementType.Int32,
         UInt32 = ClrElementType.UInt32,
