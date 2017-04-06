@@ -443,6 +443,64 @@ module Types =
     (*
         ClrElementType
     *)
+
+    let getElementKind (clrType:ClrType) : ClrElementKind =
+        if isNull clrType then ClrElementKind.Unknown
+        else
+            let mutable kind:ClrElementKind = enum<ClrElementKind>((int32)(clrType.ElementType))
+            match kind with
+            | ClrElementKind.Object ->
+                match clrType.Name with
+                | "System.Object" -> kind <- kind ||| ClrElementKind.SystemObject
+                | "System.Void" -> kind <- kind ||| ClrElementKind.SystemVoid
+                | "System.__Canon" -> kind <- kind ||| ClrElementKind.System__Canon
+                | _ -> kind |> ignore
+            | ClrElementKind.Struct ->
+                match clrType.Name with
+                | "System.Decimal" -> kind <- kind ||| ClrElementKind.Decimal
+                | "System.DateTime" -> kind <- kind ||| ClrElementKind.DateTime
+                | "System.TimeSpan" -> kind <- kind ||| ClrElementKind.TimeSpan
+                | "System.Guid" -> kind <- kind ||| ClrElementKind.Guid
+                | _ -> kind |> ignore
+            | _ -> kind |> ignore
+
+            if clrType.IsInterface then kind <- kind ||| ClrElementKind.Interface
+            elif clrType.IsAbstract then kind <- kind ||| ClrElementKind.Abstract;
+            elif clrType.IsFree then kind <- kind ||| ClrElementKind.Free;
+            elif clrType.IsException then kind <- kind ||| ClrElementKind.Exception;
+            else kind |> ignore
+            kind
+
+    let specialKind (kind:ClrElementKind) : ClrElementKind =
+        enum<ClrElementKind>((int32)kind &&& (int32)0x7FFF0000)
+
+    let standardKind (kind:ClrElementKind) : ClrElementKind =
+       enum<ClrElementKind>((int32)kind &&& (int32)0x0000FFFF)
+
+    let isString (kind:ClrElementKind) : bool =
+        standardKind kind = ClrElementKind.String
+
+    let isSystemObject (kind:ClrElementKind) : bool =
+        standardKind kind = ClrElementKind.SystemObject
+
+    let ambiguousKind (kind:ClrElementKind) : bool =
+        match specialKind kind with
+        | ClrElementKind.SystemVoid
+        | ClrElementKind.SystemObject
+        | ClrElementKind.Interface
+        | ClrElementKind.Abstract
+        | ClrElementKind.System__Canon -> true
+        | _ -> false
+
+    let undecidedKind (kind:ClrElementKind) : bool =
+        match specialKind kind with
+        | ClrElementKind.SystemVoid
+        | ClrElementKind.Interface
+        | ClrElementKind.Abstract
+        | ClrElementKind.System__Canon -> true
+        | _ -> false
+
+
     // TODO JRD
 
     //let getElementKind (clrType:ClrType) : ClrElementKind =

@@ -54,7 +54,6 @@ namespace ClrMDRIndex
 
     public class TypeExtractor
     {
-
         public static ClrElementKind GetElementKind(ClrType clrType)
         {
             if (clrType == null) return ClrElementKind.Unknown;
@@ -117,6 +116,11 @@ namespace ClrMDRIndex
             int stdKind = (int)kind & 0x0000FFFF;
             return (ClrElementKind)stdKind == ClrElementKind.String;
         }
+        public static bool IsSystemObject(ClrElementKind kind)
+        {
+            int stdKind = (int)kind & 0x0000FFFF;
+            return (ClrElementKind)stdKind == ClrElementKind.SystemObject;
+        }
 
         public static bool IsAmbiguousKind(ClrElementKind kind)
         {
@@ -134,7 +138,7 @@ namespace ClrMDRIndex
             }
         }
 
-        public static bool IsUncertainKind(ClrElementKind kind)
+        public static bool IsUndecidedKind(ClrElementKind kind)
         {
             ClrElementKind specKind = GetSpecialKind(kind);
             switch (specKind)

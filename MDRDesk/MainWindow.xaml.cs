@@ -466,26 +466,26 @@ namespace MDRDesk
 			return StringBuilderCache.GetStringAndRelease(sb);
 		}
 
-		private async void OpenDumpIndexClicked(object sender, RoutedEventArgs e)
-		{
-			if (IsIndexAvailable(null)) CloseCurrentIndex();
-			string path = null;
-			if (sender != null && sender is MenuItem)
-			{
-				var menuItem = sender as MenuItem;
-				if (menuItem.HasHeader && menuItem.Header is string && (menuItem.Header as string) == "Recent Indices")
-				{
-					path = e.OriginalSource as string;
-				}
-			}
-			if (path == null) path = GuiUtils.GetFolderPath(Setup.DumpsFolder);
+        private void OpenDumpIndexClicked(object sender, RoutedEventArgs e)
+        {
+            if (IsIndexAvailable(null)) CloseCurrentIndex();
+            string path = null;
+            if (sender != null && sender is MenuItem)
+            {
+                var menuItem = sender as MenuItem;
+                if (menuItem.HasHeader && menuItem.Header is string && (menuItem.Header as string) == "Recent Indices")
+                {
+                    path = e.OriginalSource as string;
+                }
+            }
+            if (path == null) path = GuiUtils.GetFolderPath(Setup.DumpsFolder);
 
-			if (path == null) return;
+            if (path == null) return;
 
-			DoOpenDumpIndex(0, path);
-		}
+            DoOpenDumpIndex(0, path);
+        }
 
-		private async void DoOpenDumpIndex(int runtimeIndex, string path)
+        private async void DoOpenDumpIndex(int runtimeIndex, string path)
 		{
 			if (path == null) return;
 			var progressHandler = new Progress<string>(MainStatusShowMessage);
