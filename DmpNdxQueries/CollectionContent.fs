@@ -543,7 +543,7 @@ public IEnumerator<KeyValuePair<TKey, TValue>> GetEnumerator()
 *)
 
     //let getConcurrentDictionaryContent (heap:ClrHeap) (addr:address) : (string * (string * string * string * int) * KeyValuePair<ValueString,ValueString> array) =
-    let getConcurrentDictionaryContent (heap:ClrHeap) (addr:address) : (string * KeyValuePair<string,string> array * KeyValuePair<ValueString,ValueString> array) =
+    let getConcurrentDictionaryContent (heap:ClrHeap) (addr:address) : (string * KeyValuePair<string,string> array * KeyValuePair<DisplayableString,DisplayableString> array) =
 
         let getBucketsInfo (heap:ClrHeap) (addr:address) (dctType:ClrType) : ClrType * address * int =
             let tables = dctType.GetFieldByName("m_tables")
@@ -602,7 +602,7 @@ public IEnumerator<KeyValuePair<TKey, TValue>> GetEnumerator()
         let getNodeValue (heap:ClrHeap) (nodeType:ClrType) (nodeAddr:address) (keyKind:TypeKind) (keyFld:ClrInstanceField) (valKind:TypeKind) (valFld:ClrInstanceField) =
             let keyVal = getFieldValue heap nodeAddr false keyFld keyKind
             let valVal = getFieldValue heap nodeAddr false valFld valKind
-            new KeyValuePair<ValueString,ValueString>(new ValueString(keyVal),new ValueString(valVal))
+            new KeyValuePair<DisplayableString,DisplayableString>(new DisplayableString(keyVal),new DisplayableString(valVal))
 
         try
             let dctType = heap.GetObjectType(addr)
@@ -617,7 +617,7 @@ public IEnumerator<KeyValuePair<TKey, TValue>> GetEnumerator()
                 if isNull nodeType || isNull keyType || isNull keyField || isNull valueType || isNull valueField then
                     ("Cannot resolve ConcurrentDictionary types, at address: " + Utils.RealAddressString(addr), null, null)
                 else
-                    let values = new ResizeArray<KeyValuePair<ValueString,ValueString>>(count)
+                    let values = new ResizeArray<KeyValuePair<DisplayableString,DisplayableString>>(count)
                     let keyKind = typeKind keyType
                     let valueKind = typeKind valueType
                     let info = [| new KeyValuePair<string,string>("Dictionary",dctType.Name); new KeyValuePair<string,string>("Keys Type", keyType.Name);

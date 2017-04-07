@@ -193,6 +193,18 @@ namespace ClrMDRIndex
             return new KeyValuePair<ClrType, ClrElementKind>(clrType, kind);
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static int FieldCount(ClrType clrType)
+        {
+            return clrType == null ? 0 : (clrType.Fields==null ? 0 : clrType.Fields.Count);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static bool HasInternalAddresses(ClrType clrType)
+        {
+            return clrType == null ? false : clrType.IsValueClass;
+        }
+
         public static void TryGetClrtDisplayableTypeFields(IndexProxy ndxProxy, ClrHeap heap, ClrtDisplayableType dispType, ClrType clrType, ulong addr, List<int> ambiguousFields, List<int> ambiguousFields2, ClrtDisplayableType[] fields)
         {
             Debug.Assert(clrType.Fields.Count > 0);

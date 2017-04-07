@@ -73,6 +73,9 @@ namespace UnitTestMdr
 		public void TestMisc()
 		{
 
+            string fancy = Utils.GetFancyIntStr(140, 6);
+
+
             decimal dd = 0m;
             var ddstr = dd.ToString();
 

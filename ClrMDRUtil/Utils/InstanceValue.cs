@@ -13,7 +13,7 @@ namespace ClrMDRIndex
 		private ulong _address;
 		private string _typeName;
 		private string _fieldName;
-		private ValueString _value;
+		private DisplayableString _value;
 		private string[] _aryValues;
 		private List<InstanceValue> _values;
 
@@ -21,7 +21,7 @@ namespace ClrMDRIndex
 		public ulong Address => _address;
 		public string TypeName => _typeName;
 		public string FieldName => _fieldName;
-        public ValueString Value => _value;
+        public DisplayableString Value => _value;
 		public List<InstanceValue> Values => _values;
 		public string[] ArrayValues => _aryValues;
 
@@ -31,7 +31,7 @@ namespace ClrMDRIndex
 			_address = addr;
 		    _typeName = typeName;
 		    _fieldName = fldName;
-		    _value = new ValueString(value);
+		    _value = new DisplayableString(value);
 		    _values = new List<InstanceValue>(0);
 			_fieldNdx = fldNdx;
 			_aryValues = null;

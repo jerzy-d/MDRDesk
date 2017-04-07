@@ -766,5 +766,61 @@ namespace ClrMDRIndex
 
 			intervals.Add(new triple<bool, ulong, ulong>(false, lastAddr, curLastAddr - lastAddr));
 		}
+
+        public static KeyValuePair<string,InstanceValue> GetClassStructValue(IndexProxy ndxProxy, ClrHeap heap, ulong decoratedAddr, ClrType clrType,  TypeKind kind, int fldNdx)
+        {
+            Debug.Assert(clrType != null);
+            var addr = Utils.RealAddress(decoratedAddr);
+            var fldCount = TypeExtractor.FieldCount(clrType);
+            if (fldCount < 1) return new KeyValuePair<string, InstanceValue>(clrType.Name + " is not struct/class with fields.", null);
+            var internalAddresses = TypeExtractor.HasInternalAddresses(clrType);
+            var typeId = ndxProxy.GetTypeId(clrType.Name);
+            var instVal = new InstanceValue(typeId, addr, clrType.Name, String.Empty, Utils.RealAddressString(addr));
+
+            for (int i=0; i < fldCount; ++i)
+            {
+
+            }
+
+            return new KeyValuePair<string, InstanceValue>(null, instVal);
+        }
+
+        public static DisplayableString GetFieldValue(ClrHeap heap, ulong addr, bool intr, ClrInstanceField fld)
+        {
+            return new DisplayableString("Test");
+        }
+
+        /*
+        try
+            let addr = Utils.RealAddress(decoratedAddr)
+            let fldCount = fieldCount clrType
+            let internalAddresses = hasInternalAddresses clrType
+            let mutable instVal = InstanceValue(ndxProxy.GetTypeId(clrType.Name), addr, clrType.Name, String.Empty, Utils.RealAddressString(addr));
+
+            if fldCount = 0 then
+                (clrType.Name + " is not struct/class with fields.",null)
+            else
+                for fldNdx = 0 to fldCount-1 do
+                    let fld = clrType.Fields.[fldNdx]
+                    let fldTypeName = if isNull fld.Type then Constants.UnknownTypeName else fld.Type.Name
+                    let fldKind = typeKind fld.Type
+                    let fldVal = getFieldValue heap addr internalAddresses fld fldKind
+                    let typeId = ndxProxy.GetTypeId(fldTypeName)
+                    let mainKind = TypeKinds.GetMainTypeKind(fldKind)
+                    match mainKind with
+                    | TypeKind.ArrayKind
+                    | TypeKind.ReferenceKind ->
+                        let fldAddr = getReferenceFieldAddress addr fld internalAddresses
+                        let fldObjType = heap.GetObjectType(fldAddr)
+                        let fldObjName = if isNull fldObjType then fldTypeName else fldObjType.Name
+                        let fldTypeId = ndxProxy.GetTypeId(fldObjName)
+                        instVal.Addvalue(new InstanceValue(fldTypeId, fldAddr, fldObjName, fld.Name, fldVal))
+                    | _ ->
+                        instVal.Addvalue(new InstanceValue(typeId, Constants.InvalidAddress, fldTypeName, fld.Name, fldVal, fldNdx))
+                (null,instVal)
+        with
+            | exn -> (Utils.GetExceptionErrorString(exn),null)
+            */
+
 	}
 }

@@ -2105,7 +2105,7 @@ namespace MDRDesk
 					return;
 				}
 
-				if (instVal.Value != null && instVal.Value.Content.Length > ValueString.MaxLength)
+				if (!instVal.Value.IsLong())
 				{
 					var wnd = new ContentDisplay(Utils.GetNewID(), _wndDct, result.Item3, instVal) { Owner = this };
 					wnd.Show();
@@ -2208,8 +2208,8 @@ namespace MDRDesk
 
 				KeyValuePair<int, int> kv = frmCounts[frMap2[i]];
 				sb.Clear();
-				var id = Utils.GetDigitsString(kv.Key, digitCount, buf);
-				sb.Append(id).Append("/").Append(kv.Value).Append(" thread(s), trace count ").Append(threads[i].Frames.Length); 
+                var id = Utils.GetSubscriptIntStr(kv.Key, digitCount); // Utils.GetDigitsString(kv.Key, digitCount, buf); // Utils.GetFancyIntStr(kv.Key,digitCount); // 
+                sb.Append(id).Append("/").Append(kv.Value).Append(" thread(s), trace count ").Append(threads[i].Frames.Length); 
 
 				data[dataNdx++] = sb.ToString();
 			}

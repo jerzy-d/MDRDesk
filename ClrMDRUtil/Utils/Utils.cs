@@ -1235,10 +1235,9 @@ namespace ClrMDRIndex
 			{
 				if (str[i] == '\n')
 				{
-					var sb = new StringBuilder(str);
-					sb.Replace("\r\n", Constants.WindowsNewLine);
-					sb.Replace("\n", Constants.UnixNewLine);
-					return sb.ToString();
+					var newStr = str.Replace("\r\n", Constants.WindowsNewLine);
+					newStr = newStr.Replace("\n", Constants.UnixNewLine);
+					return newStr;
 				}
 			}
 			return str;
@@ -1287,7 +1286,35 @@ namespace ClrMDRIndex
 			return str;
 		}
 
-		public static int SkipWhites(string str, int pos)
+        
+
+        public static string GetFancyIntStr(int val, int width)
+        {
+            char[] digits = new char[width];
+            for (int i = width-1; i >= 0; --i)
+            {
+                if (val == 0) { digits[i] = '\u274D'; continue; }
+                int rem = val % 10;
+                digits[i] = rem == 0 ? '\u274D' : (char)(0x277F + rem);
+                val /= 10;
+            }
+            return new string(digits);
+        }
+
+        public static string GetSubscriptIntStr(int val, int width)
+        {
+            char[] digits = new char[width];
+            for (int i = width - 1; i >= 0; --i)
+            {
+                if (val == 0) { digits[i] = '\u2080'; continue; }
+                int rem = val % 10;
+                digits[i] = rem == 0 ? '\u2080' : (char)(0x2080 + rem);
+                val /= 10;
+            }
+            return new string(digits);
+        }
+
+        public static int SkipWhites(string str, int pos)
 		{
 			for (; pos < str.Length && Char.IsWhiteSpace(str[pos]); ++pos) ;
 			return pos;
@@ -1299,6 +1326,7 @@ namespace ClrMDRIndex
 			return pos;
 		}
 
+ 
 		private static bool IsBracket(char c)
 		{
 			return c == '['
@@ -2215,7 +2243,30 @@ namespace ClrMDRIndex
 						 (c >= 'A' && c <= 'F'));
 		}
 
-		public static string GetCachedString(string str, Dictionary<string, string> cache)
+        public static KeyValuePair<bool, ulong> GetFirstUlong(string str)
+        {
+            var ndx = str.IndexOf("0x", StringComparison.OrdinalIgnoreCase);
+            if (ndx >= 0)
+            {
+                int charCount = 0;
+                ndx += "0x".Length;
+                int i = ndx;
+                for (; i < str.Length; ++i)
+                {
+                    if (IsHexChar(str[i])) ++charCount;
+                    else break;
+                }
+                if (charCount > 0 && (i == str.Length || char.IsWhiteSpace(str[i])))
+                {
+                    ulong val = Convert.ToUInt64(str.Substring(ndx, charCount), 16);
+                    return new KeyValuePair<bool, ulong>(true, val);
+                }
+            }
+            return new KeyValuePair<bool, ulong>(false, 0UL);
+        }
+
+
+        public static string GetCachedString(string str, Dictionary<string, string> cache)
 		{
 			string cachedStr;
 			if (cache.TryGetValue(str, out cachedStr))

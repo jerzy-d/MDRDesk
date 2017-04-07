@@ -2002,8 +2002,19 @@ namespace MDRDesk
 				MessageBox.Show("No address is selected!", "Action Aborted", MessageBoxButton.OK, MessageBoxImage.Exclamation);
 				return Constants.InvalidAddress;
 			}
-			var addr = (ulong)lbAddresses.SelectedItems[0];
-			return addr;
+            var selItem = lbAddresses.SelectedItems[0];
+            if (selItem is ulong)
+                return (ulong)selItem;
+            if (selItem is string)
+            {
+                var result = Utils.GetFirstUlong((string)selItem);
+                if (result.Key) return result.Value;
+                MessageBox.Show("No address is found in ListBox item string!", "Action Aborted", MessageBoxButton.OK, MessageBoxImage.Exclamation);
+                return Constants.InvalidAddress;
+            }
+
+            MessageBox.Show("Unknown type of ListBox item!", "Action Aborted", MessageBoxButton.OK, MessageBoxImage.Exclamation);
+            return Constants.InvalidAddress;
 		}
 
 		private void LbGetInstValueClicked(object sender, RoutedEventArgs e)
