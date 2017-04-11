@@ -1274,11 +1274,11 @@ namespace ClrMDRIndex
 
                 // get instance info: fields and values
                 //
-                var heap = GetFreshHeap();
-                var result = FQry.getInstanceValue(_indexProxy, heap, addr, fldNdx);
-                error = result.Item1;
-                result.Item2?.SortByFieldName();
-                return new InstanceValueAndAncestors(result.Item2, ancestorInfos);
+                //var heap = GetFreshHeap();
+                //var result = FQry.getInstanceValue(_indexProxy, heap, addr, fldNdx);
+				var instValue = GetInstanceValue(addr, out error);
+                instValue.Item1?.SortByFieldName();
+                return new InstanceValueAndAncestors(instValue.Item1, ancestorInfos);
             }
             catch (Exception ex)
             {
