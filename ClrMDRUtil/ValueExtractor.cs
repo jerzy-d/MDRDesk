@@ -767,122 +767,98 @@ namespace ClrMDRIndex
 			intervals.Add(new triple<bool, ulong, ulong>(false, lastAddr, curLastAddr - lastAddr));
 		}
 
-		public static KeyValuePair<string, InstanceValue> GetInstanceValue(IndexProxy ndxProxy, ClrHeap heap, ulong decoratedAddr, int fldNdx)
-		{
-			var addr = Utils.RealAddress(decoratedAddr);
-			var typeInfo = TypeExtractor.TryGetRealType(heap, addr);
-			var clrType = typeInfo.Key;
-			var kind = typeInfo.Value;
-			var specKind = TypeExtractor.GetSpecialKind(kind);
-			var typeId1 = ndxProxy.GetTypeIdAtAddr(addr);
-			var typeId2 = ndxProxy.GetTypeId(clrType.Name);
-			string value;
-			if (specKind != ClrElementKind.Unknown)
-			{
-				switch (specKind)
-				{
-					case ClrElementKind.Guid:
-						value = GetGuidValue(addr, clrType);
-						return new KeyValuePair<string, InstanceValue>(null, new InstanceValue(typeId1, addr, clrType.Name, value, Utils.AddressString(decoratedAddr)));
-					case ClrElementKind.DateTime:
-						value = GetDateTimeValue(addr, clrType);
-						return new KeyValuePair<string, InstanceValue>(null, new InstanceValue(typeId1, addr, clrType.Name, value, Utils.AddressString(decoratedAddr)));
-					case ClrElementKind.TimeSpan:
-						value = GetTimeSpanValue(addr, clrType);
-						return new KeyValuePair<string, InstanceValue>(null, new InstanceValue(typeId1, addr, clrType.Name, value, Utils.AddressString(decoratedAddr)));
-					case ClrElementKind.Decimal:
-						value = GetDecimalValue(addr, clrType, "0,0.00");
-						return new KeyValuePair<string, InstanceValue>(null, new InstanceValue(typeId1, addr, clrType.Name, value, Utils.AddressString(decoratedAddr)));
-					case ClrElementKind.Exception:
-						value = GetShortExceptionValue(addr, clrType, heap);
-						return new KeyValuePair<string, InstanceValue>(null, new InstanceValue(typeId1, addr, clrType.Name, value, Utils.AddressString(decoratedAddr)));
-					case ClrElementKind.Free:
-					case ClrElementKind.Abstract:
-					case ClrElementKind.SystemVoid:
-					case ClrElementKind.SystemObject:
-						return new KeyValuePair<string, InstanceValue>(null, new InstanceValue(typeId1, addr, clrType.Name, string.Empty, Utils.AddressString(decoratedAddr)));
-					default:
-						return new KeyValuePair<string, InstanceValue>("Unexpected special kind", new InstanceValue(typeId1, addr, clrType.Name, string.Empty, Utils.AddressString(decoratedAddr)));
-				}
-			}
-			else
-			{
-				switch(kind)
-				{
+        public static InstanceValue GetFieldValue(IndexProxy ndxProxy, ClrHeap heap, ClrType clrType, ulong addr, int fldNdx, out string error)
+        {
+            error = null;
+            var fld = clrType.Fields[fldNdx];
+            var kind = TypeExtractor.GetElementKind(fld.Type);
+            if (kind == ClrElementKind.Unknown)
+            {
+                // TODO JRD
+                return null;
+            }
 
-				}
-			}
 
-			return new KeyValuePair<string, InstanceValue>(null, null);
-/*
-			if (specKind != ClrElementKind.Unknown)
-			{
-				switch (specKind)
-				{
-					case ClrElementKind.Free:
-						return new KeyValuePair<string, InstanceValue>(null,new InstanceValue(typeId1, addr, clrType.Name, string.Empty, Utils.AddressString(decoratedAddr)));
-					case ClrElementKind.Guid:
 
-						return new KeyValuePair<string, InstanceValue>(null, new InstanceValue(typeId1, addr, clrType.Name, string.Empty, Utils.AddressString(decoratedAddr)));
-					case ClrElementKind.DateTime:
-					case ClrElementKind.TimeSpan:
-					case ClrElementKind.Decimal:
-						return new ClrtDisplayableType(null, typeId, Constants.InvalidIndex, clrType.Name, String.Empty, kind);
-					case ClrElementKind.Interface:
-						throw new ApplicationException("Interface kind is not expected from ClrHeap.GetHeapObject(...) method.");
-					case ClrElementKind.Enum:
-						return new ClrtDisplayableType(null, typeId, Constants.InvalidIndex, clrType.Name, String.Empty, kind);
-					case ClrElementKind.System__Canon:
-						throw new ApplicationException("System__Canon kind is not expected from ClrHeap.GetHeapObject(...) method.");
-					case ClrElementKind.Exception:
-					case ClrElementKind.Abstract:
-					case ClrElementKind.SystemVoid:
-					case ClrElementKind.SystemObject:
-						return new ClrtDisplayableType(null, typeId, Constants.InvalidIndex, clrType.Name, String.Empty, kind);
-				}
-			}
-			else
-			{
-				switch (TypeExtractor.GetStandardKind(kind))
-				{
-					case ClrElementKind.String:
-						return new ClrtDisplayableType(null, typeId, Constants.InvalidIndex, clrType.Name, String.Empty, kind);
-					case ClrElementKind.SZArray:
-					case ClrElementKind.Array:
-						return new ClrtDisplayableType(null, typeId, Constants.InvalidIndex, clrType.Name, String.Empty, kind);
-					case ClrElementKind.Struct:
-					case ClrElementKind.Object:
-					case ClrElementKind.Class:
-						var dispType = new ClrtDisplayableType(null, typeId, Constants.InvalidIndex, clrType.Name, String.Empty, kind);
-						var dispFlds = GetClrtDisplayableTypeFields(ndxProxy, heap, dispType, clrType, addr, ambiguousFields);
-						var ambiguousCount = ambiguousFields.Count;
-						var switchList = false;
-						for (int j = i + 1, jcnt = addresses.Length; j < jcnt && ambiguousCount > 0; ++j)
-						{
-							var jaddr = addresses[j];
-							if (switchList)
-							{
-								ambiguousCount = ambiguousFields2.Count;
-								switchList = !switchList;
-								TryGetClrtDisplayableTypeFields(ndxProxy, heap, dispType, clrType, jaddr, ambiguousFields2, ambiguousFields, dispFlds);
-								continue;
-							}
-							ambiguousCount = ambiguousFields.Count;
-							switchList = !switchList;
-							TryGetClrtDisplayableTypeFields(ndxProxy, heap, dispType, clrType, jaddr, ambiguousFields, ambiguousFields2, dispFlds);
-						}
-						dispType.AddFields(dispFlds);
-						return dispType;
-					case ClrElementKind.Unknown:
-						continue;
-					default:
-						return new ClrtDisplayableType(null, typeId, Constants.InvalidIndex, clrType.Name, String.Empty, kind);
-				}
-			}
-*/
-		}
+            return null;
+        }
 
-		public static KeyValuePair<string,InstanceValue> GetClassStructValue(IndexProxy ndxProxy, ClrHeap heap, ulong decoratedAddr, ClrType clrType,  TypeKind kind, int fldNdx)
+
+        public static InstanceValue[] GetFieldValues(IndexProxy ndxProxy, ClrHeap heap, ClrType clrType, ulong addr, out string error)
+        {
+            error = null;
+            if (clrType.Fields == null || clrType.Fields.Count < 1) return Utils.EmptyArray<InstanceValue>.Value;
+            for (int i = 0, icnt = clrType.Fields.Count; i < icnt; ++i)
+            {
+
+            }
+
+
+            return Utils.EmptyArray<InstanceValue>.Value;
+        }
+
+        public static KeyValuePair<string, InstanceValue> GetInstanceValue(IndexProxy ndxProxy, ClrHeap heap, ulong decoratedAddr, int fldNdx)
+        {
+            var addr = Utils.RealAddress(decoratedAddr);
+            var typeInfo = TypeExtractor.TryGetRealType(heap, addr);
+            var clrType = typeInfo.Key;
+            var kind = typeInfo.Value;
+            var specKind = TypeExtractor.GetSpecialKind(kind);
+            var typeId1 = ndxProxy.GetTypeIdAtAddr(addr);
+            var typeId2 = ndxProxy.GetTypeId(clrType.Name);
+            string value;
+            if (specKind != ClrElementKind.Unknown)
+            {
+                switch (specKind)
+                {
+                    case ClrElementKind.Guid:
+                        value = GetGuidValue(addr, clrType);
+                        return new KeyValuePair<string, InstanceValue>(null, new InstanceValue(typeId1, kind, addr, clrType.Name, value, Utils.AddressString(decoratedAddr)));
+                    case ClrElementKind.DateTime:
+                        value = GetDateTimeValue(addr, clrType);
+                        return new KeyValuePair<string, InstanceValue>(null, new InstanceValue(typeId1, kind, addr, clrType.Name, value, Utils.AddressString(decoratedAddr)));
+                    case ClrElementKind.TimeSpan:
+                        value = GetTimeSpanValue(addr, clrType);
+                        return new KeyValuePair<string, InstanceValue>(null, new InstanceValue(typeId1, kind, addr, clrType.Name, value, Utils.AddressString(decoratedAddr)));
+                    case ClrElementKind.Decimal:
+                        value = GetDecimalValue(addr, clrType, "0,0.00");
+                        return new KeyValuePair<string, InstanceValue>(null, new InstanceValue(typeId1, kind, addr, clrType.Name, value, Utils.AddressString(decoratedAddr)));
+                    case ClrElementKind.Exception:
+                        value = GetShortExceptionValue(addr, clrType, heap);
+                        return new KeyValuePair<string, InstanceValue>(null, new InstanceValue(typeId1, kind, addr, clrType.Name, value, Utils.AddressString(decoratedAddr)));
+                    case ClrElementKind.Free:
+                    case ClrElementKind.Abstract:
+                    case ClrElementKind.SystemVoid:
+                    case ClrElementKind.SystemObject:
+                        return new KeyValuePair<string, InstanceValue>(null, new InstanceValue(typeId1, kind, addr, clrType.Name, string.Empty, Utils.AddressString(decoratedAddr)));
+                    default:
+                        return new KeyValuePair<string, InstanceValue>("Unexpected special kind", new InstanceValue(typeId1, kind, addr, clrType.Name, string.Empty, Utils.AddressString(decoratedAddr)));
+                }
+            }
+            else
+            {
+                switch (kind)
+                {
+                    case ClrElementKind.String:
+                        return new KeyValuePair<string, InstanceValue>(null, null);
+                    case ClrElementKind.SZArray:
+                    case ClrElementKind.Array:
+                        return new KeyValuePair<string, InstanceValue>(null, null);
+                    case ClrElementKind.Struct:
+                    case ClrElementKind.Object:
+                    case ClrElementKind.Class:
+                        string error;
+                        var fldValues = GetFieldValues(ndxProxy, heap, clrType, addr, out error);
+                        return new KeyValuePair<string, InstanceValue>(null, null);
+                    case ClrElementKind.Unknown:
+                        return new KeyValuePair<string, InstanceValue>(null, null);
+                    default:
+                        return new KeyValuePair<string, InstanceValue>(null, null);
+                }
+            }
+        }
+
+		public static KeyValuePair<string,InstanceValue> GetClassStructValue(IndexProxy ndxProxy, ClrHeap heap, ulong decoratedAddr, ClrType clrType,  ClrElementKind kind, int fldNdx)
         {
             Debug.Assert(clrType != null);
             var addr = Utils.RealAddress(decoratedAddr);
@@ -890,7 +866,7 @@ namespace ClrMDRIndex
             if (fldCount < 1) return new KeyValuePair<string, InstanceValue>(clrType.Name + " is not struct/class with fields.", null);
             var internalAddresses = TypeExtractor.HasInternalAddresses(clrType);
             var typeId = ndxProxy.GetTypeId(clrType.Name);
-            var instVal = new InstanceValue(typeId, addr, clrType.Name, String.Empty, Utils.RealAddressString(addr));
+            var instVal = new InstanceValue(typeId, kind, addr, clrType.Name, String.Empty, Utils.RealAddressString(addr));
 
             for (int i=0; i < fldCount; ++i)
             {

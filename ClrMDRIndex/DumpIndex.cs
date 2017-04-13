@@ -1179,6 +1179,8 @@ namespace ClrMDRIndex
 
                 var kind = TypeKinds.GetTypeKind(clrType);
 
+                var newkind = TypeExtractor.GetElementKind(clrType);
+
 
                 if (TypeKinds.IsArray(kind))
                 {
@@ -1193,7 +1195,7 @@ namespace ClrMDRIndex
                     sb.Append("Item Type: ").AppendLine(aryResult.Item3.Name);
                     sb.Append("Address:   ").AppendLine(Utils.AddressString(addr));
                     sb.Append("Lenght:    ").AppendLine(aryResult.Item4.ToString());
-                    inst = new InstanceValue(typeId, addr, aryResult.Item2.Name, aryResult.Item3.Name,
+                    inst = new InstanceValue(typeId, newkind, addr, aryResult.Item2.Name, aryResult.Item3.Name,
                         Utils.BaseArrayName(aryResult.Item2.Name, aryResult.Item4));
                     inst.AddArrayValues(aryResult.Item5);
                     return new Tuple<InstanceValue, string>(inst, StringBuilderCache.GetStringAndRelease(sb));
@@ -1220,7 +1222,8 @@ namespace ClrMDRIndex
                 sb = StringBuilderCache.Acquire(StringBuilderCache.MaxCapacity);
                 sb.Append("Type:      ").AppendLine(typeName);
                 sb.Append("Address:   ").AppendLine(Utils.AddressString(addr));
-                inst = new InstanceValue(typeId, addr, typeName, string.Empty, val);
+                var newKind = TypeExtractor.GetElementKind(clrType);
+                inst = new InstanceValue(typeId, newKind, addr, typeName, string.Empty, val);
                 return new Tuple<InstanceValue, string>(inst, StringBuilderCache.GetStringAndRelease(sb));
             }
             catch (Exception ex)

@@ -555,7 +555,8 @@ module Types =
             let addr = Utils.RealAddress(decoratedAddr)
             let fldCount = fieldCount clrType
             let internalAddresses = hasInternalAddresses clrType
-            let mutable instVal = InstanceValue(ndxProxy.GetTypeId(clrType.Name), addr, clrType.Name, String.Empty, Utils.RealAddressString(addr));
+            let newKind = TypeExtractor.GetElementKind clrType
+            let mutable instVal = InstanceValue(ndxProxy.GetTypeId(clrType.Name), newKind, addr, clrType.Name, String.Empty, Utils.RealAddressString(addr));
 
             if fldCount = 0 then
                 (clrType.Name + " is not struct/class with fields.",null)
@@ -564,6 +565,7 @@ module Types =
                     let fld = clrType.Fields.[fldNdx]
                     let fldTypeName = if isNull fld.Type then Constants.UnknownTypeName else fld.Type.Name
                     let fldKind = typeKind fld.Type
+                    let fldNewKind = TypeExtractor.GetElementKind(fld.Type)
                     let fldVal = getFieldValue heap addr internalAddresses fld fldKind
                     let typeId = ndxProxy.GetTypeId(fldTypeName)
                     let mainKind = TypeKinds.GetMainTypeKind(fldKind)
@@ -574,9 +576,9 @@ module Types =
                         let fldObjType = heap.GetObjectType(fldAddr)
                         let fldObjName = if isNull fldObjType then fldTypeName else fldObjType.Name
                         let fldTypeId = ndxProxy.GetTypeId(fldObjName)
-                        instVal.Addvalue(new InstanceValue(fldTypeId, fldAddr, fldObjName, fld.Name, fldVal))
+                        instVal.Addvalue(new InstanceValue(fldTypeId, fldNewKind, fldAddr, fldObjName, fld.Name, fldVal))
                     | _ ->
-                        instVal.Addvalue(new InstanceValue(typeId, Constants.InvalidAddress, fldTypeName, fld.Name, fldVal, fldNdx))
+                        instVal.Addvalue(new InstanceValue(typeId, fldNewKind, Constants.InvalidAddress, fldTypeName, fld.Name, fldVal, fldNdx))
                 (null,instVal)
         with
             | exn -> (Utils.GetExceptionErrorString(exn),null)

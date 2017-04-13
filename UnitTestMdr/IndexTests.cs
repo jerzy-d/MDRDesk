@@ -1414,17 +1414,37 @@ namespace UnitTestMdr
 
 
 
-		#endregion disassemble
+        #endregion disassemble
 
-		#region get list of specific clr objects
+        #region instance value
 
+        [TestMethod]
+        public void TestInstanceValue()
+        {
+            ulong addr = 0x0000008045b6b0;
+            string error = null;
+            Stopwatch stopWatch = new Stopwatch();
+            stopWatch.Start();
+            var index = OpenIndex(@"D:\Jerzy\WinDbgStuff\dumps\Analytics\Highline\analyticsdump111.dlk.dmp.map");
+            TestContext.WriteLine(index.DumpFileName + " INDEX OPEN DURATION: " + Utils.StopAndGetDurationString(stopWatch));
 
+            using (index)
+            {
+                var result = ValueExtractor.GetInstanceValue(index.IndexProxy, index.GetHeap(), addr, Constants.InvalidIndex);
+            }
 
-		#endregion get list of specific clr objects
+            Assert.IsNull(error, error);
+        }
 
-		#region misc
+        #endregion instance value
 
-		[TestMethod]
+        #region get list of specific clr objects
+
+        #endregion get list of specific clr objects
+
+        #region misc
+
+        [TestMethod]
 		public void TestKnownTypes()
 		{
 			string[] typeNames = new string[]

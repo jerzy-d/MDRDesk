@@ -49,15 +49,15 @@ namespace MDRDesk
 			}
 			else
 			{
-				string[] values = _instanceValue.ArrayValues;
+				DisplayableString[] values = _instanceValue.ArrayValues;
 				Debug.Assert(values!=null);
 				int cnt = values.Length;
 				int digitCount = Utils.NumberOfDigits(cnt);
-				string[] newValues = new string[cnt];
+				DisplayableString[] newValues = new DisplayableString[cnt];
 				string format = "[{0," + digitCount.ToString() + ":#,###,###}] ";
 				for (int i = 0, icnt = values.Length; i < icnt; ++i)
 				{
-					newValues[i] = Utils.SizeStringHeader(i, digitCount, format) + values[i];
+					newValues[i] = new DisplayableString(  Utils.SizeStringHeader(i, digitCount, format) + values[i]);
 				}
 				_indicesShown = true;
 				CollectionValues.ItemsSource = newValues;

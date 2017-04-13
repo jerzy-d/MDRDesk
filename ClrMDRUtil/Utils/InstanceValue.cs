@@ -9,25 +9,29 @@ namespace ClrMDRIndex
 	public class InstanceValue
 	{
 		private int _typeId;
-		private int _fieldNdx; // If _fieldNdx value is valid, then this is a structure with fields, and address is of parent's instance.
+        private ClrElementKind _kind;
+        private int _fieldNdx; // If _fieldNdx value is valid, then this is a structure with fields, and address is of parent's instance.
 		private ulong _address;
 		private string _typeName;
 		private string _fieldName;
 		private DisplayableString _value;
-		private string[] _aryValues;
+		private DisplayableString[] _aryValues;
 		private List<InstanceValue> _values;
 
-		public int FieldIndex => _fieldNdx;
-		public ulong Address => _address;
+        public int TypeId => _typeId;
+        public ClrElementKind Kind => _kind;
+        public int FieldIndex => _fieldNdx;
+        public ulong Address => _address;
 		public string TypeName => _typeName;
 		public string FieldName => _fieldName;
         public DisplayableString Value => _value;
 		public List<InstanceValue> Values => _values;
-		public string[] ArrayValues => _aryValues;
+		public DisplayableString[] ArrayValues => _aryValues;
 
-		public InstanceValue(int typeId, ulong addr, string typeName, string fldName, string value, int fldNdx = Constants.InvalidIndex)
+		public InstanceValue(int typeId, ClrElementKind kind, ulong addr, string typeName, string fldName, string value, int fldNdx = Constants.InvalidIndex)
 		{
 			_typeId = typeId;
+            _kind = kind;
 			_address = addr;
 		    _typeName = typeName;
 		    _fieldName = fldName;
@@ -37,7 +41,20 @@ namespace ClrMDRIndex
 			_aryValues = null;
 		}
 
-		public bool HaveInnerValues()
+        public InstanceValue(int typeId, ulong addr, string typeName, string fldName, string value, int fldNdx = Constants.InvalidIndex)
+        {
+            _typeId = typeId;
+            _kind = ClrElementKind.Unknown;
+            _address = addr;
+            _typeName = typeName;
+            _fieldName = fldName;
+            _value = new DisplayableString(value);
+            _values = new List<InstanceValue>(0);
+            _fieldNdx = fldNdx;
+            _aryValues = null;
+        }
+
+        public bool HaveInnerValues()
 		{
 			return Values.Count > 0;
 		}
@@ -49,7 +66,16 @@ namespace ClrMDRIndex
 
 		public void AddArrayValues(string[] aryvalues)
 		{
-			_aryValues = aryvalues;
+            if (aryvalues == null)
+            {
+                _aryValues = null;
+                return;
+            }
+            _aryValues = new DisplayableString[aryvalues.Length];
+            for (int i = 0, icnt = aryvalues.Length; i < icnt; ++i)
+            {
+                _aryValues[i] = new DisplayableString(aryvalues[i]);
+            }
 		}
 
 		public void SortByFieldName()
