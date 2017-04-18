@@ -7,9 +7,12 @@ using Microsoft.Diagnostics.Runtime;
 
 namespace ClrMDRIndex
 {
+	public delegate string ArrayElementValue(ClrHeap heap, ClrType aryType, ulong addr, ClrType elemType, int ndx);
+
+
 	public class ValueExtractor
 	{
-		public static bool Is64Bit = Environment.Is64BitOperatingSystem;
+		public static bool Is64Bit = Environment.Is64BitProcess;
 
 
 		//
@@ -44,10 +47,23 @@ namespace ClrMDRIndex
 			return d;
 		}
 
+		public static string DecimalValue(ulong addr, ClrInstanceField field)
+		{
+			var flags = (int)field.Type.Fields[0].GetValue(addr, true);
+			var hi = (int)field.Type.Fields[1].GetValue(addr, true);
+			var lo = (int)field.Type.Fields[2].GetValue(addr, true);
+			var mid = (int)field.Type.Fields[3].GetValue(addr, true);
+
+			int[] bits = { lo, mid, hi, flags };
+			decimal d = new decimal(bits);
+
+			return d.ToString("G", CultureInfo.InvariantCulture);
+		}
+
 		public static string GetDecimalValueR(ulong addr, ClrType type, string formatSpec)
 		{
 			decimal d = GetDecimalValueR(addr, type);
-			return formatSpec == null ? d.ToString(CultureInfo.InvariantCulture) : d.ToString(formatSpec);
+			return formatSpec == null ? d.ToString("G",CultureInfo.InvariantCulture) : d.ToString(formatSpec);
 		}
 
 		public static decimal GetDecimalValueR(ulong addr, ClrType type)
@@ -110,11 +126,12 @@ namespace ClrMDRIndex
 
 		public static string GetStringAtAddress(ulong addr, ClrHeap heap)
 		{
-			if (addr == 0UL) return Constants.NullName;
+			if (addr == 0UL) return Constants.NullValue;
 			var lenBuf = new byte[4];
 			addr += (ulong)IntPtr.Size;
 			heap.ReadMemory(addr, lenBuf, 0, 4);
 			int len = BitConverter.ToInt32(lenBuf, 0) * sizeof(char);
+			if (len == 0) return Constants.EmptyStringValue;
 			var strBuf = new byte[len];
 			heap.ReadMemory(addr + 4, strBuf, 0, len);
 			return Encoding.Unicode.GetString(strBuf);
@@ -231,6 +248,14 @@ namespace ClrMDRIndex
 			return formatSpec == null ? dt.ToString(CultureInfo.InvariantCulture) : dt.ToString(formatSpec);
 		}
 
+		public static string DateTimeValue(ulong addr, ClrInstanceField fld, string formatSpec = null)
+		{
+			var data = (ulong)fld.Type.Fields[0].GetValue(addr, true);
+			data = data & TicksMask;
+			var dt = DateTime.FromBinary((long)data);
+			return formatSpec == null ? dt.ToString(CultureInfo.InvariantCulture) : dt.ToString(formatSpec);
+		}
+
 
 		public static string GetDateTimeValue(ulong addr, ClrInstanceField fld, bool internalPtr, string formatSpec = null)
 		{
@@ -257,6 +282,13 @@ namespace ClrMDRIndex
 		public static string GetTimeSpanValue(ulong addr, ClrType type)
 		{
 			var data = (long)type.Fields[0].GetValue(addr,true);
+			var ts = TimeSpan.FromTicks(data);
+			return ts.ToString("c");
+		}
+
+		public static string TimeSpanValue(ulong addr, ClrInstanceField fld) // TODO JRD -- check if this works
+		{
+			var data = (long)fld.Type.Fields[0].GetValue(addr, true);
 			var ts = TimeSpan.FromTicks(data);
 			return ts.ToString("c");
 		}
@@ -314,6 +346,27 @@ namespace ClrMDRIndex
 			{
 				if (i == 5) sb.Append('-');
 				var val = (byte)type.Fields[i].GetValue(addr, true);
+				sb.AppendFormat("{0:X2}", val);
+			}
+			return StringBuilderCache.GetStringAndRelease(sb);
+		}
+
+		public static string GuidValue(ulong addr, ClrInstanceField field)
+		{
+			StringBuilder sb = StringBuilderCache.Acquire(64);
+			var ival = (int)field.Type.Fields[0].GetValue(addr, true);
+			sb.AppendFormat("{0:X8}", ival);
+			sb.Append('-');
+			var sval = (short)field.Type.Fields[1].GetValue(addr, true);
+			sb.AppendFormat("{0:X4}", sval);
+			sb.Append('-');
+			sval = (short)field.Type.Fields[2].GetValue(addr, true);
+			sb.AppendFormat("{0:X4}", sval);
+			sb.Append('-');
+			for (var i = 3; i < 11; ++i)
+			{
+				if (i == 5) sb.Append('-');
+				var val = (byte)field.Type.Fields[i].GetValue(addr, true);
 				sb.AppendFormat("{0:X2}", val);
 			}
 			return StringBuilderCache.GetStringAndRelease(sb);
@@ -468,6 +521,57 @@ namespace ClrMDRIndex
 		//
 		// Primitive types.
 		//
+
+		public static string PrimitiveValue(ulong addr, ClrInstanceField fld, bool intern)
+		{
+			var kind = TypeExtractor.GetElementKind(fld.Type);
+			if (kind == ClrElementKind.Unknown) return Constants.UnknownValue;
+			var obj = fld.GetValue(addr, intern);
+			return PrimitiveValue(obj, kind);
+		}
+
+		public static string PrimitiveValue(object obj, ClrElementKind kind)
+		{
+			switch (kind)
+			{
+				case ClrElementKind.Unknown:
+					return Constants.UnknownValue;
+				case ClrElementKind.Boolean:
+					return ((bool)obj).ToString();
+				case ClrElementKind.Char:
+					return Utils.DisplayableChar((char)obj);
+				case ClrElementKind.Int8:
+					return ((Byte)obj).ToString();
+				case ClrElementKind.Int16:
+					return ((Int16)obj).ToString();
+				case ClrElementKind.Int32:
+					return ((Int32)obj).ToString();
+				case ClrElementKind.Int64:
+					return ((Int64)obj).ToString();
+				case ClrElementKind.UInt8:
+					return ((Byte)obj).ToString();
+				case ClrElementKind.UInt16:
+					return ((UInt16)obj).ToString();
+				case ClrElementKind.UInt32:
+					return ((UInt32)obj).ToString();
+				case ClrElementKind.UInt64:
+					return ((UInt64)obj).ToString();
+				case ClrElementKind.Float:
+					return ((float)obj).ToString("N8");
+				case ClrElementKind.Double:
+					return ((double)obj).ToString("N8");
+				case ClrElementKind.Pointer:
+					return "pointer: " + Utils.AddressString((UInt64)obj);
+				case ClrElementKind.NativeInt:
+					return "native int: " + obj;
+				case ClrElementKind.NativeUInt:
+					return "native uint: " + obj;
+				default:
+					return Constants.UnknownValue;
+			}
+		}
+
+
 		public static string GetPrimitiveValue(ulong addr, ClrType clrType)
 		{
 			if (!clrType.HasSimpleValue)
@@ -767,45 +871,183 @@ namespace ClrMDRIndex
 			intervals.Add(new triple<bool, ulong, ulong>(false, lastAddr, curLastAddr - lastAddr));
 		}
 
-        public static InstanceValue GetFieldValue(IndexProxy ndxProxy, ClrHeap heap, ClrType clrType, ulong addr, int fldNdx, out string error)
+		public static string GetFieldValue(IndexProxy ndxProxy, ClrHeap heap, ulong addr, ClrInstanceField fld, bool intern, out ClrType fldType, out ClrElementKind kind)
+		{
+			fldType = fld.Type;
+			kind = TypeExtractor.GetElementKind(fldType);
+			if (kind == ClrElementKind.Unknown)
+			{
+				// TODO JRD
+				return null;
+			}
+			ulong fldAddr = fld.GetAddress(addr, intern);
+			if (TypeExtractor.IsAmbiguousKind(kind))
+			{
+				var tempType = heap.GetObjectType(fldAddr);
+				if (tempType != null)
+				{
+					fldType = tempType;
+					kind = TypeExtractor.GetElementKind(fldType);
+				}
+			}
+			if (TypeExtractor.IsStruct(kind))
+			{
+				return Utils.RealAddressString(fldAddr);
+			}
+			var specKind = TypeExtractor.GetSpecialKind(kind);
+			string value;
+			if (specKind != ClrElementKind.Unknown)
+			{
+				switch (specKind)
+				{
+					case ClrElementKind.Guid:
+						return GuidValue(fldAddr, fld);
+					case ClrElementKind.DateTime:
+						return DateTimeValue(fldAddr, fld);
+					case ClrElementKind.TimeSpan:
+						return TimeSpanValue(fldAddr, fld);
+					case ClrElementKind.Decimal:
+						return DecimalValue(fldAddr, fld);
+					case ClrElementKind.Exception:
+						return Utils.RealAddressString(fldAddr);
+					case ClrElementKind.Enum:
+						return GetEnumValue(fldAddr, fld, intern);
+					case ClrElementKind.Free:
+					case ClrElementKind.Abstract:
+					case ClrElementKind.SystemVoid:
+					case ClrElementKind.SystemObject:
+						return Utils.RealAddressString(fldAddr);
+					default:
+						return Utils.RealAddressString(fldAddr);
+				}
+			}
+			else
+			{
+				switch (kind)
+				{
+					case ClrElementKind.String:
+						ulong faddr;
+						if (heap.ReadPointer(fldAddr, out faddr))
+							return GetStringAtAddress(faddr, heap);
+						else
+							return Constants.NullValue;
+					case ClrElementKind.SZArray:
+					case ClrElementKind.Array:
+						return Utils.RealAddressString(fldAddr);
+					case ClrElementKind.Object:
+					case ClrElementKind.Class:
+						return Utils.RealAddressString(fldAddr);
+					case ClrElementKind.Unknown:
+						return Utils.RealAddressString(fldAddr);
+					default:
+						return PrimitiveValue(addr, fld, intern);
+				}
+			}
+
+
+			return Constants.NullValue;
+		}
+
+
+		public static InstanceValue GetFieldValue(IndexProxy ndxProxy, ClrHeap heap, ClrType clrType, ulong addr, InstanceValue parent, int fldNdx, out string error)
         {
             error = null;
             var fld = clrType.Fields[fldNdx];
-            var kind = TypeExtractor.GetElementKind(fld.Type);
+			var typeId = ndxProxy.GetTypeId(fld.Type.Name);
+			var kind = TypeExtractor.GetElementKind(fld.Type);
             if (kind == ClrElementKind.Unknown)
             {
                 // TODO JRD
                 return null;
             }
+			if (TypeExtractor.IsStruct(kind))
+			{
+				// TODO JRD
+				return null;
+			}
+			var specKind = TypeExtractor.GetSpecialKind(kind);
+			string value;
+			if (specKind != ClrElementKind.Unknown)
+			{
+				switch (specKind)
+				{
+					case ClrElementKind.Guid:
+						value = GetGuidValue(addr, clrType);
+						return new InstanceValue(typeId, kind, addr, clrType.Name, value, Utils.RealAddressString(addr), fldNdx, parent);
+					case ClrElementKind.DateTime:
+						value = GetDateTimeValue(addr, clrType);
+						return new InstanceValue(typeId, kind, addr, clrType.Name, value, Utils.RealAddressString(addr), fldNdx, parent);
+					case ClrElementKind.TimeSpan:
+						value = GetTimeSpanValue(addr, clrType);
+						return new InstanceValue(typeId, kind, addr, clrType.Name, value, Utils.RealAddressString(addr), fldNdx, parent);
+					case ClrElementKind.Decimal:
+						value = GetDecimalValue(addr, clrType, "0,0.00");
+						return new InstanceValue(typeId, kind, addr, clrType.Name, value, Utils.RealAddressString(addr), fldNdx, parent);
+					case ClrElementKind.Exception:
+						value = GetShortExceptionValue(addr, clrType, heap);
+						return new InstanceValue(typeId, kind, addr, clrType.Name, value, Utils.RealAddressString(addr), fldNdx, parent);
+					case ClrElementKind.Free:
+					case ClrElementKind.Abstract:
+					case ClrElementKind.SystemVoid:
+					case ClrElementKind.SystemObject:
+						return new InstanceValue(typeId, kind, addr, clrType.Name, string.Empty, Utils.RealAddressString(addr), fldNdx, parent);
+					default:
+						error = "Unexpected special kind";
+						return new InstanceValue(typeId, kind, addr, clrType.Name, string.Empty, Utils.RealAddressString(addr), fldNdx, parent);
+				}
+			}
+			else
+			{
+				//switch (kind)
+				//{
+				//	case ClrElementKind.String:
+				//		return new KeyValuePair<string, InstanceValue>(null, null);
+				//	case ClrElementKind.SZArray:
+				//	case ClrElementKind.Array:
+				//		return new KeyValuePair<string, InstanceValue>(null, null);
+				//	case ClrElementKind.Object:
+				//	case ClrElementKind.Class:
+
+				//		var inst = new InstanceValue(typeId, kind, addr, clrType.Name, string.Empty, Utils.AddressString(decoratedAddr), fldNdx, parent);
+				//		return new KeyValuePair<string, InstanceValue>(error, inst);
+				//	case ClrElementKind.Unknown:
+				//		return new KeyValuePair<string, InstanceValue>(null, null);
+				//	default:
+				//		return new KeyValuePair<string, InstanceValue>(null, null);
+				//}
+			}
 
 
-
-            return null;
+			return null;
         }
 
 
-        public static InstanceValue[] GetFieldValues(IndexProxy ndxProxy, ClrHeap heap, ClrType clrType, ulong addr, out string error)
+        public static InstanceValue[] GetFieldValues(IndexProxy ndxProxy, ClrHeap heap, ClrType clrType, ClrElementKind kind, ulong addr, InstanceValue parent, out string error)
         {
             error = null;
             if (clrType.Fields == null || clrType.Fields.Count < 1) return Utils.EmptyArray<InstanceValue>.Value;
+			InstanceValue[] fields = new InstanceValue[clrType.Fields.Count];
             for (int i = 0, icnt = clrType.Fields.Count; i < icnt; ++i)
             {
-
-            }
-
-
-            return Utils.EmptyArray<InstanceValue>.Value;
+				var fld = clrType.Fields[i];
+				ClrElementKind fldKind;
+				ClrType fldType;
+				var value = GetFieldValue(ndxProxy, heap, addr, clrType.Fields[i], TypeExtractor.IsStruct(kind), out fldType, out fldKind);
+				var ftypeId = ndxProxy.GetTypeId(fldType.Name);
+				fields[i] = new InstanceValue(ftypeId, fldKind, addr, fld.Type.Name, fld.Name, value, i, parent);
+			}
+			return fields;
         }
 
-        public static KeyValuePair<string, InstanceValue> GetInstanceValue(IndexProxy ndxProxy, ClrHeap heap, ulong decoratedAddr, int fldNdx)
+        public static (string, InstanceValue) GetInstanceValue(IndexProxy ndxProxy, ClrHeap heap, ulong decoratedAddr, int fldNdx, InstanceValue parent)
         {
             var addr = Utils.RealAddress(decoratedAddr);
             var typeInfo = TypeExtractor.TryGetRealType(heap, addr);
             var clrType = typeInfo.Key;
             var kind = typeInfo.Value;
             var specKind = TypeExtractor.GetSpecialKind(kind);
-            var typeId1 = ndxProxy.GetTypeIdAtAddr(addr);
-            var typeId2 = ndxProxy.GetTypeId(clrType.Name);
+            var typeId = ndxProxy.GetTypeIdAtAddr(addr);
+			if (typeId == Constants.InvalidIndex) typeId = ndxProxy.GetTypeId(clrType.Name);
             string value;
             if (specKind != ClrElementKind.Unknown)
             {
@@ -813,26 +1055,26 @@ namespace ClrMDRIndex
                 {
                     case ClrElementKind.Guid:
                         value = GetGuidValue(addr, clrType);
-                        return new KeyValuePair<string, InstanceValue>(null, new InstanceValue(typeId1, kind, addr, clrType.Name, value, Utils.AddressString(decoratedAddr)));
+                        return (null, new InstanceValue(typeId, kind, addr, clrType.Name, value, Utils.RealAddressString(decoratedAddr), fldNdx, parent));
                     case ClrElementKind.DateTime:
                         value = GetDateTimeValue(addr, clrType);
-                        return new KeyValuePair<string, InstanceValue>(null, new InstanceValue(typeId1, kind, addr, clrType.Name, value, Utils.AddressString(decoratedAddr)));
+                        return (null, new InstanceValue(typeId, kind, addr, clrType.Name, value, Utils.RealAddressString(decoratedAddr), fldNdx, parent));
                     case ClrElementKind.TimeSpan:
                         value = GetTimeSpanValue(addr, clrType);
-                        return new KeyValuePair<string, InstanceValue>(null, new InstanceValue(typeId1, kind, addr, clrType.Name, value, Utils.AddressString(decoratedAddr)));
+                        return (null, new InstanceValue(typeId, kind, addr, clrType.Name, value, Utils.RealAddressString(decoratedAddr), fldNdx, parent));
                     case ClrElementKind.Decimal:
                         value = GetDecimalValue(addr, clrType, "0,0.00");
-                        return new KeyValuePair<string, InstanceValue>(null, new InstanceValue(typeId1, kind, addr, clrType.Name, value, Utils.AddressString(decoratedAddr)));
+                        return (null, new InstanceValue(typeId, kind, addr, clrType.Name, value, Utils.RealAddressString(decoratedAddr), fldNdx, parent));
                     case ClrElementKind.Exception:
                         value = GetShortExceptionValue(addr, clrType, heap);
-                        return new KeyValuePair<string, InstanceValue>(null, new InstanceValue(typeId1, kind, addr, clrType.Name, value, Utils.AddressString(decoratedAddr)));
+                        return (null, new InstanceValue(typeId, kind, addr, clrType.Name, value, Utils.RealAddressString(decoratedAddr), fldNdx, parent));
                     case ClrElementKind.Free:
                     case ClrElementKind.Abstract:
                     case ClrElementKind.SystemVoid:
                     case ClrElementKind.SystemObject:
-                        return new KeyValuePair<string, InstanceValue>(null, new InstanceValue(typeId1, kind, addr, clrType.Name, string.Empty, Utils.AddressString(decoratedAddr)));
+                        return (null, new InstanceValue(typeId, kind, addr, clrType.Name, string.Empty, Utils.RealAddressString(decoratedAddr), fldNdx, parent));
                     default:
-                        return new KeyValuePair<string, InstanceValue>("Unexpected special kind", new InstanceValue(typeId1, kind, addr, clrType.Name, string.Empty, Utils.AddressString(decoratedAddr)));
+                        return ("Unexpected special kind", new InstanceValue(typeId, kind, addr, clrType.Name, string.Empty, Utils.RealAddressString(decoratedAddr), fldNdx, parent));
                 }
             }
             else
@@ -840,20 +1082,26 @@ namespace ClrMDRIndex
                 switch (kind)
                 {
                     case ClrElementKind.String:
-                        return new KeyValuePair<string, InstanceValue>(null, null);
+						var str = GetStringAtAddress(addr, heap);
+						var sinst = new InstanceValue(typeId, kind, addr, clrType.Name, string.Empty, str, fldNdx, parent);
+						return (null, sinst);
                     case ClrElementKind.SZArray:
                     case ClrElementKind.Array:
-                        return new KeyValuePair<string, InstanceValue>(null, null);
+						return ArrayContent(ndxProxy, heap, addr, parent);
                     case ClrElementKind.Struct:
                     case ClrElementKind.Object:
                     case ClrElementKind.Class:
-                        string error;
-                        var fldValues = GetFieldValues(ndxProxy, heap, clrType, addr, out error);
-                        return new KeyValuePair<string, InstanceValue>(null, null);
+						var inst = new InstanceValue(typeId, kind, addr, clrType.Name, string.Empty, Utils.RealAddressString(decoratedAddr), fldNdx, parent);
+						string error;
+                        var fldValues = GetFieldValues(ndxProxy, heap, clrType, kind, addr, inst, out error);
+						inst.SetFields(fldValues);
+                        return (error, inst);
                     case ClrElementKind.Unknown:
-                        return new KeyValuePair<string, InstanceValue>(null, null);
+                        return ("Unknown element type.", null);
                     default:
-                        return new KeyValuePair<string, InstanceValue>(null, null);
+						var val = GetPrimitiveValue(addr, clrType);
+						var dinst = new InstanceValue(typeId, kind, addr, clrType.Name, string.Empty, val, fldNdx, parent);
+						return (null, dinst);
                 }
             }
         }
@@ -881,7 +1129,124 @@ namespace ClrMDRIndex
             return new DisplayableString("Test");
         }
 
-        /*
+		#region array values
+
+		public static (string, InstanceValue) ArrayContent(IndexProxy ndxProxy, ClrHeap heap, ulong decoratedAddr, InstanceValue parent)
+		{
+			var addr = Utils.RealAddress(decoratedAddr);
+			(string error, ClrType clrType, ClrType elemType, ClrElementKind elemKind, int len) = ArrayInfo(heap, addr);
+			if (error != null)
+				return (error, null);
+			var typeId = ndxProxy.GetTypeId(clrType.Name);
+			var kind = TypeExtractor.GetElementKind(clrType);
+			var aryInst = new InstanceValue(typeId, kind, addr, clrType.Name, String.Empty, Utils.RealAddressString(addr), Constants.InvalidIndex, parent);
+			var elemTypeId = ndxProxy.GetTypeId(elemType.Name);
+			var elemInst = new InstanceValue(elemTypeId, elemKind, Constants.InvalidAddress, elemType.Name, String.Empty, Utils.CountString(len),Constants.InvalidIndex,aryInst);
+			aryInst.SetFields(new InstanceValue[] { elemInst });
+			var aryItems = GetAryItems(heap, addr, clrType, elemType, elemKind, len);
+			aryInst.AddArrayValues(aryItems);
+			return (null, aryInst);
+
+		}
+
+		public static (string, ClrType, ClrType, ClrElementKind, int) ArrayInfo(ClrHeap heap, ulong addr)
+		{
+			var clrType = heap.GetObjectType(addr);
+			if (clrType == null)
+				return ("Cannot get type at address: " + Utils.RealAddressString(addr), null, null, ClrElementKind.Unknown, 0);
+			if (!clrType.IsArray)
+				return ("The type at address: " + Utils.RealAddressString(addr) + " is not array.", null, null, ClrElementKind.Unknown, 0);
+			var len = clrType.GetArrayLength(addr);
+			var kind = TypeExtractor.GetElementKind(clrType.ComponentType);
+			return (null, clrType, clrType.ComponentType, kind, len);
+		}
+
+		public static string[] GetAryItems(ClrHeap heap, ulong addr, ClrType aryType, ClrType elemType, ClrElementKind elemKind, int aryCnt)
+		{
+			var ary = new string[aryCnt];
+
+			for (int i = 0; i < aryCnt; ++i)
+				ary[i] = GetAryItem(heap, addr, aryType, elemType, elemKind, i);
+
+			return ary;
+		}
+
+		public static string GetAryItem(ClrHeap heap, ulong addr, ClrType aryType, ClrType elemType, ClrElementKind elemKind, int aryNdx)
+		{
+
+			if (elemKind == ClrElementKind.Unknown)
+			{
+				return Constants.UnknownValue;
+			}
+			var elemAddr = aryType.GetArrayElementAddress(addr, aryNdx);
+
+			if (TypeExtractor.IsAmbiguousKind(elemKind))
+			{
+				var tempType = heap.GetObjectType(elemAddr);
+				if (tempType != null)
+				{
+					elemType = tempType;
+					elemKind = TypeExtractor.GetElementKind(elemType);
+				}
+			}
+			if (TypeExtractor.IsStruct(elemKind))
+			{
+				return Utils.RealAddressString(elemAddr);
+			}
+			var specKind = TypeExtractor.GetSpecialKind(elemKind);
+			string value;
+			if (specKind != ClrElementKind.Unknown)
+			{
+				switch (specKind)
+				{
+					case ClrElementKind.Guid:
+						return GetGuidValue(elemAddr, elemType);
+					case ClrElementKind.DateTime:
+						return GetDateTimeValue(elemAddr, elemType);
+					case ClrElementKind.TimeSpan:
+						return GetTimeSpanValue(heap, elemAddr);
+					case ClrElementKind.Decimal:
+						return GetDecimalValueR(elemAddr, elemType, null);
+					case ClrElementKind.Exception:
+						return Utils.RealAddressString(elemAddr);
+					case ClrElementKind.Free:
+					case ClrElementKind.Abstract:
+					case ClrElementKind.SystemVoid:
+					case ClrElementKind.SystemObject:
+						return Utils.RealAddressString(elemAddr);
+					default:
+						return Utils.RealAddressString(elemAddr);
+				}
+			}
+			else
+			{
+				switch (elemKind)
+				{
+					case ClrElementKind.String:
+						ulong faddr;
+						if (heap.ReadPointer(addr, out faddr))
+							return GetStringAtAddress(faddr, heap);
+						else
+							return Constants.NullValue;
+					case ClrElementKind.SZArray:
+					case ClrElementKind.Array:
+						return Utils.RealAddressString(elemAddr);
+					case ClrElementKind.Object:
+					case ClrElementKind.Class:
+						return Utils.RealAddressString(elemAddr);
+					case ClrElementKind.Unknown:
+						return Utils.RealAddressString(elemAddr);
+					default:
+						var elemobj = aryType.GetArrayElementValue(addr, aryNdx);
+						return GetPrimitiveValue(elemobj, elemType);
+				}
+			}
+
+		}
+
+#endregion array values
+
+		/*
         try
             let addr = Utils.RealAddress(decoratedAddr)
             let fldCount = fieldCount clrType

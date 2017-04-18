@@ -27,6 +27,7 @@ namespace ClrMDRIndex
 
         public IndexType Type { get; private set; }
         public static bool Is64Bit;
+		public static uint WordSize => Is64Bit ? 8u : 4u;
 
         private readonly DumpFileMoniker _fileMoniker;
         public string AdhocFolder => _fileMoniker.OutputFolder;
@@ -115,7 +116,7 @@ namespace ClrMDRIndex
                 dumpOrIndexPath = dumpOrIndexPath.Substring(0, dumpOrIndexPath.Length - 4);
             }
             _fileMoniker = new DumpFileMoniker(dumpOrIndexPath);
-            Is64Bit = Environment.Is64BitOperatingSystem;
+            Is64Bit = Environment.Is64BitProcess;
             _currentRuntimeIndex = runtimeIndex;
         }
 
@@ -1152,88 +1153,7 @@ namespace ClrMDRIndex
             return new ListingInfo(null, items, colInfos, sb.ToString());
         }
 
-        public Tuple<InstanceValue, string> GetInstanceValue(ulong addr, out string error)
-        {
-            error = null;
-            StringBuilder sb;
-            try
-            {
-                InstanceValue inst;
-                var realAddr = Utils.RealAddress(addr);
-                var typeId = GetTypeId(addr);
-                var heap = Dump.Heap;
-                var clrType = heap.GetObjectType(realAddr);
-                if (clrType == null)
-                {
-                    error = "DumpIndex.GetInstanceValue" + Constants.HeavyGreekCrossPadded + "Object at address: " +
-                            Utils.AddressString(addr) + " is null.";
-                    return null;
-                }
-
-                if (clrType.Name == "Free" || clrType.Name == "Error")
-                {
-                    error = "DumpIndex.GetInstanceValue" + Constants.HeavyGreekCrossPadded + "Invalid object at address: " +
-                            Utils.AddressString(addr) + ", type name is: " + clrType.Name + ".";
-                    return null;
-                }
-
-                var kind = TypeKinds.GetTypeKind(clrType);
-
-                var newkind = TypeExtractor.GetElementKind(clrType);
-
-
-                if (TypeKinds.IsArray(kind))
-                {
-                    var aryResult = CollectionContent.getAryContent(heap, realAddr);
-                    if (aryResult.Item1 != null)
-                    {
-                        error = aryResult.Item1;
-                        return null;
-                    }
-                    sb = StringBuilderCache.Acquire(StringBuilderCache.MaxCapacity);
-                    sb.Append("Type:      ").AppendLine(aryResult.Item2.Name);
-                    sb.Append("Item Type: ").AppendLine(aryResult.Item3.Name);
-                    sb.Append("Address:   ").AppendLine(Utils.AddressString(addr));
-                    sb.Append("Lenght:    ").AppendLine(aryResult.Item4.ToString());
-                    inst = new InstanceValue(typeId, newkind, addr, aryResult.Item2.Name, aryResult.Item3.Name,
-                        Utils.BaseArrayName(aryResult.Item2.Name, aryResult.Item4));
-                    inst.AddArrayValues(aryResult.Item5);
-                    return new Tuple<InstanceValue, string>(inst, StringBuilderCache.GetStringAndRelease(sb));
-                }
-
-                if (TypeKinds.IsClassStruct(kind))
-                {
-                    var result = Types.getClassStructValue(this.IndexProxy, heap, addr, clrType, kind, -1);
-                    error = result.Item1;
-                    string info = string.Empty;
-                    if (result.Item2 != null)
-                    {
-                        sb = StringBuilderCache.Acquire(StringBuilderCache.MaxCapacity);
-                        sb.Append("Type:      ").AppendLine(result.Item2.TypeName);
-                        sb.Append("Address:   ").AppendLine(Utils.AddressString(addr));
-                        info = StringBuilderCache.GetStringAndRelease(sb);
-                        result.Item2?.SortByFieldName();
-                    }
-                    return new Tuple<InstanceValue, string>(result.Item2, info);
-                }
-
-                var val = Types.getTypeValue(heap, realAddr, clrType, kind);
-                var typeName = GetTypeName(typeId);
-                sb = StringBuilderCache.Acquire(StringBuilderCache.MaxCapacity);
-                sb.Append("Type:      ").AppendLine(typeName);
-                sb.Append("Address:   ").AppendLine(Utils.AddressString(addr));
-                var newKind = TypeExtractor.GetElementKind(clrType);
-                inst = new InstanceValue(typeId, newKind, addr, typeName, string.Empty, val);
-                return new Tuple<InstanceValue, string>(inst, StringBuilderCache.GetStringAndRelease(sb));
-            }
-            catch (Exception ex)
-            {
-                error = Utils.GetExceptionErrorString(ex);
-                return null;
-            }
-
-        }
-
+ 
         public AncestorNode[] GetGcRootPath(AncestorNode gcRootNode, AncestorNode targetNode)
         {
             List<AncestorNode> lst = new List<AncestorNode>(gcRootNode.Level + 1);
@@ -1247,18 +1167,117 @@ namespace ClrMDRIndex
             return lst.ToArray();
         }
 
-        #endregion instance references
+		#endregion instance references
 
-        #region instance hierarchy 
+		#region instance value
 
-        /// <summary>
-        /// Get instance information for hierarchy walk.
-        /// </summary>
-        /// <param name="addr">Instance address.</param>
-        /// <param name="fldNdx">Field index, this is used for struct types, in this case addr is of the parent.</param>
-        /// <param name="error">Output error.</param>
-        /// <returns>Instance information, and list of its parents.</returns>
-        public InstanceValueAndAncestors GetInstanceInfo(ulong addr, int fldNdx, out string error)
+		public Tuple<InstanceValue, string> GetInstanceValue(ulong addr, out string error)
+		{
+			error = null;
+			StringBuilder sb;
+			try
+			{
+				InstanceValue inst;
+				var realAddr = Utils.RealAddress(addr);
+				var typeId = GetTypeId(addr);
+				var heap = Dump.Heap;
+				var clrType = heap.GetObjectType(realAddr);
+				if (clrType == null)
+				{
+					error = "DumpIndex.GetInstanceValue" + Constants.HeavyGreekCrossPadded + "Object at address: " +
+							Utils.AddressString(addr) + " is null.";
+					return null;
+				}
+
+				if (clrType.Name == "Free" || clrType.Name == "Error")
+				{
+					error = "DumpIndex.GetInstanceValue" + Constants.HeavyGreekCrossPadded + "Invalid object at address: " +
+							Utils.AddressString(addr) + ", type name is: " + clrType.Name + ".";
+					return null;
+				}
+
+				var kind = TypeKinds.GetTypeKind(clrType);
+
+				var newkind = TypeExtractor.GetElementKind(clrType);
+
+
+				if (TypeKinds.IsArray(kind))
+				{
+					var aryResult = CollectionContent.getAryContent(heap, realAddr);
+					if (aryResult.Item1 != null)
+					{
+						error = aryResult.Item1;
+						return null;
+					}
+					sb = StringBuilderCache.Acquire(StringBuilderCache.MaxCapacity);
+					sb.Append("Type:      ").AppendLine(aryResult.Item2.Name);
+					sb.Append("Item Type: ").AppendLine(aryResult.Item3.Name);
+					sb.Append("Address:   ").AppendLine(Utils.AddressString(addr));
+					sb.Append("Lenght:    ").AppendLine(aryResult.Item4.ToString());
+					inst = new InstanceValue(typeId, newkind, addr, aryResult.Item2.Name, aryResult.Item3.Name,
+						Utils.BaseArrayName(aryResult.Item2.Name, aryResult.Item4));
+					inst.AddArrayValues(aryResult.Item5);
+					return new Tuple<InstanceValue, string>(inst, StringBuilderCache.GetStringAndRelease(sb));
+				}
+
+				if (TypeKinds.IsClassStruct(kind))
+				{
+					var result = Types.getClassStructValue(this.IndexProxy, heap, addr, clrType, kind, -1);
+					error = result.Item1;
+					string info = string.Empty;
+					if (result.Item2 != null)
+					{
+						sb = StringBuilderCache.Acquire(StringBuilderCache.MaxCapacity);
+						sb.Append("Type:      ").AppendLine(result.Item2.TypeName);
+						sb.Append("Address:   ").AppendLine(Utils.AddressString(addr));
+						info = StringBuilderCache.GetStringAndRelease(sb);
+						result.Item2?.SortByFieldName();
+					}
+					return new Tuple<InstanceValue, string>(result.Item2, info);
+				}
+
+				var val = Types.getTypeValue(heap, realAddr, clrType, kind);
+				var typeName = GetTypeName(typeId);
+				sb = StringBuilderCache.Acquire(StringBuilderCache.MaxCapacity);
+				sb.Append("Type:      ").AppendLine(typeName);
+				sb.Append("Address:   ").AppendLine(Utils.AddressString(addr));
+				var newKind = TypeExtractor.GetElementKind(clrType);
+				inst = new InstanceValue(typeId, newKind, addr, typeName, string.Empty, val);
+				return new Tuple<InstanceValue, string>(inst, StringBuilderCache.GetStringAndRelease(sb));
+			}
+			catch (Exception ex)
+			{
+				error = Utils.GetExceptionErrorString(ex);
+				return null;
+			}
+		}
+
+		public (string, InstanceValue) GetInstanceValue(ulong addr, InstanceValue parent)
+		{
+			StringBuilder sb;
+			try
+			{
+				return ValueExtractor.GetInstanceValue(IndexProxy, Dump.Heap, addr, Constants.InvalidIndex, parent);
+			}
+			catch (Exception ex)
+			{
+				return (Utils.GetExceptionErrorString(ex), null);
+			}
+		}
+
+		#endregion instance value
+
+
+		#region instance hierarchy 
+
+		/// <summary>
+		/// Get instance information for hierarchy walk.
+		/// </summary>
+		/// <param name="addr">Instance address.</param>
+		/// <param name="fldNdx">Field index, this is used for struct types, in this case addr is of the parent.</param>
+		/// <param name="error">Output error.</param>
+		/// <returns>Instance information, and list of its parents.</returns>
+		public InstanceValueAndAncestors GetInstanceInfo(ulong addr, int fldNdx, out string error)
         {
             try
             {

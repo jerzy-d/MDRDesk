@@ -48,8 +48,8 @@ namespace MDRDesk
 				var info = que.Dequeue();
 				InstanceValue parentNode = info.Key;
 				TreeViewItem tvParentNode = info.Value;
-				List<InstanceValue> descendants = parentNode.Values;
-				for (int i = 0, icount = descendants.Count; i < icount; ++i)
+				InstanceValue[] descendants = parentNode.Fields;
+				for (int i = 0, icount = descendants.Length; i < icount; ++i)
 				{
 					var descNode = descendants[i];
 					var tvNode = new TreeViewItem
@@ -81,7 +81,7 @@ namespace MDRDesk
 			var instValue = selItem.Tag as InstanceValue;
 			Debug.Assert(instValue != null);
 
-			if (instValue.HaveInnerValues()) return; // already has values
+			if (instValue.HaveFields()) return; // already has values
 
 			if (instValue.Address == Constants.InvalidAddress)
 			{
@@ -121,8 +121,8 @@ namespace MDRDesk
 				var info = que.Dequeue();
 				InstanceValue parentNode = info.Key;
 				TreeViewItem tvParentNode = info.Value;
-				List<InstanceValue> descendants = parentNode.Values;
-				for (int i = 0, icount = descendants.Count; i < icount; ++i)
+				InstanceValue[] descendants = parentNode.Fields;
+				for (int i = 0, icount = descendants.Length; i < icount; ++i)
 				{
 					var descNode = descendants[i];
 					var tvNode = new TreeViewItem

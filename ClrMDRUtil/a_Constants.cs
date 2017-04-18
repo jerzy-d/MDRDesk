@@ -25,6 +25,7 @@ namespace ClrMDRIndex
 		// some standard type names and their ids
 		//
 		public const string UnknownName = "{unknown}";
+		public const string UnknownValue = "{unknown value}";
 		public const string NullName = "{null}";
 		public const string NullValue = "null";
 		public const int NullNameId = 0;

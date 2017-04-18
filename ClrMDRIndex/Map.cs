@@ -102,7 +102,7 @@ namespace ClrMDRIndex
 		{
 			_mapFolder = mapFolder;
 			_dumpBaseName = DumpFileMoniker.GetDumpBaseName(mapFolder);
-			Is64Bit = Environment.Is64BitOperatingSystem;
+			Is64Bit = Environment.Is64BitProcess;
 		}
 
 		public static MapOld OpenMap(Version version, string mapFolder, out string error, IProgress<string> progress=null)

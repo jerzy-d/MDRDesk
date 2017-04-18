@@ -49,15 +49,17 @@ namespace ClrMDRIndex
         SystemVoid = 0x000B0000,
 
         Null = 0x00F00000,
-        Free = 0x01000000
-    }
+		Free = 0x01000000,
+		Error = 0x02000000
+	}
 
-    public class TypeExtractor
+	public class TypeExtractor
     {
         public static ClrElementKind GetElementKind(ClrType clrType)
         {
             if (clrType == null) return ClrElementKind.Unknown;
             ClrElementKind kind = (ClrElementKind)(clrType.ElementType);
+			if (Utils.SameStrings(clrType.Name, "Error")) return ClrElementKind.Error;
             switch (kind)
             {
                 case ClrElementKind.Object:
@@ -95,28 +97,40 @@ namespace ClrMDRIndex
 
             if (clrType.IsInterface) kind |= ClrElementKind.Interface;
             else if (clrType.IsAbstract) kind |= ClrElementKind.Abstract;
-            else if (clrType.IsFree) kind |= ClrElementKind.Free;
+			else if (clrType.IsEnum) kind |= ClrElementKind.Enum;
+			else if (clrType.IsFree) kind |= ClrElementKind.Free;
             else if (clrType.IsException) kind |= ClrElementKind.Exception;
             return kind;
         }
 
-        public static ClrElementKind GetSpecialKind(ClrElementKind kind)
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		public static ClrElementKind GetSpecialKind(ClrElementKind kind)
         {
             int specKind = (int)kind & (int)0x7FFF0000;
             return (ClrElementKind)specKind;
         }
 
-        public static ClrElementKind GetStandardKind(ClrElementKind kind)
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		public static ClrElementKind GetStandardKind(ClrElementKind kind)
         {
             int stdKind = (int)kind & 0x0000FFFF;
             return (ClrElementKind)stdKind;
         }
-        public static bool IsString(ClrElementKind kind)
+
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		public static bool IsString(ClrElementKind kind)
         {
-            int stdKind = (int)kind & 0x0000FFFF;
-            return (ClrElementKind)stdKind == ClrElementKind.String;
+            return GetStandardKind(kind) == ClrElementKind.String;
         }
-        public static bool IsSystemObject(ClrElementKind kind)
+
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		public static bool IsStruct(ClrElementKind kind)
+		{
+			return kind == ClrElementKind.Struct;
+		}
+
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		public static bool IsSystemObject(ClrElementKind kind)
         {
             int stdKind = (int)kind & 0x0000FFFF;
             return (ClrElementKind)stdKind == ClrElementKind.SystemObject;

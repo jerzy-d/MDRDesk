@@ -342,6 +342,7 @@ module FQry =
         match fldCount with
         | 0 -> ()
         | _ ->
+            let fields = ResizeArray<InstanceValue>()
             for fldNdx = 0 to fldCount-1 do
                 let fld = clrType.Fields.[fldNdx]
                 let fldType = fld.Type
@@ -353,21 +354,22 @@ module FQry =
                     | true ->
                         let typeName = fieldTypeName fld
                         let typeId = ndxProxy.GetTypeId(typeName)
-                        instVal.Addvalue(new InstanceValue(typeId, Constants.InvalidAddress, typeName, fld.Name, clrValue))
+                        fields.Add(new InstanceValue(typeId, Constants.InvalidAddress, typeName, fld.Name, clrValue))
                     | _ ->
                         match fld with
                         | FieldTypeNull | Other ->
                             let fldAddr = getReferenceFieldAddress addr fld internalAddresses
                             let fldTypeInfo = ndxProxy.GetTypeNameAndIdAtAddr(fldAddr)
-                            instVal.Addvalue(new InstanceValue(fldTypeInfo.Value, fldAddr, fldTypeInfo.Key, fld.Name, clrValue))
+                            fields.Add(new InstanceValue(fldTypeInfo.Value, fldAddr, fldTypeInfo.Key, fld.Name, clrValue))
                         | FieldTypeIsStruct ->
                             let fldTypeId = ndxProxy.GetTypeId(fld.Type.Name);
-                            instVal.Addvalue(new InstanceValue(fldTypeId, addr, fld.Type.Name, fld.Name, clrValue, fldNdx))
+                            fields.Add(new InstanceValue(fldTypeId, addr, fld.Type.Name, fld.Name, clrValue, fldNdx))
                         | _ -> ()
                 | _ ->
                     let typeName = fieldTypeName fld
                     let typeId = ndxProxy.GetTypeId(typeName)
-                    instVal.Addvalue(new InstanceValue(typeId, Constants.InvalidAddress, typeName, fld.Name, clrValue))
+                    fields.Add(new InstanceValue(typeId, Constants.InvalidAddress, typeName, fld.Name, clrValue))
+            instVal.SetFields(fields.ToArray())
         null
 
     let getInstanceValue (ndxProxy:IndexProxy) (heap:ClrHeap) (decoratedAddr:address) (fldNdx:int) : string * InstanceValue = 

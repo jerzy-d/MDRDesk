@@ -1421,30 +1421,96 @@ namespace UnitTestMdr
         [TestMethod]
         public void TestInstanceValue()
         {
-            ulong addr = 0x0000008045b6b0;
+            ulong addr = 0x0256e64c;
             string error = null;
             Stopwatch stopWatch = new Stopwatch();
             stopWatch.Start();
-            var index = OpenIndex(@"D:\Jerzy\WinDbgStuff\dumps\Analytics\Highline\analyticsdump111.dlk.dmp.map");
+            var index = OpenIndex(@"C:\WinDbgStuff\Dumps\TestApp\32\TestApp.exe_170415_073854.dmp.map");
             TestContext.WriteLine(index.DumpFileName + " INDEX OPEN DURATION: " + Utils.StopAndGetDurationString(stopWatch));
 
+			InstanceValue inst;
             using (index)
             {
-                var result = ValueExtractor.GetInstanceValue(index.IndexProxy, index.GetHeap(), addr, Constants.InvalidIndex);
+                (error, inst) = ValueExtractor.GetInstanceValue(index.IndexProxy, index.GetHeap(), addr, Constants.InvalidIndex,null);
             }
 
             Assert.IsNull(error, error);
         }
 
-        #endregion instance value
+		[TestMethod]
+		public void TestInstanceValueMisc()
+		{
+			// ulong addr = 0x0001e0d8eb77f8; // 64 bit
+			// ulong addr = 0x00000002564fe4; // 32 bit
 
-        #region get list of specific clr objects
+			ulong addr = Environment.Is64BitProcess ? (ulong)0x0001e0d8eb77f8 : (ulong)0x00000002564fe4;
+			string error = null;
+			Stopwatch stopWatch = new Stopwatch();
+			stopWatch.Start();
+			var index = Environment.Is64BitProcess
+						? OpenIndex(@"C:\WinDbgStuff\Dumps\TestApp\64\TestApp.exe_170415_073758.dmp.map")
+						: OpenIndex(@"C:\WinDbgStuff\Dumps\TestApp\32\TestApp.exe_170415_073854.dmp.map");
+						
 
-        #endregion get list of specific clr objects
+			TestContext.WriteLine(index.DumpFileName + " INDEX OPEN DURATION: " + Utils.StopAndGetDurationString(stopWatch));
 
-        #region misc
+			using (index)
+			{
+				var heap = index.GetHeap();
+				var clrType = heap.GetObjectType(addr);
+				var fld = clrType.GetFieldByName("_testStruct");
+				ulong faddr = addr + (ulong)fld.Offset + DumpIndex.WordSize;
+				ulong faddr2 = fld.GetAddress(addr, false);
+				string[] values = new string[fld.Type.Fields.Count];
 
-        [TestMethod]
+				try
+				{
+					//ulong faddr = fld.GetAddress(addr, true);
+					for (int i = 0, icnt = fld.Type.Fields.Count; i < icnt; ++i)
+					{
+						var sfld = fld.Type.Fields[i];
+						ClrType fldType;
+						ClrElementKind fldKind;
+						values[i] = ValueExtractor.GetFieldValue(index.IndexProxy, heap, faddr, sfld, true, out fldType, out fldKind);
+						TestContext.WriteLine(values[i]);
+					}
+				}
+				catch(Exception ex)
+				{
+					Assert.IsTrue(false, ex.ToString());
+				}
+
+			}
+
+			Assert.IsNull(error, error);
+		}
+
+		[TestMethod]
+		public void TestArrayContent()
+		{
+			Stopwatch stopWatch = new Stopwatch();
+			stopWatch.Start();
+			var index = OpenIndex(@"C:\WinDbgStuff\Dumps\Analytics\Highline\analyticsdump111.dlk.dmp.map");
+			TestContext.WriteLine(index.DumpFileName + " INDEX OPEN DURATION: " + Utils.StopAndGetDurationString(stopWatch));
+			ulong addr = 0x00000184411178;
+			using (index)
+			{
+				(string error, InstanceValue inst) = ValueExtractor.ArrayContent(index.IndexProxy, index.GetHeap(), addr,null);
+				Assert.IsNull(error, error);
+			}
+
+		}
+
+
+		#endregion instance value
+
+		#region get list of specific clr objects
+
+		#endregion get list of specific clr objects
+
+		#region misc
+
+		[TestMethod]
 		public void TestKnownTypes()
 		{
 			string[] typeNames = new string[]

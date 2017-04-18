@@ -10,13 +10,14 @@ namespace ClrMDRIndex
 	{
 		private int _typeId;
         private ClrElementKind _kind;
-        private int _fieldNdx; // If _fieldNdx value is valid, then this is a structure with fields, and address is of parent's instance.
+        private int _fieldNdx; // if _fieldNdx value is valid, then this is index of the parent field.
 		private ulong _address;
 		private string _typeName;
 		private string _fieldName;
 		private DisplayableString _value;
 		private DisplayableString[] _aryValues;
-		private List<InstanceValue> _values;
+		private InstanceValue[] _fields;
+		private InstanceValue _parent;
 
         public int TypeId => _typeId;
         public ClrElementKind Kind => _kind;
@@ -25,10 +26,11 @@ namespace ClrMDRIndex
 		public string TypeName => _typeName;
 		public string FieldName => _fieldName;
         public DisplayableString Value => _value;
-		public List<InstanceValue> Values => _values;
+		public InstanceValue[] Fields => _fields;
 		public DisplayableString[] ArrayValues => _aryValues;
+		public InstanceValue Parent => _parent;
 
-		public InstanceValue(int typeId, ClrElementKind kind, ulong addr, string typeName, string fldName, string value, int fldNdx = Constants.InvalidIndex)
+		public InstanceValue(int typeId, ClrElementKind kind, ulong addr, string typeName, string fldName, string value, int fldNdx = Constants.InvalidIndex, InstanceValue parent = null)
 		{
 			_typeId = typeId;
             _kind = kind;
@@ -36,9 +38,10 @@ namespace ClrMDRIndex
 		    _typeName = typeName;
 		    _fieldName = fldName;
 		    _value = new DisplayableString(value);
-		    _values = new List<InstanceValue>(0);
+		    _fields = Utils.EmptyArray<InstanceValue>.Value;
 			_fieldNdx = fldNdx;
 			_aryValues = null;
+			_parent = parent;
 		}
 
         public InstanceValue(int typeId, ulong addr, string typeName, string fldName, string value, int fldNdx = Constants.InvalidIndex)
@@ -49,19 +52,21 @@ namespace ClrMDRIndex
             _typeName = typeName;
             _fieldName = fldName;
             _value = new DisplayableString(value);
-            _values = new List<InstanceValue>(0);
+			_fields = Utils.EmptyArray<InstanceValue>.Value;
             _fieldNdx = fldNdx;
             _aryValues = null;
+			_parent = null;
         }
 
-        public bool HaveInnerValues()
+
+        public bool HaveFields()
 		{
-			return Values.Count > 0;
+			return _fields != null && _fields.Length > 0;
 		}
 
-	    public void Addvalue(InstanceValue val)
+	    public void SetFields(InstanceValue[] fields)
 	    {
-	        _values.Add(val);
+			_fields = fields;
 	    }
 
 		public void AddArrayValues(string[] aryvalues)
@@ -78,9 +83,20 @@ namespace ClrMDRIndex
             }
 		}
 
+		public bool IsArray()
+		{
+			return _aryValues != null;
+		}
+
+		public int ArrayLength()
+		{
+			return _aryValues == null ? 0 : _aryValues.Length;
+		}
+
 		public void SortByFieldName()
 		{
-			_values?.Sort(new InstanceValueFieldCmp());
+			if (_fields == null || _fields.Length < 1) return;
+			Array.Sort(_fields, new InstanceValueFieldCmp());
 		}
 
 		public override string ToString()

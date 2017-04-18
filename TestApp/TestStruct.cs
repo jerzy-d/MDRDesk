@@ -11,12 +11,16 @@ namespace TestApp
 		private string _name;
 		private int _someCount;
 		KeyValuePair<string, KeyValuePair<DateTime, TestStructClass>> _kvPair;
+		private decimal _decimal;
+		private DateTime _dateTime;
 
 		public TestStruct(string name, int someCount, KeyValuePair<string, KeyValuePair<DateTime, TestStructClass>> kvPair)
 		{
 			_name = name;
 			_someCount = someCount;
 			_kvPair = kvPair;
+			_decimal = 0.1m;
+			_dateTime = DateTime.Now;
 		}
 	}
 

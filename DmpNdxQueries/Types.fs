@@ -557,10 +557,10 @@ module Types =
             let internalAddresses = hasInternalAddresses clrType
             let newKind = TypeExtractor.GetElementKind clrType
             let mutable instVal = InstanceValue(ndxProxy.GetTypeId(clrType.Name), newKind, addr, clrType.Name, String.Empty, Utils.RealAddressString(addr));
-
             if fldCount = 0 then
                 (clrType.Name + " is not struct/class with fields.",null)
             else
+                let fields = ResizeArray<InstanceValue>()
                 for fldNdx = 0 to fldCount-1 do
                     let fld = clrType.Fields.[fldNdx]
                     let fldTypeName = if isNull fld.Type then Constants.UnknownTypeName else fld.Type.Name
@@ -576,9 +576,10 @@ module Types =
                         let fldObjType = heap.GetObjectType(fldAddr)
                         let fldObjName = if isNull fldObjType then fldTypeName else fldObjType.Name
                         let fldTypeId = ndxProxy.GetTypeId(fldObjName)
-                        instVal.Addvalue(new InstanceValue(fldTypeId, fldNewKind, fldAddr, fldObjName, fld.Name, fldVal))
+                        fields.Add(new InstanceValue(fldTypeId, fldNewKind, fldAddr, fldObjName, fld.Name, fldVal))
                     | _ ->
-                        instVal.Addvalue(new InstanceValue(typeId, fldNewKind, Constants.InvalidAddress, fldTypeName, fld.Name, fldVal, fldNdx))
+                        fields.Add(new InstanceValue(typeId, fldNewKind, Constants.InvalidAddress, fldTypeName, fld.Name, fldVal, fldNdx))
+                instVal.SetFields(fields.ToArray())
                 (null,instVal)
         with
             | exn -> (Utils.GetExceptionErrorString(exn),null)

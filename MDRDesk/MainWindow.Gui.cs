@@ -2069,53 +2069,113 @@ namespace MDRDesk
         /// </summary>
         private ConcurrentDictionary<int, Window> _wndDct = new ConcurrentDictionary<int, Window>();
 
-        private async void ExecuteInstanceValueQuery(string msg, ulong addr)
+  //      private async void ExecuteInstanceValueQuery(string msg, ulong addr)
+		//{
+		//	SetStartTaskMainWindowState(msg);
+
+		//	var result = await Task.Run(() =>
+		//	{
+		//		string error;
+		//		var instValue = CurrentIndex.GetInstanceValue(addr, out error);
+		//		if (error != null)
+		//			return new Tuple<string, InstanceValue, string>(error, null, null);
+		//		return new Tuple<string, InstanceValue, string>(null, instValue.Item1, instValue.Item2);
+		//	});
+
+
+		//	SetEndTaskMainWindowState(result.Item1 == null
+		//		? "value at " + Utils.RealAddressString(addr) + ":  " + result.Item2.Value.ToString()
+		//		: msg + " failed.");
+
+		//	if (result.Item1 != null)
+		//	{
+		//		ShowError(result.Item1);
+		//		return;
+		//	}
+
+		//	Debug.Assert(result.Item2 != null);
+		//	InstanceValue instVal = result.Item2;
+
+		//	if (!instVal.HaveFields())
+		//	{
+		//		if (instVal.ArrayValues != null)
+		//		{
+		//			var wnd = new CollectionDisplay(Utils.GetNewID(), _wndDct, instVal, result.Item3) { Owner = this };
+		//			wnd.Show();
+		//			return;
+		//		}
+
+		//		if (!instVal.Value.IsLong())
+		//		{
+		//			var wnd = new ContentDisplay(Utils.GetNewID(), _wndDct, result.Item3, instVal) { Owner = this };
+		//			wnd.Show();
+		//			return;
+		//		}
+		//	}
+
+		//	var awnd = new ClassStructDisplay(Utils.GetNewID(), _wndDct, result.Item3, instVal) { Owner = this };
+		//	awnd.Show();
+
+		//}
+
+		private async void ExecuteInstanceValueQuery(string msg, ulong addr)
 		{
 			SetStartTaskMainWindowState(msg);
 
-			var result = await Task.Run(() =>
+			(string error, InstanceValue inst) = await Task.Run(() =>
 			{
-				string error;
-				var instValue = CurrentIndex.GetInstanceValue(addr, out error);
-				if (error != null)
-					return new Tuple<string, InstanceValue, string>(error, null, null);
-				return new Tuple<string, InstanceValue, string>(null, instValue.Item1, instValue.Item2);
+				return CurrentIndex.GetInstanceValue(addr, null);
 			});
 
 
-			SetEndTaskMainWindowState(result.Item1 == null
-				? "value at " + Utils.RealAddressString(addr) + ":  " + result.Item2.Value.ToString()
+			SetEndTaskMainWindowState(error == null
+				? "value at " + Utils.RealAddressString(addr) + ":  " + inst.Value.ToString()
 				: msg + " failed.");
 
-			if (result.Item1 != null)
+			if (error != null)
 			{
-				ShowError(result.Item1);
+				ShowError(error);
 				return;
 			}
 
-			Debug.Assert(result.Item2 != null);
-			InstanceValue instVal = result.Item2;
+			Debug.Assert(inst != null);
 
-			if (!instVal.HaveInnerValues())
+			if (!inst.HaveFields() && !inst.Value.IsLong())
 			{
-				if (instVal.ArrayValues != null)
-				{
-					var wnd = new CollectionDisplay(Utils.GetNewID(), _wndDct, instVal, result.Item3) { Owner = this };
+					var wnd = new ContentDisplay(Utils.GetNewID(), _wndDct, GetInstanceValueDescription(inst), inst) { Owner = this };
 					wnd.Show();
 					return;
-				}
-
-				if (!instVal.Value.IsLong())
-				{
-					var wnd = new ContentDisplay(Utils.GetNewID(), _wndDct, result.Item3, instVal) { Owner = this };
-					wnd.Show();
-					return;
-				}
 			}
 
-			var awnd = new ClassStructDisplay(Utils.GetNewID(), _wndDct, result.Item3, instVal) { Owner = this };
+			if (inst.IsArray())
+			{
+				var wnd = new CollectionDisplay(Utils.GetNewID(), _wndDct, inst, GetInstanceValueDescription(inst)) { Owner = this };
+				wnd.Show();
+				return;
+			}
+
+			var awnd = new ClassStructDisplay(Utils.GetNewID(), _wndDct, GetInstanceValueDescription(inst), inst) { Owner = this };
 			awnd.Show();
 
+		}
+
+		public static string GetInstanceValueDescription(InstanceValue inst)
+		{
+			var sb = StringBuilderCache.Acquire(StringBuilderCache.MaxCapacity);
+			if (inst.IsArray())
+			{
+				sb.Append("Type:      ").AppendLine(inst.TypeName);
+				sb.Append("Item Type: ").AppendLine(inst.Fields[0].TypeName);
+				sb.Append("Address:   ").AppendLine(Utils.AddressString(inst.Address));
+				sb.Append("Lenght:    ").AppendLine(Utils.CountString(inst.ArrayLength()));
+			}
+			else
+			{
+				sb.Append("Type:      ").AppendLine(inst.TypeName);
+				sb.Append("Address:   ").AppendLine(Utils.AddressString(inst.Address));
+			}
+
+			return StringBuilderCache.GetStringAndRelease(sb);
 		}
 
 		#endregion instance value
@@ -2378,8 +2438,8 @@ namespace MDRDesk
 				var info = que.Dequeue();
 				InstanceValue parentNode = info.Key;
 				TreeViewItem tvParentNode = info.Value;
-				List<InstanceValue> descendants = parentNode.Values;
-				for (int i = 0, icount = descendants.Count; i < icount; ++i)
+				InstanceValue[] descendants = parentNode.Fields;
+				for (int i = 0, icount = descendants.Length; i < icount; ++i)
 				{
 					var descNode = descendants[i];
 					var tvNode = new TreeViewItem

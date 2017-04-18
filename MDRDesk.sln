@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 15
-VisualStudioVersion = 15.0.26228.9
+VisualStudioVersion = 15.0.26228.4
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MDRDesk", "MDRDesk\MDRDesk.csproj", "{4BB5B249-E4F1-490F-8F40-214BCC05CE64}"
 	ProjectSection(ProjectDependencies) = postProject
@@ -30,6 +30,7 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution 
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Documentation", "Documentation", "{A32781E3-ED13-4692-8186-B140B2C6E4D9}"
 	ProjectSection(SolutionItems) = preProject
+		Documentation\GettingStarted.md = Documentation\GettingStarted.md
 		Documentation\MainMenu.md = Documentation\MainMenu.md
 	EndProjectSection
 EndProject
@@ -105,16 +106,16 @@ Global
 		{7B01CCC0-8C10-4AA1-8154-4B55160E322B}.Release|x86.Build.0 = Release|x86
 		{030465FE-0687-4DE5-800C-55FAC9A8BFD2}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{030465FE-0687-4DE5-800C-55FAC9A8BFD2}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{030465FE-0687-4DE5-800C-55FAC9A8BFD2}.Debug|x64.ActiveCfg = Debug|Any CPU
-		{030465FE-0687-4DE5-800C-55FAC9A8BFD2}.Debug|x64.Build.0 = Debug|Any CPU
-		{030465FE-0687-4DE5-800C-55FAC9A8BFD2}.Debug|x86.ActiveCfg = Debug|Any CPU
-		{030465FE-0687-4DE5-800C-55FAC9A8BFD2}.Debug|x86.Build.0 = Debug|Any CPU
+		{030465FE-0687-4DE5-800C-55FAC9A8BFD2}.Debug|x64.ActiveCfg = Debug|x64
+		{030465FE-0687-4DE5-800C-55FAC9A8BFD2}.Debug|x64.Build.0 = Debug|x64
+		{030465FE-0687-4DE5-800C-55FAC9A8BFD2}.Debug|x86.ActiveCfg = Debug|x86
+		{030465FE-0687-4DE5-800C-55FAC9A8BFD2}.Debug|x86.Build.0 = Debug|x86
 		{030465FE-0687-4DE5-800C-55FAC9A8BFD2}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{030465FE-0687-4DE5-800C-55FAC9A8BFD2}.Release|Any CPU.Build.0 = Release|Any CPU
-		{030465FE-0687-4DE5-800C-55FAC9A8BFD2}.Release|x64.ActiveCfg = Release|Any CPU
-		{030465FE-0687-4DE5-800C-55FAC9A8BFD2}.Release|x64.Build.0 = Release|Any CPU
-		{030465FE-0687-4DE5-800C-55FAC9A8BFD2}.Release|x86.ActiveCfg = Release|Any CPU
-		{030465FE-0687-4DE5-800C-55FAC9A8BFD2}.Release|x86.Build.0 = Release|Any CPU
+		{030465FE-0687-4DE5-800C-55FAC9A8BFD2}.Release|x64.ActiveCfg = Release|x64
+		{030465FE-0687-4DE5-800C-55FAC9A8BFD2}.Release|x64.Build.0 = Release|x64
+		{030465FE-0687-4DE5-800C-55FAC9A8BFD2}.Release|x86.ActiveCfg = Release|x86
+		{030465FE-0687-4DE5-800C-55FAC9A8BFD2}.Release|x86.Build.0 = Release|x86
 		{0730657F-33F2-429D-8336-33D310A38718}.Debug|Any CPU.ActiveCfg = Debug|x86
 		{0730657F-33F2-429D-8336-33D310A38718}.Debug|x64.ActiveCfg = Debug|x86
 		{0730657F-33F2-429D-8336-33D310A38718}.Debug|x86.ActiveCfg = Release|x86

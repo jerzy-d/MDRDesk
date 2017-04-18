@@ -13,6 +13,9 @@ namespace ClrMDRIndex
 		public readonly int[] InstanceTypes;
 		public readonly string[] TypeNames;
 		public readonly ClrtRootInfo Roots;
+		public static bool _is64Bit;
+		public static bool Is64Bit => Environment.Is64BitProcess;
+		public static uint WordSize => Environment.Is64BitProcess ? 8u : 4u;
 
 		public IndexProxy(ClrtDump dump, ulong[] instances, int[] instanceTypes, string[] typeNames, ClrtRootInfo roots)
 		{
@@ -21,7 +24,6 @@ namespace ClrMDRIndex
 			InstanceTypes = instanceTypes;
 			TypeNames = typeNames;
 			Roots = roots;
-
 		}
 
 		public int GetTypeId(string typeName)
