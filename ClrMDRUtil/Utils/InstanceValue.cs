@@ -99,7 +99,13 @@ namespace ClrMDRIndex
 			Array.Sort(_fields, new InstanceValueFieldCmp());
 		}
 
-		public override string ToString()
+        public void SortByFieldIndex()
+        {
+            if (_fields == null || _fields.Length < 1) return;
+            Array.Sort(_fields, new InstanceValueFieldNdxCmp());
+        }
+
+        public override string ToString()
 	    {
 	        string value = _value.Content;
 	        return
@@ -147,7 +153,15 @@ namespace ClrMDRIndex
 		}
 	}
 
-	internal class InstanceHierarchyInfoEqCmp : IEqualityComparer<Tuple<InstanceValue, AncestorDispRecord[]>>
+    internal class InstanceValueFieldNdxCmp : IComparer<InstanceValue>
+    {
+        public int Compare(InstanceValue a, InstanceValue b)
+        {
+            return a.FieldIndex < b.FieldIndex ? -1 : (a.FieldIndex > b.FieldIndex ? 1 : 0);
+        }
+    }
+
+    internal class InstanceHierarchyInfoEqCmp : IEqualityComparer<Tuple<InstanceValue, AncestorDispRecord[]>>
 	{
 		public bool Equals(Tuple<InstanceValue, AncestorDispRecord[]> b1, Tuple<InstanceValue, AncestorDispRecord[]> b2)
 		{

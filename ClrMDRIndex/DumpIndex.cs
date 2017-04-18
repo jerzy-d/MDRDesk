@@ -1257,7 +1257,9 @@ namespace ClrMDRIndex
 			StringBuilder sb;
 			try
 			{
-				return ValueExtractor.GetInstanceValue(IndexProxy, Dump.Heap, addr, Constants.InvalidIndex, parent);
+                (string error, InstanceValue inst) = ValueExtractor.GetInstanceValue(IndexProxy, Dump.Heap, addr, Constants.InvalidIndex, parent);
+                if (inst != null) inst.SortByFieldName();
+                return (error, inst);
 			}
 			catch (Exception ex)
 			{
@@ -1265,19 +1267,35 @@ namespace ClrMDRIndex
 			}
 		}
 
-		#endregion instance value
+        public (string, InstanceValue[]) GetInstanceValueFields(ulong addr, InstanceValue parent)
+        {
+            StringBuilder sb;
+            try
+            {
+                (string error, InstanceValue[] fields) = ValueExtractor.GetInstanceValueFields(IndexProxy, Dump.Heap, addr, parent);
+                if (fields != parent.Fields) parent.SetFields(fields);
+                parent.SortByFieldName();
+                return (error, fields);
+            }
+            catch (Exception ex)
+            {
+                return (Utils.GetExceptionErrorString(ex), null);
+            }
+        }
+
+        #endregion instance value
 
 
-		#region instance hierarchy 
+        #region instance hierarchy 
 
-		/// <summary>
-		/// Get instance information for hierarchy walk.
-		/// </summary>
-		/// <param name="addr">Instance address.</param>
-		/// <param name="fldNdx">Field index, this is used for struct types, in this case addr is of the parent.</param>
-		/// <param name="error">Output error.</param>
-		/// <returns>Instance information, and list of its parents.</returns>
-		public InstanceValueAndAncestors GetInstanceInfo(ulong addr, int fldNdx, out string error)
+        /// <summary>
+        /// Get instance information for hierarchy walk.
+        /// </summary>
+        /// <param name="addr">Instance address.</param>
+        /// <param name="fldNdx">Field index, this is used for struct types, in this case addr is of the parent.</param>
+        /// <param name="error">Output error.</param>
+        /// <returns>Instance information, and list of its parents.</returns>
+        public InstanceValueAndAncestors GetInstanceInfo(ulong addr, int fldNdx, out string error)
         {
             try
             {

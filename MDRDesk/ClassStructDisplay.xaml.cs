@@ -76,65 +76,56 @@ namespace MDRDesk
 
 		private async void InstanceValueTreeview_OnMouseDoubleClick(object sender, MouseButtonEventArgs e)
 		{
-			var selItem = InstanceValueTreeview.SelectedItem as TreeViewItem;
-			if (selItem == null) return;
-			var instValue = selItem.Tag as InstanceValue;
-			Debug.Assert(instValue != null);
+			var selTreeItem = InstanceValueTreeview.SelectedItem as TreeViewItem;
+			if (selTreeItem == null) return;
+			var selInstValue = selTreeItem.Tag as InstanceValue;
+			Debug.Assert(selInstValue != null);
 
-			if (instValue.HaveFields()) return; // already has values
+			if (selInstValue.HaveFields()) return; // already has values
 
-			if (instValue.Address == Constants.InvalidAddress)
+			if (selInstValue.Address == Constants.InvalidAddress)
 			{
-				StatusText.Text = "Value for " + instValue.TypeName + " cannot be expanded.";
+				StatusText.Text = "Value for " + selInstValue.TypeName + " cannot be expanded.";
 				return;
 			}
 
 			var index = MainWindow.CurrentIndex;
 
-			StatusText.Text = "Getting value at address: " + instValue.Address + ", please wait...";
+			StatusText.Text = "Getting value at address: " + selInstValue.Address + ", please wait...";
 			Mouse.OverrideCursor = Cursors.Wait;
 
-			var result = await Task.Run(() =>
+			(string error, InstanceValue[] fields) = await Task.Run(() =>
 			{
-				string error;
-				var value = index.GetInstanceValue(instValue.Address, out error);
-				if (error != null)
-					return new Tuple<string, InstanceValue, string>(error, null, null);
-				return new Tuple<string, InstanceValue, string>(null, value.Item1, value.Item2);
+                return index.GetInstanceValueFields(selInstValue.Address, selInstValue.Parent);
 			});
 
-			StatusText.Text = "Getting value at address: " + instValue.Address + (result.Item1 != null ? ", done." : ", failed.");
+            if (Utils.IsInformation(error))
+                StatusText.Text = error;
+            else
+    			StatusText.Text = "Getting fields at address: " + selInstValue.Address + (fields != null ? ", done." : ", failed.");
 			Mouse.OverrideCursor = null;
 
-			if (result.Item1 != null)
+			if (error != null && !Utils.IsInformation(error))
 			{
-				GuiUtils.ShowError(result.Item1,this);
+				GuiUtils.ShowError(error,this);
 				return;
 			}
 
-			var instvalue = result.Item2;
-
-			var que = new Queue<KeyValuePair<InstanceValue, TreeViewItem>>();
-			que.Enqueue(new KeyValuePair<InstanceValue, TreeViewItem>(instvalue, selItem));
-			while (que.Count > 0)
-			{
-				var info = que.Dequeue();
-				InstanceValue parentNode = info.Key;
-				TreeViewItem tvParentNode = info.Value;
-				InstanceValue[] descendants = parentNode.Fields;
-				for (int i = 0, icount = descendants.Length; i < icount; ++i)
-				{
-					var descNode = descendants[i];
-					var tvNode = new TreeViewItem
-					{
-						Header = GuiUtils.GetInstanceValueStackPanel(descNode),
-						Tag = descNode
-					};
-					tvParentNode.Items.Add(tvNode);
-					que.Enqueue(new KeyValuePair<InstanceValue, TreeViewItem>(descNode, tvNode));
-				}
-			}
-			selItem.ExpandSubtree();
+            if (fields.Length > 0)
+            {
+                for (int i = 0, icount = fields.Length; i < icount; ++i)
+                {
+                    var fld = fields[i];
+                    var tvNode = new TreeViewItem
+                    {
+                        Header = GuiUtils.GetInstanceValueStackPanel(fld),
+                        Tag = fld
+                    };
+                    selTreeItem.Items.Add(tvNode);
+                }
+            }
+ 
+			selTreeItem.ExpandSubtree();
 		}
 
 		private void Window_Closing(object sender, System.ComponentModel.CancelEventArgs e)

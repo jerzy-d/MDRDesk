@@ -1471,7 +1471,8 @@ namespace UnitTestMdr
 						var sfld = fld.Type.Fields[i];
 						ClrType fldType;
 						ClrElementKind fldKind;
-						values[i] = ValueExtractor.GetFieldValue(index.IndexProxy, heap, faddr, sfld, true, out fldType, out fldKind);
+                        ulong fldAddr;
+						values[i] = ValueExtractor.GetFieldValue(index.IndexProxy, heap, faddr, sfld, true, out fldType, out fldKind, out fldAddr);
 						TestContext.WriteLine(values[i]);
 					}
 				}

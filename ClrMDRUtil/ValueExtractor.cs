@@ -871,29 +871,34 @@ namespace ClrMDRIndex
 			intervals.Add(new triple<bool, ulong, ulong>(false, lastAddr, curLastAddr - lastAddr));
 		}
 
-		public static string GetFieldValue(IndexProxy ndxProxy, ClrHeap heap, ulong addr, ClrInstanceField fld, bool intern, out ClrType fldType, out ClrElementKind kind)
+		public static string GetFieldValue(IndexProxy ndxProxy, ClrHeap heap, ulong addr, ClrInstanceField fld, bool intern, out ClrType fldType, out ClrElementKind kind, out ulong fldItemAddr)
 		{
 			fldType = fld.Type;
+            fldItemAddr = Constants.InvalidAddress;
 			kind = TypeExtractor.GetElementKind(fldType);
-			if (kind == ClrElementKind.Unknown)
+			var fldAddr = fld.GetAddress(addr, intern);
+            var fldObj = fld.GetValue(addr, intern);
+
+            if (fldObj != null && fldObj is ulong)
+            {
+                fldItemAddr = (ulong)fldObj;
+                if (TypeExtractor.IsAmbiguousKind(kind))
+                {
+                    var tempType = heap.GetObjectType(fldAddr);
+                    if (tempType != null)
+                    {
+                        fldType = tempType;
+                        kind = TypeExtractor.GetElementKind(fldType);
+                    }
+                }
+            }
+
+            if (TypeExtractor.IsStruct(kind))
 			{
-				// TODO JRD
-				return null;
-			}
-			ulong fldAddr = fld.GetAddress(addr, intern);
-			if (TypeExtractor.IsAmbiguousKind(kind))
-			{
-				var tempType = heap.GetObjectType(fldAddr);
-				if (tempType != null)
-				{
-					fldType = tempType;
-					kind = TypeExtractor.GetElementKind(fldType);
-				}
-			}
-			if (TypeExtractor.IsStruct(kind))
-			{
+                fldItemAddr = fldAddr;
 				return Utils.RealAddressString(fldAddr);
 			}
+
 			var specKind = TypeExtractor.GetSpecialKind(kind);
 			string value;
 			if (specKind != ClrElementKind.Unknown)
@@ -1032,9 +1037,10 @@ namespace ClrMDRIndex
 				var fld = clrType.Fields[i];
 				ClrElementKind fldKind;
 				ClrType fldType;
-				var value = GetFieldValue(ndxProxy, heap, addr, clrType.Fields[i], TypeExtractor.IsStruct(kind), out fldType, out fldKind);
+                ulong fldAddr;
+				var value = GetFieldValue(ndxProxy, heap, addr, clrType.Fields[i], TypeExtractor.IsStruct(kind), out fldType, out fldKind, out fldAddr);
 				var ftypeId = ndxProxy.GetTypeId(fldType.Name);
-				fields[i] = new InstanceValue(ftypeId, fldKind, addr, fld.Type.Name, fld.Name, value, i, parent);
+				fields[i] = new InstanceValue(ftypeId, fldKind, fldAddr, fld.Type.Name, fld.Name, value, i, parent);
 			}
 			return fields;
         }
@@ -1106,22 +1112,78 @@ namespace ClrMDRIndex
             }
         }
 
-		public static KeyValuePair<string,InstanceValue> GetClassStructValue(IndexProxy ndxProxy, ClrHeap heap, ulong decoratedAddr, ClrType clrType,  ClrElementKind kind, int fldNdx)
+        public static (string, InstanceValue[]) GetInstanceValueFields(IndexProxy ndxProxy, ClrHeap heap, ulong decoratedAddr, InstanceValue parent)
         {
-            Debug.Assert(clrType != null);
+            string error;
+            InstanceValue[] fldValues;
             var addr = Utils.RealAddress(decoratedAddr);
-            var fldCount = TypeExtractor.FieldCount(clrType);
-            if (fldCount < 1) return new KeyValuePair<string, InstanceValue>(clrType.Name + " is not struct/class with fields.", null);
-            var internalAddresses = TypeExtractor.HasInternalAddresses(clrType);
-            var typeId = ndxProxy.GetTypeId(clrType.Name);
-            var instVal = new InstanceValue(typeId, kind, addr, clrType.Name, String.Empty, Utils.RealAddressString(addr));
-
-            for (int i=0; i < fldCount; ++i)
+            var typeInfo = TypeExtractor.TryGetRealType(heap, addr);
+            var clrType = typeInfo.Key; // TODO JRD if clrType == null ??
+            var kind = typeInfo.Value;
+            var specKind = TypeExtractor.GetSpecialKind(kind);
+            var typeId = ndxProxy.GetTypeIdAtAddr(addr);
+            if (typeId == Constants.InvalidIndex) typeId = ndxProxy.GetTypeId(clrType.Name);
+            string value;
+            if (specKind != ClrElementKind.Unknown)
             {
-
+                switch (specKind)
+                {
+                    case ClrElementKind.Guid:
+                        fldValues = GetFieldValues(ndxProxy, heap, clrType, kind, addr, parent, out error);
+                        parent.SetFields(fldValues);
+                        return (error, fldValues);
+                    case ClrElementKind.DateTime:
+                        fldValues = GetFieldValues(ndxProxy, heap, clrType, kind, addr, parent, out error);
+                        parent.SetFields(fldValues);
+                        return (error, fldValues);
+                    case ClrElementKind.TimeSpan:
+                        fldValues = GetFieldValues(ndxProxy, heap, clrType, kind, addr, parent, out error);
+                        parent.SetFields(fldValues);
+                        return (error, fldValues);
+                    case ClrElementKind.Decimal:
+                        fldValues = GetFieldValues(ndxProxy, heap, clrType, kind, addr, parent, out error);
+                        parent.SetFields(fldValues);
+                        return (error, fldValues);
+                    case ClrElementKind.Exception:
+                        fldValues = GetFieldValues(ndxProxy, heap, clrType, kind, addr, parent, out error);
+                        parent.SetFields(fldValues);
+                        return (error, fldValues);
+                    case ClrElementKind.Error:
+                    case ClrElementKind.Free:
+                    case ClrElementKind.Abstract:
+                    case ClrElementKind.SystemVoid:
+                    case ClrElementKind.SystemObject:
+                        parent.SetFields(Utils.EmptyArray<InstanceValue>.Value);
+                        return (Constants.InformationSymbolHeader + "There are no fields available for this type: " + clrType.Name, Utils.EmptyArray<InstanceValue>.Value);
+                    default:
+                        parent.SetFields(Utils.EmptyArray<InstanceValue>.Value);
+                        return (Constants.InformationSymbolHeader + "Unexpected type. There are no fields available for: " + clrType.Name, Utils.EmptyArray<InstanceValue>.Value);
+                }
             }
-
-            return new KeyValuePair<string, InstanceValue>(null, instVal);
+            else
+            {
+                switch (kind)
+                {
+                    case ClrElementKind.String:
+                        parent.SetFields(Utils.EmptyArray<InstanceValue>.Value);
+                        return (Constants.InformationSymbolHeader + "We treat the string types as primitives, there are no fields available.", Utils.EmptyArray<InstanceValue>.Value);
+                    case ClrElementKind.SZArray:
+                    case ClrElementKind.Array:
+                        parent.SetFields(Utils.EmptyArray<InstanceValue>.Value);
+                        return (Constants.InformationSymbolHeader + "The array types do not have fields.", Utils.EmptyArray<InstanceValue>.Value);
+                    case ClrElementKind.Struct:
+                    case ClrElementKind.Object:
+                    case ClrElementKind.Class:
+                        fldValues = GetFieldValues(ndxProxy, heap, clrType, kind, addr, parent, out error);
+                        parent.SetFields(fldValues);
+                        return (error, fldValues);
+                    case ClrElementKind.Unknown:
+                        return ("Unknown element type.", null);
+                    default:
+                        parent.SetFields(Utils.EmptyArray<InstanceValue>.Value);
+                        return (Constants.InformationSymbolHeader + "The primitive types do not have fields.", Utils.EmptyArray<InstanceValue>.Value);
+                }
+            }
         }
 
         public static DisplayableString GetFieldValue(ClrHeap heap, ulong addr, bool intr, ClrInstanceField fld)
