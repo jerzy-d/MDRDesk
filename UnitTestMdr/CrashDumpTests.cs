@@ -338,7 +338,73 @@ namespace UnitTestMdr
 			}
 		}
 
-		private bool NoNullEntries(string[] ary)
+
+        [TestMethod]
+        public void TestGetObjectArrayContent()
+        {
+            ulong aryAddr = 0x000000018097eea8; //0x0000000380C0E090; // 0x0000000380C67E70;
+            var dmp = OpenDump(@"D:\Jerzy\WinDbgStuff\dumps\Analytics\Centurion\AnalyticsCenturion.4.18.17.dmp");
+            int defCnt=0;
+            int oneCnt = 0;
+            int twoCnt = 0;
+            int nullCnt = 0;
+            int somethingCnt = 0;
+            using (dmp)
+            {
+                var heap = dmp.Heap;
+                var result = CollectionContent.aryInfo(heap, aryAddr);
+                int aryLen = result.Item4;
+                ClrType clrType = result.Item2;
+                string[] values = new string[aryLen];
+                for (int i = 0; i < aryLen; ++i)
+                {
+                    var obj = clrType.GetArrayElementValue(aryAddr, i);
+                    if (obj != null)
+                    {
+                        ulong oaddr = (ulong)obj;
+                        var oType = heap.GetObjectType(oaddr);
+                        if (oType != null)
+                        {
+                            if (oType.Name == "Eze.Server.Common.Pulse.Common.Types.CachedValue+DefaultOnly<System.Decimal>")
+                            {
+                                values[i] = "0 default";
+                                ++defCnt;
+                            }
+                            else if (oType.Name == "Eze.Server.Common.Pulse.Common.Types.CachedValue+One<System.Decimal>")
+                            {
+                                var fld = oType.GetFieldByName("one");
+                                values[i] = ValueExtractor.GetDecimalValue(oaddr, fld, false);
+                                ++oneCnt;
+                            }
+                            else if (oType.Name == "Eze.Server.Common.Pulse.Common.Types.CachedValue+Two<System.Decimal>")
+                            {
+                                var fld = oType.GetFieldByName("one");
+                                var val1 = ValueExtractor.GetDecimalValue(oaddr, fld, false);
+                                fld = oType.GetFieldByName("two");
+                                var val2 = ValueExtractor.GetDecimalValue(oaddr, fld, false);
+                                values[i] = val1 + " | " + val2;
+                                ++twoCnt;
+                            }
+                            else
+                            {
+                                values[i] = "unknown";
+                                ++somethingCnt;
+                            }
+                        }
+                        else
+                        {
+                            values[i] = "null  " + Utils.RealAddressString(oaddr);
+                            ++nullCnt;
+                        }
+                    }
+                }
+
+                Assert.IsNull(result.Item1, result.Item1);
+ 
+            }
+        }
+
+        private bool NoNullEntries(string[] ary)
 		{
 			for (int i = 0, icnt = ary.Length; i < icnt; ++i)
 			{
@@ -1212,11 +1278,51 @@ namespace UnitTestMdr
 			} // using dump
 		}
 
-		#endregion types
+        [TestMethod]
+        public void TestGetTypeAddressList()
+        {
+            string typeName = "ECS.Common.HierarchyCache.Structure.WTPortfolio";
+            string error = null;
+            using (var clrDump = OpenDump(@"D:\Jerzy\WinDbgStuff\dumps\Modeling\Local\Eze.Modeling.Svc.exe_170421_141853.dmp"))
+            {
+                try
+                {
+                    var runtime = clrDump.Runtimes[0];
+                    var heap = runtime.GetHeap();
+                    var segs = heap.Segments;
+                    for (int i = 0, icnt = segs.Count; i < icnt; ++i)
+                    {
+                        var seg = segs[i];
+                        ulong addr = seg.FirstObject;
+                        while (addr != 0ul)
+                        {
+                            var clrType = heap.GetObjectType(addr);
+                            if (clrType == null || !Utils.SameStrings(typeName, clrType.Name)) goto NEXT_OBJECT;
+                            var fld = clrType.GetFieldByName("prtName");
+                            string val = (string)fld.GetValue(addr, false, true);
+                            if (Utils.SameStrings("RG10",val))
+                            {
+                                int a = 1;
+                            }
 
-		#region type references
+                            NEXT_OBJECT:
+                            addr = seg.NextObject(addr);
+                        }
+                    }
+                }
+                catch (Exception ex)
+                {
+                    error = Utils.GetExceptionErrorString(ex);
+                    Assert.IsTrue(false, error);
+                }
+            }
+        }
 
-		[TestMethod]
+        #endregion types
+
+        #region type references
+
+        [TestMethod]
 		public void TestTypeReferences()
 		{
 			string error;
@@ -1458,6 +1564,40 @@ namespace UnitTestMdr
 			}
 		}
 
-		#endregion template
-	}
+        [TestMethod]
+        public void TestSnippet()
+        {
+            string error = null;
+            using (var clrDump = OpenDump(""))
+            {
+                try
+                {
+                    var runtime = clrDump.Runtimes[0];
+                    var heap = runtime.GetHeap();
+                    var segs = heap.Segments;
+                    for (int i = 0, icnt = segs.Count; i < icnt; ++i)
+                    {
+                        var seg = segs[i];
+                        ulong addr = seg.FirstObject;
+                        while (addr != 0ul)
+                        {
+                            var clrType = heap.GetObjectType(addr);
+                            if (clrType == null) goto NEXT_OBJECT;
+
+
+                            NEXT_OBJECT:
+                            addr = seg.NextObject(addr);
+                        }
+                    }
+                }
+                catch (Exception ex)
+                {
+                    error = Utils.GetExceptionErrorString(ex);
+                    Assert.IsTrue(false, error);
+                }
+            }
+        }
+
+        #endregion template
+    }
 }

@@ -1991,13 +1991,13 @@ namespace UnitTestMdr
 		}
 
 		[TestMethod]
-		public void TestSpecificFilteredType()
+		public void Test_RealPosition_Type()
 		{
 			string typeName = @"ECS.Common.HierarchyCache.Structure.RealPosition";
-			string symbolName = @"4578 JP";
+			string symbolName = @"MC";
 			string error = null;
 
-			using (var clrDump = GetDump(@"D:\Jerzy\WinDbgStuff\dumps\Analytics\Scopia\Eze.Analytics.Svc_160929_103505.dmp"))
+			using (var clrDump = GetDump(@"D:\Jerzy\WinDbgStuff\dumps\Analytics\Centurion\AnalyticsCenturion.4.18.17.dmp"))
 			{
 				var addrLst = new List<String[]>(1024);
 				try
@@ -2022,6 +2022,7 @@ namespace UnitTestMdr
 
 							var prtcd = clrType.GetFieldByName("portcd");
 							data[2] = (string)prtcd.GetValue(addr, false, true);
+                            if (string.Compare("CPLP", data[2], StringComparison.OrdinalIgnoreCase) != 0) goto NEXT_OBJECT;
 
 							fld = clrType.GetFieldByName("sec");
 							object faddrObj = fld.GetValue(addr, false, false);
@@ -2039,8 +2040,9 @@ namespace UnitTestMdr
 								sval = (string)fld3.GetValue(faddr2, false, true);
 							}
 							data[3] = sval;
+                            if (string.Compare("MC", data[3], StringComparison.OrdinalIgnoreCase) != 0) goto NEXT_OBJECT;
 
-							fld = clrType.GetFieldByName("filledAmount");
+                            fld = clrType.GetFieldByName("filledAmount");
 							faddr = (ulong)fld.GetAddress(addr, true);
 							data[4] = ValueExtractor.GetDecimalValue(faddr, fld.Type, "0,0.00");
 
@@ -2063,7 +2065,7 @@ namespace UnitTestMdr
 					{
 						Tuple<string, string> dmpFolders = DumpFileMoniker.GetAndCreateMapFolders(clrDump.DumpPath, out error);
 
-						var path = dmpFolders.Item2 + @"\RealPositions.160929_103505.dmp.txt";
+						var path = dmpFolders.Item2 + @"\RealPositions.AnalyticsCenturion.4.18.17.dmp.txt";
 
 						wr = new StreamWriter(path);
 
@@ -2099,8 +2101,255 @@ namespace UnitTestMdr
 				}
 			}
 		}
+        [TestMethod]
+        public void Test_RowCache_Type()
+        {
+            string typeName = @"Eze.Server.Common.Pulse.CalculationCache.RowCache";
+            string symbolName = @"MC";
+            string error = null;
 
-		[TestMethod]
+            using (var clrDump = GetDump(@"D:\Jerzy\WinDbgStuff\dumps\Analytics\Centurion\AnalyticsCenturion.4.18.17.dmp"))
+            {
+                var addrLst = new List<String[]>(1024);
+                try
+                {
+                    var runtime = clrDump.Runtimes[0];
+                    var heap = runtime.GetHeap();
+                    var segs = heap.Segments;
+                    for (int i = 0, icnt = segs.Count; i < icnt; ++i)
+                    {
+                        var seg = segs[i];
+                        ulong addr = seg.FirstObject;
+                        while (addr != 0ul)
+                        {
+                            var clrType = heap.GetObjectType(addr);
+                            if (clrType == null || !Utils.SameStrings(clrType.Name, typeName)) goto NEXT_OBJECT;
+                            string[] data = new string[7];
+                            data[0] = Utils.AddressString(addr);
+
+                            var fld = clrType.GetFieldByName("key");
+                            if (fld == null) goto NEXT_OBJECT;
+                            data[1] = (string)fld.GetValue(addr, false, true);
+                            if (data[1].IndexOf("MC") < 0) goto NEXT_OBJECT;
+
+                            data[2] = "??????";
+                            data[3] = "??????";
+                            data[4] = "??????";
+                            data[5] = "??????";
+                            data[6] = "??????";
+
+                            //var prtcd = clrType.GetFieldByName("portcd");
+                            //data[2] = (string)prtcd.GetValue(addr, false, true);
+                            //if (string.Compare("CPLP", data[2], StringComparison.OrdinalIgnoreCase) != 0) goto NEXT_OBJECT;
+
+                            //fld = clrType.GetFieldByName("sec");
+                            //object faddrObj = fld.GetValue(addr, false, false);
+                            //ulong faddr = (ulong?)faddrObj ?? 0UL;
+                            //string sval;
+                            //if (faddr == 0UL)
+                            //{
+                            //    sval = Constants.NullValue;
+                            //}
+                            //else
+                            //{
+                            //    var fld2 = fld.Type.GetFieldByName("securitySimpleState");
+                            //    var faddr2 = (ulong)fld2.GetValue(faddr, false);
+                            //    var fld3 = fld2.Type.GetFieldByName("Symbol");
+                            //    sval = (string)fld3.GetValue(faddr2, false, true);
+                            //}
+                            //data[3] = sval;
+                            //if (string.Compare("MC", data[3], StringComparison.OrdinalIgnoreCase) != 0) goto NEXT_OBJECT;
+
+                            //fld = clrType.GetFieldByName("filledAmount");
+                            //faddr = (ulong)fld.GetAddress(addr, true);
+                            //data[4] = ValueExtractor.GetDecimalValue(faddr, fld.Type, "0,0.00");
+
+                            //fld = clrType.GetFieldByName("netcost");
+                            //faddr = (ulong)fld.GetAddress(addr, true);
+                            //data[5] = ValueExtractor.GetDecimalValue(faddr, fld.Type, "0,0.00");
+
+                            //fld = clrType.GetFieldByName("tradeState");
+                            //data[6] = (string)fld.GetValue(addr, false, true);
+
+                            addrLst.Add(data);
+
+                            NEXT_OBJECT:
+                            addr = seg.NextObject(addr);
+                        }
+                    }
+
+                    StreamWriter wr = null;
+                    try
+                    {
+                        Tuple<string, string> dmpFolders = DumpFileMoniker.GetAndCreateMapFolders(clrDump.DumpPath, out error);
+
+                        var path = dmpFolders.Item2 + @"\RowCache.AnalyticsCenturion.4.18.17.dmp.txt";
+
+                        wr = new StreamWriter(path);
+
+                        wr.WriteLine("### MDRDESK REPORT: RowCache");
+                        wr.WriteLine("### TITLE: RealPosition");
+                        wr.WriteLine("### COUNT: " + Utils.LargeNumberString(addrLst.Count));
+                        wr.WriteLine("### COLUMNS: Address|ulong \u271A key|string \u271A portcd|string \u271A Symbol|string \u271A filledAmount|string \u271A netcost|string \u271A tradeState|string");
+                        wr.WriteLine("### SEPARATOR:  \u271A ");
+                        wr.WriteLine("#### RowCache count: " + Utils.LargeNumberString(addrLst.Count));
+
+                        for (int i = 0, icnt = addrLst.Count; i < icnt; ++i)
+                        {
+                            wr.Write(addrLst[i][0] + Constants.HeavyGreekCrossPadded);
+                            wr.Write(addrLst[i][1] + Constants.HeavyGreekCrossPadded);
+                            wr.Write(addrLst[i][2] + Constants.HeavyGreekCrossPadded);
+                            wr.Write(addrLst[i][3] + Constants.HeavyGreekCrossPadded);
+                            wr.Write(addrLst[i][4] + Constants.HeavyGreekCrossPadded);
+                            wr.Write(addrLst[i][5] + Constants.HeavyGreekCrossPadded);
+                            wr.WriteLine(addrLst[i][6]);
+                        }
+                        wr.Close();
+                        wr = null;
+                    }
+                    finally
+                    {
+                        wr?.Close();
+                    }
+                }
+                catch (Exception ex)
+                {
+                    error = Utils.GetExceptionErrorString(ex);
+                    Assert.IsTrue(false, error);
+                }
+            }
+        }
+
+        [TestMethod]
+        public void Test_SideSplitterSharesItem_Type()
+        {
+            string typeName = @"Eze.Server.Common.Pulse.Common.Types.SideSplitterSharesItem";
+            ulong[] addresses = new ulong[] {
+            0x00000380c0e788,
+            0x00000380c0f028,
+            0x00000380c0fa98,
+            0x00000380c11228,
+            0x00000380c121b0,
+            0x00000380c13348,
+            };
+
+            string error = null;
+
+            using (var clrDump = GetDump(@"D:\Jerzy\WinDbgStuff\dumps\Analytics\Centurion\AnalyticsCenturion.4.18.17.dmp"))
+            {
+                var addrLst = new List<String[]>(1024);
+                try
+                {
+                    var runtime = clrDump.Runtimes[0];
+                    var heap = runtime.GetHeap();
+                    var segs = heap.Segments;
+                    for (int i = 0, icnt = segs.Count; i < icnt; ++i)
+                    {
+                        var seg = segs[i];
+                        ulong addr = seg.FirstObject;
+                        while (addr != 0ul)
+                        {
+                            var clrType = heap.GetObjectType(addr);
+                            if (clrType == null || !Utils.SameStrings(clrType.Name, typeName)) goto NEXT_OBJECT;
+                            string[] data = new string[7];
+                            data[0] = Utils.RealAddressString(addr);
+
+                            var fld = clrType.GetFieldByName("rowCache");
+                            if (fld == null) goto NEXT_OBJECT;
+
+                            ulong val = (ulong)fld.GetValue(addr, false, false);
+                            if (Array.IndexOf(addresses, val) < 0) goto NEXT_OBJECT;
+                            data[1] = Utils.RealAddressString(val);
+
+                            data[2] = "??????";
+                            data[3] = "??????";
+                            data[4] = "??????";
+                            data[5] = "??????";
+                            data[6] = "??????";
+
+                            //var prtcd = clrType.GetFieldByName("portcd");
+                            //data[2] = (string)prtcd.GetValue(addr, false, true);
+                            //if (string.Compare("CPLP", data[2], StringComparison.OrdinalIgnoreCase) != 0) goto NEXT_OBJECT;
+
+                            //fld = clrType.GetFieldByName("sec");
+                            //object faddrObj = fld.GetValue(addr, false, false);
+                            //ulong faddr = (ulong?)faddrObj ?? 0UL;
+                            //string sval;
+                            //if (faddr == 0UL)
+                            //{
+                            //    sval = Constants.NullValue;
+                            //}
+                            //else
+                            //{
+                            //    var fld2 = fld.Type.GetFieldByName("securitySimpleState");
+                            //    var faddr2 = (ulong)fld2.GetValue(faddr, false);
+                            //    var fld3 = fld2.Type.GetFieldByName("Symbol");
+                            //    sval = (string)fld3.GetValue(faddr2, false, true);
+                            //}
+                            //data[3] = sval;
+                            //if (string.Compare("MC", data[3], StringComparison.OrdinalIgnoreCase) != 0) goto NEXT_OBJECT;
+
+                            //fld = clrType.GetFieldByName("filledAmount");
+                            //faddr = (ulong)fld.GetAddress(addr, true);
+                            //data[4] = ValueExtractor.GetDecimalValue(faddr, fld.Type, "0,0.00");
+
+                            //fld = clrType.GetFieldByName("netcost");
+                            //faddr = (ulong)fld.GetAddress(addr, true);
+                            //data[5] = ValueExtractor.GetDecimalValue(faddr, fld.Type, "0,0.00");
+
+                            //fld = clrType.GetFieldByName("tradeState");
+                            //data[6] = (string)fld.GetValue(addr, false, true);
+
+                            addrLst.Add(data);
+
+                            NEXT_OBJECT:
+                            addr = seg.NextObject(addr);
+                        }
+                    }
+
+                    StreamWriter wr = null;
+                    try
+                    {
+                        Tuple<string, string> dmpFolders = DumpFileMoniker.GetAndCreateMapFolders(clrDump.DumpPath, out error);
+
+                        var path = dmpFolders.Item2 + @"\SideSplitterSharesItem.AnalyticsCenturion.4.18.17.dmp.txt";
+
+                        wr = new StreamWriter(path);
+
+                        wr.WriteLine("### MDRDESK REPORT: SideSplitterSharesItem");
+                        wr.WriteLine("### TITLE: RealPosition");
+                        wr.WriteLine("### COUNT: " + Utils.LargeNumberString(addrLst.Count));
+                        wr.WriteLine("### COLUMNS: Address|ulong \u271A key|string \u271A portcd|string \u271A Symbol|string \u271A filledAmount|string \u271A netcost|string \u271A tradeState|string");
+                        wr.WriteLine("### SEPARATOR:  \u271A ");
+                        wr.WriteLine("#### RowCache count: " + Utils.LargeNumberString(addrLst.Count));
+
+                        for (int i = 0, icnt = addrLst.Count; i < icnt; ++i)
+                        {
+                            wr.Write(addrLst[i][0] + Constants.HeavyGreekCrossPadded);
+                            wr.Write(addrLst[i][1] + Constants.HeavyGreekCrossPadded);
+                            wr.Write(addrLst[i][2] + Constants.HeavyGreekCrossPadded);
+                            wr.Write(addrLst[i][3] + Constants.HeavyGreekCrossPadded);
+                            wr.Write(addrLst[i][4] + Constants.HeavyGreekCrossPadded);
+                            wr.Write(addrLst[i][5] + Constants.HeavyGreekCrossPadded);
+                            wr.WriteLine(addrLst[i][6]);
+                        }
+                        wr.Close();
+                        wr = null;
+                    }
+                    finally
+                    {
+                        wr?.Close();
+                    }
+                }
+                catch (Exception ex)
+                {
+                    error = Utils.GetExceptionErrorString(ex);
+                    Assert.IsTrue(false, error);
+                }
+            }
+        }
+
+        [TestMethod]
 		public void TestSpecificFilteredType2()
 		{
 			string typeName = @"ECS.Common.HierarchyCache.Structure.CashEffectPosition";

@@ -884,7 +884,7 @@ namespace ClrMDRIndex
                 fldItemAddr = (ulong)fldObj;
                 if (TypeExtractor.IsAmbiguousKind(kind))
                 {
-                    var tempType = heap.GetObjectType(fldAddr);
+                    var tempType = heap.GetObjectType(fldItemAddr);
                     if (tempType != null)
                     {
                         fldType = tempType;
