@@ -67,7 +67,9 @@ Handle System.Void in TypeExtractor, and other places ?
 0024 03/29/17
 Add static variables getters, for types add static variables to types context menu, in instance value add them to value display.
 0025 04/21/17
-Double click on instance address list should get instance value.
+*** Double click on instance address list should get instance value.
 0026 04/21/17
-Add feature to rename title the tab items, and maybe change it to a window.
+*** Add feature to rename title the tab items.
+0026 04/21/17
+Add feature to change a tab into a free flowing window.
 

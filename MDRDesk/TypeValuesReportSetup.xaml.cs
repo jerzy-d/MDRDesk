@@ -24,12 +24,16 @@ namespace MDRDesk
 		private ClrtDisplayableType _typeInfo;
 		private TypeValuesQuery _query;
 		private TreeViewItem _currentTreeViewItem;
+		private HashSet<ClrtDisplayableType> _selection;
+		private LinkedList<ClrtDisplayableType> _selectionList;
 
 
 		public TypeValuesReportSetup(ClrtDisplayableType typeInfo)
 		{
 			_typeInfo = typeInfo;
 			_query = new TypeValuesQuery();
+			_selection = new HashSet<ClrtDisplayableType>();
+			_selectionList = new LinkedList<ClrtDisplayableType>();
 			InitializeComponent();
 			TypeValueReportTopTextBox.Text = typeInfo.GetDescription();
 			UpdateTypeValueSetupGrid(typeInfo,null);
@@ -146,8 +150,8 @@ namespace MDRDesk
 					curDispItem.RemoveFilter();
 				else
 					curDispItem.SetFilter(new FilterValue(val));
-//				_currentTreeViewItem.Header = curDispItem.ToString();
 				GuiUtils.UpdateTypeValueSetupTreeViewItem(_currentTreeViewItem, curDispItem);
+				UpdateSelection(curDispItem);
 			}
 		}
 
@@ -166,6 +170,88 @@ namespace MDRDesk
 				Debug.Assert(typeInfo!=null);
 				TypeValueReportTopTextBox.Text = _typeInfo.GetDescription() + " ...selected: " + typeInfo.FieldName + " / " + typeInfo.TypeName;
 
+
+			}
+		}
+
+		private void UpdateSelection(ClrtDisplayableType dispType)
+		{
+			Debug.Assert(dispType != null);
+			var parent = dispType.Parent;
+			if (dispType.GetValue || dispType.HasFilter)
+			{
+				_selection.Add(dispType);
+				while (parent != null)
+				{
+					_selection.Add(parent);
+					parent = parent.Parent;
+				}
+
+			}
+			else
+			{
+				_selection.Remove(dispType);
+				while(parent!=null && !
+			}
+		}
+
+		private void UpdateSelection(ClrtDisplayableType dispType)
+		{
+			Debug.Assert(dispType != null);
+			var dispTypeNode = _selectionList.Find(dispType);
+			var dispTypeNodeParent = _selectionList.Find(dispType.Parent);
+			
+			if (dispType.HasFields && dispType.GetValue) // add to list
+			{
+				if (dispTypeNode != null) return;
+				if (_selectionList.Count < 1)
+				{
+					_selectionList.AddFirst(dispType);
+					var parent = dispType.Parent;
+					while(parent != null)
+					{
+						_selectionList.AddFirst(parent);
+						parent = parent.Parent;
+					}
+					return;
+				}
+				if (dispTypeNodeParent != null)
+				{
+					_selectionList.AddAfter(dispTypeNodeParent, dispType);
+					return;
+				}
+				// find insertion point
+
+				if (dispTypeNodeParent != null)
+				{
+
+				}
+
+			}
+			else // remove from list
+			{
+				if (dispTypeNode == null) return;
+
+				_selection.Remove(dispType);
+				while (parent != null && !
+			}
+		}
+
+		private IList<ClrtDisplayableType> GetOrderedSelection()
+		{
+			var node = TypeValueReportTreeView.Items[0] as TreeViewItem;
+			var que = new Queue<TreeViewItem>();
+			que.Enqueue(node);
+			List<ClrtDisplayableType> lst = new List<ClrtDisplayableType>();
+			while(que.Count > 0)
+			{
+				node = que.Dequeue();
+				lst.Add(node.Tag as ClrtDisplayableType);
+				if (node.Items == null) continue;
+				for (int i = 0, icnt = node.Items.Count; i < icnt; ++i)
+				{
+					que.Enqueue(node.Items[i] as TreeViewItem);
+				}
 			}
 		}
 	}

@@ -42,13 +42,11 @@ namespace ClrMDRIndex
 		public string GetDescription()
 		{
 			return _typeName + Environment.NewLine
-			       + (HasFields() ? "Field Count: " + _fields.Length : string.Empty);
+			       + (HasFields ? "Field Count: " + _fields.Length : string.Empty);
 		}
 
-		public bool HasFields()
-		{
-			return _fields != null && _fields.Length > 0;
-		}
+		public bool HasFields => _fields != null && _fields.Length > 0;
+		
 
 		public void AddFields(ClrtDisplayableType[] fields)
 		{
@@ -68,10 +66,9 @@ namespace ClrMDRIndex
 			_getValue = !_getValue;
 		}
 
-		public bool HasFilter()
-		{
-			return _valueFilter != null;
-		}
+		public bool HasFilter => _valueFilter != null;
+		public bool GetValue => _getValue;
+
 		public void SetFilter(FilterValue filter)
 		{
 			_valueFilter = filter;
@@ -142,11 +139,11 @@ namespace ClrMDRIndex
 
 		public string SelectionStr()
 		{
-			if (_getValue && HasFilter())
+			if (_getValue && HasFilter)
 				return Constants.HeavyCheckMark.ToString() + Constants.FilterHeader;
 			if (_getValue)
 				return Constants.HeavyCheckMarkHeader;
-			if (HasFilter())
+			if (HasFilter)
 				return Constants.FilterHeader;
 			return string.Empty;
 		}

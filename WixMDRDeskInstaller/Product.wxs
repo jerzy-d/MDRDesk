@@ -9,6 +9,12 @@
 		<Feature Id="ProductFeature" Title="MDRDesk Installer" Level="1">
 			<ComponentGroupRef Id="ProductComponents" />
 		</Feature>
+
+    <UIRef Id="WixUI_Advanced"/>
+    <Property Id="ApplicationFolderName" Value="My Company" />
+    <Property Id="WixAppFolder" Value="WixPerMachineFolder" />
+    <!--Property Id="WIXUI_INSTALLDIR" Value="INSTALLFOLDER" /-->
+    <Icon Id="MDRDeskExeIcon" SourceFile="$(var.MDRDesk.TargetDir)MDRDesk.exe"/>
 	</Product>
 
 	<Fragment>

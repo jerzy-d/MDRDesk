@@ -206,7 +206,7 @@
                     <RowDefinition Height="5"/>
                     <RowDefinition Height="20*"/>
                 </Grid.RowDefinitions>
-                <ListView Name="AliveStackObjects" Grid.Row="0" VerticalAlignment="Stretch" HorizontalAlignment="Stretch" Margin="2,2,2,2" ContextMenu="{StaticResource StackObjectListContextMenu}">
+                <ListView Name="AliveStackObjects" Grid.Row="0" VerticalAlignment="Stretch" HorizontalAlignment="Stretch" Margin="2,2,2,2" ContextMenu="{StaticResource StackObjectListContextMenu}" MouseDoubleClick="StackObjectDoubleClicked">
                     <ListView.ItemContainerStyle>
                         <Style TargetType="ListViewItem">
                             <Setter Property="HorizontalContentAlignment" Value="Left" />
@@ -223,7 +223,7 @@
                     </ListView.View>
                 </ListView>
                 <GridSplitter Grid.Row="1" VerticalAlignment="Center" HorizontalAlignment="Stretch" Height="5" ShowsPreview="False" Background="DarkGray"></GridSplitter>
-                <ListView Name="DeadStackObjects" Grid.Row="2" VerticalAlignment="Stretch" HorizontalAlignment="Stretch" Margin="2,2,2,2" ContextMenu="{StaticResource StackObjectListContextMenu}">
+                <ListView Name="DeadStackObjects" Grid.Row="2" VerticalAlignment="Stretch" HorizontalAlignment="Stretch" Margin="2,2,2,2" ContextMenu="{StaticResource StackObjectListContextMenu}"  MouseDoubleClick="StackObjectDoubleClicked">
                     <ListView.ItemContainerStyle>
                         <Style TargetType="ListViewItem">
                             <Setter Property="HorizontalContentAlignment" Value="Left" />
@@ -311,7 +311,7 @@
             </ToolBarTray>
             <ListBox Grid.Row="1" Grid.Column="0" Margin="4,4,4,4" Name="lbTypeViewTypeNames" HorizontalAlignment="Stretch" SelectionChanged="lbTypeNamesSelectionChange" DisplayMemberPath="Key" FontFamily="Consolas" FontSize="12" ContextMenu="{StaticResource TypeListContextMenu}" >
             </ListBox>
-            <ListBox Grid.Row="1" Grid.Column="1" Margin="4,4,4,4" Name="lbTypeNameAddresses" HorizontalAlignment="Stretch" SelectionMode="Single" SelectionChanged="Selector_OnSelectionChanged" FontFamily="Consolas" FontSize="12" ContextMenu="{StaticResource AddresListContextMenu}" >
+            <ListBox Grid.Row="1" Grid.Column="1" Margin="4,4,4,4" Name="lbTypeNameAddresses" HorizontalAlignment="Stretch" SelectionMode="Single" SelectionChanged="Selector_OnSelectionChanged" FontFamily="Consolas" FontSize="12" ContextMenu="{StaticResource AddresListContextMenu}"  MouseDoubleClick="AddressListDoubleClicked" >
                 <ListBox.ItemTemplate>
                     <DataTemplate>
                         <TextBlock Text="{Binding Converter={StaticResource LongHexConverter}}"/>
@@ -350,7 +350,7 @@
             <ListBox Grid.Row="1" Grid.Column="2" Margin="4,4,4,4" Name="lbNamespaceViewTypeNames" HorizontalAlignment="Stretch" SelectionMode="Single" SelectionChanged="lbTpNamesSelectionChange" DisplayMemberPath="Key" FontFamily="Consolas" FontSize="12" ContextMenu="{StaticResource TypeListContextMenu}">
             </ListBox>
             <GridSplitter Grid.Row="1"  Grid.Column="3" VerticalAlignment="Stretch" HorizontalAlignment="Center" Width="5" ShowsPreview="False" Background="DarkGray"></GridSplitter>
-            <ListBox Grid.Row="1" Grid.Column="4" Margin="4,4,4,4" Name="lbTypeNamespaceAddresses" HorizontalAlignment="Stretch" SelectionMode="Single" ContextMenu="{StaticResource AddresListContextMenu}"  FontFamily="Consolas" FontSize="12">
+            <ListBox Grid.Row="1" Grid.Column="4" Margin="4,4,4,4" Name="lbTypeNamespaceAddresses" HorizontalAlignment="Stretch" SelectionMode="Single" ContextMenu="{StaticResource AddresListContextMenu}"  FontFamily="Consolas" FontSize="12" MouseDoubleClick="AddressListDoubleClicked">
                 <ListBox.ItemTemplate>
                     <DataTemplate>
                         <TextBlock Text="{Binding Converter={StaticResource LongHexConverter}}"/>
@@ -764,8 +764,7 @@
                         <Separator></Separator>
                         <MenuItem x:Name="InstanceInfo" Header="Get Instance Information">
                             <MenuItem x:Name="InstImmediateReference" Header="Parent References" Click="InstReferenceClicked"/>
-                            <!--<MenuItem x:Name="InstNLevelReferences" Header="N Parents Reference" Click="InstReferenceClicked"/>
-                        <MenuItem x:Name="InstAllReferences" Header="All Parents Reference" Click="InstReferenceClicked"/>-->
+                            <MenuItem x:Name="InstValue" Header="Instance Value" Click="InstReferenceClicked"/>
                             <MenuItem x:Name="InstGenDistribution" Header="Generation Histogram" Click="InstReferenceClicked"/>
                             <MenuItem x:Name="InstHierarchyWalk" Header="Instance Hierarchy Walk" Click="InstReferenceClicked"/>
                         </MenuItem>

@@ -1169,7 +1169,9 @@ namespace ClrMDRIndex
                         return (Constants.InformationSymbolHeader + "We treat the string types as primitives, there are no fields available.", Utils.EmptyArray<InstanceValue>.Value);
                     case ClrElementKind.SZArray:
                     case ClrElementKind.Array:
-                        parent.SetFields(Utils.EmptyArray<InstanceValue>.Value);
+						(string err, InstanceValue inst) = ArrayContent(ndxProxy, heap, decoratedAddr, parent);
+						return (err, new InstanceValue[] { inst });
+						parent.SetFields(Utils.EmptyArray<InstanceValue>.Value);
                         return (Constants.InformationSymbolHeader + "The array types do not have fields.", Utils.EmptyArray<InstanceValue>.Value);
                     case ClrElementKind.Struct:
                     case ClrElementKind.Object:

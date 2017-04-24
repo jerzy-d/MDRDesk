@@ -30,6 +30,24 @@ namespace MDRDesk
 			Button closeButton = base.GetTemplateChild("PART_Close") as Button;
 			if (closeButton != null)
 				closeButton.Click += new System.Windows.RoutedEventHandler(closeButton_Click);
+			ContextMenu = new ContextMenu();
+			MenuItem menuItem = new MenuItem() { Header = "Change Tab Header/Title" };
+			menuItem.Click += ChangeTabHeader;
+			ContextMenu.Items.Add(menuItem);
+		}
+
+		private void ChangeTabHeader(object sender, RoutedEventArgs e)
+		{
+			InputStringDlg dlg = new InputStringDlg("Enter new header/title. Headers longer that 32 characters will be truncated.", this.Header.ToString()) { Title = "Change Tab Header", Owner = Window.GetWindow(this) };
+			var dlgResult = dlg.ShowDialog();
+			if (dlg.DialogResult != null && (!dlg.DialogResult.Value || string.IsNullOrWhiteSpace(dlg.Answer))) return;
+			var str = dlg.Answer.Trim();
+			dlg.Close();
+			dlg = null;
+			if (string.IsNullOrWhiteSpace(str)) return;
+			if (str.Length > 32)
+				str = str.Substring(0, 29) + "...";
+			this.Header = str;
 		}
 
 		void closeButton_Click(object sender, System.Windows.RoutedEventArgs e)

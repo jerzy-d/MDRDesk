@@ -23,7 +23,7 @@ namespace MDRDesk
 			InitializeComponent();
 			LbTypeName.Content = dispType.TypeName;
 			_dispType = dispType;
-			if (_dispType.HasFilter())
+			if (_dispType.HasFilter)
 			{
 				TbTypeValue.Text = _dispType.Filter.FilterString;
 			}
@@ -39,8 +39,8 @@ namespace MDRDesk
             if (TypeExtractor.IsString(kind))
             {
                 TypeValueDescr.Visibility = Visibility.Hidden;
-                TypeValeCase.IsChecked = _dispType.HasFilter() && _dispType.Filter.IsIgnoreCase();
-                TypeValeRegex.IsChecked = _dispType.HasFilter() && _dispType.Filter.IsRegex();
+                TypeValeCase.IsChecked = _dispType.HasFilter && _dispType.Filter.IsIgnoreCase();
+                TypeValeRegex.IsChecked = _dispType.HasFilter && _dispType.Filter.IsRegex();
                 return;
             }
 

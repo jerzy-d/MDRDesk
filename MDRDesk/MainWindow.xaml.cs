@@ -744,6 +744,8 @@ namespace MDRDesk
 				menuItems);
 		}
 
+		#region InstanceInfo
+
 		private void InstReferenceClicked(object sender, RoutedEventArgs e)
 		{
 			if (!IsIndexAvailable("Get Instance Information")) return;
@@ -762,14 +764,10 @@ namespace MDRDesk
 				case "PARENT REFERENCES":
 					Dispatcher.CurrentDispatcher.InvokeAsync(() => ExecuteReferenceQuery(addr));
 					break;
-				//case "N PARENTS REFERENCE":
-				//	long refLevel;
-				//	if (!GetUserEnteredNumber("Reference Query Level", "Enter number, hex format not allowed:", out refLevel)) return;
-				//	Dispatcher.CurrentDispatcher.InvokeAsync(() => ExecuteReferenceQuery("Getting instance references", addr, null, (int)refLevel));
-				//	break;
-				//case "ALL PARENTS REFERENCE":
-				//	Dispatcher.CurrentDispatcher.InvokeAsync(() => ExecuteReferenceQuery("Getting instance references", addr, null, Int32.MaxValue));
-				//	break;
+				case "INSTANCE VALUE":
+					var msg = "Getting object value at: " + Utils.RealAddressString(addr);
+					Dispatcher.CurrentDispatcher.InvokeAsync(() => ExecuteInstanceValueQuery(msg, addr));
+					break;
 				case "GENERATION HISTOGRAM":
 					var grid = GetCurrentTabGrid();
 					Dispatcher.CurrentDispatcher.InvokeAsync(
@@ -783,6 +781,14 @@ namespace MDRDesk
 					break;
 			}
 		}
+
+
+		private void AddressListDoubleClicked(object sender, MouseButtonEventArgs e)
+		{
+			LbGetInstValueClicked(sender, null);
+		}
+
+		#endregion InstanceInfo
 
 		private async void IndexCompareSizeInformationClicked(object sender, RoutedEventArgs e)
 		{
@@ -1724,6 +1730,11 @@ namespace MDRDesk
 
 		private ListBox GetTypeAddressesListBox(object sender)
 		{
+			string listName = null;
+			if (sender is ListBox)
+			{
+				return (ListBox)sender;
+			}
 			var menuItem = sender as MenuItem;
 			Debug.Assert(menuItem != null);
 			var contextMenu = menuItem.Parent as ContextMenu;
@@ -1732,7 +1743,6 @@ namespace MDRDesk
 
 			var grid = GetCurrentTabGrid();
 			string gridName = Utils.GetNameWithoutId(grid.Name);
-			string listName = null;
 			switch (gridName)
 			{
 				case GridNameTypeView:
@@ -1858,6 +1868,11 @@ namespace MDRDesk
 			Dispatcher.CurrentDispatcher.InvokeAsync(() => ExecuteInstanceValueQuery("Getting stack object value: " + Utils.AddressString(addr), addr));
 		}
 
+		private void StackObjectDoubleClicked(object sender, MouseButtonEventArgs e)
+		{
+			StackObjectInstValueClicked(sender, null);
+		}
+
 		private void StackObjectGetInstHierarchyClicked(object sender, RoutedEventArgs e)
 		{
 			ulong addr = GetStackObjectAddress(sender);
@@ -1891,6 +1906,7 @@ namespace MDRDesk
 
 		private ListView GetContextMenuListView(object sender)
 		{
+			if (sender is ListView) return (ListView)sender;
 			var menuItem = sender as MenuItem;
 			Debug.Assert(menuItem != null);
 			return GetListView(menuItem);
@@ -2124,5 +2140,7 @@ namespace MDRDesk
 				return;
 			ShowMemoryViewWindow(addr);
 		}
-    }
+
+
+	}
 }

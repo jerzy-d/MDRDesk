@@ -1634,6 +1634,7 @@ namespace MDRDesk
 		{
 			var dlg = new TypeValuesReportSetup(dispType) { Owner = this };
 			dlg.ShowDialog();
+
 		}
 
 		//private TreeView UpdateTypeValueSetupGrid(ClrtDisplayableType dispType, Grid mainGrid, TreeViewItem root)

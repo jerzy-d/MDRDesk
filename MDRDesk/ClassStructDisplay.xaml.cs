@@ -111,7 +111,14 @@ namespace MDRDesk
 				return;
 			}
 
-            if (fields.Length > 0)
+			if (fields.Length == 1 && fields[0].IsArray())
+			{
+				var wnd = new CollectionDisplay(Utils.GetNewID(), _wndDct, fields[0], MainWindow.GetInstanceValueDescription(fields[0])) { Owner = Application.Current.MainWindow };
+				wnd.Show();
+				return;
+			}
+
+			if (fields.Length > 0)
             {
                 for (int i = 0, icount = fields.Length; i < icount; ++i)
                 {
