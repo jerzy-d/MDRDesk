@@ -2101,6 +2101,128 @@ namespace UnitTestMdr
 				}
 			}
 		}
+
+        [TestMethod]
+        public void Test_RealPosition_Type2()
+        {
+            string typeName = @"ECS.Common.HierarchyCache.Structure.RealPosition";
+            string symbolName = @"MC";
+            string error = null;
+
+            using (var clrDump = GetDump(@"D:\Jerzy\WinDbgStuff\dumps\Analytics\Centurion\AnalyticsCenturion.4.18.17.dmp"))
+            {
+                var addrLst = new List<String[]>(1024);
+                try
+                {
+                    var runtime = clrDump.Runtimes[0];
+                    var heap = runtime.GetHeap();
+                    var segs = heap.Segments;
+                    for (int i = 0, icnt = segs.Count; i < icnt; ++i)
+                    {
+                        var seg = segs[i];
+                        ulong addr = seg.FirstObject;
+                        while (addr != 0ul)
+                        {
+                            var clrType = heap.GetObjectType(addr);
+                            if (clrType == null || !Utils.SameStrings(clrType.Name, typeName)) goto NEXT_OBJECT;
+
+                            string[] data = new string[4];
+                            data[0] = Utils.RealAddressString(addr);
+
+                            var fld = clrType.GetFieldByName("posID");
+                            if (fld == null) goto NEXT_OBJECT;
+                            data[1] = (string)fld.GetValue(addr, false, true);
+
+                            fld = clrType.GetFieldByName("sec");
+                            object faddrObj = fld.GetValue(addr, false, false);
+                            ulong faddr = (ulong?)faddrObj ?? 0UL;
+                            string sval;
+                            if (faddr == 0UL)
+                            {
+                                sval = Constants.NullValue;
+                            }
+                            else
+                            {
+                                var fld2 = fld.Type.GetFieldByName("securitySimpleState");
+                                var faddr2 = (ulong)fld2.GetValue(faddr, false);
+                                var fld3 = fld2.Type.GetFieldByName("Symbol");
+                                sval = (string)fld3.GetValue(faddr2, false, true);
+                            }
+                            data[2] = sval;
+
+
+                            fld = clrType.GetFieldByName("positionStateManager");
+                            faddr = (ulong)fld.GetValue(addr, false);
+                            var posMngr = heap.GetObjectType(faddr);
+                            if (posMngr == null) goto NEXT_OBJECT;
+
+                            fld = posMngr.GetFieldByName("positionLevelCache");
+                            faddr = (ulong)fld.GetValue(faddr, false);
+                            var levelCache = heap.GetObjectType(faddr);
+                            if (levelCache == null) goto NEXT_OBJECT;
+
+                            fld = levelCache.GetFieldByName("multiFeedCache");
+                            faddr = (ulong)fld.GetValue(faddr, false);
+                            var cacheFeed = heap.GetObjectType(faddr);
+                            if (cacheFeed == null) goto NEXT_OBJECT;
+
+                            fld = cacheFeed.GetFieldByName("decimalCaches");
+                            faddr = (ulong)fld.GetValue(faddr, false);
+                            var decCache = heap.GetObjectType(faddr);
+                            if (decCache == null) goto NEXT_OBJECT;
+
+                            fld = decCache.GetFieldByName("count");
+                            int val = (int)fld.GetValue(faddr, false);
+                            if (val < 2) goto NEXT_OBJECT;
+
+                            data[3] = val.ToString();
+
+                            addrLst.Add(data);
+
+                            NEXT_OBJECT:
+                            addr = seg.NextObject(addr);
+                        }
+                    }
+
+                    StreamWriter wr = null;
+                    try
+                    {
+                        Tuple<string, string> dmpFolders = DumpFileMoniker.GetAndCreateMapFolders(clrDump.DumpPath, out error);
+
+                        var path = dmpFolders.Item2 + @"\RealPositions2.AnalyticsCenturion.4.18.17.dmp.txt";
+
+                        wr = new StreamWriter(path);
+
+                        wr.WriteLine("### MDRDESK REPORT: RealPosition");
+                        wr.WriteLine("### TITLE: RealPosition");
+                        wr.WriteLine("### COUNT: " + Utils.LargeNumberString(addrLst.Count));
+                        wr.WriteLine("### COLUMNS: Address|ulong \u271A posID|string \u271A Symbol|string \u271A count|int");
+                        wr.WriteLine("### SEPARATOR:  \u271A ");
+                        wr.WriteLine("#### RealPosition count: " + Utils.LargeNumberString(addrLst.Count));
+
+                        for (int i = 0, icnt = addrLst.Count; i < icnt; ++i)
+                        {
+                            wr.Write(addrLst[i][0] + Constants.HeavyGreekCrossPadded);
+                            wr.Write(addrLst[i][1] + Constants.HeavyGreekCrossPadded);
+                            wr.Write(addrLst[i][2] + Constants.HeavyGreekCrossPadded);
+                            wr.WriteLine(addrLst[i][3]);
+                        }
+                        wr.Close();
+                        wr = null;
+                    }
+                    finally
+                    {
+                        wr?.Close();
+                    }
+                }
+                catch (Exception ex)
+                {
+                    error = Utils.GetExceptionErrorString(ex);
+                    Assert.IsTrue(false, error);
+                }
+            }
+        }
+
         [TestMethod]
         public void Test_RowCache_Type()
         {

@@ -68,6 +68,8 @@ namespace ClrMDRIndex
 
 		public bool HasFilter => _valueFilter != null;
 		public bool GetValue => _getValue;
+        public bool IsMarked => HasFilter || GetValue;
+
 
 		public void SetFilter(FilterValue filter)
 		{
@@ -150,9 +152,10 @@ namespace ClrMDRIndex
 
 		public override string ToString()
 		{
-			return string.IsNullOrEmpty(_fieldName)
-				? _typeName
-				: SelectionStr() + _fieldName + FilterStr(_valueFilter) + _typeName;
+            if (string.IsNullOrEmpty(_fieldName)) return _typeName;
+            var filter = FilterStr(_valueFilter);
+            if (string.IsNullOrEmpty(filter)) filter = " ";
+			return SelectionStr() + _fieldName + filter + _typeName;
 		}
 
 		public bool CanGetFields(out string msg)

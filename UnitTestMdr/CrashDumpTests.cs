@@ -404,6 +404,7 @@ namespace UnitTestMdr
             }
         }
 
+
         private bool NoNullEntries(string[] ary)
 		{
 			for (int i = 0, icnt = ary.Length; i < icnt; ++i)
@@ -1318,6 +1319,83 @@ namespace UnitTestMdr
             }
         }
 
+
+        [TestMethod]
+        public void TestGetTypeAddressList2()
+        {
+            string typeName = "ECS.Common.HierarchyCache.Structure.IndirectRealtimePrice";
+            string error = null;
+            List<Tuple<string, int, string>> lst = new List<Tuple<string, int, string>>();
+            using (var clrDump = OpenDump(@"D:\Jerzy\WinDbgStuff\dumps\Analytics\Centurion\AnalyticsCenturion.4.18.17.dmp"))
+            {
+                try
+                {
+                    var runtime = clrDump.Runtimes[0];
+                    var heap = runtime.GetHeap();
+                    var segs = heap.Segments;
+                    for (int i = 0, icnt = segs.Count; i < icnt; ++i)
+                    {
+                        var seg = segs[i];
+                        ulong addr = seg.FirstObject;
+                        while (addr != 0ul)
+                        {
+                            var clrType = heap.GetObjectType(addr);
+                            if (clrType == null || !Utils.SameStrings(typeName, clrType.Name)) goto NEXT_OBJECT;
+                            var fld = clrType.GetFieldByName(@"<FieldSourceId>k__BackingField");
+                            var val = fld.GetValue(addr, false, false);
+                            if (val is Int32)
+                            {
+                                var intVal = (int)val;
+                                if (intVal == 16 || intVal == 18)
+                                {
+                                    var symbol = "???";
+                                    var fld2 = clrType.GetFieldByName(@"positionSpecificPriceDetails");
+                                    var val2 = fld2.GetValue(addr, false, false);
+                                    ulong addrVal2 = val2 != null ? (ulong)val2 : 0UL;
+                                    var typeVal2 = heap.GetObjectType(addrVal2);
+                                    if (typeVal2 != null)
+                                    {
+                                        var fld3 = typeVal2.Name.EndsWith(".RealPosition") 
+                                            ? typeVal2.GetFieldByName(@"sec")
+                                            : typeVal2.GetFieldByName(@"_sec");
+                                        if (fld3 == null)
+                                        {
+                                            goto SET_RESULT;
+                                        }
+                                        var val3 = fld3.GetValue(addrVal2, false, false);
+                                        var addrVal3 = val3 != null ? (ulong)val3 : 0UL;
+                                        var typeVal3 = heap.GetObjectType(addrVal3);
+                                        if (typeVal3 != null)
+                                        {
+                                            var fld4 = typeVal3.GetFieldByName(@"securitySimpleState");
+                                            var val4 = fld4.GetValue(addrVal3, false, false);
+                                            var addrVal4 = val4 != null ? (ulong)val4 : 0UL;
+                                            var typeVal4 = heap.GetObjectType(addrVal4);
+                                            if (typeVal4 != null)
+                                            {
+                                                var fld5 = typeVal4.GetFieldByName(@"Symbol");
+                                                symbol = fld5.GetValue(addrVal4, false, true).ToString();
+                                            }
+                                        }
+                                    }
+
+                                    SET_RESULT:
+                                    var result = new Tuple<string, int, string>(Utils.RealAddressString(addr), intVal, symbol);
+                                    lst.Add(result);
+                                }
+                            }
+                            NEXT_OBJECT:
+                            addr = seg.NextObject(addr);
+                        }
+                    }
+                }
+                catch (Exception ex)
+                {
+                    error = Utils.GetExceptionErrorString(ex);
+                    Assert.IsTrue(false, error);
+                }
+            }
+        }
         #endregion types
 
         #region type references

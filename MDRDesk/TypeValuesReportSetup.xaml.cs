@@ -2,30 +2,25 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
-using System.Text;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Data;
-using System.Windows.Documents;
 using System.Windows.Input;
-using System.Windows.Media;
-using System.Windows.Media.Imaging;
-using System.Windows.Shapes;
 using ClrMDRIndex;
 
 namespace MDRDesk
 {
-	/// <summary>
-	/// Interaction logic for TypeValuesReportSetup.xaml
-	/// </summary>
-	public partial class TypeValuesReportSetup : Window
+    /// <summary>
+    /// Interaction logic for TypeValuesReportSetup.xaml
+    /// </summary>
+    public partial class TypeValuesReportSetup : Window
 	{
 		private ClrtDisplayableType _typeInfo;
 		private TypeValuesQuery _query;
 		private TreeViewItem _currentTreeViewItem;
 		private HashSet<ClrtDisplayableType> _selection;
-		private LinkedList<ClrtDisplayableType> _selectionList;
+        private ClrtDisplayableType[] _selections;
+		//private LinkedList<ClrtDisplayableType> _selectionList;
 
 
 		public TypeValuesReportSetup(ClrtDisplayableType typeInfo)
@@ -33,10 +28,12 @@ namespace MDRDesk
 			_typeInfo = typeInfo;
 			_query = new TypeValuesQuery();
 			_selection = new HashSet<ClrtDisplayableType>();
-			_selectionList = new LinkedList<ClrtDisplayableType>();
+			//_selectionList = new LinkedList<ClrtDisplayableType>();
 			InitializeComponent();
 			TypeValueReportTopTextBox.Text = typeInfo.GetDescription();
 			UpdateTypeValueSetupGrid(typeInfo,null);
+            TypeValueReportSelectedList.Items.Add("SELECTED VALUES " + Constants.DownwardsBlackArrow);
+            TypeValueReportFilterList.Items.Add("FILTERS " + Constants.DownwardsBlackArrow);
 		}
 
 		private void UpdateTypeValueSetupGrid(ClrtDisplayableType dispType, TreeViewItem root)
@@ -134,9 +131,10 @@ namespace MDRDesk
 			Debug.Assert(curDispItem != null);
 			curDispItem.ToggleGetValue();
 			GuiUtils.UpdateTypeValueSetupTreeViewItem(_currentTreeViewItem, curDispItem);
-		}
+            UpdateSelection(curDispItem);
+        }
 
-		private void TypeValueReportFilterMenuitem_OnClick(object sender, RoutedEventArgs e)
+        private void TypeValueReportFilterMenuitem_OnClick(object sender, RoutedEventArgs e)
 		{
 			if (_currentTreeViewItem == null) return;
 			var curDispItem = _currentTreeViewItem.Tag as ClrtDisplayableType;
@@ -177,82 +175,91 @@ namespace MDRDesk
 		private void UpdateSelection(ClrtDisplayableType dispType)
 		{
 			Debug.Assert(dispType != null);
-			var parent = dispType.Parent;
 			if (dispType.GetValue || dispType.HasFilter)
 			{
 				_selection.Add(dispType);
-				while (parent != null)
-				{
-					_selection.Add(parent);
-					parent = parent.Parent;
-				}
-
 			}
 			else
 			{
 				_selection.Remove(dispType);
-				while(parent!=null && !
 			}
-		}
+            UpdateSelectionListBox(dispType, TypeValueReportSelectedList,dispType.GetValue);
+            UpdateSelectionListBox(dispType, TypeValueReportFilterList,dispType.HasFilter);
+        }
 
-		private void UpdateSelection(ClrtDisplayableType dispType)
-		{
-			Debug.Assert(dispType != null);
-			var dispTypeNode = _selectionList.Find(dispType);
-			var dispTypeNodeParent = _selectionList.Find(dispType.Parent);
-			
-			if (dispType.HasFields && dispType.GetValue) // add to list
-			{
-				if (dispTypeNode != null) return;
-				if (_selectionList.Count < 1)
-				{
-					_selectionList.AddFirst(dispType);
-					var parent = dispType.Parent;
-					while(parent != null)
-					{
-						_selectionList.AddFirst(parent);
-						parent = parent.Parent;
-					}
-					return;
-				}
-				if (dispTypeNodeParent != null)
-				{
-					_selectionList.AddAfter(dispTypeNodeParent, dispType);
-					return;
-				}
-				// find insertion point
+        private void UpdateSelectionListBox(ClrtDisplayableType dispType, ListBox lb, bool include)
+        {
+            bool contains = lb.Items.Contains(dispType);
+            if (include)
+            {
+                if (contains) return;
+                lb.Items.Add(dispType);
+            }
+            else
+            {
+                if (contains)
+                    lb.Items.Remove(dispType);
+            }
+        }
 
-				if (dispTypeNodeParent != null)
-				{
-
-				}
-
-			}
-			else // remove from list
-			{
-				if (dispTypeNode == null) return;
-
-				_selection.Remove(dispType);
-				while (parent != null && !
-			}
-		}
-
-		private IList<ClrtDisplayableType> GetOrderedSelection()
+        private ClrtDisplayableType[] GetOrderedSelection()
 		{
 			var node = TypeValueReportTreeView.Items[0] as TreeViewItem;
 			var que = new Queue<TreeViewItem>();
 			que.Enqueue(node);
-			List<ClrtDisplayableType> lst = new List<ClrtDisplayableType>();
+			LinkedList<ClrtDisplayableType> lst = new LinkedList<ClrtDisplayableType>();
 			while(que.Count > 0)
 			{
 				node = que.Dequeue();
-				lst.Add(node.Tag as ClrtDisplayableType);
+				lst.AddFirst(node.Tag as ClrtDisplayableType);
 				if (node.Items == null) continue;
 				for (int i = 0, icnt = node.Items.Count; i < icnt; ++i)
 				{
 					que.Enqueue(node.Items[i] as TreeViewItem);
 				}
 			}
+            var lnode = lst.First;
+            while(lnode!=null)
+            {
+                if (lnode.Value.IsMarked) break;
+                lnode = lnode.Next;
+                lst.RemoveFirst();
+            }
+            if (lst.Count < 1) return Utils.EmptyArray<ClrtDisplayableType>.Value;
+
+            var needed = new HashSet<ClrtDisplayableType>(_selection);
+            foreach(var sel in _selection)
+            {
+                var parent = sel.Parent;
+                while(parent != null)
+                {
+                    needed.Add(parent);
+                    parent = parent.Parent;
+                }
+            }
+            lnode = lst.First;
+            while (lnode != null)
+            {
+                var next = lnode.Next;
+                if (!needed.Contains(lnode.Value))
+                    lst.Remove(lnode);
+                lnode = next;
+            }
+            var ary = lst.ToArray();
+            Array.Reverse(ary);
+            return ary;
 		}
-	}
+
+        private void RunClicked(object sender, RoutedEventArgs e)
+        {
+            _selections = GetOrderedSelection();
+            DialogResult = _selections.Length > 0;
+        }
+
+        private void CancelClicked(object sender, RoutedEventArgs e)
+        {
+            DialogResult = false;
+            Close();
+        }
+    }
 }

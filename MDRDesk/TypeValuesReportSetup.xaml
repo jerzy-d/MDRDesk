@@ -21,6 +21,14 @@
             <RowDefinition Height="20"/>
         </Grid.RowDefinitions>
         <TextBox x:Name="TypeValueReportTopTextBox" Grid.Row="0" Grid.Column="0" Grid.ColumnSpan="2" VerticalAlignment="Stretch" HorizontalAlignment="Stretch" Margin="1,1,1,1"/>
+        <StackPanel Grid.Row="0" Grid.Column="2" Background="WhiteSmoke"  Orientation="Horizontal" HorizontalAlignment="Stretch">
+            <Button  x:Name="DoTypeValueReport" Content=" Run " Margin="8,0,2,0" Width="Auto" Height="32" HorizontalAlignment="Left" VerticalAlignment="Center" BorderThickness="0" Click="RunClicked"
+                         Background="LightGray">
+            </Button>
+            <Button x:Name="CancelTypeValueReport" Content=" Cancel " Margin="8,0,2,0" Width="Auto" Height="32" HorizontalAlignment="Right" VerticalAlignment="Center" BorderThickness="0" Click="CancelClicked"
+                        Background="LightGray">
+            </Button>
+        </StackPanel>
         <GridSplitter Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="3" VerticalAlignment="Center" HorizontalAlignment="Stretch" Height="5" ShowsPreview="False" Background="DarkGray"></GridSplitter>
         <TreeView x:Name="TypeValueReportTreeView" Grid.Row="2" Grid.Column="0" VerticalAlignment="Stretch" HorizontalAlignment="Stretch" Margin="2,2,2,2" MouseDoubleClick="TypeValueReportTreeView_OnMouseDoubleClick"  SelectedItemChanged="TypeValueReportTreeView_OnSelectedItemChanged"  FontSize="11" >
             <TreeView.ContextMenu>

@@ -97,8 +97,9 @@ namespace ClrMDRIndex
 		public const string ReturnDisp = "\u27a7 "; // ➧ SQUAT BLACK RIGHTWARDS ARROW
 		public const char NewLineDispChar = '\u2B92'; // NEWLINE LEFT
 		public const char RightSquatArrow = '\u27a7'; // ➧ SQUAT BLACK RIGHTWARDS ARROW
-													  //public const char RightArrow = '\u2B95'; // RIGHTWARDS BLACK ARROW
-		public const string RightTrianglePadded = " \u23F5 "; // BLACK MEDIUM RIGHT-POINTING TRIANGLE
+                                                      //public const char RightArrow = '\u2B95'; // RIGHTWARDS BLACK ARROW
+        public const char DownwardsBlackArrow = '\u2B07'; // ⬇ DOWNWARDS BLACK ARROW
+        public const string RightTrianglePadded = " \u23F5 "; // BLACK MEDIUM RIGHT-POINTING TRIANGLE
 		public const char LeftCurlyBracket = '\u2774'; // ❴ MEDIUM LEFT CURLY BRACKET ORNAMENT
 		public const char RightCurlyBracket = '\u2775'; // ❵ MEDIUM RIGHT CURLY BRACKET ORNAMENT
 														// 24EA ⓪ CIRCLED DIGIT ZERO
