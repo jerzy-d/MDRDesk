@@ -124,6 +124,15 @@ namespace ClrMDRIndex
         }
 
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		public static bool IsObjectReference(ClrElementKind kind)
+		{
+			var stdKind = GetStandardKind(kind);
+			return stdKind == ClrElementKind.String || stdKind == ClrElementKind.Class
+								 || stdKind == ClrElementKind.Array || stdKind == ClrElementKind.SZArray
+								 || stdKind == ClrElementKind.Object;
+		}
+
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		public static bool IsStruct(ClrElementKind kind)
 		{
 			return kind == ClrElementKind.Struct;
@@ -381,7 +390,7 @@ namespace ClrMDRIndex
         }
 
 
-        public static ClrtDisplayableType GetClrtDisplayableType(IndexProxy ndxProxy, ClrHeap heap, int typeId, ulong[] addresses, out string error)
+        public static ClrtDisplayableType GetClrtDisplayableType(IndexProxy ndxProxy, ClrHeap heap, ClrtDisplayableType parent, int typeId, ulong[] addresses, out string error)
         {
             error = null;
             try
@@ -407,18 +416,18 @@ namespace ClrMDRIndex
                             case ClrElementKind.DateTime:
                             case ClrElementKind.TimeSpan:
                             case ClrElementKind.Decimal:
-                                return new ClrtDisplayableType(null, typeId, Constants.InvalidIndex, clrType.Name, String.Empty, kind);
+                                return new ClrtDisplayableType(parent, typeId, Constants.InvalidIndex, clrType.Name, String.Empty, kind);
                             case ClrElementKind.Interface:
                                 throw new ApplicationException("Interface kind is not expected from ClrHeap.GetHeapObject(...) method.");
                             case ClrElementKind.Enum:
-                                return new ClrtDisplayableType(null, typeId, Constants.InvalidIndex, clrType.Name, String.Empty, kind);
+                                return new ClrtDisplayableType(parent, typeId, Constants.InvalidIndex, clrType.Name, String.Empty, kind);
                             case ClrElementKind.System__Canon:
                                 throw new ApplicationException("System__Canon kind is not expected from ClrHeap.GetHeapObject(...) method.");
                             case ClrElementKind.Exception:
                             case ClrElementKind.Abstract:
                             case ClrElementKind.SystemVoid:
                             case ClrElementKind.SystemObject:
-                                return new ClrtDisplayableType(null, typeId, Constants.InvalidIndex, clrType.Name, String.Empty, kind);
+                                return new ClrtDisplayableType(parent, typeId, Constants.InvalidIndex, clrType.Name, String.Empty, kind);
                         }
                     }
                     else
@@ -426,14 +435,14 @@ namespace ClrMDRIndex
                         switch (TypeExtractor.GetStandardKind(kind))
                         {
                             case ClrElementKind.String:
-                                return new ClrtDisplayableType(null, typeId, Constants.InvalidIndex, clrType.Name, String.Empty, kind);
+                                return new ClrtDisplayableType(parent, typeId, Constants.InvalidIndex, clrType.Name, String.Empty, kind);
                             case ClrElementKind.SZArray:
                             case ClrElementKind.Array:
-                                return new ClrtDisplayableType(null, typeId, Constants.InvalidIndex, clrType.Name, String.Empty, kind);
+                                return new ClrtDisplayableType(parent, typeId, Constants.InvalidIndex, clrType.Name, String.Empty, kind);
                             case ClrElementKind.Struct:
                             case ClrElementKind.Object:
                             case ClrElementKind.Class:
-                                var dispType = new ClrtDisplayableType(null, typeId, Constants.InvalidIndex, clrType.Name, String.Empty, kind);
+                                var dispType = new ClrtDisplayableType(parent, typeId, Constants.InvalidIndex, clrType.Name, String.Empty, kind);
                                 var dispFlds = GetClrtDisplayableTypeFields(ndxProxy, heap, dispType, clrType, addr, ambiguousFields);
                                 var ambiguousCount = ambiguousFields.Count;
                                 var switchList = false;
@@ -456,11 +465,11 @@ namespace ClrMDRIndex
                             case ClrElementKind.Unknown:
                                 continue;
                             default:
-                                return new ClrtDisplayableType(null, typeId, Constants.InvalidIndex, clrType.Name, String.Empty, kind);
+                                return new ClrtDisplayableType(parent, typeId, Constants.InvalidIndex, clrType.Name, String.Empty, kind);
                         }
                     }
                 }
-                return new ClrtDisplayableType(null, typeId, Constants.InvalidIndex, Constants.NullName, String.Empty, ClrElementKind.Unknown);
+                return new ClrtDisplayableType(parent, typeId, Constants.InvalidIndex, Constants.NullName, String.Empty, ClrElementKind.Unknown);
             }
             catch (Exception ex)
             {

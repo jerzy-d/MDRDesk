@@ -1988,7 +1988,7 @@ namespace MDRDesk
 			var result = await Task.Run(() =>
 			{
 				string error;
-				ClrtDisplayableType dispType = CurrentIndex.GetTypeDisplayableRecord(typeId, out error);
+				ClrtDisplayableType dispType = CurrentIndex.GetTypeDisplayableRecord(typeId, null, out error);
 				if (dispType == null)
 					return new Tuple<string, ClrtDisplayableType>(error, null);
 				return new Tuple<string, ClrtDisplayableType>(null, dispType);

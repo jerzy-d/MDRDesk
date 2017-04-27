@@ -1360,7 +1360,7 @@ namespace ClrMDRIndex
 
         #region Type Value Reports
 
-        public ClrtDisplayableType GetTypeDisplayableRecord(int typeId, out string error)
+        public ClrtDisplayableType GetTypeDisplayableRecord(int typeId, ClrtDisplayableType parent, out string error)
         {
             error = null;
             try
@@ -1371,7 +1371,7 @@ namespace ClrMDRIndex
                     error = "Type instances not found.";
                     return null;
                 }
-                return TypeExtractor.GetClrtDisplayableType(_indexProxy, Dump.Heap, typeId, instances, out error);
+                return TypeExtractor.GetClrtDisplayableType(_indexProxy, Dump.Heap, parent, typeId, instances, out error);
             }
             catch (Exception ex)
             {
@@ -1396,7 +1396,7 @@ namespace ClrMDRIndex
                 
                 ulong[] instances = GetTypeRealAddresses(dispTypeField.TypeId);
                 if (instances != null && instances.Length > 0)
-                    return TypeExtractor.GetClrtDisplayableType(_indexProxy, Dump.Heap, dispTypeField.TypeId, instances, out error);
+                    return TypeExtractor.GetClrtDisplayableType(_indexProxy, Dump.Heap, dispType, dispTypeField.TypeId, instances, out error);
 
                 instances = GetTypeRealAddresses(dispType.TypeId);
                 if (instances == null || instances.Length < 1)
@@ -1405,14 +1405,16 @@ namespace ClrMDRIndex
                     return null;
                 }
 
-                var result = TypeExtractor.GetClrtDisplayableType(_indexProxy, Dump.Heap, dispType.TypeId, instances, out error);
+				throw new ApplicationException("DumpIndex.GetTypeDisplayableRecord(...) -- we should not be here!");
+
+                //var result = TypeExtractor.GetClrtDisplayableType(_indexProxy, Dump.Heap, dispType.TypeId, instances, out error);
 
                 if (error != null)
                 {
                     error = Constants.InformationSymbolHeader + error;
                     return null;
                 }
-                dispType.AddFields(result.Fields);
+                //dispType.AddFields(result.Fields);
                 return dispType;
             }
             catch (Exception ex)

@@ -877,7 +877,7 @@ namespace ClrMDRIndex
             fldItemAddr = Constants.InvalidAddress;
 			kind = TypeExtractor.GetElementKind(fldType);
 			var fldAddr = fld.GetAddress(addr, intern);
-            var fldObj = fld.GetValue(addr, intern);
+            var fldObj = fld.GetValue(addr, intern,false);
 
             if (fldObj != null && fldObj is ulong)
             {
@@ -889,14 +889,19 @@ namespace ClrMDRIndex
                     {
                         fldType = tempType;
                         kind = TypeExtractor.GetElementKind(fldType);
+						fldAddr = fldItemAddr;
                     }
                 }
+
             }
 
             if (TypeExtractor.IsStruct(kind))
 			{
-                fldItemAddr = fldAddr;
 				return Utils.RealAddressString(fldAddr);
+			}
+			if (TypeExtractor.IsObjectReference(kind))
+			{
+				fldItemAddr = (ulong)fldObj;
 			}
 
 			var specKind = TypeExtractor.GetSpecialKind(kind);
@@ -938,12 +943,11 @@ namespace ClrMDRIndex
 							return Constants.NullValue;
 					case ClrElementKind.SZArray:
 					case ClrElementKind.Array:
-						return Utils.RealAddressString(fldAddr);
 					case ClrElementKind.Object:
 					case ClrElementKind.Class:
-						return Utils.RealAddressString(fldAddr);
+						return Utils.RealAddressString(fldItemAddr);
 					case ClrElementKind.Unknown:
-						return Utils.RealAddressString(fldAddr);
+						return Utils.RealAddressString(fldAddr) + Constants.HeavyAsteriskPadded + Utils.RealAddressString(fldItemAddr);
 					default:
 						return PrimitiveValue(addr, fld, intern);
 				}
@@ -1040,7 +1044,7 @@ namespace ClrMDRIndex
                 ulong fldAddr;
 				var value = GetFieldValue(ndxProxy, heap, addr, clrType.Fields[i], TypeExtractor.IsStruct(kind), out fldType, out fldKind, out fldAddr);
 				var ftypeId = ndxProxy.GetTypeId(fldType.Name);
-				fields[i] = new InstanceValue(ftypeId, fldKind, fldAddr, fld.Type.Name, fld.Name, value, i, parent);
+				fields[i] = new InstanceValue(ftypeId, fldKind, fldAddr, fldType.Name, fld.Name, value, i, parent);
 			}
 			return fields;
         }
