@@ -421,8 +421,8 @@ namespace UnitTestMdr
 		[TestMethod]
 		public void TestGetDictionaryContent()
 		{
-			ulong dctAddr = 0x00000084d7ce3988; // 0x000084d7ce3938;
-            var dmp = OpenDump(@"D:\Jerzy\WinDbgStuff\dumps\TradingService\trading_0403207dmp.dmp");
+			ulong dctAddr = 0x000059a0ce1060; // 0x000084d7ce3938;
+            var dmp = OpenDump(@"D:\Jerzy\WinDbgStuff\dumps\Analytics\Viking\AnalyticsViking.2017-04-28.dmp");
 			using (dmp)
 			{
 				var heap = dmp.Heap;
@@ -446,14 +446,27 @@ namespace UnitTestMdr
                     {
                         var entry = entries[i];
                         var hsetAddr = Convert.ToUInt64(entry.Value, 16);
-                        var hcontent = CollectionContent.getHashSetContent(heap, hsetAddr);
+
+//                        var hcontent = CollectionContent.getHashSetContent(heap, hsetAddr);
                         sw.Write(entry.Key);
                         sw.Write(" : ");
-                        for (int j = 0, jcnt = hcontent.Item2.Length; j < jcnt; ++j)
-                        {
-                            sw.Write(" ");
-                            sw.Write(hcontent.Item2[j]);
-                        }
+                        sw.Write(Utils.RealAddressString(hsetAddr));
+                        var entryType = heap.GetObjectType(hsetAddr);
+                        var typeName = entryType == null ? "{null type}" : entryType.Name;
+                        sw.Write("  ");
+                        sw.Write(typeName);
+                        //if (hcontent == null)
+                        //{
+                        //    sw.Write("{null}");
+                        //}
+                        //else
+                        //{
+                        //    for (int j = 0, jcnt = hcontent.Item2.Length; j < jcnt; ++j)
+                        //    {
+                        //        sw.Write(" ");
+                        //        sw.Write(hcontent.Item2[j]);
+                        //    }
+                        //}
                         sw.WriteLine();
                     }
                 }
