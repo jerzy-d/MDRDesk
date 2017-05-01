@@ -1384,21 +1384,44 @@ namespace ClrMDRIndex
         /// <summary>
         /// 
         /// </summary>
-        /// <param name="dispType"></param>
+        /// <param name="dispTypeParent"></param>
         /// <param name="dispTypeField"></param>
         /// <param name="error"></param>
         /// <returns></returns>
-		public ClrtDisplayableType GetTypeDisplayableRecord(ClrtDisplayableType dispType, ClrtDisplayableType dispTypeField, out string error)
+		public ClrtDisplayableType GetTypeDisplayableRecord(ClrtDisplayableType dispTypeParent, ClrtDisplayableType dispTypeField, out string error)
         {
             error = null;
             try
             {
-                
-                ulong[] instances = GetTypeRealAddresses(dispTypeField.TypeId);
-                if (instances != null && instances.Length > 0)
-                    return TypeExtractor.GetClrtDisplayableType(_indexProxy, Dump.Heap, dispType, dispTypeField.TypeId, instances, out error);
+				ulong[] parentInstances = null;
+                if (dispTypeParent != null)
+				{
+					parentInstances = GetTypeRealAddresses(dispTypeParent.TypeId);
+					if (parentInstances == null || parentInstances.Length < 1)
+					{
+						error = Constants.InformationSymbolHeader + "Parent type instances not found (should not happen)." + Environment.NewLine + dispTypeParent.TypeName;
+						return null;
+					}
+				}
+				if (dispTypeField == null)
+				{
+					return TypeExtractor.GetClrtDisplayableType(_indexProxy, Dump.Heap, dispTypeParent, dispTypeField.TypeId, parentInstances, out error);
+				}
+				Debug.Assert(dispTypeField.FieldIndex != Constants.InvalidIndex);
+				var heap = GetHeap();
+				for (int i=0,icnt = parentInstances.Length; i < icnt; ++i)
+				{
+					var addr = parentInstances[i];
+					var parentType = heap.GetObjectType(addr);
+					Debug.Assert(parentType != null);
+					var fld = parentType.Fields[dispTypeField.FieldIndex];
+				}
 
-                instances = GetTypeRealAddresses(dispType.TypeId);
+				ulong[] instances = GetTypeRealAddresses(dispTypeField.TypeId);
+                if (instances != null && instances.Length > 0)
+                    return TypeExtractor.GetClrtDisplayableType(_indexProxy, Dump.Heap, dispTypeParent, dispTypeField.TypeId, instances, out error);
+
+                instances = GetTypeRealAddresses(dispTypeParent.TypeId);
                 if (instances == null || instances.Length < 1)
                 {
                     error = Constants.InformationSymbolHeader + "Type instances not found.";
@@ -1415,7 +1438,7 @@ namespace ClrMDRIndex
                     return null;
                 }
                 //dispType.AddFields(result.Fields);
-                return dispType;
+                return dispTypeParent;
             }
             catch (Exception ex)
             {

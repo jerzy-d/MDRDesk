@@ -12,6 +12,7 @@ namespace ClrMDRIndex
 		private readonly string _fieldName;
 		private FilterValue _valueFilter;
 		private bool _getValue;
+		private ClrtDisplayableType[] _alternatives;
 
 		public int TypeId => _typeId;
 		public int FieldIndex => _fieldIndex;
@@ -19,6 +20,7 @@ namespace ClrMDRIndex
 		public string FieldName => _fieldName;
 		public FilterValue Filter => _valueFilter;
 		public ClrtDisplayableType Parent => _parent;
+		public ClrtDisplayableType[] Alternatives => _alternatives;
 
 		private ClrElementKind _kind;
         public ClrElementKind Kind => _kind;
@@ -37,6 +39,20 @@ namespace ClrMDRIndex
 			_fields = Utils.EmptyArray<ClrtDisplayableType>.Value;
 			_valueFilter = null;
 			_getValue = false;
+			_alternatives = null;
+		}
+
+		public void AddAlternative(ClrtDisplayableType dtype)
+		{
+			if (_alternatives == null)
+			{
+				_alternatives = new ClrtDisplayableType[] { dtype };
+				return;
+			}
+			var newAry = new ClrtDisplayableType[_alternatives.Length + 1];
+			Array.Copy(_alternatives, newAry, _alternatives.Length);
+			newAry[_alternatives.Length] = dtype;
+			_alternatives = newAry;
 		}
 
 		public string GetDescription()
