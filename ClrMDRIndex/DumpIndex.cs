@@ -1388,7 +1388,7 @@ namespace ClrMDRIndex
         /// <param name="dispTypeField"></param>
         /// <param name="error"></param>
         /// <returns></returns>
-		public ClrtDisplayableType GetTypeDisplayableRecord(ClrtDisplayableType dispTypeParent, ClrtDisplayableType dispTypeField, out string error)
+		public ClrtDisplayableType GetTypeDisplayableRecord(ClrtDisplayableType dispTypeParent, out string error)
         {
             error = null;
             try
@@ -1403,42 +1403,8 @@ namespace ClrMDRIndex
 						return null;
 					}
 				}
-				if (dispTypeField == null)
-				{
-					return TypeExtractor.GetClrtDisplayableType(_indexProxy, Dump.Heap, dispTypeParent, dispTypeField.TypeId, parentInstances, out error);
-				}
-				Debug.Assert(dispTypeField.FieldIndex != Constants.InvalidIndex);
-				var heap = GetHeap();
-				for (int i=0,icnt = parentInstances.Length; i < icnt; ++i)
-				{
-					var addr = parentInstances[i];
-					var parentType = heap.GetObjectType(addr);
-					Debug.Assert(parentType != null);
-					var fld = parentType.Fields[dispTypeField.FieldIndex];
-				}
 
-				ulong[] instances = GetTypeRealAddresses(dispTypeField.TypeId);
-                if (instances != null && instances.Length > 0)
-                    return TypeExtractor.GetClrtDisplayableType(_indexProxy, Dump.Heap, dispTypeParent, dispTypeField.TypeId, instances, out error);
-
-                instances = GetTypeRealAddresses(dispTypeParent.TypeId);
-                if (instances == null || instances.Length < 1)
-                {
-                    error = Constants.InformationSymbolHeader + "Type instances not found.";
-                    return null;
-                }
-
-				throw new ApplicationException("DumpIndex.GetTypeDisplayableRecord(...) -- we should not be here!");
-
-                //var result = TypeExtractor.GetClrtDisplayableType(_indexProxy, Dump.Heap, dispType.TypeId, instances, out error);
-
-                if (error != null)
-                {
-                    error = Constants.InformationSymbolHeader + error;
-                    return null;
-                }
-                //dispType.AddFields(result.Fields);
-                return dispTypeParent;
+				return TypeExtractor.GetClrtDisplayableTypeFields(_indexProxy, Dump.Heap, dispTypeParent, parentInstances, out error);
             }
             catch (Exception ex)
             {
@@ -1447,6 +1413,46 @@ namespace ClrMDRIndex
             }
 
         }
+
+
+        public ListingInfo GetTypeValuesReport(ClrtDisplayableType[] queryItems, out string error)
+        {
+            error = null;
+            try
+            {
+                Debug.Assert(queryItems != null && queryItems.Length > 0);
+                ulong[] instances = GetTypeRealAddresses(queryItems[0].TypeId);
+                if (instances == null || instances.Length < 1)
+                {
+                    error = Constants.InformationSymbolHeader + "Type instances not found? Should not happen!" + Environment.NewLine + queryItems[0].TypeName;
+                    return null;
+                }
+
+                var heap = GetHeap();
+                for (int i = 0, icnt = instances.Length; i < icnt; ++i)
+                {
+                    var addr = instances[i];
+                    var clrType = heap.GetObjectType(addr);
+                    for (int j = 1, jcnt = queryItems.Length; j < jcnt; ++j)
+                    {
+                        if (queryItems[j-1] == queryItems[j].Parent)
+                        {
+
+                        }
+                    }
+                }
+
+                error = "test";
+                return null;
+            }
+            catch (Exception ex)
+            {
+                error = Utils.GetExceptionErrorString(ex);
+                return null;
+            }
+
+        }
+
 
         #endregion Type Value Reports
 

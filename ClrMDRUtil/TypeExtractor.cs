@@ -478,6 +478,66 @@ namespace ClrMDRIndex
             }
         }
 
+        public static ClrtDisplayableType GetClrtDisplayableTypeFields(IndexProxy ndxProxy, ClrHeap heap, ClrtDisplayableType parent, ulong[] addresses, out string error)
+        {
+            error = null;
+            try
+            {
+                List<int> ambiguousFields = new List<int>();
+                List<int> ambiguousFields2 = new List<int>();
+                KeyValuePair<ClrType, ClrElementKind> typeInfo = new KeyValuePair<ClrType, ClrElementKind>(null, ClrElementKind.Unknown);
+                for (int i = 0, icnt = addresses.Length; i < icnt; ++i)
+                {
+                    var addr = addresses[i];
+                    if (Utils.IsInvalidAddress(addr)) continue;
+
+                    typeInfo = TryGetRealType(heap, addr);
+                    var clrType = typeInfo.Key;
+                    var kind = typeInfo.Value;
+                    var specKind = TypeExtractor.GetSpecialKind(kind);
+
+                    {
+                        switch (TypeExtractor.GetStandardKind(kind))
+                        {
+                            case ClrElementKind.Struct:
+                            case ClrElementKind.Object:
+                            case ClrElementKind.Class:
+                                var dispFlds = GetClrtDisplayableTypeFields(ndxProxy, heap, parent, clrType, addr, ambiguousFields);
+                                var ambiguousCount = ambiguousFields.Count;
+                                var switchList = false;
+                                for (int j = i + 1, jcnt = addresses.Length; j < jcnt && ambiguousCount > 0; ++j)
+                                {
+                                    var jaddr = addresses[j];
+                                    if (switchList)
+                                    {
+                                        ambiguousCount = ambiguousFields2.Count;
+                                        switchList = !switchList;
+                                        TryGetClrtDisplayableTypeFields(ndxProxy, heap, parent, clrType, jaddr, ambiguousFields2, ambiguousFields, dispFlds);
+                                        continue;
+                                    }
+                                    ambiguousCount = ambiguousFields.Count;
+                                    switchList = !switchList;
+                                    TryGetClrtDisplayableTypeFields(ndxProxy, heap, parent, clrType, jaddr, ambiguousFields, ambiguousFields2, dispFlds);
+                                }
+                                parent.AddFields(dispFlds);
+                                return parent;
+                            case ClrElementKind.Unknown:
+                                continue;
+                            default:
+                                throw new ApplicationException("TypeExtractor.GetClrtDisplayableTypeFields -- ");
+                        }
+                    }
+                }
+                return parent;
+            }
+            catch (Exception ex)
+            {
+                error = Utils.GetExceptionErrorString(ex);
+                return null;
+            }
+        }
+
+
         public static KeyValuePair<ClrType, ulong> TryGetReferenceType(ClrHeap heap, ulong addr, ClrInstanceField fld, bool intr)
         {
             var valueObj = fld.GetValue(addr, intr);

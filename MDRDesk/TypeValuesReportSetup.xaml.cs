@@ -20,15 +20,13 @@ namespace MDRDesk
 		private TreeViewItem _currentTreeViewItem;
 		private HashSet<ClrtDisplayableType> _selection;
         private ClrtDisplayableType[] _selections;
-		//private LinkedList<ClrtDisplayableType> _selectionList;
+        public ClrtDisplayableType[] Selections => _selections;
 
-
-		public TypeValuesReportSetup(ClrtDisplayableType typeInfo)
+        public TypeValuesReportSetup(ClrtDisplayableType typeInfo)
 		{
 			_typeInfo = typeInfo;
 			_query = new TypeValuesQuery();
 			_selection = new HashSet<ClrtDisplayableType>();
-			//_selectionList = new LinkedList<ClrtDisplayableType>();
 			InitializeComponent();
 			TypeValueReportTopTextBox.Text = typeInfo.GetDescription();
 			UpdateTypeValueSetupGrid(typeInfo,null);
@@ -76,15 +74,10 @@ namespace MDRDesk
 				return;
 			}
 
-			if (dispType.FieldIndex == Constants.InvalidIndex) // this root type, fields are already displayed
+			if (dispType.FieldIndex == Constants.InvalidIndex || dispType.HasFields) // this root type, or fields are already displayed
 			{
 				return;
 			}
-
-			var parent = selItem.Parent as TreeViewItem;
-			Debug.Assert(parent != null);
-			var parentDispType = parent.Tag as ClrtDisplayableType;
-			Debug.Assert(parentDispType != null);
 
 			StatusText.Text = "Getting type details for field: '" + dispType.FieldName + "', please wait...";
 			Mouse.OverrideCursor = Cursors.Wait;
@@ -92,8 +85,9 @@ namespace MDRDesk
 			var result = await Task.Run(() =>
 			{
 				string error;
-				ClrtDisplayableType fldDispType = MainWindow.CurrentIndex.GetTypeDisplayableRecord(parentDispType, dispType, out error);
-				if (fldDispType == null)
+				ClrtDisplayableType fldDispType = MainWindow.CurrentIndex.GetTypeDisplayableRecord(dispType, out error);
+
+                if (fldDispType == null)
 					return new Tuple<string, ClrtDisplayableType>(error, null);
 				return new Tuple<string, ClrtDisplayableType>(null, fldDispType);
 			});
@@ -167,8 +161,6 @@ namespace MDRDesk
 				var typeInfo = _currentTreeViewItem.Tag as ClrtDisplayableType;
 				Debug.Assert(typeInfo!=null);
 				TypeValueReportTopTextBox.Text = _typeInfo.GetDescription() + " ...selected: " + typeInfo.FieldName + " / " + typeInfo.TypeName;
-
-
 			}
 		}
 
@@ -205,17 +197,17 @@ namespace MDRDesk
         private ClrtDisplayableType[] GetOrderedSelection()
 		{
 			var node = TypeValueReportTreeView.Items[0] as TreeViewItem;
-			var que = new Queue<TreeViewItem>();
-			que.Enqueue(node);
+			var stack = new Stack<TreeViewItem>();
+			stack.Push(node);
 			LinkedList<ClrtDisplayableType> lst = new LinkedList<ClrtDisplayableType>();
-			while(que.Count > 0)
+			while(stack.Count > 0)
 			{
-				node = que.Dequeue();
+				node = stack.Pop();
 				lst.AddFirst(node.Tag as ClrtDisplayableType);
 				if (node.Items == null) continue;
 				for (int i = 0, icnt = node.Items.Count; i < icnt; ++i)
 				{
-					que.Enqueue(node.Items[i] as TreeViewItem);
+					stack.Push(node.Items[i] as TreeViewItem);
 				}
 			}
             var lnode = lst.First;
