@@ -7,6 +7,32 @@ using Microsoft.Diagnostics.Runtime;
 
 namespace ClrMDRIndex
 {
+
+    public class TypeValueQuery
+    {
+        private TypeValueQuery _parent;
+        private ClrType _type;
+        private ClrElementKind _kind;
+        private ClrInstanceField _field;
+        private int _fldIndex;
+        private FilterValue _filter;
+        private List<string> _values;
+
+        public TypeValueQuery Parent => _parent;
+        public ClrType Type => _type;
+
+        public TypeValueQuery(TypeValueQuery parent, ClrType type_, ClrElementKind kind, ClrInstanceField field, int fldIndex, FilterValue filter, bool getValues, int valuCntHint=0)
+        {
+            _parent = parent;
+            _type = type_;
+            _kind = kind;
+            _field = field;
+            _fldIndex = fldIndex;
+            _filter = filter;
+            _values = getValues ? new List<string>(valuCntHint <= 0 ? 256 : valuCntHint) : null;
+        }
+    }
+
 	public class TypeValue
 	{
 		private int _typeId;

@@ -782,6 +782,7 @@
                         <MenuItem x:Name="AhqCollectionContent" Header="Collection Content">
                             <MenuItem x:Name="AhqArray" Header="Array..." Click="AhqCollectionContentArray"/>
                         </MenuItem>
+                        <MenuItem x:Name="AhqTypesSizeCountCmp" Header="Type Count..." Click="AhqTypesSizeCountCmpClicked"/>
                         <!--<Separator></Separator>
                     <MenuItem x:Name="AhqInstanceRefs" Header="Instance Reference Map">
                             <MenuItem x:Name="AhqCreateInstanceRefs" Header="Create Instance Reference Map..." Click="AhqCreateInstanceRefsClicked"/>

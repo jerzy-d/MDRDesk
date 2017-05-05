@@ -165,7 +165,16 @@ namespace ClrMDRIndex
 
 		public static int SetAddressBit(Bitset bitset, ulong[] addresses, ulong bit)
 		{
-			Debug.Assert(bitset.Size == addresses.Length);
+            if (bitset == null)
+            {
+                for (int i = 0, icnt = addresses.Length; i < icnt; ++i)
+                {
+                        addresses[i] |= bit;
+                }
+                return addresses.Length;
+            }
+
+            Debug.Assert(bitset.Size == addresses.Length);
 			int count = 0;
 			for (int i = 0, icnt = bitset.Size; i < icnt; ++i)
 			{
@@ -178,8 +187,7 @@ namespace ClrMDRIndex
 			return count;
 		}
 
-
-		public static int SetAddressBitIfSet(ulong[] bitSetters, ulong[] addresses, ulong bit)
+         public static int SetAddressBitIfSet(ulong[] bitSetters, ulong[] addresses, ulong bit)
 		{
 			int bNdx = 0, bLen = bitSetters.Length, aNdx = 0, aLen = addresses.Length, setCount = 0;
 			while (bNdx < bLen && aNdx < aLen)
@@ -1320,7 +1328,13 @@ namespace ClrMDRIndex
 			return pos;
 		}
 
-		public static int SkipNonWhites(string str, int pos)
+        public static int SkipDecimalDigits(string str, int pos)
+        {
+            for (; pos < str.Length && Char.IsDigit(str[pos]); ++pos) ;
+            return pos;
+        }
+
+        public static int SkipNonWhites(string str, int pos)
 		{
 			for (; pos < str.Length && !Char.IsWhiteSpace(str[pos]); ++pos) ;
 			return pos;

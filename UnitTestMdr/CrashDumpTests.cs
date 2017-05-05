@@ -14,64 +14,64 @@ using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace UnitTestMdr
 {
-	/// <summary>
-	/// Summary description for CrashDumpTests
-	/// </summary>
-	[TestClass]
-	public class CrashDumpTests
-	{
-		#region ctrs/context/initialization
+    /// <summary>
+    /// Summary description for CrashDumpTests
+    /// </summary>
+    [TestClass]
+    public class CrashDumpTests
+    {
+        #region ctrs/context/initialization
 
-		public CrashDumpTests()
-		{
-			//
-			// TODO: Add constructor logic here
-			//
-		}
+        public CrashDumpTests()
+        {
+            //
+            // TODO: Add constructor logic here
+            //
+        }
 
-		private TestContext testContextInstance;
+        private TestContext testContextInstance;
 
-		/// <summary>
-		///Gets or sets the test context which provides
-		///information about and functionality for the current test run.
-		///</summary>
-		public TestContext TestContext
-		{
-			get { return testContextInstance; }
-			set { testContextInstance = value; }
-		}
+        /// <summary>
+        ///Gets or sets the test context which provides
+        ///information about and functionality for the current test run.
+        ///</summary>
+        public TestContext TestContext
+        {
+            get { return testContextInstance; }
+            set { testContextInstance = value; }
+        }
 
-		#region Additional test attributes
+        #region Additional test attributes
 
-		//
-		// You can use the following additional attributes as you write your tests:
-		//
-		// Use ClassInitialize to run code before running the first test in the class
-		// [ClassInitialize()]
-		// public static void MyClassInitialize(TestContext testContext) { }
-		//
-		// Use ClassCleanup to run code after all tests in a class have run
-		// [ClassCleanup()]
-		// public static void MyClassCleanup() { }
-		//
-		// Use TestInitialize to run code before running each test 
-		// [TestInitialize()]
-		// public void MyTestInitialize() { }
-		//
-		// Use TestCleanup to run code after each test has run
-		// [TestCleanup()]
-		// public void MyTestCleanup() { }
-		//
+        //
+        // You can use the following additional attributes as you write your tests:
+        //
+        // Use ClassInitialize to run code before running the first test in the class
+        // [ClassInitialize()]
+        // public static void MyClassInitialize(TestContext testContext) { }
+        //
+        // Use ClassCleanup to run code after all tests in a class have run
+        // [ClassCleanup()]
+        // public static void MyClassCleanup() { }
+        //
+        // Use TestInitialize to run code before running each test 
+        // [TestInitialize()]
+        // public void MyTestInitialize() { }
+        //
+        // Use TestCleanup to run code after each test has run
+        // [TestCleanup()]
+        // public void MyTestCleanup() { }
+        //
 
-		#endregion
+        #endregion
 
-		#endregion ctrs/context/initialization
+        #endregion ctrs/context/initialization
 
-		#region misc
+        #region misc
 
-		[TestMethod]
-		public void TestMisc()
-		{
+        [TestMethod]
+        public void TestMisc()
+        {
 
             string fancy = Utils.GetFancyIntStr(140, 6);
 
@@ -79,42 +79,197 @@ namespace UnitTestMdr
             decimal dd = 0m;
             var ddstr = dd.ToString();
 
-			ulong x = Utils.RootBits.Finalizer;
-			ulong y = Utils.RootBits.Rooted;
+            ulong x = Utils.RootBits.Finalizer;
+            ulong y = Utils.RootBits.Rooted;
 
 
 
-			List<int[]> lst = new List<int[]>();
-			int[] ary = new[] {1, 2, 3, 16, 17};
-			Utils.GetPermutations(ary,0,ary.Length-1,lst);
-			IntArrayStore rToF = new IntArrayStore(lst.Count+2);
-			for (int i = 0, icnt = lst.Count; i < icnt; ++i)
-			{
-				var lary = lst[i];
-				for (int j = 0, jcnt = lary.Length; j < jcnt; ++j)
-				{
-					rToF.Add(i, lary[j]);
-				}
-			}
+            List<int[]> lst = new List<int[]>();
+            int[] ary = new[] { 1, 2, 3, 16, 17 };
+            Utils.GetPermutations(ary, 0, ary.Length - 1, lst);
+            IntArrayStore rToF = new IntArrayStore(lst.Count + 2);
+            for (int i = 0, icnt = lst.Count; i < icnt; ++i)
+            {
+                var lary = lst[i];
+                for (int j = 0, jcnt = lary.Length; j < jcnt; ++j)
+                {
+                    rToF.Add(i, lary[j]);
+                }
+            }
 
-			for (int i = 0, icnt = lst.Count; i < icnt; ++i)
-			{
-				var lary = lst[i];
-				var sary = rToF.GetEntry(i);
-				Assert.IsTrue(Utils.IsSorted(sary));
-			}
+            for (int i = 0, icnt = lst.Count; i < icnt; ++i)
+            {
+                var lary = lst[i];
+                var sary = rToF.GetEntry(i);
+                Assert.IsTrue(Utils.IsSorted(sary));
+            }
 
-			//rToF.Add(1, 16);
-			//rToF.Add(1, 2);
-			//rToF.Add(1, 3);
-			//rToF.Add(1, 1);
-			//rToF.Add(1, 0);
+            //rToF.Add(1, 16);
+            //rToF.Add(1, 2);
+            //rToF.Add(1, 3);
+            //rToF.Add(1, 1);
+            //rToF.Add(1, 0);
 
-			//rToF.Add(1, 16);
+            //rToF.Add(1, 16);
 
-		}
+        }
 
-		[TestMethod]
+        [TestMethod]
+        public void GetWinDbgObjects()
+        {
+            //string path = @"D:\Jerzy\WinDbgStuff\dumps\Compliance\Meka\Eze.Compliance.Svc_170503_131515.HEA2E7F.tmp";
+            //string path = @"D:\Jerzy\WinDbgStuff\dumps\Compliance\Meka\Eze.Compliance.Svc_170503_121139.HEA29CE.tmp";
+            string path = @"D:\Jerzy\WinDbgStuff\dumps\Compliance\Meka\Eze.Compliance.Svc_170504_085523.HEAB8F5.tmp";
+            const string classLineBegin = " {\"00";
+            SortedDictionary<string, int> dct = new SortedDictionary<string, int>();
+
+            StreamReader rd = null;
+            StreamWriter sw = null;
+            try
+            {
+                int totalCnt = 0;
+                int dupCnt = 0;
+                rd = new StreamReader(path);
+                string ln = rd.ReadLine();
+                while(ln!=null)
+                {
+                    if (!ln.StartsWith(classLineBegin)) goto NEXT_LINE;
+
+                    int pos = Utils.SkipNonWhites(ln, classLineBegin.Length);
+                    pos = Utils.SkipWhites(ln, pos);
+                    int endPos = Utils.SkipNonWhites(ln, pos);
+                    string typeName = ln.Substring(pos, endPos - pos);
+                    pos = Utils.SkipWhites(ln, endPos);
+                    ++pos;
+                    endPos = Utils.SkipDecimalDigits(ln,pos);
+                    int cnt = Int32.Parse(ln.Substring(pos, endPos - pos));
+                    totalCnt += cnt;
+                    int dctCnt;
+                    if (dct.TryGetValue(typeName,out dctCnt))
+                    {
+                        dct[typeName] = dctCnt + cnt;
+                        dupCnt += cnt;
+                    }
+                    else
+                    {
+                        dct.Add(typeName,cnt);
+                    }
+
+                    NEXT_LINE:
+                    ln = rd.ReadLine();
+                }
+                rd.Close();
+                rd = null;
+
+                sw = new StreamWriter(path + ".Cleaned.txt");
+                foreach(var kv in dct)
+                {
+                    sw.WriteLine(kv.Key + "  " + kv.Value);
+                }
+
+            }
+            catch(Exception ex)
+            {
+                Assert.IsTrue(false, ex.ToString());
+            }
+            finally
+            {
+                rd?.Close();
+                sw?.Close();
+            }
+        }
+
+        [TestMethod]
+        public void MergeWinDbgObjects()
+        {
+            string[] paths = new string[] {
+                @"D:\Jerzy\WinDbgStuff\dumps\Compliance\Meka\Eze.Compliance.Svc_170503_131515.HEA2E7F.tmp.Cleaned.txt",
+                @"D:\Jerzy\WinDbgStuff\dumps\Compliance\Meka\Eze.Compliance.Svc_170503_121139.HEA29CE.tmp.Cleaned.txt",
+                @"D:\Jerzy\WinDbgStuff\dumps\Compliance\Meka\Eze.Compliance.Svc_170504_085523.HEAB8F5.tmp.Cleaned.txt"
+                };
+            var dct = new SortedDictionary<string, int[]>();
+
+            StreamReader rd = null;
+            StreamWriter sw = null;
+            int[] objectCounts = new int[3];
+            try
+            {
+                for(int i = 0; i < 3; ++i)
+                {
+                    rd = new StreamReader(paths[i]);
+                    string ln = rd.ReadLine();
+                    while (ln != null)
+                    {
+                        int pos = Utils.SkipNonWhites(ln, 0);
+                        string type = ln.Substring(0, pos);
+                        pos = Utils.SkipWhites(ln, pos);
+                        int cnt = Int32.Parse(ln.Substring(pos));
+                        objectCounts[i] += cnt;
+                        int[] ary;
+                        if (dct.TryGetValue(type,out ary))
+                        {
+                            ary[i] = cnt;
+                        }
+                        else
+                        {
+                            ary = new int[3];
+                            ary[i] = cnt;
+                            dct.Add(type, ary);
+                        }
+                        ln = rd.ReadLine();
+                    }
+                    rd.Close();
+                    rd = null;
+                }
+
+
+                sw = new StreamWriter(@"D:\Jerzy\WinDbgStuff\dumps\Compliance\Meka\33-20-6.TypeCounts.txt");
+
+                sw.WriteLine("### MDRDESK REPORT: TYPECOUNTS");
+                sw.WriteLine("### TITLE: Type Counts: " + Utils.CountString(dct.Count));
+               sw.WriteLine("### COUNT: " + Utils.CountString(dct.Count));
+                sw.WriteLine("### SEPARATOR: " + Constants.HeavyGreekCrossPadded);
+                sw.WriteLine("### Type Counts: " + Utils.CountString(dct.Count));
+                sw.WriteLine(           "### COLUMNS: 33GB|int|100"
+                 + Constants.HeavyGreekCrossPadded + "20GB|int|100"
+                  + Constants.HeavyGreekCrossPadded + "6GB|int|100"
+                 + Constants.HeavyGreekCrossPadded + "33-20|int|100"
+                 + Constants.HeavyGreekCrossPadded + "33-6|int|100"
+                 + Constants.HeavyGreekCrossPadded + "20-6|int|100"
+                  + Constants.HeavyGreekCrossPadded + "Type|string|400");
+                
+
+                sw.WriteLine(ReportFile.DescrPrefix + " Object counts");
+                sw.WriteLine(ReportFile.DescrPrefix + " 33GB: " + Utils.CountString(objectCounts[0]));
+                sw.WriteLine(ReportFile.DescrPrefix + " 20GB: " + Utils.CountString(objectCounts[1]));
+                sw.WriteLine(ReportFile.DescrPrefix + "  6GB: " + Utils.CountString(objectCounts[2]));
+
+                foreach (var kv in dct)
+                {
+                    var ary = kv.Value;
+                    sw.Write(Utils.CountString(ary[0]) + Constants.HeavyGreekCrossPadded);
+                    sw.Write(Utils.CountString(ary[1]) + Constants.HeavyGreekCrossPadded);
+                    sw.Write(Utils.CountString(ary[2]) + Constants.HeavyGreekCrossPadded);
+                    sw.Write(Utils.CountString(ary[0] - ary[1]) + Constants.HeavyGreekCrossPadded);
+                    sw.Write(Utils.CountString(ary[0] - ary[2]) + Constants.HeavyGreekCrossPadded);
+                    sw.Write(Utils.CountString(ary[1]-ary[2]) + Constants.HeavyGreekCrossPadded);
+                    sw.WriteLine(kv.Key);
+                }
+
+            }
+            catch (Exception ex)
+            {
+                Assert.IsTrue(false, ex.ToString());
+            }
+            finally
+            {
+                rd?.Close();
+                sw?.Close();
+            }
+        }
+
+
+        [TestMethod]
 		public void TestRevert()
 		{
 			string dataPath = Setup.DumpsFolder + Path.DirectorySeparatorChar + "indexData.txt";
@@ -200,13 +355,87 @@ namespace UnitTestMdr
 			}
 		}
 
-		#endregion misc
 
-		#region collection content
+        [TestMethod]
+        public void TestInstanceCount()
+        {
+            string error = null;
+            int count = 0;
+            int nullCount = 0;
+            SortedDictionary<string, int> dct = new SortedDictionary<string, int>();
+            using (var clrDump = OpenDump(@"D:\Jerzy\WinDbgStuff\dumps\Compliance\Meka\Eze.Compliance.Svc_170503_131515.dmp"))
+            {
+                try
+                {
+                    var runtime = clrDump.Runtimes[0];
+                    var heap = runtime.GetHeap();
+                    var segs = heap.Segments;
+                    for (int i = 0, icnt = segs.Count; i < icnt; ++i)
+                    {
+                        var seg = segs[i];
+                        ulong addr = seg.FirstObject;
+                        while (addr != 0ul)
+                        {
+                            var clrType = heap.GetObjectType(addr);
+                            if (clrType == null)
+                            {
+                                ++nullCount;
+                                goto NEXT_OBJECT;
+                            }
+                            int tcnt;
+                            if (dct.TryGetValue(clrType.Name, out tcnt))
+                            {
+                                dct[clrType.Name] = tcnt + 1;
+                            }
+                            else
+                            {
+                                dct.Add(clrType.Name, 1);
+                            }
+                            ++count;
+                            NEXT_OBJECT:
+                            addr = seg.NextObject(addr);
+                        }
+                    }
+                    TestContext.WriteLine("SEGMENT Count: " + heap.Segments.Count);
+                    TestContext.WriteLine("OBJECTS Count: " + count);
+                    TestContext.WriteLine("OBJECTS Null Count: " + nullCount);
 
-		#region array content
 
-		[TestMethod]
+                    StreamWriter sw = null;
+                    try
+                    {
+                        var path = DumpFileMoniker.GetAndCreateOutFolder(clrDump.DumpPath, out error) + Path.DirectorySeparatorChar + "TypesAndCounts.txt";
+                        sw = new StreamWriter(path);
+                        sw.WriteLine("#### SEGMENT COUNT: " + heap.Segments.Count);
+                        sw.WriteLine("#### OBJECT COUNT: " + count);
+                        foreach(var kv in dct)
+                        {
+                            sw.Write(kv.Value + "  ");
+                            sw.WriteLine(kv.Key);
+                        }
+
+                    }
+                    finally
+                    {
+                        sw?.Close();
+                    }
+
+
+                }
+                catch (Exception ex)
+                {
+                    error = Utils.GetExceptionErrorString(ex);
+                    Assert.IsTrue(false, error);
+                }
+            }
+        }
+        #endregion misc
+
+        #region collection content
+
+        #region array content
+
+        [TestMethod]
 		public void TestGetStringArrayContent()
 		{
 			ulong aryAddr = 0x0002189f5af6a0;

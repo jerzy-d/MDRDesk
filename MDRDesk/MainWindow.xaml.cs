@@ -2141,6 +2141,9 @@ namespace MDRDesk
 			ShowMemoryViewWindow(addr);
 		}
 
+        private void AhqTypesSizeCountCmpClicked(object sender, RoutedEventArgs e)
+        {
 
-	}
+        }
+    }
 }

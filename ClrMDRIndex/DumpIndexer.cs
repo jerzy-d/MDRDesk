@@ -135,13 +135,17 @@ namespace ClrMDRIndex
 						progress?.Report(runtimeIndexHeader + "Creating instance reference data...");
 
 						// new 1/7/17
-						Bitset bitset = new Bitset(addresses.Length);
-						if (!References.CreateReferences2(r, heap, rootAddrInfo.Item1, addresses, typeIds, typeNames, bitset, _fileMoniker, progress, out error))
-						{
-							progress?.Report(runtimeIndexHeader + "Indexing failed, CreateReferences method errored.");
-							AddError(r, "CreateReferences failed." + Environment.NewLine + error);
-							return false;
-						}
+						Bitset bitset = null;
+                        if (!Setup.SkipReferences)
+                        {
+                            bitset = new Bitset(addresses.Length);
+                            if (!References.CreateReferences2(r, heap, rootAddrInfo.Item1, addresses, typeIds, typeNames, bitset, _fileMoniker, progress, out error))
+                            {
+                                progress?.Report(runtimeIndexHeader + "Indexing failed, CreateReferences method errored.");
+                                AddError(r, "CreateReferences failed." + Environment.NewLine + error);
+                                return false;
+                            }
+                        }
 
 						// old
 						//var instanceFldRefs = _fileMoniker.GetFilePath(0, Constants.MapFieldRefInstancesPostfix);

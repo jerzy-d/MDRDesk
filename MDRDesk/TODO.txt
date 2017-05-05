@@ -72,4 +72,9 @@ Add static variables getters, for types add static variables to types context me
 *** Add feature to rename title the tab items.
 0026 04/21/17
 Add feature to change a tab into a free flowing window.
+0027 05/04/17
+Add indexing without references.
+Make sure that indexing and index work properly without references.
+0028 05/04/17
+Fix thread frames, something fishy about VikingServiceFrozen.dmp
 

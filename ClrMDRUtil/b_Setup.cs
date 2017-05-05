@@ -27,9 +27,10 @@ namespace ClrMDRIndex
 		public static int GraphPort { get; private set; }
 
 		public static string TypesDisplayMode { get; private set; }
-		public static int ShortReportLineCount { get; private set; }
+        public static int ShortReportLineCount { get; private set; }
+        public static bool SkipReferences { get; private set; }
 
-		public static void SetDacFolder(string folder)
+        public static void SetDacFolder(string folder)
 		{
 			DacFolder = folder;
 		}
@@ -168,7 +169,16 @@ namespace ClrMDRIndex
 							}
 							ShortReportLineCount = count;
 						}
-					}
+                        else if (Utils.SameStrings(ky, "skipreferences"))
+                        {
+                            var intStr = appSettings.Settings[key].Value.Trim();
+                            if (!string.IsNullOrWhiteSpace(intStr))
+                            {
+                                if (string.Compare(intStr,"true",StringComparison.OrdinalIgnoreCase)==0)
+                                    SkipReferences = true;
+                            }
+                        }
+                    }
 				}
                 else
                 {
