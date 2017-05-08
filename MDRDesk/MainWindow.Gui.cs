@@ -1203,11 +1203,6 @@ namespace MDRDesk
 			SetEndTaskMainWindowState(msg);
 		}
 
-		//private void GetHeapBaseSizeReportClicked(object sender, RoutedEventArgs e)
-		//{
-		//	MessageBox.Show("Not implemented yet.", "Get Type Heap Base Size Report", MessageBoxButton.OK, MessageBoxImage.Information);
-		//}
-
 		private async void GetParentReferences(object sender, RoutedEventArgs e)
 		{
 			if (!IsIndexAvailable("No index is loaded")) return;
@@ -2273,7 +2268,7 @@ namespace MDRDesk
 			Array.Sort(frMap,frMap2);
 			frMap = null;
 
-			const int ColumnCount = 4;
+			const int ColumnCount = 5;
 			string[] data = new string[threads.Length * ColumnCount];
 			listing<string>[] items = new listing<string>[threads.Length];
 			int dataNdx = 0;
@@ -2284,6 +2279,7 @@ namespace MDRDesk
 			{
 				var thrd = threads[i];
 				var osIdStr = thrd.OSThreadId.ToString();
+				var osIdStrx = thrd.OSThreadId.ToString("x");
 				var mngIdStr = thrd.ManagedThreadId.ToString();
 
 				sb.Clear();
@@ -2291,6 +2287,7 @@ namespace MDRDesk
 
 				items[itemNdx++] = new listing<string>(data, dataNdx, ColumnCount);
 				data[dataNdx++] = osIdStr;
+				data[dataNdx++] = osIdStrx;
 				data[dataNdx++] = mngIdStr;
 				data[dataNdx++] = traits;
 
@@ -2304,10 +2301,11 @@ namespace MDRDesk
 
 			ColumnInfo[] colInfos = new[]
 			{
-				new ColumnInfo("OS Id", ReportFile.ColumnType.Int32, 150, 1, true),
-				new ColumnInfo("Mng Id", ReportFile.ColumnType.Int32, 150, 2, true),
-				new ColumnInfo("Properties", ReportFile.ColumnType.String, 300, 3, true),
-				new ColumnInfo("Frame Id/Thread and Trace Counts", ReportFile.ColumnType.String, 400, 4, true),
+				new ColumnInfo("OS Id", ReportFile.ColumnType.Int32, 100, 1, true),
+				new ColumnInfo("OS Id x", ReportFile.ColumnType.String, 100, 2, true),
+				new ColumnInfo("Mng Id", ReportFile.ColumnType.Int32, 100, 3, true),
+				new ColumnInfo("Properties", ReportFile.ColumnType.String, 300, 4, true),
+				new ColumnInfo("Frame Id/Thread and Trace Counts", ReportFile.ColumnType.String, 400, 5, true),
 			};
 
 			sb.Clear();

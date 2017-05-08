@@ -37,6 +37,8 @@ namespace MDRDesk
 					break;
 			}
 			TxtBoxReportLineCount.Text = Setup.ShortReportLineCount.ToString();
+			if (Setup.SkipReferences) IndexingRefsYes.IsChecked = true;
+			else IndexingRefsNo.IsChecked = true;
 		}
 
 		private void ButtonDacFolder_OnClick(object sender, RoutedEventArgs e)
@@ -91,6 +93,7 @@ namespace MDRDesk
 				Setup.SetTypesDisplayMode("namespaces");
 			string shortRepCount = TxtBoxReportLineCount.Text.Trim();
 			Setup.SetShortReportLineCount(shortRepCount);
+			Setup.SetSkipIndexingRefs(IsTrue(IndexingRefsYes));
 			string error;
 			Setup.SaveConfigSettings(out error);
 			DialogResult = true;

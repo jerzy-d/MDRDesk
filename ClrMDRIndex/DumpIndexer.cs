@@ -112,12 +112,6 @@ namespace ClrMDRIndex
 						progress?.Report(runtimeIndexHeader + "Getting addresses and types...");
 						addresses = new ulong[addrCount];
 						typeIds = new int[addrCount];
-						// old
-						//if (!GetAddressesSetRoots(heap, addresses, typeIds, typeNames, rootAddrInfo, out error))
-						//{
-						//	return false;
-						//}
-						// new 1/7/17
 						if (!GetAddressesAndTypes(heap, addresses, typeIds, typeNames, out error))
 						{
 							return false;
@@ -133,8 +127,6 @@ namespace ClrMDRIndex
 						// field dependencies
 						//
 						progress?.Report(runtimeIndexHeader + "Creating instance reference data...");
-
-						// new 1/7/17
 						Bitset bitset = null;
                         if (!Setup.SkipReferences)
                         {
@@ -147,66 +139,7 @@ namespace ClrMDRIndex
                             }
                         }
 
-						// old
-						//var instanceFldRefs = _fileMoniker.GetFilePath(0, Constants.MapFieldRefInstancesPostfix);
-						//var fldRefQue = new BlockingCollection<KeyValuePair<int, int[]>>();
-						//var fldRefErrors = new List<string>(0);
-						//var threadFldRefPersister = Indexer.StartFieldRefInfoPersiter(instanceFldRefs, fldRefQue, fldRefErrors);
-
-						//var fldRefList = new List<KeyValuePair<ulong, int>>(64);
-						//var addressesLastNdx = addresses.Length - 1;
-						//var fieldsArrays = new int[addresses.Length][];
-						//var fldRefs = new HashSet<int>();
-
-						//for (int i = 0, icnt = addresses.Length; i < icnt; ++i)
-						//{
-						//	var addr = addresses[i];
-						//	var cleanAddr = Utils.RealAddress(addr);
-						//	var isRooted = Utils.IsRooted(addr);
-
-						//	var clrType = heap.GetObjectType(cleanAddr);
-						//	if (clrType == null || clrType.IsString || clrType.Fields == null) continue;
-
-						//	var isArray = clrType.IsArray;
-						//	fldRefs.Clear();
-						//	fldRefList.Clear();
-						//	clrType.EnumerateRefsOfObjectCarefully(cleanAddr, (address, off) =>
-						//	{
-						//		fldRefList.Add(new KeyValuePair<ulong, int>(address, off));
-						//	});
-
-						//	if (fldRefList.Count > 0)
-						//	{
-						//		for (int k = 0, kcnt = fldRefList.Count; k < kcnt; ++k)
-						//		{
-						//			var fldAddr = fldRefList[k].Key;
-						//			if (fldAddr == 0UL) continue;
-						//			var addrnx = Utils.AddressSearch(addresses, fldAddr, 0, addressesLastNdx);
-						//			if (addrnx < 0 || fldRefs.Contains(addrnx)) continue;
-						//			fldRefs.Add(addrnx);
-						//			if (isRooted)
-						//			{
-						//				DumpIndexer.MarkAsRooted(fldAddr, addrnx, addresses, fieldsArrays);
-						//			}
-						//		}
-						//	}
-
-						//	if (fldRefs.Count > 0)
-						//	{
-						//		var refAry = fldRefs.ToArray();
-						//		Array.Sort(refAry);
-						//		fieldsArrays[i] = refAry;
-						//		fldRefQue.Add(new KeyValuePair<int, int[]>(i, refAry));
-						//	}
-						//}
-
-						//fldRefQue.Add(new KeyValuePair<int, int[]>(-1, null));
-
-						//							threadFldRefPersister.Join();
 						progress?.Report(runtimeIndexHeader + "Building type instance map...");
-
-						// build type/instance map
-						//
 						if (!BuildTypeInstanceMap(r, typeIds, out error))
 						{
 							AddError(r, "BuildTypeInstanceMap failed." + Environment.NewLine + error);
@@ -216,14 +149,6 @@ namespace ClrMDRIndex
 						// build instance reference map
 						//
 						progress?.Report(runtimeIndexHeader + "Saving data...");
-
-						// old
-						//InstanceReferences.InvertFieldRefs(new Tuple<int, DumpFileMoniker, ConcurrentBag<string>, IProgress<string>>(r,
-						//	_fileMoniker, errors, null));
-
-						//durationStr = Utils.StopAndGetDurationString(stopWatch);
-						//stopWatch.Restart();
-						//progress?.Report(runtimeIndexHeader + "Saving index data... Previous action duration: " + durationStr);
 
 						var path = _fileMoniker.GetFilePath(r, Constants.MapInstanceTypesFilePostfix);
 						Utils.WriteIntArray(path, typeIds, out error);
@@ -242,8 +167,6 @@ namespace ClrMDRIndex
 						{
 							AddError(_currentRuntimeIndex, "StringIdDct.DumpInIdOrder failed." + Environment.NewLine + error);
 						}
-
-						//if (indexArguments == IndexingArguments.JustInstanceRefs) return true; // we only want instance refs
 
 						progress?.Report("Waiting for thread info worker...");
 						extraWorker.Join();

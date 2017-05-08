@@ -11,13 +11,20 @@
 		</Feature>
 
     <UIRef Id="WixUI_Advanced"/>
+    <WixVariable Id="WixUILicenseRtf" Value="License.rtf"/>
     <Property Id="ApplicationFolderName" Value="My Company" />
     <Property Id="WixAppFolder" Value="WixPerMachineFolder" />
     <!--Property Id="WIXUI_INSTALLDIR" Value="INSTALLFOLDER" /-->
-    <Icon Id="MDRDeskExeIcon" SourceFile="$(var.MDRDesk.TargetDir)MDRDesk.exe"/>
-	</Product>
+    <Icon Id="WixUIInfoIco" SourceFile="appbar.list.gear.png"/>
+    <Icon Id="icon.ico" SourceFile="appbar.list.gear.png"/>
+    <Property Id="ARPPRODUCTICON" Value="icon.ico" />
 
-	<Fragment>
+  </Product>
+
+
+
+
+  <Fragment>
 		<Directory Id="TARGETDIR" Name="SourceDir">
 			<Directory Id="ProgramFiles64Folder">
         <Directory Id="INSTALLFOLDER" Name="CrashDumpUtilities">

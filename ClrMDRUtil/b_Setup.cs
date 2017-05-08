@@ -69,6 +69,10 @@ namespace ClrMDRIndex
 			}
 		}
 
+		public static void SetSkipIndexingRefs(bool skip)
+		{
+			SkipReferences = skip;
+		}
 
 		public static void AddRecentFileList(string path, RecentFiles files )
 	    {
@@ -215,13 +219,19 @@ namespace ClrMDRIndex
             try
             {
                 var config = ConfigurationManager.OpenExeConfiguration(ConfigurationUserLevel.None);
-				config.AppSettings.Settings["typedisplaymode"].Value = TypesDisplayMode;
-				config.AppSettings.Settings["shortreportcount"].Value = ShortReportLineCount.ToString();
-				config.AppSettings.Settings["recentindices"].Value = JoinSemicolonDelimitedList(RecentIndexList);
-				config.AppSettings.Settings["recentadhocs"].Value = JoinSemicolonDelimitedList(RecentAdhocList);
-				config.AppSettings.Settings["dacfolder"].Value = DacFolder;
-				config.AppSettings.Settings["mapfolder"].Value = DumpsFolder;
-				config.AppSettings.Settings["procdumpfolder"].Value = ProcDumpFolder;
+				var settings = config.AppSettings.Settings;
+				settings["typedisplaymode"].Value = TypesDisplayMode;
+				settings["shortreportcount"].Value = ShortReportLineCount.ToString();
+				settings["recentindices"].Value = JoinSemicolonDelimitedList(RecentIndexList);
+				settings["recentadhocs"].Value = JoinSemicolonDelimitedList(RecentAdhocList);
+				settings["dacfolder"].Value = DacFolder;
+				settings["mapfolder"].Value = DumpsFolder;
+				settings["procdumpfolder"].Value = ProcDumpFolder;
+				var skip = SkipReferences ? "true" : "false";
+				if (settings["skipreferences"]==null)
+					settings.Add("skipreferences", skip);
+				else
+					settings["skipreferences"].Value = skip;
 				config.Save(ConfigurationSaveMode.Modified);
                 return true;
             }
