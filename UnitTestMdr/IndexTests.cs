@@ -1491,9 +1491,9 @@ namespace UnitTestMdr
 		{
 			Stopwatch stopWatch = new Stopwatch();
 			stopWatch.Start();
-			var index = OpenIndex(@"C:\WinDbgStuff\Dumps\Analytics\Highline\analyticsdump111.dlk.dmp.map");
+			var index = OpenIndex(@"D:\Jerzy\WinDbgStuff\dumps\Analytics\Viking\AnalyticsLatencyDump05022017 04345672.dmp.map");
 			TestContext.WriteLine(index.DumpFileName + " INDEX OPEN DURATION: " + Utils.StopAndGetDurationString(stopWatch));
-			ulong addr = 0x00000184411178;
+			ulong addr = 0x000000e0859ab5b8;
 			using (index)
 			{
 				(string error, InstanceValue inst) = ValueExtractor.ArrayContent(index.IndexProxy, index.GetHeap(), addr,null);

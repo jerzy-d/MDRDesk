@@ -180,6 +180,139 @@ namespace UnitTestMdr
         }
 
         [TestMethod]
+        public void CheckObjectCountDiff()
+        {
+            string mdrObjListPath = @"D:\Jerzy\WinDbgStuff\dumps\Compliance\Meka\Eze.Compliance.Svc_170503_131515.dmp.map\ad-hoc.queries\TypesAndCounts.txt";
+            string winDbgListPath = @"D:\Jerzy\WinDbgStuff\dumps\Compliance\Meka\Eze.Compliance.Svc_170503_131515.HEA2E7F.tmp.Cleaned.txt";
+            var dct = new SortedDictionary<string, int[]>();
+            List<string> _1lst = new List<string>();
+            List<string> _1lstmore = new List<string>();
+            int[] objectCounts = new int[3];
+
+            StreamReader rd = null;
+            StreamWriter sw = null;
+            try
+            {
+                rd = new StreamReader(mdrObjListPath);
+                string ln = rd.ReadLine();
+                while (ln != null)
+                {
+                    if (ln.Length < 1 || ln[0] == '#') goto NEXT_LINE;
+
+                    int pos = Utils.SkipNonWhites(ln, 0);
+                    int cnt = Int32.Parse(ln.Substring(0,pos));
+                    pos = Utils.SkipWhites(ln, pos);
+                    int endPos = Utils.SkipNonWhites(ln, pos);
+                    string typeName = ln.Substring(pos,endPos-pos);
+                    typeName = typeName.Replace('+', '_');
+
+                    int[] objCnt;
+                    if (dct.TryGetValue(typeName,out objCnt))
+                    {
+                        objCnt[0] += cnt;
+                    }
+                    else
+                    {
+                        dct.Add(typeName, new int[] { cnt, 0 });
+                    }
+
+                    NEXT_LINE:
+                    ln = rd.ReadLine();
+                }
+                rd.Close();
+                rd = null;
+
+                rd = new StreamReader(winDbgListPath);
+                ln = rd.ReadLine();
+                while (ln != null)
+                {
+                    if (ln.Length < 1) goto NEXT_LINE;
+
+                    int pos = Utils.SkipNonWhites(ln, 0);
+                    string typeName = ln.Substring(0, pos);
+                    pos = Utils.SkipWhites(ln, pos);
+                    int endPos = Utils.SkipNonWhites(ln, pos);
+                    int cnt = Int32.Parse(ln.Substring(pos,endPos-pos));
+
+                    int[] objCnt;
+                    if (dct.TryGetValue(typeName, out objCnt))
+                    {
+                        objCnt[1] += cnt;
+                    }
+                    else
+                    {
+                        dct.Add(typeName, new int[] {0,cnt });
+                    }
+
+                    NEXT_LINE:
+                    ln = rd.ReadLine();
+                }
+                rd.Close();
+                rd = null;
+
+                int totalCnt0 = 0;
+                int totalCnt1 = 0;
+
+                int cnt0cnt = 0;
+                int cnt1cnt = 0;
+                int cnt01diff = 0;
+                
+
+                int cnt0cntCnt = 0;
+                int cnt1cntCnt = 0;
+                int cnt01diffCnt0 = 0;
+                int cnt01diffCnt1 = 0;
+
+
+
+                foreach (var kv in dct)
+                {
+                    string type = kv.Key;
+                    int cnt0 = kv.Value[0];
+                    int cnt1 = kv.Value[1];
+                    totalCnt0 += cnt0;
+                    totalCnt1 += cnt1;
+
+                    if (cnt0 == 0)
+                    {
+                        ++cnt1cnt;
+                        cnt1cntCnt += cnt1;
+                        _1lst.Add(type);
+
+                    }
+                    else if (cnt1==0)
+                    {
+                        ++cnt0cnt;
+                        cnt0cntCnt += cnt0;
+                    }
+                    else if (cnt0 != cnt1)
+                    {
+                        ++cnt01diff;
+                        if (cnt0 > cnt1)
+                            cnt01diffCnt0 += cnt0 - cnt1;
+                        else
+                        {
+                            _1lstmore.Add(type);
+                            cnt01diffCnt1 += cnt1 - cnt0;
+                        }
+                    }
+                }
+
+                _1lst.Sort();
+                _1lstmore.Sort();
+            }
+            catch (Exception ex)
+            {
+                Assert.IsTrue(false, ex.ToString());
+            }
+            finally
+            {
+                rd?.Close();
+                sw?.Close();
+            }
+        }
+
+        [TestMethod]
         public void MergeWinDbgObjects()
         {
             string[] paths = new string[] {
@@ -268,7 +401,58 @@ namespace UnitTestMdr
             }
         }
 
+        [TestMethod]
+        public void TestClassFieldValue()
+        {
+            string dumpPath = @"D:\Jerzy\WinDbgStuff\dumps\Analytics\Viking\AnalyticsLatencyDump05022017 04345672.dmp";
+            string typeName = "Eze.Server.Common.Pulse.Common.ServerColumn";
+            List<ulong> lst = new List<ulong>();
+            string error = null;
+            int typeCount = 0;
+            int noFieldCount = 0;
+            using (var clrDump = OpenDump(dumpPath))
+            {
+                try
+                {
+                    var runtime = clrDump.Runtimes[0];
+                    var heap = runtime.GetHeap();
+                    var segs = heap.Segments;
+                    for (int i = 0, icnt = segs.Count; i < icnt; ++i)
+                    {
+                        var seg = segs[i];
+                        ulong addr = seg.FirstObject;
+                        while (addr != 0ul)
+                        {
+                            var clrType = heap.GetObjectType(addr);
+                            if (clrType == null) goto NEXT_OBJECT;
+                            if (typeName != clrType.Name) goto NEXT_OBJECT;
+                            ++typeCount;
+                            var fld = clrType.GetFieldByName("<Cacheable>k__BackingField");
+                            if (fld == null)
+                            {
+                                ++noFieldCount;
+                                continue;
+                            }
 
+                            bool val = (bool)fld.GetValue(addr);
+
+                            if (val == false)
+                            {
+                                lst.Add(addr);
+                            }
+
+                            NEXT_OBJECT:
+                            addr = seg.NextObject(addr);
+                        }
+                    }
+                }
+                catch (Exception ex)
+                {
+                    error = Utils.GetExceptionErrorString(ex);
+                    Assert.IsTrue(false, error);
+                }
+            }
+        }
         [TestMethod]
 		public void TestRevert()
 		{
@@ -650,8 +834,8 @@ namespace UnitTestMdr
 		[TestMethod]
 		public void TestGetDictionaryContent()
 		{
-			ulong dctAddr = 0x000059a0ce1060; // 0x000084d7ce3938;
-            var dmp = OpenDump(@"D:\Jerzy\WinDbgStuff\dumps\Analytics\Viking\AnalyticsViking.2017-04-28.dmp");
+            ulong dctAddr = 0xe0859ab3e8; // 0x0000e0859ab388; // 0x000084d7ce3938;
+            var dmp = OpenDump(@"D:\Jerzy\WinDbgStuff\dumps\Analytics\Viking\AnalyticsLatencyDump05022017 04345672.dmp");
 			using (dmp)
 			{
 				var heap = dmp.Heap;
@@ -711,11 +895,144 @@ namespace UnitTestMdr
 			}
 		}
 
-		#endregion System.Collections.Generic.Dictionary<TKey,TValue> content
+        #endregion System.Collections.Generic.Dictionary<TKey,TValue> content
 
-		#region System.Collections.Generic.SortedDictionary<TKey,TValue> content
+        #region System.Collections.Generic.List<T>
 
-		[TestMethod]
+        [TestMethod]
+        public void TestGetListContentSpecialCase()
+        {
+
+            ulong[] addrs = new ulong[]
+            {
+            0x0000e0859ab590,
+            0x0000e0859ab638,
+            0x0000e0859ab688,
+            0x0000e084de8308,
+            0x0000df8651f278,
+            0x0000e0859c0d40,
+            0x0000e0859e0310,
+            0x0000e085a1bce0,
+            0x0000e085a3ba08,
+            0x0000e085a51f68,
+            0x0000e085a655a8,
+            0x0000e085a7a7f8,
+            0x0000e085a7de48,
+            0x0000df86557490,
+            0x0000e085a81050,
+            0x0000e085a837b0,
+            0x0000e085a86860,
+            0x0000e085a8a7e8,
+            0x0000e085a8d290,
+            0x0000df869589d8,
+            0x0000e085a8fc08,
+            0x0000e085a910f0,
+            0x0000df8695a1c8,
+            0x0000e085a97198,
+            0x0000e085a99b30,
+            0x0000e085aa79e0,
+            0x0000e085ab2318,
+            0x0000df87624818,
+            0x0000df87631240,
+            0x0000df87638828,
+            0x0000df8766cac8,
+            0x0000e085b65140,
+            0x0000df87683920,
+            0x0000e085bd95b0,
+            0x0000e085bfa268,
+            0x0000e1060eee00,
+            0x0000df06e62bb8,
+            0x0000df06e7ad00,
+            0x0000e185958e50,
+            0x0000e185959be8,
+            0x0000e18595cc10,
+            0x0000e18595ea60,
+            0x0000e1060f6cd0,
+            0x0000e1061478c0,
+            0x0000e10614a808,
+            0x0000e1061e61e8,
+            0x0000e1061e6238,
+            0x0000e1061e6288,
+            0x0000e1061e62d8,
+            0x0000e1061e6328,
+            0x0000e106292458,
+
+        };
+            var dmp = OpenDump(@"D:\Jerzy\WinDbgStuff\dumps\Analytics\Viking\AnalyticsLatencyDump05022017 04345672.dmp");
+            List<int> hashes = new List<int>();
+            List<int[]> ids = new List<int[]>();
+
+            using (dmp)
+            {
+                var heap = dmp.Heap;
+
+                for (int k = 0, kcnt = addrs.Length; k < kcnt; ++k)
+                {
+                    var result = ValueExtractor.ListInfo(heap, addrs[k]);
+
+
+                    int aryLen = result.Item6;
+                    ClrType clrType = result.Item3;
+                    ulong aryAddr = result.Item5;
+
+                    int len = clrType.GetArrayLength(aryAddr);
+
+                    //int[] values = new int[aryLen];
+
+                    int[] values = ValueExtractor.ReadIntAryAtAddress(aryAddr+16, aryLen, heap);
+
+
+
+                    //for (int i = 0; i < aryLen; ++i)
+                    //{
+
+
+                    //    var obj = clrType.GetArrayElementValue(aryAddr, i);
+                    //    var oaddr = clrType.GetArrayElementAddress(aryAddr, i);
+                    //    if (obj != null && obj is Int32)
+                    //    {
+                    //        values[i] = (int)obj;
+                    //    }
+                    //    else
+                    //    {
+                    //        values[i] = 0;
+                    //    }
+                    //}
+
+                    ids.Add(values);
+                    unchecked
+                    {
+                        var hash = values.Aggregate(0, (current, id) => (current * 397) ^ id);
+                        hashes.Add(hash);
+                    }
+
+
+                }
+            }
+
+            StringBuilder sb = new StringBuilder(1024);
+
+            sb.Append("int[][] ids = new int[").Append(ids.Count).AppendLine("]");
+            sb.AppendLine("{");
+            for (int i = 0, icnt = ids.Count; i < icnt; ++i)
+            {
+                sb.Append("   new int[] { ");
+                for(int j = 0, jcnt = ids[i].Length; j < jcnt; ++j)
+                {
+                    sb.Append(ids[i][j]).Append(", ");
+                }
+                sb.AppendLine("},");
+            }
+            sb.AppendLine("};");
+
+            string str = sb.ToString();
+        }
+
+        #endregion System.Collections.Generic.List<T>
+
+        #region System.Collections.Generic.SortedDictionary<TKey,TValue> content
+
+        [TestMethod]
 		public void TestGetSortedDictionaryContent()
 		{
 			ulong dctAddr = 0x00015e80013030;
@@ -845,15 +1162,20 @@ namespace UnitTestMdr
 		[TestMethod]
 		public void TestGetConcurrentDictionaryContent()
 		{
-			ulong dctAddr = 0x00000300023760; // 0x000004002fe820; // 0x000001801462b0;
-			var dmp = OpenDump(@"D:\Jerzy\WinDbgStuff\dumps\Analytics\Local\Eze.Analytics.Svc.exe_170131_125914.dmp");
+            ulong dctAddr = 0x0000e004c019e0; //  0x0000df8651f520; // 0x000004002fe820; // 0x000001801462b0;
+            string dumpPath = @"D:\Jerzy\WinDbgStuff\dumps\Analytics\Viking\AnalyticsLatencyDump05022017 04345672.dmp";
+
+            var dmp = OpenDump(dumpPath);
 			using (dmp)
 			{
 				var heap = dmp.Heap;
-				var result = CollectionContent.getConcurrentDictionaryContent(heap, dctAddr);
-				Assert.IsNotNull(result);
-				Assert.IsNull(result.Item1, result.Item1);
-			}
+				//var result = CollectionContent.getConcurrentDictionaryContent(heap, dctAddr);
+				//Assert.IsNotNull(result);
+				//Assert.IsNull(result.Item1, result.Item1);
+
+                ulong dAddr = 0x00e105255b98;
+                var result2 = CollectionContent.dictionaryContent(heap, dAddr);
+            }
 		}
 
 
@@ -1561,6 +1883,110 @@ namespace UnitTestMdr
             }
         }
 
+        [TestMethod]
+        public void TestGetTypeAddressListWithFieldValue()
+        {
+            string[] typeNames = new string[] {
+                "ECS.Common.HierarchyCache.Structure.CashPosition",
+                "ECS.Common.HierarchyCache.Structure.CashEffectPosition",
+                "ECS.Common.HierarchyCache.Structure.RealPosition",
+                 };
+            string[] fldValues = new string[] { "T846078023", "T845520386" };
+            string fldName = "posID";
+            string altfldName = "positionID";
+            string error = null;
+            var addrTypes = new List<Tuple<string,string,string>>();
+            var posIDs = new List<Tuple<string,string,string>>();
+            var dct = new SortedDictionary<string, List<KeyValuePair<string, string>>>(StringComparer.OrdinalIgnoreCase);
+
+            using (var clrDump = OpenDump(@"D:\Jerzy\WinDbgStuff\dumps\Analytics\Viking\AnalyticsVikingForAlex.dmp"))
+            {
+                try
+                {
+                    var runtime = clrDump.Runtimes[0];
+                    var heap = runtime.Heap;
+                    var segs = heap.Segments;
+                    for (int i = 0, icnt = segs.Count; i < icnt; ++i)
+                    {
+                        var seg = segs[i];
+                        ulong addr = seg.FirstObject;
+                        while (addr != 0ul)
+                        {
+                            var clrType = heap.GetObjectType(addr);
+                            if (clrType == null) goto NEXT_OBJECT;
+                            if (!typeNames.Contains(clrType.Name)) goto NEXT_OBJECT;
+
+                            var fld = clrType.GetFieldByName(fldName);
+                            if (fld==null)
+                                fld = clrType.GetFieldByName(altfldName);
+                            string val = (string)fld.GetValue(addr, false, true);
+                            var info = new KeyValuePair<string, string>(clrType.Name, Utils.RealAddressString(addr));
+                            List<KeyValuePair<string, string>> lst;
+                            if (dct.TryGetValue(val,out lst))
+                            {
+                                lst.Add(info);
+                            }
+                            else
+                            {
+                                dct.Add(val, new List<KeyValuePair<string, string>>() { info });
+                            }
+
+
+
+                            //posIDs.Add(new Tuple<string, string, string>(clrType.Name,val, Utils.RealAddressString(addr)));
+                            //if(fldValues.Contains(val,StringComparer.OrdinalIgnoreCase))
+                            //{
+                            //    addrTypes.Add(new Tuple<string, string,string>(clrType.Name, Utils.RealAddressString(addr), val));
+                            //}
+                            NEXT_OBJECT:
+                            addr = seg.NextObject(addr);
+                        }
+                    }
+
+                    int maxCnt = 0;
+                    int dupCnt = 0;
+                    int totDupCnt = 0;
+                    int[] typeCnts = new int[3];
+                    StringBuilder sb = new StringBuilder(4096);
+                    foreach(var kv in dct)
+                    {
+                        if (kv.Value.Count > 1)
+                        {
+                            sb.AppendLine(kv.Key);
+                            
+                            totDupCnt += kv.Value.Count;
+                            ++dupCnt;
+                            if (maxCnt < kv.Value.Count)
+                                maxCnt = kv.Value.Count;
+                            foreach(var kvi in kv.Value)
+                            {
+                                switch(kvi.Key)
+                                {
+                                    case "ECS.Common.HierarchyCache.Structure.CashPosition":
+                                        sb.Append("   CashPosition: ").AppendLine(kvi.Value);
+                                        typeCnts[0] += 1;
+                                        break;
+                                    case "ECS.Common.HierarchyCache.Structure.CashEffectPosition":
+                                        sb.Append("   CashEffectPosition: ").AppendLine(kvi.Value);
+                                        typeCnts[1] += 1;
+                                        break;
+                                    case "ECS.Common.HierarchyCache.Structure.RealPosition":
+                                        sb.Append("   RealPosition: ").AppendLine(kvi.Value);
+                                        typeCnts[2] += 1;
+                                        break;
+                                }
+                            }
+                        }
+                    }
+                    var rep = sb.ToString();
+                }
+                catch (Exception ex)
+                {
+                    error = Utils.GetExceptionErrorString(ex);
+                    Assert.IsTrue(false, error);
+                }
+            }
+        }
 
         [TestMethod]
         public void TestGetTypeAddressList2()

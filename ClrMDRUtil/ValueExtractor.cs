@@ -1197,9 +1197,36 @@ namespace ClrMDRIndex
             return new DisplayableString("Test");
         }
 
-		#region array values
 
-		public static (string, InstanceValue) ArrayContent(IndexProxy ndxProxy, ClrHeap heap, ulong decoratedAddr, InstanceValue parent)
+        #region List<T> content
+
+        public static Tuple<string, ClrType, ClrType, ClrElementKind, ulong, int> ListInfo(ClrHeap heap, ulong addr)
+        {
+            var clrType = heap.GetObjectType(addr);
+            if (clrType == null)
+                return new Tuple<string, ClrType, ClrType, ClrElementKind, ulong, int>("Cannot get type at address: " + Utils.RealAddressString(addr), null, null, ClrElementKind.Unknown, 0Ul, 0);
+            if (!clrType.Name.StartsWith("System.Collections.Generic.List<"))
+                return new Tuple<string, ClrType, ClrType, ClrElementKind, ulong, int>("The type at address: " + Utils.RealAddressString(addr) + " is not List<T>.", null, null, ClrElementKind.Unknown, 0UL, 0);
+            var itemsFld = clrType.GetFieldByName("_items");
+            var sizeFld = clrType.GetFieldByName("_size");
+
+            var itemsobj = itemsFld.GetValue(addr, false, false);
+            ulong itemsAddr = itemsobj == null ? 0UL : (ulong)itemsobj;
+            var len = (int)sizeFld.GetValue(addr,false,false);
+            var itemsClrType = heap.GetObjectType(itemsAddr);
+            var kind = TypeExtractor.GetElementKind(itemsClrType.ComponentType);
+
+            return new Tuple<string, ClrType, ClrType, ClrElementKind, ulong, int>(null, clrType, itemsClrType, kind, itemsAddr, len);
+        }
+
+
+
+        #endregion List<T> content
+
+        #region array values
+
+
+        public static (string, InstanceValue) ArrayContent(IndexProxy ndxProxy, ClrHeap heap, ulong decoratedAddr, InstanceValue parent)
 		{
 			var addr = Utils.RealAddress(decoratedAddr);
 			(string error, ClrType clrType, ClrType elemType, ClrElementKind elemKind, int len) = ArrayInfo(heap, addr);

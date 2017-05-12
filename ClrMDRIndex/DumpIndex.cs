@@ -104,6 +104,8 @@ namespace ClrMDRIndex
         private ClrtThread[] _threads;
         private ClrtBlkObject[] _blocks;
 
+        public bool AreReferencesAvailable => _references != null;
+
         #endregion fields/properties
 
         #region ctors/initialization
@@ -357,8 +359,11 @@ namespace ClrMDRIndex
             var resultDct = new SortedDictionary<string, List<KeyValuePair<string, int>>>(StringComparer.Ordinal);
 
             string[] items = reversedNames[0].Key.Split(splitter, StringSplitOptions.RemoveEmptyEntries);
-            Debug.Assert(items.Length > 0);
-            string name = Utils.GetCachedString(items[0], strCache);
+            string name;
+            if (items.Length > 0)
+                name = Utils.GetCachedString(items[0], strCache);
+            else
+                name = Utils.GetCachedString(string.Empty, strCache);
 
             for (int i = 1, icnt = reversedNames.Length; i < icnt; ++i)
             {

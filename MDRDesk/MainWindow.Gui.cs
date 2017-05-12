@@ -864,53 +864,53 @@ namespace MDRDesk
 			txtBlock.Inlines.Add(Environment.NewLine);
 
 			string error;
-			var genDistributions = CurrentIndex.GetTotalGenerationDistributions(out error);
-			if (error != null)
-			{
-				txtBlock.Inlines.Add(new Run("FAILED TO LOAD GENERATION DISTRIBUTIONS!!!" + Environment.NewLine) { FontWeight = FontWeights.Bold, FontSize = 12 });
-				txtBlock.Inlines.Add(new Run(error + Environment.NewLine) { FontWeight = FontWeights.Bold, FontSize = 10, Foreground = Brushes.Red });
-			}
-			else
-			{
-				DisplayableGeneration[] generations = new DisplayableGeneration[6];
-				generations[0] = new DisplayableGeneration("Object Counts", genDistributions.Item1);
-				generations[1] = new DisplayableGeneration("Object Sizes", genDistributions.Item2);
-				generations[2] = new DisplayableGeneration("Unrooted Counts", genDistributions.Item5);
-				generations[3] = new DisplayableGeneration("Unrooted Sizes", genDistributions.Item6);
-				generations[4] = new DisplayableGeneration("Free Counts", genDistributions.Item3);
-				generations[5] = new DisplayableGeneration("Free Sizes", genDistributions.Item4);
+            var genDistributions = CurrentIndex.GetTotalGenerationDistributions(out error);
+            if (error != null)
+            {
+                txtBlock.Inlines.Add(new Run("FAILED TO LOAD GENERATION DISTRIBUTIONS!!!" + Environment.NewLine) { FontWeight = FontWeights.Bold, FontSize = 12 });
+                txtBlock.Inlines.Add(new Run(error + Environment.NewLine) { FontWeight = FontWeights.Bold, FontSize = 10, Foreground = Brushes.Red });
+            }
+            else
+            {
+                DisplayableGeneration[] generations = new DisplayableGeneration[6];
+                generations[0] = new DisplayableGeneration("Object Counts", genDistributions.Item1);
+                generations[1] = new DisplayableGeneration("Object Sizes", genDistributions.Item2);
+                generations[2] = new DisplayableGeneration("Unrooted Counts", genDistributions.Item5);
+                generations[3] = new DisplayableGeneration("Unrooted Sizes", genDistributions.Item6);
+                generations[4] = new DisplayableGeneration("Free Counts", genDistributions.Item3);
+                generations[5] = new DisplayableGeneration("Free Sizes", genDistributions.Item4);
 
-				var genDataGrid = (DataGrid)LogicalTreeHelper.FindLogicalNode(grid, "GeneralInfoGenerations");
-				Debug.Assert(genDataGrid!=null);
-				genDataGrid.ItemsSource = generations;
+                var genDataGrid = (DataGrid)LogicalTreeHelper.FindLogicalNode(grid, "GeneralInfoGenerations");
+                Debug.Assert(genDataGrid != null);
+                genDataGrid.ItemsSource = generations;
 
-				// display generation charts
-				//
-				var chartGrid = (Grid)LogicalTreeHelper.FindLogicalNode(grid, "GeneralInfoChart");
-				Debug.Assert(chartGrid != null);
+                // display generation charts
+                //
+                //var chartGrid = (Grid)LogicalTreeHelper.FindLogicalNode(grid, "GeneralInfoChart");
+                //Debug.Assert(chartGrid != null);
 
-				var grid1 = (Grid)LogicalTreeHelper.FindLogicalNode(chartGrid, "GeneralInfoChart1");
-				Debug.Assert(grid1 != null);
-				var grid2 = (Grid)LogicalTreeHelper.FindLogicalNode(chartGrid, "GeneralInfoChart2");
-				Debug.Assert(grid2 != null);
+                //var grid1 = (Grid)LogicalTreeHelper.FindLogicalNode(chartGrid, "GeneralInfoChart1");
+                //Debug.Assert(grid1 != null);
+                //var grid2 = (Grid)LogicalTreeHelper.FindLogicalNode(chartGrid, "GeneralInfoChart2");
+                //Debug.Assert(grid2 != null);
 
-				System.Windows.Forms.Integration.WindowsFormsHost host0 = new System.Windows.Forms.Integration.WindowsFormsHost();
-				host0.FontSize = 8;
-				List<int> intLst = new List<int>(genDistributions.Item1.Length + genDistributions.Item5.Length + genDistributions.Item3.Length);
-				intLst.AddRange(genDistributions.Item1); intLst.AddRange(genDistributions.Item5); intLst.AddRange(genDistributions.Item3);
-				host0.Child = DmpNdxQueries.Auxiliaries.getCountGenerationsChart2(intLst.ToArray());
-				host0.Child.Font = new Font("Arial", 8);
-				System.Windows.Forms.Integration.WindowsFormsHost host1 = new System.Windows.Forms.Integration.WindowsFormsHost();
-				host1.FontSize = 8;
-				List<ulong> ulongLst = new List<ulong>(genDistributions.Item2.Length + genDistributions.Item6.Length + genDistributions.Item4.Length);
-				ulongLst.AddRange(genDistributions.Item2); ulongLst.AddRange(genDistributions.Item6); ulongLst.AddRange(genDistributions.Item4);
-				host1.Child = DmpNdxQueries.Auxiliaries.getSizeGenerationsChart2(ulongLst.ToArray());
-				host1.Child.Font = new Font("Arial", 8);
-				grid1.Children.Add(host0);
-				grid2.Children.Add(host1);
-			}
+                //System.Windows.Forms.Integration.WindowsFormsHost host0 = new System.Windows.Forms.Integration.WindowsFormsHost();
+                //host0.FontSize = 8;
+                //List<int> intLst = new List<int>(genDistributions.Item1.Length + genDistributions.Item5.Length + genDistributions.Item3.Length);
+                //intLst.AddRange(genDistributions.Item1); intLst.AddRange(genDistributions.Item5); intLst.AddRange(genDistributions.Item3);
+                //host0.Child = DmpNdxQueries.Auxiliaries.getCountGenerationsChart2(intLst.ToArray());
+                //host0.Child.Font = new Font("Arial", 8);
+                //System.Windows.Forms.Integration.WindowsFormsHost host1 = new System.Windows.Forms.Integration.WindowsFormsHost();
+                //host1.FontSize = 8;
+                //List<ulong> ulongLst = new List<ulong>(genDistributions.Item2.Length + genDistributions.Item6.Length + genDistributions.Item4.Length);
+                //ulongLst.AddRange(genDistributions.Item2); ulongLst.AddRange(genDistributions.Item6); ulongLst.AddRange(genDistributions.Item4);
+                //host1.Child = DmpNdxQueries.Auxiliaries.getSizeGenerationsChart2(ulongLst.ToArray());
+                //host1.Child.Font = new Font("Arial", 8);
+                //grid1.Children.Add(host0);
+                //grid2.Children.Add(host1);
+            }
 
-			var tab = new CloseableTabItem() { Header = Constants.BlackDiamond + " General Info", Content = grid, Name = "GeneralInfoViewTab" };
+            var tab = new CloseableTabItem() { Header = Constants.BlackDiamond + " General Info", Content = grid, Name = "GeneralInfoViewTab" };
 			MainTab.Items.Add(tab);
 			MainTab.SelectedItem = tab;
 			MainTab.UpdateLayout();
@@ -1206,6 +1206,7 @@ namespace MDRDesk
 		private async void GetParentReferences(object sender, RoutedEventArgs e)
 		{
 			if (!IsIndexAvailable("No index is loaded")) return;
+            if (!AreReferencesAvailable("There are no references indexed")) return;
 			string typeName;
 			int typeId;
 			if (!GetTypeNameInfo(sender, out typeName, out typeId)) return;
@@ -1281,9 +1282,10 @@ namespace MDRDesk
 
 		private async void DisplayInstanceParentReferences(ulong addr)
 		{
-			// get reference search info
-			//
-			ReferenceSearchSetup dlg = new ReferenceSearchSetup("Get parents of instance: " + Utils.RealAddressString(addr)) { Owner = this };
+            if (!AreReferencesAvailable("There are no references indexed")) return;
+            // get reference search info
+            //
+            ReferenceSearchSetup dlg = new ReferenceSearchSetup("Get parents of instance: " + Utils.RealAddressString(addr)) { Owner = this };
 			dlg.ShowDialog();
 			if (dlg.Cancelled) return;
 			int level = dlg.GetAllReferences ? Int32.MaxValue : dlg.SearchDepthLevel;

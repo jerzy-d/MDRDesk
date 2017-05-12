@@ -481,8 +481,14 @@ namespace MDRDesk
             if (path == null) path = GuiUtils.GetFolderPath(Setup.DumpsFolder);
 
             if (path == null) return;
-
-            DoOpenDumpIndex(0, path);
+            try
+            {
+                DoOpenDumpIndex(0, path);
+            }
+            catch(Exception ex)
+            {
+                ShowError(Utils.GetExceptionErrorString(ex));
+            }
         }
 
         private async void DoOpenDumpIndex(int runtimeIndex, string path)
@@ -497,53 +503,73 @@ namespace MDRDesk
 				string error;
 				DumpIndex index = DumpIndex.OpenIndexInstanceReferences(_myVersion, path, runtimeIndex, out error, progress);
 				KeyValuePair<string, KeyValuePair<string, int>[]>[] namespaces = null;
+                progress.Report("OpenIndexInstanceReferences done");
 
 				if (error == null && index != null)
 				{
-					namespaces = index.GetNamespaceDisplay();
+                    try
+                    {
+                        namespaces = index.GetNamespaceDisplay();
+                        progress.Report("GetNamespaceDisplay done");
+                    }
+                    catch (Exception ex)
+                    {
+                        error = Utils.GetExceptionErrorString(ex);
+                    }
 				}
 				return new Tuple<string, DumpIndex, KeyValuePair<string, KeyValuePair<string, int>[]>[]>(error, index, namespaces);
 			});
 
-			SetEndTaskMainWindowState("Index: '" + DumpFileMoniker.GetMapName(path) +
-									  (result.Item1 == null ? "' is open." : "' open failed."));
+            try
+            {
+                progress.Report("Open index task done");
+                SetEndTaskMainWindowState("Index: '" + DumpFileMoniker.GetMapName(path) +
+                                          (result.Item1 == null ? "' is open." : "' open failed."));
 
-			if (result.Item1 != null)
-			{
-				ShowError(result.Item1);
-				return;
-			}
-			if (CurrentIndex != null)
-			{
-				CurrentIndex.Dispose();
-				CurrentIndex = null;
-				Utils.ForceGcWithCompaction();
-			}
-			CurrentIndex = result.Item2;
+                if (result.Item1 != null)
+                {
+                    ShowError(result.Item1);
+                    return;
+                }
+                if (CurrentIndex != null)
+                {
+                    CurrentIndex.Dispose();
+                    CurrentIndex = null;
+                    Utils.ForceGcWithCompaction();
+                }
+                CurrentIndex = result.Item2;
 
-			//var genInfo = CurrentIndex.GetGenerationTotals();
-			DisplayGeneralInfoGrid(CurrentIndex.DumpInfo);
-			if ((TypeDisplayNamespaceClass.IsChecked ?? (bool)TypeDisplayNamespaceClass.IsChecked) && result.Item3 != null)
-			{
-				DisplayNamespaceGrid(result.Item3);
-			}
-			else
-			{
-				if ((TypeDisplayClass.IsChecked ?? (bool)TypeDisplayNamespaceClass.IsChecked))
-					DisplayTypesGrid(true);
-				else
-					DisplayTypesGrid(false);
-			}
-			if (CurrentIndex.DeadlockFound)
-			{
-				string error;
-				if (!DisplayDeadlock(CurrentIndex.Deadlock, out error))
-				{
-					ShowError(error);
-				}
-			}
-			Title = BaseTitle + Constants.BlackDiamondPadded + CurrentIndex.DumpFileName;
-			RecentIndexList.Add(CurrentIndex.IndexFolder);
+                //var genInfo = CurrentIndex.GetGenerationTotals();
+                DisplayGeneralInfoGrid(CurrentIndex.DumpInfo);
+                if ((TypeDisplayNamespaceClass.IsChecked ?? (bool)TypeDisplayNamespaceClass.IsChecked) && result.Item3 != null)
+                {
+                    DisplayNamespaceGrid(result.Item3);
+                }
+                else
+                {
+                    if ((TypeDisplayClass.IsChecked ?? (bool)TypeDisplayNamespaceClass.IsChecked))
+                        DisplayTypesGrid(true);
+                    else
+                        DisplayTypesGrid(false);
+                }
+                if (CurrentIndex.DeadlockFound)
+                {
+                    string error;
+                    if (!DisplayDeadlock(CurrentIndex.Deadlock, out error))
+                    {
+                        ShowError(error);
+                    }
+                }
+                Title = BaseTitle + Constants.BlackDiamondPadded + CurrentIndex.DumpFileName;
+                RecentIndexList.Add(CurrentIndex.IndexFolder);
+
+            }
+            catch (Exception ex)
+            {
+                ShowError(Utils.GetExceptionErrorString(ex));
+                return;
+            }
+
 		}
 
 		public void SetTitle(string dmpName)
@@ -2068,7 +2094,15 @@ namespace MDRDesk
 			return true;
 		}
 
-		private void GetDlgString2(string title, string descr, string defValue, out string str)
+        private bool AreReferencesAvailable(string caption = null)
+        {
+            if (CurrentIndex != null && CurrentIndex.AreReferencesAvailable) return true;
+            if (caption == null) return false;
+            ShowInformation(caption, "References Not Available", "References were not indexed." + Environment.NewLine + "Check the setup 'Skip indexing reference'." + Environment.NewLine + "Sometimes this setting is used to when indexing huge dumps.", null);
+            return false;
+        }
+
+        private void GetDlgString2(string title, string descr, string defValue, out string str)
 		{
 			str = null;
 			InputStringDlg dlg = new InputStringDlg(descr, defValue ?? " ") { Title = title, Owner = Window.GetWindow(this) };
