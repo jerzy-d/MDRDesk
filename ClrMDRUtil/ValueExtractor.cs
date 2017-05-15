@@ -444,7 +444,7 @@ namespace ClrMDRIndex
 			}
 
 			var sb = StringBuilderCache.Acquire(64);
-			var exTypeName = exType.Type != null ? exType.Type.Name : Constants.UnknownTypeName;
+			var exTypeName = exType.Type != null ? exType.Type.Name : Constants.UnknownTypeName0;
 			var hresult = exType.HResult;
 			var message = exType.Message;
 			sb.Append("HRESULT: ").AppendLine(Utils.HResultStringHeader(hresult));
@@ -486,7 +486,7 @@ namespace ClrMDRIndex
 			var sb = StringBuilderCache.Acquire(64);
 			if (exType != null)
 			{
-				exTypeName = exType.Type != null ? exType.Type.Name : Constants.UnknownTypeName;
+				exTypeName = exType.Type != null ? exType.Type.Name : Constants.UnknownTypeName0;
 				hresult = exType.HResult;
 				message = exType.Message;
 				sb.Append(Utils.HResultStringHeader(hresult)).Append(Constants.NamespaceSepPadded);

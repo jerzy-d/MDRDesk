@@ -34,7 +34,7 @@ namespace ClrMDRIndex
 
 		public string GetTypeName(int typeId)
 		{
-			return typeId >= 0 && typeId < TypeNames.Length ? TypeNames[typeId] : Constants.UnknownTypeName;
+			return typeId >= 0 && typeId < TypeNames.Length ? TypeNames[typeId] : Constants.UnknownTypeName0;
 		}
 
 		public KeyValuePair<string, int> GetTypeNameAndIdAtAddr(ulong addr)

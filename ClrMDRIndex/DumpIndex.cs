@@ -498,7 +498,7 @@ namespace ClrMDRIndex
         {
             var instanceIndex = GetInstanceIndex(address);
             return instanceIndex == Constants.InvalidIndex
-                ? Constants.UnknownTypeName
+                ? Constants.UnknownTypeName0
                 : _typeNames[_instanceTypes[instanceIndex]];
         }
 
@@ -512,7 +512,7 @@ namespace ClrMDRIndex
 
         public string GetTypeName(int id)
         {
-            return (id >= 0 && id < _typeNames.Length) ? _typeNames[id] : Constants.UnknownTypeName;
+            return (id >= 0 && id < _typeNames.Length) ? _typeNames[id] : Constants.UnknownTypeName0;
         }
 
         public int GetTypeId(int instanceId)

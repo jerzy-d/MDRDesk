@@ -565,7 +565,7 @@ namespace ClrMDRIndex
 
 		public string GetTypeNameFromInstanceId(int instId)
 		{
-			if (Constants.InvalidIndex == instId) return Constants.NullTypeName;
+			if (Constants.InvalidIndex == instId) return Constants.NullTypeName0;
 			var typeId = _instTypes[_currentRuntime][instId];
 			return GetTypeName(typeId);
 		}
