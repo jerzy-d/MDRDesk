@@ -30,21 +30,17 @@ namespace ClrMDRIndex
 		public const string NullValue = "null";
 		public const int NullNameId = 0;
 
-		public const string NullTypeName = "!!!NullType";
-		public const string UnknownTypeName = "!!!UnknownType";
-		public const string NullTypeName0 = "!!!NullType!0";
-		public const string UnknownTypeName0 = "!!!UnknownType!0";
-		public const string FreeTypeName = "Free";
+		public const string NullTypeName = "NullType";
+		public const string UnknownTypeName = "UnknownType";
+        public const string TypeNotFound = "TypeNotFound";
+        public const string FreeTypeName = "Free";
 		public const string ErrorTypeName = "ERROR";
 
 		public const string ErrorStr = "ERROR";
 		public const int ErrorStrId = 1;
 		//public const string Free = "Free";
-		public const int FreeId = 2;
 		public const string SystemObject = "System.Object";
-		public const int SystemObjectId = 3;
 		public const string System__Canon = "System.__Canon";
-		public const int System__CanonId = 4;
 		public const string SpcPipeNlSep = " ||\r\n";
 
 		// sorts names

@@ -895,6 +895,197 @@ namespace UnitTestMdr
 			}
 		}
 
+
+        [TestMethod]
+        public void TestGetDictionaryOfDictionaryContent()
+        {
+            StringBuilder sb = new StringBuilder(1024);
+            ulong dctAddr = 0x00000011ec33cea8;
+            //ulong dctAddr = 0x000000ea94048eb8;
+            var dmp = OpenDump(@"D:\Jerzy\WinDbgStuff\dumps\Analytics\Viking\AnalyticsVikingSR9.dmp");
+            //var dmp = OpenDump(@"D:\Jerzy\WinDbgStuff\dumps\Analytics\Viking\AnalyticsVikingSR10.dmp");
+            using (dmp)
+            {
+                var heap = dmp.Heap;
+                var clrType = heap.GetObjectType(dctAddr);
+                if (!clrType.Name.StartsWith("System.Collections.Generic.Dictionary<")
+                    && !clrType.BaseType.Name.StartsWith("System.Collections.Generic.Dictionary<")) return;
+                var result = CollectionContent.getDictionaryInfo(heap, dctAddr, clrType);
+                Assert.IsNotNull(result);
+
+                var dctResult = CollectionContent.dictionaryContent(heap, dctAddr);
+                var entries = dctResult.Item7;
+                sb.AppendLine(clrType.Name);
+
+
+                StreamWriter sw = null;
+                string error;
+                try
+                {
+                    List<ulong> dctAddrs = new List<ulong>();
+                    for (int i = 0; i < entries.Length; ++i)
+                    {
+                        var entry = entries[i];
+                        var hsetAddr = Convert.ToUInt64(entry.Value, 16);
+                        dctAddrs.Add(hsetAddr);
+                    }
+
+                    for (int i = 0; i < dctAddrs.Count; ++i)
+                    {
+                        var dctaddr = dctAddrs[i];
+                        var clrtype = heap.GetObjectType(dctaddr);
+                        sb.AppendLine("   " + clrtype.Name);
+                        var res = CollectionContent.getDictionaryInfo(heap, dctaddr, clrtype);
+                        var cont = CollectionContent.dictionaryContent(heap, dctaddr);
+                        for (int j=0,jcnt=cont.Item7.Length; j < jcnt; ++j)
+                        {
+                            var entry = cont.Item7[j];
+                            var hsetAddr = Convert.ToUInt64(entry.Value, 16);
+                            var clrtp = heap.GetObjectType(hsetAddr);
+                            sb.AppendLine("      " + clrtp.Name);
+
+                            var resu = CollectionContent.getDictionaryInfo(heap, hsetAddr, clrtp);
+                            sb.AppendLine("      count: " + resu.Item2);
+
+                        }
+
+                    }
+
+                    string output = sb.ToString();
+                }
+                finally
+                {
+                    sw?.Close();
+                }
+
+
+
+                Assert.IsNotNull(dctResult);
+                Assert.IsNull(dctResult.Item1, dctResult.Item1);
+            }
+        }
+
+        [TestMethod]
+        public void TestGetDictionaryViewLinks()
+        {
+            StringBuilder sb = new StringBuilder(1024);
+            ulong[] dctAddrs = new ulong[] { 0x000011ec4b82f0,
+                                                0x000011ecd15ce8,
+                                                0x000012ec6f0328,
+                                                0x000014ef8b3b10 };
+            //ulong[] dctAddrs = new ulong[] { 0x0000ea9480f770,
+            //                                    0x0000ec93cd24f0,
+            //                                    0x0000ec9425f018,
+            //                                    0x0000ec94cdbf48
+            //                                     };
+
+            var dmp = OpenDump(@"D:\Jerzy\WinDbgStuff\dumps\Analytics\Viking\AnalyticsVikingSR9.dmp");
+            //var dmp = OpenDump(@"D:\Jerzy\WinDbgStuff\dumps\Analytics\Viking\AnalyticsVikingSR10.dmp");
+            var counts = new List<KeyValuePair<string, int>>(4);
+            int[] totcounts = new int[4];
+            int gtotal = 0;
+            using (dmp)
+            {
+                try
+                {
+                    var heap = dmp.Heap;
+                    for (int i = 0, icnt = dctAddrs.Length; i < icnt; ++i)
+                    {
+                        ulong addr = dctAddrs[i];
+                        var clrType = heap.GetObjectType(addr);
+                        var dctResult = CollectionContent.dictionaryContent(heap, addr);
+                        foreach(var entry in dctResult.Item7)
+                        {
+                            var eaddr = Convert.ToUInt64(entry.Value, 16);
+                            var clrtp = heap.GetObjectType(eaddr);
+                            var fld = clrtp.GetFieldByName("dependentRelatedViewsSet");
+                            ulong fldAddr = (ulong)fld.GetValue(eaddr, false, false);
+                            var fldType = heap.GetObjectType(fldAddr);
+                            var hfld = fldType.GetFieldByName("m_count");
+                            int count = (int)hfld.GetValue(fldAddr, false, false);
+                            counts.Add(new KeyValuePair<string, int>(Utils.RealAddressString(addr), count));
+                            totcounts[i] += count;
+                            gtotal += count;
+
+                        }
+
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Assert.IsTrue(false, ex.ToString());
+
+                }
+                finally
+                {
+                }
+            }
+        }
+
+        [TestMethod]
+        public void TestGetDictionaryRelatedViews()
+        {
+            StringBuilder sb = new StringBuilder(1024);
+            ulong[] calcCacheAddrs = new ulong[] { 0x000014ec59fef8, 0x0000eb92fffe28 };
+            List<string> lst0 = new List<string>(256);
+            List<string> lst1 = new List<string>(256);
+            ClrtDump dmp = null;
+            for (int d = 0; d < 2; ++d)
+            {
+                dmp = d == 0 ? OpenDump(@"D:\Jerzy\WinDbgStuff\dumps\Analytics\Viking\AnalyticsVikingSR9.dmp")
+                             : OpenDump(@"D:\Jerzy\WinDbgStuff\dumps\Analytics\Viking\AnalyticsVikingSR10.dmp");
+                ulong addr = calcCacheAddrs[d];
+                List<string> lst = d == 0 ? lst0 : lst1;
+                using (dmp)
+                {
+                    try
+                    {
+                        var heap = dmp.Heap;
+                        var clrType = heap.GetObjectType(addr);
+                        var fld = clrType.GetFieldByName("calculationCache");
+                        var cacheAddr = (ulong)fld.GetValue(addr, false, false);
+                        var clrCache = heap.GetObjectType(cacheAddr);
+                        var fldData = clrCache.GetFieldByName("data");
+                        ulong fldDataAddr = (ulong)fldData.GetValue(cacheAddr, false, false);
+                        var clrDct = heap.GetObjectType(fldDataAddr);
+                        var dctCont = CollectionContent.dictionaryContent(heap, fldDataAddr);
+                        for (int i = 0, icnt = dctCont.Item7.Length; i < icnt; ++i)
+                        {
+                            var vaddr = Convert.ToUInt64(dctCont.Item7[i].Value, 16);
+                            var clrView = heap.GetObjectType(vaddr);
+                            var fldRv = clrView.GetFieldByName("relatedViews");
+                            ulong fldRvAddr = (ulong)fldRv.GetValue(vaddr, false, false);
+                            var clrRv = heap.GetObjectType(fldRvAddr);
+                            var fldRvId = clrRv.GetFieldByName("relatedViewsID");
+                            string id = (string)fldRvId.GetValue(fldRvAddr, false, true);
+                            lst.Add(id);
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        Assert.IsTrue(false, ex.ToString());
+
+                    }
+                }
+            }
+            lst0.Sort(StringComparer.OrdinalIgnoreCase);
+            lst1.Sort(StringComparer.OrdinalIgnoreCase);
+            var sb0 = new StringBuilder(256 * 32);
+            foreach (var s in lst0)
+            {
+                sb0.AppendLine(s);
+            }
+            var sb1 = new StringBuilder(256 * 32);
+            foreach (var s in lst1)
+            {
+                sb1.AppendLine(s);
+            }
+            var s0 = sb0.ToString();
+            var s1 = sb1.ToString();
+
+        }
+
+
         #endregion System.Collections.Generic.Dictionary<TKey,TValue> content
 
         #region System.Collections.Generic.List<T>

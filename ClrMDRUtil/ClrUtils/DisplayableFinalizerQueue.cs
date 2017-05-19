@@ -93,7 +93,7 @@ namespace ClrMDRIndex
 			{
 				if (prevTypeId != data[i].TypeId)
 				{
-					string typeName = prevTypeId < 0 ? Constants.UnknownTypeName0 : typeNames[prevTypeId];
+					string typeName = prevTypeId < 0 ? Constants.UnknownTypeName : typeNames[prevTypeId];
 					var item = new FinalizerQueueDisplayableItem(typeCount, notRooted, typeName, typeAddresses.ToArray());
 					items.Add(item);
 					typeCount = 0;
@@ -115,7 +115,7 @@ namespace ClrMDRIndex
 			}
 			if (typeCount > 0)
 			{
-				string typeName = prevTypeId < 0 ? Constants.UnknownTypeName0 : typeNames[prevTypeId];
+				string typeName = prevTypeId < 0 ? Constants.UnknownTypeName : typeNames[prevTypeId];
 				var item = new FinalizerQueueDisplayableItem(typeCount, notRooted, typeName, typeAddresses.ToArray());
 				items.Add(item);
 			}

@@ -475,7 +475,7 @@ namespace ClrMDRIndex
 					{
 						var clrType = heap.GetObjectType(addr);
 
-						var typeNameKey = clrType == null ? Constants.NullTypeName0 : clrType.Name;
+						var typeNameKey = clrType == null ? Constants.NullTypeName : clrType.Name;
 						int typeId = Array.BinarySearch(typeNames, typeNameKey, StringComparer.Ordinal);
 						typeIds[addrNdx] = typeId;
 						elemetTypes[addrNdx] = clrType == null ? (int)ClrElementType.Unknown : (int)clrType.ElementType;
@@ -758,7 +758,7 @@ namespace ClrMDRIndex
 					{
 						ClrRoot root = threadLocalAliveVars[j];
 						ClrType clrType = heap.GetObjectType(root.Object);
-						var typeName = clrType == null ? Constants.NullTypeName0 : clrType.Name;
+						var typeName = clrType == null ? Constants.NullTypeName : clrType.Name;
 						var typeId = Array.BinarySearch(typeNames, typeName, StringComparer.Ordinal);
 						if (typeId < 0) typeId = Constants.InvalidIndex;
 						int stackId;
@@ -775,7 +775,7 @@ namespace ClrMDRIndex
 					{
 						ClrRoot root = threadLocalDeadVars[j];
 						ClrType clrType = heap.GetObjectType(root.Object);
-						var typeName = clrType == null ? Constants.NullTypeName0 : clrType.Name;
+						var typeName = clrType == null ? Constants.NullTypeName : clrType.Name;
 						var typeId = Array.BinarySearch(typeNames, typeName, StringComparer.Ordinal);
 						if (typeId < 0) typeId = Constants.InvalidIndex;
 						int stackId;
@@ -1209,11 +1209,15 @@ namespace ClrMDRIndex
 
 		public static void AddStandardTypeNames(List<string> typeNames)
 		{
-			typeNames.Add(ClrtType.GetKey(Constants.NullTypeName, 0));
-			typeNames.Add(ClrtType.GetKey(Constants.UnknownTypeName, 0));
-		}
+			typeNames.Add(Constants.NullTypeName);
+            typeNames.Add(Constants.UnknownTypeName);
+            typeNames.Add(Constants.ErrorTypeName);
+            typeNames.Add(Constants.FreeTypeName);
+            typeNames.Add(Constants.System__Canon);
+            typeNames.Add(Constants.SystemObject);
+        }
 
-		private void AddError(int rtNdx, string error)
+        private void AddError(int rtNdx, string error)
 		{
 			_errors[rtNdx].Add(DateTime.Now.ToString("s") + Environment.NewLine + error);
 		}
