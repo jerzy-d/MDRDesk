@@ -20,7 +20,7 @@ module FQry =
         ()
 
     let warmupHeap (runtime:ClrRuntime) : (string * address array) =
-        let heap = runtime.GetHeap()
+        let heap = runtime.Heap
         let nullTypes = ResizeArray<address>()
         try
             let mutable ndx:int32 = 0            
@@ -223,9 +223,9 @@ module FQry =
             | exn -> (exn.ToString(),null,null,null)
 
     let getManagedWorkItem (runtime:ClrRuntime) =
-        let heap = runtime.GetHeap()
+        let heap = runtime.Heap
         try
-            let thrdPool = runtime.GetThreadPool()
+            let thrdPool = runtime.ThreadPool
             let info = [|
                     thrdPool.TotalThreads;
                     thrdPool.RunningThreads;
@@ -453,54 +453,54 @@ module FQry =
         Type values data.
     *)
 
-    let getTypeFieldValue (ndxProxy:IndexProxy) (heap:ClrHeap) (addr:address) (clrType:ClrType) (fld:ClrInstanceField) : (address * obj) =
-        (0UL,null)
+    //let getTypeFieldValue (ndxProxy:IndexProxy) (heap:ClrHeap) (addr:address) (clrType:ClrType) (fld:ClrInstanceField) : (address * obj) =
+    //    (0UL,null)
 
-    let rec getFieldValues (ndxProxy:IndexProxy) (heap:ClrHeap) (clrType:ClrType) (addr:address) (fields:ResizeArray<FieldValue>) =
-        match fields with
-        | null -> ()
-        | _ ->
-            for fld in fields do
+    //let rec getFieldValues (ndxProxy:IndexProxy) (heap:ClrHeap) (clrType:ClrType) (addr:address) (fields:ResizeArray<FieldValue>) =
+    //    match fields with
+    //    | null -> ()
+    //    | _ ->
+    //        for fld in fields do
                 
-                let fldAddr, fldValue = getTypeFieldValue ndxProxy heap addr clrType fld.InstField
-                getFieldValues ndxProxy heap fld.ClType fldAddr fld.Fields
-            ()
+    //            let fldAddr, fldValue = getTypeFieldValue ndxProxy heap addr clrType fld.InstField
+    //            getFieldValues ndxProxy heap fld.ClType fldAddr fld.Fields
+    //        ()
 
-    let rec acceptFilter (ndxProxy:IndexProxy) (heap:ClrHeap) (clrType:ClrType) (addr:address) (fields:ResizeArray<FieldValue>) (accept:bool) =
-        match fields with
-        | null -> accept
-        | _ ->
-            let mutable curAccept = accept
-            for fld in fields do
-                let fldAddr, fldValue = getTypeFieldValue ndxProxy heap addr clrType fld.InstField
-                curAccept <- fld.Accept(fldValue,accept)
-                acceptFilter ndxProxy heap fld.ClType fldAddr fld.Fields curAccept |> ignore
-            curAccept
+    //let rec acceptFilter (ndxProxy:IndexProxy) (heap:ClrHeap) (clrType:ClrType) (addr:address) (fields:ResizeArray<FieldValue>) (accept:bool) =
+    //    match fields with
+    //    | null -> accept
+    //    | _ ->
+    //        let mutable curAccept = accept
+    //        for fld in fields do
+    //            let fldAddr, fldValue = getTypeFieldValue ndxProxy heap addr clrType fld.InstField
+    //            curAccept <- fld.Accept(fldValue,accept)
+    //            acceptFilter ndxProxy heap fld.ClType fldAddr fld.Fields curAccept |> ignore
+    //        curAccept
 
-    let rec findFilter (fields:ResizeArray<FieldValue>) (found:bool) =
-        match found with 
-        | true -> true
-        | _ -> 
-            let mutable curFound = false
-            for fld in fields do
-                curFound <- if fld.HasFilter() then true else curFound
-                match curFound with
-                | true -> ()
-                | _ -> if fld.HasFields() 
-                           then findFilter fld.Fields curFound |> ignore
-                           else ()
-            curFound
+    //let rec findFilter (fields:ResizeArray<FieldValue>) (found:bool) =
+    //    match found with 
+    //    | true -> true
+    //    | _ -> 
+    //        let mutable curFound = false
+    //        for fld in fields do
+    //            curFound <- if fld.HasFilter() then true else curFound
+    //            match curFound with
+    //            | true -> ()
+    //            | _ -> if fld.HasFields() 
+    //                       then findFilter fld.Fields curFound |> ignore
+    //                       else ()
+    //        curFound
             
-    let hasFilter' (fields:ResizeArray<FieldValue>) =
-        findFilter fields false
+    //let hasFilter' (fields:ResizeArray<FieldValue>) =
+    //    findFilter fields false
 
-    let getTypeValuesAtAddresses (ndxProxy:IndexProxy) (heap:ClrHeap) (clrType:ClrType) (typeValue: TypeValue) (addresses:(address array)) =
-        let mutable error:string = null
-        let mutable allWell = true
-        let mutable ndx:int32 = 0
-        let fieldValues = typeValue.Fields
-        let hasFilter = hasFilter' fieldValues
-        for addr in addresses do
-            if hasFilter && acceptFilter ndxProxy heap clrType addr typeValue.Fields true then
-                getFieldValues ndxProxy heap clrType addr typeValue.Fields
-        ()
+    //let getTypeValuesAtAddresses (ndxProxy:IndexProxy) (heap:ClrHeap) (clrType:ClrType) (typeValue: TypeValue) (addresses:(address array)) =
+    //    let mutable error:string = null
+    //    let mutable allWell = true
+    //    let mutable ndx:int32 = 0
+    //    let fieldValues = typeValue.Fields
+    //    let hasFilter = hasFilter' fieldValues
+    //    for addr in addresses do
+    //        if hasFilter && acceptFilter ndxProxy heap clrType addr typeValue.Fields true then
+    //            getFieldValues ndxProxy heap clrType addr typeValue.Fields
+    //    ()

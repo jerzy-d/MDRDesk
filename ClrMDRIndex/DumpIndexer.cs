@@ -78,14 +78,12 @@ namespace ClrMDRIndex
 						string runtimeIndexHeader = Utils.RuntimeStringHeader(r);
 						clrtDump.SetRuntime(r);
 						ClrRuntime runtime = clrtDump.Runtime;
-						ClrHeap heap = runtime.GetHeap();
+						ClrHeap heap = runtime.Heap;
 						ConcurrentBag<string> errors = new ConcurrentBag<string>();
 						_errors[r] = errors;
 						var strIds = _stringIdDcts[r];
 
 						string[] typeNames = null;
-						ulong[] roots = null;
-						ulong[] objects = null;
 						ulong[] addresses = null;
 						int[] typeIds = null;
 
@@ -577,7 +575,7 @@ namespace ClrMDRIndex
 			StreamWriter sw = null;
 			try
 			{
-				var heap = clrtDump.Runtimes[_currentRuntimeIndex].GetHeap();
+				var heap = clrtDump.Runtimes[_currentRuntimeIndex].Heap;
 				var threads = DumpIndexer.GetThreads(clrtDump.Runtimes[_currentRuntimeIndex]);
 				var blocks = DumpIndexer.GetBlockingObjects(heap);
 				var threadSet = new HashSet<ClrThread>(new ClrThreadEqualityCmp());

@@ -748,7 +748,6 @@ namespace MDRDesk
 			if (!forward)
 				grid.Tag = new Tuple<Digraph, List<int>, SubgraphDictionary, bool>(graphInfo.Item1, graphInfo.Item2, graphInfo.Item3,
 					true);
-			string error;
 			UpdateThreadBlockMap(grid);
 		}
 
@@ -2670,7 +2669,6 @@ namespace MDRDesk
 			DockPanel graphViewerPanel = new DockPanel();
 			ToolBar toolBar = new ToolBar();
 			GraphViewer graphViewer = new GraphViewer();
-			TextBox statusTextBox;
 		}
 
 		#endregion masgl graph

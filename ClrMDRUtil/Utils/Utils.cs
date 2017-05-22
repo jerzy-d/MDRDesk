@@ -3152,6 +3152,11 @@ namespace ClrMDRIndex
 			else dist[32] += 1;
 		}
 
+		public static string GetWinDbgTypeName(string name)
+		{
+			return name.Replace('+', '_');
+		}
+
 		#endregion Misc
 	}
 

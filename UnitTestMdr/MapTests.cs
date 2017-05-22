@@ -212,7 +212,6 @@ namespace UnitTestMdr
 				int freeId = map.GetTypeId("Free");
 				int equalCnt = 0;
 				uint maxDiff = 0;
-				int maxTypeId = 0;
 				ulong maxAddr = 0UL;
 				string maxTypeName = string.Empty;
 				ClrElementType maxElem = ClrElementType.Unknown;
@@ -243,7 +242,6 @@ namespace UnitTestMdr
 
 
 				}
-				int a = 1;
 			}
 		}
 
@@ -286,9 +284,6 @@ namespace UnitTestMdr
 					if (address == Constants.InvalidAddress)
 						lst.Add(typeAddresses[i]);
 				}
-				int a = 1;
-
-
 			}
 			Assert.IsNull(error, error);
 		}
@@ -526,7 +521,6 @@ namespace UnitTestMdr
 		public void TestDumpTypeFields()
 		{
 			const string typeName = @"ECS.Common.Data.Settings.SettingRec";
-			string error;
 			var map = OpenMap(@"D:\Jerzy\WinDbgStuff\dumps\Analytics\Memory.Usage.OPAM.971\DupCacheIssue\A2_noDF.map");
 			Assert.IsNotNull(map);
 			List<string> errors = new List<string>();
@@ -835,7 +829,6 @@ namespace UnitTestMdr
 		{
 			const string typeName =
 				"System.Collections.Concurrent.ConcurrentDictionary+Tables<System.Int32,System.Collections.Concurrent.ConcurrentDictionary<System.Int32,ECS.Common.Transport.HierarchyCache.IReadOnlyRealtimePrice>>";
-			string error;
 			var map = OpenMap(@"D:\Jerzy\WinDbgStuff\dumps\Analytics\ConvergEx\Analytics.map");
 			using (map)
 			{
@@ -853,9 +846,7 @@ namespace UnitTestMdr
 		[TestMethod]
 		public void TestTypeInstances()
 		{
-			const string typeName = "System.Threading.ReaderWriterLock";
 			var map = OpenMap(@"");
-
 			var did = map.GetTypeId("Eze.Server.Common.Pulse.Common.Types.PositionCalcGroupToRowDeltaApplicationInfo");
 			Assert.IsTrue(IndexValue.IsIndex(did));
 			Assert.IsFalse(IndexValue.IsInvalidIndex(did));
@@ -1098,7 +1089,7 @@ namespace UnitTestMdr
 		//	string error;
 		//	List<ulong> addrLst = new List<ulong>(1024);
 		//	List<InstanceTypeNode> nodeLst = new List<InstanceTypeNode>(1024);
-		//	var heap = map.Dump.Runtime.GetHeap();
+		//	var heap = map.Dump.Runtime.Heap;
 
 		//	for (int i = 0, icnt = addresses.Length; i < icnt;  ++i)
 		//	{
@@ -1119,7 +1110,6 @@ namespace UnitTestMdr
 		public void TestGetTypeGroupedContent()
 		{
 			const string str = "Eze.Server.Common.Pulse.Common.Types.CachedValue+DefaultOnly<System.Decimal>";
-			string error = null;
 			SortedDictionary<string, int> dct = new SortedDictionary<string, int>(StringComparer.Ordinal);
 			using (
 				var map =
@@ -1178,13 +1168,9 @@ namespace UnitTestMdr
 		public void TestGetTypeGroupedContent2()
 		{
 			const string str = "ECS.Common.Collections.Common.EzeBitVector";
-			string error = null;
 			SortedDictionary<string, int> dct = new SortedDictionary<string, int>(StringComparer.Ordinal);
 			int nullFieldCount = 0;
 			StringBuilder sb = new StringBuilder(256);
-			//using (var map = OpenMap(@"D:\Jerzy\WinDbgStuff\dumps\Analytics\Memory.Usage.OPAM.971\RealPositionCmp\Eze.Analytics.Svc.RPBIG_160913_151123.map"))
-			//using (var map = OpenMap(@"D:\Jerzy\WinDbgStuff\dumps\Analytics\Baly\analytics9_1512161604.good.map"))
-			//using (var map = OpenMap(@"D:\Jerzy\WinDbgStuff\dumps\Analytics\Memory.Usage.OPAM.971\Eze.Analytics.Svc.exe.EzeBitVector.map"))
 			using (var index = OpenMap(@"D:\Jerzy\WinDbgStuff\dumps\Analytics\Lou\Analytics3.dmp.map"))
 			{
 				try
@@ -1379,12 +1365,7 @@ namespace UnitTestMdr
 		public void TestDictionaryCounts2()
 		{
 			const string typeName0 = "ECS.Common.HierarchyCache.Structure.PositionIndexGroup";
-			const string typeName1 = "System.Collections.Generic.Dictionary+Entry<System.String,System.Object>[]";
-			const string typeName2 = "System.Collections.Generic.Dictionary<System.String,System.Object>";
-
-			string error = null;
 			SortedDictionary<string, int> dct = new SortedDictionary<string, int>(StringComparer.Ordinal);
-			int nullFieldCount = 0;
 			int recalcRequiredPoisonPositionsIfTtzSignChangesEmpty = 0;
 			int recalcRequiredPositionsInducingRecalcEmpty = 0;
 
@@ -1791,17 +1772,13 @@ namespace UnitTestMdr
         public void TestDumpTypesFields()
         {
             var fldRefList = new List<KeyValuePair<ulong, int>>(64);
-            const string str = "SomeClassName_SomeClassA_0";
-            string error = null;
-//            using (var map = OpenMap(@"C:\WinDbgStuff\Dumps\DumpSearch\DumpSearch.exe_160813_062931.map"))
-            {
+             {
                 BinaryReader offRd = null;
                 BinaryReader parRd = null;
                 StreamWriter sw = null;
 
                 try
                 {
-  //                  var fldDpnds = map.FieldDependencies;
                     offRd = new BinaryReader(File.Open(@"C:\WinDbgStuff\Dumps\DumpSearch\DumpSearch.exe_160813_062931.map\DumpSearch.exe_160813_062931.FIELDPARENTOFFSETS[0].map", FileMode.Open,FileAccess.Read));
                     parRd = new BinaryReader(File.Open(@"C:\WinDbgStuff\Dumps\DumpSearch\DumpSearch.exe_160813_062931.map\DumpSearch.exe_160813_062931.FIELDPARENTINSTANCES[0].map", FileMode.Open, FileAccess.Read));
                     sw = new StreamWriter(@"C:\WinDbgStuff\Dumps\DumpSearch\DumpSearch.exe_160813_062931.map\ad-hoc.queries\FieldsAndParents.txt");
@@ -1835,7 +1812,6 @@ namespace UnitTestMdr
                         var cnt = (off - poff)/sizeof(long);
 
                         sw.WriteLine(Utils.AddressStringHeader(pfld) + Utils.AddressString((ulong) poff) + " [" + cnt + "]");
-                        //for (int j = 0; j < cnt && pndx < parCnt; ++j)
                         for (int j = 0; j < cnt; ++j)
                         {
                             sw.WriteLine("   " + Utils.AddressStringHeader((ulong)parents[pndx].Key) + Utils.AddressString(parents[pndx].Value));
@@ -1844,9 +1820,6 @@ namespace UnitTestMdr
                         pfld = fld;
                         poff = off;
                     }
-
-
-
                 }
                 finally 
                 {
@@ -1874,7 +1847,7 @@ namespace UnitTestMdr
 			{
 				try
 				{
-					var heap = map.Dump.Runtime.GetHeap();
+					var heap = map.Dump.Runtime.Heap;
 
 					var strTypeId = map.GetTypeId("System.String");
 					Assert.IsTrue(IndexValue.IsIndex(strTypeId));
@@ -1910,12 +1883,10 @@ namespace UnitTestMdr
 							fldRefList.Add(new KeyValuePair<ulong, int>(address, off));
 						});
 
-						bool found = false;
 						for (int j = 0, jcnt = fldRefList.Count; j < jcnt; ++j)
 						{
 							var fldAddr = fldRefList[j].Key;
 							if (Array.BinarySearch(myStrAddrs, fldAddr) < 0) continue; // not my string
-							found = true;
 							int cnt;
 							if (typeDct.TryGetValue(clrType.Name, out cnt))
 							{
@@ -1929,16 +1900,7 @@ namespace UnitTestMdr
 						if (clrType.IsArray)
 						{
 							arrays.Add(addr);
-							if (found)
-							{
-								int a = 0;
-							}
 						}
-						else if (found)
-						{
-							int b = 0;
-						}
-
 					}
 				}
 				catch (Exception ex)
@@ -2087,7 +2049,6 @@ namespace UnitTestMdr
 		    string[] typeNames;
 			List<ulong[]> addressesLst;
 
-			ulong[][] addresses;
             ulong[] allAddress;
 	        Tuple<ulong, ulong[]> result;
 	        int usedCnt = 0;

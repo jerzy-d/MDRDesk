@@ -101,8 +101,6 @@ namespace UnitTestMdr
 
 				var blksUnion = blksWithWaiters.Union(blksOwnedByMany, new BlockingObjectEqualityCmp()).ToArray();
 				blksUnion = blksUnion.Union(blksWithWaiters, new BlockingObjectEqualityCmp()).ToArray();
-
-				int a = 1;
 			}
 
 			Assert.IsNull(error, error);
@@ -674,7 +672,7 @@ namespace UnitTestMdr
 				{
 
 					var runtime = index.Runtime;
-					var heap = runtime.GetHeap();
+					var heap = runtime.Heap;
 					var stackTraceLst = new List<ClrStackFrame>();
 					var threads = DumpIndexer.GetThreads(runtime);
 					var threadLocalDeadVars = new ClrRoot[threads.Length][];
@@ -848,7 +846,7 @@ namespace UnitTestMdr
 				{
 
 					var runtime = index.Runtime;
-					var heap = runtime.GetHeap();
+					var heap = runtime.Heap;
 					var stackTraceLst = new List<ClrStackFrame>();
 					var threads = DumpIndexer.GetThreads(runtime);
 					var threadLocalDeadVars = new ClrRoot[threads.Length][];
@@ -989,11 +987,10 @@ namespace UnitTestMdr
 			TestContext.WriteLine(index.DumpFileName + " INDEX OPEN DURATION: " + Utils.StopAndGetDurationString(stopWatch));
 			string typeName = "Free";
 			int[] genHistogram = new int[5];
-			ulong totalSize = 0ul;
 			SortedDictionary<ulong,int> dct = new SortedDictionary<ulong, int>();
 			using (index)
 			{
-				ClrHeap heap = index.GetHeap();
+				ClrHeap heap = index.Heap;
 				var typeId = index.GetTypeId(typeName);
 				var addresses = index.GetTypeRealAddresses(typeId);
 				for (int i = 0, icnt = addresses.Length; i < icnt; ++i)
@@ -1022,7 +1019,109 @@ namespace UnitTestMdr
 		}
 
 
+		[TestMethod]
+		public void GetTypeNamesAndCounts()
+		{
+			string error = null;
+			Stopwatch stopWatch = new Stopwatch();
+			stopWatch.Start();
+			var index = OpenIndex(Setup.DumpsFolder + @"\Compliance\Eze.Compliance.Svc_170503_131515.dmp.map");
+			TestContext.WriteLine(index.DumpFileName + " INDEX OPEN DURATION: " + Utils.StopAndGetDurationString(stopWatch));
+//			var dct = new Dictionary<int, int>();
+			var sdct = new SortedDictionary<string, KeyValuePair<int, int>>();
+			using (index)
+			{
+				var types = index.InstanceTypes;
+				for (int i = 0, icnt = types.Length; i < icnt; ++i)
+				{
+					var typeId = types[i];
+					var typeName = index.GetTypeName(typeId);
+					typeName = Utils.GetWinDbgTypeName(typeName);
+					KeyValuePair<int, int> kv;
+					if (sdct.TryGetValue(typeName, out kv))
+					{
+						sdct[typeName] = new KeyValuePair<int,int>(kv.Key+1,kv.Value);
+					}
+					else
+					{
+						sdct.Add(typeName, new KeyValuePair<int, int>(1,0));
+					}
+				}
+				//string[] typeNames = new string[dct.Count];
+				//int[] counts = new int[dct.Count];
+				//int ndx = 0;
+				//int totalCnt = 0;
+				//foreach(var kv in dct)
+				//{
+				//	string typeName = index.GetTypeName(kv.Key);
+				//	typeNames[ndx] = typeName;
+				//	counts[ndx] = kv.Value;
+				//	totalCnt += kv.Value;
+				//	++ndx;
+				//}
+				//Array.Sort(typeNames, counts);
+
+			}
+
+			StreamReader sr = null;
+			StreamWriter sw = null;
+			int _1Count = 0;
+			int _2Count = 0;
+			try
+			{
+				var seps = new char[] { ' ' };
+				sr = new StreamReader(@"C:\WinDbgStuff\Dumps\Compliance\Eze.Compliance.Svc_170503_131515.HEA2E7F.tmp.Cleaned.txt");
+				string ln = sr.ReadLine();
+
+				while(ln!=null)
+				{
+					string[] data = ln.Split(seps,StringSplitOptions.RemoveEmptyEntries);
+					Debug.Assert(data.Length == 2);
+					int cnt = Int32.Parse(data[1]);
+					string typeName = data[0];
+
+					KeyValuePair<int, int> kv;
+					if (sdct.TryGetValue(typeName, out kv))
+					{
+						sdct[typeName] = new KeyValuePair<int, int>(kv.Key, kv.Value+cnt);
+					}
+					else
+					{
+						sdct.Add(typeName, new KeyValuePair<int, int>(0, cnt));
+					}
+
+					ln = sr.ReadLine();
+
+				}
+
+
+				sr.Close();
+				sr = null;
+				sw = new StreamWriter(@"C:\WinDbgStuff\Dumps\Compliance\Eze.Compliance.Svc_170503_131515.HEA2E7F.TypeDiff.txt");
+
+				foreach(var kv in sdct)
+				{
+					_1Count += kv.Value.Key;
+					_2Count += kv.Value.Value;
+					sw.Write(kv.Key);
+					sw.WriteLine("  1[" + kv.Value.Key + "] 2[" + kv.Value.Value + "]");
+				}
+				sw.WriteLine("#### TOTALS  1[" + _1Count + "] 2[" + _2Count + "]");
+
+
+			}
+			finally
+			{
+				sr?.Close();
+				sw?.Close();
+			}
+
+			Assert.IsNull(error, error);
+		}
+
 		#region type sizes and distribution
+
+
 
 		#endregion type sizes and distribution
 
@@ -1131,10 +1230,6 @@ namespace UnitTestMdr
 				{
 					paths[i] = index.GetGcRootPath(rootList[i].Key, ancestors.Item2);
 				}
-
-
-
-				int a = 1;
 			}
 
 			Assert.IsNull(error, error);
@@ -1364,7 +1459,6 @@ namespace UnitTestMdr
 		[TestMethod]
 		public void TestIndexRoots()
 		{
-			string error = null;
 			Stopwatch stopWatch = new Stopwatch();
 			stopWatch.Start();
 			var index = OpenIndex();
@@ -1431,7 +1525,7 @@ namespace UnitTestMdr
 			InstanceValue inst;
             using (index)
             {
-                (error, inst) = ValueExtractor.GetInstanceValue(index.IndexProxy, index.GetHeap(), addr, Constants.InvalidIndex,null);
+                (error, inst) = ValueExtractor.GetInstanceValue(index.IndexProxy, index.Heap, addr, Constants.InvalidIndex,null);
             }
 
             Assert.IsNull(error, error);
@@ -1456,7 +1550,7 @@ namespace UnitTestMdr
 
 			using (index)
 			{
-				var heap = index.GetHeap();
+				var heap = index.Heap;
 				var clrType = heap.GetObjectType(addr);
 				var fld = clrType.GetFieldByName("_testStruct");
 				ulong faddr = addr + (ulong)fld.Offset + DumpIndex.WordSize;
@@ -1496,7 +1590,7 @@ namespace UnitTestMdr
 			ulong addr = 0x000000e0859ab5b8;
 			using (index)
 			{
-				(string error, InstanceValue inst) = ValueExtractor.ArrayContent(index.IndexProxy, index.GetHeap(), addr,null);
+				(string error, InstanceValue inst) = ValueExtractor.ArrayContent(index.IndexProxy, index.Heap, addr,null);
 				Assert.IsNull(error, error);
 			}
 

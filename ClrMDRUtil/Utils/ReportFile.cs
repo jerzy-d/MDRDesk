@@ -297,7 +297,6 @@ namespace ClrMDRIndex
 				}
 				return string.Empty;
 			}
-			bool replaceNewLine = false;
 			if (str.Contains(Constants.WindowsNewLine) || str.Contains(Constants.UnixNewLine))
 			{
 				StringBuilder sb = new StringBuilder(str);

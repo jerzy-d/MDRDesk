@@ -33,95 +33,95 @@ namespace ClrMDRIndex
         }
     }
 
-	public class TypeValue
-	{
-		private int _typeId;
-		private string _typeName;
-		private TypeKind _kind;
+	//public class TypeValue
+	//{
+	//	private int _typeId;
+	//	private string _typeName;
+	//	private TypeKind _kind;
 
-		private List<FieldValue> _fields;
-		public List<FieldValue> Fields => _fields;
+	//	private List<FieldValue> _fields;
+	//	public List<FieldValue> Fields => _fields;
 
-		public TypeValue(int typeId, string typeName, TypeKind kind)
-		{
-			_typeId = typeId;
-			_typeName = typeName;
-			_kind = kind;
-			_fields = null;
-		}
+	//	public TypeValue(int typeId, string typeName, TypeKind kind)
+	//	{
+	//		_typeId = typeId;
+	//		_typeName = typeName;
+	//		_kind = kind;
+	//		_fields = null;
+	//	}
 
-	}
+	//}
 
-	public class FieldValue
-	{
-		private int _typeId;
-		private string _fieldName;
-		private ClrType _clrType;
-		private ClrInstanceField _instField;
-		private TypeKind _kind;
-		private List<string> _values;
-		private List<FieldValue> _fields;
-		private FilterValue _filter;
+	//public class FieldValue
+	//{
+	//	private int _typeId;
+	//	private string _fieldName;
+	//	private ClrType _clrType;
+	//	private ClrInstanceField _instField;
+	//	private TypeKind _kind;
+	//	private List<string> _values;
+	//	private List<FieldValue> _fields;
+	//	private FilterValue _filter;
 
-		public int TypeId => _typeId;
-		public string FieldName => _fieldName;
-		public ClrType ClType => _clrType;
-		public ClrInstanceField InstField => _instField;
-		public List<FieldValue> Fields => _fields;
-		public FilterValue Filter;
+	//	public int TypeId => _typeId;
+	//	public string FieldName => _fieldName;
+	//	public ClrType ClType => _clrType;
+	//	public ClrInstanceField InstField => _instField;
+	//	public List<FieldValue> Fields => _fields;
+	//	public FilterValue Filter;
 
-		public FieldValue(int typeId, string fieldName, TypeKind kind)
-		{
-			_typeId = typeId;
-			_fieldName = fieldName;
-			_kind = kind;
-		}
+	//	public FieldValue(int typeId, string fieldName, TypeKind kind)
+	//	{
+	//		_typeId = typeId;
+	//		_fieldName = fieldName;
+	//		_kind = kind;
+	//	}
 
-		public bool AddField(FieldValue fld)
-		{
-			if (_fields == null) _fields = new List<FieldValue>();
-			if (_fields.Contains(fld)) return false;
-			_fields.Add(fld);
-			return true;
-		}
+	//	public bool AddField(FieldValue fld)
+	//	{
+	//		if (_fields == null) _fields = new List<FieldValue>();
+	//		if (_fields.Contains(fld)) return false;
+	//		_fields.Add(fld);
+	//		return true;
+	//	}
 
-		public void AddFilter(FilterValue filter)
-		{
-			_filter = filter;
-		}
+	//	public void AddFilter(FilterValue filter)
+	//	{
+	//		_filter = filter;
+	//	}
 
-		public bool HasFields()
-		{
-			return _fields != null && _fields.Count > 0;
-		}
+	//	public bool HasFields()
+	//	{
+	//		return _fields != null && _fields.Count > 0;
+	//	}
 
-		public bool HasFilter()
-		{
-			return _filter != null;
-		}
+	//	public bool HasFilter()
+	//	{
+	//		return _filter != null;
+	//	}
 
-		public bool Accept(object val, bool accept)
-		{
-			return true;
-		}
-	}
+	//	public bool Accept(object val, bool accept)
+	//	{
+	//		return true;
+	//	}
+	//}
 
-	public class FieldValueEqualityCmp : IEqualityComparer<FieldValue>
-	{
-		public bool Equals(FieldValue b1, FieldValue b2)
-		{
-			if (b1.TypeId == b2.TypeId)
-			{
-				return Utils.SameStrings(b1.FieldName,b2.FieldName);
-			}
-			return true;
-		}
+	//public class FieldValueEqualityCmp : IEqualityComparer<FieldValue>
+	//{
+	//	public bool Equals(FieldValue b1, FieldValue b2)
+	//	{
+	//		if (b1.TypeId == b2.TypeId)
+	//		{
+	//			return Utils.SameStrings(b1.FieldName,b2.FieldName);
+	//		}
+	//		return true;
+	//	}
 
-		public int GetHashCode(FieldValue bx)
-		{
-			return bx.TypeId.GetHashCode() ^ bx.FieldName.GetHashCode();
-		}
-	}
+	//	public int GetHashCode(FieldValue bx)
+	//	{
+	//		return bx.TypeId.GetHashCode() ^ bx.FieldName.GetHashCode();
+	//	}
+	//}
 
 	public class FilterValue
 	{

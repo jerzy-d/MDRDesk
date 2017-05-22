@@ -905,7 +905,6 @@ namespace ClrMDRIndex
 			}
 
 			var specKind = TypeExtractor.GetSpecialKind(kind);
-			string value;
 			if (specKind != ClrElementKind.Unknown)
 			{
 				switch (specKind)
@@ -1127,7 +1126,6 @@ namespace ClrMDRIndex
             var specKind = TypeExtractor.GetSpecialKind(kind);
             var typeId = ndxProxy.GetTypeIdAtAddr(addr);
             if (typeId == Constants.InvalidIndex) typeId = ndxProxy.GetTypeId(clrType.Name);
-            string value;
             if (specKind != ClrElementKind.Unknown)
             {
                 switch (specKind)
@@ -1289,7 +1287,6 @@ namespace ClrMDRIndex
 				return Utils.RealAddressString(elemAddr);
 			}
 			var specKind = TypeExtractor.GetSpecialKind(elemKind);
-			string value;
 			if (specKind != ClrElementKind.Unknown)
 			{
 				switch (specKind)

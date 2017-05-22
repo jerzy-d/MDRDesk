@@ -121,6 +121,12 @@
             </summary>
             <returns></returns>
         </member>
+        <member name="M:Microsoft.Diagnostics.Runtime.ClrObject.op_Explicit(Microsoft.Diagnostics.Runtime.ClrObject)~System.String">
+            <summary>
+            Converts a ClrObject into its string value.
+            </summary>
+            <param name="obj">A string object.</param>
+        </member>
         <member name="M:Microsoft.Diagnostics.Runtime.ClrObject.GetObjectField(System.String)">
             <summary>
             Gets the given object reference field from this ClrObject.  Throws ArgumentException if the given field does

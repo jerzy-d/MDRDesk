@@ -25,9 +25,9 @@ namespace ClrMDRIndex
 
 		private MemoryMappedFile _referencesMappedFile;
 		public MemoryMappedFile ReferencesMappedFile => _referencesMappedFile;
-		private MemoryMappedViewAccessor _mappedViewAccessor;
-		private long _mappedViewBegin;
-		private long _mappedViewEnd;
+		//private MemoryMappedViewAccessor _mappedViewAccessor;
+		//private long _mappedViewBegin;
+		//private long _mappedViewEnd;
 		private object _accessorLock;
 
 

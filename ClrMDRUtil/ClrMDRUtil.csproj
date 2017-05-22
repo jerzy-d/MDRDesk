@@ -104,10 +104,8 @@
     <Compile Include="ClrUtils\IndexCurrentInfo.cs" />
     <Compile Include="ClrUtils\IndexProxy.cs" />
     <Compile Include="ClrUtils\InstanceReferences.cs" />
-    <Compile Include="ClrUtils\ReferencePersistor.cs" />
     <Compile Include="ClrUtils\References.cs" />
     <Compile Include="ClrUtils\StringStats.cs" />
-    <Compile Include="ClrUtils\HeapTypeInfo.cs" />
     <Compile Include="Graph\DepthFirstOrder.cs" />
     <Compile Include="Graph\Digraph.cs" />
     <Compile Include="Graph\DirectedCycle.cs" />

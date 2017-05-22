@@ -268,14 +268,11 @@ namespace UnitTestMdr
 				int ndx = Array.BinarySearch(addrs, origAddrs[i]);
 				outStrings[i] = names[map[ndx]];
 			}
-			int a = 1;
-
 		}
 
 		[TestMethod]
 		public void TestAppDomains()
 		{
-			string error;
 			var clrDump = GetDump();
 			using (clrDump)
 			{
@@ -296,7 +293,6 @@ namespace UnitTestMdr
 		[TestMethod]
 		public async Task TestTypeMethodTables()
 		{
-			string error = null;
 			ClrtDump clrtDump = null;
 			Tuple<string, SortedDictionary<KeyValuePair<string, ulong>, int>> result = null;
 			var startDt = DateTime.UtcNow;
@@ -306,7 +302,7 @@ namespace UnitTestMdr
 				using (clrtDump)
 				{
 					var runtime = clrtDump.Runtimes[0];
-					result = FQry.getTypeWithMethodTables(runtime.GetHeap());
+					result = FQry.getTypeWithMethodTables(runtime.Heap);
 					Assert.IsTrue(result.Item1 == null, result.Item1);
 					var tmSpan = DateTime.UtcNow - startDt;
 
@@ -345,7 +341,7 @@ namespace UnitTestMdr
 				try
 				{
 					var runtime = clrDump.Runtimes[0];
-					var result = FQry.getInterfaceObjects(runtime.GetHeap(), "System.ServiceModel.ICommunicationObject");
+					var result = FQry.getInterfaceObjects(runtime.Heap, "System.ServiceModel.ICommunicationObject");
 					Assert.IsNull(result.Item1, result.Item1);
 					var path = TestConfiguration.OutPath0 + "System.ServiceModel.ICommunicationObject.objects.txt";
 					wr = new StreamWriter(path);
@@ -394,7 +390,7 @@ namespace UnitTestMdr
 				try
 				{
 					var runtime = clrDump.Runtimes[0];
-					var result = FQry.getNamespaceObjects(runtime.GetHeap(), "System.ServiceModel.");
+					var result = FQry.getNamespaceObjects(runtime.Heap, "System.ServiceModel.");
 					Assert.IsNull(result.Item1, result.Item1);
 					var path = TestConfiguration.OutPath0 + "System.ServiceModel.Namespace.objects.txt";
 					wr = new StreamWriter(path);
@@ -454,9 +450,8 @@ namespace UnitTestMdr
 					var aryTypeIsKnown = false;
 					var fields = new List<KeyValuePair<string, ClrInstanceField>>();
 					var fieldsCnt = -1;
-					object[] fvalues = null;
 					var runtime = clrDump.Runtimes[0];
-					var heap = runtime.GetHeap();
+					var heap = runtime.Heap;
 					var segs = heap.Segments;
 					for (int i = 0, icnt = segs.Count; i < icnt; ++i)
 					{
@@ -541,8 +536,6 @@ namespace UnitTestMdr
 			
 			string error = null;
 			var errors = new ConcurrentBag<string>();
-			string outPath = null;
-
 			// open crush dump
 			//
 			stopWatch.Start();
@@ -553,7 +546,7 @@ namespace UnitTestMdr
 				try
 				{
 					var runtime = clrtDump.Runtimes[0];
-					var heap = runtime.GetHeap();
+					var heap = runtime.Heap;
 					var getOpenDumpDuration = Utils.StopAndGetDurationString(stopWatch);
 
 					DumpFileMoniker fileMoniker = new DumpFileMoniker(clrtDump.DumpPath);
@@ -682,7 +675,7 @@ namespace UnitTestMdr
 				try
 				{
 					var runtime = clrDump.Runtimes[0];
-					var heap = runtime.GetHeap();
+					var heap = runtime.Heap;
 					List<KeyValuePair<ClrMemoryRegion, string>> lst = new List<KeyValuePair<ClrMemoryRegion, string>>(512);
 					foreach (var mr in runtime.EnumerateMemoryRegions())
 					{
@@ -706,7 +699,7 @@ namespace UnitTestMdr
 			using (var clrDump = GetDump(_dumpPath))
 			{
 				var runtime = clrDump.Runtimes[0];
-				var heap = runtime.GetHeap();
+				var heap = runtime.Heap;
 				var resultOk = DumpIndex.GetLohInfo(runtime, out error);
 				Assert.IsTrue(resultOk);
 			}
@@ -790,7 +783,7 @@ namespace UnitTestMdr
 					runtmFinQueLst = null;
 					runtime.Flush();
 
-					var heap = runtime.GetHeap();
+					var heap = runtime.Heap;
 					List<ulong> heapFinQueLst = new List<ulong>(2000000);
 					foreach (var addr in heap.EnumerateFinalizableObjectAddresses())
 					{
@@ -818,7 +811,7 @@ namespace UnitTestMdr
 					Array.Sort(heapFinRootAry);
 					Array.Sort(sosFinAry);
 
-					heap = runtime.GetHeap();
+					heap = runtime.Heap;
 					SortedDictionary<string, List<ulong>> sosHistogramDct = new SortedDictionary<string, List<ulong>>(StringComparer.Ordinal);
 					for (int i = 0, icnt = sosFinAry.Length; i < icnt; ++i)
 					{
@@ -893,7 +886,7 @@ namespace UnitTestMdr
 		//			{
 		//				wr.WriteLine("[" + Utils.AddressString(appDomains[i].Address) + " " + names[appDomains[i].NameId] + " {" + appDomains[i].Id + "}");
 		//			}
-		//			var heap = runtime.GetHeap();
+		//			var heap = runtime.Heap;
 		//			var segs = heap.Segments;
 		//			var doneSet = new HashSet<string>();
 		//			wr.WriteLine("### ClrTypes and static fiels.");
@@ -1090,7 +1083,7 @@ namespace UnitTestMdr
 				try
 				{
 					var runtime = clrDump.Runtimes[0];
-					var heap = runtime.GetHeap();
+					var heap = runtime.Heap;
 					var segs = heap.Segments;
 					for (int i = 0, icnt = segs.Count; i < icnt; ++i)
 					{
@@ -1177,7 +1170,7 @@ namespace UnitTestMdr
 				try
 				{
 					var runtime = clrDump.Runtimes[0];
-					var heap = runtime.GetHeap();
+					var heap = runtime.Heap;
 					var segs = heap.Segments;
 					for (int i = 0, icnt = segs.Count; i < icnt; ++i)
 					{
@@ -1348,7 +1341,7 @@ namespace UnitTestMdr
 				{
 					var sb = StringBuilderCache.Acquire(StringBuilderCache.MaxCapacity);
 					var runtime = clrDump.Runtimes[0];
-					var heap = runtime.GetHeap();
+					var heap = runtime.Heap;
 					var segs = heap.Segments;
 					for (int i = 0, icnt = segs.Count; i < icnt; ++i)
 					{
@@ -1450,7 +1443,7 @@ namespace UnitTestMdr
 					var aryFragmentsCannons = map.GetTypeRealAddresses(aryFragmentsCannonId);
 
 					var runtime = clrDump.Runtimes[0];
-					var heap = runtime.GetHeap();
+					var heap = runtime.Heap;
 					var segs = heap.Segments;
 					for (int i = 0, icnt = segs.Count; i < icnt; ++i)
 					{
@@ -1515,7 +1508,7 @@ namespace UnitTestMdr
 				try
 				{
 					var runtime = clrDump.Runtimes[0];
-					var heap = runtime.GetHeap();
+					var heap = runtime.Heap;
 					var segs = heap.Segments;
 					{
 						List<ulong> cancelSourceLst = new List<ulong>(700000);
@@ -1631,8 +1624,6 @@ namespace UnitTestMdr
 					{
 						wr?.Close();
 					}
-
-					int a = 1;
 				}
 				catch (Exception ex)
 				{
@@ -1698,7 +1689,7 @@ namespace UnitTestMdr
 		//		{
 		//			var runtime = clrDump.Runtimes[0];
 		//			var threads = Indexer.GetThreads(runtime);
-		//			var heap = runtime.GetHeap();
+		//			var heap = runtime.Heap;
 		//			var blkObjects = Indexer.GetBlockingObjects(runtime);
 		//			ClrType[] blkTypes = new ClrType[blkObjects.Length];
 		//			for (int i = 0, icnt = blkObjects.Length; i < icnt; ++i)
@@ -1762,7 +1753,7 @@ namespace UnitTestMdr
 				try
 				{
 					var runtime = clrDump.Runtimes[0];
-					var heap = runtime.GetHeap();
+					var heap = runtime.Heap;
 					var segs = heap.Segments;
 					for (int i = 0, icnt = segs.Count; i < icnt; ++i)
 					{
@@ -1818,7 +1809,6 @@ namespace UnitTestMdr
 		[TestMethod]
 		public void TestWorkItems()
 		{
-			string error;
 			using (var clrDump = GetDump())
 			{
 				var runtime = clrDump.Runtimes[0];
@@ -1905,7 +1895,7 @@ namespace UnitTestMdr
 				{
 					int count = 0;
 					var runtime = clrDump.Runtimes[0];
-					var heap = runtime.GetHeap();
+					var heap = runtime.Heap;
 					var segs = heap.Segments;
 					for (int i = 0, icnt = segs.Count; i < icnt; ++i)
 					{
@@ -1943,7 +1933,7 @@ namespace UnitTestMdr
 				try
 				{
 					var runtime = clrDump.Runtimes[0];
-					var heap = runtime.GetHeap();
+					var heap = runtime.Heap;
 					var segs = heap.Segments;
 					for (int i = 0, icnt = segs.Count; i < icnt; ++i)
 					{
@@ -1994,7 +1984,6 @@ namespace UnitTestMdr
 		public void Test_RealPosition_Type()
 		{
 			string typeName = @"ECS.Common.HierarchyCache.Structure.RealPosition";
-			string symbolName = @"MC";
 			string error = null;
 
 			using (var clrDump = GetDump(@"D:\Jerzy\WinDbgStuff\dumps\Analytics\Centurion\AnalyticsCenturion.4.18.17.dmp"))
@@ -2003,7 +1992,7 @@ namespace UnitTestMdr
 				try
 				{
 					var runtime = clrDump.Runtimes[0];
-					var heap = runtime.GetHeap();
+					var heap = runtime.Heap;
 					var segs = heap.Segments;
 					for (int i = 0, icnt = segs.Count; i < icnt; ++i)
 					{
@@ -2106,7 +2095,6 @@ namespace UnitTestMdr
         public void Test_RealPosition_Type2()
         {
             string typeName = @"ECS.Common.HierarchyCache.Structure.RealPosition";
-            string symbolName = @"MC";
             string error = null;
 
             using (var clrDump = GetDump(@"D:\Jerzy\WinDbgStuff\dumps\Analytics\Centurion\AnalyticsCenturion.4.18.17.dmp"))
@@ -2115,7 +2103,7 @@ namespace UnitTestMdr
                 try
                 {
                     var runtime = clrDump.Runtimes[0];
-                    var heap = runtime.GetHeap();
+                    var heap = runtime.Heap;
                     var segs = heap.Segments;
                     for (int i = 0, icnt = segs.Count; i < icnt; ++i)
                     {
@@ -2227,7 +2215,6 @@ namespace UnitTestMdr
         public void Test_RowCache_Type()
         {
             string typeName = @"Eze.Server.Common.Pulse.CalculationCache.RowCache";
-            string symbolName = @"MC";
             string error = null;
 
             using (var clrDump = GetDump(@"D:\Jerzy\WinDbgStuff\dumps\Analytics\Centurion\AnalyticsCenturion.4.18.17.dmp"))
@@ -2236,7 +2223,7 @@ namespace UnitTestMdr
                 try
                 {
                     var runtime = clrDump.Runtimes[0];
-                    var heap = runtime.GetHeap();
+                    var heap = runtime.Heap;
                     var segs = heap.Segments;
                     for (int i = 0, icnt = segs.Count; i < icnt; ++i)
                     {
@@ -2363,7 +2350,7 @@ namespace UnitTestMdr
                 try
                 {
                     var runtime = clrDump.Runtimes[0];
-                    var heap = runtime.GetHeap();
+                    var heap = runtime.Heap;
                     var segs = heap.Segments;
                     for (int i = 0, icnt = segs.Count; i < icnt; ++i)
                     {
@@ -2475,18 +2462,14 @@ namespace UnitTestMdr
 		public void TestSpecificFilteredType2()
 		{
 			string typeName = @"ECS.Common.HierarchyCache.Structure.CashEffectPosition";
-			ulong searchAddr = 0x005df72795d8;
-			//ulong searchAddr = 0x005df72794e0;
 			string error = null;
-			//using (var clrDump = GetDump(@"D:\Jerzy\WinDbgStuff\dumps\Analytics\Scopia\Eze.Analytics.Svc_160921_134355.dmp"))
 			using (var clrDump = GetDump(@"D:\Jerzy\WinDbgStuff\dumps\Analytics\Scopia\Eze.Analytics.Svc_160929_103505.dmp"))
-			//using (var clrDump = GetDump(@"D:\Jerzy\WinDbgStuff\dumps\Analytics\Scopia\Eze.Analytics.Svc_160929_110751.dmp"))
 			{
 				var addrLst = new List<string[]>(1024);
 				try
 				{
 					var runtime = clrDump.Runtimes[0];
-					var heap = runtime.GetHeap();
+					var heap = runtime.Heap;
 					var segs = heap.Segments;
 					for (int i = 0, icnt = segs.Count; i < icnt; ++i)
 					{
@@ -2532,7 +2515,6 @@ namespace UnitTestMdr
 						}
 					}
 
-					//addrLst.Sort(new SextupleUlongStrStrCmp2());
 					StreamWriter wr = null;
 					try
 					{
@@ -2586,23 +2568,11 @@ namespace UnitTestMdr
 			SortedDictionary<int, int> histogram = new SortedDictionary<int, int>(new Utils.IntCmpDesc());
 
 			using (var clrDump = GetDump(@"D:\Jerzy\WinDbgStuff\dumps\Analytics\Harding\prcdmpAnalyticsHarding.20151029.dmp"))
-			//using (var clrDump = GetDump(@"D:\Jerzy\WinDbgStuff\dumps\Analytics\Highline\analyticsdump111.dlk.dmp"))
-			//using (var clrDump = GetDump(@"D:\Jerzy\WinDbgStuff\dumps\Analytics\CNS\Analytics6_160323_1615.good.dmp"))
-			//using (var clrDump = GetDump(@"D:\Jerzy\WinDbgStuff\dumps\Analytics\ConvergEx\Analytics_Post.dmp"))
-			//using (var clrDump = GetDump(@"D:\Jerzy\WinDbgStuff\dumps\Analytics\OZ\Analytics11.OZ.dmp"))
-			//using (var clrDump = GetDump(@"D:\Jerzy\WinDbgStuff\dumps\Analytics\OZ\analytics8.OZ.1510271623.dmp"))
-			//using (var clrDump = GetDump(@"D:\Jerzy\WinDbgStuff\dumps\Analytics\Anavon\Eze.Analytics.Svc_160225_204724.Anavon.dmp"))
-			//using (var clrDump = GetDump(@"D:\Jerzy\WinDbgStuff\dumps\Analytics\Baly\analytics9_1512161604.good.Baly.dmp"))
-			//using (var clrDump = GetDump(@"D:\Jerzy\WinDbgStuff\dumps\Analytics\Baly\analytics7_1510301630.Baly.dmp"))
-			//using (var clrDump = GetDump(@"D:\Jerzy\WinDbgStuff\dumps\Analytics\Lou\Analytics1.dmp"))
-			//using (var clrDump = GetDump(@"D:\Jerzy\WinDbgStuff\dumps\Analytics\Lou\Analytics3.dmp"))
-			//using (var clrDump = GetDump(@"D:\Jerzy\WinDbgStuff\dumps\Analytics\Lou\Analytics5.dmp"))
-			//using (var clrDump = GetDump(@"D:\Jerzy\WinDbgStuff\dumps\Analytics\Scopia\Eze.Analytics.Svc_160929_103505.dmp"))
 			{
 				try
 				{
 					var runtime = clrDump.Runtimes[0];
-					var heap = runtime.GetHeap();
+					var heap = runtime.Heap;
 					var segs = heap.Segments;
 					ClrType fldClrType = null;
 					ClrInstanceField fldClrTypeFld = null;
@@ -2702,10 +2672,7 @@ namespace UnitTestMdr
 		public void TestSpecificFilteredType3()
 		{
 			string typeName = @"ECS.Common.HierarchyCache.Structure.RealPosition";
-			string symbolName = @"4578 JP";
 			string error = null;
-			//using (var clrDump = GetDump(@"D:\Jerzy\WinDbgStuff\dumps\Analytics\Scopia\Eze.Analytics.Svc_160921_134355.dmp"))
-
 			HashSet<string> posIdDct = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
 			{
 				"T150579455",
@@ -2722,13 +2689,13 @@ namespace UnitTestMdr
 				"T150569224",
 				"H150569223",
 				"H150569224",
-"T150579493",
-"T150579490",
-"T150579488",
-"T150579836",
-"T150579845",
-"T150579840",
-"T150579797"
+				"T150579493",
+				"T150579490",
+				"T150579488",
+				"T150579836",
+				"T150579845",
+				"T150579840",
+				"T150579797"
 			};
 
 
@@ -2741,7 +2708,7 @@ namespace UnitTestMdr
 				try
 				{
 					var runtime = clrDump.Runtimes[0];
-					var heap = runtime.GetHeap();
+					var heap = runtime.Heap;
 					var segs = heap.Segments;
 					for (int i = 0, icnt = segs.Count; i < icnt; ++i)
 					{
@@ -2836,7 +2803,7 @@ namespace UnitTestMdr
 				try
 				{
 					var runtime = clrDump.Runtimes[0];
-					var heap = runtime.GetHeap();
+					var heap = runtime.Heap;
 					var segs = heap.Segments;
 					for (int i = 0, icnt = segs.Count; i < icnt; ++i)
 					{
@@ -2984,13 +2951,11 @@ namespace UnitTestMdr
 								fldRefList.Add(new KeyValuePair<ulong, int>(address, off));
 							});
 
-							bool found = false;
 							bool isArray = clrType.IsArray;
 							for (int j = 0, jcnt = fldRefList.Count; j < jcnt; ++j)
 							{
 								var fldAddr = fldRefList[j].Key;
 								if (Array.BinarySearch(addresses, fldAddr) < 0) continue; // not my type
-								found = true;
 								string fldName = string.Empty;
 								if (!isArray)
 								{
@@ -3068,13 +3033,11 @@ namespace UnitTestMdr
 								fldRefList.Add(new KeyValuePair<ulong, int>(address, off));
 							});
 
-							bool found = false;
 							bool isArray = clrType.IsArray;
 							for (int j = 0, jcnt = fldRefList.Count; j < jcnt; ++j)
 							{
 								var fldAddr = fldRefList[j].Key;
 								if (Array.BinarySearch(myStringAddresses, fldAddr) < 0) continue; // not my string
-								found = true;
 								string fldName = string.Empty;
 								if (!isArray)
 								{
@@ -3156,7 +3119,7 @@ namespace UnitTestMdr
 				try
 				{
 					var runtime = clrDump.Runtimes[0];
-					var heap = runtime.GetHeap();
+					var heap = runtime.Heap;
 					var segs = heap.Segments;
 					for (int i = 0, icnt = segs.Count; i < icnt; ++i)
 					{
@@ -3254,7 +3217,7 @@ namespace UnitTestMdr
 				try
 				{
 					var runtime = clrDump.Runtimes[0];
-					var heap = runtime.GetHeap();
+					var heap = runtime.Heap;
 					var segs = heap.Segments;
 					for (int i = 0, icnt = segs.Count; i < icnt; ++i)
 					{
@@ -3310,7 +3273,7 @@ namespace UnitTestMdr
 					wr = new StreamWriter(path);
 
 					var runtime = clrDump.Runtimes[0];
-					var heap = runtime.GetHeap();
+					var heap = runtime.Heap;
 					var segs = heap.Segments;
 					var curBaseName = baseTypeName;
 					referenceBases.Add(curBaseName);
@@ -3386,7 +3349,7 @@ namespace UnitTestMdr
 
 		//			var runtime = clrDump.Runtimes[0];
 		//			runtime.Flush();
-		//			var heap = runtime.GetHeap();
+		//			var heap = runtime.Heap;
 		//			var tdct = new SortedDictionary<string, ClrType>(StringComparer.Ordinal);
 		//			tdct.Add(Constants.NullTypeName,null);
 		//			foreach (var clrType in heap.EnumerateTypes())
@@ -3455,7 +3418,7 @@ namespace UnitTestMdr
 		//			Assert.IsNull(dups);
 
 		//			runtime.Flush();
-		//			heap = runtime.GetHeap();
+		//			heap = runtime.Heap;
 
 		//			int dupcnt1 = 0;
 		//			var typeDct1 = new SortedDictionary<string, ClrType>(StringComparer.Ordinal);
@@ -3538,7 +3501,7 @@ namespace UnitTestMdr
 
 		//			var runtime = clrDump.Runtimes[0];
 		//			runtime.Flush();
-		//			var heap = runtime.GetHeap();
+		//			var heap = runtime.Heap;
 
 		//			var segs = heap.Segments;
 		//			for (int i = 0, icnt = segs.Count; i < icnt; ++i)
@@ -3592,7 +3555,7 @@ namespace UnitTestMdr
 				{
 					var dct = new SortedDictionary<uint, List<string>>();
 					var runtime = clrDump.Runtimes[0];
-					var heap = runtime.GetHeap();
+					var heap = runtime.Heap;
 					var segs = heap.Segments;
 					for (int i = 0, icnt = segs.Count; i < icnt; ++i)
 					{
@@ -3667,7 +3630,7 @@ namespace UnitTestMdr
 					var tokensDct = new SortedDictionary<uint, List<string>>();
 					var methodDct = new SortedDictionary<ulong, List<string>>();
 					var runtime = clrDump.Runtimes[0];
-					var heap = runtime.GetHeap();
+					var heap = runtime.Heap;
 					var segs = heap.Segments;
 					for (int i = 0, icnt = segs.Count; i < icnt; ++i)
 					{
@@ -3796,7 +3759,7 @@ namespace UnitTestMdr
 					{
 						var dct = new SortedDictionary<string, KeyValuePair<int, ulong>>();
 						var runtime = clrDump.Runtimes[0];
-						var heap = runtime.GetHeap();
+						var heap = runtime.Heap;
 						var segs = heap.Segments;
 						for (int i = 0, icnt = segs.Count; i < icnt; ++i)
 						{
@@ -3878,7 +3841,7 @@ namespace UnitTestMdr
 					var tblDct = new SortedDictionary<ulong, List<string>>();
 
 					var runtime = clrDump.Runtimes[0];
-					var heap = runtime.GetHeap();
+					var heap = runtime.Heap;
 					var segs = heap.Segments;
 					ClrInstanceField[] flds = new ClrInstanceField[fieldNames.Length];
 					for (int i = 0, icnt = segs.Count; i < icnt; ++i)
@@ -4042,7 +4005,7 @@ namespace UnitTestMdr
 				try
 				{
 					var runtime = clrDump.Runtimes[0];
-					var heap = runtime.GetHeap();
+					var heap = runtime.Heap;
 					var segs = heap.Segments;
 					for (int i = 0, icnt = segs.Count; i < icnt; ++i)
 					{
@@ -4111,7 +4074,7 @@ namespace UnitTestMdr
 					Stopwatch stopWatch = new Stopwatch();
 					stopWatch.Start();
 					var runtime = clrDump.Runtimes[0];
-					var heap = runtime.GetHeap();
+					var heap = runtime.Heap;
 					HashSet<ulong> done = new HashSet<ulong>();
 					string typeName = string.Empty;
 					for (int i = 0, icnt = testTypeSizeAddress.Length; i < icnt; ++i)
@@ -4184,7 +4147,7 @@ namespace UnitTestMdr
 				{
 					Stopwatch stopWatch = new Stopwatch();
 					var runtime = clrDump.Runtimes[0];
-					var heap = runtime.GetHeap();
+					var heap = runtime.Heap;
 					string typeName = string.Empty;
 					List<quadruple<int, ulong, int, ulong>> results = new List<quadruple<int, ulong, int, ulong>>(testTypeSizeAddress.Length);
 					HashSet<ulong> done = new HashSet<ulong>();
@@ -4233,7 +4196,7 @@ namespace UnitTestMdr
 					if (typeAddresses == null)
 					{
 						List<ulong> lst = new List<ulong>(200000);
-						heap = runtime.GetHeap();
+						heap = runtime.Heap;
 						var segs = heap.Segments;
 						for (int i = 0, icnt = segs.Count; i < icnt; ++i)
 						{
@@ -4253,7 +4216,7 @@ namespace UnitTestMdr
 						typeAddresses = lst.ToArray();
 					}
 					runtime.Flush();
-					heap = runtime.GetHeap();
+					heap = runtime.Heap;
 
 					ulong totalSize = 0;
 					HashSet<ulong> done = new HashSet<ulong>();
@@ -4297,7 +4260,7 @@ namespace UnitTestMdr
 				try
 				{
 					var runtime = clrDump.Runtimes[0];
-					var heap = runtime.GetHeap();
+					var heap = runtime.Heap;
 					var segs = heap.Segments;
 					for (int i = 0, icnt = segs.Count; i < icnt; ++i)
 					{
@@ -4361,7 +4324,7 @@ namespace UnitTestMdr
 				try
 				{
 					var runtime = clrDump.Runtimes[0];
-					var heap = runtime.GetHeap();
+					var heap = runtime.Heap;
 					var segs = heap.Segments;
 					for (int i = 0, icnt = segs.Count; i < icnt; ++i)
 					{
@@ -4395,7 +4358,7 @@ namespace UnitTestMdr
 				try
 				{
 					var runtime = clrDump.Runtimes[0];
-					var heap = runtime.GetHeap();
+					var heap = runtime.Heap;
 				}
 				catch (Exception ex)
 				{
@@ -4416,7 +4379,7 @@ namespace UnitTestMdr
 				try
 				{
 					var runtime = clrDump.Runtimes[0];
-					var heap = runtime.GetHeap();
+					var heap = runtime.Heap;
 					var segs = heap.Segments;
 					for (int i = 0, icnt = segs.Count; i < icnt; ++i)
 					{

@@ -1,8 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace TestApp
 {
@@ -11,7 +8,9 @@ namespace TestApp
 		private string _name;
 		private int _someCount;
 		KeyValuePair<string, KeyValuePair<DateTime, TestStructClass>> _kvPair;
+		#pragma warning disable CS0414
 		private decimal _decimal;
+		#pragma warning restore CS0414
 		private DateTime _dateTime;
 
 		public TestStruct(string name, int someCount, KeyValuePair<string, KeyValuePair<DateTime, TestStructClass>> kvPair)
@@ -23,7 +22,6 @@ namespace TestApp
 			_dateTime = DateTime.Now;
 		}
 	}
-
 
 	public class TestStructClass
 	{
@@ -38,7 +36,6 @@ namespace TestApp
 			{
 				_kvKeyValuePairs[i] = new KeyValuePair<string, int>(name + "_" + i, i);
 			}
-
 		}
 	}
 }

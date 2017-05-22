@@ -356,273 +356,273 @@ namespace ClrMDRIndex
 			_refObjects.Add(new KeyValuePair<ulong, int>(addr, off));
 		}
 
-		public static bool GetRefrences2(ClrHeap heap, int[] indices, ulong[] instances, int[] typeIds, int[] excludedTypes, int freeTypeId,
-			Bitset bitset, string refsObjFldPath, string refsFldObjPath, IProgress<string> progress, out string error)
-		{
-			error = null;
-			int reportInterval = instances.Length / 12;
-			int reportCount = reportInterval;
-			try
-			{
-				Debug.Assert(freeTypeId >= 0);
-				var fldRefList = new List<KeyValuePair<ulong, int>>(64);
-				var fldRefIndices = new List<int>(64);
-				var que = new Queue<KeyValuePair<int, ulong>>(1024 * 1024 * 10);
-				Utils.KVUlongIntKCmp kvCmp = new Utils.KVUlongIntKCmp();
+		//public static bool GetRefrences2(ClrHeap heap, int[] indices, ulong[] instances, int[] typeIds, int[] excludedTypes, int freeTypeId,
+		//	Bitset bitset, string refsObjFldPath, string refsFldObjPath, IProgress<string> progress, out string error)
+		//{
+		//	error = null;
+		//	int reportInterval = instances.Length / 12;
+		//	int reportCount = reportInterval;
+		//	try
+		//	{
+		//		Debug.Assert(freeTypeId >= 0);
+		//		var fldRefList = new List<KeyValuePair<ulong, int>>(64);
+		//		var fldRefIndices = new List<int>(64);
+		//		var que = new Queue<KeyValuePair<int, ulong>>(1024 * 1024 * 10);
+		//		Utils.KVUlongIntKCmp kvCmp = new Utils.KVUlongIntKCmp();
 
-				progress?.Report("Building rooted references, root/object counts: " + Utils.CountString(indices.Length) + "/" + Utils.CountString(instances.Length));
+		//		progress?.Report("Building rooted references, root/object counts: " + Utils.CountString(indices.Length) + "/" + Utils.CountString(instances.Length));
 
-				BlockingCollection<KeyValuePair<int, int[]>> dataToPersist = new BlockingCollection<KeyValuePair<int, int[]>>();
-				ReferencePersistor persistor = new ReferencePersistor(refsObjFldPath, refsFldObjPath, instances.Length, dataToPersist, progress);
-				persistor.Start();
+		//		BlockingCollection<KeyValuePair<int, int[]>> dataToPersist = new BlockingCollection<KeyValuePair<int, int[]>>();
+		//		ReferencePersistor persistor = new ReferencePersistor(refsObjFldPath, refsFldObjPath, instances.Length, dataToPersist, progress);
+		//		persistor.Start();
 
-				for (int i = 0, icnt = indices.Length; i < icnt; ++i)
-				{
-					var rootNdx = indices[i];
-					if (bitset.IsSet(rootNdx)) continue;
-					var excluded = IsExcludedType(excludedTypes, typeIds[rootNdx]);
-					if (excluded >= 0)
-					{
-						if (excluded != freeTypeId) bitset.Set(rootNdx); // mark it
-						continue;
-					}
-					var rootAddr = Utils.RealAddress(instances[rootNdx]);
-					var clrType = heap.GetObjectType(rootAddr);
-					if (clrType == null) continue;
-					bitset.Set(rootNdx); // mark it
-					if (bitset.SetCount > reportCount)
-					{
-						progress?.Report("Rooted references, processed: " + Utils.CountString(bitset.SetCount)
-										 + ", current instance [" + Utils.CountString(i)
-										 + "] " + Utils.RealAddressString(rootAddr));
-						reportCount += reportInterval;
-					}
+		//		for (int i = 0, icnt = indices.Length; i < icnt; ++i)
+		//		{
+		//			var rootNdx = indices[i];
+		//			if (bitset.IsSet(rootNdx)) continue;
+		//			var excluded = IsExcludedType(excludedTypes, typeIds[rootNdx]);
+		//			if (excluded >= 0)
+		//			{
+		//				if (excluded != freeTypeId) bitset.Set(rootNdx); // mark it
+		//				continue;
+		//			}
+		//			var rootAddr = Utils.RealAddress(instances[rootNdx]);
+		//			var clrType = heap.GetObjectType(rootAddr);
+		//			if (clrType == null) continue;
+		//			bitset.Set(rootNdx); // mark it
+		//			if (bitset.SetCount > reportCount)
+		//			{
+		//				progress?.Report("Rooted references, processed: " + Utils.CountString(bitset.SetCount)
+		//								 + ", current instance [" + Utils.CountString(i)
+		//								 + "] " + Utils.RealAddressString(rootAddr));
+		//				reportCount += reportInterval;
+		//			}
 
-					fldRefList.Clear();
-					clrType.EnumerateRefsOfObjectCarefully(rootAddr, (address, off) =>
-					{
-						fldRefList.Add(new KeyValuePair<ulong, int>(address, off));
-					});
-					if (fldRefList.Count < 1) continue;
-					fldRefList.Sort(kvCmp);
-					Utils.RemoveDuplicates(fldRefList, kvCmp);
-					fldRefIndices.Clear();
-					for (int j = 0, jcnt = fldRefList.Count; j < jcnt; ++j)
-					{
-						var faddr = fldRefList[j].Key;
-						var ndx = Utils.AddressSearch(instances, faddr);
-						if (ndx < 0) continue;
-						fldRefIndices.Add(ndx);
-						if (bitset.IsSet(ndx)) continue;
-						excluded = IsExcludedType(excludedTypes, typeIds[ndx]);
-						if (excluded >= 0)
-						{
-							if (excluded != freeTypeId) bitset.Set(ndx); // mark it
-							continue;
-						}
-						que.Enqueue(new KeyValuePair<int, ulong>(ndx, faddr));
-						// save ndx -> rndx pair
-					}
-					if (fldRefIndices.Count < 1) continue;
+		//			fldRefList.Clear();
+		//			clrType.EnumerateRefsOfObjectCarefully(rootAddr, (address, off) =>
+		//			{
+		//				fldRefList.Add(new KeyValuePair<ulong, int>(address, off));
+		//			});
+		//			if (fldRefList.Count < 1) continue;
+		//			fldRefList.Sort(kvCmp);
+		//			Utils.RemoveDuplicates(fldRefList, kvCmp);
+		//			fldRefIndices.Clear();
+		//			for (int j = 0, jcnt = fldRefList.Count; j < jcnt; ++j)
+		//			{
+		//				var faddr = fldRefList[j].Key;
+		//				var ndx = Utils.AddressSearch(instances, faddr);
+		//				if (ndx < 0) continue;
+		//				fldRefIndices.Add(ndx);
+		//				if (bitset.IsSet(ndx)) continue;
+		//				excluded = IsExcludedType(excludedTypes, typeIds[ndx]);
+		//				if (excluded >= 0)
+		//				{
+		//					if (excluded != freeTypeId) bitset.Set(ndx); // mark it
+		//					continue;
+		//				}
+		//				que.Enqueue(new KeyValuePair<int, ulong>(ndx, faddr));
+		//				// save ndx -> rndx pair
+		//			}
+		//			if (fldRefIndices.Count < 1) continue;
 
-					// save rndx -> ndx[] relation
-					dataToPersist.Add(new KeyValuePair<int, int[]>(rootNdx, fldRefIndices.ToArray()));
+		//			// save rndx -> ndx[] relation
+		//			dataToPersist.Add(new KeyValuePair<int, int[]>(rootNdx, fldRefIndices.ToArray()));
 
-					// go down the hierarchy
-					while (que.Count > 0)
-					{
-						var kv = que.Dequeue();
-						var refNdx = kv.Key;
-						if (bitset.IsSet(refNdx)) continue;
-						excluded = IsExcludedType(excludedTypes, typeIds[refNdx]);
-						if (excluded >= 0)
-						{
-							if (excluded != freeTypeId) bitset.Set(refNdx);
-							continue;
-						}
-						bitset.Set(refNdx);  // mark it
+		//			// go down the hierarchy
+		//			while (que.Count > 0)
+		//			{
+		//				var kv = que.Dequeue();
+		//				var refNdx = kv.Key;
+		//				if (bitset.IsSet(refNdx)) continue;
+		//				excluded = IsExcludedType(excludedTypes, typeIds[refNdx]);
+		//				if (excluded >= 0)
+		//				{
+		//					if (excluded != freeTypeId) bitset.Set(refNdx);
+		//					continue;
+		//				}
+		//				bitset.Set(refNdx);  // mark it
 
-						if (bitset.SetCount > reportCount)
-						{
-							progress?.Report("Rooted references, processed: " + Utils.CountString(bitset.SetCount)
-											 + ", current instance [" + Utils.CountString(i)
-											 + "] " + Utils.RealAddressString(rootAddr));
-							reportCount += reportInterval;
-						}
-						var refAddr = kv.Value;
-						clrType = heap.GetObjectType(refAddr);
-						if (clrType == null) continue;
-						fldRefList.Clear();
-						clrType.EnumerateRefsOfObjectCarefully(refAddr, (address, off) =>
-						{
-							fldRefList.Add(new KeyValuePair<ulong, int>(address, off));
-						});
-						if (fldRefList.Count < 1) continue;
-						fldRefList.Sort(kvCmp);
-						Utils.RemoveDuplicates(fldRefList, kvCmp);
-						fldRefIndices.Clear();
-						for (int j = 0, jcnt = fldRefList.Count; j < jcnt; ++j)
-						{
-							var faddr = fldRefList[j].Key;
-							var ndx = Utils.AddressSearch(instances, faddr);
-							if (ndx < 0) continue;
-							fldRefIndices.Add(ndx);
-							if (bitset.IsSet(ndx)) continue;
-							excluded = IsExcludedType(excludedTypes, typeIds[ndx]);
-							if (excluded >= 0)
-							{
-								if (excluded != freeTypeId) bitset.Set(ndx); // mark it
-								continue;
-							}
-							que.Enqueue(new KeyValuePair<int, ulong>(ndx, faddr));
-							// save ndx -> rndx pair
-						}
-						if (fldRefIndices.Count < 1) continue;
+		//				if (bitset.SetCount > reportCount)
+		//				{
+		//					progress?.Report("Rooted references, processed: " + Utils.CountString(bitset.SetCount)
+		//									 + ", current instance [" + Utils.CountString(i)
+		//									 + "] " + Utils.RealAddressString(rootAddr));
+		//					reportCount += reportInterval;
+		//				}
+		//				var refAddr = kv.Value;
+		//				clrType = heap.GetObjectType(refAddr);
+		//				if (clrType == null) continue;
+		//				fldRefList.Clear();
+		//				clrType.EnumerateRefsOfObjectCarefully(refAddr, (address, off) =>
+		//				{
+		//					fldRefList.Add(new KeyValuePair<ulong, int>(address, off));
+		//				});
+		//				if (fldRefList.Count < 1) continue;
+		//				fldRefList.Sort(kvCmp);
+		//				Utils.RemoveDuplicates(fldRefList, kvCmp);
+		//				fldRefIndices.Clear();
+		//				for (int j = 0, jcnt = fldRefList.Count; j < jcnt; ++j)
+		//				{
+		//					var faddr = fldRefList[j].Key;
+		//					var ndx = Utils.AddressSearch(instances, faddr);
+		//					if (ndx < 0) continue;
+		//					fldRefIndices.Add(ndx);
+		//					if (bitset.IsSet(ndx)) continue;
+		//					excluded = IsExcludedType(excludedTypes, typeIds[ndx]);
+		//					if (excluded >= 0)
+		//					{
+		//						if (excluded != freeTypeId) bitset.Set(ndx); // mark it
+		//						continue;
+		//					}
+		//					que.Enqueue(new KeyValuePair<int, ulong>(ndx, faddr));
+		//					// save ndx -> rndx pair
+		//				}
+		//				if (fldRefIndices.Count < 1) continue;
 
-						// save rndx -> ndx[] relation
-						dataToPersist.Add(new KeyValuePair<int, int[]>(refNdx, fldRefIndices.ToArray()));
-					}
-				}
+		//				// save rndx -> ndx[] relation
+		//				dataToPersist.Add(new KeyValuePair<int, int[]>(refNdx, fldRefIndices.ToArray()));
+		//			}
+		//		}
 
-				//
-				// continue with the rest
-				//
-				var bitset2 = bitset.Clone();
-				progress?.Report("Building unrooted references, unrooted/object counts: " + Utils.CountString(instances.Length - bitset2.SetCount) + "/" + Utils.CountString(instances.Length));
+		//		//
+		//		// continue with the rest
+		//		//
+		//		var bitset2 = bitset.Clone();
+		//		progress?.Report("Building unrooted references, unrooted/object counts: " + Utils.CountString(instances.Length - bitset2.SetCount) + "/" + Utils.CountString(instances.Length));
 
-				for (int i = 0, icnt = instances.Length; i < icnt; ++i)
-				{
-					if (bitset2.IsSet(i)) continue;
-					var excluded = IsExcludedType(excludedTypes, typeIds[i]);
-					if (excluded >= 0)
-					{
-						if (excluded != freeTypeId) bitset2.Set(i);
-						continue;
-					}
-					bitset2.Set(i);
-					var rootAddr = Utils.RealAddress(instances[i]);
-					if (bitset2.SetCount > reportCount)
-					{
-						progress?.Report("Unrooted references, processed: " + Utils.CountString(bitset2.SetCount - bitset.SetCount)
-										 + ", current instance [" + Utils.CountString(i)
-										 + "] " + Utils.RealAddressString(rootAddr));
-						reportCount += reportInterval;
-					}
-					var rndx = i;
-					var clrType = heap.GetObjectType(rootAddr);
-					if (clrType == null) continue;
+		//		for (int i = 0, icnt = instances.Length; i < icnt; ++i)
+		//		{
+		//			if (bitset2.IsSet(i)) continue;
+		//			var excluded = IsExcludedType(excludedTypes, typeIds[i]);
+		//			if (excluded >= 0)
+		//			{
+		//				if (excluded != freeTypeId) bitset2.Set(i);
+		//				continue;
+		//			}
+		//			bitset2.Set(i);
+		//			var rootAddr = Utils.RealAddress(instances[i]);
+		//			if (bitset2.SetCount > reportCount)
+		//			{
+		//				progress?.Report("Unrooted references, processed: " + Utils.CountString(bitset2.SetCount - bitset.SetCount)
+		//								 + ", current instance [" + Utils.CountString(i)
+		//								 + "] " + Utils.RealAddressString(rootAddr));
+		//				reportCount += reportInterval;
+		//			}
+		//			var rndx = i;
+		//			var clrType = heap.GetObjectType(rootAddr);
+		//			if (clrType == null) continue;
 
-					fldRefList.Clear();
-					clrType.EnumerateRefsOfObjectCarefully(rootAddr, (address, off) =>
-					{
-						fldRefList.Add(new KeyValuePair<ulong, int>(address, off));
-					});
-					if (fldRefList.Count < 1) continue;
-					fldRefList.Sort(kvCmp);
-					Utils.RemoveDuplicates(fldRefList, kvCmp);
-					fldRefIndices.Clear();
-					for (int j = 0, jcnt = fldRefList.Count; j < jcnt; ++j)
-					{
-						var faddr = fldRefList[j].Key;
-						var ndx = Utils.AddressSearch(instances, faddr);
-						if (ndx < 0) continue;
-						fldRefIndices.Add(ndx);
-						if (bitset2.IsSet(ndx)) continue;
-						excluded = IsExcludedType(excludedTypes, typeIds[ndx]);
-						if (excluded >= 0)
-						{
-							if (excluded != freeTypeId) bitset2.Set(ndx); // mark it
-							continue;
-						}
-						que.Enqueue(new KeyValuePair<int, ulong>(ndx, faddr));
-						// save ndx -> rndx pair
-					}
-					if (fldRefIndices.Count < 1) continue;
+		//			fldRefList.Clear();
+		//			clrType.EnumerateRefsOfObjectCarefully(rootAddr, (address, off) =>
+		//			{
+		//				fldRefList.Add(new KeyValuePair<ulong, int>(address, off));
+		//			});
+		//			if (fldRefList.Count < 1) continue;
+		//			fldRefList.Sort(kvCmp);
+		//			Utils.RemoveDuplicates(fldRefList, kvCmp);
+		//			fldRefIndices.Clear();
+		//			for (int j = 0, jcnt = fldRefList.Count; j < jcnt; ++j)
+		//			{
+		//				var faddr = fldRefList[j].Key;
+		//				var ndx = Utils.AddressSearch(instances, faddr);
+		//				if (ndx < 0) continue;
+		//				fldRefIndices.Add(ndx);
+		//				if (bitset2.IsSet(ndx)) continue;
+		//				excluded = IsExcludedType(excludedTypes, typeIds[ndx]);
+		//				if (excluded >= 0)
+		//				{
+		//					if (excluded != freeTypeId) bitset2.Set(ndx); // mark it
+		//					continue;
+		//				}
+		//				que.Enqueue(new KeyValuePair<int, ulong>(ndx, faddr));
+		//				// save ndx -> rndx pair
+		//			}
+		//			if (fldRefIndices.Count < 1) continue;
 
-					// save rndx -> ndx[] relation
-					dataToPersist.Add(new KeyValuePair<int, int[]>(rndx, fldRefIndices.ToArray()));
+		//			// save rndx -> ndx[] relation
+		//			dataToPersist.Add(new KeyValuePair<int, int[]>(rndx, fldRefIndices.ToArray()));
 
-					// go down the hierarchy
-					while (que.Count > 0)
-					{
-						var kv = que.Dequeue();
-						rndx = kv.Key;
-						if (bitset2.IsSet(rndx)) continue;
-						excluded = IsExcludedType(excludedTypes, typeIds[rndx]);
-						if (excluded >= 0)
-						{
-							if (excluded != freeTypeId) bitset2.Set(rndx);
-							continue;
-						}
-						bitset2.Set(rndx);  // mark it
-											//instances[rndx] |= Utils.RootBits.Rooted;
-						if (bitset2.SetCount > reportCount)
-						{
-							progress?.Report("Unrooted references, processed: " + Utils.CountString(bitset2.SetCount - bitset.SetCount)
-											 + ", current instance [" + Utils.CountString(i)
-											 + "] " + Utils.RealAddressString(rootAddr));
-							reportCount += reportInterval;
-						}
-						var raddr = kv.Value;
-						clrType = heap.GetObjectType(raddr);
-						if (clrType == null) continue;
-						fldRefList.Clear();
-						clrType.EnumerateRefsOfObjectCarefully(raddr, (address, off) =>
-						{
-							fldRefList.Add(new KeyValuePair<ulong, int>(address, off));
-						});
-						if (fldRefList.Count < 1) continue;
-						fldRefList.Sort(kvCmp);
-						Utils.RemoveDuplicates(fldRefList, kvCmp);
-						fldRefIndices.Clear();
-						for (int j = 0, jcnt = fldRefList.Count; j < jcnt; ++j)
-						{
-							var faddr = fldRefList[j].Key;
-							var ndx = Utils.AddressSearch(instances, faddr);
-							if (ndx < 0) continue;
-							fldRefIndices.Add(ndx);
-							if (bitset2.IsSet(ndx)) continue;
-							excluded = IsExcludedType(excludedTypes, typeIds[ndx]);
-							if (excluded >= 0)
-							{
-								if (excluded != freeTypeId) bitset2.Set(ndx); // mark it
-								continue;
-							}
-							que.Enqueue(new KeyValuePair<int, ulong>(ndx, faddr));
-							// save ndx -> rndx pair
-						}
-						if (fldRefIndices.Count < 1) continue;
+		//			// go down the hierarchy
+		//			while (que.Count > 0)
+		//			{
+		//				var kv = que.Dequeue();
+		//				rndx = kv.Key;
+		//				if (bitset2.IsSet(rndx)) continue;
+		//				excluded = IsExcludedType(excludedTypes, typeIds[rndx]);
+		//				if (excluded >= 0)
+		//				{
+		//					if (excluded != freeTypeId) bitset2.Set(rndx);
+		//					continue;
+		//				}
+		//				bitset2.Set(rndx);  // mark it
+		//									//instances[rndx] |= Utils.RootBits.Rooted;
+		//				if (bitset2.SetCount > reportCount)
+		//				{
+		//					progress?.Report("Unrooted references, processed: " + Utils.CountString(bitset2.SetCount - bitset.SetCount)
+		//									 + ", current instance [" + Utils.CountString(i)
+		//									 + "] " + Utils.RealAddressString(rootAddr));
+		//					reportCount += reportInterval;
+		//				}
+		//				var raddr = kv.Value;
+		//				clrType = heap.GetObjectType(raddr);
+		//				if (clrType == null) continue;
+		//				fldRefList.Clear();
+		//				clrType.EnumerateRefsOfObjectCarefully(raddr, (address, off) =>
+		//				{
+		//					fldRefList.Add(new KeyValuePair<ulong, int>(address, off));
+		//				});
+		//				if (fldRefList.Count < 1) continue;
+		//				fldRefList.Sort(kvCmp);
+		//				Utils.RemoveDuplicates(fldRefList, kvCmp);
+		//				fldRefIndices.Clear();
+		//				for (int j = 0, jcnt = fldRefList.Count; j < jcnt; ++j)
+		//				{
+		//					var faddr = fldRefList[j].Key;
+		//					var ndx = Utils.AddressSearch(instances, faddr);
+		//					if (ndx < 0) continue;
+		//					fldRefIndices.Add(ndx);
+		//					if (bitset2.IsSet(ndx)) continue;
+		//					excluded = IsExcludedType(excludedTypes, typeIds[ndx]);
+		//					if (excluded >= 0)
+		//					{
+		//						if (excluded != freeTypeId) bitset2.Set(ndx); // mark it
+		//						continue;
+		//					}
+		//					que.Enqueue(new KeyValuePair<int, ulong>(ndx, faddr));
+		//					// save ndx -> rndx pair
+		//				}
+		//				if (fldRefIndices.Count < 1) continue;
 
-						// save rndx -> ndx[] relation
-						dataToPersist.Add(new KeyValuePair<int, int[]>(rndx, fldRefIndices.ToArray()));
-					}
-				}
+		//				// save rndx -> ndx[] relation
+		//				dataToPersist.Add(new KeyValuePair<int, int[]>(rndx, fldRefIndices.ToArray()));
+		//			}
+		//		}
 
-				// save results in files
-				dataToPersist.Add(new KeyValuePair<int, int[]>(-1, null));
-				que.Clear();
-				que = null;
-				fldRefList.Clear();
-				fldRefList = null;
-				fldRefIndices.Clear();
-				fldRefIndices = null;
+		//		// save results in files
+		//		dataToPersist.Add(new KeyValuePair<int, int[]>(-1, null));
+		//		que.Clear();
+		//		que = null;
+		//		fldRefList.Clear();
+		//		fldRefList = null;
+		//		fldRefIndices.Clear();
+		//		fldRefIndices = null;
 
-				progress?.Report("The references processing done, rooted/unrooted counts: " + Utils.CountString(bitset.SetCount) + "/" + Utils.CountString(bitset2.SetCount - bitset.SetCount));
+		//		progress?.Report("The references processing done, rooted/unrooted counts: " + Utils.CountString(bitset.SetCount) + "/" + Utils.CountString(bitset2.SetCount - bitset.SetCount));
 
-				Utils.ForceGcWithCompaction();
+		//		Utils.ForceGcWithCompaction();
 
-				persistor.Wait();
-				error = persistor.Error;
+		//		persistor.Wait();
+		//		error = persistor.Error;
 
-				return error == null;
-			}
-			catch (Exception ex)
-			{
-				error = Utils.GetExceptionErrorString(ex);
-				return false;
-			}
+		//		return error == null;
+		//	}
+		//	catch (Exception ex)
+		//	{
+		//		error = Utils.GetExceptionErrorString(ex);
+		//		return false;
+		//	}
 
-		}
+		//}
 
 		public static bool GetRefrences3(ClrHeap heap, int[] indices, ulong[] instances, int[] typeIds, int[] excludedTypes, int freeTypeId,
 								Bitset bitset, string refsObjFldPath, string refsFldObjPath, IProgress<string> progress, out string error)
@@ -668,10 +668,6 @@ namespace ClrMDRIndex
 					{
 						var kv = que.Dequeue();
 						var refNdx = kv.Key;
-						if (refNdx == 8098)
-						{
-							int a = 1;
-						}
 						if (bitset.IsSet(refNdx)) continue;
 						Debug.Assert(IsExcludedType(excludedTypes, typeIds[refNdx]) < 0);
 						bitset.Set(refNdx); // mark it
@@ -717,10 +713,6 @@ namespace ClrMDRIndex
 							ndxList.Sort();
 							fw.WriteReferenceRecord(refNdx, ndxList);
 							++recCount;
-							if (refNdx == 8098)
-							{
-								int a = 1;
-							}
 						}
 					}
 				}
@@ -752,10 +744,6 @@ namespace ClrMDRIndex
 					{
 						var kv = que.Dequeue();
 						var refNdx = kv.Key;
-						if (refNdx == 8098)
-						{
-							int a = 1;
-						}
 						if (bitset2.IsSet(refNdx)) continue;
 						Debug.Assert(IsExcludedType(excludedTypes, typeIds[refNdx]) < 0);
 						bitset2.Set(refNdx); // mark it
@@ -1202,10 +1190,89 @@ namespace ClrMDRIndex
 			return ndx < 0 ? Constants.InvalidIndex : typeIds[ndx];
 		}
 
+		public static class ReferenceFileRevertor
+		{
+			public static Thread RevertFile(string rToFPath, string fToRPath, RecordCounter counter, List<string> errors,
+				IProgress<string> progress = null)
+			{
+				Thread thread = new Thread(RevertFileWork) { IsBackground = true, Name = "ReferenceRevertor" };
+				thread.Start(new Tuple<string, string, RecordCounter, List<string>, IProgress<string>>(rToFPath, fToRPath, counter,
+					errors, progress));
+				return thread;
+			}
+
+			private static void RevertFileWork(object data)
+			{
+				FileReader fr = null;
+				List<string> errors = null;
+				try
+				{
+					var info = data as Tuple<string, string, RecordCounter, List<string>, IProgress<string>>;
+					Debug.Assert(info != null);
+					string rToFPath = info.Item1;
+					string fToRPath = info.Item2;
+					RecordCounter counter = info.Item3;
+					errors = info.Item4;
+					IProgress<string> progress = info.Item5;
+					const int fileBufferSize = 1024 * 8;
+
+					IntStore store = new IntStore(counter);
+					fr = new FileReader(rToFPath, fileBufferSize, FileOptions.SequentialScan);
+					var totRcnt = fr.ReadInt32();
+
+					totRcnt = Math.Abs(totRcnt);
+					int[] ibuffer = new int[fileBufferSize / sizeof(int)];
+					byte[] buffer = new byte[fileBufferSize];
+					int rndx, rcnt;
+
+					for (int i = 0; i < totRcnt; ++i)
+					{
+						int read = fr.ReadRecord(buffer, ibuffer, out rndx, out rcnt);
+						int count = rcnt;
+						for (int j = 0; j < read; ++j)
+						{
+							store.AddItem(ibuffer[j], rndx);
+						}
+						//store.AddItems(rndx, read, ibuffer);
+						rcnt -= read;
+						while (rcnt > 0)
+						{
+							read = fr.ReadInts(buffer, ibuffer, rcnt);
+							for (int j = 0; j < read; ++j)
+							{
+								try
+								{
+									store.AddItem(ibuffer[j], rndx);
+								}
+								catch (Exception)
+								{
+									// TODO JRD ???
+								}
+							}
+							rcnt -= read;
+						}
+					}
+
+					// restore offsets
+					store.RestoreOffsets();
+					Debug.Assert(store.CheckOffsets());
+					string error;
+					store.Dump(fToRPath, out error);
+					if (error != null) errors?.Add(error);
+				}
+				catch (Exception ex)
+				{
+					errors?.Add(Utils.GetExceptionErrorString(ex));
+				}
+				finally
+				{
+					fr?.Dispose();
+				}
+			}
 
 
-		#endregion utils
+			#endregion utils
 
+		}
 	}
-
 }

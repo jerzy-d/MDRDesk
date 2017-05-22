@@ -415,7 +415,7 @@ namespace UnitTestMdr
                 try
                 {
                     var runtime = clrDump.Runtimes[0];
-                    var heap = runtime.GetHeap();
+                    var heap = runtime.Heap;
                     var segs = heap.Segments;
                     for (int i = 0, icnt = segs.Count; i < icnt; ++i)
                     {
@@ -552,7 +552,7 @@ namespace UnitTestMdr
                 try
                 {
                     var runtime = clrDump.Runtimes[0];
-                    var heap = runtime.GetHeap();
+                    var heap = runtime.Heap;
                     var segs = heap.Segments;
                     for (int i = 0, icnt = segs.Count; i < icnt; ++i)
                     {
@@ -613,13 +613,31 @@ namespace UnitTestMdr
                 }
             }
         }
-        #endregion misc
 
-        #region collection content
 
-        #region array content
+		[TestMethod]
+		public void TestInstCount()
+		{
+			var dmp = OpenDump(@"C:\WinDbgStuff\dumps\Compliance\Eze.Compliance.Svc_170503_131515.dmp");
+			using (dmp)
+			{
+				var heap = dmp.Heap;
+				int cnt = 0;
+				foreach(var obj in heap.EnumerateObjects())
+				{
+					++cnt;
+				}
 
-        [TestMethod]
+			}
+		}
+
+		#endregion misc
+
+		#region collection content
+
+		#region array content
+
+		[TestMethod]
 		public void TestGetStringArrayContent()
 		{
 			ulong aryAddr = 0x0002189f5af6a0;
@@ -919,7 +937,6 @@ namespace UnitTestMdr
 
 
                 StreamWriter sw = null;
-                string error;
                 try
                 {
                     List<ulong> dctAddrs = new List<ulong>();
@@ -1353,17 +1370,12 @@ namespace UnitTestMdr
 		[TestMethod]
 		public void TestGetConcurrentDictionaryContent()
 		{
-            ulong dctAddr = 0x0000e004c019e0; //  0x0000df8651f520; // 0x000004002fe820; // 0x000001801462b0;
             string dumpPath = @"D:\Jerzy\WinDbgStuff\dumps\Analytics\Viking\AnalyticsLatencyDump05022017 04345672.dmp";
 
             var dmp = OpenDump(dumpPath);
 			using (dmp)
 			{
 				var heap = dmp.Heap;
-				//var result = CollectionContent.getConcurrentDictionaryContent(heap, dctAddr);
-				//Assert.IsNotNull(result);
-				//Assert.IsNull(result.Item1, result.Item1);
-
                 ulong dAddr = 0x00e105255b98;
                 var result2 = CollectionContent.dictionaryContent(heap, dAddr);
             }
@@ -1376,8 +1388,6 @@ namespace UnitTestMdr
 		public void TestStringBuilderContent()
 		{
 			ulong addr = 0x0001e7e526c388;
-			string expectedString =
-				@"0aaaaaaaaaa1aaaaaaaaaa2aaaaaaaaaa3aaaaaaaaaa4aaaaaaaaaa5aaaaaaaaaa6aaaaaaaaaa7aaaaaaaaaa8aaaaaaaaaa9aaaaaaaaaa";
 			var dmp = OpenDump(1);
 			using (dmp)
 			{
@@ -1803,8 +1813,6 @@ namespace UnitTestMdr
 					}
 				}
 				Assert.IsTrue(notFreeCnt == 0);
-				int a = 1;
-
 			}
 		}
 
@@ -1822,7 +1830,7 @@ namespace UnitTestMdr
 				try
 				{
 					var runtime = clrDump.Runtimes[0];
-					var heap = runtime.GetHeap();
+					var heap = runtime.Heap;
 					var stackTraceLst = new List<ClrStackFrame>();
 					var threads = DumpIndexer.GetThreads(runtime);
 					var threadLocalDeadVars = new ClrRoot[threads.Length][];
@@ -1955,10 +1963,7 @@ namespace UnitTestMdr
         [TestMethod]
 		public void TestTypeSizesAndGenerations()
 		{
-			string error;
 			string dumpPath = Setup.DumpsFolder + @"\Analytics\Ellerston\Eze.Analytics.Svc_170309_130146.BIG.dmp";
-			//string typeName = "System.String";
-			//string typeName = "System.Collections.Concurrent.ConcurrentDictionary<";
 			string typeName = "Free";
 
 			var dmp = OpenDump(dumpPath);
@@ -2030,7 +2035,6 @@ namespace UnitTestMdr
 				{
 					sw?.Close();
 				}
-				int a = 1;
 			} // using dump
 		}
 
@@ -2044,7 +2048,7 @@ namespace UnitTestMdr
                 try
                 {
                     var runtime = clrDump.Runtimes[0];
-                    var heap = runtime.GetHeap();
+                    var heap = runtime.Heap;
                     var segs = heap.Segments;
                     for (int i = 0, icnt = segs.Count; i < icnt; ++i)
                     {
@@ -2056,11 +2060,7 @@ namespace UnitTestMdr
                             if (clrType == null || !Utils.SameStrings(typeName, clrType.Name)) goto NEXT_OBJECT;
                             var fld = clrType.GetFieldByName("prtName");
                             string val = (string)fld.GetValue(addr, false, true);
-                            if (Utils.SameStrings("RG10",val))
-                            {
-                                int a = 1;
-                            }
-
+ 
                             NEXT_OBJECT:
                             addr = seg.NextObject(addr);
                         }
@@ -2190,7 +2190,7 @@ namespace UnitTestMdr
                 try
                 {
                     var runtime = clrDump.Runtimes[0];
-                    var heap = runtime.GetHeap();
+                    var heap = runtime.Heap;
                     var segs = heap.Segments;
                     for (int i = 0, icnt = segs.Count; i < icnt; ++i)
                     {
@@ -2262,13 +2262,10 @@ namespace UnitTestMdr
         [TestMethod]
 		public void TestTypeReferences()
 		{
-			string error;
 			string dumpPath = Setup.DumpsFolder + @"\Analytics\Ellerstone\Eze.Analytics.Svc_170309_130146.BIG.map";
-			//string typeName = "System.String";
 			string typeName = "System.Collections.Concurrent.ConcurrentDictionary<";
 
 			var dmp = OpenDump(dumpPath);
-
 			using (dmp)
 			{
 				var heap = dmp.Heap;
@@ -2303,13 +2300,8 @@ namespace UnitTestMdr
 		[TestMethod]
 		public void TestArrayReferences()
 		{
-			string error;
 			string dumpPath = @"D:\Jerzy\WinDbgStuff\dumps\Analytics\Highline\analyticsdump111.dlk.dmp";
-			//string typeName = "System.String";
-			string typeName = "System.Collections.Concurrent.ConcurrentDictionary<";
-
 			var dmp = OpenDump(dumpPath);
-
 			using (dmp)
 			{
 				var heap = dmp.Heap;
@@ -2339,13 +2331,10 @@ namespace UnitTestMdr
 		[TestMethod]
 		public void TestEnumerateTypeReferences()
 		{
-			string error;
 			string dumpPath = @"D:\Jerzy\WinDbgStuff\dumps\Analytics\Highline\analyticsdump111.dlk.dmp";
-			//ulong addr = 0x00000000800a8d48;
 			ulong addr = 0x00000000800a8c30;
 
 			var dmp = OpenDump(dumpPath);
-
 			using (dmp)
 			{
 				var heap = dmp.Heap;
@@ -2510,7 +2499,7 @@ namespace UnitTestMdr
                 try
                 {
                     var runtime = clrDump.Runtimes[0];
-                    var heap = runtime.GetHeap();
+                    var heap = runtime.Heap;
                     var segs = heap.Segments;
                     for (int i = 0, icnt = segs.Count; i < icnt; ++i)
                     {

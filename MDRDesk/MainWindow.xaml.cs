@@ -903,7 +903,7 @@ namespace MDRDesk
 				}
 				using (dmp)
 				{
-					var heap = dmp.Runtime.GetHeap();
+					var heap = dmp.Runtime.Heap;
 					var addresses = ClrtDump.GetTypeAddresses(heap, "System.String", out error);
 					if (error != null)
 					{
@@ -953,7 +953,7 @@ namespace MDRDesk
 				}
 				using (dmp)
 				{
-					var heap = dmp.Runtime.GetHeap();
+					var heap = dmp.Runtime.Heap;
 					var count = ClrtDump.GetTypeCount(heap, typeName, out error);
 					return new KeyValuePair<string, int>(error, count);
 				}
@@ -977,15 +977,12 @@ namespace MDRDesk
 
 		private void AhqCollectionContentArray(object sender, RoutedEventArgs e)
 		{
-			string error;
 			var dumpFilePath = GuiUtils.SelectCrashDumpFile();
 			if (dumpFilePath == null) return;
 			ulong addr;
-			if (!GetUserEnteredAddress("Enter an array address.", out addr))
-				return;
+			if (!GetUserEnteredAddress("Enter an array address.", out addr)) return;
 			var progressHandler = new Progress<string>(MainStatusShowMessage);
 			var progress = progressHandler as IProgress<string>;
-
 		}
 
 		//private async void AhqOpenInstanceRefsClicked(object sender, RoutedEventArgs e)
@@ -1947,10 +1944,10 @@ namespace MDRDesk
 
 		#endregion Context Menus
 
-		private void RecentDumpSelectionClicked(object sender, RoutedEventArgs e)
-		{
-			int a = 0;
-		}
+		//private void RecentDumpSelectionClicked(object sender, RoutedEventArgs e)
+		//{
+		//	int a = 0;
+		//}
 
 		private async void GenerateSizeDetailsReport(object sender, RoutedEventArgs e) // TODO JRD -- display as ListView (listing)
 		{
@@ -2027,13 +2024,11 @@ namespace MDRDesk
 				GuiUtils.ShowError(result.Item1,this);
 				return;
 			}
-
-			//DisplayTypeValueSetupGrid(result.Item2);
-
+			#pragma warning disable CS4014
 			Dispatcher.CurrentDispatcher.InvokeAsync(() => DoDisplayTypeValueReportSetup(result.Item2));
-
+			#pragma warning restore CS4014
 		}
-		
+
 		private ulong GetAddressFromList(object listBox)
 		{
 			AssertIndexIsAvailable();

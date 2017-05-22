@@ -111,12 +111,12 @@ namespace ClrMDRIndex
 			return sb.ToString();
 		}
 
-		struct TwoElement<T>
+		struct TwoElement<U>
 		{
-			public T _left ;
-			public T _right;
+			public U _left ;
+			public U _right;
 
-			public TwoElement(T l, T r)
+			public TwoElement(U l, U r)
 			{
 				_left = l;
 				_right = r;

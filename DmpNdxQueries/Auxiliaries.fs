@@ -395,12 +395,10 @@ module Auxiliaries =
 
     let getLongColumnChartWithTitle (data:(string*uint64) array) (title:string) =
         let chart = Chart.Column (data, Title=title)
-        chart.WithLegend
         new ChartControl(chart)
 
     let getIntColumnChartWithTitle (data:(string*int) array) (title:string) =
         let chart = Chart.Column (data, Title=title)
-        chart.WithLegend
         new ChartControl(chart)
 
     let getCountGenerationsChart (instanceCounts:int array) (unrootedCounts:int array) (freeCounts:int array) =

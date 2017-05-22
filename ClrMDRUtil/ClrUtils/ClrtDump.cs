@@ -30,7 +30,7 @@ namespace ClrMDRIndex
 		public int RuntimeCount => _runtimes.Length;
 		public int CurrentRuntimeIndex => _curRuntimeIndex;
 		public ClrRuntime Runtime => _runtimes[_curRuntimeIndex];
-		public ClrHeap Heap => Runtime.GetHeap();
+		public ClrHeap Heap => Runtime.Heap;
 
 		public int SetRuntime(int index)
 		{
@@ -212,7 +212,7 @@ namespace ClrMDRIndex
 		{
 			var runtime = Runtime;
 			runtime.Flush();
-			return runtime.GetHeap();
+			return runtime.Heap;
 		}
 
 
@@ -231,7 +231,7 @@ namespace ClrMDRIndex
 		//	try
 		//	{
 		//		runtime.Flush();
-		//		var heap = runtime.GetHeap();
+		//		var heap = runtime.Heap;
 		//		var refAddresses = new Queue<KeyValuePair<ulong, InstanceSizeNode>>();
 		//		var done = new HashSet<ulong>();
 		//		done.Add(addr);
@@ -548,7 +548,7 @@ namespace ClrMDRIndex
 			{
 				var runtime = dmp.Runtime;
 				runtime.Flush();
-				var heap = runtime.GetHeap();
+				var heap = runtime.Heap;
 				HashSet<ulong> done = new HashSet<ulong>();
 				var aryDct = new SortedDictionary<string, List<int>>(StringComparer.Ordinal);
 				var typeDct = new SortedDictionary<string, KeyValuePair<int, ulong>>(StringComparer.Ordinal);
@@ -892,10 +892,7 @@ namespace ClrMDRIndex
 						aryItemType = heap.GetObjectType(aryItemAddr);
 						break;
 					}
-					if (aryItemType != null)
-					{
-						int a = 1;
-					}
+
 
 					//var flds = clrType.ComponentType.Fields;
 					//   bool hasObjRef = false;
@@ -1000,9 +997,9 @@ namespace ClrMDRIndex
 						heap.ReadMemory(off + 4UL, strBuf, 0, len);
 						str = Encoding.Unicode.GetString(strBuf);
 					}
-					catch (Exception ex)
+					catch (Exception)
 					{
-						int a = 1; // TODO JRD ???
+						// TODO JRD ???
 						len = 0;
 					}
 					KeyValuePair<uint, List<ulong>> kv;

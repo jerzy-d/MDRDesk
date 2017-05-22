@@ -20,7 +20,7 @@ namespace ClrMDRIndex
 		public int Count => _counts.Length;
 
 		private ulong[][] _adddresses;
-		private long[] _addroffsets;
+		//private long[] _addroffsets;
 
 		private long _totalSize;
 		public long TotalSize => _totalSize;
