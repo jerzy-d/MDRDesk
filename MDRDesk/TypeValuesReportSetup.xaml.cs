@@ -197,17 +197,17 @@ namespace MDRDesk
         private ClrtDisplayableType[] GetOrderedSelection()
 		{
 			var node = TypeValueReportTreeView.Items[0] as TreeViewItem;
-			var stack = new Stack<TreeViewItem>();
-			stack.Push(node);
+			var que = new Queue<TreeViewItem>();
+			que.Enqueue(node);
 			LinkedList<ClrtDisplayableType> lst = new LinkedList<ClrtDisplayableType>();
-			while(stack.Count > 0)
+			while(que.Count > 0)
 			{
-				node = stack.Pop();
+				node = que.Dequeue();
 				lst.AddFirst(node.Tag as ClrtDisplayableType);
 				if (node.Items == null) continue;
 				for (int i = 0, icnt = node.Items.Count; i < icnt; ++i)
 				{
-					stack.Push(node.Items[i] as TreeViewItem);
+					que.Enqueue(node.Items[i] as TreeViewItem);
 				}
 			}
             var lnode = lst.First;

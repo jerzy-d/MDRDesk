@@ -1,4 +1,5 @@
-﻿using System;
+﻿#define TESTING_TYPE_VALUE_REPORT
+using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -60,6 +61,7 @@ namespace ClrMDRIndex
 		public int UsedTypeCount => _displayableTypeNames.Length;
 
 		private References _references;
+        public bool HasInstanceReferences => _references != null;
 
 		private WeakReference<StringStats> _stringStats;
 		public WeakReference<StringStats> StringStatitics => _stringStats;
@@ -104,8 +106,6 @@ namespace ClrMDRIndex
 		private ClrtThread[] _threads;
 		private ClrtBlkObject[] _blocks;
 
-		public bool AreReferencesAvailable => _references != null;
-
 		#endregion fields/properties
 
 		#region ctors/initialization
@@ -144,7 +144,7 @@ namespace ClrMDRIndex
 				if (!index.InitDump(out error, progress)) return null;
 				index._indexProxy = new IndexProxy(index.Dump, index._instances, index._instanceTypes, index._typeNames,
 					index._roots);
-				if (!Setup.SkipReferences)
+				if (index._references != null)
 					index._references.SetIndexProxy(index.IndexProxy);
 				return index;
 			}
@@ -202,15 +202,15 @@ namespace ClrMDRIndex
 					_typeNamespaces = GetTypeNamespaceOrdering(_reversedTypeNames);
 				}
 
-				// old
-				//_instanceReferences = new InstanceReferences(_fileMoniker.Path, _currentRuntimeIndex, _instances,
-				//	_instanceTypes, _typeNames);
-				//_instanceReferences.Init(out error);
-				// new 1/7/17
-				if (!Setup.SkipReferences)
+				// check if we indexed referrences, and load them if we did
+                //
 				{
-					_references = new References(_currentRuntimeIndex, _fileMoniker);
-					_references.Init(out error);
+                    string refsFilePath = _fileMoniker.GetFilePath(_currentRuntimeIndex, Constants.MapRefsObjectFieldPostfix);
+                    if (File.Exists(refsFilePath))
+                    {
+                        _references = new References(_currentRuntimeIndex, _fileMoniker);
+                        _references.Init(out error);
+                    }
 				}
 
 				if (error != null) return false;
@@ -1424,7 +1424,12 @@ namespace ClrMDRIndex
 			error = null;
 			try
 			{
-				Debug.Assert(queryItems != null && queryItems.Length > 0);
+#if DEBUG && TESTING_TYPE_VALUE_REPORT
+
+                string spath = _fileMoniker.OutputFolder + Path.DirectorySeparatorChar + "ClrtDisplayableType." + Utils.DateTimeString(DateTime.Now) + ".bin";
+                bool r = ClrtDisplayableType.SerializeArray(spath, queryItems, out error);
+#endif
+                Debug.Assert(queryItems != null && queryItems.Length > 0);
 				ulong[] instances = GetTypeRealAddresses(queryItems[0].TypeId);
 				if (instances == null || instances.Length < 1)
 				{
@@ -1434,7 +1439,21 @@ namespace ClrMDRIndex
 
 				TypeValueQuery[] valueQuery = new TypeValueQuery[queryItems.Length];
 
-				var heap = Heap;
+                valueQuery[0] = new TypeValueQuery(null,Constants.InvalidIndex);
+
+                for (int i = 1, icnt = queryItems.Length; i < icnt; ++i)
+                {
+                    var qa = queryItems[i];
+                    for (int j = 0, jcnt = queryItems.Length; j < jcnt; ++j)
+                    {
+                        if (qa.Parent == queryItems[j])
+                        {
+                            valueQuery[i] = new TypeValueQuery(valueQuery[j],j);
+                            break;
+                        }
+                    }
+                }
+                var heap = Heap;
 
 				// prepare query items types and their fields
 				//
@@ -1446,43 +1465,47 @@ namespace ClrMDRIndex
 					var curAddr = addr;
 					var kv = TypeExtractor.TryGetRealType(heap, addr);
 					var clrType = kv.Key;
-					valueQuery[0] = new TypeValueQuery(null, clrType, kv.Value, null, Constants.InvalidIndex, queryItems[0].Filter, true, instances.Length);
-					ulong[] parentAddrs = new ulong[queryItems.Length];
-					parentAddrs[0] = addr;
+					valueQuery[0].SetFields(clrType, kv.Value, null, Constants.InvalidIndex, queryItems[0].Filter, true, instances.Length);
+                    var parentAddrs = new ulong[queryItems.Length];
+                    parentAddrs[0] = curAddr;
 					for (int j = 1, jcnt = queryItems.Length; j < jcnt; ++j)
 					{
-						var parentAddr = Constants.InvalidAddress;
-						var qryItem = queryItems[j];
-						TypeValueQuery parent = null;
-						for (int k = j - 1; k >= 0; --k)
-						{
-							if (queryItems[k] == qryItem.Parent)
-							{
-								parent = valueQuery[k];
-								parentAddr = parentAddrs[k];
-								break;
-							}
-						}
-						if (parent == null)
-							throw new ApplicationException("GetTypeValuesReport.GetTypeValuesReport -- ClrtDisplayableType item has no parent!");
-						clrType = parent.Type;
-						Debug.Assert(clrType.Fields.Count > qryItem.FieldIndex);
-						// get field and type info
-						var fldInst = clrType.Fields[qryItem.FieldIndex];
-						if (fldInst.IsObjectReference)
-						{
-							ulong fldAddr = (ulong)fldInst.GetValue(parentAddr, clrType.IsValueClass, false);
-							var fldTypeInfo = TypeExtractor.TryGetRealType(heap, fldAddr);
-							valueQuery[j] = new TypeValueQuery(parent, clrType, kv.Value, fldInst, qryItem.FieldIndex, qryItem.Filter, qryItem.GetValue, instances.Length);
+                        var qryItem = queryItems[j];
+                        var valQry = valueQuery[j];
+                        var parentIndex = valQry.ParentIndex;
+                        Debug.Assert(valQry.Parent != null);
+                        var valQryParent = valQry.Parent;
+                        var valQryParentAddr = parentAddrs[parentIndex];
+                        var valQryParentType = valQryParent.Type;
 
+                        Debug.Assert(valQryParentAddr != 0ul);
 
-						}
+                        ClrInstanceField fld = valQryParent.Type.GetFieldByName(qryItem.FieldName);
+                        ClrElementKind fldKind = TypeExtractor.GetElementKind(fld.Type);
+                        if (TypeExtractor.IsKnownPrimitive(fldKind))
+                        {
+                            valueQuery[j].SetFields(fld.Type, fldKind, fld, qryItem.FieldIndex, qryItem.Filter, qryItem.GetValue, qryItem.GetValue ? instances.Length : 0);
+                            continue;
+                        }
+                        if (fld.IsObjectReference)
+                        {
+                            KeyValuePair<ClrType, ulong> fkv = TypeExtractor.TryGetReferenceType(heap, valQryParentAddr, fld, false);
+                            valueQuery[j].SetFields(fkv.Key, fldKind, fld, qryItem.FieldIndex, qryItem.Filter, qryItem.GetValue, qryItem.GetValue ? instances.Length : 0);
+                            parentAddrs[j] = fkv.Value;
+                        }
 
-
-					}
+                    }
+                    break;
 				}
 
-				error = "test";
+                string[] values = new string[valueQuery.Length];
+                for (int i = 0, icnt = instances.Length; i < icnt && tryAgain; ++i)
+                {
+                    ulong addr = instances[i];
+                    GetTypeValues(valueQuery, values, addr);
+                }
+
+                error = "test";
 				return null;
 			}
 			catch (Exception ex)
@@ -1492,6 +1515,12 @@ namespace ClrMDRIndex
 			}
 
 		}
+
+        private bool GetTypeValues(TypeValueQuery[] qry, string[] values, ulong addr)
+        {
+
+            return true;
+        }
 
 
 		#endregion Type Value Reports

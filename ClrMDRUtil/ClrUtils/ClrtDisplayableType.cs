@@ -1,13 +1,17 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
+using System.Runtime.Serialization;
+using System.Runtime.Serialization.Formatters.Binary;
 
 namespace ClrMDRIndex
 {
+    [Serializable]
 	public class ClrtDisplayableType
 	{
 		private ClrtDisplayableType _parent;
 		private readonly int _typeId;
-		private readonly int _fieldIndex;
+		private readonly int _fieldIndex; // index of a parent field
 		private readonly string _typeName;
 		private readonly string _fieldName;
 		private FilterValue _valueFilter;
@@ -235,7 +239,53 @@ namespace ClrMDRIndex
                 }
             }
         }
-	}
+
+        public static bool SerializeArray(string path, ClrtDisplayableType[] ary, out string error)
+        {
+            error = null;
+            Stream stream = null;
+            try
+            {
+                IFormatter formatter = new BinaryFormatter();
+                stream = new FileStream(path, FileMode.CreateNew, FileAccess.Write, FileShare.None);
+                formatter.Serialize(stream, ary);
+                return true;
+            }
+            catch(Exception ex)
+            {
+                error = Utils.GetExceptionErrorString(ex);
+                return false;
+            }
+            finally
+            {
+                stream?.Close();
+            }
+
+        }
+
+        public static ClrtDisplayableType[] DeserializeArray(string path, out string error)
+        {
+            error = null;
+            Stream stream = null;
+            try
+            {
+                IFormatter formatter = new BinaryFormatter();
+                stream = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read);
+                ClrtDisplayableType[] ary = (ClrtDisplayableType[])formatter.Deserialize(stream);
+                return ary;
+            }
+            catch (Exception ex)
+            {
+                error = Utils.GetExceptionErrorString(ex);
+                return null;
+            }
+            finally
+            {
+                stream?.Close();
+            }
+
+        }
+    }
 
 
 

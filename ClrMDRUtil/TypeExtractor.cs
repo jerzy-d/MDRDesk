@@ -132,7 +132,41 @@ namespace ClrMDRIndex
 								 || stdKind == ClrElementKind.Object;
 		}
 
-		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static bool IsKnownPrimitive(ClrElementKind kind)
+        {
+            var stdKind = GetStandardKind(kind);
+            if (stdKind == ClrElementKind.String
+                || stdKind == ClrElementKind.Boolean
+                || stdKind == ClrElementKind.Char
+                || stdKind == ClrElementKind.Double
+                || stdKind == ClrElementKind.Float
+                || stdKind == ClrElementKind.FunctionPointer
+                || stdKind == ClrElementKind.Int16
+                || stdKind == ClrElementKind.Int32
+                || stdKind == ClrElementKind.Int64
+                || stdKind == ClrElementKind.Int8
+                || stdKind == ClrElementKind.NativeInt
+                || stdKind == ClrElementKind.NativeUInt
+                || stdKind == ClrElementKind.Pointer
+                || stdKind == ClrElementKind.UInt16
+                || stdKind == ClrElementKind.UInt32
+                || stdKind == ClrElementKind.UInt64
+                || stdKind == ClrElementKind.UInt8
+                )
+                return true;
+            var specKind = GetSpecialKind(kind);
+            if (specKind == ClrElementKind.Decimal
+                || specKind == ClrElementKind.DateTime
+                || specKind == ClrElementKind.Guid
+                || specKind == ClrElementKind.TimeSpan
+                )
+                return true;
+            return false;
+        }
+
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
 		public static bool IsStruct(ClrElementKind kind)
 		{
 			return kind == ClrElementKind.Struct;

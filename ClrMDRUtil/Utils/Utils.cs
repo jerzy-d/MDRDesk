@@ -2142,6 +2142,12 @@ namespace ClrMDRIndex
             return dt.ToString("hh:mm:ss:fff");
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static string DateTimeString(DateTime dt)
+        {
+            return dt.ToString("YYYY-MM-dd_hh-mm-ss-fff");
+        }
+
         public static string FormatBytes(long bytes)
         {
             const int scale = 1024;

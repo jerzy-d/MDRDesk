@@ -2091,7 +2091,7 @@ namespace MDRDesk
 
         private bool AreReferencesAvailable(string caption = null)
         {
-            if (CurrentIndex != null && CurrentIndex.AreReferencesAvailable) return true;
+            if (CurrentIndex != null && CurrentIndex.HasInstanceReferences) return true;
             if (caption == null) return false;
             ShowInformation(caption, "References Not Available", "References were not indexed." + Environment.NewLine + "Check the setup 'Skip indexing reference'." + Environment.NewLine + "Sometimes this setting is used to when indexing huge dumps.", null);
             return false;

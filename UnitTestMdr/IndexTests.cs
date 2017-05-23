@@ -1596,16 +1596,48 @@ namespace UnitTestMdr
 
 		}
 
+        #endregion instance value
 
-		#endregion instance value
+        #region type values report
 
-		#region get list of specific clr objects
+        [TestMethod]
+        public void TestTypeValuesReport()
+        {
+            string error;
+            Stopwatch stopWatch = new Stopwatch();
+            stopWatch.Start();
+            var index = OpenIndex(@"D:\Jerzy\WinDbgStuff\dumps\Analytics\Highline\analyticsdump111.dlk.dmp.map");
+            TestContext.WriteLine(index.DumpFileName + " INDEX OPEN DURATION: " + Utils.StopAndGetDurationString(stopWatch));
 
-		#endregion get list of specific clr objects
+            using (index)
+            {
+                // deserialioze query
+                //
+                string qpath = @"D:\Jerzy\WinDbgStuff\dumps\Analytics\Highline\analyticsdump111.dlk.dmp.map\ad-hoc.queries\ClrtDisplayableType.YYYY-05-23_09-24-29-269.bin";
+                ClrtDisplayableType[] queryItems = ClrtDisplayableType.DeserializeArray(qpath, out error);
+                try
+                {
+                    ListingInfo listing = index.GetTypeValuesReport(queryItems, out error);
+                }
+                catch (Exception ex)
+                {
+                    Assert.IsTrue(false, ex.ToString());
+                }
 
-		#region misc
+            }
 
-		[TestMethod]
+            Assert.IsNull(error, error);
+        }
+
+        #endregion type values report
+
+        #region get list of specific clr objects
+
+        #endregion get list of specific clr objects
+
+        #region misc
+
+        [TestMethod]
 		public void TestKnownTypes()
 		{
 			string[] typeNames = new string[]

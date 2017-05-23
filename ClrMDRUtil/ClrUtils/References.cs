@@ -80,22 +80,6 @@ namespace ClrMDRIndex
 			error = null;
 			try
 			{
-				//_rootedParentsPath = _fileMoniker.GetFilePath(_runtimeIndex, Constants.MapParentFieldsRootedPostfix);
-				//int[][] lists;
-				//LoadReferences(_rootedParentsPath, out _rootedParents, out lists, out error);
-				//_rootedParentReferences = new WeakReference<int[][]>(lists);
-
-				//_rootedFieldsPath = _fileMoniker.GetFilePath(_runtimeIndex, Constants.MapFieldParentsRootedPostfix);
-				//LoadReferences(_rootedFieldsPath, out _rootedFields, out lists, out error);
-				//_rootedFiledsReferences = new WeakReference<int[][]>(lists);
-
-				//_nonrootedParentsPath = _fileMoniker.GetFilePath(_runtimeIndex, Constants.MapParentFieldsNotRootedPostfix);
-				//LoadReferences(_nonrootedParentsPath, out _nonrootedParents, out lists, out error);
-				//_nonrootedParentReferences = new WeakReference<int[][]>(lists);
-
-				//_nonrootedFieldsPath = _fileMoniker.GetFilePath(_runtimeIndex, Constants.MapFieldParentsNotRootedPostfix);
-				//LoadReferences(_rootedFieldsPath, out _rootedFields, out lists, out error);
-				//_rootedFiledsReferences = new WeakReference<int[][]>(lists);
 
 				_refsObjFldPath = _fileMoniker.GetFilePath(_runtimeIndex, Constants.MapRefsObjectFieldPostfix);
 				int[][] lists;
