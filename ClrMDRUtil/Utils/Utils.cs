@@ -56,7 +56,13 @@ namespace ClrMDRIndex
 			return addr & (ulong)RootBits.AddressMask;
 		}
 
-		public static int[] GetAddressIndices(ulong[] addrs, ulong[] all)
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static bool IsRealAddress(ulong addr)
+        {
+            return (addr & (ulong)RootBits.AddressMask) == 0ul;
+        }
+
+        public static int[] GetAddressIndices(ulong[] addrs, ulong[] all)
 		{
 			Debug.Assert(Utils.AreAddressesSorted(addrs));
 			Debug.Assert(Utils.AreAddressesSorted(all));

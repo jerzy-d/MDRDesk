@@ -1613,7 +1613,7 @@ namespace UnitTestMdr
             {
                 // deserialioze query
                 //
-                string qpath = @"D:\Jerzy\WinDbgStuff\dumps\Analytics\Highline\analyticsdump111.dlk.dmp.map\ad-hoc.queries\ClrtDisplayableType.YYYY-05-23_09-24-29-269.bin";
+                string qpath = @"D:\Jerzy\WinDbgStuff\dumps\Analytics\Highline\analyticsdump111.dlk.dmp.map\ad-hoc.queries\ClrtDisplayableType.YYYY-05-23_02-58-59-882.bin";
                 ClrtDisplayableType[] queryItems = ClrtDisplayableType.DeserializeArray(qpath, out error);
                 try
                 {

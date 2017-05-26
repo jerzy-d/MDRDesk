@@ -1461,7 +1461,7 @@ namespace ClrMDRIndex
 				for (int i = 0, icnt = instances.Length; i < icnt && tryAgain; ++i)
 				{
 					tryAgain = false;
-					var addr = instances[i];
+					var addr = Utils.RealAddress(instances[i]);
 					var curAddr = addr;
 					var kv = TypeExtractor.TryGetRealType(heap, addr);
 					var clrType = kv.Key;
@@ -1499,14 +1499,25 @@ namespace ClrMDRIndex
 				}
 
                 string[] values = new string[valueQuery.Length];
+                ulong[] addresses = new ulong[valueQuery.Length];
                 for (int i = 0, icnt = instances.Length; i < icnt && tryAgain; ++i)
                 {
                     ulong addr = instances[i];
-                    GetTypeValues(valueQuery, values, addr);
+                    if (GetTypeValues(heap, valueQuery, addresses, values, addr))
+                    {
+                        for(int j = 0, jcnt = valueQuery.Length; j < jcnt; ++j)
+                        {
+                            if (valueQuery[j].GetValue)
+                            {
+                                valueQuery[j].AddValue(values[j]);
+                            }
+                        }
+                    }
                 }
 
-                error = "test";
-				return null;
+
+
+ 				return null;
 			}
 			catch (Exception ex)
 			{
@@ -1516,9 +1527,42 @@ namespace ClrMDRIndex
 
 		}
 
-        private bool GetTypeValues(TypeValueQuery[] qry, string[] values, ulong addr)
+        /// <summary>
+        /// Get type report values for one instance.
+        /// </summary>
+        /// <param name="heap">Current dump's heap (from MDR).</param>
+        /// <param name="qrys">Info about the values to be collected.</param>
+        /// <param name="addresses">Buffer for parent addresses.</param>
+        /// <param name="values">Buffer for values as strings.</param>
+        /// <param name="addr">An instance decorated address.</param>
+        /// <returns>True if values were accepted by filter(s).</returns>
+        private bool GetTypeValues(ClrHeap heap, TypeValueQuery[] qrys, ulong[] addresses, string[] values, ulong addr)
         {
-
+            // first item collects the object address
+            //
+            values[0] = Utils.AddressString(addr);
+            addr = Utils.RealAddress(addr); // switch to real address
+            addresses[0] = addr;
+            for (int i = 0, icnt = qrys.Length; i < icnt; ++i)
+            {
+                values[i] = null;
+                addresses[i] = Constants.InvalidAddress;
+                var qry = qrys[i];
+                var qparent = qrys[qry.ParentIndex];
+                var parentAddr = addresses[qry.ParentIndex];
+                if (qry.HasFilter)
+                {
+                    object val = ValueExtractor.GetFieldValue(heap, parentAddr, qry.Field, qry.Type, qry.Kind, TypeExtractor.IsStruct(qparent.Kind), true);
+                    if (!qry.Filter.Accept(val, qry.Kind)) return false;
+                    if (qry.GetValue)
+                        values[i] = ValueExtractor.ValueToString(val, qry.Kind);
+                    continue;
+                }
+                if (qry.GetValue)
+                {
+                    values[i] = (string)ValueExtractor.GetFieldValue(heap, parentAddr, qry.Field, qry.Type, qry.Kind, TypeExtractor.IsStruct(qparent.Kind), false);
+                }
+            }
             return true;
         }
 

@@ -14,12 +14,17 @@ namespace ClrMDRIndex
 	{
 		public static bool Is64Bit = Environment.Is64BitProcess;
 
+        public static ulong GetReferenceFieldAddress(ulong addr, ClrInstanceField fld, bool intern)
+        {
+            object valObj = fld.GetValue(addr, intern, false);
+            return valObj == null ? Constants.InvalidAddress : (ulong)valObj;
+        }
 
-		//
-		// System.Decimal
-		//
+        //
+        // System.Decimal
+        //
 
-		public static string GetDecimalValue(ulong parentAddr, ClrInstanceField field, bool intr)
+        public static string GetDecimalValue(ulong parentAddr, ClrInstanceField field, bool intr)
 		{
 			var addr = field.GetAddress(parentAddr, intr);
 			var flags = (int)field.Type.Fields[0].GetValue(addr,true);
@@ -256,8 +261,14 @@ namespace ClrMDRIndex
 			return formatSpec == null ? dt.ToString(CultureInfo.InvariantCulture) : dt.ToString(formatSpec);
 		}
 
+        public static DateTime GetDateTime(ulong addr, ClrInstanceField fld)
+        {
+            var data = (ulong)fld.Type.Fields[0].GetValue(addr, true);
+            data = data & TicksMask;
+            return DateTime.FromBinary((long)data);
+        }
 
-		public static string GetDateTimeValue(ulong addr, ClrInstanceField fld, bool internalPtr, string formatSpec = null)
+        public static string GetDateTimeValue(ulong addr, ClrInstanceField fld, bool internalPtr, string formatSpec = null)
 		{
 			ulong fldAddr = fld.GetAddress(addr, internalPtr);
 			var data = (ulong)fld.Type.Fields[0].GetValue(fldAddr, true);
@@ -293,7 +304,13 @@ namespace ClrMDRIndex
 			return ts.ToString("c");
 		}
 
-		public static string GetTimeSpanValue(ulong addr, ClrInstanceField fld,bool intr) // TODO JRD -- check if this works
+        public static TimeSpan GetTimeSpan(ulong addr, ClrInstanceField fld) // TODO JRD -- check if this works
+        {
+            var data = (long)fld.Type.Fields[0].GetValue(addr, true);
+            return TimeSpan.FromTicks(data);
+        }
+
+        public static string GetTimeSpanValue(ulong addr, ClrInstanceField fld,bool intr) // TODO JRD -- check if this works
 		{
 			ulong fldAddr = fld.GetAddress(addr, intr);
 			var data = (long)fld.Type.Fields[0].GetValue(fldAddr, true);
@@ -372,7 +389,23 @@ namespace ClrMDRIndex
 			return StringBuilderCache.GetStringAndRelease(sb);
 		}
 
-		public static string GetGuidValue(ulong addr, ClrInstanceField field,bool intr)
+        public static Guid GetGuid(ulong addr, ClrInstanceField field)
+        {
+            var ival = (int)field.Type.Fields[0].GetValue(addr, true);
+            var sval1 = (short)field.Type.Fields[1].GetValue(addr, true);
+            var sval2 = (short)field.Type.Fields[2].GetValue(addr, true);
+            byte b1 = (byte)field.Type.Fields[3].GetValue(addr, true);
+            byte b2 = (byte)field.Type.Fields[4].GetValue(addr, true);
+            byte b3 = (byte)field.Type.Fields[5].GetValue(addr, true);
+            byte b4 = (byte)field.Type.Fields[6].GetValue(addr, true);
+            byte b5 = (byte)field.Type.Fields[7].GetValue(addr, true);
+            byte b6 = (byte)field.Type.Fields[8].GetValue(addr, true);
+            byte b7 = (byte)field.Type.Fields[9].GetValue(addr, true);
+            byte b8 = (byte)field.Type.Fields[10].GetValue(addr, true);
+            return new Guid(ival, sval1, sval2, b1, b2, b3, b4, b5, b6, b7, b8);
+        }
+
+        public static string GetGuidValue(ulong addr, ClrInstanceField field,bool intr)
 		{
 			StringBuilder sb = StringBuilderCache.Acquire(64);
 			var fldAddr = field.GetAddress(addr,intr);
@@ -518,11 +551,19 @@ namespace ClrMDRIndex
 			return StringBuilderCache.GetStringAndRelease(sb);
 		}
 
-		//
-		// Primitive types.
-		//
+        //
+        // Primitive types.
+        //
 
-		public static string PrimitiveValue(ulong addr, ClrInstanceField fld, bool intern)
+        public static object GetPrimitiveValueObject(ulong addr, ClrInstanceField fld, bool intern)
+        {
+            var kind = TypeExtractor.GetElementKind(fld.Type);
+            if (kind == ClrElementKind.Unknown) return Constants.UnknownValue;
+            var obj = fld.GetValue(addr, intern);
+            return obj;
+        }
+
+        public static string PrimitiveValue(ulong addr, ClrInstanceField fld, bool intern)
 		{
 			var kind = TypeExtractor.GetElementKind(fld.Type);
 			if (kind == ClrElementKind.Unknown) return Constants.UnknownValue;
@@ -755,7 +796,14 @@ namespace ClrMDRIndex
 			return primVal + (enumName == null ? string.Empty : " " + enumName);
 		}
 
-		public static string GetEnumValue(ulong addr, ClrType clrType)
+        //public static object GetEnumValueObject(ulong parentAddr, ClrInstanceField field, bool intr)
+        //{
+        //    var addrObj = field.GetValue(parentAddr, intr, false);
+        //    var primVal = GetPrimitiveValueObject(addrObj, field, intr);
+        //    return primVal;
+        //}
+
+        public static string GetEnumValue(ulong addr, ClrType clrType)
 		{
 			var primVal = GetPrimitiveValue(addr, clrType);
 			var enumName = clrType.GetEnumName(addr);
@@ -871,7 +919,109 @@ namespace ClrMDRIndex
 			intervals.Add(new triple<bool, ulong, ulong>(false, lastAddr, curLastAddr - lastAddr));
 		}
 
-		public static string GetFieldValue(IndexProxy ndxProxy, ClrHeap heap, ulong addr, ClrInstanceField fld, bool intern, out ClrType fldType, out ClrElementKind kind, out ulong fldItemAddr)
+        public static object GetFieldValue(ClrHeap heap, ulong addr, ClrInstanceField fld, ClrType fldType, ClrElementKind fldKind, bool intern, bool theValue)
+        {
+            Debug.Assert(Utils.IsRealAddress(addr));
+            var fldSpecKind = TypeExtractor.GetSpecialKind(fldKind);
+            if (fldSpecKind != ClrElementKind.Unknown)
+            {
+                switch (fldSpecKind)
+                {
+                    case ClrElementKind.Guid:
+                        return theValue ? (object)GetGuid(addr, fld) : GuidValue(addr, fld);
+                    case ClrElementKind.DateTime:
+                        return theValue ? (object)GetDateTime(addr, fld) : DateTimeValue(addr, fld);
+                    case ClrElementKind.TimeSpan:
+                        return theValue ? (object)GetTimeSpan(addr, fld) : TimeSpanValue(addr, fld);
+                    case ClrElementKind.Decimal:
+                        return theValue ? (object)GetDecimal(addr, fld, intern) : DecimalValue(addr, fld);
+                    case ClrElementKind.Exception:
+                        return theValue ? (object) addr : Utils.AddressString(addr);
+                    case ClrElementKind.Enum:
+                        return GetEnumValue(addr, fld, intern);
+                    case ClrElementKind.Free:
+                    case ClrElementKind.Abstract:
+                    case ClrElementKind.SystemVoid:
+                    case ClrElementKind.SystemObject:
+                        return theValue ? (object)addr : Utils.AddressString(addr);
+                    default:
+                        return theValue ? (object)addr : Utils.AddressString(addr);
+                }
+            }
+            else
+            {
+                switch (fldKind)
+                {
+                    case ClrElementKind.String:
+                        ulong faddr;
+                        if (heap.ReadPointer(addr, out faddr))
+                            return GetStringAtAddress(faddr, heap);
+                        else
+                            return Constants.NullValue;
+                    case ClrElementKind.SZArray:
+                    case ClrElementKind.Array:
+                    case ClrElementKind.Object:
+                    case ClrElementKind.Class:
+                        var fldAddr = GetReferenceFieldAddress( addr, fld, intern);
+                        return theValue ? (object)fldAddr : Utils.AddressString(fldAddr);
+                    case ClrElementKind.Unknown:
+                        var ufldAddr = GetReferenceFieldAddress(addr, fld, intern);
+                        return Utils.RealAddressString(addr) + Constants.HeavyAsteriskPadded + Utils.RealAddressString(ufldAddr);
+                    default:
+                        return theValue ? GetPrimitiveValueObject(addr, fld, intern) : PrimitiveValue(addr, fld, intern);
+                }
+            }
+
+        }
+
+        public static string ValueToString(object val, ClrElementKind kind)
+        {
+            var specKind = TypeExtractor.GetSpecialKind(kind);
+            if (specKind != ClrElementKind.Unknown)
+            {
+                switch (specKind)
+                {
+                    case ClrElementKind.Guid:
+                        return ((Guid)val).ToString("D");
+                    case ClrElementKind.DateTime:
+                        return (((DateTime)val)).ToString(CultureInfo.InvariantCulture);
+                    case ClrElementKind.TimeSpan:
+                        return (((DateTime)val)).ToString("c");
+                    case ClrElementKind.Decimal:
+                        return (((decimal)val)).ToString(CultureInfo.InvariantCulture);
+                    case ClrElementKind.Exception:
+                    case ClrElementKind.Enum:
+                    case ClrElementKind.Free:
+                    case ClrElementKind.Abstract:
+                    case ClrElementKind.SystemVoid:
+                    case ClrElementKind.SystemObject:
+                        return Utils.AddressString((ulong)val);
+                    default:
+                        throw new ArgumentException("[ValueExtractor.ValueToString(..)] Invalid kind: " + kind.ToString());
+                }
+            }
+            else
+            {
+                switch (kind)
+                {
+                    case ClrElementKind.String:
+                        return (string)val;
+                    case ClrElementKind.SZArray:
+                    case ClrElementKind.Array:
+                    case ClrElementKind.Object:
+                    case ClrElementKind.Class:
+                        return Utils.AddressString((ulong)val);
+                    case ClrElementKind.Unknown:
+                        throw new ArgumentException("[ValueExtractor.ValueToString(..)] Invalid kind: " + kind.ToString());
+                    default:
+                        return PrimitiveValue(val, kind);
+                }
+            }
+
+        }
+
+
+        public static string GetFieldValue(IndexProxy ndxProxy, ClrHeap heap, ulong addr, ClrInstanceField fld, bool intern, out ClrType fldType, out ClrElementKind kind, out ulong fldItemAddr)
 		{
 			fldType = fld.Type;
             fldItemAddr = Constants.InvalidAddress;

@@ -18,10 +18,17 @@ namespace ClrMDRIndex
         private int _fldIndex;
         private FilterValue _filter;
         private List<string> _values;
+        public bool IsAmbiguousKind { get; private set; }
 
         public TypeValueQuery Parent => _parent;
         public int ParentIndex => _parentIndex;
         public ClrType Type => _type;
+        public ClrInstanceField Field => _field;
+        public ClrElementKind Kind => _kind;
+        public FilterValue Filter => _filter;
+
+        public bool GetValue => _values != null;
+        public bool HasFilter => _filter != null;
 
         public TypeValueQuery(TypeValueQuery parent, int parentIndex)
         {
@@ -37,6 +44,12 @@ namespace ClrMDRIndex
             _fldIndex = fldIndex;
             _filter = filter;
             _values = getValues ? new List<string>(valuCntHint <= 0 ? 256 : valuCntHint) : null;
+            IsAmbiguousKind = TypeExtractor.IsAmbiguousKind(kind);
+        }
+
+        public void AddValue(string val)
+        {
+            _values.Add(val);
         }
     }
 
@@ -179,10 +192,9 @@ namespace ClrMDRIndex
 			_values = values;
 		}
 
-		public bool Accept(object obj)
+		public bool Accept(object obj, ClrElementKind kind)
 		{
-
-			return false;
+            return true;
 		}
 	}
 }
