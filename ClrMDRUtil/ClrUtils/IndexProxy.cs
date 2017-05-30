@@ -13,17 +13,20 @@ namespace ClrMDRIndex
 		public readonly int[] InstanceTypes;
 		public readonly string[] TypeNames;
 		public readonly ClrtRootInfo Roots;
+		public readonly DumpFileMoniker FileMoniker;
+
 		public static bool _is64Bit;
 		public static bool Is64Bit => Environment.Is64BitProcess;
 		public static uint WordSize => Environment.Is64BitProcess ? 8u : 4u;
 
-		public IndexProxy(ClrtDump dump, ulong[] instances, int[] instanceTypes, string[] typeNames, ClrtRootInfo roots)
+		public IndexProxy(ClrtDump dump, ulong[] instances, int[] instanceTypes, string[] typeNames, ClrtRootInfo roots, DumpFileMoniker fileMoniker)
 		{
 			Dump = dump;
 			Instances = instances;
 			InstanceTypes = instanceTypes;
 			TypeNames = typeNames;
 			Roots = roots;
+			FileMoniker = fileMoniker;
 		}
 
 		public int GetTypeId(string typeName)

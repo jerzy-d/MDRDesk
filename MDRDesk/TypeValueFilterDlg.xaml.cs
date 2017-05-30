@@ -3,6 +3,8 @@ using ClrMDRIndex;
 using System.Diagnostics;
 using System.Windows.Documents;
 using Brushes = System.Windows.Media.Brushes;
+using System;
+using System.Text.RegularExpressions;
 
 namespace MDRDesk
 {
@@ -14,9 +16,17 @@ namespace MDRDesk
 		// ReSharper disable PrivateFieldCanBeConvertedToLocalVariable
 		private readonly ClrtDisplayableType _dispType;
 		// ReSharper restore PrivateFieldCanBeConvertedToLocalVariable
-		private string _value;
-		public string Value => _value;
-        bool _caseSensitive = false;
+		private string _valStr;
+		private object _valObj;
+		private FilterValue.Op _operator = FilterValue.Op.NONE;
+		private ClrElementKind _kind;
+
+		public string ValueString => _valStr;
+		public object ValueObject => _valObj;
+		public FilterValue.Op Operator => _operator;
+		bool _remove = false;
+		public bool Remove => _remove;
+
 
 		public TypeValueFilterDlg(ClrtDisplayableType dispType)
 		{
@@ -27,25 +37,57 @@ namespace MDRDesk
 			{
 				TbTypeValue.Text = _dispType.Filter.FilterString;
 			}
+
+			Init();
             InitFilterDescription();
+
         }
+
+		private void Init()
+		{
+			foreach (FilterValue.Op op in Enum.GetValues(typeof(FilterValue.Op)))
+			{
+				if (TypeExtractor.IsString(_dispType.Kind) || TypeExtractor.IsGuid(_dispType.Kind))
+				{
+					if (op == FilterValue.Op.EQ || op == FilterValue.Op.NOTEQ)
+						TypeValueOperator.Items.Add(FilterValue.GetOpDescr(op));
+				}
+				else
+				{
+					if (op == FilterValue.Op.EQ
+						|| op == FilterValue.Op.GT
+						|| op == FilterValue.Op.GTEQ
+						|| op == FilterValue.Op.LT
+						|| op == FilterValue.Op.NOTEQ
+						|| op == FilterValue.Op.LTEQ)
+						TypeValueOperator.Items.Add(FilterValue.GetOpDescr(op));
+				}
+			}
+			TypeValueOperator.SelectedValue = FilterValue.GetOpDescr(FilterValue.Op.EQ);
+			if (!TypeExtractor.IsString(_dispType.Kind))
+			{
+				TypeValueCase.IsEnabled = false;
+				TypeValueRegex.IsEnabled = false;
+			}
+
+		}
 
         private void InitFilterDescription()
         {
-            var kind = _dispType.Kind;
-            Debug.Assert(kind != ClrElementKind.Unknown);
-            var specKind = TypeExtractor.GetSpecialKind(kind);
+            _kind = _dispType.Kind;
+            Debug.Assert(_kind != ClrElementKind.Unknown);
+            var specKind = TypeExtractor.GetSpecialKind(_kind);
 
-            if (TypeExtractor.IsString(kind))
+            if (TypeExtractor.IsString(_kind))
             {
                 TypeValueDescr.Visibility = Visibility.Hidden;
-                TypeValeCase.IsChecked = _dispType.HasFilter && _dispType.Filter.IsIgnoreCase();
-                TypeValeRegex.IsChecked = _dispType.HasFilter && _dispType.Filter.IsRegex();
+                TypeValueCase.IsChecked = _dispType.HasFilter && _dispType.Filter.IsIgnoreCase();
+                TypeValueRegex.IsChecked = _dispType.HasFilter && _dispType.Filter.IsRegex();
                 return;
             }
 
-            TypeValeCase.Visibility = Visibility.Hidden;
-            TypeValeRegex.Visibility = Visibility.Hidden;
+            TypeValueCase.Visibility = Visibility.Hidden;
+            TypeValueRegex.Visibility = Visibility.Hidden;
 
             if (specKind != ClrElementKind.Unknown)
             {
@@ -76,7 +118,9 @@ namespace MDRDesk
                         TypeValueDescr.Inlines.Add(new Run("1:3:16:50.5 ") { FontWeight = FontWeights.Bold });
                         break;
                     case ClrElementKind.Decimal:
-                        break;
+						TypeValueDescr.Inlines.Add(new Run("Decimal format ex.: "));
+						TypeValueDescr.Inlines.Add(new Run("3.14159265") { FontWeight = FontWeights.Bold });
+						break;
                     case ClrElementKind.SystemVoid:
                         TypeValueDescr.Inlines.Add(new Run("System.Void -- unexpected type!") { FontWeight = FontWeights.Bold, Foreground = Brushes.Red });
                         break;
@@ -95,7 +139,7 @@ namespace MDRDesk
             }
             else
             {
-                var stdKind = TypeExtractor.GetStandardKind(kind);
+                var stdKind = TypeExtractor.GetStandardKind(_kind);
                 switch (stdKind)
                 {
                     case ClrElementKind.Boolean:
@@ -139,11 +183,50 @@ namespace MDRDesk
             }
         }
 
+		
+
         private void DialogOkClicked(object sender, RoutedEventArgs e)
 		{
-			_value = TbTypeValue.Text.Trim();
-            _caseSensitive = (bool)TypeValeCase.IsChecked;
-            DialogResult = true;
+			string opStr = TypeValueOperator.SelectedItem as string;
+			_operator = FilterValue.GetOpFromDescr(opStr);
+			if (TypeExtractor.IsString(_kind))
+			{
+				_valStr = TbTypeValue.Text;
+				_valObj = _valStr;
+				if ((bool)TypeValueCase.IsChecked)
+				{
+					_operator |= FilterValue.Op.IGNORECASE;
+				}
+				if ((bool)TypeValueRegex.IsChecked)
+				{
+					_operator |= FilterValue.Op.REGEX;
+					try
+					{
+						Regex regex = new Regex(_valStr);
+					}
+					catch(ArgumentException ex)
+					{
+						MessageBox.Show("String format of the regular expression is invalid.", "INVALID FORMAT", MessageBoxButton.OK, MessageBoxImage.Error);
+						return;
+					}
+				}
+
+				DialogResult = true;
+				return;
+			}
+			_valStr = TbTypeValue.Text.Trim();
+			if (TypeExtractor.GetTypeFromString(_valStr, _kind, out _valObj))
+			{
+				DialogResult = true;
+				return;
+			}
+			MessageBox.Show("String format of the value is invalid.", "INVALID FORMAT", MessageBoxButton.OK, MessageBoxImage.Error);
+		}
+
+		private void DialogRemoveClicked(object sender, RoutedEventArgs e)
+		{
+			_remove = true;
+			DialogResult = true;
 		}
 	}
 }

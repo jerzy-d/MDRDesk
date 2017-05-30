@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Runtime.Serialization;
 using System.Runtime.Serialization.Formatters.Binary;
+using System.Threading;
 
 namespace ClrMDRIndex
 {
@@ -17,6 +18,7 @@ namespace ClrMDRIndex
 		private FilterValue _valueFilter;
 		private bool _getValue;
 		private ClrtDisplayableType[] _alternatives;
+		private long _id;
 
 		public int TypeId => _typeId;
 		public int FieldIndex => _fieldIndex;
@@ -31,9 +33,11 @@ namespace ClrMDRIndex
 
         private ClrtDisplayableType[] _fields;
 		public ClrtDisplayableType[] Fields => _fields;
+		public long Id => _id;
 
 		public ClrtDisplayableType(ClrtDisplayableType parent, int typeId, int fieldIndex, string typeName, string fieldName, ClrElementKind kind)
 		{
+			_id = GetId();
 			_parent = parent;
 			_typeId = typeId;
 			_fieldIndex = fieldIndex;
@@ -79,6 +83,16 @@ namespace ClrMDRIndex
 		public void SetGetValue(bool getVal)
 		{
 			_getValue = getVal;
+		}
+
+		private void SetParent(ClrtDisplayableType parent)
+		{
+			_parent = parent;
+		}
+
+		public void ResetId(long id)
+		{
+			_id = id;
 		}
 
 		public void ToggleGetValue()
@@ -285,7 +299,38 @@ namespace ClrMDRIndex
             }
 
         }
-    }
+
+		private static long _idSeed=0;
+		private static long GetId()
+		{
+			return Interlocked.Increment(ref _idSeed);
+		}
+
+		public static ClrtDisplayableType ClrtDisplayableTypeAryFixup(ClrtDisplayableType[] ary)
+		{
+			Queue<ClrtDisplayableType> que = new Queue<ClrtDisplayableType>();
+			que.Enqueue(ary[0]);
+			long id = 0;
+			while(que.Count > 0)
+			{
+				var dt = que.Dequeue();
+				dt.ResetId(++id);
+				if (dt.HasFields)
+				{
+					for (int i = 0, icnt = dt.Fields.Length; i < icnt; ++i)
+					{
+						var fld = dt.Fields[i];
+						fld.SetParent(dt);
+						que.Enqueue(fld);
+					}
+				}
+
+			}
+
+			return ary[0];
+		}
+
+	}
 
 
 
@@ -320,4 +365,31 @@ namespace ClrMDRIndex
 		}
 	}
 
+	public class ClrtDisplayableTypeIdComparer : IEqualityComparer<ClrtDisplayableType>
+	{
+		public bool Equals(ClrtDisplayableType b1, ClrtDisplayableType b2)
+		{
+			return b1.Id == b2.Id;
+		}
+
+		public int GetHashCode(ClrtDisplayableType bx)
+		{
+			return bx.Id.GetHashCode();
+		}
+	}
+	public class ClrtDisplayableTypeIdComparison : IComparer<ClrtDisplayableType>
+	{
+		public int Compare(ClrtDisplayableType a, ClrtDisplayableType b)
+		{
+			long aId = a.Parent == null ? -1 : a.Parent.Id;
+			long bId = b.Parent == null ? -1 : b.Parent.Id;
+
+			var cmp = aId < bId ? -1 : (aId > bId ? 1 : 0);
+			if (cmp == 0)
+			{
+				cmp = a.Id < b.Id ? -1 : (a.Id > b.Id ? 1 : 0);
+			}
+			return cmp;
+		}
+	}
 }

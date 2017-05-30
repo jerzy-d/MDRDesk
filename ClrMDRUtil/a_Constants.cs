@@ -81,6 +81,7 @@ namespace ClrMDRIndex
 		public const string HeavyCheckMarkPadded = " \u2714 ";  // ✔ HEAVY CHECK MARK
 		public const string HeavyCheckMarkHeader = "\u2714 ";  // ✔ HEAVY CHECK MARK
 		public const char BlackDiamond = '\u2756'; // ❖ BLACK DIAMOND MINUS WHITE X 
+		public const string BlackDiamondHeader = "\u2756 "; // ❖ BLACK DIAMOND MINUS WHITE X 
 		public const string BlackDiamondPadded = " \u2756 "; // ❖ BLACK DIAMOND MINUS WHITE X 
 		public const char HeavyVerticalBar = '\u275A'; // ❚ HEAVY VERTICAL BAR
 		public const char MediumVerticalBar = '\u2759'; // ❙ MEDIUM VERTICAL BAR

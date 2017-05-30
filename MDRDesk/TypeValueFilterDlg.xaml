@@ -19,13 +19,16 @@
         </Grid.ColumnDefinitions>
         <Label Name="LbTypeName" Grid.Row="0" Grid.Column="0" Grid.ColumnSpan="2" FontSize="14" HorizontalAlignment="Stretch" Margin="4,0,4,0">...</Label>
         <TextBox Name="TbTypeValue" Grid.Column="0" Grid.ColumnSpan="2" Grid.Row="1" MinWidth="250" Margin="4,0,4,0" FontSize="14" VerticalContentAlignment="Center"></TextBox>
-        <CheckBox Name="TypeValeCase" Grid.Row="2" Grid.Column="0" FontSize="14" Content="String Comparison Case Insensitive" VerticalAlignment="Center" Margin="4,0,4,0"></CheckBox>
-        <CheckBox Name="TypeValeRegex" Grid.Row="2" Grid.Column="1" FontSize="14" Content="Regular Expression" VerticalAlignment="Center" Margin="4,0,4,0"></CheckBox>
+        <CheckBox Name="TypeValueCase" Grid.Row="2" Grid.Column="0" FontSize="14" Content="String Comparison Case Insensitive" VerticalAlignment="Center" Margin="4,0,4,0"></CheckBox>
+        <CheckBox Name="TypeValueRegex" Grid.Row="2" Grid.Column="1" FontSize="14" Content="Regular Expression" VerticalAlignment="Center" Margin="4,0,4,0"></CheckBox>
         <TextBlock Name="TypeValueDescr" Grid.Row="2" Grid.Column="0" Grid.ColumnSpan="2" VerticalAlignment="Stretch" HorizontalAlignment="Stretch" Margin="4,2,4,2"></TextBlock>
         <WrapPanel Grid.Row="3" Grid.ColumnSpan="2" HorizontalAlignment="Right" VerticalAlignment="Center" Margin="0,0,0,0">
-            <Label Margin="0,0,10,0" FontStyle="Italic" FontWeight="DemiBold">To remove filter clear text box content.</Label>
-            <Button IsDefault="True" x:Name="BtnDialogOk" Click="DialogOkClicked" MinWidth="60" Margin="0,0,10,0" Content="_Ok"/>
+            <!--Label Margin="0,0,10,0" FontStyle="Italic" FontWeight="DemiBold">To remove filter clear text box content.</-->
+            <ComboBox Name="TypeValueOperator" IsEditable="False" MinWidth="150" Margin="0,0,10,0">
+            </ComboBox>
+            <Button IsDefault="False" x:Name="BtnDialogOk" Click="DialogOkClicked" MinWidth="60" Margin="0,0,10,0" Content="_Ok"/>
             <Button IsCancel="True" MinWidth="60" Content="_Cancel"/>
+            <Button IsDefault="True" MinWidth="60" Content="_Remove" Margin="10,0,5,0" Click="DialogRemoveClicked"/>
         </WrapPanel>
     </Grid>
 </Window>

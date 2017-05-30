@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 using Microsoft.Diagnostics.Runtime;
 using System.Runtime.CompilerServices;
 using System.Diagnostics;
+using System.Globalization;
 
 namespace ClrMDRIndex
 {
@@ -124,6 +125,12 @@ namespace ClrMDRIndex
         }
 
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		public static bool IsGuid(ClrElementKind kind)
+		{
+			return ((int)GetSpecialKind(kind) & (int)ClrElementKind.Guid) != 0;
+		}
+
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		public static bool IsObjectReference(ClrElementKind kind)
 		{
 			var stdKind = GetStandardKind(kind);
@@ -132,7 +139,16 @@ namespace ClrMDRIndex
 								 || stdKind == ClrElementKind.Object;
 		}
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		public static bool IsNonStringObjectReference(ClrElementKind kind)
+		{
+			var stdKind = GetStandardKind(kind);
+			return stdKind == ClrElementKind.Class
+								 || stdKind == ClrElementKind.Array || stdKind == ClrElementKind.SZArray
+								 || stdKind == ClrElementKind.Object;
+		}
+
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool IsKnownPrimitive(ClrElementKind kind)
         {
             var stdKind = GetStandardKind(kind);
@@ -165,8 +181,127 @@ namespace ClrMDRIndex
             return false;
         }
 
+		public static bool GetTypeFromString(string str, ClrElementKind kind, out object val)
+		{
+			bool ok = false;
+			val = null;
+			var specKind = TypeExtractor.GetSpecialKind(kind);
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+			if (specKind != ClrElementKind.Unknown)
+			{
+				switch (specKind)
+				{
+					case ClrElementKind.Exception:
+					case ClrElementKind.Enum:
+					case ClrElementKind.Free:
+					case ClrElementKind.Guid:
+						Guid guid;
+						if (Guid.TryParse(str, out guid))
+						{
+							ok = true;
+							val = guid;
+						}
+						break;
+					case ClrElementKind.DateTime:
+						DateTime dt;
+						if(DateTime.TryParse(str, out dt))
+						{
+							ok = true;
+							val = dt;
+
+						}
+						break;
+					case ClrElementKind.TimeSpan:
+						TimeSpan ts;
+						if (TimeSpan.TryParse(str, out ts))
+						{
+							ok = true;
+							val = ts;
+						}
+						break;
+					case ClrElementKind.Decimal:
+						decimal decimalVal;
+						if (Decimal.TryParse(str, out decimalVal))
+						{
+							ok = true;
+							val = decimalVal;
+						}
+						break;
+					case ClrElementKind.SystemVoid:
+						break;
+					case ClrElementKind.SystemObject:
+					case ClrElementKind.Interface:
+					case ClrElementKind.Abstract:
+					case ClrElementKind.System__Canon:
+						ulong addr;
+						if (str.StartsWith("0x") || str.StartsWith("0X"))
+						{
+							str = str.Substring(2);
+						}
+						if (UInt64.TryParse(str,NumberStyles.HexNumber, CultureInfo.InvariantCulture,out addr))
+						{
+							ok = true;
+							val = addr;
+						}
+						break;
+					default:
+						break;
+				}
+			}
+			else
+			{
+				var stdKind = TypeExtractor.GetStandardKind(kind);
+				switch (stdKind)
+				{
+					case ClrElementKind.Boolean:
+
+						break;
+					case ClrElementKind.Class:
+					case ClrElementKind.Struct:
+						break;
+					case ClrElementKind.SZArray:
+					case ClrElementKind.Array:
+					case ClrElementKind.Object:
+						ulong addr;
+						if (str.StartsWith("0x") || str.StartsWith("0X"))
+						{
+							str = str.Substring(2);
+						}
+						if (UInt64.TryParse(str, NumberStyles.HexNumber, CultureInfo.InvariantCulture, out addr))
+						{
+							ok = true;
+							val = addr;
+						}
+						break;
+					case ClrElementKind.Char:
+					case ClrElementKind.Int8:
+					case ClrElementKind.UInt8:
+					case ClrElementKind.Int16:
+					case ClrElementKind.UInt16:
+					case ClrElementKind.Int32:
+					case ClrElementKind.UInt32:
+					case ClrElementKind.Int64:
+					case ClrElementKind.UInt64:
+					case ClrElementKind.Float:
+					case ClrElementKind.Double:
+						break;
+					case ClrElementKind.String:
+						ok = true;
+						break;
+					case ClrElementKind.Pointer:
+					case ClrElementKind.NativeInt:
+					case ClrElementKind.NativeUInt:
+					case ClrElementKind.FunctionPointer:
+						break;
+					default:
+						break;
+				}
+			}
+			return ok;
+		}
+
+
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		public static bool IsStruct(ClrElementKind kind)
 		{
 			return kind == ClrElementKind.Struct;

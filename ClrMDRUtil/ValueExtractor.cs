@@ -4,6 +4,7 @@ using System.Diagnostics;
 using System.Globalization;
 using System.Text;
 using Microsoft.Diagnostics.Runtime;
+using System.Net;
 
 namespace ClrMDRIndex
 {
@@ -277,13 +278,37 @@ namespace ClrMDRIndex
 			return formatSpec == null ? dt.ToString(CultureInfo.InvariantCulture) : dt.ToString(formatSpec);
 		}
 
-		public static DateTime GetDateTime(ulong addr, ClrInstanceField fld, bool internalPtr)
+		/// <summary>
+		/// Get DateTime value given address of containing instance.
+		/// </summary>
+		/// <param name="parentAddr">Address of the class/struct containing DateTime struct.</param>
+		/// <param name="fld">DateTime field.</param>
+		/// <param name="internalPtr">Is containing instance a struct.</param>
+		/// <returns></returns>
+		public static DateTime GetDateTime(ulong parentAddr, ClrInstanceField fld, bool internalPtr)
 		{
-			ulong fldAddr = fld.GetAddress(addr, internalPtr);
+			ulong fldAddr = fld.GetAddress(parentAddr, internalPtr);
 			var data = (ulong)fld.Type.Fields[0].GetValue(fldAddr, true);
 			data = data & TicksMask;
 			var dt = DateTime.FromBinary((long)data);
 			return dt;
+		}
+
+		/// <summary>
+		/// Get DateTime string given address of containing instance.
+		/// </summary>
+		/// <param name="parentAddr">Address of the class/struct containing DateTime struct.</param>
+		/// <param name="fld">DateTime field.</param>
+		/// <param name="internalPtr">Is containing instance a struct.</param>
+		/// <param name="formatSpec">DateTime string fromatting, can be null.</param>
+		/// <returns></returns>
+		public static string GetDateTimeString(ulong parentAddr, ClrInstanceField fld, bool internalPtr, string formatSpec = null)
+		{
+			ulong fldAddr = fld.GetAddress(parentAddr, internalPtr);
+			var data = (ulong)fld.Type.Fields[0].GetValue(fldAddr, true);
+			data = data & TicksMask;
+			var dt = DateTime.FromBinary((long)data);
+			return formatSpec == null ? dt.ToString(CultureInfo.InvariantCulture) : dt.ToString(formatSpec);
 		}
 
 		//
@@ -788,22 +813,45 @@ namespace ClrMDRIndex
 			return "uknown_element_type";
 		}
 
-		public static string GetEnumValue(ulong parentAddr, ClrInstanceField field, bool intr)
+		public static string GetEnumValueString(ulong fieldAddr, ClrInstanceField field, bool intr)
 		{
-			var addrObj = field.GetValue(parentAddr, intr, false);
-			var primVal = GetPrimitiveValue(addrObj, field.Type);
-			var enumName = field.Type.GetEnumName(addrObj);
+			//var addrObj = field.GetAddress(parentAddr, intr);
+			var primVal = field.Type.GetValue(fieldAddr);
+			var enumName = field.Type.GetEnumName(primVal);
 			return primVal + (enumName == null ? string.Empty : " " + enumName);
 		}
 
-        //public static object GetEnumValueObject(ulong parentAddr, ClrInstanceField field, bool intr)
-        //{
-        //    var addrObj = field.GetValue(parentAddr, intr, false);
-        //    var primVal = GetPrimitiveValueObject(addrObj, field, intr);
-        //    return primVal;
-        //}
+		public static int GetEnumValue(ulong parentAddr, ClrInstanceField field, bool intr)
+		{
+			var addrObj = field.GetAddress(parentAddr, intr);
+			var primVal = field.Type.GetValue(addrObj);
+			return (int)primVal;
+		}
 
-        public static string GetEnumValue(ulong addr, ClrType clrType)
+		public static string GetEnumString(ulong parentAddr, ClrInstanceField field, bool intr)
+		{
+			var addrObj = field.GetAddress(parentAddr, intr);
+			var primVal = field.Type.GetValue(addrObj);
+			var enumName = field.Type.GetEnumName(primVal);
+			return primVal + (enumName == null ? string.Empty : " " + enumName);
+		}
+
+
+		//public static long GetEnumValue(ulong parentAddr, ClrInstanceField field, bool intr)
+		//{
+		//	var addrObj = field.GetValue(parentAddr, intr, intr);
+		//	var primVal = GetPrimitiveValueObject(addrObj, field.Type,false);
+		//	return primVal;
+		//}
+
+		//public static object GetEnumValueObject(ulong parentAddr, ClrInstanceField field, bool intr)
+		//{
+		//    var addrObj = field.GetValue(parentAddr, intr, false);
+		//    var primVal = GetPrimitiveValueObject(addrObj, field, intr);
+		//    return primVal;
+		//}
+
+		public static string GetEnumValueString(ulong addr, ClrType clrType)
 		{
 			var primVal = GetPrimitiveValue(addr, clrType);
 			var enumName = clrType.GetEnumName(addr);
@@ -930,22 +978,22 @@ namespace ClrMDRIndex
                     case ClrElementKind.Guid:
                         return theValue ? (object)GetGuid(addr, fld) : GuidValue(addr, fld);
                     case ClrElementKind.DateTime:
-                        return theValue ? (object)GetDateTime(addr, fld) : DateTimeValue(addr, fld);
+                        return theValue ? (object)GetDateTime(addr, fld, intern) : GetDateTimeString(addr, fld, intern);
                     case ClrElementKind.TimeSpan:
                         return theValue ? (object)GetTimeSpan(addr, fld) : TimeSpanValue(addr, fld);
                     case ClrElementKind.Decimal:
-                        return theValue ? (object)GetDecimal(addr, fld, intern) : DecimalValue(addr, fld);
+                        return theValue ? (object)GetDecimal(addr, fld, intern) : GetDecimalValue(addr, fld,intern);
                     case ClrElementKind.Exception:
-                        return theValue ? (object) addr : Utils.AddressString(addr);
+                        return theValue ? (object) addr : Utils.RealAddressString(addr);
                     case ClrElementKind.Enum:
-                        return GetEnumValue(addr, fld, intern);
+						return theValue ?(object) GetEnumValue(addr, fld, intern) : GetEnumString(addr, fld, intern);
                     case ClrElementKind.Free:
                     case ClrElementKind.Abstract:
                     case ClrElementKind.SystemVoid:
                     case ClrElementKind.SystemObject:
-                        return theValue ? (object)addr : Utils.AddressString(addr);
+                        return theValue ? (object)addr : Utils.RealAddressString(addr);
                     default:
-                        return theValue ? (object)addr : Utils.AddressString(addr);
+                        return theValue ? (object)addr : Utils.RealAddressString(addr);
                 }
             }
             else
@@ -953,17 +1001,13 @@ namespace ClrMDRIndex
                 switch (fldKind)
                 {
                     case ClrElementKind.String:
-                        ulong faddr;
-                        if (heap.ReadPointer(addr, out faddr))
-                            return GetStringAtAddress(faddr, heap);
-                        else
-                            return Constants.NullValue;
+						return fld.GetValue(addr, intern, true);
                     case ClrElementKind.SZArray:
                     case ClrElementKind.Array:
                     case ClrElementKind.Object:
                     case ClrElementKind.Class:
                         var fldAddr = GetReferenceFieldAddress( addr, fld, intern);
-                        return theValue ? (object)fldAddr : Utils.AddressString(fldAddr);
+                        return theValue ? (object)fldAddr : Utils.RealAddressString(fldAddr);
                     case ClrElementKind.Unknown:
                         var ufldAddr = GetReferenceFieldAddress(addr, fld, intern);
                         return Utils.RealAddressString(addr) + Constants.HeavyAsteriskPadded + Utils.RealAddressString(ufldAddr);
@@ -995,7 +1039,7 @@ namespace ClrMDRIndex
                     case ClrElementKind.Abstract:
                     case ClrElementKind.SystemVoid:
                     case ClrElementKind.SystemObject:
-                        return Utils.AddressString((ulong)val);
+                        return Utils.RealAddressString((ulong)val);
                     default:
                         throw new ArgumentException("[ValueExtractor.ValueToString(..)] Invalid kind: " + kind.ToString());
                 }
@@ -1010,7 +1054,7 @@ namespace ClrMDRIndex
                     case ClrElementKind.Array:
                     case ClrElementKind.Object:
                     case ClrElementKind.Class:
-                        return Utils.AddressString((ulong)val);
+                        return Utils.RealAddressString((ulong)val);
                     case ClrElementKind.Unknown:
                         throw new ArgumentException("[ValueExtractor.ValueToString(..)] Invalid kind: " + kind.ToString());
                     default:
@@ -1070,7 +1114,7 @@ namespace ClrMDRIndex
 					case ClrElementKind.Exception:
 						return Utils.RealAddressString(fldAddr);
 					case ClrElementKind.Enum:
-						return GetEnumValue(fldAddr, fld, intern);
+						return GetEnumValueString(fldAddr, fld, intern);
 					case ClrElementKind.Free:
 					case ClrElementKind.Abstract:
 					case ClrElementKind.SystemVoid:
@@ -1486,8 +1530,51 @@ namespace ClrMDRIndex
 
 		}
 
-#endregion array values
+		#endregion array values
 
+
+		private static IPAddress GetIPAddress(ClrType clrType, ulong address)
+		{
+			const int AddressFamilyInterNetworkV6 = 23;
+			const int IPv4AddressBytes = 4;
+			const int IPv6AddressBytes = 16;
+			const int NumberOfLabels = IPv6AddressBytes / 2;
+
+			byte[] bytes;
+
+			var m_FamilyFld = clrType.GetFieldByName("m_Family");
+			var m_Family = ValueExtractor.GetEnumValue(address, m_FamilyFld, false);
+
+			if (m_Family == AddressFamilyInterNetworkV6)
+			{
+				bytes = new byte[IPv6AddressBytes];
+				int j = 0;
+
+				var m_NumbersFld = clrType.GetFieldByName("m_Numbers");
+				var m_NumbersAddr = (ulong)m_NumbersFld.GetValue(address);
+				var m_NumbersType = m_NumbersFld.Type;
+
+				for (int i = 0; i < NumberOfLabels; i++)
+				{
+					ushort number = (ushort)m_NumbersType.GetArrayElementValue(m_NumbersAddr, i);
+					bytes[j++] = (byte)((number >> 8) & 0xFF);
+					bytes[j++] = (byte)(number & 0xFF);
+				}
+			}
+			else
+			{
+				var m_m_AddressFld = clrType.GetFieldByName("m_Address");
+				var m_AddressVal = (long)m_m_AddressFld.GetValue(address);
+
+				bytes = new byte[IPv4AddressBytes];
+				bytes[0] = (byte)(m_AddressVal);
+				bytes[1] = (byte)(m_AddressVal >> 8);
+				bytes[2] = (byte)(m_AddressVal >> 16);
+				bytes[3] = (byte)(m_AddressVal >> 24);
+			}
+
+			return new IPAddress(bytes);
+		}
 		/*
         try
             let addr = Utils.RealAddress(decoratedAddr)

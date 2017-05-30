@@ -105,30 +105,28 @@
             <MenuItem x:Name="TypeTreeGetStringUsage" Header="Get String Usage" Click="TypeTreeGetTypeStringUsageClicked"></MenuItem>
         </ContextMenu>
 
-        <ControlTemplate x:Key="ListingGridTemplate" TargetType="Control">
-            <Grid x:Name="ListingGrid">
-                <Grid.RowDefinitions>
-                    <RowDefinition Height="75*"/>
-                    <RowDefinition Height="5"/>
-                    <RowDefinition Height="20*"/>
-                </Grid.RowDefinitions>
-                <ListView  Name="ListingView" Grid.Row="0" VerticalAlignment="Stretch" HorizontalAlignment="Stretch" Margin="2,2,2,2" GridViewColumnHeader.Click="ListViewBottomGridHeaderClick">
-                    <ListView.ItemContainerStyle>
-                        <Style TargetType="ListViewItem">
-                            <Setter Property="HorizontalContentAlignment" Value="Left" />
-                        </Style>
-                    </ListView.ItemContainerStyle>
-                    <ListView.View>
-                        <GridView AllowsColumnReorder="True">
-                        </GridView>
-                    </ListView.View>
-                </ListView>
-                <GridSplitter Grid.Row="1" VerticalAlignment="Center" HorizontalAlignment="Stretch" Height="5" ShowsPreview="False" Background="DarkGray"></GridSplitter>
-                <TextBox Name="ListingInformation" v4:Grid.Row="2" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" Margin="2,2,2,2">
-                </TextBox>
-            </Grid>
-        </ControlTemplate>
-        <!-- thread grids -->
+        <!--Grid x:Key="ListingGrid" x:Shared="False">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="75*"/>
+                <RowDefinition Height="5"/>
+                <RowDefinition Height="20*"/>
+            </Grid.RowDefinitions>
+            <ListView  Name="ListingView" Grid.Row="0" VerticalAlignment="Stretch" HorizontalAlignment="Stretch" Margin="2,2,2,2" GridViewColumnHeader.Click="ListViewBottomGridHeaderClick">
+                <ListView.ItemContainerStyle>
+                    <Style TargetType="ListViewItem">
+                        <Setter Property="HorizontalContentAlignment" Value="Left" />
+                    </Style>
+                </ListView.ItemContainerStyle>
+                <ListView.View>
+                    <GridView AllowsColumnReorder="True">
+                    </GridView>
+                </ListView.View>
+            </ListView>
+            <GridSplitter Grid.Row="1" VerticalAlignment="Center" HorizontalAlignment="Stretch" Height="5" ShowsPreview="False" Background="DarkGray"></GridSplitter>
+            <TextBox Name="ListingInformation" v4:Grid.Row="2" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" Margin="2,2,2,2">
+            </TextBox>
+        </-->
+    <!-- thread grids -->
         <!-- ############ -->
         <Grid x:Key="DeadlockGraphXGrid" x:Shared="False">
             <DockPanel>
@@ -176,7 +174,7 @@
                 <ColumnDefinition Width="5"/>
                 <ColumnDefinition Width="35*"/>
             </Grid.ColumnDefinitions>
-            <Grid x:Name="ListingGrid" v4:Grid.Column="0">
+            <Grid x:Name="ThreadListingGrid" v4:Grid.Column="0">
                 <Grid.RowDefinitions>
                     <RowDefinition Height="75*"/>
                     <RowDefinition Height="5"/>

@@ -7,6 +7,8 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 using ClrMDRIndex;
+using System.IO;
+using System.Text.RegularExpressions;
 
 namespace MDRDesk
 {
@@ -15,18 +17,19 @@ namespace MDRDesk
     /// </summary>
     public partial class TypeValuesReportSetup : Window
 	{
+		private IndexProxy _indexProxy;
 		private ClrtDisplayableType _typeInfo;
-		private TypeValuesQuery _query;
 		private TreeViewItem _currentTreeViewItem;
 		private HashSet<ClrtDisplayableType> _selection;
-        private ClrtDisplayableType[] _selections;
-        public ClrtDisplayableType[] Selections => _selections;
+        private ClrtDisplayableType[] _needed;
+        public ClrtDisplayableType[] Selections => _needed;
 
-        public TypeValuesReportSetup(ClrtDisplayableType typeInfo)
+
+        public TypeValuesReportSetup(ClrtDisplayableType typeInfo, IndexProxy proxy)
 		{
+			_indexProxy = proxy;
 			_typeInfo = typeInfo;
-			_query = new TypeValuesQuery();
-			_selection = new HashSet<ClrtDisplayableType>();
+			_selection = new HashSet<ClrtDisplayableType>(new ClrtDisplayableTypeIdComparer());
 			InitializeComponent();
 			TypeValueReportTopTextBox.Text = typeInfo.GetDescription();
 			UpdateTypeValueSetupGrid(typeInfo,null);
@@ -137,11 +140,24 @@ namespace MDRDesk
 			bool? dlgResult = dlg.ShowDialog();
 			if (dlgResult == true)
 			{
-				string val = dlg.Value;
-				if (string.IsNullOrEmpty(val))
+				if (dlg.Remove)
+				{
 					curDispItem.RemoveFilter();
+				}
+				else if (TypeExtractor.IsString(curDispItem.Kind))
+				{
+					var op = dlg.Operator;
+					Regex regex = null;
+					if (FilterValue.IsOp(FilterValue.Op.REGEX,op))
+					{
+						regex = new Regex(dlg.ValueString);
+					}
+					curDispItem.SetFilter(new FilterValue(dlg.ValueString, curDispItem.Kind, dlg.Operator, regex));
+				}
 				else
-					curDispItem.SetFilter(new FilterValue(val));
+				{
+					curDispItem.SetFilter(new FilterValue(dlg.ValueObject, curDispItem.Kind, dlg.Operator));
+				}
 				GuiUtils.UpdateTypeValueSetupTreeViewItem(_currentTreeViewItem, curDispItem);
 				UpdateSelection(curDispItem);
 			}
@@ -194,58 +210,137 @@ namespace MDRDesk
             }
         }
 
-        private ClrtDisplayableType[] GetOrderedSelection()
+  //      private ClrtDisplayableType[] GetOrderedSelection()
+		//{
+		//	var node = TypeValueReportTreeView.Items[0] as TreeViewItem;
+		//	var que = new Queue<TreeViewItem>();
+		//	que.Enqueue(node);
+		//	LinkedList<ClrtDisplayableType> lst = new LinkedList<ClrtDisplayableType>();
+		//	while(que.Count > 0)
+		//	{
+		//		node = que.Dequeue();
+		//		lst.AddFirst(node.Tag as ClrtDisplayableType);
+		//		if (node.Items == null) continue;
+		//		for (int i = 0, icnt = node.Items.Count; i < icnt; ++i)
+		//		{
+		//			que.Enqueue(node.Items[i] as TreeViewItem);
+		//		}
+		//	}
+  //          var lnode = lst.First;
+  //          while(lnode!=null)
+  //          {
+  //              if (lnode.Value.IsMarked) break;
+  //              lnode = lnode.Next;
+  //              lst.RemoveFirst();
+  //          }
+  //          if (lst.Count < 1) return Utils.EmptyArray<ClrtDisplayableType>.Value;
+
+  //          var needed = new HashSet<ClrtDisplayableType>(_selection);
+  //          foreach(var sel in _selection)
+  //          {
+  //              var parent = sel.Parent;
+  //              while(parent != null)
+  //              {
+  //                  needed.Add(parent);
+  //                  parent = parent.Parent;
+  //              }
+  //          }
+  //          lnode = lst.First;
+  //          while (lnode != null)
+  //          {
+  //              var next = lnode.Next;
+  //              if (!needed.Contains(lnode.Value))
+  //                  lst.Remove(lnode);
+  //              lnode = next;
+  //          }
+  //          var ary = lst.ToArray();
+  //          Array.Reverse(ary);
+  //          return ary;
+		//}
+
+
+		private ClrtDisplayableType[] GetOrderedSelection()
 		{
-			var node = TypeValueReportTreeView.Items[0] as TreeViewItem;
-			var que = new Queue<TreeViewItem>();
-			que.Enqueue(node);
-			LinkedList<ClrtDisplayableType> lst = new LinkedList<ClrtDisplayableType>();
-			while(que.Count > 0)
+			var needed = new HashSet<ClrtDisplayableType>(new ClrtDisplayableTypeIdComparer());
+			needed.Add(_typeInfo);
+			foreach (var sel in _selection)
 			{
-				node = que.Dequeue();
-				lst.AddFirst(node.Tag as ClrtDisplayableType);
-				if (node.Items == null) continue;
-				for (int i = 0, icnt = node.Items.Count; i < icnt; ++i)
+				needed.Add(sel);
+				var parent = sel.Parent;
+				while (parent != null)
 				{
-					que.Enqueue(node.Items[i] as TreeViewItem);
+					needed.Add(parent);
+					parent = parent.Parent;
 				}
 			}
-            var lnode = lst.First;
-            while(lnode!=null)
-            {
-                if (lnode.Value.IsMarked) break;
-                lnode = lnode.Next;
-                lst.RemoveFirst();
-            }
-            if (lst.Count < 1) return Utils.EmptyArray<ClrtDisplayableType>.Value;
+			var que = new Queue<ClrtDisplayableType>(Math.Max(needed.Count * 2,64));
+			var lst = new LinkedList<ClrtDisplayableType>();
+			int ndx = 0;
+			lst.AddFirst(_typeInfo);
+			if (_typeInfo.Fields == null)
+			{
+				return lst.ToArray();
+			}
+			for (int i = 0, icnt = _typeInfo.Fields.Length; i < icnt; ++i)
+			{
+				que.Enqueue(_typeInfo.Fields[i]);
+			}
+			while (que.Count > 0)
+			{
+				var cdt = que.Dequeue();
+				if (needed.Contains(cdt))
+				{
+					InsertClrtDisplayableType(lst, cdt);
+				}
 
-            var needed = new HashSet<ClrtDisplayableType>(_selection);
-            foreach(var sel in _selection)
-            {
-                var parent = sel.Parent;
-                while(parent != null)
-                {
-                    needed.Add(parent);
-                    parent = parent.Parent;
-                }
-            }
-            lnode = lst.First;
-            while (lnode != null)
-            {
-                var next = lnode.Next;
-                if (!needed.Contains(lnode.Value))
-                    lst.Remove(lnode);
-                lnode = next;
-            }
-            var ary = lst.ToArray();
-            Array.Reverse(ary);
-            return ary;
+				if (!cdt.HasFields) continue;
+				for (int i = 0, icnt = cdt.Fields.Length; i < icnt; ++i)
+				{
+					que.Enqueue(cdt.Fields[i]);
+				}
+			}
+			return lst.ToArray();
 		}
 
-        private void RunClicked(object sender, RoutedEventArgs e)
+		private void InsertClrtDisplayableType(LinkedList<ClrtDisplayableType> lst, ClrtDisplayableType cdt)
+		{
+			long myParentId = cdt.Parent.Id;
+			var node = lst.Last;
+			while(true)
+			{
+				var val = node.Value;
+				if (val.Id == myParentId || val.Parent.Id == myParentId)
+				{
+					lst.AddAfter(node, cdt);
+					break;
+				}
+				if (node.Previous == null)
+					throw new ArgumentException("[" + this.GetType().Name + "][InsertClrtDisplayableType] ClrtDisplayableType list is corrupted.");
+				node = node.Previous;
+			}
+		}
+
+		private void RunClicked(object sender, RoutedEventArgs e)
         {
-            _selections = GetOrderedSelection();
-            DialogResult = _selections.Length > 0;
+            _needed = GetOrderedSelection();
+			if (TypeValueSaveReportCheckBox.IsChecked.Value)
+			{
+				var tpName = Utils.BaseTypeName(_needed[0].TypeName);
+				tpName = Utils.GetValidFileName(tpName);
+
+				string spath = _indexProxy.FileMoniker.OutputFolder + Path.DirectorySeparatorChar + "TypeValuesSetup." + tpName + ".tvr";
+				int pathNdx = 1;
+				while(File.Exists(spath))
+				{
+					var newTpName = tpName + "(" + pathNdx.ToString() + ")";
+					++pathNdx;
+					spath = _indexProxy.FileMoniker.OutputFolder + Path.DirectorySeparatorChar + "TypeValuesSetup." + newTpName + ".tvr";
+				}
+				string error;
+				bool r = ClrtDisplayableType.SerializeArray(spath, _needed, out error);
+
+			}
+			DialogResult = _needed.Length > 0;
         }
 
         private void CancelClicked(object sender, RoutedEventArgs e)
@@ -253,5 +348,49 @@ namespace MDRDesk
             DialogResult = false;
             Close();
         }
-    }
+
+		private void OpenClicked(object sender, RoutedEventArgs e)
+		{
+			string error = null;
+			string path = GuiUtils.SelectFile(string.Format("*.{0}", "tvr"),
+				string.Format("Type values setups (*.tvr)|*.tvr|All files (*.*)|*.*"), _indexProxy.FileMoniker.OutputFolder);
+			try
+			{
+				ClrtDisplayableType[] queryItems = ClrtDisplayableType.DeserializeArray(path, out error);
+				_typeInfo = ClrtDisplayableType.ClrtDisplayableTypeAryFixup(queryItems);
+				TypeValueReportTreeView.Items.Clear();
+				UpdateTypeValueSetupGrid(_typeInfo, null);
+				TreeViewItem tvi = TypeValueReportTreeView.Items[0] as TreeViewItem;
+				var que = new Queue<KeyValuePair<ClrtDisplayableType,TreeViewItem>>(_typeInfo.Fields.Length);
+				for (int i = 0, icnt = _typeInfo.Fields.Length; i < icnt; ++i)
+				{
+					que.Enqueue(new KeyValuePair<ClrtDisplayableType, TreeViewItem>(_typeInfo.Fields[i], tvi.Items[i] as TreeViewItem));
+				}
+				while (que.Count > 0)
+				{
+					var kv = que.Dequeue();
+					var dt = kv.Key;
+					tvi = kv.Value; 
+					if (dt.GetValue || dt.HasFilter)
+					{
+						UpdateSelection(dt);
+					}
+					if (dt.HasFields)
+					{
+						UpdateTypeValueSetupGrid(dt, tvi);
+						for (int i = 0, icnt=dt.Fields.Length; i < icnt; ++i)
+						{
+							que.Enqueue(new KeyValuePair<ClrtDisplayableType, TreeViewItem>(dt.Fields[i], tvi.Items[i] as TreeViewItem));
+						}
+					}
+				}
+			}
+			catch(Exception ex)
+			{
+				error = Utils.GetExceptionErrorString(ex);
+				GuiUtils.ShowError(error, this);
+			}
+
+		}
+	}
 }

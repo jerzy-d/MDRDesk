@@ -11,7 +11,7 @@ module Types =
     open Microsoft.Diagnostics.Runtime
     open ClrMDRIndex
 
-    let typeKind (clrType:ClrType) : TypeKind =
+    let typeKind (clrType:ClrType) : ClrMDRIndex.TypeKind =
         let elemType = clrType.ElementType
         let kind = TypeKinds.SetClrElementType(TypeKind.Unknown, elemType)
         match elemType with
@@ -170,7 +170,7 @@ module Types =
             | _ ->
                 Constants.NullValue
         | TypeKind.EnumKind ->
-            ValueExtractor.GetEnumValue(addr, fld, intr)
+            ValueExtractor.GetEnumValueString(addr, fld, intr)
         | TypeKind.InterfaceKind ->
             ValueExtractor.GetPrimitiveValue(addr, fld, intr)
         | TypeKind.PrimitiveKind ->
@@ -210,7 +210,7 @@ module Types =
                 Constants.NullValue
         | TypeKind.EnumKind ->
             let enumVal = ValueExtractor.GetPrimitiveValue(addr, clrType)
-            ValueExtractor.GetEnumValue(addr, clrType)
+            ValueExtractor.GetEnumValueString(addr, clrType)
         | TypeKind.InterfaceKind ->
             Constants.NullValue
         | TypeKind.PrimitiveKind ->
@@ -550,7 +550,7 @@ module Types =
         build t
         sb.ToString()
 
-    let getClassStructValue (ndxProxy:IndexProxy) (heap:ClrHeap) (decoratedAddr:address) (clrType:ClrType) (kind:TypeKind) (fldNdx:int) : string * InstanceValue =
+    let getClassStructValue (ndxProxy:ClrMDRIndex.IndexProxy) (heap:ClrHeap) (decoratedAddr:address) (clrType:ClrType) (kind:TypeKind) (fldNdx:int) : string * InstanceValue =
         try
             let addr = Utils.RealAddress(decoratedAddr)
             let fldCount = fieldCount clrType

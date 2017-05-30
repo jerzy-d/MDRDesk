@@ -1606,14 +1606,14 @@ namespace UnitTestMdr
             string error;
             Stopwatch stopWatch = new Stopwatch();
             stopWatch.Start();
-            var index = OpenIndex(@"D:\Jerzy\WinDbgStuff\dumps\Analytics\Highline\analyticsdump111.dlk.dmp.map");
+            var index = OpenIndex(@"C:\WinDbgStuff\dumps\Analytics\Highline\analyticsdump111.dlk.dmp.map");
             TestContext.WriteLine(index.DumpFileName + " INDEX OPEN DURATION: " + Utils.StopAndGetDurationString(stopWatch));
 
             using (index)
             {
-                // deserialioze query
+                // deserialize query
                 //
-                string qpath = @"D:\Jerzy\WinDbgStuff\dumps\Analytics\Highline\analyticsdump111.dlk.dmp.map\ad-hoc.queries\ClrtDisplayableType.YYYY-05-23_02-58-59-882.bin";
+                string qpath = @"C:\WinDbgStuff\Dumps\Analytics\Highline\analyticsdump111.dlk.dmp.map\ad-hoc.queries\ClrtDisplayableType.2017-05-27-05-58-41-608.bin";
                 ClrtDisplayableType[] queryItems = ClrtDisplayableType.DeserializeArray(qpath, out error);
                 try
                 {
@@ -1629,15 +1629,37 @@ namespace UnitTestMdr
             Assert.IsNull(error, error);
         }
 
-        #endregion type values report
+		[TestMethod]
+		public void TestSavedTypeValuesReport()
+		{
+			string error;
+			Stopwatch stopWatch = new Stopwatch();
+			stopWatch.Start();
+			var index = OpenIndex(@"C:\WinDbgStuff\dumps\Analytics\Highline\analyticsdump111.dlk.dmp.map");
+			TestContext.WriteLine(index.DumpFileName + " INDEX OPEN DURATION: " + Utils.StopAndGetDurationString(stopWatch));
 
-        #region get list of specific clr objects
+			using (index)
+			{
+				// deserialize query
+				//
+				string qpath = @"C:\WinDbgStuff\Dumps\Analytics\Highline\analyticsdump111.dlk.dmp.map\ad-hoc.queries\ClrtDisplayableType.2017-05-27-05-58-41-608.bin";
+				ClrtDisplayableType[] queryItems = ClrtDisplayableType.DeserializeArray(qpath, out error);
 
-        #endregion get list of specific clr objects
 
-        #region misc
+			}
 
-        [TestMethod]
+			Assert.IsNull(error, error);
+		}
+
+		#endregion type values report
+
+		#region get list of specific clr objects
+
+		#endregion get list of specific clr objects
+
+		#region misc
+
+		[TestMethod]
 		public void TestKnownTypes()
 		{
 			string[] typeNames = new string[]

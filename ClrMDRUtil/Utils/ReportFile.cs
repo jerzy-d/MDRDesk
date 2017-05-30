@@ -80,7 +80,7 @@ namespace ClrMDRIndex
 			{
 				int itemCnt = 0;
 				string colSpecs = string.Empty;
-				string[] separators = new string[] {Constants.HeavyAsteriskPadded};
+				string[] separators = new string[] { Constants.HeavyAsteriskPadded };
 				string report = null;
 				sr = new StreamReader(path);
 				string ln = sr.ReadLine();
@@ -114,7 +114,7 @@ namespace ClrMDRIndex
 					else if (ln.StartsWith(SeparatorPrefix))
 					{
 						var sep = ln.Substring(SeparatorPrefix.Length);
-						separators = new[] {sep};
+						separators = new[] { sep };
 						ln = sr.ReadLine();
 					}
 					else
@@ -132,7 +132,7 @@ namespace ClrMDRIndex
 				ColumnType[] colTypes;
 				triple<string, ColumnType, int>[] columns = GetColumnInfo(colSpecs, separators, out colTypes);
 
-				var itemLst = new List<string>(itemCnt*columns.Length);
+				var itemLst = new List<string>(itemCnt * columns.Length);
 
 				while (ln != null)
 				{
@@ -156,9 +156,9 @@ namespace ClrMDRIndex
 				}
 
 				int colCnt = columns.Length;
-				Debug.Assert((itemLst.Count%colCnt) == 0);
+				Debug.Assert((itemLst.Count % colCnt) == 0);
 				var dataAry = itemLst.ToArray();
-				var itemAry = new listing<string>[dataAry.Length/colCnt];
+				var itemAry = new listing<string>[dataAry.Length / colCnt];
 				var dataNdx = 0;
 				for (int i = 0, icnt = dataAry.Length; i < icnt; i += colCnt)
 				{
@@ -310,7 +310,7 @@ namespace ClrMDRIndex
 		private static triple<string, ColumnType, int>[] GetColumnInfo(string colSpec, string[] seps,
 			out ColumnType[] colTypes)
 		{
-			var charSep = new char[] {'|'};
+			var charSep = new char[] { '|' };
 			var cols = colSpec.Split(seps, StringSplitOptions.None);
 			var colInfos = new triple<string, ColumnType, int>[cols.Length];
 			colTypes = new ColumnType[cols.Length];
@@ -520,6 +520,14 @@ namespace ClrMDRIndex
 					}
 					sw.WriteLine();
 				}
+				if (!string.IsNullOrWhiteSpace(info.Notes))
+				{
+					var noteLines = info.Notes.Split("\r\n".ToCharArray());
+					for (int i = 0, icnt = noteLines.Length; i < icnt; ++i)
+					{
+						sw.WriteLine(ReportFile.DescrPrefix + noteLines[i]);
+					}
+				}
 
 				return true;
 			}
@@ -604,7 +612,7 @@ namespace ClrMDRIndex
 		private IComparer<listing<string>>[] _cmps;
 		private int[] _indices;
 
-		public MultipleListingCmp(int[] indices, IComparer<listing<string>>[] cmps )
+		public MultipleListingCmp(int[] indices, IComparer<listing<string>>[] cmps)
 		{
 			_indices = indices;
 			_cmps = cmps;

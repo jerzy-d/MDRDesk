@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Diagnostics;
@@ -7,22 +6,16 @@ using System.Globalization;
 using System.IO;
 using System.Reflection;
 using System.Text;
-using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Data;
-using System.Windows.Forms.Integration;
-using System.Windows.Forms.VisualStyles;
 using System.Windows.Input;
-using System.Windows.Media.Imaging;
 using System.Windows.Threading;
 using ClrMDRIndex;
 using Application = System.Windows.Application;
-using Binding = System.Windows.Data.Binding;
 using Clipboard = System.Windows.Clipboard;
 using Cursors = System.Windows.Input.Cursors;
-using HorizontalAlignment = System.Windows.HorizontalAlignment;
 using ListBox = System.Windows.Controls.ListBox;
 using ListView = System.Windows.Controls.ListView;
 using MessageBox = System.Windows.MessageBox;
@@ -83,9 +76,9 @@ namespace MDRDesk
 
 				var result = Setup.GetConfigSettings(out error);
 				if (!result) return false;
-				RecentIndexList = new RecentFileList(RecentIndexMenuItem, (int) Setup.RecentFiles.MaxCount);
+				RecentIndexList = new RecentFileList(RecentIndexMenuItem, (int)Setup.RecentFiles.MaxCount);
 				RecentIndexList.Add(Setup.RecentIndexList);
-				RecentAdhocList = new RecentFileList(RecentAdhocMenuItem, (int) Setup.RecentFiles.MaxCount);
+				RecentAdhocList = new RecentFileList(RecentAdhocMenuItem, (int)Setup.RecentFiles.MaxCount);
 				RecentAdhocList.Add(Setup.RecentAdhocList);
 				SetupDispatcherTimer();
 
@@ -307,7 +300,7 @@ namespace MDRDesk
 			string[] dacFiles = null;
 			try
 			{
-				CreateCrashDump dlg = new CreateCrashDump() {Owner = Window.GetWindow(this)};
+				CreateCrashDump dlg = new CreateCrashDump() { Owner = Window.GetWindow(this) };
 				var dlgResult = dlg.ShowDialog();
 				if (dlgResult == true && dlg.IndexDump && System.IO.File.Exists(dlg.DumpPath))
 				{
@@ -466,32 +459,32 @@ namespace MDRDesk
 			return StringBuilderCache.GetStringAndRelease(sb);
 		}
 
-        private void OpenDumpIndexClicked(object sender, RoutedEventArgs e)
-        {
-            if (IsIndexAvailable(null)) CloseCurrentIndex();
-            string path = null;
-            if (sender != null && sender is MenuItem)
-            {
-                var menuItem = sender as MenuItem;
-                if (menuItem.HasHeader && menuItem.Header is string && (menuItem.Header as string) == "Recent Indices")
-                {
-                    path = e.OriginalSource as string;
-                }
-            }
-            if (path == null) path = GuiUtils.GetFolderPath(Setup.DumpsFolder);
+		private void OpenDumpIndexClicked(object sender, RoutedEventArgs e)
+		{
+			if (IsIndexAvailable(null)) CloseCurrentIndex();
+			string path = null;
+			if (sender != null && sender is MenuItem)
+			{
+				var menuItem = sender as MenuItem;
+				if (menuItem.HasHeader && menuItem.Header is string && (menuItem.Header as string) == "Recent Indices")
+				{
+					path = e.OriginalSource as string;
+				}
+			}
+			if (path == null) path = GuiUtils.GetFolderPath(Setup.DumpsFolder);
 
-            if (path == null) return;
-            try
-            {
-                DoOpenDumpIndex(0, path);
-            }
-            catch(Exception ex)
-            {
-                ShowError(Utils.GetExceptionErrorString(ex));
-            }
-        }
+			if (path == null) return;
+			try
+			{
+				DoOpenDumpIndex(0, path);
+			}
+			catch (Exception ex)
+			{
+				ShowError(Utils.GetExceptionErrorString(ex));
+			}
+		}
 
-        private async void DoOpenDumpIndex(int runtimeIndex, string path)
+		private async void DoOpenDumpIndex(int runtimeIndex, string path)
 		{
 			if (path == null) return;
 			var progressHandler = new Progress<string>(MainStatusShowMessage);
@@ -503,72 +496,72 @@ namespace MDRDesk
 				string error;
 				DumpIndex index = DumpIndex.OpenIndexInstanceReferences(_myVersion, path, runtimeIndex, out error, progress);
 				KeyValuePair<string, KeyValuePair<string, int>[]>[] namespaces = null;
-                progress.Report("OpenIndexInstanceReferences done");
+				progress.Report("OpenIndexInstanceReferences done");
 
 				if (error == null && index != null)
 				{
-                    try
-                    {
-                        namespaces = index.GetNamespaceDisplay();
-                        progress.Report("GetNamespaceDisplay done");
-                    }
-                    catch (Exception ex)
-                    {
-                        error = Utils.GetExceptionErrorString(ex);
-                    }
+					try
+					{
+						namespaces = index.GetNamespaceDisplay();
+						progress.Report("GetNamespaceDisplay done");
+					}
+					catch (Exception ex)
+					{
+						error = Utils.GetExceptionErrorString(ex);
+					}
 				}
 				return new Tuple<string, DumpIndex, KeyValuePair<string, KeyValuePair<string, int>[]>[]>(error, index, namespaces);
 			});
 
-            try
-            {
-                progress.Report("Open index task done");
-                SetEndTaskMainWindowState("Index: '" + DumpFileMoniker.GetMapName(path) +
-                                          (result.Item1 == null ? "' is open." : "' open failed."));
+			try
+			{
+				progress.Report("Open index task done");
+				SetEndTaskMainWindowState("Index: '" + DumpFileMoniker.GetMapName(path) +
+										  (result.Item1 == null ? "' is open." : "' open failed."));
 
-                if (result.Item1 != null)
-                {
-                    ShowError(result.Item1);
-                    return;
-                }
-                if (CurrentIndex != null)
-                {
-                    CurrentIndex.Dispose();
-                    CurrentIndex = null;
-                    Utils.ForceGcWithCompaction();
-                }
-                CurrentIndex = result.Item2;
+				if (result.Item1 != null)
+				{
+					ShowError(result.Item1);
+					return;
+				}
+				if (CurrentIndex != null)
+				{
+					CurrentIndex.Dispose();
+					CurrentIndex = null;
+					Utils.ForceGcWithCompaction();
+				}
+				CurrentIndex = result.Item2;
 
-                //var genInfo = CurrentIndex.GetGenerationTotals();
-                DisplayGeneralInfoGrid(CurrentIndex.DumpInfo);
-                if ((TypeDisplayNamespaceClass.IsChecked ?? (bool)TypeDisplayNamespaceClass.IsChecked) && result.Item3 != null)
-                {
-                    DisplayNamespaceGrid(result.Item3);
-                }
-                else
-                {
-                    if ((TypeDisplayClass.IsChecked ?? (bool)TypeDisplayNamespaceClass.IsChecked))
-                        DisplayTypesGrid(true);
-                    else
-                        DisplayTypesGrid(false);
-                }
-                if (CurrentIndex.DeadlockFound)
-                {
-                    string error;
-                    if (!DisplayDeadlock(CurrentIndex.Deadlock, out error))
-                    {
-                        ShowError(error);
-                    }
-                }
-                Title = BaseTitle + Constants.BlackDiamondPadded + CurrentIndex.DumpFileName;
-                RecentIndexList.Add(CurrentIndex.IndexFolder);
+				//var genInfo = CurrentIndex.GetGenerationTotals();
+				DisplayGeneralInfoGrid(CurrentIndex.DumpInfo);
+				if ((TypeDisplayNamespaceClass.IsChecked ?? (bool)TypeDisplayNamespaceClass.IsChecked) && result.Item3 != null)
+				{
+					DisplayNamespaceGrid(result.Item3);
+				}
+				else
+				{
+					if ((TypeDisplayClass.IsChecked ?? (bool)TypeDisplayNamespaceClass.IsChecked))
+						DisplayTypesGrid(true);
+					else
+						DisplayTypesGrid(false);
+				}
+				if (CurrentIndex.DeadlockFound)
+				{
+					string error;
+					if (!DisplayDeadlock(CurrentIndex.Deadlock, out error))
+					{
+						ShowError(error);
+					}
+				}
+				Title = BaseTitle + Constants.BlackDiamondPadded + CurrentIndex.DumpFileName;
+				RecentIndexList.Add(CurrentIndex.IndexFolder);
 
-            }
-            catch (Exception ex)
-            {
-                ShowError(Utils.GetExceptionErrorString(ex));
-                return;
-            }
+			}
+			catch (Exception ex)
+			{
+				ShowError(Utils.GetExceptionErrorString(ex));
+				return;
+			}
 
 		}
 
@@ -868,7 +861,7 @@ namespace MDRDesk
 			if (fileInfo != null)
 			{
 				Dispatcher.CurrentDispatcher.InvokeAsync(() => DoOpenDumpIndex(0, fileInfo.FilePath));
-					//OpenDumpIndexClicked(menuItem, new RoutedEventArgs(null, fileInfo.FilePath)));
+				//OpenDumpIndexClicked(menuItem, new RoutedEventArgs(null, fileInfo.FilePath)));
 			}
 		}
 
@@ -1266,31 +1259,31 @@ namespace MDRDesk
 			}
 		}
 
-        #endregion AdhocQueries
+		#endregion AdhocQueries
 
-        #region Extras
+		#region Extras
 
-        // TODO JRD
-        private void ExtrasGetIpAddressValueClicked(object sender, RoutedEventArgs e)
-        {
-            try
-            {
-                string value;
-                if (!GetDlgString("Get IPv4 Address Value", "Enter IPv4 address (ex.: 192.154.1.4)", "", out value)) return;
+		// TODO JRD
+		private void ExtrasGetIpAddressValueClicked(object sender, RoutedEventArgs e)
+		{
+			try
+			{
+				string value;
+				if (!GetDlgString("Get IPv4 Address Value", "Enter IPv4 address (ex.: 192.154.1.4)", "", out value)) return;
 				value = value.Trim();
 				var result = Utils.GetIpAddressValue(value);
 				Clipboard.SetText(result.ToString());
-				MainStatusShowMessage("IPv4 address: " +  value + ", long value is: " + result + ". The value is copied to the clipboard.");
+				MainStatusShowMessage("IPv4 address: " + value + ", long value is: " + result + ". The value is copied to the clipboard.");
 			}
 			catch (Exception ex)
-            {
+			{
 				ShowError(Utils.GetExceptionErrorString(ex));
-            }
-        }
+			}
+		}
 
-        // TODO JRD
-        private void ExtrasGetIpValueAddressClicked(object sender, RoutedEventArgs e)
-        {
+		// TODO JRD
+		private void ExtrasGetIpValueAddressClicked(object sender, RoutedEventArgs e)
+		{
 			try
 			{
 				string value;
@@ -1307,11 +1300,11 @@ namespace MDRDesk
 			}
 		}
 
-        #endregion Extras
+		#endregion Extras
 
-        #region File Reports
+		#region File Reports
 
-        private async void FileReportClicked(object sender, RoutedEventArgs e)
+		private async void FileReportClicked(object sender, RoutedEventArgs e)
 		{
 			Grid grid = GetReportGrid(true);
 			if (grid == null) return;
@@ -1346,6 +1339,12 @@ namespace MDRDesk
 			}
 
 			var listingView = (ListView)LogicalTreeHelper.FindLogicalNode(grid, "TopListView");
+			if (listingView == null)
+			{
+				MainStatusShowMessage("Cannot write report, the current tab reporting is not supported.");
+				return;
+			}
+
 			GridView gridView = (GridView)listingView.View;
 			listing<string>[] data = listingView.ItemsSource as listing<string>[];
 			var colSortInfo = listingView.Tag as Tuple<ListingInfo, string>;
@@ -1459,6 +1458,26 @@ namespace MDRDesk
 					Debug.Assert(listingInfo != null);
 					var outPath = pathInfo.Item2.GetPathAppendingToFileName(".ShortReport.txt");
 					ListingInfo.DumpListing(outPath, listingInfo.Item1, pathInfo.Item1, out error, 100);
+					break;
+				//case ListingGrid:
+				//	listView = (ListView)LogicalTreeHelper.FindLogicalNode(grid, ListingGridView);
+				//	Tuple<ListingInfo, string> pair = listView.Tag as Tuple<ListingInfo, string>;
+
+				//	SetStartTaskMainWindowState("Writing report. Please wait...");
+				//	var taskResult = await Task.Run(() =>
+				//	{
+				//		string error;
+				//		var ok = ReportFile.WriteReport(outpath, gridName, gridInfo.Item1, colSortInfo.Item1.ColInfos, descrLines, data,
+				//			out error);
+				//		return new Tuple<string, string>(error, outpath);
+				//	});
+
+				//	SetEndTaskMainWindowState(taskResult.Item1 == null
+				//		? "Report written: " + taskResult.Item2
+				//		: "Report failed: " + taskResult.Item2);
+				//	break;
+				default:
+					MainStatusShowMessage("Cannot write report, the current tab reporting is not supported.");
 					break;
 			}
 		}
@@ -1812,7 +1831,7 @@ namespace MDRDesk
 		private void StackObjectCopyAddressClicked(object sender, RoutedEventArgs e)
 		{
 			ListView lv = GetContextMenuListView(sender);
-			Debug.Assert(lv!=null);
+			Debug.Assert(lv != null);
 			var selections = lv.SelectedItems;
 			if (selections == null || selections.Count < 1)
 			{
@@ -1900,7 +1919,7 @@ namespace MDRDesk
 		{
 			ulong addr = GetStackObjectAddress(sender);
 			if (addr == Constants.InvalidAddress) return;
-			Dispatcher.CurrentDispatcher.InvokeAsync(() => ExecuteInstanceHierarchyQuery("Getting stack object hierarchy: " + Utils.AddressString(addr), addr,Constants.InvalidIndex));
+			Dispatcher.CurrentDispatcher.InvokeAsync(() => ExecuteInstanceHierarchyQuery("Getting stack object hierarchy: " + Utils.AddressString(addr), addr, Constants.InvalidIndex));
 		}
 
 		private ulong GetStackObjectAddress(object sender)
@@ -2021,12 +2040,12 @@ namespace MDRDesk
 
 			if (result.Item1 != null)
 			{
-				GuiUtils.ShowError(result.Item1,this);
+				GuiUtils.ShowError(result.Item1, this);
 				return;
 			}
-			#pragma warning disable CS4014
+#pragma warning disable CS4014
 			Dispatcher.CurrentDispatcher.InvokeAsync(() => DoDisplayTypeValueReportSetup(result.Item2));
-			#pragma warning restore CS4014
+#pragma warning restore CS4014
 		}
 
 		private ulong GetAddressFromList(object listBox)
@@ -2039,19 +2058,19 @@ namespace MDRDesk
 				MessageBox.Show("No address is selected!", "Action Aborted", MessageBoxButton.OK, MessageBoxImage.Exclamation);
 				return Constants.InvalidAddress;
 			}
-            var selItem = lbAddresses.SelectedItems[0];
-            if (selItem is ulong)
-                return (ulong)selItem;
-            if (selItem is string)
-            {
-                var result = Utils.GetFirstUlong((string)selItem);
-                if (result.Key) return result.Value;
-                MessageBox.Show("No address is found in ListBox item string!", "Action Aborted", MessageBoxButton.OK, MessageBoxImage.Exclamation);
-                return Constants.InvalidAddress;
-            }
+			var selItem = lbAddresses.SelectedItems[0];
+			if (selItem is ulong)
+				return (ulong)selItem;
+			if (selItem is string)
+			{
+				var result = Utils.GetFirstUlong((string)selItem);
+				if (result.Key) return result.Value;
+				MessageBox.Show("No address is found in ListBox item string!", "Action Aborted", MessageBoxButton.OK, MessageBoxImage.Exclamation);
+				return Constants.InvalidAddress;
+			}
 
-            MessageBox.Show("Unknown type of ListBox item!", "Action Aborted", MessageBoxButton.OK, MessageBoxImage.Exclamation);
-            return Constants.InvalidAddress;
+			MessageBox.Show("Unknown type of ListBox item!", "Action Aborted", MessageBoxButton.OK, MessageBoxImage.Exclamation);
+			return Constants.InvalidAddress;
 		}
 
 		private void LbGetInstValueClicked(object sender, RoutedEventArgs e)
@@ -2089,15 +2108,15 @@ namespace MDRDesk
 			return true;
 		}
 
-        private bool AreReferencesAvailable(string caption = null)
-        {
-            if (CurrentIndex != null && CurrentIndex.HasInstanceReferences) return true;
-            if (caption == null) return false;
-            ShowInformation(caption, "References Not Available", "References were not indexed." + Environment.NewLine + "Check the setup 'Skip indexing reference'." + Environment.NewLine + "Sometimes this setting is used to when indexing huge dumps.", null);
-            return false;
-        }
+		private bool AreReferencesAvailable(string caption = null)
+		{
+			if (CurrentIndex != null && CurrentIndex.HasInstanceReferences) return true;
+			if (caption == null) return false;
+			ShowInformation(caption, "References Not Available", "References were not indexed." + Environment.NewLine + "Check the setup 'Skip indexing reference'." + Environment.NewLine + "Sometimes this setting is used to when indexing huge dumps.", null);
+			return false;
+		}
 
-        private void GetDlgString2(string title, string descr, string defValue, out string str)
+		private void GetDlgString2(string title, string descr, string defValue, out string str)
 		{
 			str = null;
 			InputStringDlg dlg = new InputStringDlg(descr, defValue ?? " ") { Title = title, Owner = Window.GetWindow(this) };
@@ -2170,9 +2189,9 @@ namespace MDRDesk
 			ShowMemoryViewWindow(addr);
 		}
 
-        private void AhqTypesSizeCountCmpClicked(object sender, RoutedEventArgs e)
-        {
+		private void AhqTypesSizeCountCmpClicked(object sender, RoutedEventArgs e)
+		{
 
-        }
-    }
+		}
+	}
 }

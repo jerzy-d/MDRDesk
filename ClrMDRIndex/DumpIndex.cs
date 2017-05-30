@@ -1,5 +1,4 @@
-﻿#define TESTING_TYPE_VALUE_REPORT
-using System;
+﻿using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -61,7 +60,7 @@ namespace ClrMDRIndex
 		public int UsedTypeCount => _displayableTypeNames.Length;
 
 		private References _references;
-        public bool HasInstanceReferences => _references != null;
+		public bool HasInstanceReferences => _references != null;
 
 		private WeakReference<StringStats> _stringStats;
 		public WeakReference<StringStats> StringStatitics => _stringStats;
@@ -143,7 +142,7 @@ namespace ClrMDRIndex
 				if (!index.LoadInstanceReferences(out error)) return null;
 				if (!index.InitDump(out error, progress)) return null;
 				index._indexProxy = new IndexProxy(index.Dump, index._instances, index._instanceTypes, index._typeNames,
-					index._roots);
+					index._roots, index._fileMoniker);
 				if (index._references != null)
 					index._references.SetIndexProxy(index.IndexProxy);
 				return index;
@@ -203,14 +202,14 @@ namespace ClrMDRIndex
 				}
 
 				// check if we indexed referrences, and load them if we did
-                //
+				//
 				{
-                    string refsFilePath = _fileMoniker.GetFilePath(_currentRuntimeIndex, Constants.MapRefsObjectFieldPostfix);
-                    if (File.Exists(refsFilePath))
-                    {
-                        _references = new References(_currentRuntimeIndex, _fileMoniker);
-                        _references.Init(out error);
-                    }
+					string refsFilePath = _fileMoniker.GetFilePath(_currentRuntimeIndex, Constants.MapRefsObjectFieldPostfix);
+					if (File.Exists(refsFilePath))
+					{
+						_references = new References(_currentRuntimeIndex, _fileMoniker);
+						_references.Init(out error);
+					}
 				}
 
 				if (error != null) return false;
@@ -1424,12 +1423,7 @@ namespace ClrMDRIndex
 			error = null;
 			try
 			{
-#if DEBUG && TESTING_TYPE_VALUE_REPORT
-
-                string spath = _fileMoniker.OutputFolder + Path.DirectorySeparatorChar + "ClrtDisplayableType." + Utils.DateTimeString(DateTime.Now) + ".bin";
-                bool r = ClrtDisplayableType.SerializeArray(spath, queryItems, out error);
-#endif
-                Debug.Assert(queryItems != null && queryItems.Length > 0);
+				Debug.Assert(queryItems != null && queryItems.Length > 0);
 				ulong[] instances = GetTypeRealAddresses(queryItems[0].TypeId);
 				if (instances == null || instances.Length < 1)
 				{
@@ -1439,21 +1433,23 @@ namespace ClrMDRIndex
 
 				TypeValueQuery[] valueQuery = new TypeValueQuery[queryItems.Length];
 
-                valueQuery[0] = new TypeValueQuery(null,Constants.InvalidIndex);
+				valueQuery[0] = new TypeValueQuery(null, Constants.InvalidIndex);
 
-                for (int i = 1, icnt = queryItems.Length; i < icnt; ++i)
-                {
-                    var qa = queryItems[i];
-                    for (int j = 0, jcnt = queryItems.Length; j < jcnt; ++j)
-                    {
-                        if (qa.Parent == queryItems[j])
-                        {
-                            valueQuery[i] = new TypeValueQuery(valueQuery[j],j);
-                            break;
-                        }
-                    }
-                }
-                var heap = Heap;
+				int qryGetValueCnt = 1;
+				for (int i = 1, icnt = queryItems.Length; i < icnt; ++i)
+				{
+					var qa = queryItems[i];
+					if (qa.GetValue) ++qryGetValueCnt;
+					for (int j = 0, jcnt = queryItems.Length; j < jcnt; ++j)
+					{
+						if (qa.Parent == queryItems[j])
+						{
+							valueQuery[i] = new TypeValueQuery(valueQuery[j], j);
+							break;
+						}
+					}
+				}
+				var heap = Heap;
 
 				// prepare query items types and their fields
 				//
@@ -1466,58 +1462,98 @@ namespace ClrMDRIndex
 					var kv = TypeExtractor.TryGetRealType(heap, addr);
 					var clrType = kv.Key;
 					valueQuery[0].SetFields(clrType, kv.Value, null, Constants.InvalidIndex, queryItems[0].Filter, true, instances.Length);
-                    var parentAddrs = new ulong[queryItems.Length];
-                    parentAddrs[0] = curAddr;
+					var parentAddrs = new ulong[queryItems.Length];
+					parentAddrs[0] = curAddr;
 					for (int j = 1, jcnt = queryItems.Length; j < jcnt; ++j)
 					{
-                        var qryItem = queryItems[j];
-                        var valQry = valueQuery[j];
-                        var parentIndex = valQry.ParentIndex;
-                        Debug.Assert(valQry.Parent != null);
-                        var valQryParent = valQry.Parent;
-                        var valQryParentAddr = parentAddrs[parentIndex];
-                        var valQryParentType = valQryParent.Type;
+						var qryItem = queryItems[j];
+						var valQry = valueQuery[j];
+						var parentIndex = valQry.ParentIndex;
+						Debug.Assert(valQry.Parent != null);
+						var valQryParent = valQry.Parent;
+						var valQryParentAddr = parentAddrs[parentIndex];
+						var valQryParentType = valQryParent.Type;
 
-                        Debug.Assert(valQryParentAddr != 0ul);
+						Debug.Assert(valQryParentAddr != 0ul);
 
-                        ClrInstanceField fld = valQryParent.Type.GetFieldByName(qryItem.FieldName);
-                        ClrElementKind fldKind = TypeExtractor.GetElementKind(fld.Type);
-                        if (TypeExtractor.IsKnownPrimitive(fldKind))
-                        {
-                            valueQuery[j].SetFields(fld.Type, fldKind, fld, qryItem.FieldIndex, qryItem.Filter, qryItem.GetValue, qryItem.GetValue ? instances.Length : 0);
-                            continue;
-                        }
-                        if (fld.IsObjectReference)
-                        {
-                            KeyValuePair<ClrType, ulong> fkv = TypeExtractor.TryGetReferenceType(heap, valQryParentAddr, fld, false);
-                            valueQuery[j].SetFields(fkv.Key, fldKind, fld, qryItem.FieldIndex, qryItem.Filter, qryItem.GetValue, qryItem.GetValue ? instances.Length : 0);
-                            parentAddrs[j] = fkv.Value;
-                        }
+						ClrInstanceField fld = valQryParent.Type.GetFieldByName(qryItem.FieldName);
+						ClrElementKind fldKind = TypeExtractor.GetElementKind(fld.Type);
+						if (TypeExtractor.IsKnownPrimitive(fldKind))
+						{
+							valueQuery[j].SetFields(fld.Type, fldKind, fld, qryItem.FieldIndex, qryItem.Filter, qryItem.GetValue, qryItem.GetValue ? instances.Length : 0);
+							continue;
+						}
+						if (fld.IsObjectReference)
+						{
+							KeyValuePair<ClrType, ulong> fkv = TypeExtractor.TryGetReferenceType(heap, valQryParentAddr, fld, false);
+							valueQuery[j].SetFields(fkv.Key, fldKind, fld, qryItem.FieldIndex, qryItem.Filter, qryItem.GetValue, qryItem.GetValue ? instances.Length : 0);
+							parentAddrs[j] = fkv.Value;
+						}
 
-                    }
-                    break;
+					}
+					break;
+				}
+				queryItems[0].SetGetValue(true);
+				string[] values = new string[valueQuery.Length];
+				ulong[] addresses = new ulong[valueQuery.Length];
+				for (int i = 0, icnt = instances.Length; i < icnt; ++i)
+				{
+					ulong addr = instances[i];
+					if (GetTypeValues(heap, valueQuery, addresses, values, addr))
+					{
+						for (int j = 0, jcnt = valueQuery.Length; j < jcnt; ++j)
+						{
+							if (valueQuery[j].GetValue)
+							{
+								valueQuery[j].AddValue(values[j]);
+							}
+						}
+					}
 				}
 
-                string[] values = new string[valueQuery.Length];
-                ulong[] addresses = new ulong[valueQuery.Length];
-                for (int i = 0, icnt = instances.Length; i < icnt && tryAgain; ++i)
-                {
-                    ulong addr = instances[i];
-                    if (GetTypeValues(heap, valueQuery, addresses, values, addr))
-                    {
-                        for(int j = 0, jcnt = valueQuery.Length; j < jcnt; ++j)
-                        {
-                            if (valueQuery[j].GetValue)
-                            {
-                                valueQuery[j].AddValue(values[j]);
-                            }
-                        }
-                    }
-                }
+				int valCnt = valueQuery[0].Values.Count;
+				string[] data = new string[valCnt * qryGetValueCnt];
+				listing<string>[] items = new listing<string>[valCnt];
 
+				ColumnInfo[] colInfos = new ColumnInfo[qryGetValueCnt];
+				colInfos[0] = new ColumnInfo("ADDRESS", ReportFile.ColumnType.UInt64, 100, 1, true);
+				int ndx = 1;
+				for (int i = 1, icnt = queryItems.Length; i < icnt; ++i)
+				{
+					var qry = queryItems[i];
+					if (qry.GetValue)
+					{
+						colInfos[ndx++] = new ColumnInfo(qry.FieldName, ReportFile.ColumnType.String, 150, ndx, true);
+					}
+				}
 
+				int dataNdx = 0;
+				ndx = 0;
+				int qryLen = queryItems.Length;
+				for (int i = 0, icnt = valCnt; i < icnt; ++i)
+				{
+					items[ndx++] = new listing<string>(data, dataNdx, qryGetValueCnt);
+					for (int j = 0; j < qryLen; ++j)
+					{
+						var qry = queryItems[j];
+						if (!qry.GetValue) continue;
+						data[dataNdx++] = valueQuery[j].Values[i];
+					}
+				}
 
- 				return null;
+				var sb = StringBuilderCache.Acquire(StringBuilderCache.MaxCapacity);
+				sb.AppendLine(queryItems[0].TypeName + "  COUNT: " + valCnt);
+				SortedDictionary<long, string> dct = new SortedDictionary<long, string>();
+				dct.Add(queryItems[0].Id, "   ");
+				for (int i = 1, icnt = queryItems.Length; i < icnt; ++i)
+				{
+					var qry = queryItems[i];
+					string indent = dct[qry.Parent.Id];
+					dct[qry.Id] = indent + "   ";
+					sb.AppendLine(indent + qry.FieldName + "   " + qry.TypeName);
+				}
+
+				return new ListingInfo(null, items, colInfos, StringBuilderCache.GetStringAndRelease(sb));
 			}
 			catch (Exception ex)
 			{
@@ -1527,44 +1563,57 @@ namespace ClrMDRIndex
 
 		}
 
-        /// <summary>
-        /// Get type report values for one instance.
-        /// </summary>
-        /// <param name="heap">Current dump's heap (from MDR).</param>
-        /// <param name="qrys">Info about the values to be collected.</param>
-        /// <param name="addresses">Buffer for parent addresses.</param>
-        /// <param name="values">Buffer for values as strings.</param>
-        /// <param name="addr">An instance decorated address.</param>
-        /// <returns>True if values were accepted by filter(s).</returns>
-        private bool GetTypeValues(ClrHeap heap, TypeValueQuery[] qrys, ulong[] addresses, string[] values, ulong addr)
-        {
-            // first item collects the object address
-            //
-            values[0] = Utils.AddressString(addr);
-            addr = Utils.RealAddress(addr); // switch to real address
-            addresses[0] = addr;
-            for (int i = 0, icnt = qrys.Length; i < icnt; ++i)
-            {
-                values[i] = null;
-                addresses[i] = Constants.InvalidAddress;
-                var qry = qrys[i];
-                var qparent = qrys[qry.ParentIndex];
-                var parentAddr = addresses[qry.ParentIndex];
-                if (qry.HasFilter)
-                {
-                    object val = ValueExtractor.GetFieldValue(heap, parentAddr, qry.Field, qry.Type, qry.Kind, TypeExtractor.IsStruct(qparent.Kind), true);
-                    if (!qry.Filter.Accept(val, qry.Kind)) return false;
-                    if (qry.GetValue)
-                        values[i] = ValueExtractor.ValueToString(val, qry.Kind);
-                    continue;
-                }
-                if (qry.GetValue)
-                {
-                    values[i] = (string)ValueExtractor.GetFieldValue(heap, parentAddr, qry.Field, qry.Type, qry.Kind, TypeExtractor.IsStruct(qparent.Kind), false);
-                }
-            }
-            return true;
-        }
+		/// <summary>
+		/// Get type report values for one instance.
+		/// </summary>
+		/// <param name="heap">Current dump's heap (from MDR).</param>
+		/// <param name="qrys">Info about the values to be collected.</param>
+		/// <param name="addresses">Buffer for parent addresses.</param>
+		/// <param name="values">Buffer for values as strings.</param>
+		/// <param name="addr">An instance decorated address.</param>
+		/// <returns>True if values were accepted by filter(s).</returns>
+		private bool GetTypeValues(ClrHeap heap, TypeValueQuery[] qrys, ulong[] addresses, string[] values, ulong addr)
+		{
+			// first item collects the object address
+			//
+			values[0] = Utils.RealAddressString(addr);
+			addr = Utils.RealAddress(addr); // switch to real address
+			addresses[0] = addr;
+			for (int i = 1, icnt = qrys.Length; i < icnt; ++i)
+			{
+				values[i] = null;
+				addresses[i] = Constants.InvalidAddress;
+				var qry = qrys[i];
+				var qparent = qrys[qry.ParentIndex];
+				var parentAddr = addresses[qry.ParentIndex];
+				if (parentAddr == Constants.InvalidAddress)
+				{
+					if (qry.HasFilter)
+					{
+						if (!qry.Filter.AcceptNull()) return false;
+					}
+					values[i] = Constants.NullValue;
+					continue;
+				}
+				if (qry.HasFilter)
+				{
+					object val = ValueExtractor.GetFieldValue(heap, parentAddr, qry.Field, qry.Type, qry.Kind, TypeExtractor.IsStruct(qparent.Kind), true);
+					if (!qry.Filter.Accept(val)) return false;
+					if (qry.GetValue)
+						values[i] = ValueExtractor.ValueToString(val, qry.Kind);
+					if (TypeExtractor.IsNonStringObjectReference(qry.Kind))
+						addresses[i] = (ulong)val;
+					continue;
+				}
+				if (qry.GetValue)
+				{
+					values[i] = (string)ValueExtractor.GetFieldValue(heap, parentAddr, qry.Field, qry.Type, qry.Kind, TypeExtractor.IsStruct(qparent.Kind), false);
+				}
+				if (TypeExtractor.IsNonStringObjectReference(qry.Kind))
+					addresses[i] = (ulong)qry.Field.GetValue(parentAddr, TypeExtractor.IsStruct(qparent.Kind), false);
+			}
+			return true;
+		}
 
 
 		#endregion Type Value Reports

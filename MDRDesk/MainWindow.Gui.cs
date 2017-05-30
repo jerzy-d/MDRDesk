@@ -1,27 +1,19 @@
 ﻿using System;
-using System.Collections;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Data;
 using System.Diagnostics;
-using System.Drawing;
 using System.Globalization;
 using System.Linq;
-using System.Security.Cryptography;
-using System.Text;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Data;
 using System.Windows.Documents;
 using System.Windows.Input;
-using System.Windows.Media;
-using Microsoft.Diagnostics.Runtime;
 using ClrMDRIndex;
 using GraphX.Controls;
 using GraphX.PCL.Common.Enums;
-using GraphX.PCL.Logic.Algorithms.LayoutAlgorithms;
-using QuickGraph;
 using Binding = System.Windows.Data.Binding;
 using Brushes = System.Windows.Media.Brushes;
 using Cursors = System.Windows.Input.Cursors;
@@ -35,7 +27,6 @@ using TextBox = System.Windows.Controls.TextBox;
 using TreeView = System.Windows.Controls.TreeView;
 using SW = System.Windows;
 using SWC = System.Windows.Controls;
-using Microsoft.Msagl;
 using Microsoft.Msagl.WpfGraphControl;
 using SubgraphDictionary =
 	System.Collections.Generic.SortedDictionary
@@ -91,6 +82,14 @@ namespace MDRDesk
 		private const string FinalizerQueueListView = "FinalizerQueueListView";
 		private const string FinalizerQueAddrListBox = "FinalizerQueAddresses";
 		private const string FinalizerQueTextBox = "FinalizerQueTextBox";
+
+		// writing report supported
+		//
+		private const string ListingGrid = "ListingGrid";
+		private const string ListingGridView = "ListingView";
+		private const string ListingGridInformation = "ListingInformation";
+
+
 
 		private string GetReportTitle(ListView lst)
 		{
@@ -812,6 +811,15 @@ namespace MDRDesk
 			return tab;
 		}
 
+		public CloseableTabItem DisplayTab(string prefix, string reportTitle, Grid grid, string name)
+		{
+			var tab = new CloseableTabItem() { Header = prefix + reportTitle, Content = grid, Name = name + "__" + Utils.GetNewID() };
+			MainTab.Items.Add(tab);
+			MainTab.SelectedItem = tab;
+			MainTab.UpdateLayout();
+			return tab;
+		}
+
 		/// <summary>
 		/// Show information about the crash dump.
 		/// We have this stored in a text file, in a index folder, with postfix : ~INDEXIFO.txt.
@@ -863,53 +871,53 @@ namespace MDRDesk
 			txtBlock.Inlines.Add(Environment.NewLine);
 
 			string error;
-            var genDistributions = CurrentIndex.GetTotalGenerationDistributions(out error);
-            if (error != null)
-            {
-                txtBlock.Inlines.Add(new Run("FAILED TO LOAD GENERATION DISTRIBUTIONS!!!" + Environment.NewLine) { FontWeight = FontWeights.Bold, FontSize = 12 });
-                txtBlock.Inlines.Add(new Run(error + Environment.NewLine) { FontWeight = FontWeights.Bold, FontSize = 10, Foreground = Brushes.Red });
-            }
-            else
-            {
-                DisplayableGeneration[] generations = new DisplayableGeneration[6];
-                generations[0] = new DisplayableGeneration("Object Counts", genDistributions.Item1);
-                generations[1] = new DisplayableGeneration("Object Sizes", genDistributions.Item2);
-                generations[2] = new DisplayableGeneration("Unrooted Counts", genDistributions.Item5);
-                generations[3] = new DisplayableGeneration("Unrooted Sizes", genDistributions.Item6);
-                generations[4] = new DisplayableGeneration("Free Counts", genDistributions.Item3);
-                generations[5] = new DisplayableGeneration("Free Sizes", genDistributions.Item4);
+			var genDistributions = CurrentIndex.GetTotalGenerationDistributions(out error);
+			if (error != null)
+			{
+				txtBlock.Inlines.Add(new Run("FAILED TO LOAD GENERATION DISTRIBUTIONS!!!" + Environment.NewLine) { FontWeight = FontWeights.Bold, FontSize = 12 });
+				txtBlock.Inlines.Add(new Run(error + Environment.NewLine) { FontWeight = FontWeights.Bold, FontSize = 10, Foreground = Brushes.Red });
+			}
+			else
+			{
+				DisplayableGeneration[] generations = new DisplayableGeneration[6];
+				generations[0] = new DisplayableGeneration("Object Counts", genDistributions.Item1);
+				generations[1] = new DisplayableGeneration("Object Sizes", genDistributions.Item2);
+				generations[2] = new DisplayableGeneration("Unrooted Counts", genDistributions.Item5);
+				generations[3] = new DisplayableGeneration("Unrooted Sizes", genDistributions.Item6);
+				generations[4] = new DisplayableGeneration("Free Counts", genDistributions.Item3);
+				generations[5] = new DisplayableGeneration("Free Sizes", genDistributions.Item4);
 
-                var genDataGrid = (DataGrid)LogicalTreeHelper.FindLogicalNode(grid, "GeneralInfoGenerations");
-                Debug.Assert(genDataGrid != null);
-                genDataGrid.ItemsSource = generations;
+				var genDataGrid = (DataGrid)LogicalTreeHelper.FindLogicalNode(grid, "GeneralInfoGenerations");
+				Debug.Assert(genDataGrid != null);
+				genDataGrid.ItemsSource = generations;
 
-                // display generation charts
-                //
-                //var chartGrid = (Grid)LogicalTreeHelper.FindLogicalNode(grid, "GeneralInfoChart");
-                //Debug.Assert(chartGrid != null);
+				// display generation charts
+				//
+				//var chartGrid = (Grid)LogicalTreeHelper.FindLogicalNode(grid, "GeneralInfoChart");
+				//Debug.Assert(chartGrid != null);
 
-                //var grid1 = (Grid)LogicalTreeHelper.FindLogicalNode(chartGrid, "GeneralInfoChart1");
-                //Debug.Assert(grid1 != null);
-                //var grid2 = (Grid)LogicalTreeHelper.FindLogicalNode(chartGrid, "GeneralInfoChart2");
-                //Debug.Assert(grid2 != null);
+				//var grid1 = (Grid)LogicalTreeHelper.FindLogicalNode(chartGrid, "GeneralInfoChart1");
+				//Debug.Assert(grid1 != null);
+				//var grid2 = (Grid)LogicalTreeHelper.FindLogicalNode(chartGrid, "GeneralInfoChart2");
+				//Debug.Assert(grid2 != null);
 
-                //System.Windows.Forms.Integration.WindowsFormsHost host0 = new System.Windows.Forms.Integration.WindowsFormsHost();
-                //host0.FontSize = 8;
-                //List<int> intLst = new List<int>(genDistributions.Item1.Length + genDistributions.Item5.Length + genDistributions.Item3.Length);
-                //intLst.AddRange(genDistributions.Item1); intLst.AddRange(genDistributions.Item5); intLst.AddRange(genDistributions.Item3);
-                //host0.Child = DmpNdxQueries.Auxiliaries.getCountGenerationsChart2(intLst.ToArray());
-                //host0.Child.Font = new Font("Arial", 8);
-                //System.Windows.Forms.Integration.WindowsFormsHost host1 = new System.Windows.Forms.Integration.WindowsFormsHost();
-                //host1.FontSize = 8;
-                //List<ulong> ulongLst = new List<ulong>(genDistributions.Item2.Length + genDistributions.Item6.Length + genDistributions.Item4.Length);
-                //ulongLst.AddRange(genDistributions.Item2); ulongLst.AddRange(genDistributions.Item6); ulongLst.AddRange(genDistributions.Item4);
-                //host1.Child = DmpNdxQueries.Auxiliaries.getSizeGenerationsChart2(ulongLst.ToArray());
-                //host1.Child.Font = new Font("Arial", 8);
-                //grid1.Children.Add(host0);
-                //grid2.Children.Add(host1);
-            }
+				//System.Windows.Forms.Integration.WindowsFormsHost host0 = new System.Windows.Forms.Integration.WindowsFormsHost();
+				//host0.FontSize = 8;
+				//List<int> intLst = new List<int>(genDistributions.Item1.Length + genDistributions.Item5.Length + genDistributions.Item3.Length);
+				//intLst.AddRange(genDistributions.Item1); intLst.AddRange(genDistributions.Item5); intLst.AddRange(genDistributions.Item3);
+				//host0.Child = DmpNdxQueries.Auxiliaries.getCountGenerationsChart2(intLst.ToArray());
+				//host0.Child.Font = new Font("Arial", 8);
+				//System.Windows.Forms.Integration.WindowsFormsHost host1 = new System.Windows.Forms.Integration.WindowsFormsHost();
+				//host1.FontSize = 8;
+				//List<ulong> ulongLst = new List<ulong>(genDistributions.Item2.Length + genDistributions.Item6.Length + genDistributions.Item4.Length);
+				//ulongLst.AddRange(genDistributions.Item2); ulongLst.AddRange(genDistributions.Item6); ulongLst.AddRange(genDistributions.Item4);
+				//host1.Child = DmpNdxQueries.Auxiliaries.getSizeGenerationsChart2(ulongLst.ToArray());
+				//host1.Child.Font = new Font("Arial", 8);
+				//grid1.Children.Add(host0);
+				//grid2.Children.Add(host1);
+			}
 
-            var tab = new CloseableTabItem() { Header = Constants.BlackDiamond + " General Info", Content = grid, Name = "GeneralInfoViewTab" };
+			var tab = new CloseableTabItem() { Header = Constants.BlackDiamond + " General Info", Content = grid, Name = "GeneralInfoViewTab" };
 			MainTab.Items.Add(tab);
 			MainTab.SelectedItem = tab;
 			MainTab.UpdateLayout();
@@ -985,7 +993,7 @@ namespace MDRDesk
 			var lbTpAddresses = (ListBox)LogicalTreeHelper.FindLogicalNode(grid, @"lbTypeNamespaceAddresses");
 			Debug.Assert(lbTpAddresses != null);
 			var addrCountLabel = (Label)LogicalTreeHelper.FindLogicalNode(grid, @"lTpAddressCount");
-			Debug.Assert(addrCountLabel!=null);
+			Debug.Assert(addrCountLabel != null);
 			addrCountLabel.Content = Utils.CountString(addresses.Length)
 				+ (unrootedCount > 0 ? (", unrooted: " + Utils.CountString(unrootedCount)) : string.Empty);
 			lbTpAddresses.ItemsSource = addresses;
@@ -1031,7 +1039,7 @@ namespace MDRDesk
 			if (selndx < 0) return;
 			var data = lbNames.ItemsSource as KeyValuePair<string, int>[];
 			int unrootedCount;
-			var addresses = CurrentIndex.GetTypeInstances(data[selndx].Value,out unrootedCount);
+			var addresses = CurrentIndex.GetTypeInstances(data[selndx].Value, out unrootedCount);
 			var lab = (Label)LogicalTreeHelper.FindLogicalNode(grid, @"lAddressCount");
 			Debug.Assert(lab != null);
 			lab.Content = Utils.CountString(addresses.Length)
@@ -1136,7 +1144,7 @@ namespace MDRDesk
 			}
 			SetEndTaskMainWindowState(msg);
 
-			DisplayListingGrid(result, Constants.BlackDiamond, "TypeDefaults", "TypeDefaultValues");
+			DisplayListingGrid(result, Constants.BlackDiamondHeader, ListingGrid + "__TypeDefaults", "TypeDefaultValues");
 		}
 
 
@@ -1205,7 +1213,7 @@ namespace MDRDesk
 		private async void GetParentReferences(object sender, RoutedEventArgs e)
 		{
 			if (!IsIndexAvailable("No index is loaded")) return;
-            if (!AreReferencesAvailable("There are no references indexed")) return;
+			if (!AreReferencesAvailable("There are no references indexed")) return;
 			string typeName;
 			int typeId;
 			if (!GetTypeNameInfo(sender, out typeName, out typeId)) return;
@@ -1281,10 +1289,10 @@ namespace MDRDesk
 
 		private async void DisplayInstanceParentReferences(ulong addr)
 		{
-            if (!AreReferencesAvailable("There are no references indexed")) return;
-            // get reference search info
-            //
-            ReferenceSearchSetup dlg = new ReferenceSearchSetup("Get parents of instance: " + Utils.RealAddressString(addr)) { Owner = this };
+			if (!AreReferencesAvailable("There are no references indexed")) return;
+			// get reference search info
+			//
+			ReferenceSearchSetup dlg = new ReferenceSearchSetup("Get parents of instance: " + Utils.RealAddressString(addr)) { Owner = this };
 			dlg.ShowDialog();
 			if (dlg.Cancelled) return;
 			int level = dlg.GetAllReferences ? Int32.MaxValue : dlg.SearchDepthLevel;
@@ -1458,9 +1466,9 @@ namespace MDRDesk
 			DisplayTab(prefix, reportTitle, grid, name);
 		}
 
-		private void DisplayListingGrid(ListingInfo info, char prefix, string name, string reportTitle, SWC.MenuItem[] menuItems = null, string filePath = null)
+		private void DisplayListingGrid(ListingInfo info, string prefix, string name, string reportTitle, SWC.MenuItem[] menuItems = null, string filePath = null)
 		{
-			var grid = TryFindResource("ListingGrid") as Grid;
+			var grid = TryFindResource(ListingGrid) as Grid;
 			grid.Name = name + "__" + Utils.GetNewID();
 			Debug.Assert(grid != null);
 			string path;
@@ -1469,7 +1477,7 @@ namespace MDRDesk
 			else
 				path = filePath;
 			grid.Tag = new Tuple<string, DumpFileMoniker>(reportTitle, new DumpFileMoniker(path));
-			var listView = (ListView)LogicalTreeHelper.FindLogicalNode(grid, "ListingView");
+			var listView = (ListView)LogicalTreeHelper.FindLogicalNode(grid, ListingGridView);
 			GridView gridView = (GridView)listView.View;
 
 			// save data and listing name in listView
@@ -1507,7 +1515,7 @@ namespace MDRDesk
 			listView.ContextMenu.ItemsSource = menuItems;
 			if (!string.IsNullOrEmpty(info.Notes))
 			{
-				var txtBox = (TextBox)LogicalTreeHelper.FindLogicalNode(grid, "ListingInformation");
+				var txtBox = (TextBox)LogicalTreeHelper.FindLogicalNode(grid, ListingGridInformation);
 				Debug.Assert(txtBox != null);
 				txtBox.Text = info.Notes;
 			}
@@ -1628,128 +1636,158 @@ namespace MDRDesk
 
 		private void DoDisplayTypeValueReportSetup(ClrtDisplayableType dispType)
 		{
-			var dlg = new TypeValuesReportSetup(dispType) { Owner = this };
+			var dlg = new TypeValuesReportSetup(dispType, CurrentIndex.IndexProxy) { Owner = this };
 			var result = dlg.ShowDialog();
-            if (result == true)
-            {
-                System.Windows.Threading.Dispatcher.CurrentDispatcher.InvokeAsync(() => ExecuteTypeValueQuery(dlg.Selections));
-            }
+			if (result == true)
+			{
+				System.Windows.Threading.Dispatcher.CurrentDispatcher.InvokeAsync(() => ExecuteTypeValueQuery(dlg.Selections));
+			}
 
 		}
 
-        private async void ExecuteTypeValueQuery(ClrtDisplayableType[] queryItems)
-        {
-            Debug.Assert(queryItems != null && queryItems.Length > 0);
-            SetStartTaskMainWindowState("Please wait... Type values report: " + queryItems[0].TypeName);
-            (string error, ListingInfo inst) = await Task.Run(() =>
-            {
-                string err;
-                var info =  CurrentIndex.GetTypeValuesReport(queryItems,out err);
-                return (err, info);
-            });
+		private async void ExecuteTypeValueQuery(ClrtDisplayableType[] queryItems)
+		{
+			Debug.Assert(queryItems != null && queryItems.Length > 0);
+			SetStartTaskMainWindowState("Please wait... Type values report: " + queryItems[0].TypeName);
+			(string error, ListingInfo listing) = await Task.Run(() =>
+			{
+				string err;
+				var info = CurrentIndex.GetTypeValuesReport(queryItems, out err);
+				return (err, info);
+			});
 
-            SetEndTaskMainWindowState(error == null
-                ? "DONE. Type values report: " + queryItems[0].TypeName
-                : "FAILED! Type values report: " + queryItems[0].TypeName);
+			SetEndTaskMainWindowState(error == null
+				? "DONE. Type values report: " + queryItems[0].TypeName
+				: "FAILED! Type values report: " + queryItems[0].TypeName);
 
-            if (error != null)
-            {
-                ShowError(error);
-                return;
-            }
+			if (error != null)
+			{
+				ShowError(error);
+				return;
+			}
 
-        }
+			DisplayListingGrid(listing, Constants.BlackDiamondHeader, ListingGrid + "__TypeValues", Utils.BaseTypeName(queryItems[0].TypeName));
 
-        //private TreeView UpdateTypeValueSetupGrid(ClrtDisplayableType dispType, Grid mainGrid, TreeViewItem root)
-        //{
-        //	bool realRoot = false;
-        //	if (root == null)
-        //	{
-        //		realRoot = true;
-        //		root = GuiUtils.GetTypeValueSetupTreeViewItem(dispType);
-        //	}
-        //	var fields = dispType.Fields;
-        //	for (int i = 0, icnt = fields.Length; i < icnt; ++i)
-        //	{
-        //		var fld = fields[i];
-        //		var node = GuiUtils.GetTypeValueSetupTreeViewItem(fld);
-        //		root.Items.Add(node);
-        //	}
+			//	var grid = TryFindResource(ListingGrid) as Grid;
+			//Debug.Assert(grid != null);
+			//var listView = (ListView)LogicalTreeHelper.FindLogicalNode(grid, ListingGridView);
+			//Debug.Assert(listView != null);
 
-        //	var treeView = (TreeView)LogicalTreeHelper.FindLogicalNode(mainGrid, "TypeValueReportTreeView");
-        //	Debug.Assert(treeView != null);
-        //	if (realRoot)
-        //	{
-        //		treeView.Items.Clear();
-        //		treeView.Items.Add(root);
-        //	}
-        //	root.ExpandSubtree();
-        //	return treeView;
-        //}
+			//listView.Tag = listing;
+			//GridView gridView = (GridView)listView.View;
+			//for (int i = 0, icnt = listing.ColInfos.Length; i < icnt; ++i)
+			//{
+			//	var gridColumn = new GridViewColumn
+			//	{
+			//		Header = listing.ColInfos[i].Name,
+			//		DisplayMemberBinding = new Binding(listing<string>.PropertyNames[i]),
+			//		Width = listing.ColInfos[i].Width,
+			//	};
+			//	gridView.Columns.Add(gridColumn);
+			//}
+			//listView.Items.Clear();
+			//listView.ItemsSource = listing.Items;
 
-        //private async void TypeValueReportTreeViewDoubleClicked(object sender, MouseButtonEventArgs e)
-        //{
-        //	TreeView tv = sender as TreeView;
-        //	var selItem = tv.SelectedItem as TreeViewItem;
-        //	Debug.Assert(selItem != null);
-        //	var dispType = selItem.Tag as ClrtDisplayableType;
-        //	Debug.Assert(dispType != null);
+			//var textBox = (TextBox)LogicalTreeHelper.FindLogicalNode(grid, ListingGridInformation);
+			//Debug.Assert(textBox != null);
+			//textBox.Text = listing.Notes;
 
-        //	string msg;
-        //	if (!dispType.CanGetFields(out msg))
-        //	{
-        //		MainStatusShowMessage("Action failed for: '" + dispType.FieldName + "'. " + msg);
-        //		return;
-        //	}
+			//grid.Name = ListingGrid + "__" + Utils.GetNewID();
+			//DisplayTab(Constants.BlackDiamond, Utils.BaseTypeName(queryItems[0].TypeName), grid, ThreadViewGrid);
+			//listView.SelectedIndex = 0;
 
-        //	if (dispType.FieldIndex == Constants.InvalidIndex) // this root type, fields are already displayed
-        //	{
-        //		return;
-        //	}
+		}
 
-        //	var parent = selItem.Parent as TreeViewItem;
-        //	Debug.Assert(parent != null);
-        //	var parentDispType = parent.Tag as ClrtDisplayableType;
-        //	Debug.Assert(parentDispType != null);
+		//private TreeView UpdateTypeValueSetupGrid(ClrtDisplayableType dispType, Grid mainGrid, TreeViewItem root)
+		//{
+		//	bool realRoot = false;
+		//	if (root == null)
+		//	{
+		//		realRoot = true;
+		//		root = GuiUtils.GetTypeValueSetupTreeViewItem(dispType);
+		//	}
+		//	var fields = dispType.Fields;
+		//	for (int i = 0, icnt = fields.Length; i < icnt; ++i)
+		//	{
+		//		var fld = fields[i];
+		//		var node = GuiUtils.GetTypeValueSetupTreeViewItem(fld);
+		//		root.Items.Add(node);
+		//	}
 
-        //	SetStartTaskMainWindowState("Getting type details for field: '" + dispType.FieldName + "', please wait...");
+		//	var treeView = (TreeView)LogicalTreeHelper.FindLogicalNode(mainGrid, "TypeValueReportTreeView");
+		//	Debug.Assert(treeView != null);
+		//	if (realRoot)
+		//	{
+		//		treeView.Items.Clear();
+		//		treeView.Items.Add(root);
+		//	}
+		//	root.ExpandSubtree();
+		//	return treeView;
+		//}
 
-        //	var result = await Task.Run(() =>
-        //	{
-        //		string error;
-        //		ClrtDisplayableType fldDispType = CurrentIndex.GetTypeDisplayableRecord(parentDispType, dispType, out error);
-        //		if (fldDispType == null)
-        //			return new Tuple<string, ClrtDisplayableType>(error, null);
-        //		return new Tuple<string, ClrtDisplayableType>(null, fldDispType);
-        //	});
+		//private async void TypeValueReportTreeViewDoubleClicked(object sender, MouseButtonEventArgs e)
+		//{
+		//	TreeView tv = sender as TreeView;
+		//	var selItem = tv.SelectedItem as TreeViewItem;
+		//	Debug.Assert(selItem != null);
+		//	var dispType = selItem.Tag as ClrtDisplayableType;
+		//	Debug.Assert(dispType != null);
 
-        //	if (result.Item1 != null)
-        //	{
-        //		if (Utils.IsInformation(result.Item1))
-        //		{
-        //			SetEndTaskMainWindowState("Action failed for: '" + dispType.FieldName + "'. " + result.Item1);
-        //			return;
-        //		}
-        //		ShowError(result.Item1);
-        //		SetEndTaskMainWindowState("Getting type details for field: '" + dispType.FieldName + "', failed");
-        //		return;
-        //	}
+		//	string msg;
+		//	if (!dispType.CanGetFields(out msg))
+		//	{
+		//		MainStatusShowMessage("Action failed for: '" + dispType.FieldName + "'. " + msg);
+		//		return;
+		//	}
 
-        //	var fields = result.Item2.Fields;
-        //	selItem.Items.Clear();
-        //	for (int i = 0, icnt = fields.Length; i < icnt; ++i)
-        //	{
-        //		var fld = fields[i];
-        //		var node = GuiUtils.GetTypeValueSetupTreeViewItem(fld);
-        //		selItem.Items.Add(node);
-        //	}
-        //	selItem.ExpandSubtree();
+		//	if (dispType.FieldIndex == Constants.InvalidIndex) // this root type, fields are already displayed
+		//	{
+		//		return;
+		//	}
 
-        //	SetEndTaskMainWindowState("Getting type details for field: '" + dispType.FieldName + "', done");
-        //}
+		//	var parent = selItem.Parent as TreeViewItem;
+		//	Debug.Assert(parent != null);
+		//	var parentDispType = parent.Tag as ClrtDisplayableType;
+		//	Debug.Assert(parentDispType != null);
+
+		//	SetStartTaskMainWindowState("Getting type details for field: '" + dispType.FieldName + "', please wait...");
+
+		//	var result = await Task.Run(() =>
+		//	{
+		//		string error;
+		//		ClrtDisplayableType fldDispType = CurrentIndex.GetTypeDisplayableRecord(parentDispType, dispType, out error);
+		//		if (fldDispType == null)
+		//			return new Tuple<string, ClrtDisplayableType>(error, null);
+		//		return new Tuple<string, ClrtDisplayableType>(null, fldDispType);
+		//	});
+
+		//	if (result.Item1 != null)
+		//	{
+		//		if (Utils.IsInformation(result.Item1))
+		//		{
+		//			SetEndTaskMainWindowState("Action failed for: '" + dispType.FieldName + "'. " + result.Item1);
+		//			return;
+		//		}
+		//		ShowError(result.Item1);
+		//		SetEndTaskMainWindowState("Getting type details for field: '" + dispType.FieldName + "', failed");
+		//		return;
+		//	}
+
+		//	var fields = result.Item2.Fields;
+		//	selItem.Items.Clear();
+		//	for (int i = 0, icnt = fields.Length; i < icnt; ++i)
+		//	{
+		//		var fld = fields[i];
+		//		var node = GuiUtils.GetTypeValueSetupTreeViewItem(fld);
+		//		selItem.Items.Add(node);
+		//	}
+		//	selItem.ExpandSubtree();
+
+		//	SetEndTaskMainWindowState("Getting type details for field: '" + dispType.FieldName + "', done");
+		//}
 
 
-        private void DisplayDependencyNodeGrid(DependencyNode root)
+		private void DisplayDependencyNodeGrid(DependencyNode root)
 		{
 			TreeViewItem tvRoot = new TreeViewItem();
 			tvRoot.Header = root.ToString();
@@ -1829,14 +1867,14 @@ namespace MDRDesk
 
 			// display general information, this will be updated when tree selection changes
 			var txtBlk = (TextBlock)LogicalTreeHelper.FindLogicalNode(grid, "AncestorInformation");
-			Debug.Assert(txtBlk!=null);
+			Debug.Assert(txtBlk != null);
 			if (root.Data is Tuple<string, int>)
 			{
 				txtBlk.Inlines.Add(new Run(root.TypeName + " \"") { FontSize = 16, FontWeight = FontWeights.Bold });
 				var data = root.Data as Tuple<string, int>;
 				var str = data.Item1;
 				var cnt = data.Item2; // TODO JRD
-				txtBlk.Inlines.Add(new Run(ShortenString(str,60)) { FontSize = 12, Foreground = Brushes.Green});
+				txtBlk.Inlines.Add(new Run(ShortenString(str, 60)) { FontSize = 12, Foreground = Brushes.Green });
 				txtBlk.Inlines.Add(new Run("\"") { FontSize = 16, FontWeight = FontWeights.Bold });
 			}
 			else
@@ -1846,9 +1884,9 @@ namespace MDRDesk
 
 			txtBlk.Inlines.Add(Environment.NewLine);
 
-			txtBlk.Inlines.Add(new Run("") { Name = "Child", Foreground=Brushes.DarkBlue, FontSize = 12, FontStyle = FontStyles.Italic, FontWeight = FontWeights.DemiBold});
+			txtBlk.Inlines.Add(new Run("") { Name = "Child", Foreground = Brushes.DarkBlue, FontSize = 12, FontStyle = FontStyles.Italic, FontWeight = FontWeights.DemiBold });
 			txtBlk.Inlines.Add(Environment.NewLine);
-			txtBlk.Inlines.Add(new Run("") { Name="Parent", Foreground = Brushes.DarkBlue, FontSize = 12, FontStyle = FontStyles.Italic, FontWeight = FontWeights.DemiBold});
+			txtBlk.Inlines.Add(new Run("") { Name = "Parent", Foreground = Brushes.DarkBlue, FontSize = 12, FontStyle = FontStyles.Italic, FontWeight = FontWeights.DemiBold });
 			txtBlk.Inlines.Add(Environment.NewLine);
 			txtBlk.Inlines.Add(new Run("Instance addresses of the selected node are shown in the list box. To inspect individual instances right click on selected address.") { Foreground = Brushes.DarkBlue, FontSize = 12, FontStyle = FontStyles.Italic, FontWeight = FontWeights.DemiBold });
 			txtBlk.Inlines.Add(Environment.NewLine);
@@ -1863,7 +1901,7 @@ namespace MDRDesk
 		private void AncestorTreeSelectionChanged(object sender, RoutedPropertyChangedEventArgs<object> e)
 		{
 			TreeViewItem item = (TreeViewItem)e.NewValue;
-			Debug.Assert(item!=null, "AncestorTreeSelectionChanged: selected item is null!");
+			Debug.Assert(item != null, "AncestorTreeSelectionChanged: selected item is null!");
 			// ReSharper disable ConditionIsAlwaysTrueOrFalse
 			if (item == null) return;
 			// ReSharper restore ConditionIsAlwaysTrueOrFalse
@@ -1872,7 +1910,7 @@ namespace MDRDesk
 			Debug.Assert(CurrentIndex != null);
 			var grid = GetCurrentTabGrid();
 			var lbAddresses = (ListBox)LogicalTreeHelper.FindLogicalNode(grid, @"AncestorAddressList");
-			Debug.Assert(lbAddresses!=null);
+			Debug.Assert(lbAddresses != null);
 			lbAddresses.ItemsSource = addresses;
 			var txtBlk = (TextBlock)LogicalTreeHelper.FindLogicalNode(grid, "AncestorInformation");
 
@@ -1906,7 +1944,7 @@ namespace MDRDesk
 			{
 				if (btn.Name == "AncestorExpandAll")
 					(treeView.Items[0] as TreeViewItem).ExpandSubtree();
-				else if (btn.Name== "AncestorCollapseAll")
+				else if (btn.Name == "AncestorCollapseAll")
 				{
 					var root = treeView.Items[0] as TreeViewItem;
 					Stack<TreeViewItem> stack = new Stack<TreeViewItem>();
@@ -1914,7 +1952,7 @@ namespace MDRDesk
 					{
 						stack.Push(root.Items[i] as TreeViewItem);
 					}
-					while(stack.Count > 0)
+					while (stack.Count > 0)
 					{
 						var current = stack.Pop();
 						current.IsExpanded = false;
@@ -1930,15 +1968,15 @@ namespace MDRDesk
 
 		private void TypeTreeCopyTypeNameClicked(object sender, RoutedEventArgs e)
 		{
-            var grid = GetCurrentTabGrid();
-            Debug.Assert(grid != null);
-            if (grid == null) return;
-            var treeView = (TreeView)LogicalTreeHelper.FindLogicalNode(grid, "AncestorTreeView");
-            var selected = treeView.SelectedItem as TreeViewItem;
-            if (selected == null) return;
-            AncestorNode node = (AncestorNode)selected.Tag;
-            Clipboard.SetText(node.TypeName);
-            MainStatusShowMessage("Copied to Clipboard: " + node.TypeName);
+			var grid = GetCurrentTabGrid();
+			Debug.Assert(grid != null);
+			if (grid == null) return;
+			var treeView = (TreeView)LogicalTreeHelper.FindLogicalNode(grid, "AncestorTreeView");
+			var selected = treeView.SelectedItem as TreeViewItem;
+			if (selected == null) return;
+			AncestorNode node = (AncestorNode)selected.Tag;
+			Clipboard.SetText(node.TypeName);
+			MainStatusShowMessage("Copied to Clipboard: " + node.TypeName);
 		}
 
 		private void TypeTreeGenerationDistributionClicked(object sender, RoutedEventArgs e)
@@ -1971,7 +2009,7 @@ namespace MDRDesk
 			}
 			if (line != null)
 			{
-				var newChildLine = new Run(text) {Name=inlineName, FontSize = 12};
+				var newChildLine = new Run(text) { Name = inlineName, FontSize = 12 };
 				lines.InsertAfter(line, newChildLine);
 				lines.Remove(line);
 			}
@@ -2083,17 +2121,17 @@ namespace MDRDesk
 		//	}
 		//}
 
-        #endregion type values report
+		#endregion type values report
 
-        #region instance value
+		#region instance value
 
-        /// <summary>
-        /// List of currently displayed windows.
-        /// Used to close them when index is closing.
-        /// </summary>
-        private ConcurrentDictionary<int, Window> _wndDct = new ConcurrentDictionary<int, Window>();
+		/// <summary>
+		/// List of currently displayed windows.
+		/// Used to close them when index is closing.
+		/// </summary>
+		private ConcurrentDictionary<int, Window> _wndDct = new ConcurrentDictionary<int, Window>();
 
-  //      private async void ExecuteInstanceValueQuery(string msg, ulong addr)
+		//      private async void ExecuteInstanceValueQuery(string msg, ulong addr)
 		//{
 		//	SetStartTaskMainWindowState(msg);
 
@@ -2166,9 +2204,9 @@ namespace MDRDesk
 
 			if (!inst.HaveFields() && !inst.Value.IsLong())
 			{
-					var wnd = new ContentDisplay(Utils.GetNewID(), _wndDct, GetInstanceValueDescription(inst), inst) { Owner = this };
-					wnd.Show();
-					return;
+				var wnd = new ContentDisplay(Utils.GetNewID(), _wndDct, GetInstanceValueDescription(inst), inst) { Owner = this };
+				wnd.Show();
+				return;
 			}
 
 			if (inst.IsArray())
@@ -2213,7 +2251,7 @@ namespace MDRDesk
 			{
 				string error = null;
 				var info = CurrentIndex.GetThreads(out error);
-				return new Tuple<string, ClrtThread[], string[],KeyValuePair<int,ulong>[]>(error, info.Item1, info.Item2,info.Item3);
+				return new Tuple<string, ClrtThread[], string[], KeyValuePair<int, ulong>[]>(error, info.Item1, info.Item2, info.Item3);
 			});
 
 			string msg = result.Item1 != null ? "Getting thread infos failed." : "Getting thread infos succeeded.";
@@ -2235,14 +2273,14 @@ namespace MDRDesk
 			int[] frMap = Utils.Iota(threads.Length);
 			Array.Sort(frames, frMap, frmCmp);
 			int cnt, frmId = 0;
-			KeyValuePair<int,int>[] frmCounts = new KeyValuePair<int, int>[frames.Length];
-			frmCounts[0] = new KeyValuePair<int, int>(frmId,1);
+			KeyValuePair<int, int>[] frmCounts = new KeyValuePair<int, int>[frames.Length];
+			frmCounts[0] = new KeyValuePair<int, int>(frmId, 1);
 			for (int i = 1; i < frames.Length; ++i)
 			{
 				if (frmCmp.Compare(frames[i - 1], frames[i]) == 0)
 				{
-					cnt = frmCounts[i-1].Value;
-					frmCounts[i] = new KeyValuePair<int, int>(frmId, cnt+1);
+					cnt = frmCounts[i - 1].Value;
+					frmCounts[i] = new KeyValuePair<int, int>(frmId, cnt + 1);
 					continue;
 				}
 				++frmId;
@@ -2254,11 +2292,11 @@ namespace MDRDesk
 
 			cnt = frmCounts[frmCounts.Length - 1].Value;
 			frmId = frmCounts[frmCounts.Length - 1].Key;
-			for (int i = frmCounts.Length-2; i >= 0; --i)
+			for (int i = frmCounts.Length - 2; i >= 0; --i)
 			{
 				if (frmCounts[i].Key == frmId)
 				{
-					frmCounts[i] = new KeyValuePair<int, int>(frmId,cnt);
+					frmCounts[i] = new KeyValuePair<int, int>(frmId, cnt);
 					continue;
 				}
 				cnt = frmCounts[i].Value;
@@ -2266,7 +2304,7 @@ namespace MDRDesk
 			}
 
 			int[] frMap2 = Utils.Iota(threads.Length);
-			Array.Sort(frMap,frMap2);
+			Array.Sort(frMap, frMap2);
 			frMap = null;
 
 			const int ColumnCount = 5;
@@ -2294,8 +2332,8 @@ namespace MDRDesk
 
 				KeyValuePair<int, int> kv = frmCounts[frMap2[i]];
 				sb.Clear();
-                var id = Utils.GetSubscriptIntStr(kv.Key, digitCount); // Utils.GetDigitsString(kv.Key, digitCount, buf); // Utils.GetFancyIntStr(kv.Key,digitCount); // 
-                sb.Append(id).Append("/").Append(kv.Value).Append(" thread(s), trace count ").Append(threads[i].Frames.Length); 
+				var id = Utils.GetSubscriptIntStr(kv.Key, digitCount); // Utils.GetDigitsString(kv.Key, digitCount, buf); // Utils.GetFancyIntStr(kv.Key,digitCount); // 
+				sb.Append(id).Append("/").Append(kv.Value).Append(" thread(s), trace count ").Append(threads[i].Frames.Length);
 
 				data[dataNdx++] = sb.ToString();
 			}
@@ -2312,14 +2350,14 @@ namespace MDRDesk
 			sb.Clear();
 			sb.Append(ReportFile.DescrPrefix).Append("Thread Count ").Append(threads.Length).AppendLine();
 
-			Tuple<ClrtThread[],string[],KeyValuePair<int,ulong>[]> dataInfo = new Tuple<ClrtThread[], string[], KeyValuePair<int, ulong>[]>(threads,framesMethods,result.Item4);
+			Tuple<ClrtThread[], string[], KeyValuePair<int, ulong>[]> dataInfo = new Tuple<ClrtThread[], string[], KeyValuePair<int, ulong>[]>(threads, framesMethods, result.Item4);
 
-			var listing = new ListingInfo(null, items, colInfos, sb.ToString(),dataInfo);
+			var listing = new ListingInfo(null, items, colInfos, sb.ToString(), dataInfo);
 
 			var grid = TryFindResource(ThreadViewGrid) as Grid;
-			Debug.Assert(grid!=null);
+			Debug.Assert(grid != null);
 			var listView = (ListView)LogicalTreeHelper.FindLogicalNode(grid, "ThreadListingView");
-			Debug.Assert(listView!=null);
+			Debug.Assert(listView != null);
 
 			//GuiUtils.AddListViewColumn(grid, "AliveStackObjects", "Alive Stack Objects", 400);
 			//GuiUtils.AddListViewColumn(grid, "DeadStackObjects", "Dead Stack Objects", 400);
@@ -2365,15 +2403,15 @@ namespace MDRDesk
 		private void ThreadListingView_OnSelectionChanged(object sender, SelectionChangedEventArgs e)
 		{
 			ListView listView = sender as ListView;
-			Debug.Assert(listView!=null);
+			Debug.Assert(listView != null);
 			if (listView.SelectedItem == null) return;
-			listing<string> selected = (listing < string > )listView.SelectedItem;
+			listing<string> selected = (listing<string>)listView.SelectedItem;
 			// get index of data
 			Tuple<ListingInfo, string> info = listView.Tag as Tuple<ListingInfo, string>;
 			Debug.Assert(info != null);
 			var data = info.Item1.Data as Tuple<ClrtThread[], string[], KeyValuePair<int, ulong>[]>;
-			Debug.Assert(data!=null);
-			int dataNdx = selected.Offset/selected.Count;
+			Debug.Assert(data != null);
+			int dataNdx = selected.Offset / selected.Count;
 			ClrtThread thread = data.Item1[dataNdx];
 			var grid = GetCurrentTabGrid();
 			Debug.Assert(grid != null);

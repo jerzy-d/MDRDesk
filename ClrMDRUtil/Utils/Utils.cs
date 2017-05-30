@@ -35,31 +35,31 @@ namespace ClrMDRIndex
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		public static ulong SetAsFinalizer(ulong addr)
 		{
-			return addr |= (ulong)RootBits.Finalizer;
+			return addr |= RootBits.Finalizer;
 		}
 
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		public static ulong SetAsRooted(ulong addr)
 		{
-			return addr |= (ulong)RootBits.Rooted;
+			return addr |= RootBits.Rooted;
 		}
 
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		public static ulong SetAsRoot(ulong addr)
 		{
-			return addr |= (ulong)RootBits.Root;
+			return addr |= RootBits.Root;
 		}
 
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		public static ulong RealAddress(ulong addr)
 		{
-			return addr & (ulong)RootBits.AddressMask;
+			return addr & RootBits.AddressMask;
 		}
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool IsRealAddress(ulong addr)
         {
-            return (addr & (ulong)RootBits.AddressMask) == 0ul;
+            return (addr & RootBits.Mask) == 0ul;
         }
 
         public static int[] GetAddressIndices(ulong[] addrs, ulong[] all)
@@ -2151,7 +2151,7 @@ namespace ClrMDRIndex
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static string DateTimeString(DateTime dt)
         {
-            return dt.ToString("YYYY-MM-dd_hh-mm-ss-fff");
+            return dt.ToString("yyyy-MM-dd-hh-mm-ss-fff");
         }
 
         public static string FormatBytes(long bytes)
