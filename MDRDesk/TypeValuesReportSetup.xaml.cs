@@ -326,7 +326,7 @@ namespace MDRDesk
 			if (TypeValueSaveReportCheckBox.IsChecked.Value)
 			{
 				var tpName = Utils.BaseTypeName(_needed[0].TypeName);
-				tpName = Utils.GetValidFileName(tpName);
+				tpName = DumpFileMoniker.GetValidFileName(tpName);
 
 				string spath = _indexProxy.FileMoniker.OutputFolder + Path.DirectorySeparatorChar + "TypeValuesSetup." + tpName + ".tvr";
 				int pathNdx = 1;
@@ -354,6 +354,7 @@ namespace MDRDesk
 			string error = null;
 			string path = GuiUtils.SelectFile(string.Format("*.{0}", "tvr"),
 				string.Format("Type values setups (*.tvr)|*.tvr|All files (*.*)|*.*"), _indexProxy.FileMoniker.OutputFolder);
+            if (path == null) return;
 			try
 			{
 				ClrtDisplayableType[] queryItems = ClrtDisplayableType.DeserializeArray(path, out error);

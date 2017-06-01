@@ -2732,8 +2732,19 @@ namespace MDRDesk
 
 		private void ShowError(string errStr)
 		{
+            MdrMessageBox dialog;
+            if (string.IsNullOrWhiteSpace(errStr))
+            {
+                dialog = new MdrMessageBox()
+                {
+                    Owner = this,
+                    Caption = "INVALID ERROR",
+                    InstructionHeading = "ShowError called with null/empty error string.",
+                    InstructionText = "Please copy the details text below, and send it to jdominos@gmail.com. Thank you.",
+                    DeatilsText = Environment.StackTrace
+                };
+            }
 			string[] parts = errStr.Split(new[] { Constants.HeavyGreekCrossPadded }, StringSplitOptions.None);
-			MdrMessageBox dialog;
 
 			if (parts.Length > 2)
 			{

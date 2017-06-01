@@ -1053,31 +1053,7 @@ namespace ClrMDRIndex
 		}
 
 
-		public static HashSet<char> InvalidPathChars = new HashSet<char>(Path.GetInvalidPathChars());
-		 
-		public static string GetValidFileName(string name)
-		{
-			bool found = false;
-			for (int i = 0, icnt = name.Length; i < icnt; ++i)
-			{
-				if (InvalidPathChars.Contains(name[i]))
-				{
-					found = true;
-					break;
-				}
-			}
-			if (!found) return name;
-			var sb = StringBuilderCache.Acquire(StringBuilderCache.MaxCapacity);
-			sb.Append(name);
-			for (int i = 0, icnt = name.Length; i < icnt; ++i)
-			{
-				if (InvalidPathChars.Contains(name[i]))
-				{
-					sb[i] = '_';
-				}
-			}
-			return StringBuilderCache.GetStringAndRelease(sb);
-		}
+
 
 		#endregion IO
 
@@ -1146,10 +1122,11 @@ namespace ClrMDRIndex
 			var lastDotPos = name.LastIndexOf('.');
 			if (lastDotPos < 0 && bracketPos < 0 && plusPos < 0)
 				return name;
-			if (bracketPos == 0)
-			{
-				return name;
-			}
+			if (bracketPos == 0) return name;
+
+            int lastCharIndex = name.Length - 1;
+
+
 			if (plusPos < 0 && bracketPos < 0)
 			{
 				return name.Substring(lastDotPos + 1) + Constants.NamespaceSepPadded + name.Substring(0, lastDotPos);
@@ -1167,7 +1144,14 @@ namespace ClrMDRIndex
 			}
 			else if (plusPos < bracketPos)
 			{
-				return name.Substring(plusPos + 1) + "+" + Constants.NamespaceSepPadded + name.Substring(0, plusPos);
+                int p = name.IndexOf("+<>");
+                if (p > 0)
+                {
+                    p = name.LastIndexOf('.', p);
+                    if (p > 0)
+                        return name.Substring(p + 1) + "+" + Constants.NamespaceSepPadded + name.Substring(0, p);
+                }
+                return name.Substring(plusPos + 1) + "+" + Constants.NamespaceSepPadded + name.Substring(0, plusPos);
 			}
 			else
 			{
@@ -1512,11 +1496,24 @@ namespace ClrMDRIndex
 			return true;
 		}
 
-		#endregion String Utils
+        public static string GetShorterString(string str, int len)
+        {
+            if (str.Length <= len) return str;
+            return str.Substring(0, len) + "...";
+        }
 
-		#region Comparers
+        public static string GetShorterStringRemoveNewlines(string str, int len)
+        {
+            str = str.Replace(Environment.NewLine, Constants.HeavyRightArrowPadded);
+            if (str.Length <= len) return str;
+            return str.Substring(0, len) + "...";
+        }
 
-		public static bool SameIntArrays(int[] ary1, int[] ary2)
+        #endregion String Utils
+
+        #region Comparers
+
+        public static bool SameIntArrays(int[] ary1, int[] ary2)
 		{
 			if (ary1 == null && ary2 == null) return true;
 			if (ary1 == null || ary2 == null) return false;

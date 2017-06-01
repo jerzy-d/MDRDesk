@@ -484,17 +484,15 @@ namespace ClrMDRIndex
 			_data = null;
 		}
 
-		public static bool DumpListing(string path, ListingInfo info, string title, out string error,
-			int count = Int32.MaxValue)
+		public static bool DumpListing(string path, ListingInfo listingInfo, string title, out string error, int count = Int32.MaxValue)
 		{
 			error = null;
 			StreamWriter sw = null;
 			try
 			{
-				int writeCnt = Math.Min(info.Items.Length, count);
+				int writeCnt = Math.Min(listingInfo.Items.Length, count);
 				sw = new StreamWriter(path);
-				sw.WriteLine(info.Notes);
-				var cols = info.ColInfos;
+				var cols = listingInfo.ColInfos;
 				sw.WriteLine("### MDRDESK REPORT: ");
 				sw.WriteLine("### TITLE: " + title);
 				sw.WriteLine("### COUNT: " + Utils.LargeNumberString(writeCnt));
@@ -507,7 +505,20 @@ namespace ClrMDRIndex
 					sw.Write(Constants.HeavyGreekCrossPadded);
 					sw.Write(cols[i].Name + "|" + cols[i].ColumnType);
 				}
-				var items = info.Items;
+
+                if (!string.IsNullOrWhiteSpace(listingInfo.Notes))
+                {
+                    var noteLines = listingInfo.Notes.Split("\r\n".ToCharArray(),StringSplitOptions.RemoveEmptyEntries);
+                    for (int i = 0, icnt = noteLines.Length; i < icnt; ++i)
+                    {
+                        if (noteLines[i].StartsWith(ReportFile.DescrPrefix))
+                            sw.WriteLine(noteLines[i]);
+                        else
+                            sw.WriteLine(ReportFile.DescrPrefix + noteLines[i]);
+                    }
+                }
+
+                var items = listingInfo.Items;
 				sw.WriteLine();
 				int itemCount = items[0].Count;
 				for (int i = 0, icnt = writeCnt; i < icnt; ++i)
@@ -519,14 +530,6 @@ namespace ClrMDRIndex
 						sw.Write(items[i].GetItem(j));
 					}
 					sw.WriteLine();
-				}
-				if (!string.IsNullOrWhiteSpace(info.Notes))
-				{
-					var noteLines = info.Notes.Split("\r\n".ToCharArray());
-					for (int i = 0, icnt = noteLines.Length; i < icnt; ++i)
-					{
-						sw.WriteLine(ReportFile.DescrPrefix + noteLines[i]);
-					}
 				}
 
 				return true;

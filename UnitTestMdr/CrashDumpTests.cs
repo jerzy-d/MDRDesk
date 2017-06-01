@@ -82,9 +82,11 @@ namespace UnitTestMdr
             ulong x = Utils.RootBits.Finalizer;
             ulong y = Utils.RootBits.Rooted;
 
+            string typeName = @"ECS.Common.HierarchyCache.Execute.HierarchyCacheController +<> c__DisplayClass10 < ECS.Cache.Transport.Notifications.FilteredPriceNotification,ECS.Common.HierarchyCache.MarketData.FullPriceOrUnsubscribeNotification >";
+            string reversedTypeName = Utils.ReverseTypeName(typeName);
 
 
-            List<int[]> lst = new List<int[]>();
+            List <int[]> lst = new List<int[]>();
             int[] ary = new[] { 1, 2, 3, 16, 17 };
             Utils.GetPermutations(ary, 0, ary.Length - 1, lst);
             IntArrayStore rToF = new IntArrayStore(lst.Count + 2);
@@ -2002,7 +2004,7 @@ namespace UnitTestMdr
 				Array.Sort(szAry,adrAry,new Utils.AddressCmpDesc());
 				
 				string outPath = Setup.DumpsFolder + @"\Analytics\Ellerston\Eze.Analytics.Svc_170309_130146.BIG.dmp.map\ad-hoc.queries\TypeSizesAndGenerations."
-										+ Utils.GetValidFileName(typeName) + ".txt";
+										+ DumpFileMoniker.GetValidFileName(typeName) + ".txt";
 				StreamWriter sw = null;
 				try
 				{

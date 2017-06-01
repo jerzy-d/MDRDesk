@@ -1459,24 +1459,15 @@ namespace MDRDesk
 					var outPath = pathInfo.Item2.GetPathAppendingToFileName(".ShortReport.txt");
 					ListingInfo.DumpListing(outPath, listingInfo.Item1, pathInfo.Item1, out error, 100);
 					break;
-				//case ListingGrid:
-				//	listView = (ListView)LogicalTreeHelper.FindLogicalNode(grid, ListingGridView);
-				//	Tuple<ListingInfo, string> pair = listView.Tag as Tuple<ListingInfo, string>;
-
-				//	SetStartTaskMainWindowState("Writing report. Please wait...");
-				//	var taskResult = await Task.Run(() =>
-				//	{
-				//		string error;
-				//		var ok = ReportFile.WriteReport(outpath, gridName, gridInfo.Item1, colSortInfo.Item1.ColInfos, descrLines, data,
-				//			out error);
-				//		return new Tuple<string, string>(error, outpath);
-				//	});
-
-				//	SetEndTaskMainWindowState(taskResult.Item1 == null
-				//		? "Report written: " + taskResult.Item2
-				//		: "Report failed: " + taskResult.Item2);
-				//	break;
-				default:
+                case ListingGrid:
+                    listView = (ListView)LogicalTreeHelper.FindLogicalNode(grid, ListingGridView);
+                    Tuple<ListingInfo, string> pair = listView.Tag as Tuple<ListingInfo, string>;
+                    string lstPath = DumpFileMoniker.GetFileDistinctPath(CurrentIndex.AdhocFolder, pair.Item2 + ".txt");
+                    ListingInfo.DumpListing(lstPath, pair.Item1, pair.Item2, out error, 100);
+                    MainStatusShowMessage(error == null ? "Report written: " + lstPath : "Report writing failed: " + Utils.GetShorterStringRemoveNewlines(error, 40));
+                    if (error != null) ShowError(error);
+                    break;
+                default:
 					MainStatusShowMessage("Cannot write report, the current tab reporting is not supported.");
 					break;
 			}

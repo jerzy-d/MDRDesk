@@ -1423,6 +1423,8 @@ namespace ClrMDRIndex
 			error = null;
 			try
 			{
+                // get type addresses
+                //
 				Debug.Assert(queryItems != null && queryItems.Length > 0);
 				ulong[] instances = GetTypeRealAddresses(queryItems[0].TypeId);
 				if (instances == null || instances.Length < 1)
@@ -1431,10 +1433,10 @@ namespace ClrMDRIndex
 					return null;
 				}
 
+                // prepare values queries
+                //
 				TypeValueQuery[] valueQuery = new TypeValueQuery[queryItems.Length];
-
 				valueQuery[0] = new TypeValueQuery(null, Constants.InvalidIndex);
-
 				int qryGetValueCnt = 1;
 				for (int i = 1, icnt = queryItems.Length; i < icnt; ++i)
 				{
@@ -1449,11 +1451,11 @@ namespace ClrMDRIndex
 						}
 					}
 				}
-				var heap = Heap;
 
-				// prepare query items types and their fields
-				//
-				bool tryAgain = true;
+                // prepare query items types and their fields
+                //
+                var heap = Heap;
+                bool tryAgain = true;
 				for (int i = 0, icnt = instances.Length; i < icnt && tryAgain; ++i)
 				{
 					tryAgain = false;
@@ -1493,6 +1495,9 @@ namespace ClrMDRIndex
 					}
 					break;
 				}
+
+                // get values from heap
+                //
 				queryItems[0].SetGetValue(true);
 				string[] values = new string[valueQuery.Length];
 				ulong[] addresses = new ulong[valueQuery.Length];
@@ -1511,6 +1516,9 @@ namespace ClrMDRIndex
 					}
 				}
 
+
+                // prepare listing output
+                //
 				int valCnt = valueQuery[0].Values.Count;
 				string[] data = new string[valCnt * qryGetValueCnt];
 				listing<string>[] items = new listing<string>[valCnt];

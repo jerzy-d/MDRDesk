@@ -175,7 +175,26 @@ namespace ClrMDRIndex
 			return GetOuputFolder(monkr.Path) + System.IO.Path.DirectorySeparatorChar + monkr.FileName + "." + fileName;
 		}
 
-		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static string GetFileDistinctPath(string folderPath, string fileName)
+        {
+            if (string.IsNullOrWhiteSpace(folderPath) || !Directory.Exists(folderPath)) return null;
+            fileName = DumpFileMoniker.GetValidFileName(fileName);
+            string path = folderPath;
+            if (folderPath[folderPath.Length - 1] != System.IO.Path.DirectorySeparatorChar) path = path + System.IO.Path.DirectorySeparatorChar;
+            path = path + fileName;
+            int ndx = 1;
+            while (File.Exists(path))
+            {
+                string num = "(" + ndx + ")";
+                ++ndx;
+                int pos = path.LastIndexOf('.');
+                path = path.Insert(pos - 1, num);
+            }
+            return path;
+        }
+
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
 		public static string GetFileName(string path)
 		{
 			if (string.IsNullOrWhiteSpace(path)) return string.Empty;
@@ -188,5 +207,31 @@ namespace ClrMDRIndex
 			if (string.IsNullOrWhiteSpace(path)) return string.Empty;
 			return System.IO.Path.GetFileName(path) + ".map";
 		}
-	}
+
+        public static HashSet<char> InvalidPathChars = new HashSet<char>(System.IO.Path.GetInvalidPathChars());
+
+        public static string GetValidFileName(string name)
+        {
+            bool found = false;
+            for (int i = 0, icnt = name.Length; i < icnt; ++i)
+            {
+                if (InvalidPathChars.Contains(name[i]))
+                {
+                    found = true;
+                    break;
+                }
+            }
+            if (!found) return name;
+            var sb = StringBuilderCache.Acquire(StringBuilderCache.MaxCapacity);
+            sb.Append(name);
+            for (int i = 0, icnt = name.Length; i < icnt; ++i)
+            {
+                if (InvalidPathChars.Contains(name[i]))
+                {
+                    sb[i] = '_';
+                }
+            }
+            return StringBuilderCache.GetStringAndRelease(sb);
+        }
+    }
 }

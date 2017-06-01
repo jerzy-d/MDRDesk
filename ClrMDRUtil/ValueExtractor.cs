@@ -308,7 +308,7 @@ namespace ClrMDRIndex
 			var data = (ulong)fld.Type.Fields[0].GetValue(fldAddr, true);
 			data = data & TicksMask;
 			var dt = DateTime.FromBinary((long)data);
-			return formatSpec == null ? dt.ToString(CultureInfo.InvariantCulture) : dt.ToString(formatSpec);
+			return formatSpec == null ? dt.ToString("s") : dt.ToString(formatSpec);
 		}
 
 		//
@@ -1001,7 +1001,15 @@ namespace ClrMDRIndex
                 switch (fldKind)
                 {
                     case ClrElementKind.String:
-						return fld.GetValue(addr, intern, true);
+                        ulong address = (ulong)fld.GetValue(addr, intern, false);
+                        try
+                        {
+                            return fld.GetValue(addr, intern, true);
+                        }
+                        catch(Exception ex)
+                        {
+                            return string.Empty;
+                        }
                     case ClrElementKind.SZArray:
                     case ClrElementKind.Array:
                     case ClrElementKind.Object:
