@@ -19,6 +19,7 @@ namespace ClrMDRIndex
 		private bool _getValue;
 		private ClrtDisplayableType[] _alternatives;
 		private long _id;
+		private ulong[] _addresses;
 
 		public int TypeId => _typeId;
 		public int FieldIndex => _fieldIndex;
@@ -27,6 +28,8 @@ namespace ClrMDRIndex
 		public FilterValue Filter => _valueFilter;
 		public ClrtDisplayableType Parent => _parent;
 		public ClrtDisplayableType[] Alternatives => _alternatives;
+		public bool HasAlternatives => _alternatives != null;
+		public ulong[] Addresses => _addresses;
 
 		private ClrElementKind _kind;
         public ClrElementKind Kind => _kind;
@@ -48,6 +51,7 @@ namespace ClrMDRIndex
 			_valueFilter = null;
 			_getValue = false;
 			_alternatives = null;
+			_addresses = null;
 		}
 
 		public void AddAlternative(ClrtDisplayableType dtype)
@@ -57,10 +61,30 @@ namespace ClrMDRIndex
 				_alternatives = new ClrtDisplayableType[] { dtype };
 				return;
 			}
+			for(int i = 0, icnt = _alternatives.Length; i < icnt; ++i)
+			{
+				if (dtype.TypeId == _alternatives[i].TypeId) return;
+			}
 			var newAry = new ClrtDisplayableType[_alternatives.Length + 1];
 			Array.Copy(_alternatives, newAry, _alternatives.Length);
 			newAry[_alternatives.Length] = dtype;
 			_alternatives = newAry;
+		}
+
+		public bool HasAlternative(string typeName)
+		{
+			if (_alternatives == null) return false;
+			for (int i = 0, icnt = _alternatives.Length; i < icnt; ++i)
+			{
+				if (Utils.SameStrings(typeName,_alternatives[i].TypeName)) return true;
+			}
+			return false;
+		}
+
+		public void SetAddresses(IList<ulong> addresses)
+		{
+			_addresses = new ulong[addresses.Count];
+			addresses.CopyTo(_addresses,0);
 		}
 
 		public string GetDescription()
@@ -322,6 +346,15 @@ namespace ClrMDRIndex
 						var fld = dt.Fields[i];
 						fld.SetParent(dt);
 						que.Enqueue(fld);
+						if (fld.HasAlternatives)
+						{
+							for (int j = 0, jcnt = dt.Alternatives.Length; j < jcnt; ++j)
+							{
+								var alt = dt.Alternatives[j];
+								alt.SetParent(dt);
+								que.Enqueue(alt);
+							}
+						}
 					}
 				}
 

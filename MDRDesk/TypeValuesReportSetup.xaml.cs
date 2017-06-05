@@ -88,7 +88,7 @@ namespace MDRDesk
 			var result = await Task.Run(() =>
 			{
 				string error;
-				ClrtDisplayableType fldDispType = MainWindow.CurrentIndex.GetTypeDisplayableRecord(dispType, out error);
+				ClrtDisplayableType fldDispType = MainWindow.CurrentIndex.GetTypeDisplayableRecord(dispType.TypeId, dispType, out error);
 
                 if (fldDispType == null)
 					return new Tuple<string, ClrtDisplayableType>(error, null);

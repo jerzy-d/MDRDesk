@@ -1375,6 +1375,7 @@ namespace ClrMDRIndex
 					return null;
 				}
 				return TypeExtractor.GetClrtDisplayableType(_indexProxy, Dump.Heap, parent, typeId, instances, out error);
+				//GetClrtDisplayableType(IndexProxy ndxProxy, ClrHeap heap, ClrtDisplayableType parent, int typeId, ulong[] addresses, out string error)
 			}
 			catch (Exception ex)
 			{
@@ -1384,38 +1385,59 @@ namespace ClrMDRIndex
 
 		}
 
-		/// <summary>
-		/// 
-		/// </summary>
-		/// <param name="dispTypeParent"></param>
-		/// <param name="dispTypeField"></param>
-		/// <param name="error"></param>
-		/// <returns></returns>
-		public ClrtDisplayableType GetTypeDisplayableRecord(ClrtDisplayableType dispTypeParent, out string error)
-		{
-			error = null;
-			try
-			{
-				ulong[] parentInstances = null;
-				if (dispTypeParent != null)
-				{
-					parentInstances = GetTypeRealAddresses(dispTypeParent.TypeId);
-					if (parentInstances == null || parentInstances.Length < 1)
-					{
-						error = Constants.InformationSymbolHeader + "Parent type instances not found (should not happen)." + Environment.NewLine + dispTypeParent.TypeName;
-						return null;
-					}
-				}
+		//public ClrtDisplayableType GetTypeDisplayableRecord(int typeId, ClrtDisplayableType parent, out string error)
+		//{
+		//	error = null;
+		//	try
+		//	{
+		//		ulong[] instances = GetTypeRealAddresses(typeId);
+		//		if (instances == null || instances.Length < 1)
+		//		{
+		//			error = "Type instances not found.";
+		//			return null;
+		//		}
+		//		return TypeExtractor.GetClrtDisplayableType(_indexProxy, Dump.Heap, parent, typeId, instances, out error);
+		//	}
+		//	catch (Exception ex)
+		//	{
+		//		error = Utils.GetExceptionErrorString(ex);
+		//		return null;
+		//	}
 
-				return TypeExtractor.GetClrtDisplayableTypeFields(_indexProxy, Dump.Heap, dispTypeParent, parentInstances, out error);
-			}
-			catch (Exception ex)
-			{
-				error = Utils.GetExceptionErrorString(ex);
-				return null;
-			}
+		//}
 
-		}
+		///// <summary>
+		///// 
+		///// </summary>
+		///// <param name="dispTypeParent"></param>
+		///// <param name="dispTypeField"></param>
+		///// <param name="error"></param>
+		///// <returns></returns>
+		//public ClrtDisplayableType GetTypeDisplayableRecord(ClrtDisplayableType dispTypeParent, out string error)
+		//{
+		//	error = null;
+		//	try
+		//	{
+		//		ulong[] parentInstances = null;
+		//		if (dispTypeParent != null)
+		//		{
+		//			parentInstances = GetTypeRealAddresses(dispTypeParent.TypeId);
+		//			if (parentInstances == null || parentInstances.Length < 1)
+		//			{
+		//				error = Constants.InformationSymbolHeader + "Parent type instances not found (should not happen)." + Environment.NewLine + dispTypeParent.TypeName;
+		//				return null;
+		//			}
+		//		}
+
+		//		return TypeExtractor.GetClrtDisplayableTypeFields(_indexProxy, Dump.Heap, dispTypeParent, parentInstances, out error);
+		//	}
+		//	catch (Exception ex)
+		//	{
+		//		error = Utils.GetExceptionErrorString(ex);
+		//		return null;
+		//	}
+
+		//}
 
 
 		public ListingInfo GetTypeValuesReport(ClrtDisplayableType[] queryItems, out string error)
