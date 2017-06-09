@@ -55,5 +55,17 @@ namespace ClrMDRIndex
 			var ndx = Utils.AddressSearch(Instances, addr);
 			return ndx < 0 ? Constants.InvalidIndex : InstanceTypes[ndx];
 		}
-	}
+
+        public ulong[] GetTypeInstances(int typeId)
+        {
+            List<ulong> lst = new List<ulong>(1024);
+            for (int i = 0, icnt = Instances.Length; i < icnt; ++i)
+            {
+                if (typeId == InstanceTypes[i]) lst.Add(Utils.RealAddress(Instances[i]));
+            }
+            lst.Sort();
+            return lst.ToArray();
+        }
+
+    }
 }

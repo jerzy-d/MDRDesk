@@ -79,5 +79,11 @@ Make sure that indexing and index work properly without references.
 Fix thread frames, something fishy about VikingServiceFrozen.dmp
 0029 06/01/17
 Add context menu to value windows (all), say... Copy Value, Get Instance Value, Get Parent references, etc...
+0030 06/07/17
+Fix total sizes of instances and types.
+0031 06/08/17
+Double fields showing - D:\Jerzy\WinDbgStuff\dumps\Analytics\Ellerston\LouBug\Eze.Analytics.Svc_170607_214916.dmp.map
+0032 06/09/17
+Make sure that DumpIndex does not acces _references when they not present.
 
 

@@ -6,11 +6,14 @@ using System.Threading.Tasks;
 
 namespace ClrMDRIndex
 {
+    /// <summary>
+    /// Helper class to gather type/instance references.
+    /// </summary>
 	public class IndexNode
 	{
-		public int Index;
-		public int Level;
-		public IndexNode[] Nodes;
+		public int Index; // instance index
+		public int Level; // level in references tree
+		public IndexNode[] Nodes; // this instance references
 
 		public IndexNode(int index, int level)
 		{

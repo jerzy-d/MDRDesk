@@ -1271,11 +1271,233 @@ namespace UnitTestMdr
 			Assert.IsNull(error, error);
 		}
 
-		#endregion references
+        [TestMethod]
+        public void TestTypeReferences()
+        {
+            string error = null;
+            Stopwatch stopWatch = new Stopwatch();
+            stopWatch.Start();
+            var index = OpenIndex(@"D:\Jerzy\WinDbgStuff\dumps\Analytics\Ellerston\Eze.Analytics.Svc_170607_214916.dmp.map");
+            string typeName = @"Eze.Server.Common.Pulse.CalculationCache.RelatedViewsCache";
+            TestContext.WriteLine(index.DumpFileName + " INDEX OPEN DURATION: " + Utils.StopAndGetDurationString(stopWatch));
 
-		#region roots
+            using (index)
+            {
+                ulong[] valid = Utils.ReadUlongArray(@"D:\Jerzy\WinDbgStuff\dumps\Analytics\Ellerston\Eze.Analytics.Svc_170607_214916.dmp.map\ad-hoc.queries\ValidRelatedViewsCache.bin", out error);
+                int typeId = index.GetTypeId(typeName);
+                ulong[] all = index.GetTypeRealAddresses(typeId);
+                ulong[] invalid = all.Except(valid).ToArray();
 
-		[TestMethod]
+                int[] validNdxs = index.GetRealAddressIndices(valid);
+                KeyValuePair<IndexNode, int>[] validRefs = new KeyValuePair<IndexNode, int>[valid.Length];
+                for (int i = 0, icnt = valid.Length; i < icnt; ++i)
+                {
+                    validRefs[i] = index.GetReferenceNodes(validNdxs[i], References.Direction.FieldParent, References.DataSource.All, out error, 1);
+                }
+
+
+                int[] invalidNdxs = index.GetRealAddressIndices(invalid);
+                KeyValuePair<IndexNode, int>[] invalidRefs = new KeyValuePair<IndexNode, int>[invalid.Length];
+                for (int i = 0, icnt = invalid.Length; i < icnt; ++i)
+                {
+                    invalidRefs[i] = index.GetReferenceNodes(invalidNdxs[i], References.Direction.FieldParent, References.DataSource.All, out error, 1);
+                }
+
+                Queue<IndexNode> que = new Queue<IndexNode>(1024);
+                HashSet<int> validRefIds = new HashSet<int>();
+                for (int i = 0, icnt=validRefs.Length; i < icnt; ++i)
+                {
+                    GetTypeIds(index, validRefs[i].Key, validRefIds, que);
+                }
+
+
+                HashSet<int> invalidRefIds = new HashSet<int>();
+                for (int i = 0, icnt = invalidRefs.Length; i < icnt; ++i)
+                {
+                    GetTypeIds(index, invalidRefs[i].Key, invalidRefIds, que);
+                }
+
+
+
+                int[] exValidTypeIds = validRefIds.Except(invalidRefIds).ToArray();
+                int[] exInvalidTypeIds = invalidRefIds.Except(validRefIds).ToArray();
+
+                string[] exValidTypeNames = GetTypeNames(index, exValidTypeIds);
+                string[] exInvalidTypeNames = GetTypeNames(index, exInvalidTypeIds);
+
+                string[] validTypeNames = GetTypeNames(index, validRefIds);
+                string[] invalidTypeNames = GetTypeNames(index, invalidRefIds);
+
+
+                // var result = index.GetReferenceNodes(invalid, References.Direction.FieldParent, References.DataSource.All, out error, 1);
+
+
+                Assert.IsNull(error);
+
+            }
+
+            Assert.IsNull(error, error);
+        }
+
+        ulong[] suspects = new ulong[]
+        {
+            0x000069a5e44df8
+,0x000069b3c711f8
+,0x000069b8244f18
+,0x000069b8fef880
+,0x000069b981bfc0
+,0x000069bab95ae0
+,0x000069bcfb46e0
+,0x000069bdefab28
+,0x000069c070ae48
+,0x000069c4d8b8b8
+,0x000069c55714e8
+,0x000069c6406fa0
+,0x000069ca0d42b0
+,0x000069cdf446e8
+,0x000069cee02e40
+,0x000069d0434b58
+,0x000069d265fb40
+,0x00006aa7f72930
+,0x00006ab3d15030
+,0x00006ab5dd5b48
+,0x00006ab6d3ed00
+,0x00006ab80b7550
+,0x00006ab8f45ec0
+,0x00006abd558b70
+,0x00006ac004a538
+,0x00006ac40dcbc0
+,0x00006aca485208
+,0x00006acc60aa80
+,0x00006accbcdaf0
+,0x00006acd920f18
+,0x00006ace0c72d0
+,0x00006acf024480
+,0x00006ad2a2a860
+,0x00006baeaaa258
+,0x00006bb07f3bd0
+,0x00006bb0f35fd8
+,0x00006bb132ff58
+,0x00006bb18612a8
+,0x00006bb2d61210
+,0x00006bb5683558
+,0x00006bb6c48478
+,0x00006bba3e9498
+,0x00006bbb4ecfd8
+,0x00006bbbe83fb0
+,0x00006bbcbdde30
+,0x00006bbdbc6520
+,0x00006bc00e2a30
+,0x00006bc124f688
+,0x00006bc20c8f78
+,0x00006bc3c71cd8
+,0x00006bc415d650
+,0x00006bc7b40c00
+,0x00006bc876bba8
+,0x00006bcb5aa610
+,0x00006bccb10508
+,0x00006bd02277f8
+,0x00006cb4dfd1b0
+,0x00006cb717df58
+,0x00006cb740c348
+,0x00006cbb0efa68
+,0x00006cbcabc1c8
+,0x00006cc168f538
+,0x00006cc249af58
+,0x00006cc4194098
+,0x00006cc4e06c58
+,0x00006cc6ffb780
+,0x00006cc76735f8
+,0x00006cc8bda6f0
+,0x00006cc9e41570
+,0x00006ccacdfb30
+,0x00006ccbe23b18
+,0x00006ccd0e36c0
+,0x00006cce2394a8
+,0x00006cd2dd9428
+,0x00006cd46c5120
+,0x00006cd606f808
+        }          ;
+
+        [TestMethod]
+        public void TestInstancesTimestamps()
+        {
+            ulong addr = 0x0256e64c;
+            string error = null;
+            Stopwatch stopWatch = new Stopwatch();
+            stopWatch.Start();
+            var index = OpenIndex(@"D:\Jerzy\WinDbgStuff\dumps\Analytics\Ellerston\Eze.Analytics.Svc_170607_214916.dmp.map");
+            TestContext.WriteLine(index.DumpFileName + " INDEX OPEN DURATION: " + Utils.StopAndGetDurationString(stopWatch));
+
+            InstanceValue inst;
+            using (index)
+            {
+                var heap = index.Heap;
+                ClrType clrType = heap.GetObjectType(suspects[0]);
+                ClrInstanceField fld = clrType.GetFieldByName("createTimeStamp");
+                DateTime[] dts = new DateTime[suspects.Length];
+                for (int i = 0, icnt = suspects.Length; i < icnt; ++i)
+                {
+                    long tmstmp = (long)fld.GetValue(suspects[i], false, false);
+                    var dt = new DateTime(tmstmp,DateTimeKind.Utc);
+                    dts[i] = dt;
+                }
+                Array.Sort(dts);
+
+                string typeName = @"Eze.Server.Common.Pulse.CalculationCache.RelatedViewsCache";
+                int typeId = index.GetTypeId(typeName);
+                ulong[] all = index.GetTypeRealAddresses(typeId);
+
+                DateTime[] adts = new DateTime[all.Length];
+                for (int i = 0, icnt = suspects.Length; i < icnt; ++i)
+                {
+                    long tmstmp = (long)fld.GetValue(all[i], false, false);
+                    var dt = new DateTime(tmstmp, DateTimeKind.Utc);
+                    adts[i] = dt;
+                }
+                Array.Sort(adts);
+
+            }
+
+            Assert.IsNull(error, error);
+        }
+
+        int[] GetTypeIds(DumpIndex index, IndexNode node, HashSet<int> typeIdSet, Queue<IndexNode> que)
+        {
+            que.Clear();
+            que.Enqueue(node);
+            while(que.Count > 0)
+            {
+                var n = que.Dequeue();
+                for(int i = 0, icnt = n.Nodes.Length; i < icnt; ++i)
+                {
+                    var cn = n.Nodes[i];
+                    int typeId = index.GetTypeId(cn.Index);
+                    typeIdSet.Add(typeId);
+                    que.Enqueue(cn);
+                }
+            }
+            return Utils.EmptyArray<int>.Value;
+        }
+
+        string[] GetTypeNames(DumpIndex index, IEnumerable<int> set)
+        {
+            string[] names = new string[set.Count()];
+            int ndx = 0;
+            foreach(var id in set)
+            {
+                names[ndx++] = index.GetTypeName(id);
+            }
+            Array.Sort(names,StringComparer.Ordinal);
+            return names;
+        }
+
+
+        #endregion references
+
+        #region roots
+
+        [TestMethod]
 		public void TestRootScan()
 		{
 			string error = null;
@@ -1601,7 +1823,7 @@ namespace UnitTestMdr
         #region type values report
 
         [TestMethod]
-        public void TestTypeValuesReport()
+        public void TestSavedTypeValuesReport()
         {
             string error;
             Stopwatch stopWatch = new Stopwatch();
@@ -1629,27 +1851,36 @@ namespace UnitTestMdr
             Assert.IsNull(error, error);
         }
 
-		[TestMethod]
-		public void TestSavedTypeValuesReport()
-		{
-			string error;
-			Stopwatch stopWatch = new Stopwatch();
-			stopWatch.Start();
-			var index = OpenIndex(@"C:\WinDbgStuff\dumps\Analytics\Highline\analyticsdump111.dlk.dmp.map");
-			TestContext.WriteLine(index.DumpFileName + " INDEX OPEN DURATION: " + Utils.StopAndGetDurationString(stopWatch));
 
-			using (index)
-			{
-				// deserialize query
-				//
-				string qpath = @"C:\WinDbgStuff\Dumps\Analytics\Highline\analyticsdump111.dlk.dmp.map\ad-hoc.queries\ClrtDisplayableType.2017-05-27-05-58-41-608.bin";
-				ClrtDisplayableType[] queryItems = ClrtDisplayableType.DeserializeArray(qpath, out error);
+        [TestMethod]
+        public void TestTypeValuesReport()
+        {
+            string error = null;
+            Stopwatch stopWatch = new Stopwatch();
+            stopWatch.Start();
+            var index = OpenIndex(@"D:\Jerzy\WinDbgStuff\dumps\Analytics\Highline\analyticsdump111.dlk.dmp.map");
+            TestContext.WriteLine(index.DumpFileName + " INDEX OPEN DURATION: " + Utils.StopAndGetDurationString(stopWatch));
 
+            using (index)
+            {
+                // deserialize query
+                //
+                string typeName = @"Eze.Server.Common.Pulse.Common.Types.PositionLevelCache";
+                try
+                {
+                    int typeId = index.GetTypeId(typeName);
 
-			}
+                    (string err, ClrtDisplayableType cdt, ulong[] instances) = index.GetTypeDisplayableRecord(typeId, null);
+                }
+                catch (Exception ex)
+                {
+                    Assert.IsTrue(false, ex.ToString());
+                }
 
-			Assert.IsNull(error, error);
-		}
+            }
+
+            Assert.IsNull(error, error);
+        }
 
 		#endregion type values report
 

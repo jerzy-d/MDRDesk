@@ -1484,13 +1484,60 @@ namespace ClrMDRIndex
 			return names;
 		}
 
-		#endregion Strings
+        #endregion Strings
 
-		#region values
+        #region values
 
-		#endregion values
+        #endregion values
 
-		public static Tuple<ulong[], ulong[]> GetFinalizableInstances(ClrHeap heap, out string error)
+        #region types
+
+        public string[] GetTypesImplementingInterface(string interfaceList, out string error)
+        {
+            error = null;
+            try
+            {
+                List<string> types = new List<string>(256);
+                var heap = Heap;
+                var segs = heap.Segments;
+
+                for (int i = 0, icnt = segs.Count; i < icnt; ++i)
+                {
+                    var seg = segs[i];
+                    ulong addr = seg.FirstObject;
+                    while (addr != 0ul)
+                    {
+                        var clrType = heap.GetObjectType(addr);
+                        if (clrType == null || !clrType.IsObjectReference) goto NEXT_OBJECT;
+                        if (clrType.Interfaces == null) goto NEXT_OBJECT;
+                        for (int j = 0, jcnt = clrType.Interfaces.Count; j < jcnt;  ++j)
+                        {
+                            var interf = clrType.Interfaces[j];
+                            if (interf.Name.EndsWith(interfaceList))
+                            {
+                                types.Add(clrType.Name);
+                                break;
+                            }
+                        }
+
+                        NEXT_OBJECT:
+                        addr = seg.NextObject(addr);
+                    }
+
+                }
+                return types.ToArray();
+            }
+            catch (Exception ex)
+            {
+                error = Utils.GetExceptionErrorString(ex);
+                return null;
+            }
+        }
+
+        #endregion types
+
+
+        public static Tuple<ulong[], ulong[]> GetFinalizableInstances(ClrHeap heap, out string error)
 		{
 			error = null;
 			try

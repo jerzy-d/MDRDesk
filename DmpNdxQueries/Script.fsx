@@ -1,6 +1,6 @@
 ﻿// Learn more about F# at http://fsharp.org. See the 'F# Tutorial' project
 // for more guidance on F# programming.
-#r "../ClrMd/Release/Microsoft.Diagnostics.Runtime.dll"
+#r "../ClrMd/Microsoft.Diagnostics.Runtime.dll"
 #R "../packages/FSharp.Charting.0.90.14/lib/net40/FSharp.Charting.dll"
 #r "../MDRDesk/bin/x64/Debug/ClrMDRUtil.dll"
 #r "../MDRDesk/bin/x64/Debug/ClrMDRIndex.dll"
@@ -45,3 +45,16 @@ if isNull (fst result) then
     printfn "success"
 else
     printfn "Failed\n: %s" (fst result)
+
+
+//let msize = 4
+let modulo n m = ((n%m)+m)%m
+let wrap msize (x,y) = ((modulo (x-1) msize) + 1, (modulo (y-1) msize) + 1)
+
+let neighbs m (x,y) = Seq.map (wrap m) [(x-1,y-1); (x,y-1); (x+1,y-1); (x-1,y); (x+1,y); (x-1,y+1); (x,y+1); (x+1,y+1)]
+
+let nb11 = neighbs 4 (1,1)
+
+printf "%A" (nb11 |> Seq.toList)
+
+

@@ -86,7 +86,7 @@ namespace UnitTestMdr
             string reversedTypeName = Utils.ReverseTypeName(typeName);
 
 
-            List <int[]> lst = new List<int[]>();
+            List<int[]> lst = new List<int[]>();
             int[] ary = new[] { 1, 2, 3, 16, 17 };
             Utils.GetPermutations(ary, 0, ary.Length - 1, lst);
             IntArrayStore rToF = new IntArrayStore(lst.Count + 2);
@@ -133,7 +133,7 @@ namespace UnitTestMdr
                 int dupCnt = 0;
                 rd = new StreamReader(path);
                 string ln = rd.ReadLine();
-                while(ln!=null)
+                while (ln != null)
                 {
                     if (!ln.StartsWith(classLineBegin)) goto NEXT_LINE;
 
@@ -143,18 +143,18 @@ namespace UnitTestMdr
                     string typeName = ln.Substring(pos, endPos - pos);
                     pos = Utils.SkipWhites(ln, endPos);
                     ++pos;
-                    endPos = Utils.SkipDecimalDigits(ln,pos);
+                    endPos = Utils.SkipDecimalDigits(ln, pos);
                     int cnt = Int32.Parse(ln.Substring(pos, endPos - pos));
                     totalCnt += cnt;
                     int dctCnt;
-                    if (dct.TryGetValue(typeName,out dctCnt))
+                    if (dct.TryGetValue(typeName, out dctCnt))
                     {
                         dct[typeName] = dctCnt + cnt;
                         dupCnt += cnt;
                     }
                     else
                     {
-                        dct.Add(typeName,cnt);
+                        dct.Add(typeName, cnt);
                     }
 
                     NEXT_LINE:
@@ -164,13 +164,13 @@ namespace UnitTestMdr
                 rd = null;
 
                 sw = new StreamWriter(path + ".Cleaned.txt");
-                foreach(var kv in dct)
+                foreach (var kv in dct)
                 {
                     sw.WriteLine(kv.Key + "  " + kv.Value);
                 }
 
             }
-            catch(Exception ex)
+            catch (Exception ex)
             {
                 Assert.IsTrue(false, ex.ToString());
             }
@@ -202,14 +202,14 @@ namespace UnitTestMdr
                     if (ln.Length < 1 || ln[0] == '#') goto NEXT_LINE;
 
                     int pos = Utils.SkipNonWhites(ln, 0);
-                    int cnt = Int32.Parse(ln.Substring(0,pos));
+                    int cnt = Int32.Parse(ln.Substring(0, pos));
                     pos = Utils.SkipWhites(ln, pos);
                     int endPos = Utils.SkipNonWhites(ln, pos);
-                    string typeName = ln.Substring(pos,endPos-pos);
+                    string typeName = ln.Substring(pos, endPos - pos);
                     typeName = typeName.Replace('+', '_');
 
                     int[] objCnt;
-                    if (dct.TryGetValue(typeName,out objCnt))
+                    if (dct.TryGetValue(typeName, out objCnt))
                     {
                         objCnt[0] += cnt;
                     }
@@ -234,7 +234,7 @@ namespace UnitTestMdr
                     string typeName = ln.Substring(0, pos);
                     pos = Utils.SkipWhites(ln, pos);
                     int endPos = Utils.SkipNonWhites(ln, pos);
-                    int cnt = Int32.Parse(ln.Substring(pos,endPos-pos));
+                    int cnt = Int32.Parse(ln.Substring(pos, endPos - pos));
 
                     int[] objCnt;
                     if (dct.TryGetValue(typeName, out objCnt))
@@ -243,7 +243,7 @@ namespace UnitTestMdr
                     }
                     else
                     {
-                        dct.Add(typeName, new int[] {0,cnt });
+                        dct.Add(typeName, new int[] { 0, cnt });
                     }
 
                     NEXT_LINE:
@@ -258,7 +258,7 @@ namespace UnitTestMdr
                 int cnt0cnt = 0;
                 int cnt1cnt = 0;
                 int cnt01diff = 0;
-                
+
 
                 int cnt0cntCnt = 0;
                 int cnt1cntCnt = 0;
@@ -282,7 +282,7 @@ namespace UnitTestMdr
                         _1lst.Add(type);
 
                     }
-                    else if (cnt1==0)
+                    else if (cnt1 == 0)
                     {
                         ++cnt0cnt;
                         cnt0cntCnt += cnt0;
@@ -329,7 +329,7 @@ namespace UnitTestMdr
             int[] objectCounts = new int[3];
             try
             {
-                for(int i = 0; i < 3; ++i)
+                for (int i = 0; i < 3; ++i)
                 {
                     rd = new StreamReader(paths[i]);
                     string ln = rd.ReadLine();
@@ -341,7 +341,7 @@ namespace UnitTestMdr
                         int cnt = Int32.Parse(ln.Substring(pos));
                         objectCounts[i] += cnt;
                         int[] ary;
-                        if (dct.TryGetValue(type,out ary))
+                        if (dct.TryGetValue(type, out ary))
                         {
                             ary[i] = cnt;
                         }
@@ -362,17 +362,17 @@ namespace UnitTestMdr
 
                 sw.WriteLine("### MDRDESK REPORT: TYPECOUNTS");
                 sw.WriteLine("### TITLE: Type Counts: " + Utils.CountString(dct.Count));
-               sw.WriteLine("### COUNT: " + Utils.CountString(dct.Count));
+                sw.WriteLine("### COUNT: " + Utils.CountString(dct.Count));
                 sw.WriteLine("### SEPARATOR: " + Constants.HeavyGreekCrossPadded);
                 sw.WriteLine("### Type Counts: " + Utils.CountString(dct.Count));
-                sw.WriteLine(           "### COLUMNS: 33GB|int|100"
+                sw.WriteLine("### COLUMNS: 33GB|int|100"
                  + Constants.HeavyGreekCrossPadded + "20GB|int|100"
                   + Constants.HeavyGreekCrossPadded + "6GB|int|100"
                  + Constants.HeavyGreekCrossPadded + "33-20|int|100"
                  + Constants.HeavyGreekCrossPadded + "33-6|int|100"
                  + Constants.HeavyGreekCrossPadded + "20-6|int|100"
                   + Constants.HeavyGreekCrossPadded + "Type|string|400");
-                
+
 
                 sw.WriteLine(ReportFile.DescrPrefix + " Object counts");
                 sw.WriteLine(ReportFile.DescrPrefix + " 33GB: " + Utils.CountString(objectCounts[0]));
@@ -387,7 +387,7 @@ namespace UnitTestMdr
                     sw.Write(Utils.CountString(ary[2]) + Constants.HeavyGreekCrossPadded);
                     sw.Write(Utils.CountString(ary[0] - ary[1]) + Constants.HeavyGreekCrossPadded);
                     sw.Write(Utils.CountString(ary[0] - ary[2]) + Constants.HeavyGreekCrossPadded);
-                    sw.Write(Utils.CountString(ary[1]-ary[2]) + Constants.HeavyGreekCrossPadded);
+                    sw.Write(Utils.CountString(ary[1] - ary[2]) + Constants.HeavyGreekCrossPadded);
                     sw.WriteLine(kv.Key);
                 }
 
@@ -456,90 +456,90 @@ namespace UnitTestMdr
             }
         }
         [TestMethod]
-		public void TestRevert()
-		{
-			string dataPath = Setup.DumpsFolder + Path.DirectorySeparatorChar + "indexData.txt";
-			string indexPath = Setup.DumpsFolder + Path.DirectorySeparatorChar + "index.txt";
-			StreamWriter sw = null;
-			StreamReader sr = null;
-			Random rnd = new Random(17);
-			RecordCounter counter = new RecordCounter(100);
-			Bitset bitset = new Bitset(100);
-			List<int> valLst = new List<int>(20);
+        public void TestRevert()
+        {
+            string dataPath = Setup.DumpsFolder + Path.DirectorySeparatorChar + "indexData.txt";
+            string indexPath = Setup.DumpsFolder + Path.DirectorySeparatorChar + "index.txt";
+            StreamWriter sw = null;
+            StreamReader sr = null;
+            Random rnd = new Random(17);
+            RecordCounter counter = new RecordCounter(100);
+            Bitset bitset = new Bitset(100);
+            List<int> valLst = new List<int>(20);
 
-			try
-			{
-				sw = new StreamWriter(dataPath);
-				for (int i = 0; i < 1000; ++i)
-				{
-					var rndx = rnd.Next(0, 100);
-					if ((rndx % 5) == 0) continue;
-					if (bitset.IsSet(rndx)) continue;
-					bitset.Set(rndx);
-					sw.Write(rndx + ",");
-					var cnt = rnd.Next(1, 21);
-					valLst.Clear();
-					for (int j = 0; j < cnt; ++j)
-					{
-						var val = rnd.Next(0, 100);
-						valLst.Add(val);
-					}
-					valLst.Sort();
-					Utils.RemoveDuplicates(valLst, Comparer<int>.Default);
-					sw.Write(valLst.Count);
-					for (int j = 0; j < valLst.Count; ++j)
-					{
-						counter.Add(valLst[j]);
-						sw.Write("," + valLst[j]);
-					}
-					sw.WriteLine();
-				}
-				sw.Close();
-				sw = null;
+            try
+            {
+                sw = new StreamWriter(dataPath);
+                for (int i = 0; i < 1000; ++i)
+                {
+                    var rndx = rnd.Next(0, 100);
+                    if ((rndx % 5) == 0) continue;
+                    if (bitset.IsSet(rndx)) continue;
+                    bitset.Set(rndx);
+                    sw.Write(rndx + ",");
+                    var cnt = rnd.Next(1, 21);
+                    valLst.Clear();
+                    for (int j = 0; j < cnt; ++j)
+                    {
+                        var val = rnd.Next(0, 100);
+                        valLst.Add(val);
+                    }
+                    valLst.Sort();
+                    Utils.RemoveDuplicates(valLst, Comparer<int>.Default);
+                    sw.Write(valLst.Count);
+                    for (int j = 0; j < valLst.Count; ++j)
+                    {
+                        counter.Add(valLst[j]);
+                        sw.Write("," + valLst[j]);
+                    }
+                    sw.WriteLine();
+                }
+                sw.Close();
+                sw = null;
 
-				IntStore store = new IntStore(counter);
-				Dictionary<int,int[]> dct = new Dictionary<int, int[]>();
-				sr = new StreamReader(dataPath);
-				string ln = sr.ReadLine();
-				int recCount = 0;
-				while (ln!=null)
-				{
-					++recCount;
-					string[] vals = ln.Split(',');
-					var rndx = Int32.Parse(vals[0]);
-					var cnt = Int32.Parse(vals[1]);
-					Assert.IsTrue(cnt == vals.Length-2);
-					int[] ints = new int[cnt];
-					for (int i = 2; i < vals.Length; ++i)
-					{
-						ints[i-2] = Int32.Parse(vals[i]);
-					}
-					dct.Add(rndx,ints);
-					ln = sr.ReadLine();
-				}
-				foreach (var kv in dct)
-				{
-					for (int i = 0; i < kv.Value.Length; ++i)
-					{
-						store.AddItem(kv.Value[i], kv.Key);
-					}
-				}
-				store.RestoreOffsets();
-				Debug.Assert(store.CheckOffsets());
-				string error;
-				store.DumpTest(indexPath, out error);
-				Assert.IsNull(error,error);
-			}
-			catch (Exception ex)
-			{
-				Assert.IsTrue(false,ex.ToString());
-			}
-			finally
-			{
-				sw?.Close();
-				sr?.Close();
-			}
-		}
+                IntStore store = new IntStore(counter);
+                Dictionary<int, int[]> dct = new Dictionary<int, int[]>();
+                sr = new StreamReader(dataPath);
+                string ln = sr.ReadLine();
+                int recCount = 0;
+                while (ln != null)
+                {
+                    ++recCount;
+                    string[] vals = ln.Split(',');
+                    var rndx = Int32.Parse(vals[0]);
+                    var cnt = Int32.Parse(vals[1]);
+                    Assert.IsTrue(cnt == vals.Length - 2);
+                    int[] ints = new int[cnt];
+                    for (int i = 2; i < vals.Length; ++i)
+                    {
+                        ints[i - 2] = Int32.Parse(vals[i]);
+                    }
+                    dct.Add(rndx, ints);
+                    ln = sr.ReadLine();
+                }
+                foreach (var kv in dct)
+                {
+                    for (int i = 0; i < kv.Value.Length; ++i)
+                    {
+                        store.AddItem(kv.Value[i], kv.Key);
+                    }
+                }
+                store.RestoreOffsets();
+                Debug.Assert(store.CheckOffsets());
+                string error;
+                store.DumpTest(indexPath, out error);
+                Assert.IsNull(error, error);
+            }
+            catch (Exception ex)
+            {
+                Assert.IsTrue(false, ex.ToString());
+            }
+            finally
+            {
+                sw?.Close();
+                sr?.Close();
+            }
+        }
 
 
         [TestMethod]
@@ -594,7 +594,7 @@ namespace UnitTestMdr
                         sw = new StreamWriter(path);
                         sw.WriteLine("#### SEGMENT COUNT: " + heap.Segments.Count);
                         sw.WriteLine("#### OBJECT COUNT: " + count);
-                        foreach(var kv in dct)
+                        foreach (var kv in dct)
                         {
                             sw.Write(kv.Value + "  ");
                             sw.WriteLine(kv.Key);
@@ -617,159 +617,159 @@ namespace UnitTestMdr
         }
 
 
-		[TestMethod]
-		public void TestInstCount()
-		{
-			var dmp = OpenDump(@"C:\WinDbgStuff\dumps\Compliance\Eze.Compliance.Svc_170503_131515.dmp");
-			using (dmp)
-			{
-				var heap = dmp.Heap;
-				int cnt = 0;
-				foreach(var obj in heap.EnumerateObjects())
-				{
-					++cnt;
-				}
+        [TestMethod]
+        public void TestInstCount()
+        {
+            var dmp = OpenDump(@"C:\WinDbgStuff\dumps\Compliance\Eze.Compliance.Svc_170503_131515.dmp");
+            using (dmp)
+            {
+                var heap = dmp.Heap;
+                int cnt = 0;
+                foreach (var obj in heap.EnumerateObjects())
+                {
+                    ++cnt;
+                }
 
-			}
-		}
+            }
+        }
 
-		#endregion misc
+        #endregion misc
 
-		#region collection content
+        #region collection content
 
-		#region array content
+        #region array content
 
-		[TestMethod]
-		public void TestGetStringArrayContent()
-		{
-			ulong aryAddr = 0x0002189f5af6a0;
-			var dmp = OpenDump(1);
-			using (dmp)
-			{
-				var heap = dmp.Heap;
-				var result = CollectionContent.aryInfo(heap, aryAddr);
-				Assert.IsNull(result.Item1, result.Item1);
-				string[] strings = new string[result.Item4];
-				for (int i = 0, icnt = result.Item4; i < icnt; ++i)
-				{
-					strings[i] = CollectionContent.aryElemString(heap, aryAddr, result.Item2, result.Item3, i);
-				}
-				Assert.IsTrue(NoNullEntries(strings));
-				var aryresult = CollectionContent.getAryContent(heap, aryAddr);
-				Assert.IsNull(aryresult.Item1);
-				Assert.IsTrue(Utils.SameStringArrays(strings, aryresult.Item5));
-			}
-		}
+        [TestMethod]
+        public void TestGetStringArrayContent()
+        {
+            ulong aryAddr = 0x0002189f5af6a0;
+            var dmp = OpenDump(1);
+            using (dmp)
+            {
+                var heap = dmp.Heap;
+                var result = CollectionContent.aryInfo(heap, aryAddr);
+                Assert.IsNull(result.Item1, result.Item1);
+                string[] strings = new string[result.Item4];
+                for (int i = 0, icnt = result.Item4; i < icnt; ++i)
+                {
+                    strings[i] = CollectionContent.aryElemString(heap, aryAddr, result.Item2, result.Item3, i);
+                }
+                Assert.IsTrue(NoNullEntries(strings));
+                var aryresult = CollectionContent.getAryContent(heap, aryAddr);
+                Assert.IsNull(aryresult.Item1);
+                Assert.IsTrue(Utils.SameStringArrays(strings, aryresult.Item5));
+            }
+        }
 
-		[TestMethod]
-		public void TestGetDecimalArrayContent()
-		{
-			ulong aryAddr = 0x0002189f5af8b8;
-			var dmp = OpenDump(1);
-			using (dmp)
-			{
-				var heap = dmp.Heap;
-				var result = CollectionContent.aryInfo(heap, aryAddr);
-				Assert.IsNull(result.Item1, result.Item1);
-				string[] strings = new string[result.Item4];
-				for (int i = 0, icnt = result.Item4; i < icnt; ++i)
-				{
-					strings[i] = CollectionContent.aryElemDecimal(heap, aryAddr, result.Item2, result.Item3, i);
-				}
-				Assert.IsTrue(NoNullEntries(strings));
-				var aryresult = CollectionContent.getAryContent(heap, aryAddr);
-				Assert.IsNull(aryresult.Item1);
-				Assert.IsTrue(Utils.SameStringArrays(strings, aryresult.Item5));
-			}
-		}
+        [TestMethod]
+        public void TestGetDecimalArrayContent()
+        {
+            ulong aryAddr = 0x0002189f5af8b8;
+            var dmp = OpenDump(1);
+            using (dmp)
+            {
+                var heap = dmp.Heap;
+                var result = CollectionContent.aryInfo(heap, aryAddr);
+                Assert.IsNull(result.Item1, result.Item1);
+                string[] strings = new string[result.Item4];
+                for (int i = 0, icnt = result.Item4; i < icnt; ++i)
+                {
+                    strings[i] = CollectionContent.aryElemDecimal(heap, aryAddr, result.Item2, result.Item3, i);
+                }
+                Assert.IsTrue(NoNullEntries(strings));
+                var aryresult = CollectionContent.getAryContent(heap, aryAddr);
+                Assert.IsNull(aryresult.Item1);
+                Assert.IsTrue(Utils.SameStringArrays(strings, aryresult.Item5));
+            }
+        }
 
-		[TestMethod]
-		public void TestGetDateTimeArrayContent()
-		{
-			ulong aryAddr = 0x0002189f5af780;
-			var dmp = OpenDump(1);
-			using (dmp)
-			{
-				var heap = dmp.Heap;
-				var result = CollectionContent.aryInfo(heap, aryAddr);
-				Assert.IsNull(result.Item1, result.Item1);
-				string[] strings = new string[result.Item4];
-				for (int i = 0, icnt = result.Item4; i < icnt; ++i)
-				{
-					strings[i] = CollectionContent.aryElemDatetimeR(heap, aryAddr, result.Item2, result.Item3, i);
-				}
-				Assert.IsTrue(NoNullEntries(strings));
-				var aryresult = CollectionContent.getAryContent(heap, aryAddr);
-				Assert.IsNull(aryresult.Item1);
-				Assert.IsTrue(Utils.SameStringArrays(strings, aryresult.Item5));
-			}
-		}
+        [TestMethod]
+        public void TestGetDateTimeArrayContent()
+        {
+            ulong aryAddr = 0x0002189f5af780;
+            var dmp = OpenDump(1);
+            using (dmp)
+            {
+                var heap = dmp.Heap;
+                var result = CollectionContent.aryInfo(heap, aryAddr);
+                Assert.IsNull(result.Item1, result.Item1);
+                string[] strings = new string[result.Item4];
+                for (int i = 0, icnt = result.Item4; i < icnt; ++i)
+                {
+                    strings[i] = CollectionContent.aryElemDatetimeR(heap, aryAddr, result.Item2, result.Item3, i);
+                }
+                Assert.IsTrue(NoNullEntries(strings));
+                var aryresult = CollectionContent.getAryContent(heap, aryAddr);
+                Assert.IsNull(aryresult.Item1);
+                Assert.IsTrue(Utils.SameStringArrays(strings, aryresult.Item5));
+            }
+        }
 
-		[TestMethod]
-		public void TestGetTimespanArrayContent()
-		{
-			ulong aryAddr = 0x0002189f5af710;
-			var dmp = OpenDump(1);
-			using (dmp)
-			{
-				var heap = dmp.Heap;
-				var result = CollectionContent.aryInfo(heap, aryAddr);
-				Assert.IsNull(result.Item1, result.Item1);
-				string[] strings = new string[result.Item4];
-				for (int i = 0, icnt = result.Item4; i < icnt; ++i)
-				{
-					strings[i] = CollectionContent.aryElemTimespanR(heap, aryAddr, result.Item2, result.Item3, i);
-				}
-				Assert.IsTrue(NoNullEntries(strings));
-				var aryresult = CollectionContent.getAryContent(heap, aryAddr);
-				Assert.IsNull(aryresult.Item1);
-				Assert.IsTrue(Utils.SameStringArrays(strings, aryresult.Item5));
-			}
-		}
+        [TestMethod]
+        public void TestGetTimespanArrayContent()
+        {
+            ulong aryAddr = 0x0002189f5af710;
+            var dmp = OpenDump(1);
+            using (dmp)
+            {
+                var heap = dmp.Heap;
+                var result = CollectionContent.aryInfo(heap, aryAddr);
+                Assert.IsNull(result.Item1, result.Item1);
+                string[] strings = new string[result.Item4];
+                for (int i = 0, icnt = result.Item4; i < icnt; ++i)
+                {
+                    strings[i] = CollectionContent.aryElemTimespanR(heap, aryAddr, result.Item2, result.Item3, i);
+                }
+                Assert.IsTrue(NoNullEntries(strings));
+                var aryresult = CollectionContent.getAryContent(heap, aryAddr);
+                Assert.IsNull(aryresult.Item1);
+                Assert.IsTrue(Utils.SameStringArrays(strings, aryresult.Item5));
+            }
+        }
 
-		[TestMethod]
-		public void TestGetGuidArrayContent()
-		{
-			ulong aryAddr = 0x0002189f5af7f0;
-			var dmp = OpenDump(1);
-			using (dmp)
-			{
-				var heap = dmp.Heap;
-				var result = CollectionContent.aryInfo(heap, aryAddr);
-				Assert.IsNull(result.Item1, result.Item1);
-				string[] strings = new string[result.Item4];
-				for (int i = 0, icnt = result.Item4; i < icnt; ++i)
-				{
-					strings[i] = CollectionContent.aryElemGuid(heap, aryAddr, result.Item2, result.Item3, i);
-				}
-				Assert.IsTrue(NoNullEntries(strings));
-				var aryresult = CollectionContent.getAryContent(heap, aryAddr);
-				Assert.IsNull(aryresult.Item1);
-				Assert.IsTrue(Utils.SameStringArrays(strings, aryresult.Item5));
-			}
-		}
+        [TestMethod]
+        public void TestGetGuidArrayContent()
+        {
+            ulong aryAddr = 0x0002189f5af7f0;
+            var dmp = OpenDump(1);
+            using (dmp)
+            {
+                var heap = dmp.Heap;
+                var result = CollectionContent.aryInfo(heap, aryAddr);
+                Assert.IsNull(result.Item1, result.Item1);
+                string[] strings = new string[result.Item4];
+                for (int i = 0, icnt = result.Item4; i < icnt; ++i)
+                {
+                    strings[i] = CollectionContent.aryElemGuid(heap, aryAddr, result.Item2, result.Item3, i);
+                }
+                Assert.IsTrue(NoNullEntries(strings));
+                var aryresult = CollectionContent.getAryContent(heap, aryAddr);
+                Assert.IsNull(aryresult.Item1);
+                Assert.IsTrue(Utils.SameStringArrays(strings, aryresult.Item5));
+            }
+        }
 
-		[TestMethod]
-		public void TestGetBooleanArrayContent()
-		{
-			ulong aryAddr = 0x0002189f5a3e68;
-			var dmp = OpenDump(1);
-			using (dmp)
-			{
-				var heap = dmp.Heap;
-				var result = CollectionContent.aryInfo(heap, aryAddr);
-				Assert.IsNull(result.Item1, result.Item1);
-				string[] strings = new string[result.Item4];
-				for (int i = 0, icnt = result.Item4; i < icnt; ++i)
-				{
-					strings[i] = CollectionContent.aryElemPrimitive(heap, aryAddr, result.Item2, result.Item3, i);
-				}
-				Assert.IsTrue(NoNullEntries(strings));
-				var aryresult = CollectionContent.getAryContent(heap, aryAddr);
-				Assert.IsNull(aryresult.Item1);
-				Assert.IsTrue(Utils.SameStringArrays(strings, aryresult.Item5));
-			}
-		}
+        [TestMethod]
+        public void TestGetBooleanArrayContent()
+        {
+            ulong aryAddr = 0x0002189f5a3e68;
+            var dmp = OpenDump(1);
+            using (dmp)
+            {
+                var heap = dmp.Heap;
+                var result = CollectionContent.aryInfo(heap, aryAddr);
+                Assert.IsNull(result.Item1, result.Item1);
+                string[] strings = new string[result.Item4];
+                for (int i = 0, icnt = result.Item4; i < icnt; ++i)
+                {
+                    strings[i] = CollectionContent.aryElemPrimitive(heap, aryAddr, result.Item2, result.Item3, i);
+                }
+                Assert.IsTrue(NoNullEntries(strings));
+                var aryresult = CollectionContent.getAryContent(heap, aryAddr);
+                Assert.IsNull(aryresult.Item1);
+                Assert.IsTrue(Utils.SameStringArrays(strings, aryresult.Item5));
+            }
+        }
 
 
         [TestMethod]
@@ -777,7 +777,7 @@ namespace UnitTestMdr
         {
             ulong aryAddr = 0x000000018097eea8; //0x0000000380C0E090; // 0x0000000380C67E70;
             var dmp = OpenDump(@"D:\Jerzy\WinDbgStuff\dumps\Analytics\Centurion\AnalyticsCenturion.4.18.17.dmp");
-            int defCnt=0;
+            int defCnt = 0;
             int oneCnt = 0;
             int twoCnt = 0;
             int nullCnt = 0;
@@ -833,39 +833,55 @@ namespace UnitTestMdr
                 }
 
                 Assert.IsNull(result.Item1, result.Item1);
- 
+
             }
         }
 
 
         private bool NoNullEntries(string[] ary)
-		{
-			for (int i = 0, icnt = ary.Length; i < icnt; ++i)
-			{
-				if (ary[i] == null) return false;
-			}
-			return true;
-		}
+        {
+            for (int i = 0, icnt = ary.Length; i < icnt; ++i)
+            {
+                if (ary[i] == null) return false;
+            }
+            return true;
+        }
 
-		#endregion array content
+        #endregion array content
 
-		#region System.Collections.Generic.Dictionary<TKey,TValue> content
+        #region System.Collections.Generic.Dictionary<TKey,TValue> content
 
-		[TestMethod]
-		public void TestGetDictionaryContent()
-		{
-            ulong dctAddr = 0xe0859ab3e8; // 0x0000e0859ab388; // 0x000084d7ce3938;
-            var dmp = OpenDump(@"D:\Jerzy\WinDbgStuff\dumps\Analytics\Viking\AnalyticsLatencyDump05022017 04345672.dmp");
-			using (dmp)
-			{
-				var heap = dmp.Heap;
-				var clrType = heap.GetObjectType(dctAddr);
-				if (!clrType.Name.StartsWith("System.Collections.Generic.Dictionary<")
+        [TestMethod]
+        public void TestGetDictionaryContent()
+        {
+            ulong dctAddr = 0x6aa051f410; //0xe0859ab3e8; // 0x0000e0859ab388; // 0x000084d7ce3938;
+            var dmp = OpenDump(@"D:\Jerzy\WinDbgStuff\dumps\Analytics\Ellerston\Eze.Analytics.Svc_170607_214916.dmp");
+            using (dmp)
+            {
+                var heap = dmp.Heap;
+                var clrType = heap.GetObjectType(dctAddr);
+                if (!clrType.Name.StartsWith("System.Collections.Generic.Dictionary<")
                     && !clrType.BaseType.Name.StartsWith("System.Collections.Generic.Dictionary<")) return;
-				var result = CollectionContent.getDictionaryInfo(heap, dctAddr, clrType);
-				Assert.IsNotNull(result);
 
-				var dctResult = CollectionContent.dictionaryContent(heap, dctAddr);
+                var dctAry = ValueExtractor.GetDictionaryInfo(heap, dctAddr, clrType);
+                var lst = new List<KeyValuePair<ulong, ulong>>();
+                for (int i = 0, icnt = dctAry.Length; i < icnt; ++i)
+                {
+                    if (dctAry[i].Key == 0ul) continue;
+                    lst.Add(dctAry[i]);
+                }
+
+
+
+                return;
+
+                var result = CollectionContent.getDictionaryInfo(heap, dctAddr, clrType);
+                Assert.IsNotNull(result);
+
+
+
+
+                var dctResult = CollectionContent.dictionaryContent(heap, dctAddr);
                 var entries = dctResult.Item7;
 
                 StreamWriter sw = null;
@@ -880,7 +896,7 @@ namespace UnitTestMdr
                         var entry = entries[i];
                         var hsetAddr = Convert.ToUInt64(entry.Value, 16);
 
-//                        var hcontent = CollectionContent.getHashSetContent(heap, hsetAddr);
+                        //                        var hcontent = CollectionContent.getHashSetContent(heap, hsetAddr);
                         sw.Write(entry.Key);
                         sw.Write(" : ");
                         sw.Write(Utils.RealAddressString(hsetAddr));
@@ -910,10 +926,252 @@ namespace UnitTestMdr
 
 
 
-				Assert.IsNotNull(dctResult);
-				Assert.IsNull(dctResult.Item1, dctResult.Item1);
-			}
-		}
+                Assert.IsNotNull(dctResult);
+                Assert.IsNull(dctResult.Item1, dctResult.Item1);
+            }
+        }
+
+        ulong[] relatedViews = new ulong[] {
+ 0x000006ca17ed798
+,0x000006ad489cb40
+,0x000006aad02a798
+,0x000006cd768f120
+,0x000006ba9fbd8a0
+,0x0000069aa47b8d0
+,0x000006ca9e22d28
+,0x000006caa86a758
+,0x000006aaf7cfae0
+,0x000006cd77c79c0
+,0x000006aab741598
+,0x000006aab82b870
+,0x000006ca186a8c0
+,0x000006aa3832058
+,0x000006bad8b0a78
+,0x000006cd7740968
+,0x000006bacc68088
+,0x000006bacceb288
+,0x0000069a26aa500
+,0x000006aa6227800
+,0x000006aafbf5260
+,0x000006aafe945a8
+,0x000006ca17df130
+,0x000006aa3762250
+,0x000006aafc094f8
+,0x000006cd7759988
+,0x000006aa225ed68
+,0x000006ca6fa09c8
+,0x0000069aaeea3a8
+,0x000006cd765bcb0
+,0x0000069a2a49838
+,0x0000069a4c48090
+,0x000006caa919710
+,0x000006caa9ac098
+,0x000006ba2c3b3a0
+,0x000006ba4ce4e80
+,0x000006baca98750
+,0x000006ad492b598
+,0x000006bacc7f758
+,0x000006cd7705e08
+,0x000006aac668098
+,0x000006aac6afc28
+,0x0000069ae842b28
+,0x000006cd7727850
+,0x000006cac56daf0
+,0x000006cd7675990
+,0x000006ba1911340
+,0x000006ca2c1d060
+,0x000006ab002bcc0
+,0x000006ab02edf88
+,0x000006aab79de78
+,0x000006ad496bed8
+,0x000006ba9d249c8
+,0x000006bd5096e20
+,0x000006aaeaef7b8
+,0x000006ad4916248
+,0x0000069ad5a6fb0
+,0x0000069ad5fdc78
+,0x000006ba2c48c20
+,0x000006aa61bf370
+,0x0000069aeb9cc60
+,0x000006cd7773450
+,0x000006baca96378
+,0x000006baca9b788
+,0x0000069a184ec30
+,0x000006ca3399c40
+,0x000006cafb97f40
+,0x000006cd77a5f38
+,0x0000069a0fb76b0
+,0x0000069a28eaae0
+,0x000006ca9e331a0
+,0x000006ad4948f38
+,0x0000069ad5eb468
+,0x000006ad493a198
+,0x000006cac412dc0
+,0x000006ad20ea050
+,0x000006aaceccdf0
+,0x000006aad094f58
+,0x000006caffbf3c0
+,0x000006cd77d8dd0
+,0x000006caa92eec0
+,0x000006ad4959cb8
+,0x000006ba231c990
+,0x000006ba31cb460
+,0x000006bad863e58
+,0x000006bad9a8080
+,0x0000069a1235658
+,0x0000069a2833d48
+,0x000006ca17138c8
+,0x000006ad4888b80
+,0x000006aaeccf5f0
+,0x000006aaecf0ee0
+,0x000006bac650568
+,0x000006bac701118
+,0x000006caf5efc98
+,0x000006ad4268790
+,0x0000069ae832838
+,0x0000069ae938080
+,0x0000069a0f87af0
+,0x000006ba4f0c860
+,0x000006aadcb3418
+,0x000006cad471db0
+,0x000006cae93ea00
+,0x000006bace2f238
+,0x0000069a2a40678
+,0x000006cd77e7ab8
+,0x0000069a2658a48
+,0x000006ba4b9e9e0
+,0x0000069af15d138
+,0x000006cd778c470
+,0x000006aa1c0e668
+,0x000006ad4874320
+,0x000006aaf5c2578
+,0x000006aaf7e7dc8
+,0x000006aa6659658
+,0x000006aaea1cc58
+,0x000006aaeae8880
+,0x000006aaeaf2860
+,0x000006cafb608e8
+,0x000006cafbfb168
+,0x000006bac69d7b0
+,0x000006cd76e4600
+,0x000006baa11e198
+,0x000006ad497dfd8
+,0x000006cae9f7858
+,0x000006cd7716ad0
+,0x000006cad3f7418
+,0x000006cd76c0b50
+,0x0000069aeb7bf40
+,0x0000069af0599b8
+,0x000006aa665d4f8
+,0x000006cd77b6c40
+,0x0000069abf4eb78
+,0x000006ad136cac8
+,0x0000069ac0a9480
+,0x000006cd76a7818
+    };
+
+        ulong[] _RelatedViewsCacheValid;
+        ulong[] _RelatedViewsCacheNonValid;
+
+        [TestMethod]
+        public void TestRelatedViews()
+        {
+            string error;
+            ulong dctAddr = 0x6aa051f410; //0xe0859ab3e8; // 0x0000e0859ab388; // 0x000084d7ce3938;
+            var dmp = OpenDump(@"D:\Jerzy\WinDbgStuff\dumps\Analytics\Ellerston\Eze.Analytics.Svc_170607_214916.dmp");
+            using (dmp)
+            {
+                var heap = dmp.Heap;
+                ClrType rv = heap.GetObjectType(relatedViews[0]);
+                ClrInstanceField rvfld = rv.GetFieldByName("relatedViewsID");
+                ClrType rvc = heap.GetObjectType(relatedViews[1]);
+                List<string> lst = new List<string>(relatedViews.Length / 2);
+                for (int i = 0, icnt = relatedViews.Length; i < icnt; i+= 2)
+                {
+                    string name = (string)rvfld.GetValue(relatedViews[i], false, true);
+                    lst.Add(name);
+                }
+                lst.Sort(StringComparer.OrdinalIgnoreCase);
+
+                string path = DumpFileMoniker.GetAndCreateOutFolder(dmp.DumpPath, out error) + System.IO.Path.DirectorySeparatorChar + "relatedViewsID.txt";
+
+                Utils.WriteStringList(path, lst, out error);
+
+                var validSet = new HashSet<ulong>();
+                for (int i = 0, icnt = relatedViews.Length; i < icnt; i += 2)
+                {
+                    validSet.Add(relatedViews[i+1]);
+                }
+
+                List<ulong> nonValid = new List<ulong>();
+                string rvcName = rvc.Name;
+                var segs = heap.Segments;
+                for (int i = 0, icnt = segs.Count; i < icnt; ++i)
+                {
+                    var seg = segs[i];
+                    ulong addr = seg.FirstObject;
+                    while (addr != 0ul)
+                    {
+                        var clrType = heap.GetObjectType(addr);
+                        if (clrType == null) goto NEXT_OBJECT;
+                        if (!Utils.SameStrings(rvcName, clrType.Name)) goto NEXT_OBJECT;
+
+                        if (!validSet.Contains(addr))
+                            nonValid.Add(addr);
+
+                        NEXT_OBJECT:
+                        addr = seg.NextObject(addr);
+                    }
+                }
+
+
+                path = DumpFileMoniker.GetAndCreateOutFolder(dmp.DumpPath, out error) + System.IO.Path.DirectorySeparatorChar + "ValidRelatedViewsCache.txt";
+                var valid = validSet.ToArray();
+                Array.Sort(valid);
+                Utils.WriteAddressAsStringArray(path, valid, out error);
+                nonValid.Sort();
+                var nonValidUnique = nonValid.Distinct().ToArray();
+                path = DumpFileMoniker.GetAndCreateOutFolder(dmp.DumpPath, out error) + System.IO.Path.DirectorySeparatorChar + "NonValidRelatedViewsCache.txt";
+
+                Utils.WriteAddressAsStringArray(path, nonValidUnique, out error);
+
+                _RelatedViewsCacheValid = valid;
+                _RelatedViewsCacheNonValid = nonValid.ToArray();
+
+                path = DumpFileMoniker.GetAndCreateOutFolder(dmp.DumpPath, out error) + System.IO.Path.DirectorySeparatorChar + "ValidRelatedViewsCache.bin";
+                Utils.WriteUlongArray(path, valid, out error);
+
+                var xlst1 = GetStuff(heap, _RelatedViewsCacheValid);
+                path = DumpFileMoniker.GetAndCreateOutFolder(dmp.DumpPath, out error) + System.IO.Path.DirectorySeparatorChar + "ValidRelatedViewsCacheToRelatedViews.txt";
+                Utils.WriteStringList(path, xlst1, out error);
+
+                var xlst2 = GetStuff(heap, _RelatedViewsCacheNonValid);
+                path = DumpFileMoniker.GetAndCreateOutFolder(dmp.DumpPath, out error) + System.IO.Path.DirectorySeparatorChar + "NonValidRelatedViewsCacheToRelatedViews.txt";
+                Utils.WriteStringList(path, xlst2, out error);
+
+            }
+        }
+
+        private string[] GetStuff(ClrHeap heap, ulong[] addresses)
+        {
+            List<string> lst = new List<string>(256);
+            var xaddr = addresses[0];
+            var xclrType = heap.GetObjectType(xaddr);
+            var xfld = xclrType.GetFieldByName("relatedViews");
+            var xrvAddr = (ulong)xfld.GetValue(xaddr, false, false);
+            var xrvType = heap.GetObjectType(xrvAddr);
+            var xrvIdFld = xrvType.GetFieldByName("relatedViewsID");
+            for (int i = 0, icnt = addresses.Length; i < icnt; ++i)
+            {
+                xaddr = addresses[i];
+                xclrType = heap.GetObjectType(xaddr);
+                xrvAddr = (ulong)xfld.GetValue(xaddr, false, false);
+                string id = (string)xrvIdFld.GetValue(xrvAddr, false, true);
+                lst.Add(id + Constants.HeavyGreekCrossPadded + Utils.RealAddressString(xaddr) + Constants.HeavyGreekCrossPadded + Utils.RealAddressString(xrvAddr));
+            }
+            lst.Sort(StringComparer.OrdinalIgnoreCase);
+            return lst.ToArray();
+        }
 
 
         [TestMethod]

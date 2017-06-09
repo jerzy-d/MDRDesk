@@ -2018,24 +2018,21 @@ namespace MDRDesk
 
 			SetStartTaskMainWindowState("Getting type details for: '" + baseTypeName + "', please wait...");
 
-			var result = await Task.Run(() =>
+            (string error, ClrtDisplayableType dispType, ulong[] instances) = await Task.Run(() =>
 			{
-				string error;
-				ClrtDisplayableType dispType = CurrentIndex.GetTypeDisplayableRecord(typeId, null, out error);
-				if (dispType == null)
-					return new Tuple<string, ClrtDisplayableType>(error, null);
-				return new Tuple<string, ClrtDisplayableType>(null, dispType);
+				return CurrentIndex.GetTypeDisplayableRecord(typeId, null);
 			});
 
 			SetEndTaskMainWindowState("Getting type details for: '" + baseTypeName + "', done");
+            
 
-			if (result.Item1 != null)
+			if (error != null)
 			{
-				GuiUtils.ShowError(result.Item1, this);
+				GuiUtils.ShowError(error, this);
 				return;
 			}
 #pragma warning disable CS4014
-			Dispatcher.CurrentDispatcher.InvokeAsync(() => DoDisplayTypeValueReportSetup(result.Item2));
+			Dispatcher.CurrentDispatcher.InvokeAsync(() => DoDisplayTypeValueReportSetup(dispType,instances));
 #pragma warning restore CS4014
 		}
 
@@ -2184,5 +2181,26 @@ namespace MDRDesk
 		{
 
 		}
-	}
+
+        private async void TypesImplementingInterfaceClicked(object sender, RoutedEventArgs e)
+        {
+            string answer;
+            bool result = GetDlgString("List Types Implementing Interface", "Enter interface name, with namespace if possible.", " ", out answer);
+            if (!result || string.IsNullOrWhiteSpace(answer)) return;
+            answer = answer.Trim();
+            SetStartTaskMainWindowState("Getting types impl. interface: '" + answer + "', please wait...");
+
+            var res = await Task.Run(() =>
+            {
+                string err;
+                string[] lst = CurrentIndex.GetTypesImplementingInterface(answer, out err);
+                return new ValueTuple<string, string[]>(null, lst);
+            });
+
+            SetEndTaskMainWindowState("Getting types impl. interface: '" + answer + "', done");
+
+            (string error, string[] types) = res;
+            // TODO JRD -- display this in some window
+        }
+    }
 }

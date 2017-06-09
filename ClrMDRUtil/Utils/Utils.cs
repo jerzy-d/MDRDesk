@@ -461,7 +461,33 @@ namespace ClrMDRIndex
 			}
 		}
 
-		public static ulong[] ReadUlongArray(string path, out string error)
+        public static bool WriteUlongArray(string path, IList<ulong> lst, out string error)
+        {
+            error = null;
+            BinaryWriter bw = null;
+            try
+            {
+                bw = new BinaryWriter(File.Open(path, FileMode.Create));
+                var cnt = lst.Count;
+                bw.Write(cnt);
+                for (int i = 0; i < cnt; ++i)
+                {
+                    bw.Write(lst[i]);
+                }
+                return true;
+            }
+            catch (Exception ex)
+            {
+                error = GetExceptionErrorString(ex);
+                return false;
+            }
+            finally
+            {
+                bw?.Close();
+            }
+        }
+
+        public static ulong[] ReadUlongArray(string path, out string error)
 		{
 			error = null;
 			BinaryReader br = null;
@@ -701,31 +727,6 @@ namespace ClrMDRIndex
 			}
 		}
 
-		public static bool WriteUlongArray(string path, IList<ulong> lst, out string error)
-		{
-			error = null;
-			BinaryWriter bw = null;
-			try
-			{
-				bw = new BinaryWriter(File.Open(path, FileMode.Create));
-				var cnt = lst.Count;
-				bw.Write(cnt);
-				for (int i = 0; i < cnt; ++i)
-				{
-					bw.Write(lst[i]);
-				}
-				return true;
-			}
-			catch (Exception ex)
-			{
-				error = GetExceptionErrorString(ex);
-				return false;
-			}
-			finally
-			{
-				bw?.Close();
-			}
-		}
 
 		public static bool WriteAddressAsStringArray(string path, IList<ulong> lst, out string error)
 		{

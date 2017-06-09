@@ -1419,12 +1419,87 @@ namespace ClrMDRIndex
             return new Tuple<string, ClrType, ClrType, ClrElementKind, ulong, int>(null, clrType, itemsClrType, kind, itemsAddr, len);
         }
 
-
-
         #endregion List<T> content
 
-        #region array values
+        #region System.Collections.Generic.Dictionary<TKey, TValue>
 
+        public static int GetFieldIntValue(ClrHeap heap, ulong addr, ClrType clrType, string fldName)
+        {
+            var fld = clrType.GetFieldByName(fldName);
+            if (fld == null) return int.MinValue;
+            var obj = fld.GetValue(addr);
+            if (obj == null) return 0;
+            Debug.Assert(obj is Int32);
+            return (int)obj;
+        }
+
+        public static KeyValuePair<ulong,ulong>[] GetDictionaryInfo(ClrHeap heap, ulong addr, ClrType clrType)
+        {
+            int count = GetFieldIntValue(heap, addr, clrType, "count");
+            int version = GetFieldIntValue(heap, addr, clrType, "version");
+            int freeCount = GetFieldIntValue(heap, addr, clrType, "freeCount");
+            KeyValuePair<string, string>[] fldDescription = new KeyValuePair<string, string>[]
+            {
+                new KeyValuePair<string, string>("count", count.ToString()),
+                new KeyValuePair<string, string>("free count", freeCount.ToString()),
+                new KeyValuePair<string, string>("version", version.ToString())
+            };
+
+            var entriesFld = clrType.GetFieldByName("entries");
+            (ClrType entriesFldType, ClrElementKind entriesFldKind, ulong entriesFldAddr) =
+                TypeExtractor.GetRealType(heap, addr, entriesFld, false);
+
+            var aryLen = entriesFldType.GetArrayLength(entriesFldAddr);
+            var entryType = entriesFldType.ComponentType;
+            var entryHashCodeFld = entryType.GetFieldByName("hashCode");
+            var entryNextFld = entryType.GetFieldByName("next");
+            var entryKeyFld = entryType.GetFieldByName("key");
+            var entryValFld = entryType.GetFieldByName("value");
+            List<KeyValuePair<ulong, ulong>> lst = new List<KeyValuePair<ulong, ulong>>(256);
+            var names = new List<KeyValuePair<string, string>>(256);
+            for (int i = 0; i < aryLen; ++i)
+            {
+                var eaddr = entriesFldType.GetArrayElementAddress(entriesFldAddr, i);
+                var keyAddr = entryKeyFld.GetValue(eaddr, true, false);
+                var valAddr = entryValFld.GetValue(eaddr, true, false);
+                if (keyAddr == null)
+                {
+                    continue;
+                }
+                
+                if (keyAddr is ulong && valAddr is ulong)
+                {
+                    var ka = (ulong)keyAddr;
+                    var va = (ulong)valAddr;
+                    //if (ka != 0ul && va != 0ul)
+                    {
+                        lst.Add(new KeyValuePair<ulong, ulong>(ka, va));
+                    }
+                    //var kType = heap.GetObjectType(ka);
+                    //var vType = heap.GetObjectType(va);
+                    //if (kType != null && vType != null)
+                    //{
+                    //    names.Add(new KeyValuePair<string, string>(kType.Name, vType.Name));
+                    //}
+                }
+            }
+            return lst.ToArray();
+        }
+
+        //let entriesAddr = getReferenceFieldAddress addr entries false
+        //let entriesType = heap.GetObjectType(entriesAddr) // that is address of entries array
+
+        //    GetRealType(ClrHeap heap, ulong addr, ClrInstanceField fld, bool isInternal)
+        //}
+        //let entryAddr = entriesType.GetArrayElementAddress(entriesAddr, 0)
+
+        //let entryKeyType = tryGetFieldType heap(entryAddr + (uint64) entryKeyFld.Offset) entryKeyFld
+        //let entryValueType = tryGetFieldType heap(entryAddr + (uint64) entryValueFld.Offset) entryValueFld
+        //(fldDescription, count, entriesType, entriesAddr, entryHashCodeFld, entryNextFld, entryKeyFld, entryKeyType, entryValueFld, entryValueType)
+
+        #endregion System.Collections.Generic.Dictionary<TKey, TValue>
+
+        #region array values
 
         public static (string, InstanceValue) ArrayContent(IndexProxy ndxProxy, ClrHeap heap, ulong decoratedAddr, InstanceValue parent)
 		{

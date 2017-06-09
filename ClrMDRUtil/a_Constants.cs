@@ -31,7 +31,8 @@ namespace ClrMDRIndex
 		public const int NullNameId = 0;
 
 		public const string NullTypeName = "NullType";
-		public const string UnknownTypeName = "UnknownType";
+        public const string UnknownTypeName = "UnknownType";
+        public const string UnknownFieldTypeName = "\u2714UnknownFieldType";
         public const string TypeNotFound = "TypeNotFound";
         public const string FreeTypeName = "Free";
 		public const string ErrorTypeName = "ERROR";

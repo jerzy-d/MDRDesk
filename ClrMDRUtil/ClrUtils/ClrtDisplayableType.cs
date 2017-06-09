@@ -29,7 +29,6 @@ namespace ClrMDRIndex
 		public ClrtDisplayableType Parent => _parent;
 		public ClrtDisplayableType[] Alternatives => _alternatives;
 		public bool HasAlternatives => _alternatives != null;
-		public ulong[] Addresses => _addresses;
 
 		private ClrElementKind _kind;
         public ClrElementKind Kind => _kind;
@@ -51,7 +50,6 @@ namespace ClrMDRIndex
 			_valueFilter = null;
 			_getValue = false;
 			_alternatives = null;
-			_addresses = null;
 		}
 
 		public void AddAlternative(ClrtDisplayableType dtype)
@@ -81,13 +79,17 @@ namespace ClrMDRIndex
 			return false;
 		}
 
-		public void SetAddresses(IList<ulong> addresses)
-		{
-			_addresses = new ulong[addresses.Count];
-			addresses.CopyTo(_addresses,0);
-		}
+        public bool HasAlternative(ClrtDisplayableType cdt)
+        {
+            if (_alternatives == null) return false;
+            for (int i = 0, icnt = _alternatives.Length; i < icnt; ++i)
+            {
+                if (_alternatives[i].Id == cdt.Id) return true;
+            }
+            return false;
+        }
 
-		public string GetDescription()
+        public string GetDescription()
 		{
 			return _typeName + Environment.NewLine
 			       + (HasFields ? "Field Count: " + _fields.Length : string.Empty);
@@ -109,7 +111,7 @@ namespace ClrMDRIndex
 			_getValue = getVal;
 		}
 
-		private void SetParent(ClrtDisplayableType parent)
+		public void SetParent(ClrtDisplayableType parent)
 		{
 			_parent = parent;
 		}
@@ -348,10 +350,10 @@ namespace ClrMDRIndex
 						que.Enqueue(fld);
 						if (fld.HasAlternatives)
 						{
-							for (int j = 0, jcnt = dt.Alternatives.Length; j < jcnt; ++j)
+							for (int j = 0, jcnt = fld.Alternatives.Length; j < jcnt; ++j)
 							{
-								var alt = dt.Alternatives[j];
-								alt.SetParent(dt);
+								var alt = fld.Alternatives[j];
+								alt.SetParent(fld);
 								que.Enqueue(alt);
 							}
 						}

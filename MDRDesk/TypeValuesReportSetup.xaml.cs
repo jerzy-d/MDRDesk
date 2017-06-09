@@ -19,16 +19,18 @@ namespace MDRDesk
 	{
 		private IndexProxy _indexProxy;
 		private ClrtDisplayableType _typeInfo;
+        private ulong[] _instances;
 		private TreeViewItem _currentTreeViewItem;
 		private HashSet<ClrtDisplayableType> _selection;
         private ClrtDisplayableType[] _needed;
         public ClrtDisplayableType[] Selections => _needed;
 
 
-        public TypeValuesReportSetup(ClrtDisplayableType typeInfo, IndexProxy proxy)
+        public TypeValuesReportSetup(IndexProxy proxy, ClrtDisplayableType typeInfo, ulong[] instances)
 		{
 			_indexProxy = proxy;
 			_typeInfo = typeInfo;
+            _instances = instances;
 			_selection = new HashSet<ClrtDisplayableType>(new ClrtDisplayableTypeIdComparer());
 			InitializeComponent();
 			TypeValueReportTopTextBox.Text = typeInfo.GetDescription();
@@ -45,13 +47,26 @@ namespace MDRDesk
 				realRoot = true;
 				root = GuiUtils.GetTypeValueSetupTreeViewItem(dispType);
 			}
-			var fields = dispType.Fields;
-			for (int i = 0, icnt = fields.Length; i < icnt; ++i)
-			{
-				var fld = fields[i];
-				var node = GuiUtils.GetTypeValueSetupTreeViewItem(fld);
-				root.Items.Add(node);
-			}
+            if (dispType.HasFields)
+            {
+                var fields = dispType.Fields;
+                for (int i = 0, icnt = fields.Length; i < icnt; ++i)
+                {
+                    var fld = fields[i];
+                    var node = GuiUtils.GetTypeValueSetupTreeViewItem(fld);
+                     root.Items.Add(node);
+                }
+            }
+            if (dispType.HasAlternatives)
+            {
+                var alternatives = dispType.Alternatives;
+                for (int i = 0, icnt = alternatives.Length; i < icnt; ++i)
+                {
+                    var alt = alternatives[i];
+                    var node = GuiUtils.GetTypeValueSetupTreeViewItem(alt);
+                    root.Items.Add(node);
+                }
+            }
 
 			if (realRoot)
 			{
@@ -85,30 +100,27 @@ namespace MDRDesk
 			StatusText.Text = "Getting type details for field: '" + dispType.FieldName + "', please wait...";
 			Mouse.OverrideCursor = Cursors.Wait;
 
-			var result = await Task.Run(() =>
+            (string error, ClrtDisplayableType cdt, ulong[] instances) = await Task.Run(() =>
 			{
-				string error;
-				ClrtDisplayableType fldDispType = MainWindow.CurrentIndex.GetTypeDisplayableRecord(dispType.TypeId, dispType, out error);
-
-                if (fldDispType == null)
-					return new Tuple<string, ClrtDisplayableType>(error, null);
-				return new Tuple<string, ClrtDisplayableType>(null, fldDispType);
+                // TODO JRD -- replace with othetr metyhod !!!!
+                return MainWindow.CurrentIndex.GetTypeDisplayableRecord(dispType.TypeId, dispType);
 			});
+
 			Mouse.OverrideCursor = null;
 
-			if (result.Item1 != null)
+			if (error != null)
 			{
-				if (Utils.IsInformation(result.Item1))
+				if (Utils.IsInformation(error))
 				{
-					StatusText.Text = "Action failed for: '" + dispType.FieldName + "'. " + result.Item1;
+					StatusText.Text = "Action failed for: '" + cdt.FieldName + "'. " + error;
 					return;
 				}
-				StatusText.Text = "Getting type details for field: '" + dispType.FieldName + "', failed";
-				GuiUtils.ShowError(result.Item1,this);
+				StatusText.Text = "Getting type details for field: '" + cdt.FieldName + "', failed";
+				GuiUtils.ShowError(error,this);
 				return;
 			}
 
-			var fields = result.Item2.Fields;
+			var fields = cdt.Fields;
 			selItem.Items.Clear();
 			for (int i = 0, icnt = fields.Length; i < icnt; ++i)
 			{
@@ -266,13 +278,31 @@ namespace MDRDesk
 			foreach (var sel in _selection)
 			{
 				needed.Add(sel);
+                if (sel.Parent == null) continue;
 				var parent = sel.Parent;
+                if (parent.HasAlternatives && parent.HasAlternative(sel))
+                {
+                    parent = parent.Parent;
+                    needed.Add(parent);
+                    sel.SetParent(parent);
+                    var tempSel = parent;
+                    while (parent.HasAlternatives && parent.HasAlternative(tempSel))
+                    {
+                        parent = parent.Parent;
+                        needed.Add(parent);
+                        tempSel.SetParent(parent);
+                        tempSel = parent;
+                    }
+                }
+
 				while (parent != null)
 				{
 					needed.Add(parent);
 					parent = parent.Parent;
 				}
 			}
+
+
 			var que = new Queue<ClrtDisplayableType>(Math.Max(needed.Count * 2,64));
 			var lst = new LinkedList<ClrtDisplayableType>();
 			int ndx = 0;
@@ -293,11 +323,20 @@ namespace MDRDesk
 					InsertClrtDisplayableType(lst, cdt);
 				}
 
-				if (!cdt.HasFields) continue;
-				for (int i = 0, icnt = cdt.Fields.Length; i < icnt; ++i)
-				{
-					que.Enqueue(cdt.Fields[i]);
-				}
+                if (cdt.HasFields)
+                {
+                    for (int i = 0, icnt = cdt.Fields.Length; i < icnt; ++i)
+                    {
+                        que.Enqueue(cdt.Fields[i]);
+                    }
+                }
+                if (cdt.HasAlternatives)
+                {
+                    for (int i = 0, icnt = cdt.Alternatives.Length; i < icnt; ++i)
+                    {
+                        que.Enqueue(cdt.Alternatives[i]);
+                    }
+                }
 			}
 			return lst.ToArray();
 		}
@@ -384,8 +423,18 @@ namespace MDRDesk
 							que.Enqueue(new KeyValuePair<ClrtDisplayableType, TreeViewItem>(dt.Fields[i], tvi.Items[i] as TreeViewItem));
 						}
 					}
-				}
-			}
+                    else if (dt.HasAlternatives)
+                    {
+                        UpdateTypeValueSetupGrid(dt, tvi);
+                        for (int i = 0, icnt = dt.Alternatives.Length; i < icnt; ++i)
+                        {
+                            que.Enqueue(new KeyValuePair<ClrtDisplayableType, TreeViewItem>(dt.Alternatives[i], tvi.Items[i] as TreeViewItem));
+                        }
+                    }
+                }
+                _instances = _indexProxy.GetTypeInstances(_typeInfo.TypeId);
+
+            }
 			catch(Exception ex)
 			{
 				error = Utils.GetExceptionErrorString(ex);

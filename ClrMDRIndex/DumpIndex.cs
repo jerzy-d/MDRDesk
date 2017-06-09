@@ -577,7 +577,23 @@ namespace ClrMDRIndex
 			return indices;
 		}
 
-		public int GetTypeInstanceCount(int typeId)
+        public int[] GetRealAddressIndices(ulong[] addresses)
+        {
+            Debug.Assert(Utils.IsSorted(addresses));
+            int i = 0, _i = 0, icnt = addresses.Length, _icnt = _instances.Length;
+            int[] indices = new int[icnt];
+            while (i < icnt && _i < _icnt)
+            {
+                if (Utils.RealAddress(addresses[i]) == Utils.RealAddress(_instances[_i]))
+                {
+                    indices[i++] = _i;
+                }
+                ++_i;
+            }
+            return indices;
+        }
+
+        public int GetTypeInstanceCount(int typeId)
 		{
 			var offNdx = Array.BinarySearch(_typeInstanceOffsets, new KeyValuePair<int, int>(typeId, 0), KvIntIntKeyCmparer);
 			if (offNdx < 0) return 0;
@@ -822,11 +838,16 @@ namespace ClrMDRIndex
 			}
 		}
 
-		#endregion types
+        public string[] GetTypesImplementingInterface(string interfaceList, out string error)
+        {
+            return _clrtDump.GetTypesImplementingInterface(interfaceList, out error);
+        }
 
-		#region instance references
+        #endregion types
 
-		public Tuple<string, AncestorNode> GetParentTree(ulong address, int levelMax)
+        #region instance references
+
+        public Tuple<string, AncestorNode> GetParentTree(ulong address, int levelMax)
 		{
 			string error = null;
 			try
@@ -1007,7 +1028,14 @@ namespace ClrMDRIndex
 			}
 		}
 
-		public ListingInfo GetParentReferencesReport(ulong addr, int level = Int32.MaxValue)
+
+        public KeyValuePair<IndexNode, int> GetReferenceNodes(int instNdx, References.Direction dir, References.DataSource source, out string error, int level)
+        {
+            return _references.GetReferenceNodes(instNdx, dir, source, out error, level);
+        }
+
+
+        public ListingInfo GetParentReferencesReport(ulong addr, int level = Int32.MaxValue)
 		{
 			string error;
 			var instNdx = GetInstanceIndex(addr);
@@ -1033,13 +1061,23 @@ namespace ClrMDRIndex
 			return OneInstanceParentsReport(result.Key, result.Value);
 		}
 
-		/// <summary>
-		/// Get references for all instances of a given type.
-		/// </summary>
-		/// <param name="typeId">Type id.</param>
-		/// <param name="level">How deep reference tree should be.</param>
-		/// <returns></returns>
-		public ListingInfo GetParentReferencesReport(int typeId, int level = Int32.MaxValue)
+
+
+
+        public KeyValuePair<IndexNode, int>[] GetReferenceNodes(ulong[] typeInstances, References.Direction  dir, References.DataSource dataSource, out string error, int level)
+        {
+            int[] indices = GetRealAddressIndices(typeInstances);
+            return _references.GetReferenceNodes(indices, References.Direction.FieldParent, References.DataSource.All, out error, level);
+        }
+
+
+        /// <summary>
+        /// Get references for all instances of a given type.
+        /// </summary>
+        /// <param name="typeId">Type id.</param>
+        /// <param name="level">How deep reference tree should be.</param>
+        /// <returns></returns>
+        public ListingInfo GetParentReferencesReport(int typeId, int level = Int32.MaxValue)
 		{
 			string error;
 
@@ -1363,24 +1401,24 @@ namespace ClrMDRIndex
 
 		#region Type Value Reports
 
-		public ClrtDisplayableType GetTypeDisplayableRecord(int typeId, ClrtDisplayableType parent, out string error)
+		public ValueTuple<string, ClrtDisplayableType,ulong[]> GetTypeDisplayableRecord(int typeId, ClrtDisplayableType parent)
 		{
-			error = null;
+			string error = null;
 			try
 			{
 				ulong[] instances = GetTypeRealAddresses(typeId);
 				if (instances == null || instances.Length < 1)
-				{
-					error = "Type instances not found.";
-					return null;
-				}
-				return TypeExtractor.GetClrtDisplayableType(_indexProxy, Dump.Heap, parent, typeId, instances, out error);
-				//GetClrtDisplayableType(IndexProxy ndxProxy, ClrHeap heap, ClrtDisplayableType parent, int typeId, ulong[] addresses, out string error)
-			}
-			catch (Exception ex)
+					return new ValueTuple<string, ClrtDisplayableType, ulong[]>("Type instances not found.", null, null); ;
+
+                ClrtDisplayableType cdt = parent != null
+                    ? TypeExtractor.GetClrtDisplayableType(_indexProxy, Dump.Heap, parent, typeId, instances, out error)
+                    : TypeExtractor.GetClrtDisplayableType(_indexProxy, Dump.Heap, instances, out error);
+                return new ValueTuple<string, ClrtDisplayableType, ulong[]>(error, cdt, instances); ;
+            }
+            catch (Exception ex)
 			{
 				error = Utils.GetExceptionErrorString(ex);
-				return null;
+				return new ValueTuple<string, ClrtDisplayableType, ulong[]>(error,null,null);
 			}
 
 		}

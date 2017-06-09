@@ -767,6 +767,10 @@
                             <MenuItem x:Name="InstHierarchyWalk" Header="Instance Hierarchy Walk" Click="InstReferenceClicked"/>
                         </MenuItem>
                         <Separator></Separator>
+                        <MenuItem x:Name="TypeInfo" Header="Get Type Information">
+                            <MenuItem x:Name="TypeWithInterface" Header="List Types Implementing Interface" Click="TypesImplementingInterfaceClicked"/>
+                        </MenuItem>
+                        <Separator></Separator>
                         <MenuItem x:Name="IndexCompareSizeInformation" Header="Type Sizes Comparison (with other dump)..." Click="IndexCompareSizeInformationClicked"/>
                         <MenuItem x:Name="IndexCompareStringInformation" Header="Strings Comparison (with other dump)..." Click="IndexCompareStringInformationClicked"/>
                         <Separator></Separator>
