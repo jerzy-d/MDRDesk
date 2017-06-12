@@ -8,4 +8,5 @@
     <Image x:Key="ArrayPng" Source="./Images/Arrange_16x.png"/>
     <Image x:Key="EnumPng" Source="./Images/EnumItem_exp_16x.png"/>
     <Image x:Key="QuestionPng" Source="./Images/Question_16x.png"/>
+    <Image x:Key="GroupPng" Source="./Images/GroupClause_16x.png"/>
 </ResourceDictionary>

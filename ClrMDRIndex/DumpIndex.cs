@@ -1401,14 +1401,29 @@ namespace ClrMDRIndex
 
 		#region Type Value Reports
 
-		public ValueTuple<string, ClrtDisplayableType,ulong[]> GetTypeDisplayableRecord(int typeId, ClrtDisplayableType parent)
+		public ValueTuple<string, ClrtDisplayableType,ulong[]> GetTypeDisplayableRecord(int typeId, ClrtDisplayableType parent, ClrtDisplayableType[] fields=null, ulong[] rootInstances=null)
 		{
 			string error = null;
 			try
 			{
-				ulong[] instances = GetTypeRealAddresses(typeId);
+
+				ulong[] instances = rootInstances != null ? rootInstances : GetTypeRealAddresses(typeId);
 				if (instances == null || instances.Length < 1)
-					return new ValueTuple<string, ClrtDisplayableType, ulong[]>("Type instances not found.", null, null); ;
+					return new ValueTuple<string, ClrtDisplayableType, ulong[]>("Type instances not found.", null, null);
+
+				if (fields != null)
+				{
+					Debug.Assert(fields.Length > 1);
+					int[] fieldIndices = new int[fields.Length-1];
+					// we need to get addresses of parent, starting at root instances, first item in the list is root type
+					for (int i = 1, icnt = fields.Length; i < icnt; ++i)
+					{
+						fieldIndices[i - 1] = fields[i].FieldIndex;
+					}
+					instances = GetInstanceFieldAddresses(instances, fieldIndices, out error);
+					if (error != null)
+						return new ValueTuple<string, ClrtDisplayableType, ulong[]>(error, null, null);
+				}
 
                 ClrtDisplayableType cdt = parent != null
                     ? TypeExtractor.GetClrtDisplayableType(_indexProxy, Dump.Heap, parent, typeId, instances, out error)
@@ -1419,6 +1434,66 @@ namespace ClrMDRIndex
 			{
 				error = Utils.GetExceptionErrorString(ex);
 				return new ValueTuple<string, ClrtDisplayableType, ulong[]>(error,null,null);
+			}
+
+		}
+
+		private ulong[] GetInstanceFieldAddresses(ulong[] instances, int[] fieldIndices, out string error)
+		{
+			error = null;
+			List<ulong> addresses = new List<ulong>(instances.Length);
+			try
+			{
+				var heap = Heap;
+				int i = 0;
+				ClrType rootType = null;
+				ClrInstanceField[] fields = new ClrInstanceField[fieldIndices.Length];
+				int icount = instances.Length;
+
+				bool done = true;
+				for (; i < icount; ++i)
+				{
+					done = true;
+					var addr = instances[i];
+					rootType = heap.GetObjectType(addr);
+					if (rootType == null) continue;
+					var curType = rootType;
+					var curAddr = addr;
+					for (int j = 0, jcnt = fieldIndices.Length; j < jcnt; ++j)
+					{
+						if (fields[j] != null) continue;
+						var fld = curType.Fields[fieldIndices[j]];
+						curAddr = ValueExtractor.GetReferenceFieldAddress(curAddr, fld, false);
+						curType = heap.GetObjectType(curAddr);
+						if (curType == null) { done = false; break; }
+						fields[j] = fld;
+					}
+
+					if (done) break;
+				}
+				if (!done)
+				{
+					Utils.GetErrorString("Type Report", "Cannot resolve field chain.", rootType != null ? rootType.Name : "Getting root type failed.");
+					return null;
+				}
+				for (; i < icount; ++i)
+				{
+					var addr = instances[i];
+					for (int j = 0, jcnt = fieldIndices.Length; j < jcnt; ++j)
+					{
+						var fld = fields[j];
+						addr = ValueExtractor.GetReferenceFieldAddress(addr, fld, false);
+					}
+					if (addr != Constants.InvalidAddress)
+						addresses.Add(addr);
+				}
+
+				return addresses.ToArray();
+			}
+			catch(Exception ex)
+			{
+				error = Utils.GetExceptionErrorString(ex);
+				return null;
 			}
 
 		}

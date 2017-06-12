@@ -446,6 +446,9 @@
   <ItemGroup>
     <Resource Include="Images\RemoveCommand_16x.png" />
   </ItemGroup>
+  <ItemGroup>
+    <Resource Include="Images\GroupClause_16x.png" />
+  </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <PropertyGroup>
     <PostBuildEvent>

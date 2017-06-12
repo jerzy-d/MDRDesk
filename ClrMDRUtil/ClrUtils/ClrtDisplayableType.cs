@@ -10,9 +10,10 @@ namespace ClrMDRIndex
     [Serializable]
 	public class ClrtDisplayableType
 	{
+		private const int _dummyTypeId = int.MinValue;
 		private ClrtDisplayableType _parent;
 		private readonly int _typeId;
-		private readonly int _fieldIndex; // index of a parent field
+		private int _fieldIndex; // index of a parent field
 		private readonly string _typeName;
 		private readonly string _fieldName;
 		private FilterValue _valueFilter;
@@ -28,7 +29,9 @@ namespace ClrMDRIndex
 		public FilterValue Filter => _valueFilter;
 		public ClrtDisplayableType Parent => _parent;
 		public ClrtDisplayableType[] Alternatives => _alternatives;
-		public bool HasAlternatives => _alternatives != null;
+		public bool HasAlternatives => _alternatives != null && _alternatives.Length > 0;
+		public bool IsAlternative => _alternatives != null && _alternatives.Length == 0;
+		public bool IsDummy => _typeId == _dummyTypeId;
 
 		private ClrElementKind _kind;
         public ClrElementKind Kind => _kind;
@@ -52,6 +55,14 @@ namespace ClrMDRIndex
 			_alternatives = null;
 		}
 
+		private ClrtDisplayableType()
+		{ }
+
+		public static ClrtDisplayableType GetDummy(string typeName, string fldName)
+		{
+			return new ClrtDisplayableType(null, _dummyTypeId, Constants.InvalidIndex, typeName, fldName, ClrElementKind.Unknown);
+		}
+
 		public void AddAlternative(ClrtDisplayableType dtype)
 		{
 			if (_alternatives == null)
@@ -67,6 +78,11 @@ namespace ClrMDRIndex
 			Array.Copy(_alternatives, newAry, _alternatives.Length);
 			newAry[_alternatives.Length] = dtype;
 			_alternatives = newAry;
+		}
+
+		public void SetAlterntives(ClrtDisplayableType[] alts)
+		{
+			_alternatives = alts;
 		}
 
 		public bool HasAlternative(string typeName)
@@ -114,6 +130,11 @@ namespace ClrMDRIndex
 		public void SetParent(ClrtDisplayableType parent)
 		{
 			_parent = parent;
+		}
+
+		public void SetFieldIndex(int fldIndex)
+		{
+			_fieldIndex = fldIndex;
 		}
 
 		public void ResetId(long id)
@@ -221,7 +242,12 @@ namespace ClrMDRIndex
 		public bool CanGetFields(out string msg)
 		{
 			msg = null;
-            var specKind = TypeExtractor.GetSpecialKind(_kind);
+			if (IsDummy)
+			{
+				msg = "Cannot get fields, this is alternatives grouping node.";
+				return false;
+			}
+			var specKind = TypeExtractor.GetSpecialKind(_kind);
             if (specKind != ClrElementKind.Unknown)
             {
                 switch (specKind)

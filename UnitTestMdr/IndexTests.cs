@@ -1858,7 +1858,7 @@ namespace UnitTestMdr
             string error = null;
             Stopwatch stopWatch = new Stopwatch();
             stopWatch.Start();
-            var index = OpenIndex(@"D:\Jerzy\WinDbgStuff\dumps\Analytics\Highline\analyticsdump111.dlk.dmp.map");
+            var index = OpenIndex(@"C:\WinDbgStuff\dumps\Analytics\Highline\analyticsdump111.dlk.dmp.map");
             TestContext.WriteLine(index.DumpFileName + " INDEX OPEN DURATION: " + Utils.StopAndGetDurationString(stopWatch));
 
             using (index)

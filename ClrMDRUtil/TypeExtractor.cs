@@ -406,7 +406,7 @@ namespace ClrMDRIndex
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static ValueTuple<ClrType, ClrElementKind, ulong> GetRealType(ClrHeap heap, ulong addr, ClrInstanceField fld, bool isInternal)
         {
-            var obj = fld.GetValue(addr, isInternal);
+            var obj = fld.GetValue(addr, isInternal, false);
             if (obj == null) return new ValueTuple<ClrType, ClrElementKind, ulong>(null, ClrElementKind.Unknown, Constants.InvalidAddress);
             var oaddr = (ulong)obj;
             if (oaddr == 0UL) return new ValueTuple<ClrType, ClrElementKind, ulong>(null, ClrElementKind.Unknown, Constants.InvalidAddress);
@@ -661,9 +661,21 @@ namespace ClrMDRIndex
                                 for (int j = 0, jcnt = addresses.Length; j < jcnt; ++j)
                                 {
                                     var jaddr = addresses[j];
-                                    TryGetClrtDisplayableTypeFields(ndxProxy, heap, jaddr, ambiguousFields, dispFlds);
-                                }
-                                dispType.AddFields(dispFlds);
+									try
+									{
+										TryGetClrtDisplayableTypeFields(ndxProxy, heap, jaddr, ambiguousFields, dispFlds);
+									}
+									catch (Exception ex)
+									{
+										int a = 1;
+									}
+
+								}
+								if (ambiguousFields.Count > 0)
+								{
+									HandleAlternatives(dispType, dispFlds, ambiguousFields);
+								}
+								dispType.AddFields(dispFlds);
                                 return dispType;
                             case ClrElementKind.Unknown:
                                 continue;
@@ -681,16 +693,43 @@ namespace ClrMDRIndex
             }
         }
 
-        /// <summary>
-        /// 
-        /// </summary>
-        /// <param name="ndxProxy">Basic indexed dump data.</param>
-        /// <param name="heap">MDR's a crash dump heap.</param>
-        /// <param name="addresses"></param>
-        /// <param name="error"></param>
-        /// <returns></returns>
-        public static ClrtDisplayableType GetClrtDisplayableType(IndexProxy ndxProxy, ClrHeap heap, ulong[] addresses, out string error)
-        {
+		private static void HandleAlternatives(ClrtDisplayableType parent, ClrtDisplayableType[] fields, List<int> ambLst)
+		{
+			List<string> names = new List<string>(8);
+			for (int i = 0, icnt = fields.Length; i < icnt; ++i)
+			{
+				var fld = fields[i];
+				if (!fld.HasAlternatives) continue;
+				names.Clear();
+				var dummyAry = Utils.EmptyArray<ClrtDisplayableType>.Value;
+				for (int k = 0, kcnt = fld.Alternatives.Length; k < kcnt; ++k)
+				{
+					var alt = fld.Alternatives[k];
+					alt.SetParent(parent);
+					alt.SetAlterntives(dummyAry);
+					alt.SetFieldIndex(fld.FieldIndex);
+					if (!names.Contains(alt.FieldName))
+					{
+						names.Add(alt.FieldName);
+					}
+				}
+				var fldName = string.Join(",", names);
+				var dummy = ClrtDisplayableType.GetDummy(fld.TypeName, fldName + " ALTERNATIVES");
+				dummy.AddFields(fld.Alternatives);
+				fields[i] = dummy;
+			}
+		}
+
+			/// <summary>
+			/// 
+			/// </summary>
+			/// <param name="ndxProxy">Basic indexed dump data.</param>
+			/// <param name="heap">MDR's a crash dump heap.</param>
+			/// <param name="addresses"></param>
+			/// <param name="error"></param>
+			/// <returns></returns>
+			public static ClrtDisplayableType GetClrtDisplayableType(IndexProxy ndxProxy, ClrHeap heap, ulong[] addresses, out string error)
+			{
             error = null;
             try
             {
@@ -751,7 +790,11 @@ namespace ClrMDRIndex
                                     var jaddr = addresses[j];
                                     TryGetClrtDisplayableTypeFields(ndxProxy, heap, jaddr, ambiguousFields, dispFlds);
                                 }
-                                dispType.AddFields(dispFlds);
+								if (ambiguousFields.Count > 0)
+								{
+									HandleAlternatives(dispType, dispFlds, ambiguousFields);
+								}
+								dispType.AddFields(dispFlds);
                                 return dispType;
                             case ClrElementKind.Unknown:
                                 continue;

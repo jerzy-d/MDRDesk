@@ -39,6 +39,8 @@ namespace MDRDesk
             TypeValueReportFilterList.Items.Add("FILTERS " + Constants.DownwardsBlackArrow);
 		}
 
+
+
 		private void UpdateTypeValueSetupGrid(ClrtDisplayableType dispType, TreeViewItem root)
 		{
 			bool realRoot = false;
@@ -54,20 +56,19 @@ namespace MDRDesk
                 {
                     var fld = fields[i];
                     var node = GuiUtils.GetTypeValueSetupTreeViewItem(fld);
-                     root.Items.Add(node);
-                }
-            }
-            if (dispType.HasAlternatives)
-            {
-                var alternatives = dispType.Alternatives;
-                for (int i = 0, icnt = alternatives.Length; i < icnt; ++i)
-                {
-                    var alt = alternatives[i];
-                    var node = GuiUtils.GetTypeValueSetupTreeViewItem(alt);
                     root.Items.Add(node);
+					if (fld.HasFields)
+					{
+						for (int j = 0, jcnt = fld.Fields.Length; j < jcnt; ++j)
+						{
+							var fnode = GuiUtils.GetTypeValueSetupTreeViewItem(fld.Fields[j]);
+							node.Items.Add(fnode);
+						}
+					}
+
                 }
             }
-
+ 
 			if (realRoot)
 			{
 				TypeValueReportTreeView.Items.Clear();
@@ -86,6 +87,7 @@ namespace MDRDesk
 			Debug.Assert(dispType != null);
 
 			string msg;
+
 			if (!dispType.CanGetFields(out msg))
 			{
 				StatusText.Text = "Action failed for: '" + dispType.FieldName + "'. " + msg;
@@ -94,6 +96,7 @@ namespace MDRDesk
 
 			if (dispType.FieldIndex == Constants.InvalidIndex || dispType.HasFields) // this root type, or fields are already displayed
 			{
+				StatusText.Text = "This is root item, its address/value is included in the report by default.";
 				return;
 			}
 
@@ -102,8 +105,17 @@ namespace MDRDesk
 
             (string error, ClrtDisplayableType cdt, ulong[] instances) = await Task.Run(() =>
 			{
-                // TODO JRD -- replace with othetr metyhod !!!!
-                return MainWindow.CurrentIndex.GetTypeDisplayableRecord(dispType.TypeId, dispType);
+
+				// TODO JRD -- replace with othetr metyhod !!!!
+				List<ClrtDisplayableType> lst = new List<ClrtDisplayableType>() { dispType };
+				var parent = dispType.Parent;
+				while (parent != null)
+				{
+					lst.Add(parent);
+					parent = parent.Parent;
+				}
+				lst.Reverse();
+				return MainWindow.CurrentIndex.GetTypeDisplayableRecord(dispType.TypeId, dispType, lst.ToArray(), _instances);
 			});
 
 			Mouse.OverrideCursor = null;
@@ -112,10 +124,10 @@ namespace MDRDesk
 			{
 				if (Utils.IsInformation(error))
 				{
-					StatusText.Text = "Action failed for: '" + cdt.FieldName + "'. " + error;
+					StatusText.Text = "Action failed for: '" + dispType.FieldName + "'. " + error;
 					return;
 				}
-				StatusText.Text = "Getting type details for field: '" + cdt.FieldName + "', failed";
+				StatusText.Text = "Getting type details for field: '" + dispType.FieldName + "', failed";
 				GuiUtils.ShowError(error,this);
 				return;
 			}
@@ -280,28 +292,12 @@ namespace MDRDesk
 				needed.Add(sel);
                 if (sel.Parent == null) continue;
 				var parent = sel.Parent;
-                if (parent.HasAlternatives && parent.HasAlternative(sel))
-                {
-                    parent = parent.Parent;
-                    needed.Add(parent);
-                    sel.SetParent(parent);
-                    var tempSel = parent;
-                    while (parent.HasAlternatives && parent.HasAlternative(tempSel))
-                    {
-                        parent = parent.Parent;
-                        needed.Add(parent);
-                        tempSel.SetParent(parent);
-                        tempSel = parent;
-                    }
-                }
-
-				while (parent != null)
+ 				while (parent != null)
 				{
 					needed.Add(parent);
 					parent = parent.Parent;
 				}
 			}
-
 
 			var que = new Queue<ClrtDisplayableType>(Math.Max(needed.Count * 2,64));
 			var lst = new LinkedList<ClrtDisplayableType>();

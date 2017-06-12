@@ -104,6 +104,12 @@ namespace MDRDesk
 		{
 			var txtBlk = new TextBlock();
 			txtBlk.Inlines.Add("   ");
+			if (val.IsDummy)
+			{
+				txtBlk.Inlines.Add(new Bold(new Run(val.FieldName + "  ") { Foreground = Brushes.DarkBlue }));
+				txtBlk.Inlines.Add(new Bold(new Run("  " + val.TypeName) { Foreground = Brushes.DarkBlue }));
+				return txtBlk;
+			}
 			var selection = val.SelectionStr();
 			if (!string.IsNullOrEmpty(selection))
 				txtBlk.Inlines.Add(new Bold(new Run(selection + "  ")) { Foreground = Brushes.DarkGreen });
@@ -111,10 +117,6 @@ namespace MDRDesk
 				txtBlk.Inlines.Add(new Italic(new Run(val.FieldName + "  ") { Foreground = Brushes.DarkRed }));
 			txtBlk.Inlines.Add(new Run("  " + val.TypeName));
 			return txtBlk;
-			//        return string.IsNullOrEmpty(_fieldName)
-			//? TypeHeader() + _typeName
-			//: SelectionStr() + _fieldName + FilterStr(_valueFilter) + TypeHeader() + _typeName;
-
 		}
 
 		public static StackPanel GetInstanceValueStackPanel(InstanceValue val)
@@ -166,9 +168,18 @@ namespace MDRDesk
         public static StackPanel GetClrtDisplayableTypeStackPanel(ClrtDisplayableType dispType)
 		{
 			var stackPanel = new StackPanel() { Orientation = Orientation.Horizontal };
+
+			Image image = new Image();
+			if (dispType.IsDummy)
+			{
+				image.Source = ((Image)Application.Current.FindResource("GroupPng")).Source;
+				stackPanel.Children.Add(image);
+				stackPanel.Children.Add(GetClrtDisplayableTypeTextBlock(dispType));
+				return stackPanel;
+			}
+
 			var kind = dispType.Kind;
             var specKind = TypeExtractor.GetSpecialKind(kind);
-			Image image = new Image();
             if (specKind != ClrElementKind.Unknown)
             {
                 switch(specKind)
