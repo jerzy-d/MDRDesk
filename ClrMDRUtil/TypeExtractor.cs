@@ -700,6 +700,15 @@ namespace ClrMDRIndex
 			{
 				var fld = fields[i];
 				if (!fld.HasAlternatives) continue;
+                if (fld.Alternatives.Length==1)
+                {
+                    var alt = fld.Alternatives[0];
+                    alt.SetParent(parent);
+                    alt.SetAlterntives(null);
+                    alt.SetFieldIndex(fld.FieldIndex);
+                    fields[i] = alt;
+                    continue;
+                }
 				names.Clear();
 				var dummyAry = Utils.EmptyArray<ClrtDisplayableType>.Value;
 				for (int k = 0, kcnt = fld.Alternatives.Length; k < kcnt; ++k)

@@ -1511,6 +1511,7 @@ namespace MDRDesk
 				menu.Tag = listView;
 				menu.Click += ListViewBottomGridClick;
 			}
+
 			listView.ContextMenu = new SWC.ContextMenu();
 			listView.ContextMenu.ItemsSource = menuItems;
 			if (!string.IsNullOrEmpty(info.Notes))

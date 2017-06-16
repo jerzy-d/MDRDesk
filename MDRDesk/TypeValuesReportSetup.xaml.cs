@@ -49,6 +49,10 @@ namespace MDRDesk
 				realRoot = true;
 				root = GuiUtils.GetTypeValueSetupTreeViewItem(dispType);
 			}
+            else
+            {
+                root.Tag = dispType;
+            }
             if (dispType.HasFields)
             {
                 var fields = dispType.Fields;

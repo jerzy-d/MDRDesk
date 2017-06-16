@@ -1414,20 +1414,15 @@ namespace ClrMDRIndex
 				if (fields != null)
 				{
 					Debug.Assert(fields.Length > 1);
-					int[] fieldIndices = new int[fields.Length-1];
-					// we need to get addresses of parent, starting at root instances, first item in the list is root type
-					for (int i = 1, icnt = fields.Length; i < icnt; ++i)
-					{
-						fieldIndices[i - 1] = fields[i].FieldIndex;
-					}
-					instances = GetInstanceFieldAddresses(instances, fieldIndices, out error);
+					instances = GetInstanceFieldAddresses(instances, fields, out error);
 					if (error != null)
 						return new ValueTuple<string, ClrtDisplayableType, ulong[]>(error, null, null);
 				}
 
-                ClrtDisplayableType cdt = parent != null
-                    ? TypeExtractor.GetClrtDisplayableType(_indexProxy, Dump.Heap, parent, typeId, instances, out error)
-                    : TypeExtractor.GetClrtDisplayableType(_indexProxy, Dump.Heap, instances, out error);
+                ClrtDisplayableType cdt = TypeExtractor.GetClrtDisplayableType(_indexProxy, Dump.Heap, parent, typeId, instances, out error);
+                //ClrtDisplayableType cdt = parent != null
+                //    ? TypeExtractor.GetClrtDisplayableType(_indexProxy, Dump.Heap, parent, typeId, instances, out error)
+                //    : TypeExtractor.GetClrtDisplayableType(_indexProxy, Dump.Heap, instances, out error);
                 return new ValueTuple<string, ClrtDisplayableType, ulong[]>(error, cdt, instances); ;
             }
             catch (Exception ex)
@@ -1438,7 +1433,62 @@ namespace ClrMDRIndex
 
 		}
 
-		private ulong[] GetInstanceFieldAddresses(ulong[] instances, int[] fieldIndices, out string error)
+        private ulong[] GetInstanceFieldAddresses(ulong[] instances, ClrtDisplayableType[] types, out string error)
+        {
+            error = null;
+            try
+            {
+                bool hasAmbiguousField = Array.FindIndex(types, t => t.IsAlternative) != -1;
+                if (!hasAmbiguousField)
+                {
+                    int[] fieldIndices = new int[types.Length - 1];
+                    // we need to get addresses of parent, starting at root instances, first item in the list is root type
+                    for (int j = 1, jcnt = types.Length; j < jcnt; ++j)
+                    {
+                        fieldIndices[j - 1] = types[j].FieldIndex;
+                    }
+                    return GetInstanceFieldAddresses(instances, fieldIndices, out error);
+                }
+
+                var heap = Heap;
+                ClrType rootType = null;
+                ClrInstanceField[] fields = new ClrInstanceField[types.Length];
+                int icount = instances.Length;
+                List<ulong> addresses = new List<ulong>(instances.Length);
+
+                for (int i = 0; i < icount; ++i)
+                {
+                    var found = true;
+                    var addr = instances[i];
+                    rootType = heap.GetObjectType(addr);
+                    if (rootType == null) continue;
+
+                    var curType = rootType;
+                    var curAddr = addr;
+                    for (int j = 1, jcnt = types.Length; j < jcnt; ++j)
+                    {
+                        var fld = curType.Fields[types[j].FieldIndex];
+                        curAddr = ValueExtractor.GetReferenceFieldAddress(curAddr, fld, false);
+                        curType = heap.GetObjectType(curAddr);
+                        if (!Utils.SameStrings(curType.Name, types[j].TypeName)) { found = false; break; }
+                    }
+
+                    if (found)
+                    {
+                        addresses.Add(curAddr);
+                    }
+                }
+                return addresses.ToArray();
+            }
+            catch (Exception ex)
+            {
+                error = Utils.GetExceptionErrorString(ex);
+                return null;
+            }
+
+        }
+
+        private ulong[] GetInstanceFieldAddresses(ulong[] instances, int[] fieldIndices, out string error)
 		{
 			error = null;
 			List<ulong> addresses = new List<ulong>(instances.Length);
