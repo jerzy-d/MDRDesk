@@ -105,6 +105,7 @@
     <Compile Include="Lou.cs" />
     <Compile Include="MapTests.cs" />
     <Compile Include="TestConfiguration.cs" />
+    <Compile Include="CppTest.cs" />
     <Compile Include="UnitTestUtils.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
@@ -120,6 +121,10 @@
     <ProjectReference Include="..\DmpNdxQueries\DmpNdxQueries.fsproj">
       <Project>{edc2770a-abb6-482e-a78f-a8d5d5c40d86}</Project>
       <Name>DmpNdxQueries</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\Scullions\Scullions.vcxproj">
+      <Project>{d4099dbb-15bf-4f5f-881b-bffa9963977a}</Project>
+      <Name>Scullions</Name>
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>

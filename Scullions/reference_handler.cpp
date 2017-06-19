@@ -1,69 +1,83 @@
 #include "stdafx.h"
 #include <cstring>
+#include "utils.h"
 #include "reference_handler.h"
 
+using namespace std;
 
-reference_handler::reference_handler(unsigned long long *addresses, int count)
+reference_handler::reference_handler(unsigned long long *addresses, int count, const wchar_t* out_folder) : _addresses(addresses), _addr_cnt(count), _outFolder(out_folder)
 {
-	_addresses = addresses;
-	_addr_cnt = count;
-	_bkwd_ref_counts = new long long[_addr_cnt];
-	memset(_bkwd_ref_counts, 0, _addr_cnt * sizeof(long long));
+	_reversed_counts = new int[count];
+	memset(_reversed_counts, 0, count * sizeof(int));
 }
-
 
 reference_handler::~reference_handler()
 {
 	delete _addresses;
-	delete _bkwd_ref_counts;
+	//delete _bkwd_ref_counts;
+	delete _reversed_counts;
 }
 
-int address_search(unsigned long long* ary, int left, int right, unsigned long long key) {
-	key = (key & reference_handler::AddressFlagMask);
-	while (left <= right) {
-		int middle = (left + right) / 2;
-		unsigned long long ary_item = (ary[middle]& reference_handler::AddressFlagMask);
-		if (key == ary_item) return middle;
-		key < ary_item ? right = middle - 1 : left = middle + 1;
-	}
-	return -1;
-}
-
-void copy_addr_flags(unsigned long long* ary, int from, int to)
-{
-	unsigned long long fromVal = ary[from];
-	unsigned long long toVal = ary[to];
-	ary[to] = toVal | (fromVal & reference_handler::AddressMask);
-}
-
-bool same_addr_flags(unsigned long long* ary, int lhs, int rhs)
-{
-	return (ary[lhs] & reference_handler::AddressMask) == (ary[rhs] & reference_handler::AddressMask);
-}
-
-void reference_handler::process_parent_refs(unsigned long long parent, int parent_ndx, vector<unsigned long long>& children, vector<int>& data_out) {
-	
-	data_out.clear();
-	data_out.reserve(children.size());
+unsigned long long* reference_handler::preprocess_parent_refs(vector<unsigned long long>& children) {
+	sort(children.begin(), children.end());
 	unsigned long long* begin = &(*children.begin());
+	unsigned long long* end = begin + children.size();
+	return unique(begin, end);
+}
+
+unsigned long long* reference_handler::preprocess_parent_refs(unsigned long long* begin, unsigned long long* end) {
+	sort(begin, end);
+	return unique(begin, end);
+}
+
+int reference_handler::get_reflag_count() {
+	return _reflag_set.size();
+}
+
+int reference_handler::get_notfound_count() {
+	return _reflag_set.size();
+}
+
+std::pair<int,int> reference_handler::get_reversed_minmax() {
+	int min = 0x7fffffff;
+	int max = 0;
+	for (int *begin = _reversed_counts, *end = _reversed_counts + _addr_cnt; begin < end; ++begin) {
+		int val = *begin;
+		if (val > 0 && min > val) min = val;
+		if (max < val) max = val;
+	}
+	return pair<int, int>(min, max);
+}
+
+void reference_handler::process_parent_refs(unsigned long long parent, int parent_ndx, unsigned long long* begin, unsigned long long* end, vector<int>& data_out) {
+
+	data_out.clear();
+	data_out.reserve(distance(begin, end));
 	unsigned long long* current = begin;
-	unsigned long long* end = &(*children.end());
 	unsigned long long* addr_start = _addresses;
-	int right = _addr_cnt -1;
+	int right = _addr_cnt - 1;
 	int ndx;
 	for (; current < end; ++current) {
-		ndx = address_search(begin, 0, right, *current);
+		unsigned long long addr = *current;
+		if (addr == parent) continue;
+		ndx = address_search(_addresses, 0, right, addr);
 		if (ndx < 0) {
+			++_not_found_count;
 			continue;
 		}
 		data_out.push_back(ndx);
+		_reversed_counts[ndx] += 1;
 
 		// update child root flags
-		if (!same_addr_flags(begin, parent_ndx, ndx)) {
+		if (!same_addr_flags(_addresses, parent_ndx, ndx)) {
 			if (ndx < parent_ndx) { // in this case we might need to update address flag of current's children
 				_reflag_set.insert(ndx);
 			}
-			copy_addr_flags(begin, parent_ndx, ndx);
+			copy_addr_flags(_addresses, parent_ndx, ndx);
 		}
 	}
 }
+
+
+
+

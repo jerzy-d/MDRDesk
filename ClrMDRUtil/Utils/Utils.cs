@@ -2014,6 +2014,15 @@ namespace ClrMDRIndex
 		}
 
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		public static string StopAndGetDurationStringAndRestart(Stopwatch stopWatch)
+		{
+			stopWatch.Stop();
+			string duration =  DurationString(stopWatch.Elapsed);
+			stopWatch.Restart();
+			return duration;
+		}
+
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static string SortableLengthString(ulong len)
         {
             return len == 0 ? "             O" : string.Format("{0,14:0#,###,###,###}", len);
