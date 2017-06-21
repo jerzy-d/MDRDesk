@@ -4428,15 +4428,166 @@ namespace UnitTestMdr
 			}
 		}
 
-		#endregion Snippets
+        #endregion Snippets
 
-		#region Open Dump/Map
 
-		/// <summary>
-		/// Opens dump map using th from App.config, key: test_mapfolder.
-		/// </summary>
-		/// <returns>Instance of a dump map, or null on failure.</returns>
-		private DumpIndex OpenMap0()
+        #region references
+
+        string[] excludedTypeNames = new[]
+{
+                "Free",
+                "System.DateTime",
+                "System.Decimal",
+                "System.Guid",
+                "System.String",
+                "System.TimeSpan",
+
+            };
+
+        bool IsExludedType(string typeName)
+        {
+            return Array.IndexOf(excludedTypeNames, typeName) >= 0;
+        }
+
+
+        [TestMethod]
+        public void TestRefProcessing3()
+        {
+            string outFolderPath = @"D:\Jerzy\WinDbgStuff\dumps\Analytics\BigOne\tests";
+            ClrtDump dmp = GetDump(@"D:\Jerzy\WinDbgStuff\dumps\Analytics\BigOne\Analytics11_042015_2.BigOne.dmp");
+            //string outFolderPath = @"D:\Jerzy\WinDbgStuff\dumps\Analytics\Highline\tests";
+            //ClrtDump dmp = GetDump(@"D:\Jerzy\WinDbgStuff\dumps\Analytics\Highline\analyticsdump111.dlk.dmp");
+            ulong[] instances = null;
+            //BlockingCollection<KeyValuePair<int, ulong[]>> queue = null;
+            Thread oThread = null;
+            BinaryWriter bw = null;
+            Stopwatch stopWatch = new Stopwatch();
+            Stopwatch totStopWatch = new Stopwatch();
+            stopWatch.Start();
+            totStopWatch.Start();
+            TestContext.WriteLine(dmp.DumpFileName + " DUMP OPEN DURATION: " + Utils.StopAndGetDurationStringAndRestart(stopWatch));
+            int buffer_size = 1024;
+            ulong[] buffer = new ulong[buffer_size];
+
+            using (dmp)
+            {
+                var heap = dmp.Heap;
+                try
+                {
+                    bw = new BinaryWriter(File.Open(outFolderPath + @"\instances.bin", FileMode.Create));
+                    bw.Write((int)0);
+                    int acount = 0;
+                    var segs = heap.Segments;
+                    for (int segNdx = 0, icnt = segs.Count; segNdx < icnt; ++segNdx)
+                    {
+                        var seg = segs[segNdx];
+                        ulong addr = seg.FirstObject;
+                        while (addr != 0ul)
+                        {
+                            var clrType = heap.GetObjectType(addr);
+                            if (clrType == null) goto NEXT_OBJECT;
+
+                            bw.Write(addr);
+                            ++acount;
+
+                            NEXT_OBJECT:
+                            addr = seg.NextObject(addr);
+                        }
+                    }
+                    bw.Seek(0, SeekOrigin.Begin);
+                    bw.Write(acount);
+                }
+                catch (Exception ex)
+                {
+                    Assert.IsTrue(false, ex.ToString());
+                }
+                finally
+                {
+                    bw?.Close();
+                    bw = null;
+                }
+
+                TestContext.WriteLine(dmp.DumpFileName + " COLLECTING INSTANCES DURATION: " + Utils.StopAndGetDurationStringAndRestart(stopWatch));
+
+                string error;
+                instances = Utils.ReadUlongArray(outFolderPath + @"\instances.bin", out error);
+                bw = new BinaryWriter(File.Open(outFolderPath + @"\refsdata.bin", FileMode.Create));
+
+
+                TestContext.WriteLine(dmp.DumpFileName + " INSTANCE COUNT: " + instances.Length + " READING INSTANCES DURATION: " + Utils.StopAndGetDurationStringAndRestart(stopWatch));
+
+                var fieldAddrOffsetList = new List<ulong>(64);
+                for (int i = 0, icnt = instances.Length; i < icnt; ++i)
+                {
+                    var addr = instances[i];
+                    var clrType = heap.GetObjectType(addr);
+                    Assert.IsNotNull(clrType);
+                    if (IsExludedType(clrType.Name))
+                    {
+                        bw.Write((int)0);
+                        continue;
+                    }
+
+                    fieldAddrOffsetList.Clear();
+                    clrType.EnumerateRefsOfObjectCarefully(addr, (address, off) =>
+                    {
+                        fieldAddrOffsetList.Add(address);
+                    });
+                    if (fieldAddrOffsetList.Count < 1)
+                    {
+                        bw.Write((int)0);
+                        continue;
+                    }
+                    bw.Write(fieldAddrOffsetList.Count + 1);
+                    bw.Write(addr);
+                    fieldAddrOffsetList.Sort();
+                    for (int j = 0, jcnt = fieldAddrOffsetList.Count; j < jcnt; ++j)
+                    {
+                        bw.Write(fieldAddrOffsetList[j]);
+                    }
+                }
+            }
+            bw.Close();
+            bw = null;
+            TestContext.WriteLine(dmp.DumpFileName + " SAVING REFERENCE DATA DURATION: " + Utils.StopAndGetDurationStringAndRestart(stopWatch));
+
+            Scullion bld = new Scullion(outFolderPath,
+                                        instances,
+                                        @"instances.bin",
+                                        @"refsdata.bin",
+                                        @"fwdrefsoffsets.bin",
+                                        @"fwdrefs.bin",
+                                        @"bwdrefsoffsets.bin",
+                                        @"bwdrefs.bin"
+                                        );
+
+            oThread = new Thread(new ThreadStart(bld.BuildReferences));
+            oThread.Start();
+
+            oThread.Join();
+
+            TestContext.WriteLine(dmp.DumpFileName + " REFLAG COUNT: " + bld.GetReflagCount());
+            TestContext.WriteLine(dmp.DumpFileName + " NOTFOUND COUNT: " + bld.GetNotFoundCount());
+            KeyValuePair<int, int> reversedMinmax = bld.GetReversedMinMax();
+            TestContext.WriteLine(dmp.DumpFileName + " REVERSED MINMAX: " + reversedMinmax.Key + " - " + reversedMinmax.Value);
+
+            TestContext.WriteLine(dmp.DumpFileName + " BUILDING REFERENCES DURATION: " + Utils.StopAndGetDurationString(stopWatch));
+            TestContext.WriteLine(dmp.DumpFileName + " TOTAL DURATION: " + Utils.StopAndGetDurationString(totStopWatch));
+
+        }
+
+
+
+
+        #endregion references
+
+        #region Open Dump/Map
+
+        /// <summary>
+        /// Opens dump map using th from App.config, key: test_mapfolder.
+        /// </summary>
+        /// <returns>Instance of a dump map, or null on failure.</returns>
+        private DumpIndex OpenMap0()
 		{
 			string error;
 			var map = DumpIndex.OpenIndexInstanceReferences(new Version(1, 0, 0), TestConfiguration.MapPath0, 0, out error);

@@ -311,125 +311,16 @@ namespace UnitTestMdr
 
 		}
 
-		[TestMethod]
-		public void TestRefProcessing3()
-		{
-			//string outFolderPath = @"C:\WinDbgStuff\Dumps\Analytics\BigOne\Tests";
-			//ClrtDump dmp = OpenDump(@"C:\WinDbgStuff\Dumps\Analytics\BigOne\Analytics11_042015_2.Big.dmp");
-			string outFolderPath = @"C:\WinDbgStuff\Dumps\Analytics\Highline\Tests";
-			ClrtDump dmp = OpenDump(@"C:\WinDbgStuff\Dumps\Analytics\Highline\analyticsdump111.dlk.dmp");
-			ulong[] instances = null;
-			//BlockingCollection<KeyValuePair<int, ulong[]>> queue = null;
-			Thread oThread = null;
-			BinaryWriter bw = null;
-			Stopwatch stopWatch = new Stopwatch();
-			stopWatch.Start();
-			TestContext.WriteLine(dmp.DumpFileName + " DUMP OPEN DURATION: " + Utils.StopAndGetDurationStringAndRestart(stopWatch));
-			int buffer_size = 1024;
-			ulong[] buffer = new ulong[buffer_size];
 
-			using (dmp)
-			{
-				var heap = dmp.Heap;
-				try
-				{
-					bw = new BinaryWriter(File.Open(outFolderPath + @"\instances.bin", FileMode.Create));
-					bw.Write((int)0);
-					int acount = 0;
-					var segs = heap.Segments;
-					for (int segNdx = 0, icnt = segs.Count; segNdx < icnt; ++segNdx)
-					{
-						var seg = segs[segNdx];
-						ulong addr = seg.FirstObject;
-						while (addr != 0ul)
-						{
-							var clrType = heap.GetObjectType(addr);
-							if (clrType == null) goto NEXT_OBJECT;
-
-							bw.Write(addr);
-							++acount;
-
-							NEXT_OBJECT:
-							addr = seg.NextObject(addr);
-						}
-					}
-					bw.Seek(0, SeekOrigin.Begin);
-					bw.Write(acount);
-				}
-				catch (Exception ex)
-				{
-					Assert.IsTrue(false, ex.ToString());
-				}
-				finally
-				{
-					bw?.Close();
-					bw = null;
-				}
-
-				TestContext.WriteLine(dmp.DumpFileName + " COLLECTING INSTANCES DURATION: " + Utils.StopAndGetDurationStringAndRestart(stopWatch));
-
-				string error;
-				instances = Utils.ReadUlongArray(outFolderPath + @"\instances.bin", out error);
-				bw = new BinaryWriter(File.Open(outFolderPath + @"\refsdata.bin", FileMode.Create));
+        #region references
 
 
-				TestContext.WriteLine(dmp.DumpFileName + " INSTANCE COUNT: " + instances.Length + " READING INSTANCES DURATION: " + Utils.StopAndGetDurationStringAndRestart(stopWatch));
 
-				var fieldAddrOffsetList = new List<ulong>(64);
-				for (int i = 0, icnt = instances.Length; i < icnt; ++i)
-				{
-					var addr = instances[i];
-					var clrType = heap.GetObjectType(addr);
-					Assert.IsNotNull(clrType);
-					if (IsExludedType(clrType.Name))
-					{
-						bw.Write((int)0);
-						continue;
-					}
+        #endregion references
 
-					fieldAddrOffsetList.Clear();
-					clrType.EnumerateRefsOfObjectCarefully(addr, (address, off) =>
-					{
-						fieldAddrOffsetList.Add(address);
-					});
-					if (fieldAddrOffsetList.Count < 1)
-					{
-						bw.Write((int)0);
-						continue;
-					}
-					//ulong[] data = new ulong[fieldAddrOffsetList.Count + 1];
-					bw.Write(fieldAddrOffsetList.Count + 1);
-					bw.Write(addr);
-					fieldAddrOffsetList.Sort();
-					for (int j = 0, jcnt = fieldAddrOffsetList.Count; j < jcnt; ++j)
-					{
-						bw.Write(fieldAddrOffsetList[j]);
-					}
-				}
-			}
-			bw.Close();
-			bw = null;
-			TestContext.WriteLine(dmp.DumpFileName + " SAVING REFERENCE DATA DURATION: " + Utils.StopAndGetDurationStringAndRestart(stopWatch));
+        #region open dump
 
-			Scullions.ReferenceBuilder bld = new Scullions.ReferenceBuilder(outFolderPath);
-			bld.Init(instances);
-			oThread = new Thread(new ThreadStart(bld.Work2));
-			oThread.Start();
-
-			oThread.Join();
-
-			TestContext.WriteLine(dmp.DumpFileName + " REFLAG COUNT: " + bld.GetReflagCount());
-			TestContext.WriteLine(dmp.DumpFileName + " NOTFOUND COUNT: " + bld.GetNotFoundCount());
-			KeyValuePair<int, int> reversedMinmax = (KeyValuePair<int, int>)bld.GetReversedMinMax();
-			TestContext.WriteLine(dmp.DumpFileName + " REVERSED MINMAX: " + reversedMinmax.Key + " - " + reversedMinmax.Value);
-
-			TestContext.WriteLine(dmp.DumpFileName + " BUILDING REFERENCES DURATION: " + Utils.StopAndGetDurationString(stopWatch));
-
-		}
-
-		#region open dump
-
-		public static ClrtDump OpenDump(string path)
+        public static ClrtDump OpenDump(string path)
 		{
 			string error;
 			var clrDump = new ClrtDump(path);

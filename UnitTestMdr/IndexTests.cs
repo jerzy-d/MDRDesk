@@ -1492,7 +1492,6 @@ namespace UnitTestMdr
             return names;
         }
 
-
         #endregion references
 
         #region roots

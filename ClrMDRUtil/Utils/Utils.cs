@@ -2711,14 +2711,14 @@ namespace ClrMDRIndex
 			return true;
 		}
 
-		public static bool IsSorted(IList<int> lst)
-		{
-			for (int i = 1, icnt = lst.Count; i < icnt; ++i)
-			{
-				if (lst[i - 1] > lst[i]) return false;
-			}
-			return true;
-		}
+        public static bool IsSorted(IList<int> lst)
+        {
+            for (int i = 1, icnt = lst.Count; i < icnt; ++i)
+            {
+                if (lst[i - 1] > lst[i]) return false;
+            }
+            return true;
+        }
 
 		public static bool IsSorted<T>(IList<T> lst, IComparer<T> cmp)
 		{
