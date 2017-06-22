@@ -23,9 +23,18 @@ namespace UnitTestMdr
 	[TestClass]
 	public class IndexTests
 	{
-		#region test context/initialization
 
-		private TestContext testContextInstance;
+        string[] dumps = new string[]
+{
+            /*  0 */    @"D:\Jerzy\WinDbgStuff\dumps\Analytics\Highline\analyticsdump111.dlk.dmp",
+            /*  1 */    @"D:\Jerzy\WinDbgStuff\dumps\TradingService\Tortoise\tradingservice_0615.dmp",
+            /*  2 */    @"D:\Jerzy\WinDbgStuff\dumps\Analytics\Baly\analytics7_1510301630.Baly.dmp",
+            /*  3 */    @"D:\Jerzy\WinDbgStuff\dumps\Analytics\BigOne\Analytics11_042015_2.BigOne.dmp"
+}       ;
+        
+        #region test context/initialization
+
+        private TestContext testContextInstance;
 
 		/// <summary>
 		///Gets or sets the test context which provides
@@ -1119,15 +1128,58 @@ namespace UnitTestMdr
 			Assert.IsNull(error, error);
 		}
 
-		#region type sizes and distribution
+        #region type sizes and distribution
 
 
 
-		#endregion type sizes and distribution
+        #endregion type sizes and distribution
 
-		#region references
+        #region references
 
-		[TestMethod]
+        [TestMethod]
+        public void TestReferences0()
+        {
+            string error = null;
+            Stopwatch stopWatch = new Stopwatch();
+            stopWatch.Start();
+            string dumpPath = dumps[0];
+            var testFolder = Path.GetDirectoryName(dumpPath);
+
+            //FwdOffsets,
+            //FwdRefs,
+            //BwdOffsets,
+            //BwdRefs
+
+            string[] testFolders = new string[]
+            {
+                testFolder + @"\tests" + Path.DirectorySeparatorChar + "fwdrefsoffsets.bin",
+                testFolder + @"\tests" + Path.DirectorySeparatorChar + "fwdrefs.bin",
+                testFolder + @"\tests" + Path.DirectorySeparatorChar + "bwdrefsoffsets.bin",
+                testFolder + @"\tests" + Path.DirectorySeparatorChar + "bwdrefs.bin",
+            };
+
+            var index = OpenIndex(dumpPath + ".map");
+
+
+            TestContext.WriteLine(index.DumpFileName + " INDEX OPEN DURATION: " + Utils.StopAndGetDurationString(stopWatch));
+
+            using (index)
+            {
+                var typeName = "Eze.Server.Common.Pulse.Common.Types.ServerColumnPostionLevelCacheDictionary<System.Decimal>";
+                var typeId = index.GetTypeId(typeName);
+                var typeInstances = index.GetTypeInstanceIndices(typeId);
+                var referencer = new InstanceReferences(index.Instances, testFolders);
+                using (referencer)
+                {
+                    var kv = referencer.GetAncestors(typeInstances, 2, out error);
+                }
+                Assert.IsNull(error);
+            }
+
+            Assert.IsNull(error, error);
+        }
+
+        [TestMethod]
 		public void TestReferences()
 		{
 			string error = null;

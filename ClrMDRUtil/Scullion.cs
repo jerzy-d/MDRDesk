@@ -6,6 +6,7 @@ using System.Text;
 using System.Threading.Tasks;
 using ClrMDRIndex;
 using System.IO;
+using System.IO.MemoryMappedFiles;
 
 namespace ClrMDRIndex
 {
@@ -21,13 +22,22 @@ namespace ClrMDRIndex
         string _instancesFile, _refsDataFile, _fwdRefOffsetsFile, _fwdRfsFile, _bwdRefOffsetsFile, _bwdRefsFile;
 
         ulong[] _instances;
-        int[] _reversedCounts;
+        public int InstanceCount { get; private set; }
+        int[] _reversedRefsCounts;
+        int[] _fwdRefsCounts;
         List<ulong> _notFoundInstances;
         Dictionary<int,ulong> _reflagSet = new Dictionary<int, ulong>();
 
         int _reflag_count;
         int _reversed_min;
         int _reversed_max;
+
+                                        //        @"instances.bin",
+                                        //@"refsdata.bin",
+                                        //@"fwdrefsoffsets.bin",
+                                        //@"fwdrefs.bin",
+                                        //@"bwdrefsoffsets.bin",
+                                        //@"bwdrefs.bin"
 
         public Scullion(string rootFolder, 
             ulong[] instances,
@@ -47,7 +57,9 @@ namespace ClrMDRIndex
             _bwdRefsFile = bwdRefsFile;
 
             _instances = instances;
-            _reversedCounts = new int[_instances.Length];
+            InstanceCount = instances.Length;
+            _reversedRefsCounts = new int[InstanceCount];
+            _fwdRefsCounts = new int[InstanceCount];
             _notFoundInstances = new List<ulong>();
 		}
 
@@ -97,6 +109,7 @@ namespace ClrMDRIndex
             BinaryReader br = null;
             BinaryWriter bwoffsets = null;
             BinaryWriter bwrefs = null;
+            MemoryMappedFile mmf = null;
             int byteBufferSize = 2048;
             byte[] byteBuffer = new byte[byteBufferSize];
             int ulongBufferSize = 2048/4;
@@ -114,7 +127,7 @@ namespace ClrMDRIndex
                 bwoffsets = new BinaryWriter(File.Open(FilePath(_fwdRefOffsetsFile), FileMode.Create));
                 bwrefs = new BinaryWriter(File.Open(FilePath(_fwdRfsFile), FileMode.Create));
 
-                for (int i= 0, icnt = _instances.Length; i < icnt; ++i)
+                for (int i= 0, icnt = InstanceCount; i < icnt; ++i)
                 {
                     var refCnt = br.ReadInt32();
                     if (refCnt == 0)
@@ -146,7 +159,9 @@ namespace ClrMDRIndex
                             continue;
                         }
 
-                        _reversedCounts[ndx] += 1;
+                        _reversedRefsCounts[ndx] += 1;
+                        _fwdRefsCounts[i] += 1;
+                        offset += sizeof(int);
                         bwdTotalCount += 1;
                         // update child root flags
                         if (!same_addr_flags(_instances, i, ndx))
@@ -178,6 +193,12 @@ namespace ClrMDRIndex
                 bwoffsets.Write(offset); // last extra offset to get the count of last item;
                 bwoffsets.Close();
                 bwoffsets = null;
+                br.Close();
+                br = null;
+                bwrefs.Close();
+                bwrefs = null;
+
+                File.Delete(FilePath(_refsDataFile));
 
                 if (_reflagSet.Count>0)
                 {
@@ -185,11 +206,70 @@ namespace ClrMDRIndex
                 }
 
                 ClrMDRIndex.Utils.WriteUlongArray(_rootFolder + Path.DirectorySeparatorChar + _instancesFile, _instances, out error);
+                _instances = null; // release mem
+
                 ClrMDRIndex.Unsafe.FileWriter.CreateFileWithSize(FilePath(_bwdRefsFile), bwdTotalCount * sizeof(int), out error);
-                ClrMDRIndex.Unsafe.FileWriter.CreateFileWithSize(FilePath(_bwdRefOffsetsFile), (_instances.Length+1) * sizeof(ulong), out error);
-                _instances = null;
+                ClrMDRIndex.Unsafe.FileWriter.CreateFileWithSize(FilePath(_bwdRefOffsetsFile), (InstanceCount+1) * sizeof(long), out error);
+                br = new BinaryReader(File.Open(FilePath(_fwdRfsFile), FileMode.Open));
 
+                bwoffsets = new BinaryWriter(File.Open(FilePath(_bwdRefOffsetsFile), FileMode.Create));
 
+                long[] _bwdRefOffsets = new long[InstanceCount + 1];
+                offset = 0L;
+                for (int i = 0, icnt = _reversedRefsCounts.Length; i < icnt; ++i)
+                {
+                    bwoffsets.Write(offset);
+                    _bwdRefOffsets[i] = offset;
+                    offset += _reversedRefsCounts[i]*sizeof(int);
+                }
+                bwoffsets.Write(offset);
+                bwoffsets.Close();
+                bwoffsets = null;
+                _bwdRefOffsets[_reversedRefsCounts.Length] = offset;
+
+                var fs = File.Open(FilePath(_bwdRefsFile), FileMode.Open, FileAccess.ReadWrite);
+                bwrefs = new BinaryWriter(fs);
+                //mmf = MemoryMappedFile.CreateFromFile(fs,
+                //                                        null,
+                //                                        0,
+                //                                        MemoryMappedFileAccess.CopyOnWrite,
+                //                                        HandleInheritability.None,
+                //                                        false
+                //                                        );
+
+                SortedDictionary<int, List<int>> dct = new SortedDictionary<int, List<int>>();
+                for (int i = 0, icnt = _fwdRefsCounts.Length; i < icnt; ++i)
+                {
+                    int cnt = _fwdRefsCounts[i];
+                    for(int j = 0, jcnt = cnt; j < jcnt; ++j)
+                    {
+                        int childNdx = br.ReadInt32();
+                        List<int> parentList;
+                        if (dct.TryGetValue(childNdx,out parentList))
+                        {
+                            parentList.Add(i);
+                        }
+                        else
+                        {
+                            parentList = new List<int>() { i };
+                            dct.Add(childNdx, parentList);
+                        }
+                        if (parentList.Count == _reversedRefsCounts[childNdx])
+                        {
+                            // dump to file
+                            fs.Seek(_bwdRefOffsets[childNdx], SeekOrigin.Begin);
+                            for (int k = 0, kcnt = parentList.Count; k < kcnt; ++k)
+                            {
+                                bwrefs.Write(parentList[k]);
+                            }
+                            // remove from dct
+                            dct.Remove(childNdx);
+                        }
+                    }
+                    // read forward references
+                }
+                bwrefs.Close();
+                bwrefs = null;
 
 
             }
@@ -201,10 +281,17 @@ namespace ClrMDRIndex
             {
                 br?.Close();
                 bwoffsets?.Close();
+                bwrefs?.Close();
+                mmf?.Dispose();
             }
 
 
 
+        }
+
+        private int GetCountFromIntOffsets(long off1, long off2)
+        {
+            return ((int)(off2 - off1)) / sizeof(int);
         }
 
         private string FilePath(string file)

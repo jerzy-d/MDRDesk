@@ -22,9 +22,21 @@ namespace ClrMDRIndex
 			Nodes = Utils.EmptyArray<IndexNode>.Value;
 		}
 
-		public void AddNodes(IndexNode[] nodes)
+        public IndexNode(int index, int level, IndexNode[] nodes)
+        {
+            Index = index;
+            Level = level;
+            Nodes = nodes;
+        }
+
+        public void AddNodes(IndexNode[] nodes)
 		{
 			Nodes = nodes;
 		}
+
+        public bool HasReferences()
+        {
+            return Nodes.Length > 0;
+        }
 	}
 }

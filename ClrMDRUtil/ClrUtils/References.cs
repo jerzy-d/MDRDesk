@@ -1,17 +1,14 @@
 ﻿using System;
-using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
-using System.Linq;
-using System.Runtime.InteropServices;
 using System.Threading;
 using ClrMDRUtil;
 using Microsoft.Diagnostics.Runtime;
 
 namespace ClrMDRIndex
 {
-	public class References
+    public class References
 	{
 		public enum DataSource
 		{

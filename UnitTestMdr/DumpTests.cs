@@ -4453,10 +4453,15 @@ namespace UnitTestMdr
         [TestMethod]
         public void TestRefProcessing3()
         {
-            string outFolderPath = @"D:\Jerzy\WinDbgStuff\dumps\Analytics\BigOne\tests";
-            ClrtDump dmp = GetDump(@"D:\Jerzy\WinDbgStuff\dumps\Analytics\BigOne\Analytics11_042015_2.BigOne.dmp");
-            //string outFolderPath = @"D:\Jerzy\WinDbgStuff\dumps\Analytics\Highline\tests";
-            //ClrtDump dmp = GetDump(@"D:\Jerzy\WinDbgStuff\dumps\Analytics\Highline\analyticsdump111.dlk.dmp");
+            string outFolderPath = null;
+            string[] dumps = new string[]
+            {
+            /*  0 */    @"D:\Jerzy\WinDbgStuff\dumps\Analytics\Highline\analyticsdump111.dlk.dmp",
+            /*  1 */    @"D:\Jerzy\WinDbgStuff\dumps\TradingService\Tortoise\tradingservice_0615.dmp",
+            /*  2 */    @"D:\Jerzy\WinDbgStuff\dumps\Analytics\Baly\analytics7_1510301630.Baly.dmp",
+            /*  3 */    @"D:\Jerzy\WinDbgStuff\dumps\Analytics\BigOne\Analytics11_042015_2.BigOne.dmp"
+            };
+            ClrtDump dmp = GetDump(dumps[0]);
             ulong[] instances = null;
             //BlockingCollection<KeyValuePair<int, ulong[]>> queue = null;
             Thread oThread = null;
@@ -4465,7 +4470,9 @@ namespace UnitTestMdr
             Stopwatch totStopWatch = new Stopwatch();
             stopWatch.Start();
             totStopWatch.Start();
-            TestContext.WriteLine(dmp.DumpFileName + " DUMP OPEN DURATION: " + Utils.StopAndGetDurationStringAndRestart(stopWatch));
+            TestContext.WriteLine("DUMP PATH: " + dmp.DumpPath);
+            TestContext.WriteLine(dmp.DumpFileName + " size: " + Utils.LargeNumberString(dmp.DumpSize()) + ", created: " + Utils.DateTimeString(dmp.DumpCreationTime()) + ", last written: " + Utils.DateTimeString(dmp.DumpLastWriteTime()));
+            TestContext.WriteLine("DUMP OPEN DURATION: " + Utils.StopAndGetDurationStringAndRestart(stopWatch));
             int buffer_size = 1024;
             ulong[] buffer = new ulong[buffer_size];
 
@@ -4474,6 +4481,11 @@ namespace UnitTestMdr
                 var heap = dmp.Heap;
                 try
                 {
+                    outFolderPath = Path.GetDirectoryName(dmp.DumpPath) + Path.DirectorySeparatorChar + "tests";
+                    if (!Directory.Exists(outFolderPath))
+                    {
+                        Directory.CreateDirectory(outFolderPath);
+                    }
                     bw = new BinaryWriter(File.Open(outFolderPath + @"\instances.bin", FileMode.Create));
                     bw.Write((int)0);
                     int acount = 0;
@@ -4507,14 +4519,14 @@ namespace UnitTestMdr
                     bw = null;
                 }
 
-                TestContext.WriteLine(dmp.DumpFileName + " COLLECTING INSTANCES DURATION: " + Utils.StopAndGetDurationStringAndRestart(stopWatch));
+                TestContext.WriteLine("COLLECTING INSTANCES DURATION: " + Utils.StopAndGetDurationStringAndRestart(stopWatch));
 
                 string error;
                 instances = Utils.ReadUlongArray(outFolderPath + @"\instances.bin", out error);
                 bw = new BinaryWriter(File.Open(outFolderPath + @"\refsdata.bin", FileMode.Create));
 
 
-                TestContext.WriteLine(dmp.DumpFileName + " INSTANCE COUNT: " + instances.Length + " READING INSTANCES DURATION: " + Utils.StopAndGetDurationStringAndRestart(stopWatch));
+                TestContext.WriteLine("INSTANCE COUNT: " + Utils.CountString(instances.Length) + " READING INSTANCES DURATION: " + Utils.StopAndGetDurationStringAndRestart(stopWatch));
 
                 var fieldAddrOffsetList = new List<ulong>(64);
                 for (int i = 0, icnt = instances.Length; i < icnt; ++i)
@@ -4549,7 +4561,7 @@ namespace UnitTestMdr
             }
             bw.Close();
             bw = null;
-            TestContext.WriteLine(dmp.DumpFileName + " SAVING REFERENCE DATA DURATION: " + Utils.StopAndGetDurationStringAndRestart(stopWatch));
+            TestContext.WriteLine("SAVING REFERENCE DATA DURATION: " + Utils.StopAndGetDurationStringAndRestart(stopWatch));
 
             Scullion bld = new Scullion(outFolderPath,
                                         instances,
@@ -4566,13 +4578,13 @@ namespace UnitTestMdr
 
             oThread.Join();
 
-            TestContext.WriteLine(dmp.DumpFileName + " REFLAG COUNT: " + bld.GetReflagCount());
-            TestContext.WriteLine(dmp.DumpFileName + " NOTFOUND COUNT: " + bld.GetNotFoundCount());
+            TestContext.WriteLine("REFLAG COUNT: " + Utils.CountString(bld.GetReflagCount()));
+            TestContext.WriteLine("NOTFOUND COUNT: " + Utils.CountString(bld.GetNotFoundCount()));
             KeyValuePair<int, int> reversedMinmax = bld.GetReversedMinMax();
-            TestContext.WriteLine(dmp.DumpFileName + " REVERSED MINMAX: " + reversedMinmax.Key + " - " + reversedMinmax.Value);
+            TestContext.WriteLine("REVERSED MINMAX: " + Utils.CountString(reversedMinmax.Key) + " - " + Utils.CountString(reversedMinmax.Value));
 
-            TestContext.WriteLine(dmp.DumpFileName + " BUILDING REFERENCES DURATION: " + Utils.StopAndGetDurationString(stopWatch));
-            TestContext.WriteLine(dmp.DumpFileName + " TOTAL DURATION: " + Utils.StopAndGetDurationString(totStopWatch));
+            TestContext.WriteLine("BUILDING REFERENCES DURATION: " + Utils.StopAndGetDurationString(stopWatch));
+            TestContext.WriteLine("TOTAL DURATION: " + Utils.StopAndGetDurationString(totStopWatch));
 
         }
 

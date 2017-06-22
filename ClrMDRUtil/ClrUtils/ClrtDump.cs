@@ -32,7 +32,24 @@ namespace ClrMDRIndex
 		public ClrRuntime Runtime => _runtimes[_curRuntimeIndex];
 		public ClrHeap Heap => Runtime.Heap;
 
-		public int SetRuntime(int index)
+        public long DumpSize()
+        {
+            System.IO.FileInfo fi = new FileInfo(_dumpPath);
+            return fi.Length;
+        }
+        public DateTime DumpCreationTime()
+        {
+            System.IO.FileInfo fi = new FileInfo(_dumpPath);
+            return fi.CreationTimeUtc;
+        }
+
+        public DateTime DumpLastWriteTime()
+        {
+            System.IO.FileInfo fi = new FileInfo(_dumpPath);
+            return fi.CreationTimeUtc;
+        }
+
+        public int SetRuntime(int index)
 		{
 			if (index >= 0 && index < _runtimes.Length)
 				_curRuntimeIndex = index;
