@@ -4461,7 +4461,7 @@ namespace UnitTestMdr
             /*  2 */    @"D:\Jerzy\WinDbgStuff\dumps\Analytics\Baly\analytics7_1510301630.Baly.dmp",
             /*  3 */    @"D:\Jerzy\WinDbgStuff\dumps\Analytics\BigOne\Analytics11_042015_2.BigOne.dmp"
             };
-            ClrtDump dmp = GetDump(dumps[0]);
+            ClrtDump dmp = GetDump(dumps[3]);
             ulong[] instances = null;
             //BlockingCollection<KeyValuePair<int, ulong[]>> queue = null;
             Thread oThread = null;
@@ -4534,6 +4534,10 @@ namespace UnitTestMdr
                     var addr = instances[i];
                     var clrType = heap.GetObjectType(addr);
                     Assert.IsNotNull(clrType);
+                    //if (clrType.Name== "Eze.Server.Common.Pulse.Common.Types.ServerColumnPostionLevelCacheDictionary<System.Decimal>")
+                    //{
+                    //    int a = 1;
+                    //}
                     if (IsExludedType(clrType.Name))
                     {
                         bw.Write((int)0);
@@ -4555,7 +4559,12 @@ namespace UnitTestMdr
                     fieldAddrOffsetList.Sort();
                     for (int j = 0, jcnt = fieldAddrOffsetList.Count; j < jcnt; ++j)
                     {
-                        bw.Write(fieldAddrOffsetList[j]);
+                        ulong childAddr = fieldAddrOffsetList[j];
+                        //if (childAddr == 0x000000008027cd20 || childAddr == 0x000000008027e5b8)
+                        //{
+                        //    int a = 1;
+                        //}
+                        bw.Write(childAddr);
                     }
                 }
             }

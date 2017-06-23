@@ -93,12 +93,12 @@ namespace ClrMDRIndex
             for (; i < count; ++i) if (lst[i] != parent) break;
             if (i == count) return new KeyValuePair<ulong, int>(parent, 0);
             lst[0] = lst[i];
-            int ndx = 0;
+            int ndx = 1;
 			for( ; i < count;  ++i)
 			{
                 var val = lst[i];
                 if (val == parent || val == lst[ndx]) continue;
-                lst[++ndx] = val;
+                lst[ndx++] = val;
 			}
 			return new KeyValuePair<ulong, int>(parent, ndx);
 		}
@@ -129,6 +129,10 @@ namespace ClrMDRIndex
 
                 for (int i= 0, icnt = InstanceCount; i < icnt; ++i)
                 {
+                    if (i== 31690 || i==31824)
+                    {
+                        int a = 1;
+                    }
                     var refCnt = br.ReadInt32();
                     if (refCnt == 0)
                     {
@@ -241,8 +245,10 @@ namespace ClrMDRIndex
                 for (int i = 0, icnt = _fwdRefsCounts.Length; i < icnt; ++i)
                 {
                     int cnt = _fwdRefsCounts[i];
+                    if (cnt == 0) continue;
                     for(int j = 0, jcnt = cnt; j < jcnt; ++j)
                     {
+                        // read forward references
                         int childNdx = br.ReadInt32();
                         List<int> parentList;
                         if (dct.TryGetValue(childNdx,out parentList))
@@ -262,11 +268,11 @@ namespace ClrMDRIndex
                             {
                                 bwrefs.Write(parentList[k]);
                             }
+                            Debug.Assert(GetCountFromIntOffsets(_bwdRefOffsets[childNdx], _bwdRefOffsets[childNdx + 1]) == parentList.Count);
                             // remove from dct
                             dct.Remove(childNdx);
                         }
                     }
-                    // read forward references
                 }
                 bwrefs.Close();
                 bwrefs = null;

@@ -1167,11 +1167,24 @@ namespace UnitTestMdr
             {
                 var typeName = "Eze.Server.Common.Pulse.Common.Types.ServerColumnPostionLevelCacheDictionary<System.Decimal>";
                 var typeId = index.GetTypeId(typeName);
-                var typeInstances = index.GetTypeInstanceIndices(typeId);
+                var typeInstanceNdxs = index.GetTypeInstanceIndices(typeId);
+                var typeInstanceAddrs = index.GetTypeRealAddresses(typeId);
+                Array.Sort(typeInstanceNdxs);
+                Array.Sort(typeInstanceAddrs);
+
+                string path = testFolder + @"\tests" + Path.DirectorySeparatorChar + "instances.bin";
+                var testIndices = Utils.ReadUlongArray(path, out error);
+                for (int i = 0, icnt = typeInstanceNdxs.Length; i < icnt; ++i)
+                {
+                    Assert.IsTrue(typeInstanceAddrs[i] == testIndices[typeInstanceNdxs[i]]);
+                }
+
                 var referencer = new InstanceReferences(index.Instances, testFolders);
+
+
                 using (referencer)
                 {
-                    var kv = referencer.GetAncestors(typeInstances, 2, out error);
+                    var kv = referencer.GetAncestors(typeInstanceNdxs, 2, out error);
                 }
                 Assert.IsNull(error);
             }
@@ -1755,11 +1768,73 @@ namespace UnitTestMdr
 			}
 		}
 
-		#endregion roots
+        [TestMethod]
+        public void TestIndexRootsVsHeap()
+        {
+            string error;
+            Stopwatch stopWatch = new Stopwatch();
+            stopWatch.Start();
+            var index = OpenIndex(dumps[0]+".map");
+            Assert.IsNotNull(index);
+            TestContext.WriteLine(index.DumpFileName + " INDEX OPEN DURATION: " + Utils.StopAndGetDurationString(stopWatch));
+            stopWatch.Restart();
+            using (index)
+            {
+                var instances = index.Instances;
+                var rootInfo = index.GetRoots(out error);
+                var roots = rootInfo.RootAddresses;
+                var finalizer = rootInfo.FinalizerAddresses;
+                var kv = rootInfo.GetRootSearchList();
+                ValueTuple<ClrtRoot[], ulong[], ClrtRoot[], ulong[]> GetRootObjectSearchList()
+                List<ulong> notFound = new List<ulong>();
+                for(int i = 0, icnt = finalizer.Length; i < icnt; ++i)
+                {
+                    var addr = finalizer[i];
+                    var ndx = Utils.AddressSearch(instances, addr);
+                    if (ndx < 0) notFound.Add(Utils.RealAddress(addr));
+                }
 
-		#region disassemble
+                for (int i = 0, icnt = roots.Length; i < icnt; ++i)
+                {
+                    var addr = roots[i];
+                    var ndx = Utils.AddressSearch(instances, addr);
+                    if (ndx < 0) notFound.Add(Utils.RealAddress(addr));
+                }
 
-		[TestMethod]
+                var rootAddrs = kv.Value;
+                var roorInfos = kv.Key;
+                HashSet<GCRootKind> set = new HashSet<GCRootKind>();
+                Dictionary<ClrtRoot,int> dct = new Dictionary<ClrtRoot,int>(new ClrtRootEqualityComparer());
+                for (int i = 0, icnt = notFound.Count; i < icnt; ++i)
+                {
+                    var addr = notFound[i];
+                    var ndx = Utils.AddressSearch(rootAddrs, addr);
+                    Assert.IsTrue(ndx >= 0);
+                    var rr = roorInfos[ndx];
+                    int rcnt;
+                    if (dct.TryGetValue(rr,out rcnt))
+                    {
+                        dct[rr] = rcnt + 1;
+                    }
+                    else
+                    {
+                        dct.Add(rr, 1);
+                        set.Add(ClrtRoot.GetGCRootKind(rr.RootKind));
+                    }
+                }
+
+
+                TestContext.WriteLine("INSTANCE COUNT: " + Utils.LargeNumberString(instances.Length));
+                TestContext.WriteLine("NOT FOUND COUNT: " + Utils.CountString(notFound.Count));
+            }
+        }
+
+
+        #endregion roots
+
+        #region disassemble
+
+        [TestMethod]
 		public void TestDisassemble()
 		{
 			string error = null;

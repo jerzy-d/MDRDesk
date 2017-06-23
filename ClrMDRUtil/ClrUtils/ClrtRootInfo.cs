@@ -15,7 +15,7 @@ namespace ClrMDRIndex
 	{
 		private readonly ClrtRoot[][] _roots; // rooots by Kind
 		private readonly ulong[] _rootAddresses; // unique root addresses, sorted, without finalizer
-		private readonly ulong[] _finalizerAddresses; // unique finalizer addresses, sorted, without finalizer
+		private readonly ulong[] _finalizerAddresses; // unique finalizer addresses, sorted, only finalizer
 
 		public ulong[] RootAddresses => _rootAddresses;
 		public ulong[] FinalizerAddresses => _finalizerAddresses;
@@ -137,9 +137,74 @@ namespace ClrMDRIndex
 			}
 		}
 
-		#region save/load
+        public KeyValuePair<ClrtRoot[],ulong[]> GetRootSearchList()
+        {
+            List<ClrtRoot> rootLst = new List<ClrtRoot>(1024 * 10);
+            List<ulong> addrtLst = new List<ulong>(1024 * 10);
 
-		public static bool Save(int rtm, List<ClrtRoot>[] ourRoots, Tuple<ulong[], ulong[]> rootAddrInfo, DumpFileMoniker fileMoniker, out string error)
+            for (int i = 0, icnt =_roots.Length; i < icnt; ++i)
+            {
+                var ary = _roots[i];
+                for (int j = 0, jcnt = ary.Length; j < jcnt; ++j)
+                {
+                    var r = ary[j];
+                    if (r.Address != Constants.InvalidAddress)
+                    {
+                        addrtLst.Add(Utils.RealAddress(r.Address));
+                        rootLst.Add(r);
+                    }
+                    if (r.Object != Constants.InvalidAddress)
+                    {
+                        addrtLst.Add(Utils.RealAddress(r.Object));
+                        rootLst.Add(r);
+                    }
+                }
+            }
+            var rootAry = rootLst.ToArray();
+            var addrAry = addrtLst.ToArray();
+            Array.Sort(addrAry, rootAry);
+            return new KeyValuePair<ClrtRoot[], ulong[]>(rootAry, addrAry);
+        }
+
+        public ValueTuple<ClrtRoot[], ulong[], ClrtRoot[], ulong[]> GetRootObjectSearchList()
+        {
+            List<ClrtRoot> clrtAddrLst = new List<ClrtRoot>(1024 * 10);
+            List<ulong> rootAddrLst = new List<ulong>(1024 * 10);
+            List<ClrtRoot> clrtObjLst = new List<ClrtRoot>(1024 * 10);
+            List<ulong> objAddrLst = new List<ulong>(1024 * 10);
+
+            for (int i = 0, icnt = _roots.Length; i < icnt; ++i)
+            {
+                var ary = _roots[i];
+                for (int j = 0, jcnt = ary.Length; j < jcnt; ++j)
+                {
+                    var r = ary[j];
+                    if (r.Address != Constants.InvalidAddress)
+                    {
+                        rootAddrLst.Add(Utils.RealAddress(r.Address));
+                        clrtAddrLst.Add(r);
+                    }
+                    if (r.Object != Constants.InvalidAddress)
+                    {
+                        objAddrLst.Add(Utils.RealAddress(r.Object));
+                        clrtObjLst.Add(r);
+                    }
+                }
+            }
+            var clrtAddrLstAry = clrtAddrLst.ToArray();
+            var rootAddrLstAry = rootAddrLst.ToArray();
+            Array.Sort(rootAddrLstAry, clrtAddrLstAry);
+
+            var clrtObjLstAry = clrtObjLst.ToArray();
+            var objAddrLstAry = objAddrLst.ToArray();
+            Array.Sort(objAddrLstAry, clrtObjLstAry);
+
+            return new ValueTuple<ClrtRoot[], ulong[], ClrtRoot[], ulong[]>(clrtAddrLstAry, rootAddrLstAry, clrtObjLstAry, objAddrLstAry);
+        }
+
+        #region save/load
+
+        public static bool Save(int rtm, List<ClrtRoot>[] ourRoots, Tuple<ulong[], ulong[]> rootAddrInfo, DumpFileMoniker fileMoniker, out string error)
 		{
 			error = null;
 			BinaryWriter bw = null;
@@ -488,7 +553,28 @@ namespace ClrMDRIndex
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		public static GCRootKind GetGCRootKind(Kinds kind)
 		{
-			return (GCRootKind)((uint)kind >> 4);
+            Kinds k = (Kinds)((uint)kind & 0xFFFFFFF0);
+
+            switch (k)
+            {
+                case Kinds.StaticVar:
+                    return GCRootKind.StaticVar;
+                case Kinds.ThreadStaticVar:
+                    return GCRootKind.ThreadStaticVar;
+                case Kinds.LocalVar:
+                    return GCRootKind.LocalVar;
+                case Kinds.Strong:
+                    return GCRootKind.Strong;
+                case Kinds.Weak:
+                    return GCRootKind.Weak;
+                case Kinds.Pinning:
+                    return GCRootKind.Pinning;
+                case Kinds.Finalizer:
+                    return GCRootKind.Finalizer;
+                case Kinds.AsyncPinning:
+                    return GCRootKind.AsyncPinning;
+            }
+            throw new ArgumentException("[ClrtRoot.GetGCRootKind]");
 		}
 
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -661,4 +747,18 @@ namespace ClrMDRIndex
 		}
 	}
 
+    public class ClrtRootEqualityComparer : IEqualityComparer<ClrtRoot>
+    {
+        public bool Equals(ClrtRoot r1, ClrtRoot r2)
+        {
+            if (Utils.RealAddress(r1.Object) == Utils.RealAddress(r2.Object))
+                return Utils.RealAddress(r1.Address) == Utils.RealAddress(r2.Address);
+            return false;
+        }
+
+        public int GetHashCode(ClrtRoot r)
+        {
+            return Utils.RealAddress(r.Object).GetHashCode() ^ Utils.RealAddress(r.Address).GetHashCode() ^ 17;
+        }
+    }
 }
