@@ -172,6 +172,12 @@ namespace ClrMDRIndex
 		public const string MapFieldParentOffsetsFilePostfix = ".FIELDPARENTOFFSETS[0].map";
 		public const string MapFieldParentInstancesPostfix = ".FIELDPARENTINSTANCES[0].map";
 
+		public const string MapRefFwdDataFilePostfix = ".REFFWDDATA[0].bin";
+		public const string MapRefFwdOffsetsFilePostfix = ".REFFWDOFFSETS[0].bin";
+		public const string MapFwdRefsFilePostfix = ".FWDREFS[0].bin";
+		public const string MapRefBwdOffsetsFilePostfix = ".REFBWDOFFSETS[0].bin";
+		public const string MapBwdRefsFilePostfix = ".BWDREFS[0].map";
+
 		// TODO JRD -- new below, delete old field refs files above
 
 		// new stuff ////////////////////////////////////////////////////////////////////////////////////////////////////////////

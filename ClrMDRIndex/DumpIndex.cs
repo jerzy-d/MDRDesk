@@ -89,7 +89,8 @@ namespace ClrMDRIndex
 
 		private ClrtRootInfo _roots;
 
-		public ulong[] RootAddresses => _roots.RootAddresses;
+		public ulong[] RootObjects => _roots.RootObjects;
+
 		public ulong[] FinalizerAddresses => _roots.FinalizerAddresses;
 
 		private IndexProxy _indexProxy;

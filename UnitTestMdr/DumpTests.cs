@@ -4454,14 +4454,21 @@ namespace UnitTestMdr
         public void TestRefProcessing3()
         {
             string outFolderPath = null;
-            string[] dumps = new string[]
-            {
-            /*  0 */    @"D:\Jerzy\WinDbgStuff\dumps\Analytics\Highline\analyticsdump111.dlk.dmp",
+			//string[] dumps = new string[]
+			//{
+			///*  0 */    @"D:\Jerzy\WinDbgStuff\dumps\Analytics\Highline\analyticsdump111.dlk.dmp",
+			///*  1 */    @"D:\Jerzy\WinDbgStuff\dumps\TradingService\Tortoise\tradingservice_0615.dmp",
+			///*  2 */    @"D:\Jerzy\WinDbgStuff\dumps\Analytics\Baly\analytics7_1510301630.Baly.dmp",
+			///*  3 */    @"D:\Jerzy\WinDbgStuff\dumps\Analytics\BigOne\Analytics11_042015_2.BigOne.dmp"
+			//};
+			string[] dumps = new string[]
+{
+            /*  0 */    @"C:\WinDbgStuff\Dumps\Analytics\Highline\analyticsdump111.dlk.dmp",
             /*  1 */    @"D:\Jerzy\WinDbgStuff\dumps\TradingService\Tortoise\tradingservice_0615.dmp",
-            /*  2 */    @"D:\Jerzy\WinDbgStuff\dumps\Analytics\Baly\analytics7_1510301630.Baly.dmp",
-            /*  3 */    @"D:\Jerzy\WinDbgStuff\dumps\Analytics\BigOne\Analytics11_042015_2.BigOne.dmp"
-            };
-            ClrtDump dmp = GetDump(dumps[3]);
+            /*  2 */    @"C:\WinDbgStuff\Dumps\Analytics\Baly\AnalyticsLatencyDump06062016 03354291.dmp",
+            /*  3 */    @"C:\WinDbgStuff\Dumps\Analytics\BigOne\Analytics11_042015_2.Big.dmp"
+};
+			ClrtDump dmp = GetDump(dumps[0]);
             ulong[] instances = null;
             //BlockingCollection<KeyValuePair<int, ulong[]>> queue = null;
             Thread oThread = null;
@@ -4471,127 +4478,124 @@ namespace UnitTestMdr
             stopWatch.Start();
             totStopWatch.Start();
             TestContext.WriteLine("DUMP PATH: " + dmp.DumpPath);
-            TestContext.WriteLine(dmp.DumpFileName + " size: " + Utils.LargeNumberString(dmp.DumpSize()) + ", created: " + Utils.DateTimeString(dmp.DumpCreationTime()) + ", last written: " + Utils.DateTimeString(dmp.DumpLastWriteTime()));
+            TestContext.WriteLine(dmp.DumpFileName + " size: " + Utils.LargeNumberString(dmp.DumpSize()));
             TestContext.WriteLine("DUMP OPEN DURATION: " + Utils.StopAndGetDurationStringAndRestart(stopWatch));
             int buffer_size = 1024;
             ulong[] buffer = new ulong[buffer_size];
+			Scullion bld = null;
 
-            using (dmp)
-            {
-                var heap = dmp.Heap;
-                try
-                {
-                    outFolderPath = Path.GetDirectoryName(dmp.DumpPath) + Path.DirectorySeparatorChar + "tests";
-                    if (!Directory.Exists(outFolderPath))
-                    {
-                        Directory.CreateDirectory(outFolderPath);
-                    }
-                    bw = new BinaryWriter(File.Open(outFolderPath + @"\instances.bin", FileMode.Create));
-                    bw.Write((int)0);
-                    int acount = 0;
-                    var segs = heap.Segments;
-                    for (int segNdx = 0, icnt = segs.Count; segNdx < icnt; ++segNdx)
-                    {
-                        var seg = segs[segNdx];
-                        ulong addr = seg.FirstObject;
-                        while (addr != 0ul)
-                        {
-                            var clrType = heap.GetObjectType(addr);
-                            if (clrType == null) goto NEXT_OBJECT;
+			using (dmp)
+			{
+				var heap = dmp.Heap;
+				try
+				{
+					outFolderPath = Path.GetDirectoryName(dmp.DumpPath) + Path.DirectorySeparatorChar + "tests";
+					if (!Directory.Exists(outFolderPath))
+					{
+						Directory.CreateDirectory(outFolderPath);
+					}
+					bw = new BinaryWriter(File.Open(outFolderPath + @"\instances.bin", FileMode.Create));
+					bw.Write((int)0);
+					int acount = 0;
+					var segs = heap.Segments;
+					for (int segNdx = 0, icnt = segs.Count; segNdx < icnt; ++segNdx)
+					{
+						var seg = segs[segNdx];
+						ulong addr = seg.FirstObject;
+						while (addr != 0ul)
+						{
+							var clrType = heap.GetObjectType(addr);
+							if (clrType == null) goto NEXT_OBJECT;
 
-                            bw.Write(addr);
-                            ++acount;
+							bw.Write(addr);
+							++acount;
 
-                            NEXT_OBJECT:
-                            addr = seg.NextObject(addr);
-                        }
-                    }
-                    bw.Seek(0, SeekOrigin.Begin);
-                    bw.Write(acount);
-                }
-                catch (Exception ex)
-                {
-                    Assert.IsTrue(false, ex.ToString());
-                }
-                finally
-                {
-                    bw?.Close();
-                    bw = null;
-                }
+							NEXT_OBJECT:
+							addr = seg.NextObject(addr);
+						}
+					}
+					bw.Seek(0, SeekOrigin.Begin);
+					bw.Write(acount);
+				}
+				catch (Exception ex)
+				{
+					Assert.IsTrue(false, ex.ToString());
+				}
+				finally
+				{
+					bw?.Close();
+					bw = null;
+				}
 
-                TestContext.WriteLine("COLLECTING INSTANCES DURATION: " + Utils.StopAndGetDurationStringAndRestart(stopWatch));
+				TestContext.WriteLine("COLLECTING INSTANCES DURATION: " + Utils.StopAndGetDurationStringAndRestart(stopWatch));
 
-                string error;
-                instances = Utils.ReadUlongArray(outFolderPath + @"\instances.bin", out error);
-                bw = new BinaryWriter(File.Open(outFolderPath + @"\refsdata.bin", FileMode.Create));
+				string error;
+				instances = Utils.ReadUlongArray(outFolderPath + @"\instances.bin", out error);
+				//bw = new BinaryWriter(File.Open(outFolderPath + @"\refsdata.bin", FileMode.Create));
 
 
-                TestContext.WriteLine("INSTANCE COUNT: " + Utils.CountString(instances.Length) + " READING INSTANCES DURATION: " + Utils.StopAndGetDurationStringAndRestart(stopWatch));
+				TestContext.WriteLine("INSTANCE COUNT: " + Utils.CountString(instances.Length) + " READING INSTANCES DURATION: " + Utils.StopAndGetDurationStringAndRestart(stopWatch));
 
-                var fieldAddrOffsetList = new List<ulong>(64);
-                for (int i = 0, icnt = instances.Length; i < icnt; ++i)
-                {
-                    var addr = instances[i];
-                    var clrType = heap.GetObjectType(addr);
-                    Assert.IsNotNull(clrType);
-                    //if (clrType.Name== "Eze.Server.Common.Pulse.Common.Types.ServerColumnPostionLevelCacheDictionary<System.Decimal>")
-                    //{
-                    //    int a = 1;
-                    //}
-                    if (IsExludedType(clrType.Name))
-                    {
-                        bw.Write((int)0);
-                        continue;
-                    }
+				//    var fieldAddrOffsetList = new List<ulong>(64);
+				//    for (int i = 0, icnt = instances.Length; i < icnt; ++i)
+				//    {
+				//        var addr = instances[i];
+				//        var clrType = heap.GetObjectType(addr);
+				//        Assert.IsNotNull(clrType);
+				//        //if (clrType.Name== "Eze.Server.Common.Pulse.Common.Types.ServerColumnPostionLevelCacheDictionary<System.Decimal>")
+				//        //{
+				//        //    int a = 1;
+				//        //}
+				//        if (IsExludedType(clrType.Name))
+				//        {
+				//            bw.Write((int)0);
+				//            continue;
+				//        }
 
-                    fieldAddrOffsetList.Clear();
-                    clrType.EnumerateRefsOfObjectCarefully(addr, (address, off) =>
-                    {
-                        fieldAddrOffsetList.Add(address);
-                    });
-                    if (fieldAddrOffsetList.Count < 1)
-                    {
-                        bw.Write((int)0);
-                        continue;
-                    }
-                    bw.Write(fieldAddrOffsetList.Count + 1);
-                    bw.Write(addr);
-                    fieldAddrOffsetList.Sort();
-                    for (int j = 0, jcnt = fieldAddrOffsetList.Count; j < jcnt; ++j)
-                    {
-                        ulong childAddr = fieldAddrOffsetList[j];
-                        //if (childAddr == 0x000000008027cd20 || childAddr == 0x000000008027e5b8)
-                        //{
-                        //    int a = 1;
-                        //}
-                        bw.Write(childAddr);
-                    }
-                }
-            }
-            bw.Close();
-            bw = null;
-            TestContext.WriteLine("SAVING REFERENCE DATA DURATION: " + Utils.StopAndGetDurationStringAndRestart(stopWatch));
+				//        fieldAddrOffsetList.Clear();
+				//        clrType.EnumerateRefsOfObjectCarefully(addr, (address, off) =>
+				//        {
+				//            fieldAddrOffsetList.Add(address);
+				//        });
+				//        if (fieldAddrOffsetList.Count < 1)
+				//        {
+				//            bw.Write((int)0);
+				//            continue;
+				//        }
+				//        bw.Write(fieldAddrOffsetList.Count + 1);
+				//        bw.Write(addr);
+				//        fieldAddrOffsetList.Sort();
+				//        for (int j = 0, jcnt = fieldAddrOffsetList.Count; j < jcnt; ++j)
+				//        {
+				//            ulong childAddr = fieldAddrOffsetList[j];
+				//            bw.Write(childAddr);
+				//        }
+				//    }
+				//}
+				//bw.Close();
+				//bw = null;
 
-            Scullion bld = new Scullion(outFolderPath,
-                                        instances,
-                                        @"instances.bin",
-                                        @"refsdata.bin",
-                                        @"fwdrefsoffsets.bin",
-                                        @"fwdrefs.bin",
-                                        @"bwdrefsoffsets.bin",
-                                        @"bwdrefs.bin"
-                                        );
+				bld = new Scullion(
+											instances,
+											outFolderPath + @"\refsdata.bin",
+											outFolderPath + @"\fwdrefsoffsets.bin",
+											outFolderPath + @"\fwdrefs.bin",
+											outFolderPath + @"\bwdrefsoffsets.bin",
+											outFolderPath + @"\bwdrefs.bin",
+											null);
 
-            oThread = new Thread(new ThreadStart(bld.BuildReferences));
-            oThread.Start();
+				bld.CreateForwardReferences(heap, out error);
 
-            oThread.Join();
+				TestContext.WriteLine("SAVING REFERENCE DATA DURATION: " + Utils.StopAndGetDurationStringAndRestart(stopWatch));
+
+				oThread = new Thread(new ThreadStart(bld.BuildReferences));
+				oThread.Start();
+
+				oThread.Join();
+			}
 
             TestContext.WriteLine("REFLAG COUNT: " + Utils.CountString(bld.GetReflagCount()));
             TestContext.WriteLine("NOTFOUND COUNT: " + Utils.CountString(bld.GetNotFoundCount()));
-            KeyValuePair<int, int> reversedMinmax = bld.GetReversedMinMax();
-            TestContext.WriteLine("REVERSED MINMAX: " + Utils.CountString(reversedMinmax.Key) + " - " + Utils.CountString(reversedMinmax.Value));
-
             TestContext.WriteLine("BUILDING REFERENCES DURATION: " + Utils.StopAndGetDurationString(stopWatch));
             TestContext.WriteLine("TOTAL DURATION: " + Utils.StopAndGetDurationString(totStopWatch));
 

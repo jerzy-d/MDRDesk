@@ -58,7 +58,45 @@ namespace ClrMDRIndex
             }
         }
 
-        public KeyValuePair<IndexNode[], int> GetAncestors(int[] instanceNdxs, int maxLevel, out string error, ReferenceType refType = ReferenceType.Ancestors | ReferenceType.All)
+		public ValueTuple<bool,bool> TestOffsets()
+		{
+			long[] fwdoffsets = GetOffsets(RefFile.FwdOffsets);
+			long[] bwdoffsets = GetOffsets(RefFile.BwdOffsets);
+			BinaryReader fwdbr = GetReader(RefFile.FwdRefs);
+			BinaryReader bwdbr = GetReader(RefFile.BwdRefs);
+
+			if (fwdoffsets.Length != bwdoffsets.Length) return new ValueTuple<bool, bool>(false, false);
+			bool b1 = true, b2 = true;
+			int ref1 = -1, ref2 = -1;
+			int parent1 = -1, parent2 = -1;
+			for (int i= 0, icnt = fwdoffsets.Length-1; i < icnt; ++i)
+			{
+				if (i == 31691)
+				{
+					ref1 = ReadReference(fwdbr,fwdoffsets[i]);
+				}
+				if (i == 31825)
+				{
+					ref2 = ReadReference(fwdbr, fwdoffsets[i]);
+				}
+				if (i == ref1)
+				{
+					parent1 = ReadReference(bwdbr, fwdoffsets[i]);
+				}
+				if (i == ref2)
+				{
+					parent2 = ReadReference(bwdbr, fwdoffsets[i]);
+				}
+				int cnt1 = ReferenceCount(fwdoffsets[i], fwdoffsets[i + 1]);
+				int cnt2 = ReferenceCount(bwdoffsets[i], bwdoffsets[i + 1]);
+				if (cnt1 != cnt2) b1 = false;
+				if (fwdoffsets[i] != bwdoffsets[i]) b2 = false;
+			}
+			return new ValueTuple<bool, bool>(b1, b2);
+
+		}
+
+		public KeyValuePair<IndexNode[], int> GetAncestors(int[] instanceNdxs, int maxLevel, out string error, ReferenceType refType = ReferenceType.Ancestors | ReferenceType.All)
         {
             error = null;
             try
@@ -128,7 +166,13 @@ namespace ClrMDRIndex
             return refs;
         }
 
-        private IndexNode[] ReadReferences(BinaryReader br, long offset, int count, int level)
+		private int ReadReference(BinaryReader br, long offset)
+		{
+			br.BaseStream.Seek(offset, SeekOrigin.Begin);
+			return br.ReadInt32();
+		}
+
+		private IndexNode[] ReadReferences(BinaryReader br, long offset, int count, int level)
         {
             IndexNode[] refs = new IndexNode[count];
             br.BaseStream.Seek(offset, SeekOrigin.Begin);

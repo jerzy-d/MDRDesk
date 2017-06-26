@@ -114,7 +114,9 @@ namespace ClrMDRIndex
 						{
 							return false;
 						}
-							
+						
+
+
 						// threads and blocking objects
 						//
 						extraWorker = new Thread(GetThreadsInfos);
@@ -144,7 +146,7 @@ namespace ClrMDRIndex
 							return false;
 						}
 
-						// build instance reference map
+						// save index data
 						//
 						progress?.Report(runtimeIndexHeader + "Saving data...");
 
@@ -208,6 +210,175 @@ namespace ClrMDRIndex
 				}
 			}
 		}
+
+
+		public bool CreateDumpIndex2(Version version, IProgress<string> progress, out string indexPath, out string error)
+		{
+			error = null;
+			indexPath = _fileMoniker.MapFolder;
+			var clrtDump = new ClrtDump(DumpPath);
+			if (!clrtDump.Init(out error)) return false;
+			_errors = new ConcurrentBag<string>[clrtDump.RuntimeCount];
+			Thread extraWorker = null;
+			ClrtDump dumpClone = clrtDump.Clone(out error);
+			DateTime indexingStart = DateTime.UtcNow;
+
+			using (clrtDump)
+			{
+				try
+				{
+					if (DumpFileMoniker.GetAndCreateMapFolders(DumpPath, out error) == null) return false;
+					indexPath = IndexFolder;
+
+					// indexing
+					//
+					if (!GetPrerequisites(clrtDump, progress, out _stringIdDcts, out error)) return false;
+					if (!GetTargetModuleInfos(clrtDump, progress, out error)) return false;
+
+					for (int r = 0, rcnt = clrtDump.RuntimeCount; r < rcnt; ++r)
+					{
+						_currentRuntimeIndex = r;
+						string runtimeIndexHeader = Utils.RuntimeStringHeader(r);
+						clrtDump.SetRuntime(r);
+						ClrRuntime runtime = clrtDump.Runtime;
+						ClrHeap heap = runtime.Heap;
+						ConcurrentBag<string> errors = new ConcurrentBag<string>();
+						_errors[r] = errors;
+						var strIds = _stringIdDcts[r];
+
+						string[] typeNames = null;
+						ulong[] addresses = null;
+						int[] typeIds = null;
+
+						// get heap address count
+						//
+						progress?.Report(runtimeIndexHeader + "Getting instance count...");
+						var addrCount = DumpIndexer.GetHeapAddressCount(heap);
+						progress?.Report(runtimeIndexHeader + "Instance count: " + Utils.CountString(addrCount));
+
+						// get type names
+						//
+						progress?.Report(runtimeIndexHeader + "Getting type names...");
+						typeNames = DumpIndexer.GetTypeNames(heap, out error);
+						Debug.Assert(error == null);
+
+						// get roots
+						//
+						progress?.Report(runtimeIndexHeader + "Getting roots...");
+						(ulong[] rootObjectAddrs, ulong[] finalizerAddrs) = ClrtRootInfo.SetupRootAddresses(r, runtime, heap, typeNames, strIds, _fileMoniker, out error);
+						Debug.Assert(error == null);
+
+						// get addresses and types
+						//
+						progress?.Report(runtimeIndexHeader + "Getting addresses and types...");
+						addresses = new ulong[addrCount];
+						typeIds = new int[addrCount];
+						if (!GetAddressesAndTypes(heap, addresses, typeIds, typeNames, out error))
+						{
+							return false;
+						}
+
+						// setting root information
+						//
+						progress?.Report(runtimeIndexHeader + "Setting root information...");
+						for (int i = 0, icnt = addresses.Length; i < icnt; ++i)
+						{
+							ulong addr = addresses[i];
+							var ndx = Utils.AddressSearch(rootObjectAddrs, addr);
+							if (ndx >= 0)
+								addresses[i] = Utils.SetAsRooted(addr);
+							ndx = Utils.AddressSearch(finalizerAddrs, addr);
+							if (ndx >= 0)
+								addresses[i] = Utils.SetAsFinalizer(addr);
+						}
+						rootObjectAddrs = null;
+						finalizerAddrs = null;
+
+						// threads and blocking objects
+						//
+						extraWorker = new Thread(GetThreadsInfos);
+						extraWorker.Start(new Tuple<ClrtDump, ulong[], int[], string[]>(dumpClone, addresses, typeIds, typeNames));
+
+						progress?.Report(runtimeIndexHeader + "Getting threads, blocking objecks information...");
+
+						// field dependencies
+						//
+						progress?.Report(runtimeIndexHeader + "Creating instance reference data...");
+						if (!Setup.SkipReferences)
+						{
+
+							Scullion bld = new Scullion(addresses,
+								_fileMoniker.GetFilePath(r, Constants.MapRefFwdDataFilePostfix),
+								_fileMoniker.GetFilePath(r, Constants.MapRefFwdOffsetsFilePostfix),
+								_fileMoniker.GetFilePath(r, Constants.MapFwdRefsFilePostfix),
+								_fileMoniker.GetFilePath(r, Constants.MapRefBwdOffsetsFilePostfix),
+								_fileMoniker.GetFilePath(r, Constants.MapBwdRefsFilePostfix), 
+								progress);
+							
+						}
+
+						progress?.Report(runtimeIndexHeader + "Building type instance map...");
+						if (!BuildTypeInstanceMap(r, typeIds, out error))
+						{
+							AddError(r, "BuildTypeInstanceMap failed." + Environment.NewLine + error);
+							return false;
+						}
+
+						// save index data
+						//
+						progress?.Report(runtimeIndexHeader + "Saving data...");
+
+						var path = _fileMoniker.GetFilePath(r, Constants.MapInstanceTypesFilePostfix);
+						Utils.WriteIntArray(path, typeIds, out error);
+						// save type names
+						path = _fileMoniker.GetFilePath(r, Constants.TxtTypeNamesFilePostfix);
+						Utils.WriteStringList(path, typeNames, out error);
+						{
+							var reversedNames = Utils.ReverseTypeNames(typeNames);
+							path = _fileMoniker.GetFilePath(r, Constants.TxtReversedTypeNamesFilePostfix);
+							Utils.WriteStringList(path, reversedNames, out error);
+						}
+						// save string ids
+						//
+						path = _fileMoniker.GetFilePath(r, Constants.TxtCommonStringIdsPostfix);
+						if (!strIds.DumpInIdOrder(path, out error))
+						{
+							AddError(_currentRuntimeIndex, "StringIdDct.DumpInIdOrder failed." + Environment.NewLine + error);
+						}
+
+						progress?.Report("Waiting for thread info worker...");
+						extraWorker.Join();
+
+						path = _fileMoniker.GetFilePath(r, Constants.MapInstancesFilePostfix);
+						Utils.WriteUlongArray(path, addresses, out error);
+
+						runtime.Flush();
+						heap = null;
+					}
+
+					var durationStr = Utils.DurationString(DateTime.UtcNow - indexingStart);
+					DumpIndexInfo(version, clrtDump, durationStr);
+					progress?.Report("Indexing done, total duration: " + durationStr);
+					return true;
+				}
+				catch (Exception ex)
+				{
+					error = Utils.GetExceptionErrorString(ex);
+					AddError(_currentRuntimeIndex, "Exception in CreateDumpIndex." + Environment.NewLine + error);
+					return false;
+				}
+				finally
+				{
+					dumpClone?.Dispose();
+					DumpErrors();
+					GCSettings.LargeObjectHeapCompactionMode = GCLargeObjectHeapCompactionMode.CompactOnce;
+					GC.Collect();
+				}
+			}
+		}
+
+
+
 
 		/// <summary>
 		/// Save instances by type lookup.

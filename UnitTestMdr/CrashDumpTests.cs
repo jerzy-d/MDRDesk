@@ -1937,24 +1937,6 @@ namespace UnitTestMdr
 			} // using dump
 		}
 
-		[TestMethod]
-		public void TestRootInfo()
-		{
-			string error;
-			string dumpPath = @"D:\Jerzy\WinDbgStuff\dumps\Analytics\Highline\analyticsdump111.dlk.dmp";
-			var dmp = OpenDump(dumpPath);
-
-			using (dmp)
-			{
-				var heap = dmp.Heap;
-				var runtm = dmp.Runtimes[0];
-				ulong[] instances = DumpIndexer.GetHeapAddressesCount(heap);
-				var result = ClrtRootInfo.DumpRootInfo(dumpPath, runtm, heap, instances, out error);
-				Assert.IsTrue(result);
-				Assert.IsNull(error);
-			} // using dump
-		}
-
 		private bool DumpReferences(string path, SortedDictionary<ulong, List<ulong>> refs, ulong[] instances,
 			out string error)
 		{

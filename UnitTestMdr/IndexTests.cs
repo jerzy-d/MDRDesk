@@ -24,17 +24,24 @@ namespace UnitTestMdr
 	public class IndexTests
 	{
 
-        string[] dumps = new string[]
-{
-            /*  0 */    @"D:\Jerzy\WinDbgStuff\dumps\Analytics\Highline\analyticsdump111.dlk.dmp",
-            /*  1 */    @"D:\Jerzy\WinDbgStuff\dumps\TradingService\Tortoise\tradingservice_0615.dmp",
-            /*  2 */    @"D:\Jerzy\WinDbgStuff\dumps\Analytics\Baly\analytics7_1510301630.Baly.dmp",
-            /*  3 */    @"D:\Jerzy\WinDbgStuff\dumps\Analytics\BigOne\Analytics11_042015_2.BigOne.dmp"
-}       ;
-        
-        #region test context/initialization
+//        string[] dumps = new string[]
+//{
+//            /*  0 */    @"D:\Jerzy\WinDbgStuff\dumps\Analytics\Highline\analyticsdump111.dlk.dmp",
+//            /*  1 */    @"D:\Jerzy\WinDbgStuff\dumps\TradingService\Tortoise\tradingservice_0615.dmp",
+//            /*  2 */    @"D:\Jerzy\WinDbgStuff\dumps\Analytics\Baly\analytics7_1510301630.Baly.dmp",
+//            /*  3 */    @"D:\Jerzy\WinDbgStuff\dumps\Analytics\BigOne\Analytics11_042015_2.BigOne.dmp"
+//}       ;
 
-        private TestContext testContextInstance;
+		string[] dumps = new string[]
+{
+            /*  0 */    @"C:\WinDbgStuff\Dumps\Analytics\Highline\analyticsdump111.dlk.dmp",
+            /*  1 */    @"D:\Jerzy\WinDbgStuff\dumps\TradingService\Tortoise\tradingservice_0615.dmp",
+            /*  2 */    @"C:\WinDbgStuff\Dumps\Analytics\Baly\AnalyticsLatencyDump06062016 03354291.dmp",
+            /*  3 */    @"C:\WinDbgStuff\Dumps\Analytics\BigOne\Analytics11_042015_2.Big.dmp"
+};
+		#region test context/initialization
+
+		private TestContext testContextInstance;
 
 		/// <summary>
 		///Gets or sets the test context which provides
@@ -1192,7 +1199,54 @@ namespace UnitTestMdr
             Assert.IsNull(error, error);
         }
 
-        [TestMethod]
+
+		[TestMethod]
+		public void TestReferences1()
+		{
+			string error = null;
+			Stopwatch stopWatch = new Stopwatch();
+			stopWatch.Start();
+			string dumpPath = dumps[0];
+			var testFolder = Path.GetDirectoryName(dumpPath);
+
+			//FwdOffsets,
+			//FwdRefs,
+			//BwdOffsets,
+			//BwdRefs
+
+			string[] testFolders = new string[]
+			{
+				testFolder + @"\tests" + Path.DirectorySeparatorChar + "fwdrefsoffsets.bin",
+				testFolder + @"\tests" + Path.DirectorySeparatorChar + "fwdrefs.bin",
+				testFolder + @"\tests" + Path.DirectorySeparatorChar + "bwdrefsoffsets.bin",
+				testFolder + @"\tests" + Path.DirectorySeparatorChar + "bwdrefs.bin",
+			};
+			string indexPath = @"C:\WinDbgStuff\Dumps\Analytics\Highline\analyticsdump111.dlk.dmp.map";
+
+			var typeName = "Eze.Server.Common.Pulse.Common.Types.ServerColumnPostionLevelCacheDictionary<System.Decimal>";
+			ulong[] instances = Utils.ReadUlongArray(indexPath + @"\analyticsdump111.dlk.dmp.`INSTANCES[0].bin", out error);
+			int[] types = Utils.ReadIntArray(indexPath + @"\analyticsdump111.dlk.dmp.`INSTANCETYPES[0].bin", out error);
+			string[] typeNames = Utils.GetStringListFromFile(indexPath + @"\analyticsdump111.dlk.dmp.`TYPENAMES[0].txt", out error);
+			int typeId = Array.BinarySearch(typeNames, typeName, StringComparer.Ordinal);
+			Assert.IsFalse(typeId < 0);
+			var lst = new List<int>(1024);
+			for(int i = 0, icnt = instances.Length; i < icnt; ++i)
+			{
+				if (typeId == types[i]) lst.Add(i);
+			}
+			lst.Sort();
+
+			var referencer = new InstanceReferences(instances, testFolders);
+			(bool countsSame, bool offse3tsSame) = referencer.TestOffsets();
+			using (referencer)
+			{
+				var kv = referencer.GetAncestors(lst.ToArray(), 2, out error);
+			}
+			Assert.IsNull(error);
+
+		}
+
+		[TestMethod]
 		public void TestReferences()
 		{
 			string error = null;
@@ -1574,7 +1628,7 @@ namespace UnitTestMdr
 			stopWatch.Restart();
 			using (index)
 			{
-				var rootAddresses = index.RootAddresses;
+				var rootAddresses = index.RootObjects;
 				Assert.IsTrue(Utils.IsSorted(rootAddresses));
 				var finalizerAddresses = index.FinalizerAddresses;
 				Assert.IsTrue(Utils.IsSorted(finalizerAddresses));
@@ -1768,13 +1822,19 @@ namespace UnitTestMdr
 			}
 		}
 
+		/// <summary>
+		/// Find roots, finalizer addresses in heap.
+		/// </summary>
         [TestMethod]
         public void TestIndexRootsVsHeap()
         {
             string error;
             Stopwatch stopWatch = new Stopwatch();
             stopWatch.Start();
-            var index = OpenIndex(dumps[0]+".map");
+			var dumpPath = dumps[0];
+			var index = OpenIndex(dumpPath+".map");
+			TestContext.WriteLine("DUMP: " + dumpPath);
+
             Assert.IsNotNull(index);
             TestContext.WriteLine(index.DumpFileName + " INDEX OPEN DURATION: " + Utils.StopAndGetDurationString(stopWatch));
             stopWatch.Restart();
@@ -1783,58 +1843,77 @@ namespace UnitTestMdr
                 var instances = index.Instances;
                 var rootInfo = index.GetRoots(out error);
                 var roots = rootInfo.RootAddresses;
+				Assert.IsTrue(Utils.AreAddressesSorted(roots));
                 var finalizer = rootInfo.FinalizerAddresses;
-                var kv = rootInfo.GetRootSearchList();
-                ValueTuple<ClrtRoot[], ulong[], ClrtRoot[], ulong[]> GetRootObjectSearchList()
-                List<ulong> notFound = new List<ulong>();
-                for(int i = 0, icnt = finalizer.Length; i < icnt; ++i)
-                {
-                    var addr = finalizer[i];
-                    var ndx = Utils.AddressSearch(instances, addr);
-                    if (ndx < 0) notFound.Add(Utils.RealAddress(addr));
-                }
+				Assert.IsTrue(Utils.AreAddressesSorted(finalizer));
 
-                for (int i = 0, icnt = roots.Length; i < icnt; ++i)
-                {
-                    var addr = roots[i];
-                    var ndx = Utils.AddressSearch(instances, addr);
-                    if (ndx < 0) notFound.Add(Utils.RealAddress(addr));
-                }
+				int notFoundFin = NotFoundCount(instances, finalizer);
+				int notFoundOther = NotFoundCount(instances, roots);
 
-                var rootAddrs = kv.Value;
-                var roorInfos = kv.Key;
-                HashSet<GCRootKind> set = new HashSet<GCRootKind>();
-                Dictionary<ClrtRoot,int> dct = new Dictionary<ClrtRoot,int>(new ClrtRootEqualityComparer());
-                for (int i = 0, icnt = notFound.Count; i < icnt; ++i)
-                {
-                    var addr = notFound[i];
-                    var ndx = Utils.AddressSearch(rootAddrs, addr);
-                    Assert.IsTrue(ndx >= 0);
-                    var rr = roorInfos[ndx];
-                    int rcnt;
-                    if (dct.TryGetValue(rr,out rcnt))
-                    {
-                        dct[rr] = rcnt + 1;
-                    }
-                    else
-                    {
-                        dct.Add(rr, 1);
-                        set.Add(ClrtRoot.GetGCRootKind(rr.RootKind));
-                    }
-                }
+				(ClrtRoot[] rootRoots, ulong[] rootRootAddrs, ClrtRoot[] rootObjects, ulong[] rootObjAddrs) = rootInfo.GetRootObjectSearchList();
+				var rootRootsDct = new Dictionary<GCRootKind, int>(1024);
+				GetNotFountCounts(instances, rootRoots, rootRootAddrs, rootRootsDct);
+				var rootObjsDct = new Dictionary<GCRootKind, int>(1024);
+				GetNotFountCounts(instances, rootObjects, rootObjAddrs, rootObjsDct);
 
 
-                TestContext.WriteLine("INSTANCE COUNT: " + Utils.LargeNumberString(instances.Length));
-                TestContext.WriteLine("NOT FOUND COUNT: " + Utils.CountString(notFound.Count));
-            }
+				TestContext.WriteLine("INSTANCE COUNT: " + Utils.LargeNumberString(instances.Length));
+				TestContext.WriteLine("NOT FOUND FINALIZER COUNT: " + Utils.CountString(notFoundFin) + " out of " + Utils.CountString(finalizer.Length));
+				TestContext.WriteLine("NOT FOUND ROOTS COUNT: " + Utils.CountString(notFoundOther) + " out of " + Utils.CountString(roots.Length));
+
+				TestContext.WriteLine("NOT FOUND ROOTS  " + Utils.CountString(rootRootAddrs.Length));
+				foreach(var kindCount in rootRootsDct)
+				{
+					TestContext.WriteLine(kindCount.Key.ToString() + "   " + kindCount.Value);
+				}
+				TestContext.WriteLine("NOT FOUND OBJECTS  " + Utils.CountString(rootObjAddrs.Length));
+				foreach (var kindCount in rootObjsDct)
+				{
+					TestContext.WriteLine(kindCount.Key.ToString() + "   " + kindCount.Value);
+				}
+			}
         }
 
+		int NotFoundCount(ulong[] instances, ulong[] addrs)
+		{
+			int notFound = 0;
+			for (int i = 0, icnt = addrs.Length; i < icnt; ++i)
+			{
+				var addr = addrs[i];
+				var ndx = Utils.AddressSearch(instances, addr);
+				if (ndx < 0) ++notFound;
+			}
+			return notFound;
+		}
 
-        #endregion roots
+		void GetNotFountCounts(ulong[] instances, ClrtRoot[] roots, ulong[] addrs, Dictionary<GCRootKind, int> dct)
+		{
+			for (int i = 0, icnt = addrs.Length; i < icnt; ++i)
+			{
+				var addr = addrs[i];
+				var ndx = Utils.AddressSearch(instances, addr);
+				if (ndx < 0)
+				{
+					GCRootKind k = ClrtRoot.GetGCRootKind(roots[i].RootKind);
 
-        #region disassemble
+					int cnt;
+					if (dct.TryGetValue(k, out cnt))
+					{
+						dct[k] = cnt + 1;
+					}
+					else
+					{
+						dct.Add(k, 1);
+					}
+				}
+			}
+		}
 
-        [TestMethod]
+		#endregion roots
+
+		#region disassemble
+
+		[TestMethod]
 		public void TestDisassemble()
 		{
 			string error = null;

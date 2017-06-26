@@ -345,15 +345,21 @@ namespace ClrMDRIndex
             Array.Sort(addresses, new AddressCmpAcs());
         }
 
-        /// <summary>
-        /// Binary search to find an index of the address in a ulong array.
-        /// </summary>
-        /// <param name="addresses">Array of ulongs.</param>
-        /// <param name="addr">Address to look for.</param>
-        /// <param name="lhs">An index to start the search, (left hand side).</param>
-        /// <param name="rhs">The last index included in the search range, (right hand side).</param>
-        /// <returns>Index of the item if found, invalid index (-1) otherwise.</returns>
-        public static int AddressSearch(ulong[] addresses, ulong addr, int lhs, int rhs)
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		public static bool SameRealAddresses(ulong a1, ulong a2)
+		{
+			return RealAddress(a1) == RealAddress(a2);
+		}
+
+		/// <summary>
+		/// Binary search to find an index of the address in a ulong array.
+		/// </summary>
+		/// <param name="addresses">Array of ulongs.</param>
+		/// <param name="addr">Address to look for.</param>
+		/// <param name="lhs">An index to start the search, (left hand side).</param>
+		/// <param name="rhs">The last index included in the search range, (right hand side).</param>
+		/// <returns>Index of the item if found, invalid index (-1) otherwise.</returns>
+		public static int AddressSearch(ulong[] addresses, ulong addr, int lhs, int rhs)
 		{
 			var cleanAddr = RealAddress(addr);
 			while (lhs <= rhs)
@@ -387,6 +393,29 @@ namespace ClrMDRIndex
 					rhs = mid - 1;
 			}
 			return Constants.InvalidIndex;
+		}
+
+		public class AddressComparison : IComparer<ulong>
+		{
+			public int Compare(ulong a, ulong b)
+			{
+				var reala = Utils.RealAddress(a);
+				var realb = Utils.RealAddress(b);
+				return reala < realb ? -1 : (reala > realb ? 1 : 0);
+			}
+		}
+
+		public class AddressEqualityComparer : IEqualityComparer<ulong>
+		{
+			public bool Equals(ulong addr1, ulong addr2)
+			{
+				return RealAddress(addr1) == RealAddress(addr2);
+			}
+
+			public int GetHashCode(ulong addr)
+			{
+				return addr.GetHashCode();
+			}
 		}
 
 		#endregion Address Handling

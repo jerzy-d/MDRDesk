@@ -363,7 +363,23 @@ namespace ClrMDRIndex
             return new ValueTuple<bool, ClrElementKind, ClrType, ClrElementKind>(isUndecided, kind, clrType.BaseType, baseKind);
         }
 
-        private static readonly string[] KnownTypes = new string[]
+		private static readonly string[] excludedTypeNames = new[]
+		{
+				"Free",
+				"System.DateTime",
+				"System.Decimal",
+				"System.Guid",
+				"System.String",
+				"System.TimeSpan",
+
+		};
+
+		public static bool IsExludedType(string typeName)
+		{
+			return Array.IndexOf(excludedTypeNames, typeName) >= 0;
+		}
+
+		private static readonly string[] KnownTypes = new string[]
         {
             "System.Collections.Generic.Dictionary<",
             "System.Collections.Generic.HashSet<",
