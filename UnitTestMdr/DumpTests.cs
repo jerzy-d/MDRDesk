@@ -4454,20 +4454,20 @@ namespace UnitTestMdr
         public void TestRefProcessing3()
         {
             string outFolderPath = null;
-			//string[] dumps = new string[]
-			//{
-			///*  0 */    @"D:\Jerzy\WinDbgStuff\dumps\Analytics\Highline\analyticsdump111.dlk.dmp",
-			///*  1 */    @"D:\Jerzy\WinDbgStuff\dumps\TradingService\Tortoise\tradingservice_0615.dmp",
-			///*  2 */    @"D:\Jerzy\WinDbgStuff\dumps\Analytics\Baly\analytics7_1510301630.Baly.dmp",
-			///*  3 */    @"D:\Jerzy\WinDbgStuff\dumps\Analytics\BigOne\Analytics11_042015_2.BigOne.dmp"
-			//};
-			string[] dumps = new string[]
-{
-            /*  0 */    @"C:\WinDbgStuff\Dumps\Analytics\Highline\analyticsdump111.dlk.dmp",
-            /*  1 */    @"D:\Jerzy\WinDbgStuff\dumps\TradingService\Tortoise\tradingservice_0615.dmp",
-            /*  2 */    @"C:\WinDbgStuff\Dumps\Analytics\Baly\AnalyticsLatencyDump06062016 03354291.dmp",
-            /*  3 */    @"C:\WinDbgStuff\Dumps\Analytics\BigOne\Analytics11_042015_2.Big.dmp"
-};
+            string[] dumps = new string[]
+            {
+			/*  0 */    @"D:\Jerzy\WinDbgStuff\dumps\Analytics\Highline\analyticsdump111.dlk.dmp",
+			/*  1 */    @"D:\Jerzy\WinDbgStuff\dumps\TradingService\Tortoise\tradingservice_0615.dmp",
+			/*  2 */    @"D:\Jerzy\WinDbgStuff\dumps\Analytics\Baly\analytics7_1510301630.Baly.dmp",
+			/*  3 */    @"D:\Jerzy\WinDbgStuff\dumps\Analytics\BigOne\Analytics11_042015_2.BigOne.dmp"
+            };
+//          string[] dumps = new string[]
+//          {
+//            /*  0 */    @"C:\WinDbgStuff\Dumps\Analytics\Highline\analyticsdump111.dlk.dmp",
+//            /*  1 */    @"D:\Jerzy\WinDbgStuff\dumps\TradingService\Tortoise\tradingservice_0615.dmp",
+//            /*  2 */    @"C:\WinDbgStuff\Dumps\Analytics\Baly\AnalyticsLatencyDump06062016 03354291.dmp",
+//            /*  3 */    @"C:\WinDbgStuff\Dumps\Analytics\BigOne\Analytics11_042015_2.Big.dmp"
+//          };
 			ClrtDump dmp = GetDump(dumps[0]);
             ulong[] instances = null;
             //BlockingCollection<KeyValuePair<int, ulong[]>> queue = null;
@@ -4581,8 +4581,9 @@ namespace UnitTestMdr
 											outFolderPath + @"\fwdrefsoffsets.bin",
 											outFolderPath + @"\fwdrefs.bin",
 											outFolderPath + @"\bwdrefsoffsets.bin",
-											outFolderPath + @"\bwdrefs.bin",
-											null);
+                                            outFolderPath + @"\bwdrefs.bin",
+                                            outFolderPath + @"\instances.bin",
+                                            null);
 
 				bld.CreateForwardReferences(heap, out error);
 

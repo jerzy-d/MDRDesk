@@ -532,12 +532,24 @@
         </Grid>
         <Grid x:Key="IndexingGrid" x:Shared="False">
             <Grid.RowDefinitions>
-                <RowDefinition Height="75*"/>
+                <RowDefinition Height="35*"/>
+                <RowDefinition Height="5"/>
+                <RowDefinition Height="20*"/>
+                <RowDefinition Height="5"/>
+                <RowDefinition Height="20*"/>
+                <RowDefinition Height="5"/>
                 <RowDefinition Height="15*"/>
             </Grid.RowDefinitions>
             <TextBox  Name="IndexingList" Grid.Row="0" VerticalAlignment="Stretch" HorizontalAlignment="Stretch" VerticalScrollBarVisibility="Auto" Margin="2,2,2,2" FontFamily="Consolas" FontSize="11">
             </TextBox>
-            <TextBox Name="IndexingInformation" v4:Grid.Row="1" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" Margin="2,2,2,2" FontFamily="Consolas" FontSize="12" Background="LightGray" IsReadOnly="True">
+            <GridSplitter Grid.Row="1" VerticalAlignment="Center" HorizontalAlignment="Stretch" Height="5" ShowsPreview="False" Background="DarkGray"></GridSplitter>
+            <TextBox  Name="IndexingThreadList" Grid.Row="2" VerticalAlignment="Stretch" HorizontalAlignment="Stretch" VerticalScrollBarVisibility="Auto" Margin="2,2,2,2" FontFamily="Consolas" FontSize="11">
+            </TextBox>
+            <GridSplitter Grid.Row="3" VerticalAlignment="Center" HorizontalAlignment="Stretch" Height="5" ShowsPreview="False" Background="DarkGray"></GridSplitter>
+            <TextBox  Name="IndexingRefsList" Grid.Row="4" VerticalAlignment="Stretch" HorizontalAlignment="Stretch" VerticalScrollBarVisibility="Auto" Margin="2,2,2,2" FontFamily="Consolas" FontSize="11">
+            </TextBox>
+            <GridSplitter Grid.Row="5" VerticalAlignment="Center" HorizontalAlignment="Stretch" Height="5" ShowsPreview="False" Background="DarkGray"></GridSplitter>
+            <TextBox Name="IndexingInformation" v4:Grid.Row="6" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" Margin="2,2,2,2" FontFamily="Consolas" FontSize="12" Background="LightGray" IsReadOnly="True">
             </TextBox>
         </Grid>
         <Grid x:Key="WeakReferenceViewGrid" x:Shared="False">

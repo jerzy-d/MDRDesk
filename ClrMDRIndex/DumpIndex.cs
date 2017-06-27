@@ -59,8 +59,9 @@ namespace ClrMDRIndex
 		public KeyValuePair<string, KeyValuePair<string, int>[]>[] TypeNamespaces => _typeNamespaces;
 		public int UsedTypeCount => _displayableTypeNames.Length;
 
-		private References _references;
-		public bool HasInstanceReferences => _references != null;
+        //private References _references;
+        private InstanceReferences _instanceReferences;
+        public bool HasInstanceReferences => _instanceReferences != null;
 
 		private WeakReference<StringStats> _stringStats;
 		public WeakReference<StringStats> StringStatitics => _stringStats;
@@ -140,12 +141,18 @@ namespace ClrMDRIndex
 					return null;
 
 				}
-				if (!index.LoadInstanceReferences(out error)) return null;
+
+                if (!index.LoadInstanceData(out error)) return null;
+                if (InstanceReferences.InstanceReferenceFilesAvailable(runtimeNdx, index._fileMoniker, out error))
+                {
+                    index._instanceReferences = new InstanceReferences(index._instances, runtimeNdx, index._fileMoniker);
+                }
+
 				if (!index.InitDump(out error, progress)) return null;
 				index._indexProxy = new IndexProxy(index.Dump, index._instances, index._instanceTypes, index._typeNames,
 					index._roots, index._fileMoniker);
-				if (index._references != null)
-					index._references.SetIndexProxy(index.IndexProxy);
+				//if (index._references != null)
+				//	index._references.SetIndexProxy(index.IndexProxy);
 				return index;
 			}
 			catch (Exception ex)
@@ -155,7 +162,7 @@ namespace ClrMDRIndex
 			}
 		}
 
-		private bool LoadInstanceReferences(out string error)
+		private bool LoadInstanceData(out string error)
 		{
 			error = null;
 			try
@@ -202,16 +209,16 @@ namespace ClrMDRIndex
 					_typeNamespaces = GetTypeNamespaceOrdering(_reversedTypeNames);
 				}
 
-				// check if we indexed referrences, and load them if we did
-				//
-				{
-					string refsFilePath = _fileMoniker.GetFilePath(_currentRuntimeIndex, Constants.MapRefsObjectFieldPostfix);
-					if (File.Exists(refsFilePath))
-					{
-						_references = new References(_currentRuntimeIndex, _fileMoniker);
-						_references.Init(out error);
-					}
-				}
+				//// check if we indexed referrences, and load them if we did
+				////
+				//{
+				//	string refsFilePath = _fileMoniker.GetFilePath(_currentRuntimeIndex, Constants.MapRefsObjectFieldPostfix);
+				//	if (File.Exists(refsFilePath))
+				//	{
+				//		_references = new References(_currentRuntimeIndex, _fileMoniker);
+				//		_references.Init(out error);
+				//	}
+				//}
 
 				if (error != null) return false;
 
@@ -923,8 +930,11 @@ namespace ClrMDRIndex
 						var inst = instances[i];
 						if (!set.Add(inst)) continue;
 
-						var ancestors = _references.GetReferences(inst, References.Direction.FieldParent, References.DataSource.All, out error);
-						for (int j = 0, jcnt = ancestors.Length; j < jcnt; ++j)
+                        var ancestors = //_references.GetReferences(inst, References.Direction.FieldParent, References.DataSource.All, out error);
+                        _instanceReferences.GetReferences(inst, out error, InstanceReferences.ReferenceType.Ancestors | InstanceReferences.ReferenceType.All);
+
+
+                        for (int j = 0, jcnt = ancestors.Length; j < jcnt; ++j)
 						{
 							var ancestor = ancestors[j];
 							var typeid = _instanceTypes[ancestor];
@@ -1030,10 +1040,10 @@ namespace ClrMDRIndex
 		}
 
 
-        public KeyValuePair<IndexNode, int> GetReferenceNodes(int instNdx, References.Direction dir, References.DataSource source, out string error, int level)
-        {
-            return _references.GetReferenceNodes(instNdx, dir, source, out error, level);
-        }
+        //public KeyValuePair<IndexNode, int> GetReferenceNodes(int instNdx, References.Direction dir, References.DataSource source, out string error, int level)
+        //{
+        //    return _references.GetReferenceNodes(instNdx, dir, source, out error, level);
+        //}
 
 
         public ListingInfo GetParentReferencesReport(ulong addr, int level = Int32.MaxValue)
@@ -1046,9 +1056,12 @@ namespace ClrMDRIndex
 				return new ListingInfo(error);
 			}
 
-			KeyValuePair<IndexNode, int> result = _references.GetReferenceNodes(instNdx, References.Direction.FieldParent,
-				References.DataSource.All, out error, level);
-			if (!string.IsNullOrEmpty(error) && error[0] != Constants.InformationSymbol)
+			KeyValuePair<IndexNode, int> result = //_references.GetReferenceNodes(instNdx, References.Direction.FieldParent,References.DataSource.All, out error, level);
+
+            _instanceReferences.GetAncestors(instNdx, level, out error, InstanceReferences.ReferenceType.Ancestors | InstanceReferences.ReferenceType.All);
+
+
+            if (!string.IsNullOrEmpty(error) && error[0] != Constants.InformationSymbol)
 			{
 				return new ListingInfo(error);
 			}
@@ -1065,11 +1078,11 @@ namespace ClrMDRIndex
 
 
 
-        public KeyValuePair<IndexNode, int>[] GetReferenceNodes(ulong[] typeInstances, References.Direction  dir, References.DataSource dataSource, out string error, int level)
-        {
-            int[] indices = GetRealAddressIndices(typeInstances);
-            return _references.GetReferenceNodes(indices, References.Direction.FieldParent, References.DataSource.All, out error, level);
-        }
+        //public KeyValuePair<IndexNode, int>[] GetReferenceNodes(ulong[] typeInstances, References.Direction  dir, References.DataSource dataSource, out string error, int level)
+        //{
+        //    int[] indices = GetRealAddressIndices(typeInstances);
+        //    return _references.GetReferenceNodes(indices, References.Direction.FieldParent, References.DataSource.All, out error, level);
+        //}
 
 
         /// <summary>
@@ -1085,9 +1098,11 @@ namespace ClrMDRIndex
 			// all type instances
 			int[] typeInstances = GetTypeInstanceIndices(typeId);
 
-			KeyValuePair<IndexNode, int>[] result = _references.GetReferenceNodes(typeInstances, References.Direction.FieldParent,
-				References.DataSource.All, out error, level);
-			if (!string.IsNullOrEmpty(error) && error[0] != Constants.InformationSymbol)
+            KeyValuePair<IndexNode, int>[] result = //_references.GetReferenceNodes(typeInstances, References.Direction.FieldParent, References.DataSource.All, out error, level);
+            _instanceReferences.GetReferenceNodes(typeInstances, level, out error, InstanceReferences.ReferenceType.Ancestors | InstanceReferences.ReferenceType.All);
+
+
+            if (!string.IsNullOrEmpty(error) && error[0] != Constants.InformationSymbol)
 			{
 				return new ListingInfo(error);
 			}
@@ -1347,9 +1362,10 @@ namespace ClrMDRIndex
 				var instNdx = GetInstanceIndex(addr);
 				if (instNdx >= 0)
 				{
-					var ancestors = _references.GetReferences(instNdx, References.Direction.FieldParent, References.DataSource.All,
-						out error);
-					if (error != null && !Utils.IsInformation(error)) return null;
+                    var ancestors = //_references.GetReferences(instNdx, References.Direction.FieldParent, References.DataSource.All,out error);
+                    _instanceReferences.GetReferences(instNdx, out error, InstanceReferences.ReferenceType.Ancestors | InstanceReferences.ReferenceType.All);
+
+                    if (error != null && !Utils.IsInformation(error)) return null;
 					if (ancestors != null && ancestors.Length > 0)
 						ancestorInfos = GroupAddressesByTypesForDisplay(ancestors);
 				}

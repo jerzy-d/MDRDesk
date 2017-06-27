@@ -58,8 +58,9 @@ namespace ClrMDRIndex
 		public const string HeavyGreekCrossPadded = " \u271A "; // ✚ HEAVY GREEK CROSS		
 		public const string ReportSeparator = " \u271A "; // ✚ HEAVY GREEK CROSS		
 		public const char HeavyAsterisk = '\u2731'; // ✱ heavy asterisk		
-		public const string HeavyAsteriskPadded = " \u2731 "; // ✱  heavy asterisk		
-		public const string NamespaceSepPadded = " \u2731 "; // ✱  heavy asterisk		
+        public const string HeavyAsteriskPadded = " \u2731 "; // ✱  heavy asterisk		
+        public const string HeavyAsteriskHeader = "\u2731 "; // ✱  heavy asterisk		
+        public const string NamespaceSepPadded = " \u2731 "; // ✱  heavy asterisk		
 		public const char FancyKleeneStar = '\u2734'; // 2734 ✴ EIGHT POINTED BLACK STAR
 		public const char NonValueChar = '\u2734'; // 2734 ✴ EIGHT POINTED BLACK STAR
 		public const string NonValue = "\u2734"; // 2734 ✴ EIGHT POINTED BLACK STAR

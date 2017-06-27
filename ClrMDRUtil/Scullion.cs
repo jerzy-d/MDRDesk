@@ -20,7 +20,7 @@ namespace ClrMDRIndex
         private string _error;
         public string Error => _error;
 
-        string _refsDataFile, _fwdRefOffsetsFile, _fwdRfsFile, _bwdRefOffsetsFile, _bwdRefsFile;
+        string _refsDataFile, _fwdRefOffsetsFile, _fwdRfsFile, _bwdRefOffsetsFile, _bwdRefsFile, _instanceFile;
 
         ulong[] _instances;
         public int InstanceCount { get; private set; }
@@ -38,6 +38,7 @@ namespace ClrMDRIndex
             string fwdRfsFile, 
             string bwdRefOffsetsFile, 
             string bwdRefsFile,
+            string instanceFile,
 			IProgress<string> progress)
 		{
             _refsDataFile = refsDataFile;
@@ -45,6 +46,7 @@ namespace ClrMDRIndex
             _fwdRfsFile = fwdRfsFile;
             _bwdRefOffsetsFile = bwdRefOffsetsFile;
             _bwdRefsFile = bwdRefsFile;
+            _instanceFile = instanceFile;
 
             _instances = instances;
 			_progress = progress;
@@ -91,6 +93,11 @@ namespace ClrMDRIndex
 						bw.Write((int)0);
 						continue;
 					}
+
+                    if (clrType.Name== @"Eze.Server.Common.Pulse.Common.Types.CachedPositionValues<System.Decimal>")
+                    {
+                        int a = 1;
+                    }
 
 					fieldAddrOffsetList.Clear();
 					clrType.EnumerateRefsOfObjectCarefully(addr, (address, off) =>
@@ -178,7 +185,7 @@ namespace ClrMDRIndex
 				if (val == parent || val == lst[ndx]) continue;
 				lst[++ndx] = val;
 			}
-			return ndx;
+			return ndx+1;
 		}
 
 		public void BuildReferences()
@@ -246,7 +253,7 @@ namespace ClrMDRIndex
                         offset += sizeof(int);
                         bwdTotalCount += 1;
                         // update child root flags
-                        if (!same_addr_flags(_instances, i, ndx))
+                        if (!contains_flags(_instances, i, ndx))
                         {
                             if (ndx < i) // child address smaller than parent's
                             { // in this case we might need to update address flag of current's children
@@ -285,8 +292,10 @@ namespace ClrMDRIndex
                 if (_reflagSet.Count>0)
                 {
                     // TODO JRD
+                    int a = 1;
                 }
 
+                Utils.WriteUlongArray(_instanceFile, _instances, out error);
                 _instances = null; // release mem
 
                 ClrMDRIndex.Unsafe.FileWriter.CreateFileWithSize(_bwdRefsFile, bwdTotalCount * sizeof(int), out error);
@@ -302,6 +311,7 @@ namespace ClrMDRIndex
                     _bwdRefOffsets[i] = offset;
                     offset += _reversedRefsCounts[i]*sizeof(int);
                 }
+
                 bwoffsets.Write(offset);
                 bwoffsets.Close();
                 bwoffsets = null;
@@ -326,7 +336,7 @@ namespace ClrMDRIndex
                     {
                         // read forward references
                         int childNdx = br.ReadInt32();
-						if (i == 31691 || i == 31825)
+						if (childNdx == 31692 || childNdx == 31826)
 						{
 							int a = 1;
 						}
@@ -408,7 +418,25 @@ namespace ClrMDRIndex
 
         bool same_addr_flags(ulong[] ary, int lhs, int rhs)
         {
+            var lflg = ary[lhs] & AddressMask;
+            if (lflg == 0) return true;
             return (ary[lhs] & AddressMask) == (ary[rhs] & AddressMask);
+        }
+
+        bool contains_flags(ulong[] ary, int lhs, int rhs)
+        {
+            var lflg = ary[lhs] & AddressMask;
+            if (lflg == 0) return true;
+            var rflg = ary[rhs] & AddressMask;
+            ulong i = 0x8000000000000000;
+            if ((lflg & i) != 0 && (rflg & i) == 0) return false;
+            i >>= 1;
+            if ((lflg & i) != 0 && (rflg & i) == 0) return false;
+            i >>= 1;
+            if ((lflg & i) != 0 && (rflg & i) == 0) return false;
+            i >>= 1;
+            if ((lflg & i) != 0 && (rflg & i) == 0) return false;
+            return true;
         }
 
         void copy_addr_flags(ulong[] ary, int from, int to)

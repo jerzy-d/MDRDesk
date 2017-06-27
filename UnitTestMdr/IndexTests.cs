@@ -24,24 +24,24 @@ namespace UnitTestMdr
 	public class IndexTests
 	{
 
-//        string[] dumps = new string[]
-//{
-//            /*  0 */    @"D:\Jerzy\WinDbgStuff\dumps\Analytics\Highline\analyticsdump111.dlk.dmp",
-//            /*  1 */    @"D:\Jerzy\WinDbgStuff\dumps\TradingService\Tortoise\tradingservice_0615.dmp",
-//            /*  2 */    @"D:\Jerzy\WinDbgStuff\dumps\Analytics\Baly\analytics7_1510301630.Baly.dmp",
-//            /*  3 */    @"D:\Jerzy\WinDbgStuff\dumps\Analytics\BigOne\Analytics11_042015_2.BigOne.dmp"
-//}       ;
-
-		string[] dumps = new string[]
-{
-            /*  0 */    @"C:\WinDbgStuff\Dumps\Analytics\Highline\analyticsdump111.dlk.dmp",
+        string[] dumps = new string[]
+        {
+            /*  0 */    @"D:\Jerzy\WinDbgStuff\dumps\Analytics\Highline\analyticsdump111.dlk.dmp",
             /*  1 */    @"D:\Jerzy\WinDbgStuff\dumps\TradingService\Tortoise\tradingservice_0615.dmp",
-            /*  2 */    @"C:\WinDbgStuff\Dumps\Analytics\Baly\AnalyticsLatencyDump06062016 03354291.dmp",
-            /*  3 */    @"C:\WinDbgStuff\Dumps\Analytics\BigOne\Analytics11_042015_2.Big.dmp"
-};
-		#region test context/initialization
+            /*  2 */    @"D:\Jerzy\WinDbgStuff\dumps\Analytics\Baly\analytics7_1510301630.Baly.dmp",
+            /*  3 */    @"D:\Jerzy\WinDbgStuff\dumps\Analytics\BigOne\Analytics11_042015_2.BigOne.dmp"
+        };
 
-		private TestContext testContextInstance;
+        //		string[] dumps = new string[]
+        //{
+        //            /*  0 */    @"C:\WinDbgStuff\Dumps\Analytics\Highline\analyticsdump111.dlk.dmp",
+        //            /*  1 */    @"D:\Jerzy\WinDbgStuff\dumps\TradingService\Tortoise\tradingservice_0615.dmp",
+        //            /*  2 */    @"C:\WinDbgStuff\Dumps\Analytics\Baly\AnalyticsLatencyDump06062016 03354291.dmp",
+        //            /*  3 */    @"C:\WinDbgStuff\Dumps\Analytics\BigOne\Analytics11_042015_2.Big.dmp"
+        //};
+        #region test context/initialization
+
+        private TestContext testContextInstance;
 
 		/// <summary>
 		///Gets or sets the test context which provides
@@ -1221,7 +1221,7 @@ namespace UnitTestMdr
 				testFolder + @"\tests" + Path.DirectorySeparatorChar + "bwdrefsoffsets.bin",
 				testFolder + @"\tests" + Path.DirectorySeparatorChar + "bwdrefs.bin",
 			};
-			string indexPath = @"C:\WinDbgStuff\Dumps\Analytics\Highline\analyticsdump111.dlk.dmp.map";
+			string indexPath = @"D:\Jerzy\WinDbgStuff\dumps\Analytics\Highline\analyticsdump111.dlk.dmp.map";
 
 			var typeName = "Eze.Server.Common.Pulse.Common.Types.ServerColumnPostionLevelCacheDictionary<System.Decimal>";
 			ulong[] instances = Utils.ReadUlongArray(indexPath + @"\analyticsdump111.dlk.dmp.`INSTANCES[0].bin", out error);
@@ -1237,7 +1237,7 @@ namespace UnitTestMdr
 			lst.Sort();
 
 			var referencer = new InstanceReferences(instances, testFolders);
-			(bool countsSame, bool offse3tsSame) = referencer.TestOffsets();
+//			(bool countsSame, bool offse3tsSame) = referencer.TestOffsets();
 			using (referencer)
 			{
 				var kv = referencer.GetAncestors(lst.ToArray(), 2, out error);
@@ -1245,31 +1245,6 @@ namespace UnitTestMdr
 			Assert.IsNull(error);
 
 		}
-
-		[TestMethod]
-		public void TestReferences()
-		{
-			string error = null;
-			Stopwatch stopWatch = new Stopwatch();
-			stopWatch.Start();
-			var index = OpenIndex(@"C:\WinDbgStuff\Dumps\Analytics\BigOne\Analytics11_042015_2.Big.dmp.map");
-			TestContext.WriteLine(index.DumpFileName + " INDEX OPEN DURATION: " + Utils.StopAndGetDurationString(stopWatch));
-
-			using (index)
-			{
-				string path = index.GetFilePath(0, Constants.MapFieldParentsRootedPostfix);
-				int[] rootedParents;
-				int[][] rootedRefs;
-				References.LoadReferences(path, out rootedParents, out rootedRefs, out error);
-
-
-				Assert.IsNull(error);
-
-			}
-
-			Assert.IsNull(error, error);
-		}
-
 
 		[TestMethod]
 		public void TestReferenceRoots()
@@ -1353,110 +1328,7 @@ namespace UnitTestMdr
 
 			Assert.IsNull(error, error);
 		}
-		[TestMethod]
-		public void TestReferencesFile()
-		{
-			string error = null;
-			string path = @"C:\WinDbgStuff\Dumps\Analytics\Highline\analyticsdump111.dlk.dmp.map\analyticsdump111.dlk.dmp.`REFSOBJECTFIELD[0].bin";
-			int[] headAry;
-			int[][] lists;
-			References.LoadReferences(path, out headAry, out lists, out error);
 
-			Assert.IsNull(error, error);
-		}
-
-
-		[TestMethod]
-		public void TestReferenceFile()
-		{
-			string error = null;
-			string path = @"C:\WinDbgStuff\Dumps\Analytics\BigOne\Analytics11_042015_2.Big.dmp.map\Analytics11_042015_2.Big.dmp.`REFSFIELDOBJECT[0].bin";
-			int[] rootedParents;
-			int[][] rootedRefs;
-			References.LoadReferences(path, out rootedParents, out rootedRefs, out error);
-			for (int i = 1, icnt = rootedParents.Length; i < icnt; ++i)
-			{
-				int a1 = rootedParents[i - 1];
-				int a2 = rootedParents[i];
-				Assert.IsTrue(a1 < a2);
-				var lst = rootedRefs[i];
-				Assert.IsTrue(lst.Length>0);
-				for (int j = 1, jcnt = lst.Length; j < jcnt; ++j)
-				{
-					Assert.IsTrue(lst[j-1] < lst[j]);
-				}
-			}
-
-			Assert.IsNull(error, error);
-		}
-
-        [TestMethod]
-        public void TestTypeReferences()
-        {
-            string error = null;
-            Stopwatch stopWatch = new Stopwatch();
-            stopWatch.Start();
-            var index = OpenIndex(@"D:\Jerzy\WinDbgStuff\dumps\Analytics\Ellerston\Eze.Analytics.Svc_170607_214916.dmp.map");
-            string typeName = @"Eze.Server.Common.Pulse.CalculationCache.RelatedViewsCache";
-            TestContext.WriteLine(index.DumpFileName + " INDEX OPEN DURATION: " + Utils.StopAndGetDurationString(stopWatch));
-
-            using (index)
-            {
-                ulong[] valid = Utils.ReadUlongArray(@"D:\Jerzy\WinDbgStuff\dumps\Analytics\Ellerston\Eze.Analytics.Svc_170607_214916.dmp.map\ad-hoc.queries\ValidRelatedViewsCache.bin", out error);
-                int typeId = index.GetTypeId(typeName);
-                ulong[] all = index.GetTypeRealAddresses(typeId);
-                ulong[] invalid = all.Except(valid).ToArray();
-
-                int[] validNdxs = index.GetRealAddressIndices(valid);
-                KeyValuePair<IndexNode, int>[] validRefs = new KeyValuePair<IndexNode, int>[valid.Length];
-                for (int i = 0, icnt = valid.Length; i < icnt; ++i)
-                {
-                    validRefs[i] = index.GetReferenceNodes(validNdxs[i], References.Direction.FieldParent, References.DataSource.All, out error, 1);
-                }
-
-
-                int[] invalidNdxs = index.GetRealAddressIndices(invalid);
-                KeyValuePair<IndexNode, int>[] invalidRefs = new KeyValuePair<IndexNode, int>[invalid.Length];
-                for (int i = 0, icnt = invalid.Length; i < icnt; ++i)
-                {
-                    invalidRefs[i] = index.GetReferenceNodes(invalidNdxs[i], References.Direction.FieldParent, References.DataSource.All, out error, 1);
-                }
-
-                Queue<IndexNode> que = new Queue<IndexNode>(1024);
-                HashSet<int> validRefIds = new HashSet<int>();
-                for (int i = 0, icnt=validRefs.Length; i < icnt; ++i)
-                {
-                    GetTypeIds(index, validRefs[i].Key, validRefIds, que);
-                }
-
-
-                HashSet<int> invalidRefIds = new HashSet<int>();
-                for (int i = 0, icnt = invalidRefs.Length; i < icnt; ++i)
-                {
-                    GetTypeIds(index, invalidRefs[i].Key, invalidRefIds, que);
-                }
-
-
-
-                int[] exValidTypeIds = validRefIds.Except(invalidRefIds).ToArray();
-                int[] exInvalidTypeIds = invalidRefIds.Except(validRefIds).ToArray();
-
-                string[] exValidTypeNames = GetTypeNames(index, exValidTypeIds);
-                string[] exInvalidTypeNames = GetTypeNames(index, exInvalidTypeIds);
-
-                string[] validTypeNames = GetTypeNames(index, validRefIds);
-                string[] invalidTypeNames = GetTypeNames(index, invalidRefIds);
-
-
-                // var result = index.GetReferenceNodes(invalid, References.Direction.FieldParent, References.DataSource.All, out error, 1);
-
-
-                Assert.IsNull(error);
-
-            }
-
-            Assert.IsNull(error, error);
-        }
 
         ulong[] suspects = new ulong[]
         {

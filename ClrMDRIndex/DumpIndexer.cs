@@ -131,12 +131,12 @@ namespace ClrMDRIndex
                         if (!Setup.SkipReferences)
                         {
                             bitset = new Bitset(addresses.Length);
-                            if (!References.CreateReferences2(r, heap, rootAddrInfo.Item1, addresses, typeIds, typeNames, bitset, _fileMoniker, progress, out error))
-                            {
-                                progress?.Report(runtimeIndexHeader + "Indexing failed, CreateReferences method errored.");
-                                AddError(r, "CreateReferences failed." + Environment.NewLine + error);
-                                return false;
-                            }
+                            //if (!References.CreateReferences2(r, heap, rootAddrInfo.Item1, addresses, typeIds, typeNames, bitset, _fileMoniker, progress, out error))
+                            //{
+                            //    progress?.Report(runtimeIndexHeader + "Indexing failed, CreateReferences method errored.");
+                            //    AddError(r, "CreateReferences failed." + Environment.NewLine + error);
+                            //    return false;
+                            //}
                         }
 
 						progress?.Report(runtimeIndexHeader + "Building type instance map...");
@@ -219,11 +219,12 @@ namespace ClrMDRIndex
 			var clrtDump = new ClrtDump(DumpPath);
 			if (!clrtDump.Init(out error)) return false;
 			_errors = new ConcurrentBag<string>[clrtDump.RuntimeCount];
-			Thread extraWorker = null;
+			Thread threadInfoWorker = null, referenceBuilderWorker=null;
 			ClrtDump dumpClone = clrtDump.Clone(out error);
 			DateTime indexingStart = DateTime.UtcNow;
+            InstanceReferences builder = null;
 
-			using (clrtDump)
+            using (clrtDump)
 			{
 				try
 				{
@@ -278,8 +279,9 @@ namespace ClrMDRIndex
 							return false;
 						}
 
-						// setting root information
-						//
+                        // setting root information
+                        //
+                        Debug.Assert(Utils.IsSorted(addresses));
 						progress?.Report(runtimeIndexHeader + "Setting root information...");
 						for (int i = 0, icnt = addresses.Length; i < icnt; ++i)
 						{
@@ -294,30 +296,69 @@ namespace ClrMDRIndex
 						rootObjectAddrs = null;
 						finalizerAddrs = null;
 
-						// threads and blocking objects
-						//
-						extraWorker = new Thread(GetThreadsInfos);
-						extraWorker.Start(new Tuple<ClrtDump, ulong[], int[], string[]>(dumpClone, addresses, typeIds, typeNames));
+                        // threads and blocking objects
+                        //
+                        progress?.Report(runtimeIndexHeader + "Getting threads, blocking objecks information...");
+                        var addressesCopy = Utils.CopyArray(addresses);
+                        threadInfoWorker = new Thread(GetThreadsInfos);
+						threadInfoWorker.Start(new Tuple<ClrtDump, ulong[], int[], string[]>(dumpClone, addresses, typeIds, typeNames));
+                        addresses = null;
+                        //progress?.Report("Waiting for thread info worker...");
+                        //threadInfoWorker.Join();
 
-						progress?.Report(runtimeIndexHeader + "Getting threads, blocking objecks information...");
-
-						// field dependencies
-						//
-						progress?.Report(runtimeIndexHeader + "Creating instance reference data...");
-						if (!Setup.SkipReferences)
+                        // field dependencies
+                        //
+                        if (!Setup.SkipReferences)
 						{
-
-							Scullion bld = new Scullion(addresses,
+#if TRUE
+                            progress?.Report(runtimeIndexHeader + "Creating instance reference data...");
+                            Scullion bld = new Scullion(addressesCopy,
 								_fileMoniker.GetFilePath(r, Constants.MapRefFwdDataFilePostfix),
 								_fileMoniker.GetFilePath(r, Constants.MapRefFwdOffsetsFilePostfix),
 								_fileMoniker.GetFilePath(r, Constants.MapFwdRefsFilePostfix),
 								_fileMoniker.GetFilePath(r, Constants.MapRefBwdOffsetsFilePostfix),
-								_fileMoniker.GetFilePath(r, Constants.MapBwdRefsFilePostfix), 
-								progress);
-							
-						}
+								_fileMoniker.GetFilePath(r, Constants.MapBwdRefsFilePostfix),
+                                _fileMoniker.GetFilePath(r, Constants.MapInstancesFilePostfix),
+                            progress);
+                            addressesCopy = null;
+                            progress?.Report(runtimeIndexHeader + "Dumping forward instance reference heap data...");
+                            bld.CreateForwardReferences(heap, out error);
 
-						progress?.Report(runtimeIndexHeader + "Building type instance map...");
+                            progress?.Report(runtimeIndexHeader + "Starting instance reference builder...");
+
+
+                            referenceBuilderWorker = new Thread(new ThreadStart(bld.BuildReferences));
+                            referenceBuilderWorker.Start();
+#else
+                            //heap = clrtDump.GetFreshHeap();
+                            builder = new InstanceReferences(addressesCopy,
+                                                                    new string[]
+                                                                    {
+                                                                    _fileMoniker.GetFilePath(r, Constants.MapRefFwdOffsetsFilePostfix),
+                                                                    _fileMoniker.GetFilePath(r, Constants.MapFwdRefsFilePostfix),
+                                                                    _fileMoniker.GetFilePath(r, Constants.MapRefBwdOffsetsFilePostfix),
+                                                                    _fileMoniker.GetFilePath(r, Constants.MapBwdRefsFilePostfix),
+                                                                    },
+                                                                    progress,
+                                                                    _fileMoniker.GetFilePath(r, Constants.MapInstancesFilePostfix)
+                                                                    );
+                            
+                            builder.CreateForwardReferences(heap, out error);
+                            referenceBuilderWorker = new Thread(builder.BuildReveresedReferences);
+                            referenceBuilderWorker.Start();
+
+#endif
+                        }
+                        else
+                        {
+                            progress?.Report(runtimeIndexHeader + "Skipping generation of instance references...");
+                            InstanceReferences.DeleteInstanceReferenceFiles(r, _fileMoniker, out error);
+                            progress?.Report(runtimeIndexHeader + "Savings instances addresses...");
+                            Utils.WriteUlongArray(_fileMoniker.GetFilePath(r, Constants.MapInstancesFilePostfix), addressesCopy, out error);
+                            addressesCopy = null;
+                        }
+
+                        progress?.Report(runtimeIndexHeader + "Building type instance map...");
 						if (!BuildTypeInstanceMap(r, typeIds, out error))
 						{
 							AddError(r, "BuildTypeInstanceMap failed." + Environment.NewLine + error);
@@ -346,17 +387,20 @@ namespace ClrMDRIndex
 							AddError(_currentRuntimeIndex, "StringIdDct.DumpInIdOrder failed." + Environment.NewLine + error);
 						}
 
-						progress?.Report("Waiting for thread info worker...");
-						extraWorker.Join();
+                        progress?.Report("Waiting for thread info worker...");
+                        threadInfoWorker.Join();
+                        progress?.Report("Waiting for instance refrerences builder...");
+                        referenceBuilderWorker.Join();
 
-						path = _fileMoniker.GetFilePath(r, Constants.MapInstancesFilePostfix);
-						Utils.WriteUlongArray(path, addresses, out error);
+      //                  path = _fileMoniker.GetFilePath(r, Constants.MapInstancesFilePostfix);
+						//Utils.WriteUlongArray(path, addresses, out error);
 
 						runtime.Flush();
 						heap = null;
-					}
+                        progress?.Report(runtimeIndexHeader + "Runtime indexing done...");
+                    }
 
-					var durationStr = Utils.DurationString(DateTime.UtcNow - indexingStart);
+                    var durationStr = Utils.DurationString(DateTime.UtcNow - indexingStart);
 					DumpIndexInfo(version, clrtDump, durationStr);
 					progress?.Report("Indexing done, total duration: " + durationStr);
 					return true;
@@ -369,6 +413,7 @@ namespace ClrMDRIndex
 				}
 				finally
 				{
+                    builder?.Dispose();
 					dumpClone?.Dispose();
 					DumpErrors();
 					GCSettings.LargeObjectHeapCompactionMode = GCLargeObjectHeapCompactionMode.CompactOnce;
@@ -1214,12 +1259,12 @@ namespace ClrMDRIndex
 			}
 		}
 
-		#region references
+#region references
 
 
-		#endregion references
+#endregion references
 
-		#region data dumping
+#region data dumping
 
 		private void DumpIndexInfo(Version version, ClrtDump dump, string indexingDuration = null)
 		{
@@ -1299,9 +1344,9 @@ namespace ClrMDRIndex
 			}
 		}
 
-		#endregion data dumping
+#endregion data dumping
 
-		#region indexing helpers
+#region indexing helpers
 
 		public static void MarkAsRootedOld(ulong addr, int addrNdx, ulong[] instances, int[][] references)
 		{
@@ -1453,7 +1498,7 @@ namespace ClrMDRIndex
 			return ary;
 		}
 
-		#endregion indexing helpers
+#endregion indexing helpers
 	}
 
 	public class BlkObjInfoCmp : IComparer<Tuple<BlockingObject, ClrThread[], ClrThread[]>>

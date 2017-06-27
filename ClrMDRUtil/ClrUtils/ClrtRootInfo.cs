@@ -195,9 +195,8 @@ namespace ClrMDRIndex
 
 					ourRoots[(int)root.Kind].Add(clrtRoot);
 
-					if (objAddr != 0UL)
+ 					if (objAddr != 0UL)
 					{
-						ulong addr;
 						if (root.Kind == GCRootKind.Finalizer)
 						{
 							objAddr = Utils.SetAsFinalizer(objAddr);
@@ -209,7 +208,21 @@ namespace ClrMDRIndex
 							objSet.Add(objAddr);
 						}
 					}
-				}
+                    if (rootAddr != 0UL)
+                    {
+                        if (root.Kind == GCRootKind.Finalizer)
+                        {
+                            rootAddr = Utils.SetAsFinalizer(rootAddr);
+                            finlSet.Add(rootAddr);
+                        }
+                        else
+                        {
+                            rootAddr = Utils.SetRooted(rootAddr);
+                            objSet.Add(rootAddr);
+                        }
+                    }
+
+                }
 
 				// root infos TODO JRD -- Fix this
 				//
@@ -228,7 +241,8 @@ namespace ClrMDRIndex
 				var finlAry = finlSet.ToArray();
 				Array.Sort(finlAry, new Utils.AddressComparison());
 
-				return new ValueTuple<ulong[], ulong[]>(addrAry, finlAry);
+                if (!ClrtRootInfo.Save(rtm, ourRoots, fileMoniker, out error)) return new ValueTuple<ulong[],ulong[]>(null,null);
+                return new ValueTuple<ulong[], ulong[]>(addrAry, finlAry);
 			}
 			catch (Exception ex)
 			{

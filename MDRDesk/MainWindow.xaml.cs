@@ -426,8 +426,7 @@ namespace MDRDesk
 				string error;
 				string indexPath;
 				var indexer = new DumpIndexer(path);
-				var ok = indexer.CreateDumpIndex(_myVersion, indexingProgress.Progress, DumpIndexer.IndexingArguments.All,
-					out indexPath, out error);
+				var ok = indexer.CreateDumpIndex2(_myVersion, indexingProgress.Progress, out indexPath, out error);
 				return new Tuple<bool, string, string>(ok, error, indexPath);
 			});
 

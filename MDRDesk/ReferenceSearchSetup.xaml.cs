@@ -18,10 +18,10 @@ namespace MDRDesk
 		private bool _okExit;
 		private static DispMode _displayMode = DispMode.Tree;
 		public DispMode DisplayMode => _displayMode;
-		private static References.DataSource _dataSource = References.DataSource.All;
-		public References.DataSource DataSource => _dataSource;
-		private static References.Direction _direction = References.Direction.FieldParent;
-		public References.Direction Direction => _direction;
+		private static InstanceReferences.ReferenceType _dataSource = InstanceReferences.ReferenceType.All;
+		public InstanceReferences.ReferenceType DataSource => _dataSource;
+		private static InstanceReferences.ReferenceType _direction = InstanceReferences.ReferenceType.Ancestors;
+		public InstanceReferences.ReferenceType Direction => _direction;
 
 		public bool Cancelled => !_okExit;
 		public bool GetAllReferences => RefSearchAll.IsChecked != null && (bool) RefSearchAll.IsChecked;
@@ -51,13 +51,13 @@ namespace MDRDesk
 			}
 			switch (_dataSource)
 			{
-				case References.DataSource.Rooted:
+				case InstanceReferences.ReferenceType.Rooted:
 					RefSearchRooted.IsChecked = true;
 					break;
-				case References.DataSource.All:
+				case InstanceReferences.ReferenceType.All:
 					RefSearchBoth.IsChecked = true;
 					break;
-				case References.DataSource.Unrooted:
+				case InstanceReferences.ReferenceType.Unrooted:
 					RefSearchNotRooted.IsChecked = true;
 					break;
 				default:
@@ -67,10 +67,10 @@ namespace MDRDesk
 
 			switch (_direction)
 			{
-				case References.Direction.FieldParent:
+				case InstanceReferences.ReferenceType.Ancestors:
 					RefSearchFieldParents.IsChecked = true;
 					break;
-				case References.Direction.ParentField:
+				case InstanceReferences.ReferenceType.Descendants:
 					RefSearchParentFields.IsChecked = true;
 					break;
 				default:
@@ -93,20 +93,20 @@ namespace MDRDesk
 			else _displayMode = DispMode.Tree;
 
 			if (RefSearchRooted.IsChecked == true)
-				_dataSource = References.DataSource.Rooted;
+				_dataSource = InstanceReferences.ReferenceType.Rooted;
 			else if (RefSearchBoth.IsChecked == true)
-				_dataSource = References.DataSource.All;
+				_dataSource = InstanceReferences.ReferenceType.All;
 			else if (RefSearchNotRooted.IsChecked == true)
-				_dataSource = References.DataSource.Unrooted;
+				_dataSource = InstanceReferences.ReferenceType.Unrooted;
 			else
-				_dataSource = References.DataSource.All;
+				_dataSource = InstanceReferences.ReferenceType.All;
 
 			if (RefSearchFieldParents.IsChecked == true)
-				_direction = References.Direction.FieldParent;
+				_direction = InstanceReferences.ReferenceType.Ancestors;
 			else if (RefSearchParentFields.IsChecked == true)
-				_direction = References.Direction.ParentField;
+				_direction = InstanceReferences.ReferenceType.Descendants;
 			else
-				_direction = References.Direction.FieldParent;
+				_direction = InstanceReferences.ReferenceType.Ancestors;
 
 			DialogResult = true;
 		}

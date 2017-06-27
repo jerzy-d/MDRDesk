@@ -30,17 +30,48 @@ namespace ClrMDRIndex
             Count
         }
 
+        public const ulong AddressFlagMask = 0x00FFFFFFFFFFFFFF;
+        public const ulong AddressMask = 0xFF00000000000000;
+
+
+        const int MaxNodes = 10000;
+
         string[] _fileList;
         ulong[] _instances;
         long[] _fwdOffsets;
         long[] _bwdOffsets;
         BinaryReader[] _readers;
 
-        public InstanceReferences(ulong[] instances,  string[] fileList)
+        #region building fields
+
+        int[] _forwardRefsCounts;
+        int[] _reversedRefsCounts;
+        int _totalReversedRefs;
+        string _error;
+        Stopwatch _stopWatch;
+        IProgress<string> _progress;
+        string _instanceFilePath;
+
+        #endregion building fields
+
+        public InstanceReferences(ulong[] instances,  string[] fileList, IProgress<string> progress=null, string instanceFilePath=null)
         {
             Debug.Assert(fileList.Length == (int)RefFile.Count);
             _fileList = fileList;
             _instances = instances;
+            _readers = new BinaryReader[(int)RefFile.Count];
+            _progress = progress;
+            _instanceFilePath = instanceFilePath;
+        }
+
+        public InstanceReferences(ulong[] instances, int runtmNdx, DumpFileMoniker moniker)
+        {
+            _instances = instances;
+            _fileList = new string[(int)RefFile.Count];
+            _fileList[0] = moniker.GetFilePath(runtmNdx, Constants.MapRefFwdOffsetsFilePostfix);
+            _fileList[1] = moniker.GetFilePath(runtmNdx, Constants.MapFwdRefsFilePostfix);
+            _fileList[2] = moniker.GetFilePath(runtmNdx, Constants.MapRefBwdOffsetsFilePostfix);
+            _fileList[3] = moniker.GetFilePath(runtmNdx, Constants.MapBwdRefsFilePostfix);
             _readers = new BinaryReader[(int)RefFile.Count];
         }
 
@@ -55,98 +86,6 @@ namespace ClrMDRIndex
             {
                 error = Utils.GetExceptionErrorString(ex);
                 return false;
-            }
-        }
-
-		public ValueTuple<bool,bool> TestOffsets()
-		{
-			long[] fwdoffsets = GetOffsets(RefFile.FwdOffsets);
-			long[] bwdoffsets = GetOffsets(RefFile.BwdOffsets);
-			BinaryReader fwdbr = GetReader(RefFile.FwdRefs);
-			BinaryReader bwdbr = GetReader(RefFile.BwdRefs);
-
-			if (fwdoffsets.Length != bwdoffsets.Length) return new ValueTuple<bool, bool>(false, false);
-			bool b1 = true, b2 = true;
-			int ref1 = -1, ref2 = -1;
-			int parent1 = -1, parent2 = -1;
-			for (int i= 0, icnt = fwdoffsets.Length-1; i < icnt; ++i)
-			{
-				if (i == 31691)
-				{
-					ref1 = ReadReference(fwdbr,fwdoffsets[i]);
-				}
-				if (i == 31825)
-				{
-					ref2 = ReadReference(fwdbr, fwdoffsets[i]);
-				}
-				if (i == ref1)
-				{
-					parent1 = ReadReference(bwdbr, fwdoffsets[i]);
-				}
-				if (i == ref2)
-				{
-					parent2 = ReadReference(bwdbr, fwdoffsets[i]);
-				}
-				int cnt1 = ReferenceCount(fwdoffsets[i], fwdoffsets[i + 1]);
-				int cnt2 = ReferenceCount(bwdoffsets[i], bwdoffsets[i + 1]);
-				if (cnt1 != cnt2) b1 = false;
-				if (fwdoffsets[i] != bwdoffsets[i]) b2 = false;
-			}
-			return new ValueTuple<bool, bool>(b1, b2);
-
-		}
-
-		public KeyValuePair<IndexNode[], int> GetAncestors(int[] instanceNdxs, int maxLevel, out string error, ReferenceType refType = ReferenceType.Ancestors | ReferenceType.All)
-        {
-            error = null;
-            try
-            {
-                IndexNode[] lst = new IndexNode[instanceNdxs.Length];
-
-                int level = 0;
-
-                int totalCount = instanceNdxs.Length;
-                Queue<IndexNode> que = new Queue<IndexNode>(instanceNdxs.Length);
-
-                long[] offsets = GetOffsets((ReferenceType.Ancestors & refType) != 0 ? RefFile.BwdOffsets : RefFile.FwdOffsets);
-                BinaryReader br = GetReader((ReferenceType.Ancestors & refType) != 0 ? RefFile.BwdRefs : RefFile.FwdRefs);
-                for (int i = 0, icnt = instanceNdxs.Length; i < icnt; ++i)
-                {
-                    int ndx = instanceNdxs[i];
-                    long offset = offsets[ndx];
-                    int count = ReferenceCount(offset, offsets[ndx+1]);
-                    totalCount += count;
-                    if (count == 0)
-                    {
-                        lst[i] = new IndexNode(ndx, level);
-                        continue;
-                    }
-                    IndexNode[] refs = ReadReferences(br, offset, count, level+1, que);
-                    lst[i] = new IndexNode(ndx, level, refs);
-                }
-                ++level;
-                if (maxLevel <= level) return new KeyValuePair<IndexNode[], int>(lst,totalCount);
-
-                while(que.Count > 0)
-                {
-                    var node = que.Dequeue();
-                    if (node.Level >= maxLevel) continue;
-                    int ndx = node.Index;
-                    Debug.Assert(!node.HasReferences());
-                    long offset = offsets[ndx];
-                    int count = ReferenceCount(offset, offsets[ndx + 1]);
-                    totalCount += count;
-                    if (count == 0) continue;
-                    IndexNode[] refs = ReadReferences(br, offset, count, node.Level + 1, que);
-                    node.AddNodes(refs);
-                }
-
-                return new KeyValuePair<IndexNode[], int>(lst, totalCount);
-            }
-            catch (Exception ex)
-            {
-                error = Utils.GetExceptionErrorString(ex);
-                return new KeyValuePair<IndexNode[], int>(null, 0); ;
             }
         }
 
@@ -166,7 +105,17 @@ namespace ClrMDRIndex
             return refs;
         }
 
-		private int ReadReference(BinaryReader br, long offset)
+        private void ReadReferences(BinaryReader br, long offset, int count, int[] buf)
+        {
+            Debug.Assert(buf.Length >= count);
+            br.BaseStream.Seek(offset, SeekOrigin.Begin);
+            for (int i = 0, icnt = count; i < icnt; ++i)
+            {
+                buf[i] = br.ReadInt32();
+            }
+        }
+
+        private int ReadReference(BinaryReader br, long offset)
 		{
 			br.BaseStream.Seek(offset, SeekOrigin.Begin);
 			return br.ReadInt32();
@@ -240,6 +189,514 @@ namespace ClrMDRIndex
             _readers[(int)fileNdx] = new BinaryReader(File.Open(_fileList[(int)fileNdx], FileMode.Open, FileAccess.Read));
             return _readers[(int)fileNdx];
         }
+
+
+        private BinaryReader GetReader(RefFile fileNdx, FileMode mode)
+        {
+            return new BinaryReader(File.Open(_fileList[(int)fileNdx], mode, FileAccess.Read));
+        }
+
+        private BinaryWriter GetWriter(RefFile fileNdx, FileMode mode)
+        {
+            return new BinaryWriter(File.Open(_fileList[(int)fileNdx], mode, FileAccess.Write,FileShare.None));
+        }
+
+
+        #region queries
+
+        public KeyValuePair<IndexNode, int>[] GetReferenceNodes(int[] addrNdxs, int maxLevel, out string error, ReferenceType refType = ReferenceType.Ancestors | ReferenceType.All)
+        {
+            error = null;
+            try
+            {
+                var results = new List<KeyValuePair<IndexNode, int>>(addrNdxs.Length);
+                var uniqueSet = new HashSet<int>();
+                var que = new Queue<IndexNode>(256);
+                long[] offsets = GetOffsets((ReferenceType.Ancestors & refType) != 0 ? RefFile.BwdOffsets : RefFile.FwdOffsets);
+                BinaryReader br = GetReader((ReferenceType.Ancestors & refType) != 0 ? RefFile.BwdRefs : RefFile.FwdRefs);
+                for (int ndx = 0, ndxCnt = addrNdxs.Length; ndx < ndxCnt; ++ndx)
+                {
+                    uniqueSet.Clear();
+                    que.Clear();
+                    var addrNdx = addrNdxs[ndx];
+                    var rootNode = new IndexNode(addrNdx, 0); // we at level 0
+                    que.Enqueue(rootNode);
+                    uniqueSet.Add(addrNdx);
+                    int nodeCount = 0; // do not count root node
+                    while (que.Count > 0)
+                    {
+                        var curNode = que.Dequeue();
+                        ++nodeCount;
+                        if (curNode.Level >= maxLevel || nodeCount > MaxNodes) continue;
+                        int curndx = curNode.Index;
+                        long offset = offsets[curndx];
+                        int count = ReferenceCount(offset, offsets[ndx + 1]);
+                        if (count == 0) continue;
+
+                        var nodes = new IndexNode[count];
+                        curNode.AddNodes(nodes);
+                        var refs = ReadReferences(br, offset, count);
+                        for (int i = 0; i < count; ++i)
+                        {
+                            var rNdx = refs[i];
+                            var cnode = new IndexNode(rNdx, curNode.Level + 1);
+                            nodes[i] = cnode;
+                            if (!uniqueSet.Add(rNdx))
+                            {
+                                ++nodeCount;
+                                continue;
+                            }
+                            que.Enqueue(cnode);
+                        }
+                    }
+                    results.Add(new KeyValuePair<IndexNode, int>(rootNode, nodeCount));
+                }
+                return results.ToArray();
+            }
+            catch (Exception ex)
+            {
+                error = Utils.GetExceptionErrorString(ex);
+                return null;
+            }
+        }
+
+
+        public KeyValuePair<IndexNode[], int> GetAncestors(int[] instanceNdxs, int maxLevel, out string error, ReferenceType refType = ReferenceType.Ancestors | ReferenceType.All)
+        {
+            error = null;
+            try
+            {
+                IndexNode[] lst = new IndexNode[instanceNdxs.Length];
+
+                int level = 0;
+
+                int totalCount = instanceNdxs.Length;
+                Queue<IndexNode> que = new Queue<IndexNode>(instanceNdxs.Length);
+
+                long[] offsets = GetOffsets((ReferenceType.Ancestors & refType) != 0 ? RefFile.BwdOffsets : RefFile.FwdOffsets);
+                BinaryReader br = GetReader((ReferenceType.Ancestors & refType) != 0 ? RefFile.BwdRefs : RefFile.FwdRefs);
+                for (int i = 0, icnt = instanceNdxs.Length; i < icnt; ++i)
+                {
+                    int ndx = instanceNdxs[i];
+                    long offset = offsets[ndx];
+                    int count = ReferenceCount(offset, offsets[ndx + 1]);
+                    totalCount += count;
+                    if (count == 0)
+                    {
+                        lst[i] = new IndexNode(ndx, level);
+                        continue;
+                    }
+                    IndexNode[] refs = ReadReferences(br, offset, count, level + 1, que);
+                    lst[i] = new IndexNode(ndx, level, refs);
+                }
+                ++level;
+                if (maxLevel <= level) return new KeyValuePair<IndexNode[], int>(lst, totalCount);
+
+                while (que.Count > 0)
+                {
+                    var node = que.Dequeue();
+                    if (node.Level >= maxLevel) continue;
+                    int ndx = node.Index;
+                    Debug.Assert(!node.HasReferences());
+                    long offset = offsets[ndx];
+                    int count = ReferenceCount(offset, offsets[ndx + 1]);
+                    totalCount += count;
+                    if (count == 0) continue;
+                    IndexNode[] refs = ReadReferences(br, offset, count, node.Level + 1, que);
+                    node.AddNodes(refs);
+                }
+
+                return new KeyValuePair<IndexNode[], int>(lst, totalCount);
+            }
+            catch (Exception ex)
+            {
+                error = Utils.GetExceptionErrorString(ex);
+                return new KeyValuePair<IndexNode[], int>(null, 0); ;
+            }
+        }
+
+        public KeyValuePair<IndexNode, int> GetAncestors(int instanceNdx, int maxLevel, out string error, ReferenceType refType = ReferenceType.Ancestors | ReferenceType.All)
+        {
+            error = null;
+            try
+            {
+                 int level = 0;
+
+                Queue<IndexNode> que = new Queue<IndexNode>(128);
+
+                long[] offsets = GetOffsets((ReferenceType.Ancestors & refType) != 0 ? RefFile.BwdOffsets : RefFile.FwdOffsets);
+                BinaryReader br = GetReader((ReferenceType.Ancestors & refType) != 0 ? RefFile.BwdRefs : RefFile.FwdRefs);
+                long offset = offsets[instanceNdx];
+                int count = ReferenceCount(offset, offsets[instanceNdx + 1]);
+                if (count == 0)
+                {
+                    return new  KeyValuePair<IndexNode, int>(new IndexNode(instanceNdx, level), 1);
+                }
+                int totalCount = count + 1;
+                IndexNode[] refs = ReadReferences(br, offset, count, level + 1, que);
+                var rootNode = new IndexNode(instanceNdx, level, refs);
+                while (que.Count > 0)
+                {
+                    var node = que.Dequeue();
+                    if (node.Level >= maxLevel) continue;
+                    int ndx = node.Index;
+                    Debug.Assert(!node.HasReferences());
+                    offset = offsets[ndx];
+                    count = ReferenceCount(offset, offsets[ndx + 1]);
+                    if (count == 0) continue;
+                    totalCount += count;
+                    refs = ReadReferences(br, offset, count, node.Level + 1, que);
+                    node.AddNodes(refs);
+                }
+
+                return new KeyValuePair<IndexNode, int>(rootNode, totalCount);
+            }
+            catch (Exception ex)
+            {
+                error = Utils.GetExceptionErrorString(ex);
+                return new KeyValuePair<IndexNode, int>(null, 0); ;
+            }
+        }
+
+        public int[] GetReferences(int instNdx, out string error, ReferenceType refType = ReferenceType.Ancestors | ReferenceType.All)
+        {
+            error = null;
+            long[] offsets = GetOffsets((ReferenceType.Ancestors & refType) != 0 ? RefFile.BwdOffsets : RefFile.FwdOffsets);
+            BinaryReader br = GetReader((ReferenceType.Ancestors & refType) != 0 ? RefFile.BwdRefs : RefFile.FwdRefs);
+
+            long offset = offsets[instNdx];
+            int count = ReferenceCount(offset, offsets[instNdx + 1]);
+            if (count == 0) return Utils.EmptyArray<int>.Value;
+
+            return ReadReferences(br, offset, count);
+        }
+
+        #endregion queries
+
+        #region building
+
+        public bool CreateForwardReferences(ClrHeap heap, out string error)
+        {
+            const string progressHeader = Constants.HeavyAsteriskHeader + "[FwdRefs] ";
+            error = null;
+            BinaryWriter bwFwdRefs = null, bwFwdOffs = null;
+            try
+            {
+                _stopWatch = new Stopwatch();
+                _stopWatch.Start();
+                _progress?.Report(progressHeader + "Creating forward references data...");
+                _reversedRefsCounts = new int[_instances.Length];
+                _forwardRefsCounts = new int[_instances.Length];
+                int lastInstanceNdx = _instances.Length - 1; // for binary search
+                bwFwdRefs = GetWriter(RefFile.FwdRefs, FileMode.Create);
+                bwFwdOffs = GetWriter(RefFile.FwdOffsets, FileMode.Create);
+                long offset = 0L;
+
+                var fieldAddrOffsetList = new List<ulong>(64);
+                for (int i = 0, icnt = _instances.Length; i < icnt; ++i)
+                {
+                    var addr = Utils.RealAddress(_instances[i]);
+                    var clrType = heap.GetObjectType(addr);
+                    //Debug.Assert();
+                    bwFwdOffs.Write(offset);
+
+                    if (clrType == null || TypeExtractor.IsExludedType(clrType.Name)) continue;
+
+                    fieldAddrOffsetList.Clear();
+                    clrType.EnumerateRefsOfObjectCarefully(addr, (address, off) =>
+                    {
+                        fieldAddrOffsetList.Add(address);
+                    });
+                    if (fieldAddrOffsetList.Count < 1) continue;
+
+                    int acount = PreprocessParentRefs(addr, fieldAddrOffsetList);
+                    if (acount == 0) continue;
+
+                    offset += acount * sizeof(int);
+                    _forwardRefsCounts[i] += acount;
+
+                    int parentNdx = Utils.AddressSearch(_instances, addr);
+                    Debug.Assert(parentNdx >= 0);
+                    for (int j = 0; j < acount; ++j)
+                    {
+                        ulong childAddr = fieldAddrOffsetList[j];
+                        int childNdx = Utils.AddressSearch(_instances, childAddr);
+                        Debug.Assert(childNdx >= 0);
+
+                        copy_addr_flags(_instances, parentNdx, childNdx);
+                        _reversedRefsCounts[childNdx] += 1; // update reversed references count
+                        ++_totalReversedRefs;
+                        bwFwdRefs.Write(childNdx);
+                    }
+                }
+                bwFwdOffs.Write(offset);
+                _progress?.Report(progressHeader + "Creating forward references data done. " + Utils.StopAndGetDurationStringAndRestart(_stopWatch));
+                return true;
+            }
+            catch (Exception ex)
+            {
+                error = Utils.GetExceptionErrorString(ex);
+                _progress?.Report(progressHeader + "EXCEPTION: " + ex.Message);
+                return false;
+            }
+            finally
+            {
+                bwFwdRefs?.Close();
+                bwFwdOffs?.Close();
+            }
+
+        }
+
+
+        public void BuildReveresedReferences()
+        {
+            const string progressHeader = Constants.HeavyAsteriskHeader + "[BwdRefs] ";
+            BinaryReader brFwdRefs = null;
+            BinaryWriter bwBwdRefs = null;
+            try
+            {
+                _progress?.Report(progressHeader + "Creating reveresed references data...");
+                Unsafe.FileWriter.CreateFileWithSize(_fileList[(int)RefFile.BwdRefs], _totalReversedRefs * sizeof(int), out _error);
+                Unsafe.FileWriter.CreateFileWithSize(_fileList[(int)RefFile.BwdOffsets], (_instances.Length+1) * sizeof(long), out _error);
+                long[] bwdRefOffsets = WriteBwdOffsets(_reversedRefsCounts);
+                int[] intBuf = new int[1024];
+                brFwdRefs = GetReader(RefFile.FwdRefs, FileMode.Open);
+                bwBwdRefs = GetWriter(RefFile.BwdRefs, FileMode.Create);
+                long fwdOffset = 0L;
+                HashSet<int> reflagSet = new HashSet<int>();
+                Dictionary<int, List<int>> bwdRefsDct = new Dictionary<int, List<int>>();
+
+                for (int i = 0, icnt = _forwardRefsCounts.Length; i < icnt; ++i)
+                {
+                    int fwdCount = _forwardRefsCounts[i];
+                    if (fwdCount == 0) continue;
+                    intBuf = CheckBufferSize(intBuf, fwdCount);
+                    ReadReferences(brFwdRefs, fwdOffset, fwdCount, intBuf);
+                    fwdOffset += fwdCount * sizeof(int);
+                    for (int j = 0; j < fwdCount; ++j)
+                    {
+                        int childNdx = intBuf[j];
+                        if (check_copy_addr_flags(_instances, i, childNdx))
+                        {
+                            reflagSet.Add(childNdx);
+                        }
+
+                        int childRefCount = _reversedRefsCounts[childNdx];
+                        List<int> lst;
+                        if (bwdRefsDct.TryGetValue(childNdx, out lst))
+                        {
+                            lst.Add(i);
+                            if (lst.Count == childRefCount)
+                            {
+                                WriteRefs(bwBwdRefs, bwdRefOffsets[childNdx], lst);
+                                bwdRefsDct.Remove(childNdx);
+                            }
+                        }
+                        else
+                        {
+                            if (childRefCount == 1)
+                            {
+                                WriteRef(bwBwdRefs, bwdRefOffsets[childNdx], i);
+                            }
+                            else
+                            {
+                                lst = new List<int>(childRefCount);
+                                lst.Add(i);
+                                bwdRefsDct.Add(childNdx, lst);
+                            }
+                        }
+                    }
+                }
+
+                _progress?.Report(progressHeader + "Saving instance array: " + Utils.CountString(_instances.Length));
+                Utils.WriteUlongArray(_instanceFilePath, _instances, out _error);
+                _instances = null; // release mem
+
+                _progress?.Report(progressHeader + "Reflag count: " + reflagSet.Count);
+                _progress?.Report(progressHeader + "Creating reversed references data done. " + Utils.StopAndGetDurationStringAndRestart(_stopWatch));
+            }
+            catch (Exception ex)
+            {
+                _error = Utils.GetExceptionErrorString(ex);
+                _progress?.Report(progressHeader + "EXCEPTION: " + ex.Message);
+            }
+            finally
+            {
+                brFwdRefs?.Close();
+                bwBwdRefs?.Close();
+                _stopWatch?.Stop();
+            }
+        }
+
+        private void WriteRefs(BinaryWriter bw, long offset, List<int> vals)
+        {
+            vals.Sort();
+            bw.BaseStream.Seek(offset,SeekOrigin.Begin);
+            for(int i = 0, icnt = vals.Count; i < icnt; ++i)
+            {
+                bw.Write(vals[i]);
+            }
+        }
+        private void WriteRef(BinaryWriter bw, long offset, int val)
+        {
+            bw.BaseStream.Seek(offset, SeekOrigin.Begin);
+            bw.Write(val);
+        }
+
+        private long[] WriteBwdOffsets(int[] reversedRefsCounts)
+        {
+            BinaryWriter bw = null;
+            try
+            {
+                bw = GetWriter(RefFile.BwdOffsets, FileMode.Create);
+                long[] bwdRefOffsets = new long[_instances.Length + 1];
+                long offset = 0L;
+                for (int i = 0, icnt = _reversedRefsCounts.Length; i < icnt; ++i)
+                {
+                    bw.Write(offset);
+                    bwdRefOffsets[i] = offset;
+                    offset += reversedRefsCounts[i] * sizeof(int);
+                }
+                bw.Write(offset);
+                bw.Close();
+                bwdRefOffsets[_reversedRefsCounts.Length] = offset;
+                return bwdRefOffsets;
+            }
+            catch(Exception ex)
+            {
+                _error = Utils.GetExceptionErrorString(ex);
+                return null;
+            }
+            finally
+            {
+                bw?.Close();
+            }
+        }
+
+        public int PreprocessParentRefs(ulong parent, List<ulong> lst)
+        {
+            // assert lst has to be sorted TODO JRD
+            int count = lst.Count;
+            Debug.Assert(lst.Count > 0);
+            lst.Sort(new Utils.AddressComparison());
+            int i = 0, ndx = 0;
+            for (; i < count; ++i)
+                if (!Utils.SameRealAddresses(lst[i], parent)) break;
+            if (i == count) return 0;
+            lst[0] = lst[i++];
+            for (; i < count; ++i)
+            {
+                var val = lst[i];
+                if (val == parent || val == lst[ndx]) continue;
+                lst[++ndx] = val;
+            }
+            return ndx + 1;
+        }
+
+        //int address_search(ulong[] ary, int left, int right, ulong key)
+        //{
+        //    key = (key & AddressFlagMask);
+        //    while (left <= right)
+        //    {
+        //        int middle = (left + right) / 2;
+        //        ulong ary_item = (ary[middle] & key & AddressFlagMask);
+        //        if (key == ary_item) return middle;
+        //        if (key < ary_item) right = middle - 1; else left = middle + 1;
+        //    }
+        //    return -1;
+        //}
+
+        void copy_addr_flags(ulong[] ary, int from, int to)
+        {
+            ulong fromValFlg = ary[from] & Utils.RootBits.Mask;
+            if (fromValFlg == 0UL) return;
+            ulong toVal = ary[to];
+            ary[to] = toVal | fromValFlg;
+        }
+
+        bool check_copy_addr_flags(ulong[] ary, int from, int to)
+        {
+            ulong fromValFlg = ary[from] & Utils.RootBits.Mask;
+            if (fromValFlg == 0UL) return false;
+            bool check = false;
+            if (to < from)
+            {
+                ulong toValFlg = ary[to] & Utils.RootBits.Mask;
+                if (((fromValFlg & Utils.RootBits.Rooted) != 0) && ((toValFlg & Utils.RootBits.Rooted) == 0)) check = true;
+                else if (((fromValFlg & Utils.RootBits.Finalizer) != 0) && ((toValFlg & Utils.RootBits.Finalizer) == 0)) check = true;
+            }
+            ary[to] |= fromValFlg;
+            return check;
+        }
+
+        #endregion building
+
+        #region io
+
+        public static bool DeleteInstanceReferenceFiles( int runtmNdx, DumpFileMoniker moniker, out string error)
+        {
+            error = null;
+            try
+            {
+                string[] fileList = new string[(int)RefFile.Count + 1];
+                fileList[0] = moniker.GetFilePath(runtmNdx, Constants.MapRefFwdOffsetsFilePostfix);
+                fileList[1] = moniker.GetFilePath(runtmNdx, Constants.MapFwdRefsFilePostfix);
+                fileList[2] = moniker.GetFilePath(runtmNdx, Constants.MapRefBwdOffsetsFilePostfix);
+                fileList[3] = moniker.GetFilePath(runtmNdx, Constants.MapBwdRefsFilePostfix);
+                fileList[4] = moniker.GetFilePath(runtmNdx, Constants.MapRefFwdDataFilePostfix);
+
+                for (int i = 0, icnt = fileList.Length; i < icnt; ++i)
+                {
+                    if (File.Exists(fileList[i]))
+                        File.Delete(fileList[0]);
+                }
+
+                return true;
+            }
+            catch(Exception ex)
+            {
+                error = Utils.GetExceptionErrorString(ex);
+                return false;
+            }
+        }
+
+        public static bool InstanceReferenceFilesAvailable(int runtmNdx, DumpFileMoniker moniker, out string error)
+        {
+            error = null;
+            try
+            {
+                string[] fileList = new string[(int)RefFile.Count];
+                fileList[0] = moniker.GetFilePath(runtmNdx, Constants.MapRefFwdOffsetsFilePostfix);
+                fileList[1] = moniker.GetFilePath(runtmNdx, Constants.MapFwdRefsFilePostfix);
+                fileList[2] = moniker.GetFilePath(runtmNdx, Constants.MapRefBwdOffsetsFilePostfix);
+                fileList[3] = moniker.GetFilePath(runtmNdx, Constants.MapBwdRefsFilePostfix);
+
+                for (int i = 0, icnt = fileList.Length; i < icnt; ++i)
+                {
+                    if (!File.Exists(fileList[i])) return false;
+                }
+
+                return true;
+            }
+            catch (Exception ex)
+            {
+                error = Utils.GetExceptionErrorString(ex);
+                return false;
+            }
+        }
+
+        private static int[] CheckBufferSize(int[] buf, int requiredSize)
+        {
+            int size = buf.Length;
+            if (size >= requiredSize) return buf;
+            while (requiredSize > size)
+            {
+                size += size / 2;
+            }
+            return new int[size];
+        }
+
+        #endregion io
 
         #region dispose
 

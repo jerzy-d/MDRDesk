@@ -26,7 +26,7 @@ namespace ClrMDRIndex
 			public static ulong Mask = 0xF000000000000000;
 			public static ulong FinalizerMask = 0x3000000000000000;
 			public static ulong AddressMask = 0x0FFFFFFFFFFFFFFF;
-			public static ulong Rooted = 0x8000000000000000;
+			public static ulong Rooted =    0x8000000000000000;
 			public static ulong Finalizer = 0x4000000000000000;
 			public static ulong Root = 0x2000000000000000;
 			public static ulong RootedMask = (Rooted|Root);
@@ -3125,11 +3125,40 @@ namespace ClrMDRIndex
 		}
 
 
-		/// <summary>
-		/// Return an empty array to avoid unnecessary memory allocation.
-		/// </summary>
-		/// <typeparam name="T"></typeparam>
-		public static class EmptyArray<T>
+        public static ulong[] CopyArray(ulong[] ary)
+        {
+            int len = ary.Length;
+            var copy = new ulong[len];
+            unsafe
+            {
+                fixed(ulong* to = &copy[0])
+                {
+                    fixed(ulong* from = &ary[0])
+                    {
+                        Buffer.MemoryCopy(from, to, long.MaxValue, (long)len * sizeof(ulong));
+                    }
+                }
+            }
+            return copy;
+        }
+
+        public static ulong[] MyCopyArray(ulong[] ary)
+        {
+            int len = ary.Length;
+            var copy = new ulong[len];
+            for (int i = 0; i <len; ++i)
+            {
+                copy[i] = ary[i];
+            }
+            return copy;
+        }
+
+
+        /// <summary>
+        /// Return an empty array to avoid unnecessary memory allocation.
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        public static class EmptyArray<T>
 		{
 			/// <summary>
 			/// Static empty array of some type.
