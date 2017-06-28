@@ -310,7 +310,7 @@ namespace ClrMDRIndex
                         //
                         if (!Setup.SkipReferences)
 						{
-#if TRUE
+#if FALSE
                             progress?.Report(runtimeIndexHeader + "Creating instance reference data...");
                             Scullion bld = new Scullion(addressesCopy,
 								_fileMoniker.GetFilePath(r, Constants.MapRefFwdDataFilePostfix),

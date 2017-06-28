@@ -59,20 +59,35 @@ namespace MDRDesk
 				var text = sr.ReadToEnd();
 				var pos = text.IndexOf(InfoSeparator,StringComparison.Ordinal);
 				Debug.Assert(pos>0);
-				var info = text.Substring(0, pos);
-				var progressInfo = text.Substring(pos + InfoSeparator.Length);
-				Debug.Assert(grid != null);
+
+                pos += InfoSeparator.Length;
+                int pos2 = text.IndexOf(InfoSeparator, pos);
+                pos2 += InfoSeparator.Length;
+                int pos3 = text.IndexOf(InfoSeparator, pos2);
+                pos3 += InfoSeparator.Length;
+
+                var info = text.Substring(0, pos - InfoSeparator.Length);
+                var progressInfo = text.Substring(pos, pos2-pos);
+                var threadInfo = text.Substring(pos2, pos3 - pos2);
+                var refInfo = text.Substring(pos3);
+
+
+                Debug.Assert(grid != null);
 				_progressText = (TextBox) LogicalTreeHelper.FindLogicalNode(grid, "IndexingList");
 				Debug.Assert(_progressText != null);
                 _progressThreadText = (TextBox)LogicalTreeHelper.FindLogicalNode(grid, "IndexingThreadList");
                 Debug.Assert(_progressThreadText != null);
+                _progressThreadText.Text = threadInfo;
                 _progressRefsText = (TextBox)LogicalTreeHelper.FindLogicalNode(grid, "IndexingRefsList");
                 Debug.Assert(_progressRefsText != null);
+                _progressRefsText.Text = refInfo;
 
                 _progressText.Text = progressInfo;
 				_infoText = (TextBox) LogicalTreeHelper.FindLogicalNode(grid, "IndexingInformation");
 				Debug.Assert(_infoText != null);
 				_infoText.Text = info;
+
+
 				wnd.DisplayTab(Constants.BlackDiamond, "Indexing", grid, "IndexingGrid");
 				return true;
 			}
@@ -97,6 +112,10 @@ namespace MDRDesk
 				sw.WriteLine(_infoText.Text);
 				sw.WriteLine(InfoSeparator);
 				sw.WriteLine(_progressText.Text);
+                sw.WriteLine(InfoSeparator);
+                sw.WriteLine(_progressThreadText.Text);
+                sw.WriteLine(InfoSeparator);
+                sw.WriteLine(_progressRefsText);
 			}
 			catch (Exception)
 			{

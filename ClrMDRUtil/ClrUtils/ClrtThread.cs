@@ -48,6 +48,7 @@ namespace ClrMDRIndex
 		private int[] _frames;
 		private ulong[] _stackPtrs;
 		private int[] _liveStackObjects;
+
 		public int[] LiveStackObjects => _liveStackObjects;
 		private int[] _deadStackObjects;
 		public int[] DeadStackObjects => _deadStackObjects;

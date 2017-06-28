@@ -235,7 +235,6 @@ namespace ClrMDRIndex
 				// unique addresses
 				//
 				var addrAry = objSet.ToArray();
-				var cmp = new Utils.AddressCmpAcs();
 				Array.Sort(addrAry, new Utils.AddressComparison());
 
 				var finlAry = finlSet.ToArray();

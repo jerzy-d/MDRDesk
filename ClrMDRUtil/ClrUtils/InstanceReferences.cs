@@ -379,6 +379,7 @@ namespace ClrMDRIndex
         {
             const string progressHeader = Constants.HeavyAsteriskHeader + "[FwdRefs] ";
             error = null;
+            int nullCount = 0;
             BinaryWriter bwFwdRefs = null, bwFwdOffs = null;
             try
             {
@@ -396,11 +397,16 @@ namespace ClrMDRIndex
                 for (int i = 0, icnt = _instances.Length; i < icnt; ++i)
                 {
                     var addr = Utils.RealAddress(_instances[i]);
+                    if (addr == 0x000000038130e798)
+                    {
+                        int a = 1;
+                    }
                     var clrType = heap.GetObjectType(addr);
-                    //Debug.Assert();
+                    //Debug.Assert(clrType != null); // TODO JRD restore this
                     bwFwdOffs.Write(offset);
 
-                    if (clrType == null || TypeExtractor.IsExludedType(clrType.Name)) continue;
+                    if (clrType == null) { ++nullCount; continue; }
+                    if (TypeExtractor.IsExludedType(clrType.Name)) continue;
 
                     fieldAddrOffsetList.Clear();
                     clrType.EnumerateRefsOfObjectCarefully(addr, (address, off) =>
@@ -431,6 +437,7 @@ namespace ClrMDRIndex
                 }
                 bwFwdOffs.Write(offset);
                 _progress?.Report(progressHeader + "Creating forward references data done. " + Utils.StopAndGetDurationStringAndRestart(_stopWatch));
+                _progress?.Report(progressHeader + "UNEXPECTED NULLS, count: " + nullCount);
                 return true;
             }
             catch (Exception ex)
@@ -478,7 +485,8 @@ namespace ClrMDRIndex
                         int childNdx = intBuf[j];
                         if (check_copy_addr_flags(_instances, i, childNdx))
                         {
-                            reflagSet.Add(childNdx);
+                            if (_forwardRefsCounts[childNdx] > 0)
+                                reflagSet.Add(childNdx);
                         }
 
                         int childRefCount = _reversedRefsCounts[childNdx];
@@ -508,11 +516,63 @@ namespace ClrMDRIndex
                     }
                 }
 
+                bwBwdRefs.Close();
+                bwBwdRefs = null;
+
+                // release some mem
+                //
+                _reversedRefsCounts = null;
+                bwdRefOffsets = null;
+
+                if (reflagSet.Count > 0)
+                {
+                    _progress?.Report(progressHeader + "Start of reflagging, count: " + Utils.CountString(reflagSet.Count));
+                    var ary = new int[reflagSet.Count];
+                    reflagSet.CopyTo(ary);
+                    Array.Sort(ary);
+                    IntSterta bh = new IntSterta(ary.Length + 8, ary);
+                    ary = null;
+                    var fwdRefOffsets = new long[_forwardRefsCounts.Length + 1];
+                    long offset = 0L;
+                    for (int i = 0, icnt = _forwardRefsCounts.Length; i < icnt; ++i)
+                    {
+                        fwdRefOffsets[i] = offset;
+                        offset += fwdRefOffsets[i] * sizeof(int);
+                    }
+                    fwdRefOffsets[_forwardRefsCounts.Length] = offset;
+                    while (bh.Count > 0)
+                    {
+                        int ndx = bh.Pop();
+                        int cnt = _forwardRefsCounts[ndx];
+                        if (cnt < 1) continue;
+                        intBuf = CheckBufferSize(intBuf, cnt);
+                        offset = fwdRefOffsets[ndx];
+                        ReadReferences(brFwdRefs, offset, cnt, intBuf);
+                        for (int i = 0; i < cnt; ++i)
+                        {
+                            int childNdx = intBuf[i];
+#if FALSE
+                            if (checkall_copy_addr_flags(_instances, ndx, childNdx))
+                            {
+                                if (_forwardRefsCounts[childNdx] > 0)
+                                {
+                                    if (reflagSet.Add(childNdx))
+                                        bh.Push(childNdx);
+                                }
+                            }
+#else
+                            copy_addr_flags(_instances, ndx, childNdx);
+                            if (_forwardRefsCounts[childNdx] > 0 && reflagSet.Add(childNdx))
+                                bh.Push(childNdx);
+#endif
+                        }
+                    }
+                }
+
                 _progress?.Report(progressHeader + "Saving instance array: " + Utils.CountString(_instances.Length));
                 Utils.WriteUlongArray(_instanceFilePath, _instances, out _error);
                 _instances = null; // release mem
 
-                _progress?.Report(progressHeader + "Reflag count: " + reflagSet.Count);
                 _progress?.Report(progressHeader + "Creating reversed references data done. " + Utils.StopAndGetDurationStringAndRestart(_stopWatch));
             }
             catch (Exception ex)
@@ -577,7 +637,7 @@ namespace ClrMDRIndex
         {
             // assert lst has to be sorted TODO JRD
             int count = lst.Count;
-            Debug.Assert(lst.Count > 0);
+            Debug.Assert(count > 0);
             lst.Sort(new Utils.AddressComparison());
             int i = 0, ndx = 0;
             for (; i < count; ++i)
@@ -619,19 +679,37 @@ namespace ClrMDRIndex
             ulong fromValFlg = ary[from] & Utils.RootBits.Mask;
             if (fromValFlg == 0UL) return false;
             bool check = false;
+            ulong toVal = ary[to];
+#if FALSE
             if (to < from)
             {
-                ulong toValFlg = ary[to] & Utils.RootBits.Mask;
+                ulong toValFlg = toVal & Utils.RootBits.Mask;
                 if (((fromValFlg & Utils.RootBits.Rooted) != 0) && ((toValFlg & Utils.RootBits.Rooted) == 0)) check = true;
                 else if (((fromValFlg & Utils.RootBits.Finalizer) != 0) && ((toValFlg & Utils.RootBits.Finalizer) == 0)) check = true;
             }
-            ary[to] |= fromValFlg;
+#else
+            if (to < from) check = true;
+#endif
+            ary[to] = toVal | fromValFlg;
             return check;
         }
 
-        #endregion building
+        bool checkall_copy_addr_flags(ulong[] ary, int from, int to)
+        {
+            ulong fromValFlg = ary[from] & Utils.RootBits.Mask;
+            if (fromValFlg == 0UL) return false;
+            bool check = false;
+            ulong toVal = ary[to];
+            ulong toValFlg = toVal & Utils.RootBits.Mask;
+            if (((fromValFlg & Utils.RootBits.Rooted) != 0) && ((toValFlg & Utils.RootBits.Rooted) == 0)) check = true;
+            else if (((fromValFlg & Utils.RootBits.Finalizer) != 0) && ((toValFlg & Utils.RootBits.Finalizer) == 0)) check = true;
+            ary[to] = toVal | fromValFlg;
+            return check;
+        }
 
-        #region io
+#endregion building
+
+#region io
 
         public static bool DeleteInstanceReferenceFiles( int runtmNdx, DumpFileMoniker moniker, out string error)
         {
@@ -696,9 +774,9 @@ namespace ClrMDRIndex
             return new int[size];
         }
 
-        #endregion io
+#endregion io
 
-        #region dispose
+#region dispose
 
         volatile
         bool _disposed = false;
@@ -734,7 +812,7 @@ namespace ClrMDRIndex
             Dispose(false);
         }
 
-        #endregion dispose
+#endregion dispose
 
     }
 

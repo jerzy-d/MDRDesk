@@ -105,6 +105,7 @@
     <Compile Include="ClrUtils\IndexCurrentInfo.cs" />
     <Compile Include="ClrUtils\IndexProxy.cs" />
     <Compile Include="ClrUtils\InstanceReferences.cs" />
+    <Compile Include="ClrUtils\IntSterta.cs" />
     <Compile Include="ClrUtils\References.cs" />
     <Compile Include="ClrUtils\StringStats.cs" />
     <Compile Include="Graph\DepthFirstOrder.cs" />

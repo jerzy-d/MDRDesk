@@ -137,3 +137,13 @@ BUILDING REFERENCES DURATION:  00:14:07.24
 TOTAL DURATION:  00:19:20.41
 
 
+0034 06/28/17
+Double click on list view:
+Generally one only responds to a single click on an item but if you want a double click it isn't hard to do.
+private void listView1_MouseDoubleClick ( object sender, MouseEventArgs e ) {
+   ListViewHitTestInfo hit = listView1.HitTest(e.Location);
+   if (hit.Item != null) {
+      MessageBox.Show(this, hit.Item.Text);
+   };
+}
+Note that the above code reacts to clicking anywhere on the item.  You can get specific (icon, label, etc).
