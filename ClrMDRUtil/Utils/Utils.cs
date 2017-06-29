@@ -542,7 +542,32 @@ namespace ClrMDRIndex
 			}
 		}
 
-		public static uint[] ReadUintArray(string path, out string error)
+        public static long[] ReadLongArray(string path, int cnt, out string error)
+        {
+            error = null;
+            BinaryReader br = null;
+            try
+            {
+                br = new BinaryReader(File.Open(path, FileMode.Open));
+                var ary = new long[cnt];
+                for (int i = 0; i < cnt; ++i)
+                {
+                    ary[i] = br.ReadInt64();
+                }
+                return ary;
+            }
+            catch (Exception ex)
+            {
+                error = GetExceptionErrorString(ex);
+                return null;
+            }
+            finally
+            {
+                br?.Close();
+            }
+        }
+
+        public static uint[] ReadUintArray(string path, out string error)
 		{
 			error = null;
 			BinaryReader br = null;
@@ -1556,7 +1581,20 @@ namespace ClrMDRIndex
 			return true;
 		}
 
-		public class AddressCmpDesc : IComparer<ulong>
+        public static bool SameRealAddresses(ulong[] ary1, ulong[] ary2)
+        {
+            if (ary1 == null && ary2 == null) return true;
+            if (ary1 == null || ary2 == null) return false;
+            if (ary1.Length != ary2.Length) return false;
+            for (int i = 0, icnt = ary1.Length; i < icnt; ++i)
+            {
+                if (RealAddress(ary1[i]) != RealAddress(ary2[i]))
+                    return false;
+            }
+            return true;
+        }
+
+        public class AddressCmpDesc : IComparer<ulong>
         {
             public int Compare(ulong a, ulong b)
             {

@@ -162,22 +162,22 @@ namespace ClrMDRIndex
 
 		public const string ReportPath = @"ad-hoc.queries";
 
-		public const string TxtStringIdsPostfix = ".STRINGIDS[0].txt"; // list of strings, ordered by ids
-		public const string MapTypeInfosFilePostfix = ".TYPEINFOS[0].map"; // type infos, see ClrtTypes class
-		public const string MapInstanceFilePostfix = ".INSTANCES[0].map"; // instance addresses and corresponding type ids
-		public const string MapTypeInstancesFilePostfix = ".TYPEINSTANCES[0].map"; // mapping of ordered type ids onto instances
+		//public const string TxtStringIdsPostfix = ".STRINGIDS[0].txt"; // list of strings, ordered by ids
+		//public const string MapTypeInfosFilePostfix = ".TYPEINFOS[0].map"; // type infos, see ClrtTypes class
+		//public const string MapInstanceFilePostfix = ".INSTANCES[0].map"; // instance addresses and corresponding type ids
+		//public const string MapTypeInstancesFilePostfix = ".TYPEINSTANCES[0].map"; // mapping of ordered type ids onto instances
 																				   //public const string MapFieldsAndParentsFilePostfix = ".FIELDSANDPARENTS[0].map";
 
-		public const string MapFieldOffsetsFilePostfix = ".FIELDOFFSETS[0].map";
-		public const string MapFieldInstancesPostfix = ".FIELDINSTANCES[0].map";
-		public const string MapFieldParentOffsetsFilePostfix = ".FIELDPARENTOFFSETS[0].map";
-		public const string MapFieldParentInstancesPostfix = ".FIELDPARENTINSTANCES[0].map";
+		//public const string MapFieldOffsetsFilePostfix = ".FIELDOFFSETS[0].map";
+		//public const string MapFieldInstancesPostfix = ".FIELDINSTANCES[0].map";
+		//public const string MapFieldParentOffsetsFilePostfix = ".FIELDPARENTOFFSETS[0].map";
+		//public const string MapFieldParentInstancesPostfix = ".FIELDPARENTINSTANCES[0].map";
 
-		public const string MapRefFwdDataFilePostfix = ".REFFWDDATA[0].bin";
-		public const string MapRefFwdOffsetsFilePostfix = ".REFFWDOFFSETS[0].bin";
-		public const string MapFwdRefsFilePostfix = ".FWDREFS[0].bin";
-		public const string MapRefBwdOffsetsFilePostfix = ".REFBWDOFFSETS[0].bin";
-		public const string MapBwdRefsFilePostfix = ".BWDREFS[0].map";
+		public const string MapRefFwdDataFilePostfix = ".`REFFWDDATA[0].bin";
+		public const string MapRefFwdOffsetsFilePostfix = ".`FWDREFOFFSETS[0].bin";
+		public const string MapFwdRefsFilePostfix = ".`FWDREFS[0].bin";
+		public const string MapRefBwdOffsetsFilePostfix = ".`BWDREFOFFSETS[0].bin";
+		public const string MapBwdRefsFilePostfix = ".`BWDREFS[0].bin";
 
 		// TODO JRD -- new below, delete old field refs files above
 
@@ -215,23 +215,23 @@ namespace ClrMDRIndex
 
 		// instance references
 		//
-		public const string MapFieldRefInstancesPostfix = ".`FIELDREFINSTANCES[0].bin";
-		public const string MapFieldRefOffsetsFilePostfix = ".`FIELDREFOFFSETS[0].bin"; // TODO JRD -- remove
-		public const string MapFieldParentsPostfix = ".`FIELDPARENTS[0].bin"; // TODO JRD -- remove
+		//public const string MapFieldRefInstancesPostfix = ".`FIELDREFINSTANCES[0].bin";
+		//public const string MapFieldRefOffsetsFilePostfix = ".`FIELDREFOFFSETS[0].bin"; // TODO JRD -- remove
+		//public const string MapFieldParentsPostfix = ".`FIELDPARENTS[0].bin"; // TODO JRD -- remove
 
-		public const string MapParentsRootedPostfix = ".`PARENTSROOTED[0].bin"; // TODO JRD -- remove
-		public const string MapParentFieldsRootedPostfix = ".`PARENTFIELDSROOTED[0].bin"; // TODO JRD -- remove
-		public const string MapFieldsRootedPostfix = ".`FIELDSROOTED[0].bin"; // TODO JRD -- remove
-		public const string MapFieldParentsRootedPostfix = ".`FIELDPARENTSROOTED[0].bin"; // TODO JRD -- remove
+		//public const string MapParentsRootedPostfix = ".`PARENTSROOTED[0].bin"; // TODO JRD -- remove
+		//public const string MapParentFieldsRootedPostfix = ".`PARENTFIELDSROOTED[0].bin"; // TODO JRD -- remove
+		//public const string MapFieldsRootedPostfix = ".`FIELDSROOTED[0].bin"; // TODO JRD -- remove
+		//public const string MapFieldParentsRootedPostfix = ".`FIELDPARENTSROOTED[0].bin"; // TODO JRD -- remove
 
 		public const string MapRefsObjectFieldPostfix = ".`REFSOBJECTFIELD[0].bin";
 		public const string MapRefsFieldObjectPostfix = ".`REFSFIELDOBJECT[0].bin";
 
 
-		public const string MapParentsNotRootedPostfix = ".`PARENTS!ROOTED[0].bin"; // TODO JRD -- remove
-		public const string MapParentFieldsNotRootedPostfix = ".`PARENTFIELDS!ROOTED[0].bin"; // TODO JRD -- remove
-		public const string MapFieldsNotRootedPostfix = ".`FIELDS!ROOTED[0].bin"; // TODO JRD -- remove
-		public const string MapFieldParentsNotRootedPostfix = ".`FIELDPARENTS!ROOTED[0].bin"; // TODO JRD -- remove
+		//public const string MapParentsNotRootedPostfix = ".`PARENTS!ROOTED[0].bin"; // TODO JRD -- remove
+		//public const string MapParentFieldsNotRootedPostfix = ".`PARENTFIELDS!ROOTED[0].bin"; // TODO JRD -- remove
+		//public const string MapFieldsNotRootedPostfix = ".`FIELDS!ROOTED[0].bin"; // TODO JRD -- remove
+		//public const string MapFieldParentsNotRootedPostfix = ".`FIELDPARENTS!ROOTED[0].bin"; // TODO JRD -- remove
 
 		public const string TxtCommonStringIdsPostfix = ".`STRINGIDS[0].txt"; // list of strings, ordered by ids
 

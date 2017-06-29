@@ -381,6 +381,9 @@ namespace ClrMDRIndex
             error = null;
             int nullCount = 0;
             BinaryWriter bwFwdRefs = null, bwFwdOffs = null;
+
+            (int rootedCount, int finalizerCount) = get_flags_counts(_instances); // TODO JRD -- remove
+
             try
             {
                 _stopWatch = new Stopwatch();
@@ -397,7 +400,7 @@ namespace ClrMDRIndex
                 for (int i = 0, icnt = _instances.Length; i < icnt; ++i)
                 {
                     var addr = Utils.RealAddress(_instances[i]);
-                    if (addr == 0x000000038130e798)
+                    if (addr == 0x000000800224e0)
                     {
                         int a = 1;
                     }
@@ -438,6 +441,7 @@ namespace ClrMDRIndex
                 bwFwdOffs.Write(offset);
                 _progress?.Report(progressHeader + "Creating forward references data done. " + Utils.StopAndGetDurationStringAndRestart(_stopWatch));
                 _progress?.Report(progressHeader + "UNEXPECTED NULLS, count: " + nullCount);
+                (rootedCount, finalizerCount) = get_flags_counts(_instances); // TODO JRD -- remove
                 return true;
             }
             catch (Exception ex)
@@ -460,6 +464,7 @@ namespace ClrMDRIndex
             const string progressHeader = Constants.HeavyAsteriskHeader + "[BwdRefs] ";
             BinaryReader brFwdRefs = null;
             BinaryWriter bwBwdRefs = null;
+            (int rootedCount, int finalizerCount) = get_flags_counts(_instances); // TODO JRD remove
             try
             {
                 _progress?.Report(progressHeader + "Creating reveresed references data...");
@@ -519,6 +524,8 @@ namespace ClrMDRIndex
                 bwBwdRefs.Close();
                 bwBwdRefs = null;
 
+                (rootedCount, finalizerCount) = get_flags_counts(_instances); // TODO JRD -- remove
+
                 // release some mem
                 //
                 _reversedRefsCounts = null;
@@ -568,6 +575,8 @@ namespace ClrMDRIndex
                         }
                     }
                 }
+
+                (rootedCount, finalizerCount) = get_flags_counts(_instances); // TODO JRD -- remove
 
                 _progress?.Report(progressHeader + "Saving instance array: " + Utils.CountString(_instances.Length));
                 Utils.WriteUlongArray(_instanceFilePath, _instances, out _error);
@@ -666,6 +675,33 @@ namespace ClrMDRIndex
         //    return -1;
         //}
 
+        bool has_flag(ulong addr)
+        {
+            return (addr & Utils.RootBits.Mask) > 0;
+        }
+
+        bool has_rooted_flag(ulong addr)
+        {
+            return (addr & Utils.RootBits.Rooted) > 0;
+        }
+
+        bool has_finalizer_flag(ulong addr)
+        {
+            return (addr & Utils.RootBits.Finalizer) > 0;
+        }
+
+        ValueTuple<int,int> get_flags_counts(ulong[] ary)
+        {
+            int rootedCount = 0, finalizerCount = 0;
+            for (int i = 0, icnt = ary.Length; i < icnt; ++i)
+            {
+                ulong val = ary[i];
+                if (has_rooted_flag(val)) ++rootedCount;
+                if (has_finalizer_flag(val)) ++finalizerCount;
+            }
+            return (rootedCount, finalizerCount);
+        }
+
         void copy_addr_flags(ulong[] ary, int from, int to)
         {
             ulong fromValFlg = ary[from] & Utils.RootBits.Mask;
@@ -691,7 +727,7 @@ namespace ClrMDRIndex
             if (to < from) check = true;
 #endif
             ary[to] = toVal | fromValFlg;
-            return check;
+            return true;
         }
 
         bool checkall_copy_addr_flags(ulong[] ary, int from, int to)

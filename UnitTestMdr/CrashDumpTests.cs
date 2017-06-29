@@ -1894,48 +1894,48 @@ namespace UnitTestMdr
 		//	} // using dump
 		//}
 
-		[TestMethod]
-		public void TestIndexingBig()
-		{
-			string error;
-			string dumpPath = @"C:\WinDbgStuff\Dumps\Analytics\BigOne\Analytics11_042015_2.Big.dmp";
-			var dmp = OpenDump(dumpPath);
-			var fileMoniker = new DumpFileMoniker(dumpPath);
-			var strIds = new StringIdDct();
+		//[TestMethod]
+		//public void TestIndexingBig()
+		//{
+		//	string error;
+		//	string dumpPath = @"C:\WinDbgStuff\Dumps\Analytics\BigOne\Analytics11_042015_2.Big.dmp";
+		//	var dmp = OpenDump(dumpPath);
+		//	var fileMoniker = new DumpFileMoniker(dumpPath);
+		//	var strIds = new StringIdDct();
 
-			using (dmp)
-			{
-				var heap = dmp.Heap;
-				var runtm = dmp.Runtimes[0];
-				ulong[] instances = DumpIndexer.GetHeapAddressesCount(heap);
-				string[] typeNames = DumpIndexer.GetTypeNames(heap, out error);
-				var rootAddrInfo = ClrtRootInfo.GetRootAddresses(0, runtm, heap, typeNames, strIds, fileMoniker, out error);
-				Utils.GetRealAddressesInPlace(rootAddrInfo.Item1);
-				Utils.GetRealAddressesInPlace(rootAddrInfo.Item2);
+		//	using (dmp)
+		//	{
+		//		var heap = dmp.Heap;
+		//		var runtm = dmp.Runtimes[0];
+		//		ulong[] instances = DumpIndexer.GetHeapAddressesCount(heap);
+		//		string[] typeNames = DumpIndexer.GetTypeNames(heap, out error);
+		//		var rootAddrInfo = ClrtRootInfo.GetRootAddresses(0, runtm, heap, typeNames, strIds, fileMoniker, out error);
+		//		Utils.GetRealAddressesInPlace(rootAddrInfo.Item1);
+		//		Utils.GetRealAddressesInPlace(rootAddrInfo.Item2);
 
-				Assert.IsNull(error);
-				Assert.IsTrue(Utils.AreAddressesSorted(rootAddrInfo.Item1));
-				Assert.IsTrue(Utils.AreAddressesSorted(rootAddrInfo.Item2));
+		//		Assert.IsNull(error);
+		//		Assert.IsTrue(Utils.AreAddressesSorted(rootAddrInfo.Item1));
+		//		Assert.IsTrue(Utils.AreAddressesSorted(rootAddrInfo.Item2));
 
-				var rootAddresses = rootAddrInfo.Item1;
+		//		var rootAddresses = rootAddrInfo.Item1;
 
-				//Assert.IsTrue(Utils.AreAllInExcept0(rootAddresses, rootAddrInfo.Item1));
-				//Assert.IsTrue(Utils.AreAllInExcept0(rootAddresses, rootAddrInfo.Item2));
-				Assert.IsTrue(Utils.AreAllDistinct(rootAddresses));
-				Assert.IsTrue(Utils.IsSorted(rootAddresses));
+		//		//Assert.IsTrue(Utils.AreAllInExcept0(rootAddresses, rootAddrInfo.Item1));
+		//		//Assert.IsTrue(Utils.AreAllInExcept0(rootAddresses, rootAddrInfo.Item2));
+		//		Assert.IsTrue(Utils.AreAllDistinct(rootAddresses));
+		//		Assert.IsTrue(Utils.IsSorted(rootAddresses));
 
-				rootAddresses = Utils.GetRealAddressesInPlace(rootAddresses);
-				Bitset bitset = new Bitset(instances.Length);
-				var rootAddressNdxs = Utils.GetAddressIndices(rootAddresses, instances);
+		//		rootAddresses = Utils.GetRealAddressesInPlace(rootAddresses);
+		//		Bitset bitset = new Bitset(instances.Length);
+		//		var rootAddressNdxs = Utils.GetAddressIndices(rootAddresses, instances);
 
-				string path1 = fileMoniker.GetFilePath(0, Constants.MapParentFieldsRootedPostfix);
-				string path2 = fileMoniker.GetFilePath(0, Constants.MapFieldParentsRootedPostfix);
+		//		string path1 = fileMoniker.GetFilePath(0, Constants.MapParentFieldsRootedPostfix);
+		//		string path2 = fileMoniker.GetFilePath(0, Constants.MapFieldParentsRootedPostfix);
 
-				//bool result = References.CreateReferences2(0, heap, rootAddrInfo.Item1, instances, bitset, fileMoniker, null, out error);
-				//Assert.IsTrue(result);
-				Assert.IsNull(error);
-			} // using dump
-		}
+		//		//bool result = References.CreateReferences2(0, heap, rootAddrInfo.Item1, instances, bitset, fileMoniker, null, out error);
+		//		//Assert.IsTrue(result);
+		//		Assert.IsNull(error);
+		//	} // using dump
+		//}
 
 		private bool DumpReferences(string path, SortedDictionary<ulong, List<ulong>> refs, ulong[] instances,
 			out string error)
@@ -2594,6 +2594,245 @@ namespace UnitTestMdr
 
 			} // using dump
 		}
+
+        [TestMethod]
+        public void TestCompareInstanceFiles()
+        {
+            string path1 = @"D:\Jerzy\WinDbgStuff\dumps\Analytics\Highline\analyticsdump111.dlk.dmp.map\analyticsdump111.dlk.dmp.`INSTANCES[0].bin";
+            string path2 = @"D:\Jerzy\WinDbgStuff\dumps\Analytics\Highline\analyticsdump111.dlk.new2.dmp.map\analyticsdump111.dlk.new2.dmp.`INSTANCES[0].bin";
+
+            Assert.IsTrue(File.Exists(path1) && File.Exists(path2));
+
+            FileInfo fi1 = new FileInfo(path1);
+            long file1len = fi1.Length;
+            FileInfo fi2 = new FileInfo(path2);
+            long file2len = fi2.Length;
+            Assert.AreEqual(file1len, file2len);
+
+            string error;
+            ulong[] ary1 = Utils.ReadUlongArray(path1, out error);
+            Assert.IsNull(error);
+            ulong[] ary2 = Utils.ReadUlongArray(path2, out error);
+            Assert.IsNull(error);
+            Assert.AreEqual(ary1.Length, ary2.Length);
+
+            (int rootedCount1, int finalizerCount1) = get_flags_counts(ary1);
+            (int rootedCount2, int finalizerCount2) = get_flags_counts(ary2);
+            bool sameAddresses = same_addresses(ary1, ary2);
+
+            TestContext.WriteLine("[1] : " + path1);
+            TestContext.WriteLine("[2] : " + path2);
+            TestContext.WriteLine("SAME INSTANCE ADDRESSES: " + sameAddresses);
+            TestContext.WriteLine("[1] INSTANCE COUNT: " + Utils.CountString(ary1.Length));
+            TestContext.WriteLine("[2] INSTANCE COUNT: " + Utils.CountString(ary1.Length));
+            TestContext.WriteLine("[1] ROOTED    COUNT: " + Utils.CountString(rootedCount1));
+            TestContext.WriteLine("[2] ROOTED    COUNT: " + Utils.CountString(rootedCount2));
+            TestContext.WriteLine("[1] FINALIZER COUNT: " + Utils.CountString(finalizerCount1));
+            TestContext.WriteLine("[2] FINALIZER COUNT: " + Utils.CountString(finalizerCount2));
+
+
+        }
+
+
+        bool has_rooted_flag(ulong addr)
+        {
+            return (addr & Utils.RootBits.Rooted) > 0;
+        }
+
+        bool has_finalizer_flag(ulong addr)
+        {
+            return (addr & Utils.RootBits.Finalizer) > 0;
+        }
+
+        ValueTuple<int, int> get_flags_counts(ulong[] ary)
+        {
+            int rootedCount = 0, finalizerCount = 0;
+            for (int i = 0, icnt = ary.Length; i < icnt; ++i)
+            {
+                ulong val = ary[i];
+                if (has_rooted_flag(val)) ++rootedCount;
+                if (has_finalizer_flag(val)) ++finalizerCount;
+            }
+            return (rootedCount, finalizerCount);
+        }
+
+        bool same_addresses(ulong[] ary1, ulong[] ary2)
+        {
+            if (ary1.Length != ary2.Length) return false;
+            for (int i = 0, icnt = ary1.Length; i < icnt; ++i)
+            {
+                ulong val1 = ary1[i] & Utils.RootBits.AddressMask;
+                ulong val2 = ary2[i] & Utils.RootBits.AddressMask;
+                if (val1 != val2) return false;
+            }
+            return true;
+        }
+
+        [TestMethod]
+        public void TestCompareReferenceFiles()
+        {
+            string error;
+            BinaryReader br = null;
+            string path0 = @"D:\Jerzy\WinDbgStuff\dumps\Analytics\Highline\analyticsdump111.dlk.dmp.map\analyticsdump111.dlk.dmp.`INSTANCES[0].bin";
+            string path1 = @"D:\Jerzy\WinDbgStuff\dumps\Analytics\Highline\analyticsdump111.dlk.dmp.map\analyticsdump111.dlk.dmp.`REFSOBJECTFIELD[0].bin";
+            string path2 = @"D:\Jerzy\WinDbgStuff\dumps\Analytics\Highline\analyticsdump111.dlk.new2.dmp.map\analyticsdump111.dlk.new2.dmp.`FWDREFS[0].bin";
+            string path3 = @"D:\Jerzy\WinDbgStuff\dumps\Analytics\Highline\analyticsdump111.dlk.new2.dmp.map\analyticsdump111.dlk.new2.dmp.`FWDREFOFFSETS[0].bin";
+            string path4 = @"D:\Jerzy\WinDbgStuff\dumps\Analytics\Highline\analyticsdump111.dlk.new2.dmp.map\analyticsdump111.dlk.new2.dmp.`INSTANCES[0].bin";
+
+            Assert.IsTrue(File.Exists(path0)
+                            && File.Exists(path1)
+                            && File.Exists(path2)
+                            && File.Exists(path3)
+                            );
+
+            List<int> notEqualCounts = new List<int>();
+            List<int> diffsRefs = new List<int>();
+            try
+            {
+                ulong[] instances_O = Utils.ReadUlongArray(path0, out error);
+                ulong[] instances_N = Utils.ReadUlongArray(path4, out error);
+                int[] headAry_O;
+                int[][] lists_O;
+                References_old.LoadReferences(path1, out headAry_O, out lists_O, out error);
+                long[] offsets_N = Utils.ReadLongArray(path3, instances_N.Length + 1, out error);
+                int[] counts_N = new int[instances_N.Length];
+                for (int i = 0 , icnt = instances_N.Length; i < icnt; ++i)
+                {
+                    counts_N[i] = (int)(offsets_N[i+1] - offsets_N[i])/sizeof(int);
+                }
+                int[] counts_O = new int[instances_O.Length];
+                int nx_O = 0;
+                int ii = 0;
+                for (int icnt = instances_N.Length; ii < icnt;)
+                {
+                    if (nx_O == headAry_O.Length)
+                    {
+                        counts_O[ii++] = 0;
+                        continue;
+                    }
+                    int ndx_O = headAry_O[nx_O];
+                    if(ndx_O > ii)
+                    {
+                        try
+                        {
+                            while (ii < ndx_O) counts_O[ii++] = 0;
+                        }
+                        catch
+                        {
+                            int a = 1;
+                        }
+                    }
+                    counts_O[ii++] = lists_O[nx_O].Length;
+                    ++nx_O;
+                }
+
+
+                Assert.AreEqual(instances_O.Length, instances_N.Length);
+                for (int i = 0, icnt = instances_N.Length; i < icnt; ++i)
+                {
+                    if (counts_O[i] != counts_N[i])
+                    {
+                        notEqualCounts.Add(i);
+                    }
+                }
+
+                if (notEqualCounts.Count > 0)
+                {
+                    StreamWriter sw = null;
+                    try
+                    {
+                        sw = new StreamWriter(@"D:\Jerzy\WinDbgStuff\dumps\Analytics\Highline\COUNTDIFFS.TXT");
+                        foreach(int inst in notEqualCounts)
+                        {
+                            sw.Write(Utils.CountStringHeader(inst));
+                            sw.Write(Utils.SmallIdHeader(counts_O[inst]));
+                            sw.Write(Utils.SmallIdHeader(counts_N[inst]));
+                            sw.Write(Utils.AddressStringHeader(instances_O[inst]));
+                            sw.Write(Utils.AddressStringHeader(instances_N[inst]));
+                            sw.WriteLine();
+                        }
+                    }
+                    finally
+                    {
+                        sw?.Close();
+                    }
+
+                    //return;
+                }
+
+
+                br = new BinaryReader(File.Open(path2, FileMode.Open));
+
+                int ndx_N = 0;
+                for (int i = 0, icnt = headAry_O.Length; i < icnt; ++i)
+                {
+                    int ndx_O = headAry_O[i];
+                    int cnt_O = lists_O[i].Length;
+                    long offset_N = offsets_N[ndx_O];
+                    int cnt_N = counts_N[ndx_O];
+
+                    if (cnt_O != cnt_N)
+                    {
+                        int a = 1;
+                    }
+
+                    ulong parent_O = instances_O[ndx_O];
+                    ulong parent_N = instances_N[ndx_O];
+                    ulong[] children_O = new ulong[cnt_O];
+                    for (int j = 0, jcnt = lists_O[i].Length; j < jcnt; ++j)
+                    {
+                        children_O[j] = instances_O[lists_O[i][j]];
+                    }
+
+                    ulong[] children_N = new ulong[cnt_N];
+                    br.BaseStream.Seek(offset_N,SeekOrigin.Begin);
+                    for (int j = 0, jcnt = cnt_N; j < jcnt; ++j)
+                    {
+                        int nx_N = br.ReadInt32();
+                        children_N[j] = instances_N[nx_N];
+                    }
+
+                    if (notEqualCounts.BinarySearch(ndx_O) < 0)
+                    {
+                        if (!Utils.SameRealAddresses(children_O, children_N))
+                        {
+                            diffsRefs.Add(ndx_O);
+                        }
+                    }
+                    else
+                    {
+
+                    }
+
+
+                    int b = 1;
+
+                }
+            }
+            catch(Exception ex)
+            {
+                error = ex.ToString();
+                TestContext.WriteLine("EXCEPTION");
+                TestContext.WriteLine(error);
+            }
+            finally
+            {
+                br?.Close();
+            }
+
+
+            //TestContext.WriteLine("[1] : " + path1);
+            //TestContext.WriteLine("[2] : " + path2);
+            //TestContext.WriteLine("SAME INSTANCE ADDRESSES: " + sameAddresses);
+            //TestContext.WriteLine("[1] INSTANCE COUNT: " + Utils.CountString(ary1.Length));
+            //TestContext.WriteLine("[2] INSTANCE COUNT: " + Utils.CountString(ary1.Length));
+            //TestContext.WriteLine("[1] ROOTED    COUNT: " + Utils.CountString(rootedCount1));
+            //TestContext.WriteLine("[2] ROOTED    COUNT: " + Utils.CountString(rootedCount2));
+            //TestContext.WriteLine("[1] FINALIZER COUNT: " + Utils.CountString(finalizerCount1));
+            //TestContext.WriteLine("[2] FINALIZER COUNT: " + Utils.CountString(finalizerCount2));
+
+
+        }
 
         #endregion type references
 
