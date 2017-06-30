@@ -30,6 +30,7 @@ namespace ClrMDRIndex
 			public static ulong Finalizer = 0x4000000000000000;
 			public static ulong Root = 0x2000000000000000;
 			public static ulong RootedMask = (Rooted|Root);
+            public static ulong NotRootMask = ~(Root);
 		}
 
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]

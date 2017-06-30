@@ -279,32 +279,32 @@ namespace ClrMDRIndex
 							return false;
 						}
 
-                        // setting root information
-                        //
-                        Debug.Assert(Utils.IsSorted(addresses));
-						progress?.Report(runtimeIndexHeader + "Setting root information...");
-						for (int i = 0, icnt = addresses.Length; i < icnt; ++i)
-						{
-							ulong addr = addresses[i];
-							var ndx = Utils.AddressSearch(rootObjectAddrs, addr);
-							if (ndx >= 0)
-								addresses[i] = Utils.SetAsRooted(addr);
-							ndx = Utils.AddressSearch(finalizerAddrs, addr);
-							if (ndx >= 0)
-								addresses[i] = Utils.SetAsFinalizer(addr);
-						}
-						rootObjectAddrs = null;
-						finalizerAddrs = null;
-
                         // threads and blocking objects
                         //
                         progress?.Report(runtimeIndexHeader + "Getting threads, blocking objecks information...");
                         var addressesCopy = Utils.CopyArray(addresses);
                         threadInfoWorker = new Thread(GetThreadsInfos);
 						threadInfoWorker.Start(new Tuple<ClrtDump, ulong[], int[], string[]>(dumpClone, addresses, typeIds, typeNames));
-                        addresses = null;
+                        //addresses = null;
                         //progress?.Report("Waiting for thread info worker...");
                         //threadInfoWorker.Join();
+
+                        // setting root information
+                        //
+                        Debug.Assert(Utils.AreAddressesSorted(addressesCopy));
+                        progress?.Report(runtimeIndexHeader + "Setting root information...");
+                        for (int i = 0, icnt = addressesCopy.Length; i < icnt; ++i)
+                        {
+                            ulong addr = addressesCopy[i];
+                            var ndx = Utils.AddressSearch(rootObjectAddrs, addr);
+                            if (ndx >= 0)
+                                addressesCopy[i] = Utils.SetAsRooted(addr);
+                            ndx = Utils.AddressSearch(finalizerAddrs, addr);
+                            if (ndx >= 0)
+                                addressesCopy[i] = Utils.SetAsFinalizer(addr);
+                        }
+                        rootObjectAddrs = null;
+                        finalizerAddrs = null;
 
                         // field dependencies
                         //
@@ -342,7 +342,7 @@ namespace ClrMDRIndex
                                                                     progress,
                                                                     _fileMoniker.GetFilePath(r, Constants.MapInstancesFilePostfix)
                                                                     );
-                            
+                            addressesCopy = null;
                             builder.CreateForwardReferences(heap, out error);
                             referenceBuilderWorker = new Thread(builder.BuildReveresedReferences);
                             referenceBuilderWorker.Start();

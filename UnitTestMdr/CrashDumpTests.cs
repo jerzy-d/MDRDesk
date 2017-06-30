@@ -1086,7 +1086,7 @@ namespace UnitTestMdr
                 ClrInstanceField rvfld = rv.GetFieldByName("relatedViewsID");
                 ClrType rvc = heap.GetObjectType(relatedViews[1]);
                 List<string> lst = new List<string>(relatedViews.Length / 2);
-                for (int i = 0, icnt = relatedViews.Length; i < icnt; i+= 2)
+                for (int i = 0, icnt = relatedViews.Length; i < icnt; i += 2)
                 {
                     string name = (string)rvfld.GetValue(relatedViews[i], false, true);
                     lst.Add(name);
@@ -1100,7 +1100,7 @@ namespace UnitTestMdr
                 var validSet = new HashSet<ulong>();
                 for (int i = 0, icnt = relatedViews.Length; i < icnt; i += 2)
                 {
-                    validSet.Add(relatedViews[i+1]);
+                    validSet.Add(relatedViews[i + 1]);
                 }
 
                 List<ulong> nonValid = new List<ulong>();
@@ -1214,7 +1214,7 @@ namespace UnitTestMdr
                         sb.AppendLine("   " + clrtype.Name);
                         var res = CollectionContent.getDictionaryInfo(heap, dctaddr, clrtype);
                         var cont = CollectionContent.dictionaryContent(heap, dctaddr);
-                        for (int j=0,jcnt=cont.Item7.Length; j < jcnt; ++j)
+                        for (int j = 0, jcnt = cont.Item7.Length; j < jcnt; ++j)
                         {
                             var entry = cont.Item7[j];
                             var hsetAddr = Convert.ToUInt64(entry.Value, 16);
@@ -1271,7 +1271,7 @@ namespace UnitTestMdr
                         ulong addr = dctAddrs[i];
                         var clrType = heap.GetObjectType(addr);
                         var dctResult = CollectionContent.dictionaryContent(heap, addr);
-                        foreach(var entry in dctResult.Item7)
+                        foreach (var entry in dctResult.Item7)
                         {
                             var eaddr = Convert.ToUInt64(entry.Value, 16);
                             var clrtp = heap.GetObjectType(eaddr);
@@ -1447,7 +1447,7 @@ namespace UnitTestMdr
 
                     //int[] values = new int[aryLen];
 
-                    int[] values = ValueExtractor.ReadIntAryAtAddress(aryAddr+16, aryLen, heap);
+                    int[] values = ValueExtractor.ReadIntAryAtAddress(aryAddr + 16, aryLen, heap);
 
 
 
@@ -1485,7 +1485,7 @@ namespace UnitTestMdr
             for (int i = 0, icnt = ids.Count; i < icnt; ++i)
             {
                 sb.Append("   new int[] { ");
-                for(int j = 0, jcnt = ids[i].Length; j < jcnt; ++j)
+                for (int j = 0, jcnt = ids[i].Length; j < jcnt; ++j)
                 {
                     sb.Append(ids[i][j]).Append(", ");
                 }
@@ -1501,29 +1501,29 @@ namespace UnitTestMdr
         #region System.Collections.Generic.SortedDictionary<TKey,TValue> content
 
         [TestMethod]
-		public void TestGetSortedDictionaryContent()
-		{
-			ulong dctAddr = 0x00015e80013030;
-			var dmp = OpenDump(1);
-			using (dmp)
-			{
-				var heap = dmp.Heap;
-				var result = CollectionContent.getSortedDicionaryContent(heap, dctAddr);
-				Assert.IsNotNull(result);
-				Assert.IsNull(result.Item1, result.Item1);
-			}
-		}
+        public void TestGetSortedDictionaryContent()
+        {
+            ulong dctAddr = 0x00015e80013030;
+            var dmp = OpenDump(1);
+            using (dmp)
+            {
+                var heap = dmp.Heap;
+                var result = CollectionContent.getSortedDicionaryContent(heap, dctAddr);
+                Assert.IsNotNull(result);
+                Assert.IsNull(result.Item1, result.Item1);
+            }
+        }
 
-		#endregion System.Collections.Generic.SortedDictionary<TKey,TValue> content
-		
-		#region System.Collections.Generic.HashSet<T> content
+        #endregion System.Collections.Generic.SortedDictionary<TKey,TValue> content
 
-		[TestMethod]
-		public void TestGetHashSetContent()
-		{
-			ulong[] dctAddrs = new ulong[]
-			{
-				0x00023f00013130, // string
+        #region System.Collections.Generic.HashSet<T> content
+
+        [TestMethod]
+        public void TestGetHashSetContent()
+        {
+            ulong[] dctAddrs = new ulong[]
+            {
+                0x00023f00013130, // string
 				0x00023f00013170, // decimal
 				0x00023f00013238, // DateTime
 				0x00023f00013300, // TimeSpan
@@ -1534,656 +1534,656 @@ namespace UnitTestMdr
 
 			};
 
-			string[] valTypeNames = new string[dctAddrs.Length];
-			string[][] values = new string[dctAddrs.Length][];
-			var dmp = OpenDump(1);
-			int index = 0;
-			using (dmp)
-			{
-				var heap = dmp.Heap;
-				FQry.heapWarmup(heap);
-				ClrType setType = null;
-				goto GET_CONTENT;
-				for (int i = 3, icnt = dctAddrs.Length; i < 4; ++i)
-				{
-					setType = heap.GetObjectType(dctAddrs[i]);
+            string[] valTypeNames = new string[dctAddrs.Length];
+            string[][] values = new string[dctAddrs.Length][];
+            var dmp = OpenDump(1);
+            int index = 0;
+            using (dmp)
+            {
+                var heap = dmp.Heap;
+                FQry.heapWarmup(heap);
+                ClrType setType = null;
+                goto GET_CONTENT;
+                for (int i = 3, icnt = dctAddrs.Length; i < 4; ++i)
+                {
+                    setType = heap.GetObjectType(dctAddrs[i]);
 
-					ClrInstanceField slotsFld = setType.GetFieldByName("m_slots");
-					ulong slotsAddr = (ulong) slotsFld.GetValue(dctAddrs[i]);
-					ClrType slotsType = heap.GetObjectType(slotsAddr);
-					var lastIndex = Auxiliaries.getFieldIntValue(heap, dctAddrs[i], setType, "m_lastIndex");
-					var setCount = Auxiliaries.getFieldIntValue(heap, dctAddrs[i], setType, "m_count");
-					ClrType compType = slotsType.ComponentType;
+                    ClrInstanceField slotsFld = setType.GetFieldByName("m_slots");
+                    ulong slotsAddr = (ulong)slotsFld.GetValue(dctAddrs[i]);
+                    ClrType slotsType = heap.GetObjectType(slotsAddr);
+                    var lastIndex = Auxiliaries.getFieldIntValue(heap, dctAddrs[i], setType, "m_lastIndex");
+                    var setCount = Auxiliaries.getFieldIntValue(heap, dctAddrs[i], setType, "m_count");
+                    ClrType compType = slotsType.ComponentType;
 
-					var hashCodeFld = compType.GetFieldByName("hashCode");
-					var valueFld = compType.GetFieldByName("value");
+                    var hashCodeFld = compType.GetFieldByName("hashCode");
+                    var valueFld = compType.GetFieldByName("value");
 
 
-					var valType = valueFld.Type;
-					if (valType.Name == "ERROR" || valType.Name == "System.__Canon")
-					{
-						var mt = ValueExtractor.ReadUlongAtAddress(dctAddrs[i] + 96, heap);
-						var tp = heap.GetTypeByMethodTable(mt);
-						if (tp != null)
-						{
-							valType = tp;
-						}
-						else
-						{
-							index = 0;
-							while (index < lastIndex)
-							{
+                    var valType = valueFld.Type;
+                    if (valType.Name == "ERROR" || valType.Name == "System.__Canon")
+                    {
+                        var mt = ValueExtractor.ReadUlongAtAddress(dctAddrs[i] + 96, heap);
+                        var tp = heap.GetTypeByMethodTable(mt);
+                        if (tp != null)
+                        {
+                            valType = tp;
+                        }
+                        else
+                        {
+                            index = 0;
+                            while (index < lastIndex)
+                            {
 
-								var elemAddr = slotsType.GetArrayElementAddress(slotsAddr, index);
-								var hash = Auxiliaries.getIntValue(elemAddr, hashCodeFld, true);
-								if (hash >= 0)
-								{
-									var valAddr = Auxiliaries.getReferenceFieldAddress(elemAddr, valueFld, true);
-									tp = heap.GetObjectType(valAddr);
-									if (tp != null)
-									{
-										valType = tp;
-										break;
-									}
-								}
+                                var elemAddr = slotsType.GetArrayElementAddress(slotsAddr, index);
+                                var hash = Auxiliaries.getIntValue(elemAddr, hashCodeFld, true);
+                                if (hash >= 0)
+                                {
+                                    var valAddr = Auxiliaries.getReferenceFieldAddress(elemAddr, valueFld, true);
+                                    tp = heap.GetObjectType(valAddr);
+                                    if (tp != null)
+                                    {
+                                        valType = tp;
+                                        break;
+                                    }
+                                }
 
-								++index;
-							}
-						}
-					}
-					var kind = TypeKinds.GetTypeKind(valType);
-					values[i] = new string[setCount];
-					index = 0;
-					var valIndex = 0;
-					while (index < lastIndex)
-					{
+                                ++index;
+                            }
+                        }
+                    }
+                    var kind = TypeKinds.GetTypeKind(valType);
+                    values[i] = new string[setCount];
+                    index = 0;
+                    var valIndex = 0;
+                    while (index < lastIndex)
+                    {
 
-						var elemAddr = slotsType.GetArrayElementAddress(slotsAddr, index);
-						var hash = Auxiliaries.getIntValue(elemAddr, hashCodeFld, true);
-						if (hash >= 0)
-						{
-							string value = Types.getFieldValue(heap, elemAddr, true, valueFld, kind);
-							values[i][valIndex++] = value;
-						}
+                        var elemAddr = slotsType.GetArrayElementAddress(slotsAddr, index);
+                        var hash = Auxiliaries.getIntValue(elemAddr, hashCodeFld, true);
+                        if (hash >= 0)
+                        {
+                            string value = Types.getFieldValue(heap, elemAddr, true, valueFld, kind);
+                            values[i][valIndex++] = value;
+                        }
 
-						++index;
-					}
+                        ++index;
+                    }
 
-					valTypeNames[i] = valType.Name;
-				}
+                    valTypeNames[i] = valType.Name;
+                }
 
-				return;
-				GET_CONTENT:
-				for (int i = 0, icnt = dctAddrs.Length; i < icnt; ++i)
-				{
-					var setResult = CollectionContent.getHashSetContent(heap, dctAddrs[i]);
-					Assert.IsNotNull(setResult);
-					Assert.IsNull(setResult.Item1);
-					values[i] = setResult.Item2;
-				}
+                return;
+                GET_CONTENT:
+                for (int i = 0, icnt = dctAddrs.Length; i < icnt; ++i)
+                {
+                    var setResult = CollectionContent.getHashSetContent(heap, dctAddrs[i]);
+                    Assert.IsNotNull(setResult);
+                    Assert.IsNull(setResult.Item1);
+                    values[i] = setResult.Item2;
+                }
 
-			}
-		}
+            }
+        }
 
-		#endregion  System.Collections.Generic.HashSet<T> content
+        #endregion  System.Collections.Generic.HashSet<T> content
 
-		[TestMethod]
-		public void TestGetConcurrentDictionaryContent()
-		{
+        [TestMethod]
+        public void TestGetConcurrentDictionaryContent()
+        {
             string dumpPath = @"D:\Jerzy\WinDbgStuff\dumps\Analytics\Viking\AnalyticsLatencyDump05022017 04345672.dmp";
 
             var dmp = OpenDump(dumpPath);
-			using (dmp)
-			{
-				var heap = dmp.Heap;
+            using (dmp)
+            {
+                var heap = dmp.Heap;
                 ulong dAddr = 0x00e105255b98;
                 var result2 = CollectionContent.dictionaryContent(heap, dAddr);
             }
-		}
-
-
-		#region System.Text.StringBuilder
-
-		[TestMethod]
-		public void TestStringBuilderContent()
-		{
-			ulong addr = 0x0001e7e526c388;
-			var dmp = OpenDump(1);
-			using (dmp)
-			{
-				var heap = dmp.Heap;
-
-				var str = CollectionContent.getStringBuilderString(heap, addr);
-
-				Assert.IsNotNull(str);
-			}
-		}
-
-		#endregion System.Text.StringBuilder
-
-		#endregion collection content
-
-		#region roots/instances/references
-
-		//[TestMethod]
-		//public void TestIndexing()
-		//{
-		//	string error;
-		//	string dumpPath = Setup.RecentAdhocList[0];
-		//	var dmp = OpenDump(dumpPath);
-		//	var fileMoniker = new DumpFileMoniker(dumpPath);
-		//	var strIds = new StringIdDct();
-
-		//	using (dmp)
-		//	{
-		//		var heap = dmp.Heap;
-		//		ulong[] instances = DumpIndexer.GetHeapAddressesCount(heap);
-		//		string[] typeNames = DumpIndexer.GetTypeNames(heap, out error);
-		//		var rootAddrInfo = ClrtRootInfo.GetRootAddresses(0, dmp.Runtimes[0], heap, typeNames, strIds, fileMoniker, out error);
-
-		//		Assert.IsNull(error);
-		//		Assert.IsTrue(Utils.IsSorted(rootAddrInfo.Item1));
-		//		Assert.IsTrue(Utils.IsSorted(rootAddrInfo.Item2));
-
-		//		var rootAddresses = Utils.MergeAddressesRemove0s(rootAddrInfo.Item1, rootAddrInfo.Item2);
-
-		//		Assert.IsTrue(Utils.AreAllInExcept0(rootAddresses, rootAddrInfo.Item1));
-		//		Assert.IsTrue(Utils.AreAllInExcept0(rootAddresses, rootAddrInfo.Item2));
-		//		Assert.IsTrue(Utils.AreAllDistinct(rootAddresses));
-		//		Assert.IsTrue(Utils.IsSorted(rootAddresses));
-
-		//		rootAddresses = Utils.GetRealAddressesInPlace(rootAddresses);
-
-		//		HashSet<ulong> done = new HashSet<ulong>();
-		//		SortedDictionary<ulong, List<ulong>> objRefs = new SortedDictionary<ulong, List<ulong>>();
-		//		SortedDictionary<ulong, List<ulong>> fldRefs = new SortedDictionary<ulong, List<ulong>>();
-
-		//		bool result = References.GetRefrences(heap, rootAddresses, objRefs, fldRefs, done, out error);
-
-		//		Assert.IsTrue(result);
-		//		Assert.IsNull(error);
-
-		//		string path = fileMoniker.GetFilePath(0, Constants.MapParentFieldsRootedPostfix);
-		//		result = DumpReferences(path, objRefs, instances, out error);
-		//		Assert.IsTrue(result);
-		//		Assert.IsNull(error);
-		//		path = fileMoniker.GetFilePath(0, Constants.MapFieldParentsRootedPostfix);
-		//		result = DumpReferences(path, fldRefs, instances, out error);
-		//		Assert.IsTrue(result);
-		//		Assert.IsNull(error);
-
-		//		var rootedAry = done.ToArray(); // for later
-		//		Array.Sort(rootedAry);
-		//		done.Clear();
-		//		objRefs.Clear();
-		//		fldRefs.Clear();
-		//		var remaining = Utils.Difference(instances, rootedAry);
-		//		result = References.GetRefrences(heap, remaining, objRefs, fldRefs, done, out error);
-		//		Assert.IsTrue(result);
-		//		Assert.IsNull(error);
-		//		path = fileMoniker.GetFilePath(0, Constants.MapParentFieldsNotRootedPostfix);
-		//		result = DumpReferences(path, objRefs, instances, out error);
-		//		Assert.IsTrue(result);
-		//		Assert.IsNull(error);
-		//		path = fileMoniker.GetFilePath(0, Constants.MapFieldParentsNotRootedPostfix);
-		//		result = DumpReferences(path, fldRefs, instances, out error);
-		//		Assert.IsTrue(result);
-		//		Assert.IsNull(error);
-
-		//		var roots = ClrtRootInfo.Load(0, fileMoniker, out error);
-		//		Assert.IsNull(error);
-		//		Assert.IsNotNull(roots);
-
-		//		ulong[] finalizer = Utils.GetRealAddressesInPlace(roots.FinalizerAddresses);
-		//		Assert.IsTrue(Utils.IsSorted(finalizer));
-
-		//		int fcnt = 0;
-		//		for (int i = 0, icnt = finalizer.Length; i < icnt; ++i)
-		//		{
-		//			if (Utils.AddressSearch(instances,finalizer[i]) < 0) continue;
-		//			++fcnt;
-		//		}
-
-		//		Utils.SetAddressBit(rootedAry, instances, Utils.RootBits.Rooted);
-		//		Utils.SetAddressBit(finalizer, instances, Utils.RootBits.Finalizer);
-
-		//		TestContext.WriteLine("INSTANCE COUNT: " + Utils.LargeNumberString(instances.Length));
-		//		TestContext.WriteLine("ROOTED ARY COUNT: " + Utils.LargeNumberString(rootedAry.Length));
-		//		TestContext.WriteLine("UNROOTED ARY COUNT: " + Utils.LargeNumberString(done.Count));
-		//		TestContext.WriteLine("FINALIZER COUNT: " + Utils.LargeNumberString(finalizer.Length));
-
-		//		var markedRoooted = 0;
-		//		var markedFinalizer = 0;
-		//		for (int i = 0, icnt = instances.Length; i < icnt; ++i)
-		//		{
-		//			var addr = instances[i];
-		//			if (Utils.IsRooted(addr)) ++markedRoooted;
-		//			if (Utils.IsFinalizer(addr)) ++markedFinalizer;
-		//		}
-		//		TestContext.WriteLine("MARKED ROOTED COUNT: " + Utils.LargeNumberString(markedRoooted));
-		//		TestContext.WriteLine("MARKED FINALIZER COUNT: " + Utils.LargeNumberString(markedFinalizer));
-
-
-
-		//	} // using dump
-		//}
-
-		//[TestMethod]
-		//public void TestIndexing2()
-		//{
-		//	string error;
-		//	string dumpPath = Setup.RecentAdhocList[0];
-		//	var dmp = OpenDump(dumpPath);
-		//	var fileMoniker = new DumpFileMoniker(dumpPath);
-		//	var strIds = new StringIdDct();
-
-		//	using (dmp)
-		//	{
-		//		var heap = dmp.Heap;
-		//		var runtm = dmp.Runtimes[0];
-		//		ulong[] instances = DumpIndexer.GetHeapAddressesCount(heap);
-		//		string[] typeNames = DumpIndexer.GetTypeNames(heap, out error);
-		//		var rootAddrInfo = ClrtRootInfo.GetRootAddresses(0, runtm, heap, typeNames, strIds, fileMoniker, out error);
-		//		Utils.GetRealAddressesInPlace(rootAddrInfo.Item1);
-		//		Utils.GetRealAddressesInPlace(rootAddrInfo.Item2);
-
-		//		Assert.IsNull(error);
-		//		Assert.IsTrue(Utils.AreAddressesSorted(rootAddrInfo.Item1));
-		//		Assert.IsTrue(Utils.AreAddressesSorted(rootAddrInfo.Item2));
-
-		//		var rootAddresses = rootAddrInfo.Item1;
-
-		//		//Assert.IsTrue(Utils.AreAllInExcept0(rootAddresses, rootAddrInfo.Item1));
-		//		//Assert.IsTrue(Utils.AreAllInExcept0(rootAddresses, rootAddrInfo.Item2));
-		//		Assert.IsTrue(Utils.AreAllDistinct(rootAddresses));
-		//		Assert.IsTrue(Utils.IsSorted(rootAddresses));
-
-		//		rootAddresses = Utils.GetRealAddressesInPlace(rootAddresses);
-		//		Bitset bitset = new Bitset(instances.Length);
-		//		var rootAddressNdxs = Utils.GetAddressIndices(rootAddresses, instances);
-
-		//		string path1 = fileMoniker.GetFilePath(0, Constants.MapParentFieldsRootedPostfix);
-		//		string path2 = fileMoniker.GetFilePath(0, Constants.MapFieldParentsRootedPostfix);
-		//		//bool result = References.GetRefrences(heap, rootAddressNdxs, instances, bitset, path1, path2, out error);
-		//		bool result = References.CreateReferences2(0, heap, rootAddrInfo.Item1, instances, bitset, fileMoniker, null, out error);
-
-		//		int markRootCount = Utils.SetAddressBitIfSet(instances, rootAddrInfo.Item2, Utils.RootBits.Rooted);
-		//		int markFnlzCount = Utils.SetAddressBit(rootAddrInfo.Item2, instances, Utils.RootBits.Finalizer);
-
-		//		Assert.IsTrue(result);
-		//		Assert.IsNull(error);
-
-		//		int[] head1;
-		//		int[][] lists1;
-		//		result = References.LoadReferences(path1, out head1, out lists1, out error);
-		//		Assert.IsTrue(result);
-		//		Assert.IsNull(error);
-		//		Assert.IsTrue(Utils.IsSorted(head1));
-
-		//		for (int i = 0, icnt = lists1.Length; i < icnt; ++i)
-		//		{
-		//			var lst = lists1[i];
-		//			Assert.IsTrue(Utils.IsSorted(lst));
-		//			Assert.IsTrue(Utils.AreAllDistinct(lst));
-		//			Assert.IsTrue(Utils.DoesNotContain(lst,Int32.MaxValue));
-		//		}
-
-		//		string path1a = fileMoniker.GetFilePath(0, ".`PARENTFIELDSROOTED[0].BEFORE.NOFIN.bin");
-		//		int[] head1a;
-		//		int[][] lists1a;
-		//		result = References.LoadReferences(path1a, out head1a, out lists1a, out error);
-		//		Assert.IsTrue(result);
-		//		Assert.IsNull(error);
-
-		//		for (int i = 0, icnt = lists1a.Length; i < icnt; ++i)
-		//		{
-		//			var lst = lists1a[i];
-		//			Assert.IsTrue(Utils.IsSorted(lst));
-		//			//Assert.IsTrue(Utils.AreAllDistinct(lst));
-		//			Assert.IsTrue(Utils.DoesNotContain(lst, Int32.MaxValue));
-		//			Assert.IsTrue(Utils.Contains(lst,lists1[i]));
-		//		}
-
-		//		int[] head2;
-		//		int[][] lists2;
-		//		result = References.LoadReferences(path2, out head2, out lists2, out error);
-		//		Assert.IsTrue(result);
-		//		Assert.IsNull(error);
-		//		Assert.IsTrue(Utils.IsSorted(head2));
-
-		//		for (int i = 0, icnt = lists2.Length; i < icnt; ++i)
-		//		{
-		//			var lst = lists2[i];
-		//			Assert.IsTrue(Utils.IsSorted(lst));
-		//			Assert.IsTrue(Utils.AreAllDistinct(lst));
-		//			Assert.IsTrue(Utils.DoesNotContain(lst, Int32.MaxValue));
-		//		}
-
-
-		//		string path2a = fileMoniker.GetFilePath(0, ".`FIELDPARENTSROOTED[0].BEFORE.NOFIN.bin");
-		//		int[] head2a;
-		//		int[][] lists2a;
-		//		result = References.LoadReferences(path2a, out head2a, out lists2a, out error);
-		//		Assert.IsTrue(result);
-		//		Assert.IsNull(error);
-
-		//		for (int i = 0, icnt = lists2a.Length; i < icnt; ++i)
-		//		{
-		//			var lst = lists2a[i];
-		//			Assert.IsTrue(Utils.IsSorted(lst));
-		//			Assert.IsTrue(Utils.DoesNotContain(lst, Int32.MaxValue));
-		//			Assert.IsTrue(Utils.Contains(lst, lists2[i]));
-		//		}
-
-		//		TestContext.WriteLine("INSTANCE COUNT: " + Utils.LargeNumberString(instances.Length));
-		//		//TestContext.WriteLine("ROOTED ARY COUNT: " + Utils.LargeNumberString(rootedAry.Length));
-		//		//TestContext.WriteLine("UNROOTED ARY COUNT: " + Utils.LargeNumberString(done.Count));
-		//		//TestContext.WriteLine("FINALIZER COUNT: " + Utils.LargeNumberString(finalizer.Length));
-
-		//		var markedRoooted = 0;
-		//		var markedFinalizer = 0;
-		//		for (int i = 0, icnt = instances.Length; i < icnt; ++i)
-		//		{
-		//			var addr = instances[i];
-		//			if (Utils.IsRooted(addr)) ++markedRoooted;
-		//			if (Utils.IsFinalizer(addr)) ++markedFinalizer;
-		//		}
-		//		TestContext.WriteLine("MARKED ROOTED COUNT: " + Utils.LargeNumberString(markedRoooted));
-		//		TestContext.WriteLine("MARKED FINALIZER COUNT: " + Utils.LargeNumberString(markedFinalizer));
-
-		//	} // using dump
-		//}
-
-		//[TestMethod]
-		//public void TestIndexingBig()
-		//{
-		//	string error;
-		//	string dumpPath = @"C:\WinDbgStuff\Dumps\Analytics\BigOne\Analytics11_042015_2.Big.dmp";
-		//	var dmp = OpenDump(dumpPath);
-		//	var fileMoniker = new DumpFileMoniker(dumpPath);
-		//	var strIds = new StringIdDct();
-
-		//	using (dmp)
-		//	{
-		//		var heap = dmp.Heap;
-		//		var runtm = dmp.Runtimes[0];
-		//		ulong[] instances = DumpIndexer.GetHeapAddressesCount(heap);
-		//		string[] typeNames = DumpIndexer.GetTypeNames(heap, out error);
-		//		var rootAddrInfo = ClrtRootInfo.GetRootAddresses(0, runtm, heap, typeNames, strIds, fileMoniker, out error);
-		//		Utils.GetRealAddressesInPlace(rootAddrInfo.Item1);
-		//		Utils.GetRealAddressesInPlace(rootAddrInfo.Item2);
-
-		//		Assert.IsNull(error);
-		//		Assert.IsTrue(Utils.AreAddressesSorted(rootAddrInfo.Item1));
-		//		Assert.IsTrue(Utils.AreAddressesSorted(rootAddrInfo.Item2));
-
-		//		var rootAddresses = rootAddrInfo.Item1;
-
-		//		//Assert.IsTrue(Utils.AreAllInExcept0(rootAddresses, rootAddrInfo.Item1));
-		//		//Assert.IsTrue(Utils.AreAllInExcept0(rootAddresses, rootAddrInfo.Item2));
-		//		Assert.IsTrue(Utils.AreAllDistinct(rootAddresses));
-		//		Assert.IsTrue(Utils.IsSorted(rootAddresses));
-
-		//		rootAddresses = Utils.GetRealAddressesInPlace(rootAddresses);
-		//		Bitset bitset = new Bitset(instances.Length);
-		//		var rootAddressNdxs = Utils.GetAddressIndices(rootAddresses, instances);
-
-		//		string path1 = fileMoniker.GetFilePath(0, Constants.MapParentFieldsRootedPostfix);
-		//		string path2 = fileMoniker.GetFilePath(0, Constants.MapFieldParentsRootedPostfix);
-
-		//		//bool result = References.CreateReferences2(0, heap, rootAddrInfo.Item1, instances, bitset, fileMoniker, null, out error);
-		//		//Assert.IsTrue(result);
-		//		Assert.IsNull(error);
-		//	} // using dump
-		//}
-
-		private bool DumpReferences(string path, SortedDictionary<ulong, List<ulong>> refs, ulong[] instances,
-			out string error)
-		{
-			error = null;
-			BinaryWriter bw = null;
-			try
-			{
-				bw = new BinaryWriter(File.Open(path, FileMode.Create));
-				bw.Write(refs.Count);
-				foreach (var kv in refs)
-				{
-					var ndx = Array.BinarySearch(instances, kv.Key);
-					Debug.Assert(ndx >= 0);
-					var lst = kv.Value;
-					bw.Write(ndx);
-					bw.Write(lst.Count);
-					for (int i = 0, icnt = lst.Count; i < icnt; ++i)
-					{
-						ndx = Array.BinarySearch(instances, lst[i]);
-						Debug.Assert(ndx >= 0);
-						bw.Write(ndx);
-					}
-				}
-				return true;
-			}
-			catch (Exception ex)
-			{
-				error = Utils.GetExceptionErrorString(ex);
-				return false;
-			}
-			finally
-			{
-				bw?.Close();
-			}
-		}
-
-		#endregion roots/instances/references
-
-		#region threads
-
-		[TestMethod]
-		public void TestBlocking()
-		{
-			var dmp = OpenDump(@"C:\WinDbgStuff\Dumps\Analytics\AnalyticsMemory\A2_noDF.dmp");
-			uint ThreadId = 13680;
-			using (dmp)
-			{
-				ClrThread thread;
-				var threads = DumpIndexer.GetThreads(dmp.Runtime);
-				for (int i = 0, icnt = threads.Length; i < icnt; ++i)
-				{
-					if (threads[i].OSThreadId == ThreadId)
-					{
-						thread = threads[i];
-					}
-				}
-
-				var heap = dmp.Heap;
-				BlockingObject[] freeBlks;
-				var blocks = DumpIndexer.GetBlockingObjectsEx(heap,out freeBlks);
-
-				List<BlockingObject> obloks = new List<BlockingObject>(256);
-				List<BlockingObject> wbloks = new List<BlockingObject>(256);
-				List<BlockingObject> wwbloks = new List<BlockingObject>(256);
-				HashSet<string> typeSet = new HashSet<string>();
-				int nullTypeCnt = 0;
-				for (int i = 0, icnt = blocks.Length; i < icnt; ++i)
-				{
-					var block = blocks[i];
-
-					if (block.HasSingleOwner && block.Taken && block.Owner!=null && block.Owner.OSThreadId==ThreadId)
-					{
-						wwbloks.Add(block);
-						var clrType = heap.GetObjectType(block.Object);
-						if (clrType != null)
-							typeSet.Add(clrType.Name);
-						else
-							++nullTypeCnt;
-					}
-					for (int j = 0, jcnt = block.Owners.Count; j < jcnt; ++j)
-					{
-						if (block.Owners[j]==null) continue;
-						if (block.Owners[j].OSThreadId == ThreadId)
-						{
-							obloks.Add(block);
-							var clrType = heap.GetObjectType(block.Object);
-							if (clrType != null)
-								typeSet.Add(clrType.Name);
-							else
-								++nullTypeCnt;
-						}
-					}
-					for (int j = 0, jcnt = block.Waiters.Count; j < jcnt; ++j)
-					{
-						if (block.Waiters[j] == null) continue;
-						if (block.Waiters[j].OSThreadId == ThreadId)
-						{
-							wbloks.Add(block);
-							var clrType = heap.GetObjectType(block.Object);
-							if (clrType != null)
-								typeSet.Add(clrType.Name);
-							else
-								++nullTypeCnt;
-
-						}
-					}
-				}
-				int notFreeCnt = 0;
-				for (int i = 0, icnt = freeBlks.Length; i < icnt; ++i)
-				{
-					var blk = freeBlks[i];
-					var clrType = heap.GetObjectType(blk.Object);
-					if (clrType != null && clrType.Name != "Free")
-					{
-						++notFreeCnt;
-					}
-				}
-				Assert.IsTrue(notFreeCnt == 0);
-			}
-		}
-
-		[TestMethod]
-		public void TestThreadInfo()
-		{
+        }
+
+
+        #region System.Text.StringBuilder
+
+        [TestMethod]
+        public void TestStringBuilderContent()
+        {
+            ulong addr = 0x0001e7e526c388;
+            var dmp = OpenDump(1);
+            using (dmp)
+            {
+                var heap = dmp.Heap;
+
+                var str = CollectionContent.getStringBuilderString(heap, addr);
+
+                Assert.IsNotNull(str);
+            }
+        }
+
+        #endregion System.Text.StringBuilder
+
+        #endregion collection content
+
+        #region roots/instances/references
+
+        //[TestMethod]
+        //public void TestIndexing()
+        //{
+        //	string error;
+        //	string dumpPath = Setup.RecentAdhocList[0];
+        //	var dmp = OpenDump(dumpPath);
+        //	var fileMoniker = new DumpFileMoniker(dumpPath);
+        //	var strIds = new StringIdDct();
+
+        //	using (dmp)
+        //	{
+        //		var heap = dmp.Heap;
+        //		ulong[] instances = DumpIndexer.GetHeapAddressesCount(heap);
+        //		string[] typeNames = DumpIndexer.GetTypeNames(heap, out error);
+        //		var rootAddrInfo = ClrtRootInfo.GetRootAddresses(0, dmp.Runtimes[0], heap, typeNames, strIds, fileMoniker, out error);
+
+        //		Assert.IsNull(error);
+        //		Assert.IsTrue(Utils.IsSorted(rootAddrInfo.Item1));
+        //		Assert.IsTrue(Utils.IsSorted(rootAddrInfo.Item2));
+
+        //		var rootAddresses = Utils.MergeAddressesRemove0s(rootAddrInfo.Item1, rootAddrInfo.Item2);
+
+        //		Assert.IsTrue(Utils.AreAllInExcept0(rootAddresses, rootAddrInfo.Item1));
+        //		Assert.IsTrue(Utils.AreAllInExcept0(rootAddresses, rootAddrInfo.Item2));
+        //		Assert.IsTrue(Utils.AreAllDistinct(rootAddresses));
+        //		Assert.IsTrue(Utils.IsSorted(rootAddresses));
+
+        //		rootAddresses = Utils.GetRealAddressesInPlace(rootAddresses);
+
+        //		HashSet<ulong> done = new HashSet<ulong>();
+        //		SortedDictionary<ulong, List<ulong>> objRefs = new SortedDictionary<ulong, List<ulong>>();
+        //		SortedDictionary<ulong, List<ulong>> fldRefs = new SortedDictionary<ulong, List<ulong>>();
+
+        //		bool result = References.GetRefrences(heap, rootAddresses, objRefs, fldRefs, done, out error);
+
+        //		Assert.IsTrue(result);
+        //		Assert.IsNull(error);
+
+        //		string path = fileMoniker.GetFilePath(0, Constants.MapParentFieldsRootedPostfix);
+        //		result = DumpReferences(path, objRefs, instances, out error);
+        //		Assert.IsTrue(result);
+        //		Assert.IsNull(error);
+        //		path = fileMoniker.GetFilePath(0, Constants.MapFieldParentsRootedPostfix);
+        //		result = DumpReferences(path, fldRefs, instances, out error);
+        //		Assert.IsTrue(result);
+        //		Assert.IsNull(error);
+
+        //		var rootedAry = done.ToArray(); // for later
+        //		Array.Sort(rootedAry);
+        //		done.Clear();
+        //		objRefs.Clear();
+        //		fldRefs.Clear();
+        //		var remaining = Utils.Difference(instances, rootedAry);
+        //		result = References.GetRefrences(heap, remaining, objRefs, fldRefs, done, out error);
+        //		Assert.IsTrue(result);
+        //		Assert.IsNull(error);
+        //		path = fileMoniker.GetFilePath(0, Constants.MapParentFieldsNotRootedPostfix);
+        //		result = DumpReferences(path, objRefs, instances, out error);
+        //		Assert.IsTrue(result);
+        //		Assert.IsNull(error);
+        //		path = fileMoniker.GetFilePath(0, Constants.MapFieldParentsNotRootedPostfix);
+        //		result = DumpReferences(path, fldRefs, instances, out error);
+        //		Assert.IsTrue(result);
+        //		Assert.IsNull(error);
+
+        //		var roots = ClrtRootInfo.Load(0, fileMoniker, out error);
+        //		Assert.IsNull(error);
+        //		Assert.IsNotNull(roots);
+
+        //		ulong[] finalizer = Utils.GetRealAddressesInPlace(roots.FinalizerAddresses);
+        //		Assert.IsTrue(Utils.IsSorted(finalizer));
+
+        //		int fcnt = 0;
+        //		for (int i = 0, icnt = finalizer.Length; i < icnt; ++i)
+        //		{
+        //			if (Utils.AddressSearch(instances,finalizer[i]) < 0) continue;
+        //			++fcnt;
+        //		}
+
+        //		Utils.SetAddressBit(rootedAry, instances, Utils.RootBits.Rooted);
+        //		Utils.SetAddressBit(finalizer, instances, Utils.RootBits.Finalizer);
+
+        //		TestContext.WriteLine("INSTANCE COUNT: " + Utils.LargeNumberString(instances.Length));
+        //		TestContext.WriteLine("ROOTED ARY COUNT: " + Utils.LargeNumberString(rootedAry.Length));
+        //		TestContext.WriteLine("UNROOTED ARY COUNT: " + Utils.LargeNumberString(done.Count));
+        //		TestContext.WriteLine("FINALIZER COUNT: " + Utils.LargeNumberString(finalizer.Length));
+
+        //		var markedRoooted = 0;
+        //		var markedFinalizer = 0;
+        //		for (int i = 0, icnt = instances.Length; i < icnt; ++i)
+        //		{
+        //			var addr = instances[i];
+        //			if (Utils.IsRooted(addr)) ++markedRoooted;
+        //			if (Utils.IsFinalizer(addr)) ++markedFinalizer;
+        //		}
+        //		TestContext.WriteLine("MARKED ROOTED COUNT: " + Utils.LargeNumberString(markedRoooted));
+        //		TestContext.WriteLine("MARKED FINALIZER COUNT: " + Utils.LargeNumberString(markedFinalizer));
+
+
+
+        //	} // using dump
+        //}
+
+        //[TestMethod]
+        //public void TestIndexing2()
+        //{
+        //	string error;
+        //	string dumpPath = Setup.RecentAdhocList[0];
+        //	var dmp = OpenDump(dumpPath);
+        //	var fileMoniker = new DumpFileMoniker(dumpPath);
+        //	var strIds = new StringIdDct();
+
+        //	using (dmp)
+        //	{
+        //		var heap = dmp.Heap;
+        //		var runtm = dmp.Runtimes[0];
+        //		ulong[] instances = DumpIndexer.GetHeapAddressesCount(heap);
+        //		string[] typeNames = DumpIndexer.GetTypeNames(heap, out error);
+        //		var rootAddrInfo = ClrtRootInfo.GetRootAddresses(0, runtm, heap, typeNames, strIds, fileMoniker, out error);
+        //		Utils.GetRealAddressesInPlace(rootAddrInfo.Item1);
+        //		Utils.GetRealAddressesInPlace(rootAddrInfo.Item2);
+
+        //		Assert.IsNull(error);
+        //		Assert.IsTrue(Utils.AreAddressesSorted(rootAddrInfo.Item1));
+        //		Assert.IsTrue(Utils.AreAddressesSorted(rootAddrInfo.Item2));
+
+        //		var rootAddresses = rootAddrInfo.Item1;
+
+        //		//Assert.IsTrue(Utils.AreAllInExcept0(rootAddresses, rootAddrInfo.Item1));
+        //		//Assert.IsTrue(Utils.AreAllInExcept0(rootAddresses, rootAddrInfo.Item2));
+        //		Assert.IsTrue(Utils.AreAllDistinct(rootAddresses));
+        //		Assert.IsTrue(Utils.IsSorted(rootAddresses));
+
+        //		rootAddresses = Utils.GetRealAddressesInPlace(rootAddresses);
+        //		Bitset bitset = new Bitset(instances.Length);
+        //		var rootAddressNdxs = Utils.GetAddressIndices(rootAddresses, instances);
+
+        //		string path1 = fileMoniker.GetFilePath(0, Constants.MapParentFieldsRootedPostfix);
+        //		string path2 = fileMoniker.GetFilePath(0, Constants.MapFieldParentsRootedPostfix);
+        //		//bool result = References.GetRefrences(heap, rootAddressNdxs, instances, bitset, path1, path2, out error);
+        //		bool result = References.CreateReferences2(0, heap, rootAddrInfo.Item1, instances, bitset, fileMoniker, null, out error);
+
+        //		int markRootCount = Utils.SetAddressBitIfSet(instances, rootAddrInfo.Item2, Utils.RootBits.Rooted);
+        //		int markFnlzCount = Utils.SetAddressBit(rootAddrInfo.Item2, instances, Utils.RootBits.Finalizer);
+
+        //		Assert.IsTrue(result);
+        //		Assert.IsNull(error);
+
+        //		int[] head1;
+        //		int[][] lists1;
+        //		result = References.LoadReferences(path1, out head1, out lists1, out error);
+        //		Assert.IsTrue(result);
+        //		Assert.IsNull(error);
+        //		Assert.IsTrue(Utils.IsSorted(head1));
+
+        //		for (int i = 0, icnt = lists1.Length; i < icnt; ++i)
+        //		{
+        //			var lst = lists1[i];
+        //			Assert.IsTrue(Utils.IsSorted(lst));
+        //			Assert.IsTrue(Utils.AreAllDistinct(lst));
+        //			Assert.IsTrue(Utils.DoesNotContain(lst,Int32.MaxValue));
+        //		}
+
+        //		string path1a = fileMoniker.GetFilePath(0, ".`PARENTFIELDSROOTED[0].BEFORE.NOFIN.bin");
+        //		int[] head1a;
+        //		int[][] lists1a;
+        //		result = References.LoadReferences(path1a, out head1a, out lists1a, out error);
+        //		Assert.IsTrue(result);
+        //		Assert.IsNull(error);
+
+        //		for (int i = 0, icnt = lists1a.Length; i < icnt; ++i)
+        //		{
+        //			var lst = lists1a[i];
+        //			Assert.IsTrue(Utils.IsSorted(lst));
+        //			//Assert.IsTrue(Utils.AreAllDistinct(lst));
+        //			Assert.IsTrue(Utils.DoesNotContain(lst, Int32.MaxValue));
+        //			Assert.IsTrue(Utils.Contains(lst,lists1[i]));
+        //		}
+
+        //		int[] head2;
+        //		int[][] lists2;
+        //		result = References.LoadReferences(path2, out head2, out lists2, out error);
+        //		Assert.IsTrue(result);
+        //		Assert.IsNull(error);
+        //		Assert.IsTrue(Utils.IsSorted(head2));
+
+        //		for (int i = 0, icnt = lists2.Length; i < icnt; ++i)
+        //		{
+        //			var lst = lists2[i];
+        //			Assert.IsTrue(Utils.IsSorted(lst));
+        //			Assert.IsTrue(Utils.AreAllDistinct(lst));
+        //			Assert.IsTrue(Utils.DoesNotContain(lst, Int32.MaxValue));
+        //		}
+
+
+        //		string path2a = fileMoniker.GetFilePath(0, ".`FIELDPARENTSROOTED[0].BEFORE.NOFIN.bin");
+        //		int[] head2a;
+        //		int[][] lists2a;
+        //		result = References.LoadReferences(path2a, out head2a, out lists2a, out error);
+        //		Assert.IsTrue(result);
+        //		Assert.IsNull(error);
+
+        //		for (int i = 0, icnt = lists2a.Length; i < icnt; ++i)
+        //		{
+        //			var lst = lists2a[i];
+        //			Assert.IsTrue(Utils.IsSorted(lst));
+        //			Assert.IsTrue(Utils.DoesNotContain(lst, Int32.MaxValue));
+        //			Assert.IsTrue(Utils.Contains(lst, lists2[i]));
+        //		}
+
+        //		TestContext.WriteLine("INSTANCE COUNT: " + Utils.LargeNumberString(instances.Length));
+        //		//TestContext.WriteLine("ROOTED ARY COUNT: " + Utils.LargeNumberString(rootedAry.Length));
+        //		//TestContext.WriteLine("UNROOTED ARY COUNT: " + Utils.LargeNumberString(done.Count));
+        //		//TestContext.WriteLine("FINALIZER COUNT: " + Utils.LargeNumberString(finalizer.Length));
+
+        //		var markedRoooted = 0;
+        //		var markedFinalizer = 0;
+        //		for (int i = 0, icnt = instances.Length; i < icnt; ++i)
+        //		{
+        //			var addr = instances[i];
+        //			if (Utils.IsRooted(addr)) ++markedRoooted;
+        //			if (Utils.IsFinalizer(addr)) ++markedFinalizer;
+        //		}
+        //		TestContext.WriteLine("MARKED ROOTED COUNT: " + Utils.LargeNumberString(markedRoooted));
+        //		TestContext.WriteLine("MARKED FINALIZER COUNT: " + Utils.LargeNumberString(markedFinalizer));
+
+        //	} // using dump
+        //}
+
+        //[TestMethod]
+        //public void TestIndexingBig()
+        //{
+        //	string error;
+        //	string dumpPath = @"C:\WinDbgStuff\Dumps\Analytics\BigOne\Analytics11_042015_2.Big.dmp";
+        //	var dmp = OpenDump(dumpPath);
+        //	var fileMoniker = new DumpFileMoniker(dumpPath);
+        //	var strIds = new StringIdDct();
+
+        //	using (dmp)
+        //	{
+        //		var heap = dmp.Heap;
+        //		var runtm = dmp.Runtimes[0];
+        //		ulong[] instances = DumpIndexer.GetHeapAddressesCount(heap);
+        //		string[] typeNames = DumpIndexer.GetTypeNames(heap, out error);
+        //		var rootAddrInfo = ClrtRootInfo.GetRootAddresses(0, runtm, heap, typeNames, strIds, fileMoniker, out error);
+        //		Utils.GetRealAddressesInPlace(rootAddrInfo.Item1);
+        //		Utils.GetRealAddressesInPlace(rootAddrInfo.Item2);
+
+        //		Assert.IsNull(error);
+        //		Assert.IsTrue(Utils.AreAddressesSorted(rootAddrInfo.Item1));
+        //		Assert.IsTrue(Utils.AreAddressesSorted(rootAddrInfo.Item2));
+
+        //		var rootAddresses = rootAddrInfo.Item1;
+
+        //		//Assert.IsTrue(Utils.AreAllInExcept0(rootAddresses, rootAddrInfo.Item1));
+        //		//Assert.IsTrue(Utils.AreAllInExcept0(rootAddresses, rootAddrInfo.Item2));
+        //		Assert.IsTrue(Utils.AreAllDistinct(rootAddresses));
+        //		Assert.IsTrue(Utils.IsSorted(rootAddresses));
+
+        //		rootAddresses = Utils.GetRealAddressesInPlace(rootAddresses);
+        //		Bitset bitset = new Bitset(instances.Length);
+        //		var rootAddressNdxs = Utils.GetAddressIndices(rootAddresses, instances);
+
+        //		string path1 = fileMoniker.GetFilePath(0, Constants.MapParentFieldsRootedPostfix);
+        //		string path2 = fileMoniker.GetFilePath(0, Constants.MapFieldParentsRootedPostfix);
+
+        //		//bool result = References.CreateReferences2(0, heap, rootAddrInfo.Item1, instances, bitset, fileMoniker, null, out error);
+        //		//Assert.IsTrue(result);
+        //		Assert.IsNull(error);
+        //	} // using dump
+        //}
+
+        private bool DumpReferences(string path, SortedDictionary<ulong, List<ulong>> refs, ulong[] instances,
+            out string error)
+        {
+            error = null;
+            BinaryWriter bw = null;
+            try
+            {
+                bw = new BinaryWriter(File.Open(path, FileMode.Create));
+                bw.Write(refs.Count);
+                foreach (var kv in refs)
+                {
+                    var ndx = Array.BinarySearch(instances, kv.Key);
+                    Debug.Assert(ndx >= 0);
+                    var lst = kv.Value;
+                    bw.Write(ndx);
+                    bw.Write(lst.Count);
+                    for (int i = 0, icnt = lst.Count; i < icnt; ++i)
+                    {
+                        ndx = Array.BinarySearch(instances, lst[i]);
+                        Debug.Assert(ndx >= 0);
+                        bw.Write(ndx);
+                    }
+                }
+                return true;
+            }
+            catch (Exception ex)
+            {
+                error = Utils.GetExceptionErrorString(ex);
+                return false;
+            }
+            finally
+            {
+                bw?.Close();
+            }
+        }
+
+        #endregion roots/instances/references
+
+        #region threads
+
+        [TestMethod]
+        public void TestBlocking()
+        {
+            var dmp = OpenDump(@"C:\WinDbgStuff\Dumps\Analytics\AnalyticsMemory\A2_noDF.dmp");
+            uint ThreadId = 13680;
+            using (dmp)
+            {
+                ClrThread thread;
+                var threads = DumpIndexer.GetThreads(dmp.Runtime);
+                for (int i = 0, icnt = threads.Length; i < icnt; ++i)
+                {
+                    if (threads[i].OSThreadId == ThreadId)
+                    {
+                        thread = threads[i];
+                    }
+                }
+
+                var heap = dmp.Heap;
+                BlockingObject[] freeBlks;
+                var blocks = DumpIndexer.GetBlockingObjectsEx(heap, out freeBlks);
+
+                List<BlockingObject> obloks = new List<BlockingObject>(256);
+                List<BlockingObject> wbloks = new List<BlockingObject>(256);
+                List<BlockingObject> wwbloks = new List<BlockingObject>(256);
+                HashSet<string> typeSet = new HashSet<string>();
+                int nullTypeCnt = 0;
+                for (int i = 0, icnt = blocks.Length; i < icnt; ++i)
+                {
+                    var block = blocks[i];
+
+                    if (block.HasSingleOwner && block.Taken && block.Owner != null && block.Owner.OSThreadId == ThreadId)
+                    {
+                        wwbloks.Add(block);
+                        var clrType = heap.GetObjectType(block.Object);
+                        if (clrType != null)
+                            typeSet.Add(clrType.Name);
+                        else
+                            ++nullTypeCnt;
+                    }
+                    for (int j = 0, jcnt = block.Owners.Count; j < jcnt; ++j)
+                    {
+                        if (block.Owners[j] == null) continue;
+                        if (block.Owners[j].OSThreadId == ThreadId)
+                        {
+                            obloks.Add(block);
+                            var clrType = heap.GetObjectType(block.Object);
+                            if (clrType != null)
+                                typeSet.Add(clrType.Name);
+                            else
+                                ++nullTypeCnt;
+                        }
+                    }
+                    for (int j = 0, jcnt = block.Waiters.Count; j < jcnt; ++j)
+                    {
+                        if (block.Waiters[j] == null) continue;
+                        if (block.Waiters[j].OSThreadId == ThreadId)
+                        {
+                            wbloks.Add(block);
+                            var clrType = heap.GetObjectType(block.Object);
+                            if (clrType != null)
+                                typeSet.Add(clrType.Name);
+                            else
+                                ++nullTypeCnt;
+
+                        }
+                    }
+                }
+                int notFreeCnt = 0;
+                for (int i = 0, icnt = freeBlks.Length; i < icnt; ++i)
+                {
+                    var blk = freeBlks[i];
+                    var clrType = heap.GetObjectType(blk.Object);
+                    if (clrType != null && clrType.Name != "Free")
+                    {
+                        ++notFreeCnt;
+                    }
+                }
+                Assert.IsTrue(notFreeCnt == 0);
+            }
+        }
+
+        [TestMethod]
+        public void TestThreadInfo()
+        {
             string dumpPath = Setup.DumpsFolder + @"\Analytics\Ellerston\Eze.Analytics.Svc_170309_130146.BIG.dmp";
             string error = null;
-			StreamWriter sw = null;
-			var rootEqCmp = new ClrRootEqualityComparer();
-			var rootCmp = new ClrRootObjCmp();
+            StreamWriter sw = null;
+            var rootEqCmp = new ClrRootEqualityComparer();
+            var rootCmp = new ClrRootObjCmp();
 
-			using (var clrDump = OpenDump(dumpPath))
-			{
-				try
-				{
-					var runtime = clrDump.Runtimes[0];
-					var heap = runtime.Heap;
-					var stackTraceLst = new List<ClrStackFrame>();
-					var threads = DumpIndexer.GetThreads(runtime);
-					var threadLocalDeadVars = new ClrRoot[threads.Length][];
-					var threadLocalAliveVars = new ClrRoot[threads.Length][];
-					var threadFrames = new ClrStackFrame[threads.Length][];
+            using (var clrDump = OpenDump(dumpPath))
+            {
+                try
+                {
+                    var runtime = clrDump.Runtimes[0];
+                    var heap = runtime.Heap;
+                    var stackTraceLst = new List<ClrStackFrame>();
+                    var threads = DumpIndexer.GetThreads(runtime);
+                    var threadLocalDeadVars = new ClrRoot[threads.Length][];
+                    var threadLocalAliveVars = new ClrRoot[threads.Length][];
+                    var threadFrames = new ClrStackFrame[threads.Length][];
 
-					for (int i = 0, icnt = threads.Length; i < icnt; ++i)
-					{
-						var t = threads[i];
-						stackTraceLst.Clear();
-						foreach (var st in t.EnumerateStackTrace())
-						{
-							stackTraceLst.Add(st);
-							if (stackTraceLst.Count > 100) break;
-						}
-						threadLocalAliveVars[i] = t.EnumerateStackObjects(false).ToArray();
-						var all = t.EnumerateStackObjects(true).ToArray();
-						threadLocalDeadVars[i] = all.Except(threadLocalAliveVars[i], rootEqCmp).ToArray();
-						threadFrames[i] = stackTraceLst.ToArray();
-					}
+                    for (int i = 0, icnt = threads.Length; i < icnt; ++i)
+                    {
+                        var t = threads[i];
+                        stackTraceLst.Clear();
+                        foreach (var st in t.EnumerateStackTrace())
+                        {
+                            stackTraceLst.Add(st);
+                            if (stackTraceLst.Count > 100) break;
+                        }
+                        threadLocalAliveVars[i] = t.EnumerateStackObjects(false).ToArray();
+                        var all = t.EnumerateStackObjects(true).ToArray();
+                        threadLocalDeadVars[i] = all.Except(threadLocalAliveVars[i], rootEqCmp).ToArray();
+                        threadFrames[i] = stackTraceLst.ToArray();
+                    }
 
-					var path = DumpFileMoniker.GetAndCreateOutFolder(dumpPath, out error) + Path.DirectorySeparatorChar + "TestThreadsInfo.txt";
-					sw = new StreamWriter(path);
-					HashSet<ulong> locals = new HashSet<ulong>();
-					var localAliveDups = new HashSet<ClrRoot>(rootEqCmp);
-					var localDeadDups = new HashSet<ClrRoot>(rootEqCmp);
-					int dupLocals = 0;
-					for (int i = 0, icnt = threads.Length; i < icnt; ++i)
-					{
-						ClrThread th = threads[i];
-						var frm = threadFrames[i];
-						var vars = threadLocalDeadVars[i];
-						sw.WriteLine(th.OSThreadId.ToString() + "/" + th.ManagedThreadId + "  " + Utils.RealAddressString(th.Address));
-						sw.WriteLine("    alive locals");
-						for (int j = 0, jcnt = threadLocalAliveVars[i].Length; j < jcnt; ++j)
-						{
-							ClrRoot root = threadLocalAliveVars[i][j];
-							if (!locals.Add(root.Object))
-							{
-								localAliveDups.Add(root);
-								++dupLocals;
-							}
-							ClrType clrType = heap.GetObjectType(root.Object);
+                    var path = DumpFileMoniker.GetAndCreateOutFolder(dumpPath, out error) + Path.DirectorySeparatorChar + "TestThreadsInfo.txt";
+                    sw = new StreamWriter(path);
+                    HashSet<ulong> locals = new HashSet<ulong>();
+                    var localAliveDups = new HashSet<ClrRoot>(rootEqCmp);
+                    var localDeadDups = new HashSet<ClrRoot>(rootEqCmp);
+                    int dupLocals = 0;
+                    for (int i = 0, icnt = threads.Length; i < icnt; ++i)
+                    {
+                        ClrThread th = threads[i];
+                        var frm = threadFrames[i];
+                        var vars = threadLocalDeadVars[i];
+                        sw.WriteLine(th.OSThreadId.ToString() + "/" + th.ManagedThreadId + "  " + Utils.RealAddressString(th.Address));
+                        sw.WriteLine("    alive locals");
+                        for (int j = 0, jcnt = threadLocalAliveVars[i].Length; j < jcnt; ++j)
+                        {
+                            ClrRoot root = threadLocalAliveVars[i][j];
+                            if (!locals.Add(root.Object))
+                            {
+                                localAliveDups.Add(root);
+                                ++dupLocals;
+                            }
+                            ClrType clrType = heap.GetObjectType(root.Object);
                             sw.Write("    " + Utils.RealAddressStringHeader(root.Address) + "    " + Utils.RealAddressStringHeader(root.Object));
                             sw.Write(" " + root.Kind.ToString() + " ");
-							if (clrType != null)
-								sw.WriteLine(clrType.Name);
-							else
-								sw.WriteLine();
-						}
+                            if (clrType != null)
+                                sw.WriteLine(clrType.Name);
+                            else
+                                sw.WriteLine();
+                        }
 
-						sw.WriteLine("    dead locals");
-						for (int j = 0, jcnt = threadLocalDeadVars[i].Length; j < jcnt; ++j)
-						{
-							ClrRoot root = threadLocalDeadVars[i][j];
-							if (!locals.Add(root.Object))
-							{
-								localDeadDups.Add(root);
-								++dupLocals;
-							}
-							ClrType clrType = heap.GetObjectType(root.Object);
-							sw.Write("    " + Utils.RealAddressStringHeader(root.Address) + "    " + Utils.RealAddressStringHeader(root.Object));
-							if (clrType != null)
-								sw.WriteLine(clrType.Name);
-							else
-								sw.WriteLine();
-						}
-						for (int j = 0, jcnt = threadFrames[i].Length; j < jcnt; ++j)
-						{
-							ClrStackFrame fr = threadFrames[i][j];
-							if (fr.Method != null)
-							{
-								string fullSig = fr.Method.GetFullSignature();
-								if (fullSig == null)
-									fullSig = fr.Method.Name;
-								if (fullSig == null) fullSig = "UNKNOWN";
-								sw.WriteLine("  " + Utils.RealAddressStringHeader(fr.StackPointer) + "  " + Utils.RealAddressStringHeader(fr.InstructionPointer)
-												+ Utils.RealAddressStringHeader(fr.Method.NativeCode)
-												+ fullSig);
+                        sw.WriteLine("    dead locals");
+                        for (int j = 0, jcnt = threadLocalDeadVars[i].Length; j < jcnt; ++j)
+                        {
+                            ClrRoot root = threadLocalDeadVars[i][j];
+                            if (!locals.Add(root.Object))
+                            {
+                                localDeadDups.Add(root);
+                                ++dupLocals;
+                            }
+                            ClrType clrType = heap.GetObjectType(root.Object);
+                            sw.Write("    " + Utils.RealAddressStringHeader(root.Address) + "    " + Utils.RealAddressStringHeader(root.Object));
+                            if (clrType != null)
+                                sw.WriteLine(clrType.Name);
+                            else
+                                sw.WriteLine();
+                        }
+                        for (int j = 0, jcnt = threadFrames[i].Length; j < jcnt; ++j)
+                        {
+                            ClrStackFrame fr = threadFrames[i][j];
+                            if (fr.Method != null)
+                            {
+                                string fullSig = fr.Method.GetFullSignature();
+                                if (fullSig == null)
+                                    fullSig = fr.Method.Name;
+                                if (fullSig == null) fullSig = "UNKNOWN";
+                                sw.WriteLine("  " + Utils.RealAddressStringHeader(fr.StackPointer) + "  " + Utils.RealAddressStringHeader(fr.InstructionPointer)
+                                                + Utils.RealAddressStringHeader(fr.Method.NativeCode)
+                                                + fullSig);
 
-							}
-							else
-							{
-								sw.WriteLine("  METHOD UKNOWN");
-							}
-							if (!string.IsNullOrEmpty(fr.DisplayString))
-								sw.WriteLine("  " + fr.DisplayString);
-							else
-								sw.WriteLine("  ???");
-						}
-					}
+                            }
+                            else
+                            {
+                                sw.WriteLine("  METHOD UKNOWN");
+                            }
+                            if (!string.IsNullOrEmpty(fr.DisplayString))
+                                sw.WriteLine("  " + fr.DisplayString);
+                            else
+                                sw.WriteLine("  ???");
+                        }
+                    }
 
-					var localAliveDupsAry = localAliveDups.ToArray();
-					var localDeadDupsAry = localDeadDups.ToArray();
+                    var localAliveDupsAry = localAliveDups.ToArray();
+                    var localDeadDupsAry = localDeadDups.ToArray();
 
 
 
-					TestContext.WriteLine("LOCAL OBJECT DUPLICATE COUNT: " + dupLocals);
+                    TestContext.WriteLine("LOCAL OBJECT DUPLICATE COUNT: " + dupLocals);
 
-				}
-				catch (Exception ex)
-				{
-					error = Utils.GetExceptionErrorString(ex);
-					Assert.IsTrue(false, error);
-				}
-				finally
-				{
-					sw?.Close();
-				}
-			}
-		}
+                }
+                catch (Exception ex)
+                {
+                    error = Utils.GetExceptionErrorString(ex);
+                    Assert.IsTrue(false, error);
+                }
+                finally
+                {
+                    sw?.Close();
+                }
+            }
+        }
 
         static (int count, double sum) Tally(IEnumerable<double> values)
         {
@@ -2203,82 +2203,82 @@ namespace UnitTestMdr
         #region types
 
         [TestMethod]
-		public void TestTypeSizesAndGenerations()
-		{
-			string dumpPath = Setup.DumpsFolder + @"\Analytics\Ellerston\Eze.Analytics.Svc_170309_130146.BIG.dmp";
-			string typeName = "Free";
+        public void TestTypeSizesAndGenerations()
+        {
+            string dumpPath = Setup.DumpsFolder + @"\Analytics\Ellerston\Eze.Analytics.Svc_170309_130146.BIG.dmp";
+            string typeName = "Free";
 
-			var dmp = OpenDump(dumpPath);
+            var dmp = OpenDump(dumpPath);
 
-			using (dmp)
-			{
-				var heap = dmp.Heap;
-				var segs = heap.Segments;
-				var addresses = new List<ulong>(1024 * 1024);
-				var sizes = new List<ulong>(1024 * 1024);
-				int[] genHistogram = new int[4];
-				int[] sizeHistogram = new int[Utils.SizeDistributionLenght];
+            using (dmp)
+            {
+                var heap = dmp.Heap;
+                var segs = heap.Segments;
+                var addresses = new List<ulong>(1024 * 1024);
+                var sizes = new List<ulong>(1024 * 1024);
+                int[] genHistogram = new int[4];
+                int[] sizeHistogram = new int[Utils.SizeDistributionLenght];
 
-				for (int i = 0, icnt = segs.Count; i < icnt; ++i)
-				{
-					var seg = segs[i];
-					ulong addr = seg.FirstObject;
-					while (addr != 0ul)
-					{
-						var clrType = heap.GetObjectType(addr);
-						if (clrType == null || !Utils.SameStrings(clrType.Name,typeName)) goto NEXT_OBJECT;
-						var sz = clrType.GetSize(addr);
-						Utils.AddSizeDistribution(sizeHistogram,sz);
-						var gen = heap.GetGeneration(addr);
-						genHistogram[gen] += 1;
-						addresses.Add(addr);
-						sizes.Add(sz);
-						NEXT_OBJECT:
-						addr = seg.NextObject(addr);
-					}
-				}
-				var adrAry = addresses.ToArray();
-				addresses = null;
-				var szAry = sizes.ToArray();
-				sizes = null;
-				Array.Sort(szAry,adrAry,new Utils.AddressCmpDesc());
-				
-				string outPath = Setup.DumpsFolder + @"\Analytics\Ellerston\Eze.Analytics.Svc_170309_130146.BIG.dmp.map\ad-hoc.queries\TypeSizesAndGenerations."
-										+ DumpFileMoniker.GetValidFileName(typeName) + ".txt";
-				StreamWriter sw = null;
-				try
-				{
-					sw = new StreamWriter(outPath);
-					sw.Write("GENERATION COUNTS (0 1 2 LOH): ");
-					for (int i = 0; i < 4; ++i)
-						sw.Write(" " + genHistogram[i]);
-					sw.WriteLine();
-					sw.WriteLine("SIZE DISTRIBUTION:");
-					ulong twoPower = 32;
-					for (int i = 0; i < sizeHistogram.Length; ++i)
-					{
-						sw.WriteLine("<= " + Utils.SizeString(twoPower) + ": " + Utils.CountString(sizeHistogram[i]));
-						twoPower *= 2;
-					}
+                for (int i = 0, icnt = segs.Count; i < icnt; ++i)
+                {
+                    var seg = segs[i];
+                    ulong addr = seg.FirstObject;
+                    while (addr != 0ul)
+                    {
+                        var clrType = heap.GetObjectType(addr);
+                        if (clrType == null || !Utils.SameStrings(clrType.Name, typeName)) goto NEXT_OBJECT;
+                        var sz = clrType.GetSize(addr);
+                        Utils.AddSizeDistribution(sizeHistogram, sz);
+                        var gen = heap.GetGeneration(addr);
+                        genHistogram[gen] += 1;
+                        addresses.Add(addr);
+                        sizes.Add(sz);
+                        NEXT_OBJECT:
+                        addr = seg.NextObject(addr);
+                    }
+                }
+                var adrAry = addresses.ToArray();
+                addresses = null;
+                var szAry = sizes.ToArray();
+                sizes = null;
+                Array.Sort(szAry, adrAry, new Utils.AddressCmpDesc());
 
-					sw.WriteLine();
-					sw.WriteLine("ADDRESSES AND SIZES:");
+                string outPath = Setup.DumpsFolder + @"\Analytics\Ellerston\Eze.Analytics.Svc_170309_130146.BIG.dmp.map\ad-hoc.queries\TypeSizesAndGenerations."
+                                        + DumpFileMoniker.GetValidFileName(typeName) + ".txt";
+                StreamWriter sw = null;
+                try
+                {
+                    sw = new StreamWriter(outPath);
+                    sw.Write("GENERATION COUNTS (0 1 2 LOH): ");
+                    for (int i = 0; i < 4; ++i)
+                        sw.Write(" " + genHistogram[i]);
+                    sw.WriteLine();
+                    sw.WriteLine("SIZE DISTRIBUTION:");
+                    ulong twoPower = 32;
+                    for (int i = 0; i < sizeHistogram.Length; ++i)
+                    {
+                        sw.WriteLine("<= " + Utils.SizeString(twoPower) + ": " + Utils.CountString(sizeHistogram[i]));
+                        twoPower *= 2;
+                    }
 
-					for (int i = 0; i < szAry.Length; ++i)
-					{
-						sw.WriteLine(Utils.RealAddressStringHeader(adrAry[i]) + Utils.SizeString(szAry[i]));
-					}
-				}
-				catch (Exception ex)
-				{
-					Assert.IsTrue(false,ex.ToString());
-				}
-				finally
-				{
-					sw?.Close();
-				}
-			} // using dump
-		}
+                    sw.WriteLine();
+                    sw.WriteLine("ADDRESSES AND SIZES:");
+
+                    for (int i = 0; i < szAry.Length; ++i)
+                    {
+                        sw.WriteLine(Utils.RealAddressStringHeader(adrAry[i]) + Utils.SizeString(szAry[i]));
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Assert.IsTrue(false, ex.ToString());
+                }
+                finally
+                {
+                    sw?.Close();
+                }
+            } // using dump
+        }
 
         [TestMethod]
         public void TestGetTypeAddressList()
@@ -2302,7 +2302,7 @@ namespace UnitTestMdr
                             if (clrType == null || !Utils.SameStrings(typeName, clrType.Name)) goto NEXT_OBJECT;
                             var fld = clrType.GetFieldByName("prtName");
                             string val = (string)fld.GetValue(addr, false, true);
- 
+
                             NEXT_OBJECT:
                             addr = seg.NextObject(addr);
                         }
@@ -2328,8 +2328,8 @@ namespace UnitTestMdr
             string fldName = "posID";
             string altfldName = "positionID";
             string error = null;
-            var addrTypes = new List<Tuple<string,string,string>>();
-            var posIDs = new List<Tuple<string,string,string>>();
+            var addrTypes = new List<Tuple<string, string, string>>();
+            var posIDs = new List<Tuple<string, string, string>>();
             var dct = new SortedDictionary<string, List<KeyValuePair<string, string>>>(StringComparer.OrdinalIgnoreCase);
 
             using (var clrDump = OpenDump(@"D:\Jerzy\WinDbgStuff\dumps\Analytics\Viking\AnalyticsVikingForAlex.dmp"))
@@ -2350,12 +2350,12 @@ namespace UnitTestMdr
                             if (!typeNames.Contains(clrType.Name)) goto NEXT_OBJECT;
 
                             var fld = clrType.GetFieldByName(fldName);
-                            if (fld==null)
+                            if (fld == null)
                                 fld = clrType.GetFieldByName(altfldName);
                             string val = (string)fld.GetValue(addr, false, true);
                             var info = new KeyValuePair<string, string>(clrType.Name, Utils.RealAddressString(addr));
                             List<KeyValuePair<string, string>> lst;
-                            if (dct.TryGetValue(val,out lst))
+                            if (dct.TryGetValue(val, out lst))
                             {
                                 lst.Add(info);
                             }
@@ -2381,19 +2381,19 @@ namespace UnitTestMdr
                     int totDupCnt = 0;
                     int[] typeCnts = new int[3];
                     StringBuilder sb = new StringBuilder(4096);
-                    foreach(var kv in dct)
+                    foreach (var kv in dct)
                     {
                         if (kv.Value.Count > 1)
                         {
                             sb.AppendLine(kv.Key);
-                            
+
                             totDupCnt += kv.Value.Count;
                             ++dupCnt;
                             if (maxCnt < kv.Value.Count)
                                 maxCnt = kv.Value.Count;
-                            foreach(var kvi in kv.Value)
+                            foreach (var kvi in kv.Value)
                             {
-                                switch(kvi.Key)
+                                switch (kvi.Key)
                                 {
                                     case "ECS.Common.HierarchyCache.Structure.CashPosition":
                                         sb.Append("   CashPosition: ").AppendLine(kvi.Value);
@@ -2456,7 +2456,7 @@ namespace UnitTestMdr
                                     var typeVal2 = heap.GetObjectType(addrVal2);
                                     if (typeVal2 != null)
                                     {
-                                        var fld3 = typeVal2.Name.EndsWith(".RealPosition") 
+                                        var fld3 = typeVal2.Name.EndsWith(".RealPosition")
                                             ? typeVal2.GetFieldByName(@"sec")
                                             : typeVal2.GetFieldByName(@"_sec");
                                         if (fld3 == null)
@@ -2502,98 +2502,98 @@ namespace UnitTestMdr
         #region type references
 
         [TestMethod]
-		public void TestTypeReferences()
-		{
-			string dumpPath = Setup.DumpsFolder + @"\Analytics\Ellerstone\Eze.Analytics.Svc_170309_130146.BIG.map";
-			string typeName = "System.Collections.Concurrent.ConcurrentDictionary<";
+        public void TestTypeReferences()
+        {
+            string dumpPath = Setup.DumpsFolder + @"\Analytics\Ellerstone\Eze.Analytics.Svc_170309_130146.BIG.map";
+            string typeName = "System.Collections.Concurrent.ConcurrentDictionary<";
 
-			var dmp = OpenDump(dumpPath);
-			using (dmp)
-			{
-				var heap = dmp.Heap;
-				var segs = heap.Segments;
-				var fieldAddrOffsetList = new List<KeyValuePair<ulong, int>>(64);
-				for (int i = 0, icnt = segs.Count; i < icnt; ++i)
-				{
-					var seg = segs[i];
-					ulong addr = seg.FirstObject;
-					while (addr != 0ul)
-					{
-						var clrType = heap.GetObjectType(addr);
-						if (clrType == null) goto NEXT_OBJECT;
-						if (clrType.Name.StartsWith(typeName,StringComparison.Ordinal))
-						{
-							fieldAddrOffsetList.Clear();
-							clrType.EnumerateRefsOfObjectCarefully(addr, (address, off) =>
-							{
-								fieldAddrOffsetList.Add(new KeyValuePair<ulong, int>(address, off));
-							});
-						}
+            var dmp = OpenDump(dumpPath);
+            using (dmp)
+            {
+                var heap = dmp.Heap;
+                var segs = heap.Segments;
+                var fieldAddrOffsetList = new List<KeyValuePair<ulong, int>>(64);
+                for (int i = 0, icnt = segs.Count; i < icnt; ++i)
+                {
+                    var seg = segs[i];
+                    ulong addr = seg.FirstObject;
+                    while (addr != 0ul)
+                    {
+                        var clrType = heap.GetObjectType(addr);
+                        if (clrType == null) goto NEXT_OBJECT;
+                        if (clrType.Name.StartsWith(typeName, StringComparison.Ordinal))
+                        {
+                            fieldAddrOffsetList.Clear();
+                            clrType.EnumerateRefsOfObjectCarefully(addr, (address, off) =>
+                            {
+                                fieldAddrOffsetList.Add(new KeyValuePair<ulong, int>(address, off));
+                            });
+                        }
 
-						int fieldCount = clrType.Fields.Count;
+                        int fieldCount = clrType.Fields.Count;
 
-						NEXT_OBJECT:
-						addr = seg.NextObject(addr);
-					}
-				}
-			} // using dump
-		}
+                        NEXT_OBJECT:
+                        addr = seg.NextObject(addr);
+                    }
+                }
+            } // using dump
+        }
 
-		[TestMethod]
-		public void TestArrayReferences()
-		{
-			string dumpPath = @"D:\Jerzy\WinDbgStuff\dumps\Analytics\Highline\analyticsdump111.dlk.dmp";
-			var dmp = OpenDump(dumpPath);
-			using (dmp)
-			{
-				var heap = dmp.Heap;
-				var segs = heap.Segments;
-				var fieldAddrOffsetList = new List<KeyValuePair<ulong, int>>(64);
-				for (int i = 0, icnt = segs.Count; i < icnt; ++i)
-				{
-					var seg = segs[i];
-					ulong addr = seg.FirstObject;
-					while (addr != 0ul)
-					{
-						var clrType = heap.GetObjectType(addr);
-						if (clrType == null || !clrType.IsArray) goto NEXT_OBJECT;
-						fieldAddrOffsetList.Clear();
-						clrType.EnumerateRefsOfObjectCarefully(addr, (address, off) =>
-						{
-							fieldAddrOffsetList.Add(new KeyValuePair<ulong, int>(address, off));
-						});
+        [TestMethod]
+        public void TestArrayReferences()
+        {
+            string dumpPath = @"D:\Jerzy\WinDbgStuff\dumps\Analytics\Highline\analyticsdump111.dlk.dmp";
+            var dmp = OpenDump(dumpPath);
+            using (dmp)
+            {
+                var heap = dmp.Heap;
+                var segs = heap.Segments;
+                var fieldAddrOffsetList = new List<KeyValuePair<ulong, int>>(64);
+                for (int i = 0, icnt = segs.Count; i < icnt; ++i)
+                {
+                    var seg = segs[i];
+                    ulong addr = seg.FirstObject;
+                    while (addr != 0ul)
+                    {
+                        var clrType = heap.GetObjectType(addr);
+                        if (clrType == null || !clrType.IsArray) goto NEXT_OBJECT;
+                        fieldAddrOffsetList.Clear();
+                        clrType.EnumerateRefsOfObjectCarefully(addr, (address, off) =>
+                        {
+                            fieldAddrOffsetList.Add(new KeyValuePair<ulong, int>(address, off));
+                        });
 
-						NEXT_OBJECT:
-						addr = seg.NextObject(addr);
-					}
-				}
-			} // using dump
-		}
+                        NEXT_OBJECT:
+                        addr = seg.NextObject(addr);
+                    }
+                }
+            } // using dump
+        }
 
-		[TestMethod]
-		public void TestEnumerateTypeReferences()
-		{
-			string dumpPath = @"D:\Jerzy\WinDbgStuff\dumps\Analytics\Highline\analyticsdump111.dlk.dmp";
-			ulong addr = 0x00000000800a8c30;
+        [TestMethod]
+        public void TestEnumerateTypeReferences()
+        {
+            string dumpPath = @"D:\Jerzy\WinDbgStuff\dumps\Analytics\Highline\analyticsdump111.dlk.dmp";
+            ulong addr = 0x00000000800a8c30;
 
-			var dmp = OpenDump(dumpPath);
-			using (dmp)
-			{
-				var heap = dmp.Heap;
-				var segs = heap.Segments;
-				var fieldAddrOffsetList = new List<KeyValuePair<ulong, int>>(64);
-				fieldAddrOffsetList.Clear();
-				var clrType = heap.GetObjectType(addr);
-				Assert.IsNotNull(clrType);
-				clrType.EnumerateRefsOfObjectCarefully(addr, (address, off) =>
-				{
-					fieldAddrOffsetList.Add(new KeyValuePair<ulong, int>(address, off));
-				});
+            var dmp = OpenDump(dumpPath);
+            using (dmp)
+            {
+                var heap = dmp.Heap;
+                var segs = heap.Segments;
+                var fieldAddrOffsetList = new List<KeyValuePair<ulong, int>>(64);
+                fieldAddrOffsetList.Clear();
+                var clrType = heap.GetObjectType(addr);
+                Assert.IsNotNull(clrType);
+                clrType.EnumerateRefsOfObjectCarefully(addr, (address, off) =>
+                {
+                    fieldAddrOffsetList.Add(new KeyValuePair<ulong, int>(address, off));
+                });
 
-				int fieldCount = clrType.Fields.Count;
+                int fieldCount = clrType.Fields.Count;
 
-			} // using dump
-		}
+            } // using dump
+        }
 
         [TestMethod]
         public void TestCompareInstanceFiles()
@@ -2685,20 +2685,24 @@ namespace UnitTestMdr
                             && File.Exists(path3)
                             );
 
+            StreamWriter sw = null, sw1 = null;
             List<int> notEqualCounts = new List<int>();
             List<int> diffsRefs = new List<int>();
+            List<int> diffsFixedRefs = new List<int>();
+            ulong[] instances_O = null;
+            ulong[] instances_N = null;
             try
             {
-                ulong[] instances_O = Utils.ReadUlongArray(path0, out error);
-                ulong[] instances_N = Utils.ReadUlongArray(path4, out error);
+                instances_O = Utils.ReadUlongArray(path0, out error);
+                instances_N = Utils.ReadUlongArray(path4, out error);
                 int[] headAry_O;
                 int[][] lists_O;
                 References_old.LoadReferences(path1, out headAry_O, out lists_O, out error);
                 long[] offsets_N = Utils.ReadLongArray(path3, instances_N.Length + 1, out error);
                 int[] counts_N = new int[instances_N.Length];
-                for (int i = 0 , icnt = instances_N.Length; i < icnt; ++i)
+                for (int i = 0, icnt = instances_N.Length; i < icnt; ++i)
                 {
-                    counts_N[i] = (int)(offsets_N[i+1] - offsets_N[i])/sizeof(int);
+                    counts_N[i] = (int)(offsets_N[i + 1] - offsets_N[i]) / sizeof(int);
                 }
                 int[] counts_O = new int[instances_O.Length];
                 int nx_O = 0;
@@ -2711,7 +2715,7 @@ namespace UnitTestMdr
                         continue;
                     }
                     int ndx_O = headAry_O[nx_O];
-                    if(ndx_O > ii)
+                    if (ndx_O > ii)
                     {
                         try
                         {
@@ -2726,6 +2730,21 @@ namespace UnitTestMdr
                     ++nx_O;
                 }
 
+                int rootedCount_O = 0;
+                int rootedCount_N = 0;
+                int fnlzerCount_O = 0;
+                int fnlzerCount_N = 0;
+                for (int i = 0, icnt = instances_N.Length; i < icnt; ++i)
+                {
+                    if ((instances_O[i] & Utils.RootBits.Rooted) > 0) ++rootedCount_O;
+                    if ((instances_N[i] & Utils.RootBits.Rooted) > 0) ++rootedCount_N;
+                    if ((instances_O[i] & Utils.RootBits.Finalizer) > 0) ++fnlzerCount_O;
+                    if ((instances_N[i] & Utils.RootBits.Finalizer) > 0) ++fnlzerCount_N;
+                }
+                TestContext.WriteLine("instances_O rooted " + Utils.CountString(rootedCount_O));
+                TestContext.WriteLine("instances_N rooted " + Utils.CountString(rootedCount_N));
+                TestContext.WriteLine("instances_O finalizer" + Utils.CountString(fnlzerCount_O));
+                TestContext.WriteLine("instances_N finalizer" + Utils.CountString(fnlzerCount_N));
 
                 Assert.AreEqual(instances_O.Length, instances_N.Length);
                 for (int i = 0, icnt = instances_N.Length; i < icnt; ++i)
@@ -2738,11 +2757,10 @@ namespace UnitTestMdr
 
                 if (notEqualCounts.Count > 0)
                 {
-                    StreamWriter sw = null;
                     try
                     {
                         sw = new StreamWriter(@"D:\Jerzy\WinDbgStuff\dumps\Analytics\Highline\COUNTDIFFS.TXT");
-                        foreach(int inst in notEqualCounts)
+                        foreach (int inst in notEqualCounts)
                         {
                             sw.Write(Utils.CountStringHeader(inst));
                             sw.Write(Utils.SmallIdHeader(counts_O[inst]));
@@ -2785,7 +2803,7 @@ namespace UnitTestMdr
                     }
 
                     ulong[] children_N = new ulong[cnt_N];
-                    br.BaseStream.Seek(offset_N,SeekOrigin.Begin);
+                    br.BaseStream.Seek(offset_N, SeekOrigin.Begin);
                     for (int j = 0, jcnt = cnt_N; j < jcnt; ++j)
                     {
                         int nx_N = br.ReadInt32();
@@ -2801,15 +2819,61 @@ namespace UnitTestMdr
                     }
                     else
                     {
+                        var seq = children_O.Where((src, ndx) => src != parent_O).Distinct().ToArray();
+                        if (!Utils.SameRealAddresses(seq, children_N))
+                        {
+                            diffsFixedRefs.Add(ndx_O);
+                        }
+                    }
+                }
 
+                try
+                {
+                    sw = new StreamWriter(@"D:\Jerzy\WinDbgStuff\dumps\Analytics\Highline\O_N_FLAGDIFFS.TXT");
+                    sw1 = new StreamWriter(@"D:\Jerzy\WinDbgStuff\dumps\Analytics\Highline\N_O_FLAGDIFFS.TXT");
+                    Assert.IsTrue(instances_O != null && instances_N != null && instances_O.Length == instances_N.Length);
+                    for (int k = 0, kcnt = instances_N.Length; k < kcnt; ++k)
+                    {
+                        ulong addr_O = instances_O[k];
+                        ulong addr_N = instances_N[k];
+                        Assert.IsTrue(Utils.RealAddress(addr_O) == Utils.RealAddress(addr_N));
+                        bool addr_O_rooted = Utils.IsRooted(addr_O);
+                        bool addr_O_fnlzer = Utils.IsFinalizer(addr_O);
+                        bool addr_N_rooted = Utils.IsRooted(addr_N);
+                        bool addr_N_fnlzer = Utils.IsFinalizer(addr_N);
+
+                        if ((addr_O_rooted && !addr_N_rooted) || (addr_O_fnlzer && !addr_N_fnlzer))
+                        {
+                            sw.Write(Utils.CountStringHeader(k));
+                            sw.Write(Utils.AddressStringHeader(addr_O));
+                            sw.Write(Utils.AddressStringHeader(addr_N));
+                            sw.WriteLine();
+                        }
+
+                        if ((addr_N_rooted && !addr_O_rooted) || (addr_N_fnlzer && !addr_O_fnlzer))
+                        {
+                            sw1.Write(Utils.CountStringHeader(k));
+                            sw1.Write(Utils.AddressStringHeader(addr_N));
+                            sw1.Write(Utils.AddressStringHeader(addr_O));
+                            sw1.WriteLine();
+                        }
                     }
 
 
-                    int b = 1;
-
+                }
+                catch (Exception ex)
+                {
+                    Assert.IsTrue(false, ex.ToString());
+                }
+                finally
+                {
+                    sw?.Close();
+                    sw = null;
+                    sw1.Close();
+                    sw1 = null;
                 }
             }
-            catch(Exception ex)
+            catch (Exception ex)
             {
                 error = ex.ToString();
                 TestContext.WriteLine("EXCEPTION");
@@ -2818,6 +2882,8 @@ namespace UnitTestMdr
             finally
             {
                 br?.Close();
+                sw?.Close();
+                sw1?.Close();
             }
 
 
@@ -2839,7 +2905,7 @@ namespace UnitTestMdr
         #region exceptions
 
         [TestMethod]
-		public void TestExceptionList()
+        public void TestExceptionList()
         {
             string dumpPath = Setup.DumpsFolder + @"\OMS\Redskull\Analytics_170330_163202.bad.dmp";
 
@@ -2877,7 +2943,7 @@ namespace UnitTestMdr
             string typeName = "System.ServiceModel.Description.MessageDescription";
             string dumpPath = Setup.DumpsFolder + @"\OMS\Redskull\Analytics_170330_163202.bad.dmp";
 
-            ClrInstanceField itemsFld=null, bodyFld=null, wrapperNameFld=null, encodedFld=null, decodedFld = null;
+            ClrInstanceField itemsFld = null, bodyFld = null, wrapperNameFld = null, encodedFld = null, decodedFld = null;
             ClrType itemsType = null, bodyType = null, wrapperNameType = null;
             ulong itemsAddr, bodyAddr, wrapperNameAddr;
 
@@ -2895,7 +2961,7 @@ namespace UnitTestMdr
                     while (addr != 0ul)
                     {
                         var clrType = heap.GetObjectType(addr);
-                        if (clrType == null || !Utils.SameStrings(typeName,clrType.Name)) goto NEXT_OBJECT;
+                        if (clrType == null || !Utils.SameStrings(typeName, clrType.Name)) goto NEXT_OBJECT;
 
                         (itemsType, itemsFld, itemsAddr) = TypeExtractor.GetReferenceTypeField(heap, clrType, addr, "items");
                         Assert.IsNotNull(itemsType);
@@ -2937,39 +3003,39 @@ namespace UnitTestMdr
         #region open dump
 
         public static ClrtDump OpenDump(int indexNdx = 0)
-		{
-			string error;
-			var path = Setup.GetRecentAdhocPath(indexNdx);
-			Assert.IsNotNull(path, "Setup returned null when asked for index " + indexNdx + ".");
-			var clrDump = new ClrtDump(path);
-			var initOk = clrDump.Init(out error);
-			Assert.IsTrue(initOk, "ClrtDump.Init failed for dump: " + path + Environment.NewLine + error);
-			return clrDump;
-		}
+        {
+            string error;
+            var path = Setup.GetRecentAdhocPath(indexNdx);
+            Assert.IsNotNull(path, "Setup returned null when asked for index " + indexNdx + ".");
+            var clrDump = new ClrtDump(path);
+            var initOk = clrDump.Init(out error);
+            Assert.IsTrue(initOk, "ClrtDump.Init failed for dump: " + path + Environment.NewLine + error);
+            return clrDump;
+        }
 
-		public static ClrtDump OpenDump(string path)
-		{
-			string error;
-			var clrDump = new ClrtDump(path);
-			bool initOk = clrDump.Init(out error);
-			Assert.IsTrue(initOk, "ClrtDump.Init failed for dump: " + path + Environment.NewLine + error);
-			return clrDump;
-		}
+        public static ClrtDump OpenDump(string path)
+        {
+            string error;
+            var clrDump = new ClrtDump(path);
+            bool initOk = clrDump.Init(out error);
+            Assert.IsTrue(initOk, "ClrtDump.Init failed for dump: " + path + Environment.NewLine + error);
+            return clrDump;
+        }
 
-		#endregion open dump
+        #endregion open dump
 
-		#region template
+        #region template
 
-		[TestMethod]
+        [TestMethod]
         public void TestTemplate()
         {
             var dmp = OpenDump();
-			using (dmp)
-			{
-				var heap = dmp.Heap;
+            using (dmp)
+            {
+                var heap = dmp.Heap;
 
-			}
-		}
+            }
+        }
 
         [TestMethod]
         public void TestSnippet()
