@@ -13,12 +13,23 @@ namespace ClrMDRIndex
         [Flags]
         public enum ReferenceType
         {
+            None = 0,
             Ancestors = 1,
             Descendants = 1 << 2,
             Rooted = 1 << 3,
             Unrooted = 1 << 4,
-            All = 1 << 5,
+            Finalizer = 1 << 5,
+            Strict = 1 << 6,
+            All = 1 << 7,
 
+        }
+
+        public static string InstanceTypeString(ReferenceType refType)
+        {
+            if ((refType & ReferenceType.Rooted) > 0) return "ROOTED";
+            if ((refType & ReferenceType.Unrooted) > 0) return "UNROOTED";
+            if ((refType & ReferenceType.Finalizer) > 0) return "FINALIZER";
+            return "ALL";
         }
 
         enum RefFile
@@ -205,7 +216,7 @@ namespace ClrMDRIndex
 
         #region queries
 
-        public KeyValuePair<IndexNode, int>[] GetReferenceNodes(int[] addrNdxs, int maxLevel, out string error, ReferenceType refType = ReferenceType.Ancestors | ReferenceType.All)
+        public KeyValuePair<IndexNode, int>[] GetReferenceNodes(int[] addrNdxs, int maxLevel, ulong[] instances, out string error, ReferenceType refType = ReferenceType.Ancestors | ReferenceType.All)
         {
             error = null;
             try
@@ -231,7 +242,7 @@ namespace ClrMDRIndex
                         if (curNode.Level >= maxLevel || nodeCount > MaxNodes) continue;
                         int curndx = curNode.Index;
                         long offset = offsets[curndx];
-                        int count = ReferenceCount(offset, offsets[ndx + 1]);
+                        int count = ReferenceCount(offset, offsets[curndx + 1]);
                         if (count == 0) continue;
 
                         var nodes = new IndexNode[count];
@@ -336,10 +347,13 @@ namespace ClrMDRIndex
                 int totalCount = count + 1;
                 IndexNode[] refs = ReadReferences(br, offset, count, level + 1, que);
                 var rootNode = new IndexNode(instanceNdx, level, refs);
+                HashSet<int> set = new HashSet<int>();
+                set.Add(rootNode.Index);
                 while (que.Count > 0)
                 {
                     var node = que.Dequeue();
                     if (node.Level >= maxLevel) continue;
+                    if (!set.Add(node.Index)) continue;
                     int ndx = node.Index;
                     Debug.Assert(!node.HasReferences());
                     offset = offsets[ndx];
@@ -371,6 +385,8 @@ namespace ClrMDRIndex
 
             return ReadReferences(br, offset, count);
         }
+
+
 
         #endregion queries
 
@@ -522,15 +538,19 @@ namespace ClrMDRIndex
                 _reversedRefsCounts = null;
                 bwdRefOffsets = null;
 
+                // set rooted flags on references
+                //
                 if (_reflagSet.Count > 0)
                 {
                     _progress?.Report(progressHeader + "Start of reflagging, count: " + Utils.CountString(_reflagSet.Count));
                     var ary = new int[_reflagSet.Count];
                     _reflagSet.CopyTo(ary);
                     Array.Sort(ary);
-                    IntSterta bh = new IntSterta(ary.Length + 8, ary);
+                    IntSterta bh = new IntSterta(ary.Length + 8, ary); // transfer reflag items to the binary heap, data is sorted so heap constraints are met
                     ary = null;
                     var fwdRefOffsets = new long[_forwardRefsCounts.Length + 1];
+                    // put forward offsets in the array for fast access
+                    //
                     long offset = 0L;
                     for (int i = 0, icnt = _forwardRefsCounts.Length; i < icnt; ++i)
                     {
@@ -541,8 +561,9 @@ namespace ClrMDRIndex
                     while (bh.Count > 0)
                     {
                         int ndx = bh.Pop();
+                        _reflagSet.Remove(ndx); // keep in this set values which are the the binary heap
                         int cnt = _forwardRefsCounts[ndx];
-                        if (cnt < 1) continue;
+                        if (cnt < 1) continue; // this should not happen
                         intBuf = CheckBufferSize(intBuf, cnt);
                         offset = fwdRefOffsets[ndx];
                         ReadReferences(brFwdRefs, offset, cnt, intBuf);
@@ -551,7 +572,7 @@ namespace ClrMDRIndex
                             int childNdx = intBuf[i];
                             bool check = copy_addr_flags_check(_instances, ndx, childNdx);
                             if (check && _forwardRefsCounts[childNdx] > 0 && _reflagSet.Add(childNdx))
-                                bh.Push(childNdx);
+                                bh.Push(childNdx); // need to revisit this instance
                         }
                     }
                 }

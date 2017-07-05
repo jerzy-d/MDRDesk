@@ -322,5 +322,10 @@ namespace MDRDesk
 			dialog.DetailsExpander.Visibility = string.IsNullOrWhiteSpace(dialog.DeatilsText) ? Visibility.Collapsed : Visibility.Visible;
 			dialog.ShowDialog();
 		}
+
+        public static void NotImplementedMsgBox(string what)
+        {
+            MessageBox.Show("Not implemented yet.", what, MessageBoxButton.OK, MessageBoxImage.Information);
+        }
 	}
 }

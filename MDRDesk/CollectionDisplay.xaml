@@ -8,6 +8,18 @@
         WindowStartupLocation="CenterOwner"
         Closing="Window_Closing"
         Title="Collection Content" Height="500" Width="300">
+    <Window.Resources>
+        <ContextMenu x:Key="ItemListContextMenu" x:Shared="False">
+            <MenuItem x:Name="ItemLstCopy" Header="Copy (clipboard)" Click="CopyItemSelectionClicked" ></MenuItem>
+            <MenuItem x:Name="ItemLstCopyAll" Header="Copy All (clipboard)" Click="CopyItemAllClicked"></MenuItem>
+            <MenuItem x:Name="ItemLstGetParentRefs" Header="Get Instance References" Click="ItemLstGetParentRefsClicked"/>
+            <MenuItem x:Name="ItemLstGetInstSizes" Header="Get Instance Sizes" Click="ItemLstGetInstsClicked"/>
+            <MenuItem x:Name="ItemLstGetInstValue" Header="Get Instance Value" Click="ItemLstGetInstValueClicked"/>
+            <MenuItem x:Name="ItemLstGetInstHierarchy" Header="Get Instance Hierarchy" Click="ItemLstGetInstHierarchyClicked"/>
+            <Separator></Separator>
+            <MenuItem x:Name="ItemLstViewMemory" Header="View Memory" Click="ItenLstViewMemoryClicked"/>
+        </ContextMenu>
+    </Window.Resources>
     <Grid>
         <Grid.RowDefinitions>
             <RowDefinition Height="15*"/>
@@ -19,7 +31,7 @@
             <TextBox.BorderBrush>BlanchedAlmond</TextBox.BorderBrush>
         </TextBox>
         <GridSplitter Grid.Row="1" VerticalAlignment="Center" HorizontalAlignment="Stretch" Height="5" ShowsPreview="False" Background="DarkGray"></GridSplitter>
-        <ListBox x:Name="CollectionValues" Grid.Row="2" Margin="2,2,2,2" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" FontFamily="Consolas" FontSize="11">
+        <ListBox x:Name="CollectionValues" Grid.Row="2" Margin="2,2,2,2" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" FontFamily="Consolas" FontSize="11" ContextMenu="{StaticResource ItemListContextMenu}"  MouseDoubleClick="ItemListDoubleClicked">
             <ListBox.BorderBrush>BlanchedAlmond</ListBox.BorderBrush>
         </ListBox>
         <Grid Grid.Row="3" Margin="2,2,2,2">

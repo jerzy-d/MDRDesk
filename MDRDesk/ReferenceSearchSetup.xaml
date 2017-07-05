@@ -5,7 +5,7 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:MDRDesk"
         mc:Ignorable="d"
-        Title="Reference Search Setup" Height="400" Width="550"
+        Title="Reference Search Setup" Height="400" Width="650"
         FontFamily="Consolas" FontSize="14"
         WindowStartupLocation="CenterOwner" ResizeMode="NoResize" ShowInTaskbar="False" WindowStyle="ToolWindow">
     <Grid Margin="2,2,2,2">
@@ -38,14 +38,18 @@
         <Grid Grid.Row="3" VerticalAlignment="Stretch" HorizontalAlignment="Stretch" Grid.ColumnSpan="2">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="40*"/>
-                <ColumnDefinition Width="20*"/>
-                <ColumnDefinition Width="20*"/>
-                <ColumnDefinition Width="20*"/>
+                <ColumnDefinition Width="12*"/>
+                <ColumnDefinition Width="12*"/>
+                <ColumnDefinition Width="12*"/>
+                <ColumnDefinition Width="12*"/>
+                <ColumnDefinition Width="12*"/>
             </Grid.ColumnDefinitions>
-            <Label Grid.Column="0" HorizontalAlignment="Left" VerticalAlignment="Center" FontFamily="Consolas" FontWeight="Bold" Margin="8,0,0,0">_instances considered:</Label>
-            <RadioButton x:Name ="RefSearchBoth" GroupName="RefSearchDataSource" Grid.Column="1" HorizontalAlignment="Left" VerticalAlignment="Center" Margin="4,0,4,0" FontWeight="Bold" IsEnabled="True">All</RadioButton>
-            <RadioButton x:Name ="RefSearchRooted" GroupName="RefSearchDataSource" Grid.Column="2" HorizontalAlignment="Left" VerticalAlignment="Center" Margin="4,0,4,0" FontWeight="Bold"  IsEnabled="False">Rooted</RadioButton>
-            <RadioButton x:Name ="RefSearchNotRooted" GroupName="RefSearchDataSource" Grid.Column="3" HorizontalAlignment="Left" VerticalAlignment="Center" Margin="4,0,4,0" FontWeight="Bold" IsEnabled="False">Unrooted</RadioButton>
+            <Label Grid.Column="0" HorizontalAlignment="Left" VerticalAlignment="Center" FontFamily="Consolas" FontWeight="Bold" Margin="8,0,0,0">Instances Considered:</Label>
+            <RadioButton x:Name ="RefSearchAll" GroupName="RefSearchDataSource" Grid.Column="1" HorizontalAlignment="Left" VerticalAlignment="Center" VerticalContentAlignment="Center"  Margin="4,0,4,0" IsEnabled="True" FontSize="10">All</RadioButton>
+            <RadioButton x:Name ="RefSearchRooted" GroupName="RefSearchDataSource" Grid.Column="2" HorizontalAlignment="Left" VerticalAlignment="Center" VerticalContentAlignment="Center"  Margin="4,0,4,0" IsEnabled="False" FontSize="10">Rooted</RadioButton>
+            <RadioButton x:Name ="RefSearchNotRooted" GroupName="RefSearchDataSource" Grid.Column="3" HorizontalAlignment="Left" VerticalAlignment="Center" VerticalContentAlignment="Center" Margin="4,0,4,0" IsEnabled="False" FontSize="10">Unrooted</RadioButton>
+            <RadioButton x:Name ="RefSearchFinalizer" GroupName="RefSearchDataSource" Grid.Column="4" HorizontalAlignment="Left" VerticalAlignment="Center" VerticalContentAlignment="Center" Margin="4,0,4,0" IsEnabled="False" FontSize="10">Finalizer</RadioButton>
+            <CheckBox x:Name="RefSearchStrict" Grid.Column="5" HorizontalAlignment="Left" VerticalAlignment="Center" VerticalContentAlignment="Center" FontSize="10" Margin="4,0,4,0">Strict</CheckBox>
         </Grid>
         <Grid Grid.Row="2" VerticalAlignment="Stretch" HorizontalAlignment="Stretch" Grid.ColumnSpan="2">
             <Grid.ColumnDefinitions>
@@ -70,7 +74,7 @@
                 <ColumnDefinition Width="20*"/>
                 <ColumnDefinition Width="20*"/>
             </Grid.ColumnDefinitions>
-            <CheckBox x:Name="RefSearchAll" Grid.Column="0" HorizontalAlignment="Left" VerticalAlignment="Center" FontFamily="Consolas" FontSize="11" Margin="16,0,0,0">Search All Levels</CheckBox>
+            <CheckBox x:Name="RefSearchAllLevels" Grid.Column="0" HorizontalAlignment="Left" VerticalAlignment="Center" FontFamily="Consolas" FontSize="11" Margin="16,0,0,0">Search All Levels</CheckBox>
             <Label Grid.Column="1" VerticalAlignment="Center" FontFamily="Consolas" FontSize="11" FontWeight="DemiBold">Enter Search Depth Level:</Label>
             <TextBox x:Name="RefSearchLevel" Grid.Column="2" Margin="16,8,4,8" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" Background="Azure"></TextBox>
         </Grid>

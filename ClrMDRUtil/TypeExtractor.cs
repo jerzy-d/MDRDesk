@@ -149,6 +149,13 @@ namespace ClrMDRIndex
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static bool IsArray(ClrElementKind kind)
+        {
+            var stdKind = GetStandardKind(kind);
+            return stdKind == ClrElementKind.Array || stdKind == ClrElementKind.SZArray;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool IsKnownPrimitive(ClrElementKind kind)
         {
             var stdKind = GetStandardKind(kind);
@@ -727,10 +734,11 @@ namespace ClrMDRIndex
                 }
 				names.Clear();
 				var dummyAry = Utils.EmptyArray<ClrtDisplayableType>.Value;
-				for (int k = 0, kcnt = fld.Alternatives.Length; k < kcnt; ++k)
+                var dummy = ClrtDisplayableType.GetDummy(fld.TypeName, fld.FieldName + " ALTERNATIVES");
+                for (int k = 0, kcnt = fld.Alternatives.Length; k < kcnt; ++k)
 				{
 					var alt = fld.Alternatives[k];
-					alt.SetParent(parent);
+					alt.SetParent(dummy);
 					alt.SetAlterntives(dummyAry);
 					alt.SetFieldIndex(fld.FieldIndex);
 					if (!names.Contains(alt.FieldName))
@@ -739,8 +747,9 @@ namespace ClrMDRIndex
 					}
 				}
 				var fldName = string.Join(",", names);
-				var dummy = ClrtDisplayableType.GetDummy(fld.TypeName, fldName + " ALTERNATIVES");
-				dummy.AddFields(fld.Alternatives);
+                dummy.SetAlterntives(fld.Alternatives);
+                dummy.SetParent(parent);
+                dummy.SetFieldName(fldName + " ALTERNATIVES");
 				fields[i] = dummy;
 			}
 		}

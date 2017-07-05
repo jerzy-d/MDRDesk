@@ -433,7 +433,7 @@ namespace ClrMDRIndex
 
 		#region utils
 
-		private int GetInstanceIndex(ulong address)
+		public int GetInstanceIndex(ulong address)
 		{
 			return Utils.AddressSearch(_instances, address);
 		}
@@ -570,20 +570,56 @@ namespace ClrMDRIndex
 			return addresses;
 		}
 
-		public int[] GetTypeInstanceIndices(int typeId)
+		public int[] GetTypeInstanceIndices(int typeId, InstanceReferences.ReferenceType refType)
 		{
 			var offNdx = Array.BinarySearch(_typeInstanceOffsets, new KeyValuePair<int, int>(typeId, 0), KvIntIntKeyCmparer);
 			if (offNdx < 0) return Utils.EmptyArray<int>.Value;
 			var count = _typeInstanceOffsets[offNdx + 1].Value - _typeInstanceOffsets[offNdx].Value;
-			int[] indices = new int[count];
+			List<int> indices = new List<int>(count);
 			int mapIndex = _typeInstanceOffsets[offNdx].Value;
-			for (int i = 0; i < count; ++i)
+            bool all = (refType & InstanceReferences.ReferenceType.All) > 0;
+            bool rooted = (refType & InstanceReferences.ReferenceType.Rooted) > 0;
+            bool unrooted = (refType & InstanceReferences.ReferenceType.Unrooted) > 0;
+            bool fnlzer = (refType & InstanceReferences.ReferenceType.Finalizer) > 0;
+
+            for (int i = 0; i < count; ++i)
 			{
-				indices[i] = _typeInstanceMap[mapIndex++];
-			}
-			//Array.Sort(indices);
-			return indices;
+                int ndx = _typeInstanceMap[mapIndex++];
+                if (all) indices.Add(ndx);
+                else if (rooted)
+                {
+                    if (Utils.IsRooted(_instances[ndx]))
+                        indices.Add(ndx);
+                }
+                else if (unrooted)
+                {
+                    if (!Utils.IsRooted(_instances[ndx]))
+                        indices.Add(ndx);
+                }
+                else
+                {
+                    Debug.Assert(fnlzer);
+                    if (Utils.IsFinalizer(_instances[ndx]))
+                        indices.Add(ndx);
+                }
+            }
+			return indices.ToArray();
 		}
+
+        public int[] GetTypeAllInstanceIndices(int typeId)
+        {
+            var offNdx = Array.BinarySearch(_typeInstanceOffsets, new KeyValuePair<int, int>(typeId, 0), KvIntIntKeyCmparer);
+            if (offNdx < 0) return Utils.EmptyArray<int>.Value;
+            var count = _typeInstanceOffsets[offNdx + 1].Value - _typeInstanceOffsets[offNdx].Value;
+            int[] indices = new int[count];
+            int mapIndex = _typeInstanceOffsets[offNdx].Value;
+            for (int i = 0; i < count; ++i)
+            {
+                indices[i] = _typeInstanceMap[mapIndex++];
+            }
+            return indices;
+        }
+
 
         public int[] GetRealAddressIndices(ulong[] addresses)
         {
@@ -855,7 +891,7 @@ namespace ClrMDRIndex
 
         #region instance references
 
-        public Tuple<string, AncestorNode> GetParentTree(ulong address, int levelMax)
+        public ValueTuple<string, AncestorNode> GetParentTree(ulong address, int levelMax)
 		{
 			string error = null;
 			try
@@ -864,7 +900,7 @@ namespace ClrMDRIndex
 				if (instanceId < 0)
 				{
 					error = "Cannot find instance at address: " + Utils.AddressString(address);
-					return new Tuple<string, AncestorNode>(error, null);
+					return (error, null);
 				}
 				var typeId = _instanceTypes[instanceId];
 				var typeName = _typeNames[typeId];
@@ -875,26 +911,28 @@ namespace ClrMDRIndex
 			catch (Exception ex)
 			{
 				error = Utils.GetExceptionErrorString(ex);
-				return new Tuple<string, AncestorNode>(error, null);
+				return (error, null);
 			}
 		}
 
-		public Tuple<string, AncestorNode> GetParentTree(int typeId, int levelMax)
+		public ValueTuple<string, AncestorNode> GetParentTree(int typeId, int levelMax, InstanceReferences.ReferenceType refType = InstanceReferences.ReferenceType.All | InstanceReferences.ReferenceType.Ancestors)
 		{
 			try
 			{
 				string typeName = GetTypeName(typeId);
-				var rootNode = new AncestorNode(null, 0, 0, typeId, typeName, GetTypeInstanceIndices(typeId));
+                int[] instances = GetTypeInstanceIndices(typeId, refType);
+                if (instances.Length < 1)
+                    return ("Cannot find find instances of type: " + GetTypeName(typeId),null);
+                var rootNode = new AncestorNode(null, 0, 0, typeId, typeName, instances);
 				return GetParentTree(rootNode, levelMax);
 			}
 			catch (Exception ex)
 			{
-				string error = Utils.GetExceptionErrorString(ex);
-				return new Tuple<string, AncestorNode>(error, null);
+				return (Utils.GetExceptionErrorString(ex), null);
 			}
 		}
 
-		public Tuple<string, AncestorNode> GetParentTree(int typeId, int[] instIds, int levelMax)
+		public ValueTuple<string, AncestorNode> GetParentTree(int typeId, int[] instIds, int levelMax)
 		{
 			try
 			{
@@ -904,12 +942,11 @@ namespace ClrMDRIndex
 			}
 			catch (Exception ex)
 			{
-				string error = Utils.GetExceptionErrorString(ex);
-				return new Tuple<string, AncestorNode>(error, null);
+				return (Utils.GetExceptionErrorString(ex), null);
 			}
 		}
 
-		public Tuple<string, AncestorNode> GetParentTree(AncestorNode rootNode, int levelMax)
+		public ValueTuple<string, AncestorNode> GetParentTree(AncestorNode rootNode, int levelMax)
 		{
 			string error = null;
 			try
@@ -967,12 +1004,12 @@ namespace ClrMDRIndex
 					currentNode.AddNodes(nodes);
 					currentNode.Sort(AncestorNode.SortAncestors.ByteInstanceCountDesc);
 				}
-				return new Tuple<string, AncestorNode>(null, rootNode);
+				return (null, rootNode);
 			}
 			catch (Exception ex)
 			{
 				error = Utils.GetExceptionErrorString(ex);
-				return new Tuple<string, AncestorNode>(error, null);
+				return (error, null);
 			}
 		}
 
@@ -1075,7 +1112,39 @@ namespace ClrMDRIndex
 			return OneInstanceParentsReport(result.Key, result.Value);
 		}
 
+        public int[] GetAllReferences(ulong addr, InstanceReferences.ReferenceType type, out string error)
+        {
+            error=null;
+            var instNdx = GetInstanceIndex(addr);
+            if (instNdx < 0)
+            {
+                error = "No object found at: " + Utils.AddressString(addr);
+                return null;
+            }
 
+            KeyValuePair<IndexNode, int> result = _instanceReferences.GetAncestors(instNdx, int.MaxValue, out error, type);
+            if (error != null) return null;
+            List<int> lst = new List<int>(result.Value);
+            Queue<IndexNode> que = new Queue<IndexNode>(1024);
+            que.Enqueue(result.Key);
+            lst.Add(result.Key.Index);
+            HashSet<int> set = new HashSet<int>();
+            set.Add(result.Key.Index);
+            while(que.Count>0)
+            {
+                var node = que.Dequeue();
+                if (node.Nodes == null || node.Nodes.Length < 1) continue;
+                for(int i = 0, icnt = node.Nodes.Length; i < icnt; ++i)
+                {
+                    var n = node.Nodes[i];
+                    if (set.Contains(n.Index)) continue;
+                    lst.Add(n.Index);
+                    set.Add(n.Index);
+                    que.Enqueue(n);
+                }
+            }
+            return lst.ToArray();
+        }
 
 
         //public KeyValuePair<IndexNode, int>[] GetReferenceNodes(ulong[] typeInstances, References.Direction  dir, References.DataSource dataSource, out string error, int level)
@@ -1089,19 +1158,16 @@ namespace ClrMDRIndex
         /// Get references for all instances of a given type.
         /// </summary>
         /// <param name="typeId">Type id.</param>
+        /// <param name="refType">Search flag restrinctions and directions. Rooted, unrooted, finalizer and forward or backward references.</param>
         /// <param name="level">How deep reference tree should be.</param>
         /// <returns></returns>
-        public ListingInfo GetParentReferencesReport(int typeId, int level = Int32.MaxValue)
+        public ListingInfo GetTypeReferenceReport(int typeId, InstanceReferences.ReferenceType refType, int level = Int32.MaxValue)
 		{
 			string error;
-
-			// all type instances
-			int[] typeInstances = GetTypeInstanceIndices(typeId);
-
-            KeyValuePair<IndexNode, int>[] result = //_references.GetReferenceNodes(typeInstances, References.Direction.FieldParent, References.DataSource.All, out error, level);
-            _instanceReferences.GetReferenceNodes(typeInstances, level, out error, InstanceReferences.ReferenceType.Ancestors | InstanceReferences.ReferenceType.All);
-
-
+			int[] typeInstances = GetTypeInstanceIndices(typeId,refType);
+            if (typeInstances.Length < 1)
+                return new ListingInfo(Constants.InformationSymbolHeader + "No " + InstanceReferences.InstanceTypeString(refType) + " instances found for this type");
+            KeyValuePair<IndexNode, int>[] result = _instanceReferences.GetReferenceNodes(typeInstances, level, _instances, out error, refType);
             if (!string.IsNullOrEmpty(error) && error[0] != Constants.InformationSymbol)
 			{
 				return new ListingInfo(error);
@@ -1179,12 +1245,12 @@ namespace ClrMDRIndex
 					int instNdx = node.Index;
 					ulong address = _instances[instNdx];
 					string typeName = _typeNames[_instanceTypes[instNdx]];
-					string rootInfo = Utils.IsRooted(address) ? string.Empty : "not rooted";
+					string level = Utils.SortableCountStringHeader(node.Level);
 
 					items[itemNdx++] = new listing<string>(data, dataNdx, ColumnCount);
 					data[dataNdx++] = Utils.AddressString(rootAddr);
 					data[dataNdx++] = Utils.AddressString(address);
-					data[dataNdx++] = rootInfo;
+					data[dataNdx++] = level;
 					data[dataNdx++] = typeName;
 					for (int j = 0, jcnt = node.Nodes.Length; j < jcnt; ++j)
 					{
@@ -1195,9 +1261,9 @@ namespace ClrMDRIndex
 
 			ColumnInfo[] colInfos = new[]
 			{
-				new ColumnInfo("Type _instances", ReportFile.ColumnType.Int32, 150, 1, true),
-				new ColumnInfo("Parents", ReportFile.ColumnType.String, 150, 2, true),
-				new ColumnInfo("Root Info", ReportFile.ColumnType.String, 300, 3, true),
+				new ColumnInfo("Type _instances", ReportFile.ColumnType.Address, 150, 1, true),
+				new ColumnInfo("Parents", ReportFile.ColumnType.Address, 150, 2, true),
+				new ColumnInfo("Tree Level", ReportFile.ColumnType.Int32, 100, 3, true),
 				new ColumnInfo("Type", ReportFile.ColumnType.String, 700, 4, true),
 			};
 
@@ -1315,7 +1381,14 @@ namespace ClrMDRIndex
 		{
 			try
 			{
-				(string error, InstanceValue inst) = ValueExtractor.GetInstanceValue(IndexProxy, Dump.Heap, addr, Constants.InvalidIndex, parent);
+                int instId = GetInstanceIndex(addr);
+                if (instId  < 0)
+                {
+                    string err = Constants.InformationSymbolHeader + "Cannot find address on the heap: " + Utils.RealAddressString(addr);
+                    return (err, null);
+                }
+
+                (string error, InstanceValue inst) = ValueExtractor.GetInstanceValue(IndexProxy, Dump.Heap, addr, Constants.InvalidIndex, parent);
 				if (inst != null) inst.SortByFieldName();
 				return (error, inst);
 			}
@@ -1423,11 +1496,9 @@ namespace ClrMDRIndex
 			string error = null;
 			try
 			{
-
 				ulong[] instances = rootInstances != null ? rootInstances : GetTypeRealAddresses(typeId);
 				if (instances == null || instances.Length < 1)
 					return new ValueTuple<string, ClrtDisplayableType, ulong[]>("Type instances not found.", null, null);
-
 				if (fields != null)
 				{
 					Debug.Assert(fields.Length > 1);
@@ -1435,11 +1506,7 @@ namespace ClrMDRIndex
 					if (error != null)
 						return new ValueTuple<string, ClrtDisplayableType, ulong[]>(error, null, null);
 				}
-
                 ClrtDisplayableType cdt = TypeExtractor.GetClrtDisplayableType(_indexProxy, Dump.Heap, parent, typeId, instances, out error);
-                //ClrtDisplayableType cdt = parent != null
-                //    ? TypeExtractor.GetClrtDisplayableType(_indexProxy, Dump.Heap, parent, typeId, instances, out error)
-                //    : TypeExtractor.GetClrtDisplayableType(_indexProxy, Dump.Heap, instances, out error);
                 return new ValueTuple<string, ClrtDisplayableType, ulong[]>(error, cdt, instances); ;
             }
             catch (Exception ex)
@@ -1540,7 +1607,7 @@ namespace ClrMDRIndex
 				}
 				if (!done)
 				{
-					Utils.GetErrorString("Type Report", "Cannot resolve field chain.", rootType != null ? rootType.Name : "Getting root type failed.");
+					error = Utils.GetErrorString("Type Report", "Cannot resolve field chain.", rootType != null ? rootType.Name : "Getting root type failed.");
 					return null;
 				}
 				for (; i < icount; ++i)
@@ -1932,6 +1999,20 @@ namespace ClrMDRIndex
 			}
 		}
 
+        public ValueTuple<ulong[],ulong[]> GetRootAddresses(out string error)
+        {
+            error = null;
+            try
+            {
+                return (_roots.RootAddresses, _roots.RootObjects);
+            }
+            catch(Exception ex)
+            {
+                error = Utils.GetExceptionErrorString(ex);
+                return (null, null);
+            }
+        }
+
 		#endregion roots
 
 		#region weakreferences
@@ -1950,7 +2031,7 @@ namespace ClrMDRIndex
 				var heap = Dump.GetFreshHeap();
 				for (int i = 0, icnt = ids.Length; i < icnt; ++i)
 				{
-					var refs = GetTypeInstanceIndices(ids[i]);
+					var refs = GetTypeAllInstanceIndices(ids[i]);
 					if (refs.Length < 1) continue;
 					totalWeakRefCount += refs.Length;
 					indices[i] = new KeyValuePair<int, int[]>(ids[i], refs);
@@ -2386,170 +2467,40 @@ namespace ClrMDRIndex
 			return strStats.GetSizeOfStringsWithPrefix(str);
 		}
 
-		public Tuple<string, AncestorNode> GetTypesWithSpecificStringFieldListing(string strContent)
+		public ValueTuple<string, AncestorNode> GetTypesWithSpecificStringFieldListing(string strContent)
 		{
-			string error;
-			return GetTypesWithSpecificStringField(strContent, out error);
-
-
-
-
-			//if (error != null)
-			//	return new ListingInfo(error);
-			//var dct = result.Item1;
-			//if (dct.Count < 1)
-			//{
-			//	return new ListingInfo();
-			//}
-			//var itemCount = result.Item2;
-			//ColumnInfo[] columns = new ColumnInfo[]
-			//{
-			//	new ColumnInfo("String Addr", ReportFile.ColumnType.UInt64, 200,1,true),
-			//	new ColumnInfo("Parent Addr", ReportFile.ColumnType.UInt64, 200,2,true),
-			//	new ColumnInfo("Parent Count", ReportFile.ColumnType.Int32, 200,3,true),
-			//	new ColumnInfo("Field", ReportFile.ColumnType.String, 200,4,true),
-			//	new ColumnInfo("Type", ReportFile.ColumnType.String, 500,5,true)
-			//};
-			//listing<string>[] listAry = new listing<string>[itemCount];
-			//string[] dataAry = new string[itemCount * columns.Length];
-			//int lisAryNdx = 0;
-			//int dataAryNdx = 0;
-			//foreach (var kv in dct)
-			//{
-			//	var parts = kv.Key.Split(new string[] { Constants.FieldSymbolPadded }, StringSplitOptions.None);
-			//	Debug.Assert(parts.Length == 2);
-			//	var addresses = kv.Value;
-			//	for (int i = 0, icnt = addresses.Count; i < icnt; ++i)
-			//	{
-			//		listAry[lisAryNdx++] = new listing<string>(dataAry, dataAryNdx, columns.Length);
-			//		dataAry[dataAryNdx++] = Utils.AddressString(addresses[i].Key);
-			//		dataAry[dataAryNdx++] = Utils.AddressString(addresses[i].Value);
-			//		dataAry[dataAryNdx++] = Utils.LargeNumberString(icnt);
-			//		dataAry[dataAryNdx++] = parts[1];
-			//		dataAry[dataAryNdx++] = parts[0];
-			//	}
-			//}
-			//StringBuilder sb = StringBuilderCache.Acquire(StringBuilderCache.MaxCapacity);
-			//sb.Append(ReportFile.DescrPrefix).Append("Type instances containing with string field: ").Append(strContent).AppendLine();
-			//sb.Append(ReportFile.DescrPrefix).Append("Total reference count: ").Append(itemCount).AppendLine();
-			//return new ListingInfo(null, listAry, columns, StringBuilderCache.GetStringAndRelease(sb), dct);
+			return GetTypesWithSpecificStringField(strContent);
 		}
 
-		//public Tuple<SortedDictionary<string, List<KeyValuePair<ulong, ulong>>>, int> GetTypesWithSpecificStringField(string strContent, out string error)
-		//{
-		//	error = null;
-		//	try
-		//	{
-		//		var strStats = GetCurrentStringStats(out error);
-		//		var addresses = strStats.GetStringAddresses(strContent, out error);
-		//		if (error != null)
-		//		{
-		//			error = Utils.GetErrorString("Types with Specific String Field", "StringStats.GetStringAddresses failed.",
-		//				error);
-		//			return null;
-		//		}
-
-		//		List<string> errors = new List<string>();
-
-		//		var indices = GetInstanceIndices(addresses);
-		//		int typeId = GetTypeId("System.String");
-		//		Tuple<string, AncestorNode> result = GetParentTree(typeId, indices, 4);
-
-		//		KeyValuePair <int, int[]>[] parentInfos = _references.GetMultireferences(indices, References.Direction.FieldParent, References.DataSource.All, errors);
-
-
-		//		var dct = new SortedDictionary<string, List<KeyValuePair<ulong, ulong>>>(StringComparer.Ordinal);
-		//		int addrCount = 0;
-		//		for (int i = 0, icnt = parentInfos.Length; i < icnt; ++i)
-		//		{
-		//			var childAddr = _instances[parentInfos[i].Key];
-		//			var parentIds = parentInfos[i].Value;
-		//			for (int j = 0, jcnt = parentIds.Length; j < jcnt; ++j)
-		//			{
-		//				var parentId = parentIds[j];
-		//				var parentAddr = _instances[parentId];
-		//				var typeName = _typeNames[_instanceTypes[parentId]];
-		//				List<KeyValuePair<ulong, ulong>> lst;
-		//				if (dct.TryGetValue(typeName, out lst))
-		//				{
-		//					lst.Add(new KeyValuePair<ulong, ulong>(childAddr, parentAddr));
-		//				}
-		//				else
-		//				{
-		//					dct.Add(typeName, new List<KeyValuePair<ulong, ulong>>() { new KeyValuePair<ulong, ulong>(childAddr, parentAddr) });
-		//				}
-
-		//				++addrCount;
-		//			}
-
-		//		}
-		//		return new Tuple<SortedDictionary<string, List<KeyValuePair<ulong, ulong>>>, int>(dct, addrCount);
-		//	}
-		//	catch (Exception ex)
-		//	{
-		//		error = Utils.GetExceptionErrorString(ex);
-		//		return null;
-		//	}
-		//}
-
-		public Tuple<string, AncestorNode> GetTypesWithSpecificStringField(string strContent, out string error)
+		public ValueTuple<string, AncestorNode> GetTypesWithSpecificStringField(string strContent)
 		{
-			error = null;
 			try
 			{
+                string error;
 				var strStats = GetCurrentStringStats(out error);
 				var addresses = strStats.GetStringAddresses(strContent, out error);
 				if (error != null)
 				{
 					error = Utils.GetErrorString("Types with Specific String Field", "StringStats.GetStringAddresses failed.",
 						error);
-					return null;
+					return (error,null);
 				}
 
 				List<string> errors = new List<string>();
 
 				var indices = GetInstanceIndices(addresses);
 				int typeId = GetTypeId("System.String");
-				Tuple<string, AncestorNode> result = GetParentTree(typeId, indices, 2);
-
-				result.Item2.AddData(new Tuple<string, int>(strContent, result.Item2.Ancestors.Length));
-				return result;
-
-
-				//KeyValuePair<int, int[]>[] parentInfos = _references.GetMultireferences(indices, References.Direction.FieldParent, References.DataSource.All, errors);
-
-
-				//var dct = new SortedDictionary<string, List<KeyValuePair<ulong, ulong>>>(StringComparer.Ordinal);
-				//int addrCount = 0;
-				//for (int i = 0, icnt = parentInfos.Length; i < icnt; ++i)
-				//{
-				//	var childAddr = _instances[parentInfos[i].Key];
-				//	var parentIds = parentInfos[i].Value;
-				//	for (int j = 0, jcnt = parentIds.Length; j < jcnt; ++j)
-				//	{
-				//		var parentId = parentIds[j];
-				//		var parentAddr = _instances[parentId];
-				//		var typeName = _typeNames[_instanceTypes[parentId]];
-				//		List<KeyValuePair<ulong, ulong>> lst;
-				//		if (dct.TryGetValue(typeName, out lst))
-				//		{
-				//			lst.Add(new KeyValuePair<ulong, ulong>(childAddr, parentAddr));
-				//		}
-				//		else
-				//		{
-				//			dct.Add(typeName, new List<KeyValuePair<ulong, ulong>>() { new KeyValuePair<ulong, ulong>(childAddr, parentAddr) });
-				//		}
-
-				//		++addrCount;
-				//	}
-
-				//}
-				//return new Tuple<SortedDictionary<string, List<KeyValuePair<ulong, ulong>>>, int>(dct, addrCount);
+				(string err, AncestorNode node) = GetParentTree(typeId, indices, 2);
+                if (err != null)
+                {
+                    return (err, null);
+                }
+                node.AddData(new Tuple<string, int>(strContent, node.Ancestors.Length));
+				return (null,node);
 			}
 			catch (Exception ex)
 			{
-				error = Utils.GetExceptionErrorString(ex);
-				return null;
+				return (Utils.GetExceptionErrorString(ex),null);
 			}
 		}
 
@@ -2876,7 +2827,7 @@ namespace ClrMDRIndex
 			{
 				uint[] sizes = GetSizeArray(false, out error);
 				uint[] baseSz = GetSizeArray(true, out error);
-				int[] instIndices = GetTypeInstanceIndices(typeId);
+				int[] instIndices = GetTypeAllInstanceIndices(typeId);
 				ulong totalSize = 0UL;
 				ulong totalBaseSize = 0UL;
 				for (int i = 0, icnt = instIndices.Length; i < icnt; ++i)
@@ -2896,41 +2847,41 @@ namespace ClrMDRIndex
 			}
 		}
 
-		public Tuple<ulong, KeyValuePair<uint, ulong>[]> GetTypeBaseSizes(int typeId, out string error)
-		{
-			error = null;
-			try
-			{
-				uint[] sizes = null;
-				if (_baseSizes == null || !_baseSizes.TryGetTarget(out sizes))
-				{
-					sizes = Utils.ReadUintArray(_fileMoniker.GetFilePath(_currentRuntimeIndex, Constants.MapInstanceBaseSizesFilePostfix),
-						out error);
-					if (sizes == null) return null;
-					if (_baseSizes == null)
-						_baseSizes = new WeakReference<uint[]>(sizes);
-					else
-						_baseSizes.SetTarget(sizes);
-				}
+		//public Tuple<ulong, KeyValuePair<uint, ulong>[]> GetTypeBaseSizes(int typeId, out string error)
+		//{
+		//	error = null;
+		//	try
+		//	{
+		//		uint[] sizes = null;
+		//		if (_baseSizes == null || !_baseSizes.TryGetTarget(out sizes))
+		//		{
+		//			sizes = Utils.ReadUintArray(_fileMoniker.GetFilePath(_currentRuntimeIndex, Constants.MapInstanceBaseSizesFilePostfix),
+		//				out error);
+		//			if (sizes == null) return null;
+		//			if (_baseSizes == null)
+		//				_baseSizes = new WeakReference<uint[]>(sizes);
+		//			else
+		//				_baseSizes.SetTarget(sizes);
+		//		}
 
-				int[] instIndices = GetTypeInstanceIndices(typeId);
-				ulong totalSize = 0UL;
-				var sizeInfos = new KeyValuePair<uint, ulong>[instIndices.Length];
-				for (int i = 0, icnt = instIndices.Length; i < icnt; ++i)
-				{
-					var ndx = instIndices[i];
-					var sz = sizes[ndx];
-					totalSize += sz;
-					sizeInfos[i] = new KeyValuePair<uint, ulong>(sz, _instances[ndx]);
-				}
-				return new Tuple<ulong, KeyValuePair<uint, ulong>[]>(totalSize, sizeInfos);
-			}
-			catch (Exception ex)
-			{
-				error = Utils.GetExceptionErrorString(ex);
-				return null;
-			}
-		}
+		//		int[] instIndices = GetTypeInstanceIndices(typeId);
+		//		ulong totalSize = 0UL;
+		//		var sizeInfos = new KeyValuePair<uint, ulong>[instIndices.Length];
+		//		for (int i = 0, icnt = instIndices.Length; i < icnt; ++i)
+		//		{
+		//			var ndx = instIndices[i];
+		//			var sz = sizes[ndx];
+		//			totalSize += sz;
+		//			sizeInfos[i] = new KeyValuePair<uint, ulong>(sz, _instances[ndx]);
+		//		}
+		//		return new Tuple<ulong, KeyValuePair<uint, ulong>[]>(totalSize, sizeInfos);
+		//	}
+		//	catch (Exception ex)
+		//	{
+		//		error = Utils.GetExceptionErrorString(ex);
+		//		return null;
+		//	}
+		//}
 
 		public SortedDictionary<string, quadruple<int, ulong, ulong, ulong>> GetTypeSizesInfo(out string error)
 		{

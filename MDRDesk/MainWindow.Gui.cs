@@ -1228,11 +1228,12 @@ namespace MDRDesk
 			if (dlg.Cancelled) return;
 			int level = dlg.GetAllReferences ? Int32.MaxValue : dlg.SearchDepthLevel;
 			var dispMode = dlg.DisplayMode;
+            var searchFlag = dlg.DataSource | dlg.Direction | dlg.Strict;
 
-			if (dispMode == ReferenceSearchSetup.DispMode.List)
+            if (dispMode == ReferenceSearchSetup.DispMode.List)
 			{
 				SetStartTaskMainWindowState("Getting parent references for: '" + typeName + "', please wait...");
-				var report = await Task.Run(() => CurrentIndex.GetParentReferencesReport(typeId, level));
+				var report = await Task.Run(() => CurrentIndex.GetTypeReferenceReport(typeId, searchFlag, level));
 
 				if (report.Error != null)
 				{
@@ -1317,15 +1318,15 @@ namespace MDRDesk
 			if (dispMode == ReferenceSearchSetup.DispMode.Tree)
 			{
 				SetStartTaskMainWindowState(msg + "please wait...");
-				var report = await Task.Run(() => CurrentIndex.GetParentTree(addr, level));
-				if (report.Item1 != null)
+				(string error, AncestorNode node) = await Task.Run(() => CurrentIndex.GetParentTree(addr, level));
+				if (error != null)
 				{
 					SetEndTaskMainWindowState(msg + "failed.");
-					MessageBox.Show(report.Item1, "Action Aborted", MessageBoxButton.OK, MessageBoxImage.Exclamation);
+					MessageBox.Show(error, "Action Aborted", MessageBoxButton.OK, MessageBoxImage.Exclamation);
 					return;
 				}
 				SetEndTaskMainWindowState(msg + "done.");
-				DisplayTypeAncestorsGrid(report.Item2);
+				DisplayTypeAncestorsGrid(node);
 			}
 		}
 
@@ -2181,7 +2182,7 @@ namespace MDRDesk
 
 		//}
 
-		private async void ExecuteInstanceValueQuery(string msg, ulong addr)
+		public async void ExecuteInstanceValueQuery(string msg, ulong addr)
 		{
 			SetStartTaskMainWindowState(msg);
 

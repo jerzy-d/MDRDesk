@@ -291,13 +291,6 @@ namespace ClrMDRIndex
 			return string.Format("0x{0:x14} ", realAddr);
 		}
 
-		//[MethodImpl(MethodImplOptions.AggressiveInlining)]
-		//public static string MultiAddressString(int addrCount)
-		//{
-		//	return string.Format("\u275A{0}\u275A", Utils.LargeNumberString(addrCount));
-		//}
-
-
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
 		public static ulong SetRooted(ulong addr)
 		{
@@ -418,6 +411,12 @@ namespace ClrMDRIndex
 				return addr.GetHashCode();
 			}
 		}
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static ulong GetAddressValue(string addrStr)
+        {
+            return Convert.ToUInt64(addrStr.Substring(4), 16);
+        }
 
 		#endregion Address Handling
 
@@ -2093,37 +2092,37 @@ namespace ClrMDRIndex
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static string SortableLengthString(ulong len)
         {
-            return len == 0 ? "             O" : string.Format("{0,14:0#,###,###,###}", len);
+            return len == 0 ? "00,000,000,000,000" : string.Format("{0,14:0#,###,###,###}", len);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static string SortableLengthStringHeader(ulong len)
         {
-            return len == 0 ? "             O" : string.Format("[{0,14:0#,###,###,###}] ", len);
+            return len == 0 ? "00,000,000,000,000" : string.Format("[{0,14:0#,###,###,###}] ", len);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static string SortableSizeString(int sz)
         {
-            return sz == 0 ? "           O" : string.Format("{0,12:0##,###,###}", sz);
+            return sz == 0 ? "000,000,000,000" : string.Format("{0,12:0##,###,###}", sz);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static string SortableSizeStringHeader(int sz)
         {
-            return sz == 0 ? "[           O] " : string.Format("[{0,12:0#,###,###}] ", sz);
+            return sz == 0 ? "[000,000,000,000] " : string.Format("[{0,12:0#,###,###}] ", sz);
         }
 
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		public static string SortableCountStringHeader(int sz)
 		{
-			return sz == 0 ? "[       O] " : string.Format("[{0,8:0#,###,###}] ", sz);
+			return sz == 0 ? "[00,000,000] " : string.Format("[{0,8:0#,###,###}] ", sz);
 		}
 
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static string SizeString(int sz)
         {
-            return sz == 0 ? "           O" : string.Format("{0,12:#,###,###}", sz);
+            return sz == 0 ? "000,000,000,000" : string.Format("{0,12:#,###,###}", sz);
         }
 
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -2154,25 +2153,25 @@ namespace ClrMDRIndex
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static string SizeString(long sz)
         {
-            return sz == 0 ? "           0" : string.Format("{0,12:#,###,###}", sz);
+            return sz == 0 ? "000,000,000,000" : string.Format("{0,12:#,###,###}", sz);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static string SizeString(ulong sz)
         {
-            return sz == 0 ? "           0" : string.Format("{0,12:#,###,###}", sz);
+            return sz == 0 ? "000,000,000,000" : string.Format("{0,12:#,###,###}", sz);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static string SizeStringHeader(int sz)
         {
-            return sz == 0 ? "[           0] " : string.Format("[{0,12:#,###,###}] ", sz);
+            return sz == 0 ? "[000,000,000,000] " : string.Format("[{0,12:#,###,###}] ", sz);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static string CountStringHeader(int sz)
         {
-            return sz == 0 ? "[       0] " : string.Format("[{0,8:#,###,###}] ", sz);
+            return sz == 0 ? "[00,000,000] " : string.Format("[{0,8:#,###,###}] ", sz);
         }
 
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -2184,7 +2183,7 @@ namespace ClrMDRIndex
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static string SizeStringHeader(long sz)
         {
-            return sz == 0 ? "[           0] " : string.Format("[{0,12:#,###,###}] ", sz);
+            return sz == 0 ? "[000,000,000,000] " : string.Format("[{0,12:#,###,###}] ", sz);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]

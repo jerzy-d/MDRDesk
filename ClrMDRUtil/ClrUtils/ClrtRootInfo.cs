@@ -384,9 +384,10 @@ namespace ClrMDRIndex
 			}
 		}
 
-		#endregion save/load
+        #endregion save/load
 
-		public ClrtRoot[] GetFinalizerItems()
+
+        public ClrtRoot[] GetFinalizerItems()
 		{
 			return _roots[(int)GCRootKind.Finalizer];
 		}
@@ -596,7 +597,9 @@ namespace ClrMDRIndex
 			RootKind = trait;
 		}
 
-		public void Dump(BinaryWriter bw)
+        #region io
+
+        public void Dump(BinaryWriter bw)
 		{
 			bw.Write(Address);
 			bw.Write(Object);
@@ -620,7 +623,10 @@ namespace ClrMDRIndex
 			Kinds rootTraits = (Kinds)br.ReadInt32();
 			return new ClrtRoot(address, @object, typeId, nameId, domainId, osThreadId, managedThreadId, rootTraits);
 		}
-	}
+
+        #endregion io
+
+    }
 
 
 	public class ClrtRootObjCmp : IComparer<ClrtRoot>

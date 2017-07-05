@@ -2673,17 +2673,17 @@ namespace UnitTestMdr
         {
             string error;
             BinaryReader br = null;
-            string path0 = @"D:\Jerzy\WinDbgStuff\dumps\Analytics\Highline\analyticsdump111.dlk.dmp.map\analyticsdump111.dlk.dmp.`INSTANCES[0].bin";
-            string path1 = @"D:\Jerzy\WinDbgStuff\dumps\Analytics\Highline\analyticsdump111.dlk.dmp.map\analyticsdump111.dlk.dmp.`REFSOBJECTFIELD[0].bin";
-            string path2 = @"D:\Jerzy\WinDbgStuff\dumps\Analytics\Highline\analyticsdump111.dlk.new2.dmp.map\analyticsdump111.dlk.new2.dmp.`FWDREFS[0].bin";
-            string path3 = @"D:\Jerzy\WinDbgStuff\dumps\Analytics\Highline\analyticsdump111.dlk.new2.dmp.map\analyticsdump111.dlk.new2.dmp.`FWDREFOFFSETS[0].bin";
-            string path4 = @"D:\Jerzy\WinDbgStuff\dumps\Analytics\Highline\analyticsdump111.dlk.new2.dmp.map\analyticsdump111.dlk.new2.dmp.`INSTANCES[0].bin";
+            string path0 = @"C:\WinDbgStuff\Dumps\Analytics\Highline\analyticsdump111.dlk.dmp.map\analyticsdump111.dlk.dmp.`INSTANCES[0].bin";
+            string path1 = @"C:\WinDbgStuff\dumps\Analytics\Highline\analyticsdump111.dlk.dmp.map\analyticsdump111.dlk.dmp.`REFSOBJECTFIELD[0].bin";
+            string path2 = @"C:\WinDbgStuff\Dumps\Analytics\Highline\analyticsdump111.dlk.new2.dmp.map\analyticsdump111.dlk.new2.dmp.`FWDREFS[0].bin";
+            string path3 = @"C:\WinDbgStuff\dumps\Analytics\Highline\analyticsdump111.dlk.new2.dmp.map\analyticsdump111.dlk.new2.dmp.`FWDREFOFFSETS[0].bin";
+            string path4 = @"C:\WinDbgStuff\dumps\Analytics\Highline\analyticsdump111.dlk.new2.dmp.map\analyticsdump111.dlk.new2.dmp.`INSTANCES[0].bin";
 
-            Assert.IsTrue(File.Exists(path0)
-                            && File.Exists(path1)
-                            && File.Exists(path2)
-                            && File.Exists(path3)
-                            );
+			Assert.IsTrue(File.Exists(path0));
+			Assert.IsTrue(File.Exists(path1));
+			Assert.IsTrue(File.Exists(path2));
+			Assert.IsTrue(File.Exists(path3));
+			Assert.IsTrue(File.Exists(path4));
 
             StreamWriter sw = null, sw1 = null;
             List<int> notEqualCounts = new List<int>();
@@ -2743,8 +2743,8 @@ namespace UnitTestMdr
                 }
                 TestContext.WriteLine("instances_O rooted " + Utils.CountString(rootedCount_O));
                 TestContext.WriteLine("instances_N rooted " + Utils.CountString(rootedCount_N));
-                TestContext.WriteLine("instances_O finalizer" + Utils.CountString(fnlzerCount_O));
-                TestContext.WriteLine("instances_N finalizer" + Utils.CountString(fnlzerCount_N));
+                TestContext.WriteLine("instances_O finalizer " + Utils.CountString(fnlzerCount_O));
+                TestContext.WriteLine("instances_N finalizer " + Utils.CountString(fnlzerCount_N));
 
                 Assert.AreEqual(instances_O.Length, instances_N.Length);
                 for (int i = 0, icnt = instances_N.Length; i < icnt; ++i)
@@ -2759,7 +2759,7 @@ namespace UnitTestMdr
                 {
                     try
                     {
-                        sw = new StreamWriter(@"D:\Jerzy\WinDbgStuff\dumps\Analytics\Highline\COUNTDIFFS.TXT");
+                        sw = new StreamWriter(@"C:\WinDbgStuff\dumps\Analytics\Highline\COUNTDIFFS.TXT");
                         foreach (int inst in notEqualCounts)
                         {
                             sw.Write(Utils.CountStringHeader(inst));
@@ -2829,8 +2829,8 @@ namespace UnitTestMdr
 
                 try
                 {
-                    sw = new StreamWriter(@"D:\Jerzy\WinDbgStuff\dumps\Analytics\Highline\O_N_FLAGDIFFS.TXT");
-                    sw1 = new StreamWriter(@"D:\Jerzy\WinDbgStuff\dumps\Analytics\Highline\N_O_FLAGDIFFS.TXT");
+                    sw = new StreamWriter(@"C:\WinDbgStuff\dumps\Analytics\Highline\O_N_FLAGDIFFS.TXT");
+                    sw1 = new StreamWriter(@"C:\WinDbgStuff\dumps\Analytics\Highline\N_O_FLAGDIFFS.TXT");
                     Assert.IsTrue(instances_O != null && instances_N != null && instances_O.Length == instances_N.Length);
                     for (int k = 0, kcnt = instances_N.Length; k < kcnt; ++k)
                     {
@@ -2838,11 +2838,11 @@ namespace UnitTestMdr
                         ulong addr_N = instances_N[k];
                         Assert.IsTrue(Utils.RealAddress(addr_O) == Utils.RealAddress(addr_N));
                         bool addr_O_rooted = Utils.IsRooted(addr_O);
-                        bool addr_O_fnlzer = Utils.IsFinalizer(addr_O);
+                        //bool addr_O_fnlzer = Utils.IsFinalizer(addr_O);
                         bool addr_N_rooted = Utils.IsRooted(addr_N);
-                        bool addr_N_fnlzer = Utils.IsFinalizer(addr_N);
+                        //bool addr_N_fnlzer = Utils.IsFinalizer(addr_N);
 
-                        if ((addr_O_rooted && !addr_N_rooted) || (addr_O_fnlzer && !addr_N_fnlzer))
+                        if ((addr_O_rooted && !addr_N_rooted))
                         {
                             sw.Write(Utils.CountStringHeader(k));
                             sw.Write(Utils.AddressStringHeader(addr_O));
@@ -2850,7 +2850,7 @@ namespace UnitTestMdr
                             sw.WriteLine();
                         }
 
-                        if ((addr_N_rooted && !addr_O_rooted) || (addr_N_fnlzer && !addr_O_fnlzer))
+                        if ((addr_N_rooted && !addr_O_rooted))
                         {
                             sw1.Write(Utils.CountStringHeader(k));
                             sw1.Write(Utils.AddressStringHeader(addr_N));
