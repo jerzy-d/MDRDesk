@@ -734,7 +734,7 @@ namespace ClrMDRIndex
                 }
 				names.Clear();
 				var dummyAry = Utils.EmptyArray<ClrtDisplayableType>.Value;
-                var dummy = ClrtDisplayableType.GetDummy(fld.TypeName, fld.FieldName + " ALTERNATIVES");
+                var dummy = ClrtDisplayableType.GetDummy(parent, fld.TypeName, fld.FieldName + " ALTERNATIVES", fld.FieldIndex);
                 for (int k = 0, kcnt = fld.Alternatives.Length; k < kcnt; ++k)
 				{
 					var alt = fld.Alternatives[k];
@@ -748,7 +748,6 @@ namespace ClrMDRIndex
 				}
 				var fldName = string.Join(",", names);
                 dummy.SetAlterntives(fld.Alternatives);
-                dummy.SetParent(parent);
                 dummy.SetFieldName(fldName + " ALTERNATIVES");
 				fields[i] = dummy;
 			}

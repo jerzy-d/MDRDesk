@@ -30,7 +30,7 @@ namespace ClrMDRIndex
         public ClrtDisplayableType Parent => _parent;
         public ClrtDisplayableType[] Alternatives => _alternatives;
         public bool HasAlternatives => _alternatives != null && _alternatives.Length > 0;
-        public bool IsAlternative => _alternatives != null && _alternatives.Length == 0;
+        public bool IsAlternative => _parent != null && _parent.HasAlternatives;
         public bool IsDummy => _typeId == _dummyTypeId;
         private ClrElementKind _kind;
         public ClrElementKind Kind => _kind;
@@ -49,7 +49,7 @@ namespace ClrMDRIndex
             }
         }
 
-        public ClrtDisplayableType(ClrtDisplayableType parent, int typeId, int fieldIndex, string typeName, string fieldName, ClrElementKind kind)
+        public ClrtDisplayableType(ClrtDisplayableType parent, int typeId, int fieldIndex, string typeName, string fieldName, ClrElementKind kind, ulong[] addresses=null)
         {
             _id = GetId();
             _parent = parent;
@@ -62,14 +62,15 @@ namespace ClrMDRIndex
             _valueFilter = null;
             _getValue = false;
             _alternatives = null;
+            _addresses = addresses;
         }
 
         private ClrtDisplayableType()
         { }
 
-        public static ClrtDisplayableType GetDummy(string typeName, string fldName)
+        public static ClrtDisplayableType GetDummy(ClrtDisplayableType parent, string typeName, string fldName, int fldIndex)
         {
-            return new ClrtDisplayableType(null, _dummyTypeId, Constants.InvalidIndex, typeName, fldName, ClrElementKind.Unknown);
+            return new ClrtDisplayableType(parent, _dummyTypeId, fldIndex, typeName, fldName, ClrElementKind.Unknown);
         }
 
         public void AddAlternative(ClrtDisplayableType dtype)
@@ -114,13 +115,29 @@ namespace ClrMDRIndex
             return false;
         }
 
+        public bool HasFields => _fields != null && _fields.Length > 0;
+
+        public bool HasAddresses => _addresses != null && _addresses.Length > 0;
+
+        public bool SameAlternativeField(ClrtDisplayableType fld, int dispIndex, int fldType, int fldIndex, string fldName)
+        {
+            if (!fld.IsAlternative) return false;
+            for (int i = 0, icnt = _parent.Alternatives.Length; i < icnt; ++i)
+            {
+                var altFld = _parent.Alternatives[i];
+                if (!altFld.HasFields || dispIndex >= altFld.Fields.Length) return false;
+                var checkFld = altFld.Fields[dispIndex];
+                if (checkFld.TypeId != fldType || checkFld.FieldIndex != fldIndex || !Utils.SameStrings(checkFld.FieldName, fldName)) return false;
+            }
+            return true;
+        }
+
         public string GetDescription()
         {
             return _typeName + Environment.NewLine
                    + (HasFields ? "Field Count: " + _fields.Length : string.Empty);
         }
 
-        public bool HasFields => _fields != null && _fields.Length > 0;
 
 
         public void AddFields(ClrtDisplayableType[] fields)
@@ -139,6 +156,11 @@ namespace ClrMDRIndex
         public void SetParent(ClrtDisplayableType parent)
         {
             _parent = parent;
+        }
+
+        public void SetAddresses(ulong[] addresses)
+        {
+            _addresses = addresses;
         }
 
         public void SetFieldIndex(int fldIndex)

@@ -1507,6 +1507,7 @@ namespace ClrMDRIndex
 						return new ValueTuple<string, ClrtDisplayableType, ulong[]>(error, null, null);
 				}
                 ClrtDisplayableType cdt = TypeExtractor.GetClrtDisplayableType(_indexProxy, Dump.Heap, parent, typeId, instances, out error);
+                if (cdt != null) cdt.SetAddresses(instances);
                 return new ValueTuple<string, ClrtDisplayableType, ulong[]>(error, cdt, instances); ;
             }
             catch (Exception ex)
@@ -1522,47 +1523,50 @@ namespace ClrMDRIndex
             error = null;
             try
             {
-                bool hasAmbiguousField = Array.FindIndex(types, t => t.IsAlternative) != -1;
-                if (!hasAmbiguousField)
-                {
-                    int[] fieldIndices = new int[types.Length - 1];
-                    // we need to get addresses of parent, starting at root instances, first item in the list is root type
-                    for (int j = 1, jcnt = types.Length; j < jcnt; ++j)
-                    {
-                        fieldIndices[j - 1] = types[j].FieldIndex;
-                    }
-                    return GetInstanceFieldAddresses(instances, fieldIndices, out error);
-                }
+                return GetInstanceFieldAddresses2(instances, types, out error);
 
-                var heap = Heap;
-                ClrType rootType = null;
-                ClrInstanceField[] fields = new ClrInstanceField[types.Length];
-                int icount = instances.Length;
-                List<ulong> addresses = new List<ulong>(instances.Length);
+                //bool hasAmbiguousField = Array.FindIndex(types, t => t.IsAlternative) != -1;
+                //if (!hasAmbiguousField)
+                //{
+                //    List<int> fieldIndices = new List<int>(types.Length - 1);
+                //    // we need to get addresses of parent, starting at root instances, first item in the list is root type
+                //    for (int j = 1, jcnt = types.Length; j < jcnt; ++j)
+                //    {
+                //        if (types[j].IsDummy) continue;
+                //        fieldIndices.Add(types[j].FieldIndex);
+                //    }
+                //    return GetInstanceFieldAddresses2(instances, fieldIndices.ToArray(), out error);
+                //}
 
-                for (int i = 0; i < icount; ++i)
-                {
-                    var found = true;
-                    var addr = instances[i];
-                    rootType = heap.GetObjectType(addr);
-                    if (rootType == null) continue;
+                //var heap = Heap;
+                //ClrType rootType = null;
+                //ClrInstanceField[] fields = new ClrInstanceField[types.Length];
+                //int icount = instances.Length;
+                //List<ulong> addresses = new List<ulong>(instances.Length);
 
-                    var curType = rootType;
-                    var curAddr = addr;
-                    for (int j = 1, jcnt = types.Length; j < jcnt; ++j)
-                    {
-                        var fld = curType.Fields[types[j].FieldIndex];
-                        curAddr = ValueExtractor.GetReferenceFieldAddress(curAddr, fld, false);
-                        curType = heap.GetObjectType(curAddr);
-                        if (!Utils.SameStrings(curType.Name, types[j].TypeName)) { found = false; break; }
-                    }
+                //for (int i = 0; i < icount; ++i)
+                //{
+                //    var found = true;
+                //    var addr = instances[i];
+                //    rootType = heap.GetObjectType(addr);
+                //    if (rootType == null) continue;
 
-                    if (found)
-                    {
-                        addresses.Add(curAddr);
-                    }
-                }
-                return addresses.ToArray();
+                //    var curType = rootType;
+                //    var curAddr = addr;
+                //    for (int j = 1, jcnt = types.Length; j < jcnt; ++j)
+                //    {
+                //        var fld = curType.Fields[types[j].FieldIndex];
+                //        curAddr = ValueExtractor.GetReferenceFieldAddress(curAddr, fld, false);
+                //        curType = heap.GetObjectType(curAddr);
+                //        if (!Utils.SameStrings(curType.Name, types[j].TypeName)) { found = false; break; }
+                //    }
+
+                //    if (found)
+                //    {
+                //        addresses.Add(curAddr);
+                //    }
+                //}
+                //return addresses.ToArray();
             }
             catch (Exception ex)
             {
@@ -1632,62 +1636,169 @@ namespace ClrMDRIndex
 
 		}
 
-		//public ClrtDisplayableType GetTypeDisplayableRecord(int typeId, ClrtDisplayableType parent, out string error)
-		//{
-		//	error = null;
-		//	try
-		//	{
-		//		ulong[] instances = GetTypeRealAddresses(typeId);
-		//		if (instances == null || instances.Length < 1)
-		//		{
-		//			error = "Type instances not found.";
-		//			return null;
-		//		}
-		//		return TypeExtractor.GetClrtDisplayableType(_indexProxy, Dump.Heap, parent, typeId, instances, out error);
-		//	}
-		//	catch (Exception ex)
-		//	{
-		//		error = Utils.GetExceptionErrorString(ex);
-		//		return null;
-		//	}
 
-		//}
+        private ulong[] GetInstanceFieldAddresses2(ulong[] instances, int[] fieldIndices, out string error)
+        {
+            error = null;
+            ulong[] addresses = instances;
+            try
+            {
+                for (int i = 0, icnt = fieldIndices.Length; i < icnt; ++i)
+                {
+                    addresses = GetInstanceFieldAddresses(addresses, fieldIndices[i], out error);
+                    if (addresses == null) return null;
+                }
+                return addresses;
+            }
+            catch (Exception ex)
+            {
+                error = Utils.GetExceptionErrorString(ex);
+                return null;
+            }
 
-		///// <summary>
-		///// 
-		///// </summary>
-		///// <param name="dispTypeParent"></param>
-		///// <param name="dispTypeField"></param>
-		///// <param name="error"></param>
-		///// <returns></returns>
-		//public ClrtDisplayableType GetTypeDisplayableRecord(ClrtDisplayableType dispTypeParent, out string error)
-		//{
-		//	error = null;
-		//	try
-		//	{
-		//		ulong[] parentInstances = null;
-		//		if (dispTypeParent != null)
-		//		{
-		//			parentInstances = GetTypeRealAddresses(dispTypeParent.TypeId);
-		//			if (parentInstances == null || parentInstances.Length < 1)
-		//			{
-		//				error = Constants.InformationSymbolHeader + "Parent type instances not found (should not happen)." + Environment.NewLine + dispTypeParent.TypeName;
-		//				return null;
-		//			}
-		//		}
+        }
 
-		//		return TypeExtractor.GetClrtDisplayableTypeFields(_indexProxy, Dump.Heap, dispTypeParent, parentInstances, out error);
-		//	}
-		//	catch (Exception ex)
-		//	{
-		//		error = Utils.GetExceptionErrorString(ex);
-		//		return null;
-		//	}
+        private ulong[] GetInstanceFieldAddresses2(ulong[] instances, ClrtDisplayableType[] fields, out string error)
+        {
+            error = null;
+            ulong[] addresses = instances;
+            try
+            {
+                for (int i = 1, icnt = fields.Length; i < icnt; ++i)
+                {
+                    var fld = fields[i];
+                    if (fld.IsDummy) continue;
+                    addresses = fld.IsAlternative
+                        ? GetInstanceFieldAddresses(addresses, fld.FieldIndex, fld.TypeName, out error)
+                        : GetInstanceFieldAddresses(addresses, fld.FieldIndex, out error);
+                    if (addresses == null) return null;
+                    fld.SetAddresses(addresses);
+                }
+                return addresses;
+            }
+            catch (Exception ex)
+            {
+                error = Utils.GetExceptionErrorString(ex);
+                return null;
+            }
 
-		//}
+        }
+
+        private ulong[] GetInstanceFieldAddresses(ulong[] instances, int fldIndex, out string error)
+        {
+            error = null;
+            List<ulong> addresses = new List<ulong>(instances.Length);
+            try
+            {
+                var heap = Heap;
+                int icount = instances.Length;
+                ClrType clrType = heap.GetObjectType(instances[0]);
+                Debug.Assert(clrType != null);
+                ClrInstanceField fld = clrType.Fields[fldIndex];
+
+                for (int i = 0; i < icount; ++i)
+                {
+                    var fldAddr = ValueExtractor.GetReferenceFieldAddress(instances[i], fld, false);
+                    if (fldAddr != Constants.InvalidAddress)
+                        addresses.Add(fldAddr);
+                }
+                return addresses.ToArray();
+            }
+            catch (Exception ex)
+            {
+                error = Utils.GetExceptionErrorString(ex);
+                return null;
+            }
+
+        }
+
+        private ulong[] GetInstanceFieldAddresses(ulong[] instances, int fldIndex, string typeName, out string error)
+        {
+            error = null;
+            List<ulong> addresses = new List<ulong>(instances.Length);
+            try
+            {
+                var heap = Heap;
+                int icount = instances.Length;
+
+                for (int i = 0; i < icount; ++i)
+                {
+                    ClrType clrType = heap.GetObjectType(instances[i]);
+                    Debug.Assert(clrType != null);
+                    ClrInstanceField fld = clrType.Fields[fldIndex];
+                    var fldAddr = ValueExtractor.GetReferenceFieldAddress(instances[i], fld, false);
+                    if (fldAddr == Constants.InvalidAddress) continue;
+                    ClrType fldType = heap.GetObjectType(fldAddr);
+                    if (fldType == null || !Utils.SameStrings(typeName, fldType.Name)) continue;
+                    addresses.Add(fldAddr);
+                }
+                return addresses.ToArray();
+            }
+            catch (Exception ex)
+            {
+                error = Utils.GetExceptionErrorString(ex);
+                return null;
+            }
+
+        }
 
 
-		public ListingInfo GetTypeValuesReport(ClrtDisplayableType[] queryItems, out string error)
+        //public ClrtDisplayableType GetTypeDisplayableRecord(int typeId, ClrtDisplayableType parent, out string error)
+        //{
+        //	error = null;
+        //	try
+        //	{
+        //		ulong[] instances = GetTypeRealAddresses(typeId);
+        //		if (instances == null || instances.Length < 1)
+        //		{
+        //			error = "Type instances not found.";
+        //			return null;
+        //		}
+        //		return TypeExtractor.GetClrtDisplayableType(_indexProxy, Dump.Heap, parent, typeId, instances, out error);
+        //	}
+        //	catch (Exception ex)
+        //	{
+        //		error = Utils.GetExceptionErrorString(ex);
+        //		return null;
+        //	}
+
+        //}
+
+        ///// <summary>
+        ///// 
+        ///// </summary>
+        ///// <param name="dispTypeParent"></param>
+        ///// <param name="dispTypeField"></param>
+        ///// <param name="error"></param>
+        ///// <returns></returns>
+        //public ClrtDisplayableType GetTypeDisplayableRecord(ClrtDisplayableType dispTypeParent, out string error)
+        //{
+        //	error = null;
+        //	try
+        //	{
+        //		ulong[] parentInstances = null;
+        //		if (dispTypeParent != null)
+        //		{
+        //			parentInstances = GetTypeRealAddresses(dispTypeParent.TypeId);
+        //			if (parentInstances == null || parentInstances.Length < 1)
+        //			{
+        //				error = Constants.InformationSymbolHeader + "Parent type instances not found (should not happen)." + Environment.NewLine + dispTypeParent.TypeName;
+        //				return null;
+        //			}
+        //		}
+
+        //		return TypeExtractor.GetClrtDisplayableTypeFields(_indexProxy, Dump.Heap, dispTypeParent, parentInstances, out error);
+        //	}
+        //	catch (Exception ex)
+        //	{
+        //		error = Utils.GetExceptionErrorString(ex);
+        //		return null;
+        //	}
+
+        //}
+
+
+        public ListingInfo GetTypeValuesReport(ClrtDisplayableType[] queryItems, out string error)
 		{
 			error = null;
 			try

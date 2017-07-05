@@ -215,6 +215,40 @@ namespace MDRDesk
             }
         }
 
+        /// <summary>
+        /// Update selections/filters for type display loaded form a file.
+        /// </summary>
+        /// <param name="dispType">Information loaded from a file.</param>
+        private void UpdateSelections(ClrtDisplayableType dispType)
+        {
+            if (dispType.GetValue || dispType.HasFilter)
+            {
+                UpdateSelection(dispType);
+            }
+            if (dispType.HasFields)
+            {
+                for (int i = 0, icnt = dispType.Fields.Length; i < icnt; ++i)
+                {
+                    var dt = dispType.Fields[i];
+                    if (dt.GetValue || dt.HasFilter)
+                    {
+                        UpdateSelections(dt);
+                    }
+                }
+            }
+            if (dispType.HasAlternatives)
+            {
+                for (int i = 0, icnt = dispType.Alternatives.Length; i < icnt; ++i)
+                {
+                    var dt = dispType.Alternatives[i];
+                    if (dt.GetValue || dt.HasFilter)
+                    {
+                        UpdateSelections(dt);
+                    }
+                }
+            }
+        }
+
         private void UpdateSelection(ClrtDisplayableType dispType)
         {
             Debug.Assert(dispType != null);
@@ -461,38 +495,39 @@ namespace MDRDesk
                 _typeInfo = ClrtDisplayableType.ClrtDisplayableTypeAryFixup(queryItems);
                 TypeValueReportTreeView.Items.Clear();
                 UpdateTypeValueSetupGrid(_typeInfo, null);
-                TreeViewItem tvi = TypeValueReportTreeView.Items[0] as TreeViewItem;
-                var que = new Queue<KeyValuePair<ClrtDisplayableType, TreeViewItem>>(_typeInfo.Fields.Length);
-                for (int i = 0, icnt = _typeInfo.Fields.Length; i < icnt; ++i)
-                {
-                    que.Enqueue(new KeyValuePair<ClrtDisplayableType, TreeViewItem>(_typeInfo.Fields[i], tvi.Items[i] as TreeViewItem));
-                }
-                while (que.Count > 0)
-                {
-                    var kv = que.Dequeue();
-                    var dt = kv.Key;
-                    tvi = kv.Value;
-                    if (dt.GetValue || dt.HasFilter)
-                    {
-                        UpdateSelection(dt);
-                    }
-                    if (dt.HasFields)
-                    {
-                        UpdateTypeValueSetupGrid(dt, tvi);
-                        for (int i = 0, icnt = dt.Fields.Length; i < icnt; ++i)
-                        {
-                            que.Enqueue(new KeyValuePair<ClrtDisplayableType, TreeViewItem>(dt.Fields[i], tvi.Items[i] as TreeViewItem));
-                        }
-                    }
-                    else if (dt.HasAlternatives)
-                    {
-                        UpdateTypeValueSetupGrid(dt, tvi);
-                        for (int i = 0, icnt = dt.Alternatives.Length; i < icnt; ++i)
-                        {
-                            que.Enqueue(new KeyValuePair<ClrtDisplayableType, TreeViewItem>(dt.Alternatives[i], tvi.Items[i] as TreeViewItem));
-                        }
-                    }
-                }
+                UpdateSelections(_typeInfo);
+                //TreeViewItem tvi = TypeValueReportTreeView.Items[0] as TreeViewItem;
+                //var que = new Queue<KeyValuePair<ClrtDisplayableType, TreeViewItem>>(_typeInfo.Fields.Length);
+                //for (int i = 0, icnt = _typeInfo.Fields.Length; i < icnt; ++i)
+                //{
+                //    que.Enqueue(new KeyValuePair<ClrtDisplayableType, TreeViewItem>(_typeInfo.Fields[i], tvi.Items[i] as TreeViewItem));
+                //}
+                //while (que.Count > 0)
+                //{
+                //    var kv = que.Dequeue();
+                //    var dt = kv.Key;
+                //    tvi = kv.Value;
+                //    if (dt.GetValue || dt.HasFilter)
+                //    {
+                //        UpdateSelection(dt);
+                //    }
+                //    if (dt.HasFields)
+                //    {
+                //        UpdateTypeValueSetupGrid(dt, tvi);
+                //        for (int i = 0, icnt = dt.Fields.Length; i < icnt; ++i)
+                //        {
+                //            que.Enqueue(new KeyValuePair<ClrtDisplayableType, TreeViewItem>(dt.Fields[i], tvi.Items[i] as TreeViewItem));
+                //        }
+                //    }
+                //    else if (dt.HasAlternatives)
+                //    {
+                //        UpdateTypeValueSetupGrid(dt, tvi);
+                //        for (int i = 0, icnt = dt.Alternatives.Length; i < icnt; ++i)
+                //        {
+                //            que.Enqueue(new KeyValuePair<ClrtDisplayableType, TreeViewItem>(dt.Alternatives[i], tvi.Items[i] as TreeViewItem));
+                //        }
+                //    }
+                //}
                 _instances = _indexProxy.GetTypeInstances(_typeInfo.TypeId);
 
             }
