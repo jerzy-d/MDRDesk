@@ -106,8 +106,8 @@ namespace MDRDesk
 			txtBlk.Inlines.Add("   ");
 			if (val.IsDummy)
 			{
-				txtBlk.Inlines.Add(new Bold(new Run(val.FieldName + "  ") { Foreground = Brushes.DarkBlue }));
-				txtBlk.Inlines.Add(new Bold(new Run("  " + val.TypeName) { Foreground = Brushes.DarkBlue }));
+				txtBlk.Inlines.Add(new Italic(new Run(val.FieldName + "  ") { Foreground = Brushes.DarkBlue }));
+				txtBlk.Inlines.Add(new Run("  " + val.TypeName));
 				return txtBlk;
 			}
 			var selection = val.SelectionStr();
@@ -116,7 +116,10 @@ namespace MDRDesk
 			if (!string.IsNullOrEmpty(val.FieldName))
 				txtBlk.Inlines.Add(new Italic(new Run(val.FieldName + "  ") { Foreground = Brushes.DarkRed }));
 			txtBlk.Inlines.Add(new Run("  " + val.TypeName));
-			return txtBlk;
+            if (val.HasAddresses)
+                txtBlk.Inlines.Add(new Italic(new Run("  [" + Utils.CountString(val.Addresses.Length) + "]")) { Foreground = Brushes.DarkGreen });
+
+            return txtBlk;
 		}
 
 		public static StackPanel GetInstanceValueStackPanel(InstanceValue val)

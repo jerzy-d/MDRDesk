@@ -1487,11 +1487,32 @@ namespace ClrMDRIndex
 			return ary;
 		}
 
-		#endregion instance hierarchy 
+        #endregion instance hierarchy 
 
-		#region Type Value Reports
+        #region Type Value Reports
 
-		public ValueTuple<string, ClrtDisplayableType,ulong[]> GetTypeDisplayableRecord(int typeId, ClrtDisplayableType parent, ClrtDisplayableType[] fields=null, ulong[] rootInstances=null)
+        public ValueTuple<string, ClrtDisplayableType, ulong[]> GetTypeDisplayableRecord(int typeId)
+        {
+            string error = null;
+            try
+            {
+                ulong[] instances = GetTypeRealAddresses(typeId);
+                if (instances == null || instances.Length < 1)
+                    return new ValueTuple<string, ClrtDisplayableType, ulong[]>("Type instances not found.", null, null);
+                ClrtDisplayableType cdt = TypeExtractor.GetClrtDisplayableType(_indexProxy, Dump.Heap, typeId, instances, out error);
+                if (cdt != null) cdt.SetAddresses(instances);
+                return new ValueTuple<string, ClrtDisplayableType, ulong[]>(error, cdt, instances); ;
+            }
+            catch (Exception ex)
+            {
+                error = Utils.GetExceptionErrorString(ex);
+                return new ValueTuple<string, ClrtDisplayableType, ulong[]>(error, null, null);
+            }
+
+        }
+
+
+        public ValueTuple<string, ClrtDisplayableType,ulong[]> GetTypeDisplayableRecord(int typeId, ClrtDisplayableType parent, ClrtDisplayableType[] fields=null, ulong[] rootInstances=null)
 		{
 			string error = null;
 			try
@@ -1508,7 +1529,7 @@ namespace ClrMDRIndex
 				}
                 ClrtDisplayableType cdt = TypeExtractor.GetClrtDisplayableType(_indexProxy, Dump.Heap, parent, typeId, instances, out error);
                 if (cdt != null) cdt.SetAddresses(instances);
-                return new ValueTuple<string, ClrtDisplayableType, ulong[]>(error, cdt, instances); ;
+                return new ValueTuple<string, ClrtDisplayableType, ulong[]>(error, parent, instances); ;
             }
             catch (Exception ex)
 			{
@@ -1798,33 +1819,33 @@ namespace ClrMDRIndex
         //}
 
 
-        public ListingInfo GetTypeValuesReport(ClrtDisplayableType[] queryItems, out string error)
+        public ListingInfo GetTypeValuesReport(ClrtDisplayableType[] selectedItems, out string error)
 		{
 			error = null;
 			try
 			{
                 // get type addresses
                 //
-				Debug.Assert(queryItems != null && queryItems.Length > 0);
-				ulong[] instances = GetTypeRealAddresses(queryItems[0].TypeId);
+				Debug.Assert(selectedItems != null && selectedItems.Length > 0 && selectedItems[0].HasAddresses);
+				ulong[] instances = selectedItems[0].Addresses;
 				if (instances == null || instances.Length < 1)
 				{
-					error = Constants.InformationSymbolHeader + "Type instances not found? Should not happen!" + Environment.NewLine + queryItems[0].TypeName;
+					error = Constants.InformationSymbolHeader + "Type instances not found? Should not happen!" + Environment.NewLine + selectedItems[0].TypeName;
 					return null;
 				}
 
                 // prepare values queries
                 //
-				TypeValueQuery[] valueQuery = new TypeValueQuery[queryItems.Length];
+				TypeValueQuery[] valueQuery = new TypeValueQuery[selectedItems.Length];
 				valueQuery[0] = new TypeValueQuery(null, Constants.InvalidIndex);
 				int qryGetValueCnt = 1;
-				for (int i = 1, icnt = queryItems.Length; i < icnt; ++i)
+				for (int i = 1, icnt = selectedItems.Length; i < icnt; ++i)
 				{
-					var qa = queryItems[i];
+					var qa = selectedItems[i];
 					if (qa.GetValue) ++qryGetValueCnt;
-					for (int j = 0, jcnt = queryItems.Length; j < jcnt; ++j)
+					for (int j = 0, jcnt = selectedItems.Length; j < jcnt; ++j)
 					{
-						if (qa.Parent == queryItems[j])
+						if (qa.RealParent == selectedItems[j])
 						{
 							valueQuery[i] = new TypeValueQuery(valueQuery[j], j);
 							break;
@@ -1843,12 +1864,12 @@ namespace ClrMDRIndex
 					var curAddr = addr;
 					var kv = TypeExtractor.TryGetRealType(heap, addr);
 					var clrType = kv.Key;
-					valueQuery[0].SetFields(clrType, kv.Value, null, Constants.InvalidIndex, queryItems[0].Filter, true, instances.Length);
-					var parentAddrs = new ulong[queryItems.Length];
+					valueQuery[0].SetFields(clrType, kv.Value, null, Constants.InvalidIndex, selectedItems[0].Filter, true, instances.Length);
+					var parentAddrs = new ulong[selectedItems.Length];
 					parentAddrs[0] = curAddr;
-					for (int j = 1, jcnt = queryItems.Length; j < jcnt; ++j)
+					for (int j = 1, jcnt = selectedItems.Length; j < jcnt; ++j)
 					{
-						var qryItem = queryItems[j];
+						var qryItem = selectedItems[j];
 						var valQry = valueQuery[j];
 						var parentIndex = valQry.ParentIndex;
 						Debug.Assert(valQry.Parent != null);
@@ -1878,7 +1899,7 @@ namespace ClrMDRIndex
 
                 // get values from heap
                 //
-				queryItems[0].SetGetValue(true);
+				selectedItems[0].SetGetValue(true);
 				string[] values = new string[valueQuery.Length];
 				ulong[] addresses = new ulong[valueQuery.Length];
 				for (int i = 0, icnt = instances.Length; i < icnt; ++i)
@@ -1906,9 +1927,9 @@ namespace ClrMDRIndex
 				ColumnInfo[] colInfos = new ColumnInfo[qryGetValueCnt];
 				colInfos[0] = new ColumnInfo("ADDRESS", ReportFile.ColumnType.UInt64, 100, 1, true);
 				int ndx = 1;
-				for (int i = 1, icnt = queryItems.Length; i < icnt; ++i)
+				for (int i = 1, icnt = selectedItems.Length; i < icnt; ++i)
 				{
-					var qry = queryItems[i];
+					var qry = selectedItems[i];
 					if (qry.GetValue)
 					{
 						colInfos[ndx++] = new ColumnInfo(qry.FieldName, ReportFile.ColumnType.String, 150, ndx, true);
@@ -1917,26 +1938,26 @@ namespace ClrMDRIndex
 
 				int dataNdx = 0;
 				ndx = 0;
-				int qryLen = queryItems.Length;
+				int qryLen = selectedItems.Length;
 				for (int i = 0, icnt = valCnt; i < icnt; ++i)
 				{
 					items[ndx++] = new listing<string>(data, dataNdx, qryGetValueCnt);
 					for (int j = 0; j < qryLen; ++j)
 					{
-						var qry = queryItems[j];
+						var qry = selectedItems[j];
 						if (!qry.GetValue) continue;
 						data[dataNdx++] = valueQuery[j].Values[i];
 					}
 				}
 
 				var sb = StringBuilderCache.Acquire(StringBuilderCache.MaxCapacity);
-				sb.AppendLine(queryItems[0].TypeName + "  COUNT: " + valCnt);
+				sb.AppendLine(selectedItems[0].TypeName + "  COUNT: " + valCnt);
 				SortedDictionary<long, string> dct = new SortedDictionary<long, string>();
-				dct.Add(queryItems[0].Id, "   ");
-				for (int i = 1, icnt = queryItems.Length; i < icnt; ++i)
+				dct.Add(selectedItems[0].Id, "   ");
+				for (int i = 1, icnt = selectedItems.Length; i < icnt; ++i)
 				{
-					var qry = queryItems[i];
-					string indent = dct[qry.Parent.Id];
+					var qry = selectedItems[i];
+					string indent = dct[qry.RealParent.Id];
 					dct[qry.Id] = indent + "   ";
 					sb.AppendLine(indent + qry.FieldName + "   " + qry.TypeName);
 				}

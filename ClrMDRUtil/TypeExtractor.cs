@@ -370,23 +370,23 @@ namespace ClrMDRIndex
             return new ValueTuple<bool, ClrElementKind, ClrType, ClrElementKind>(isUndecided, kind, clrType.BaseType, baseKind);
         }
 
-		private static readonly string[] excludedTypeNames = new[]
-		{
-				"Free",
-				"System.DateTime",
-				"System.Decimal",
-				"System.Guid",
-				"System.String",
-				"System.TimeSpan",
+        private static readonly string[] excludedTypeNames = new[]
+        {
+                "Free",
+                "System.DateTime",
+                "System.Decimal",
+                "System.Guid",
+                "System.String",
+                "System.TimeSpan",
 
-		};
+        };
 
-		public static bool IsExludedType(string typeName)
-		{
-			return Array.IndexOf(excludedTypeNames, typeName) >= 0;
-		}
+        public static bool IsExludedType(string typeName)
+        {
+            return Array.IndexOf(excludedTypeNames, typeName) >= 0;
+        }
 
-		private static readonly string[] KnownTypes = new string[]
+        private static readonly string[] KnownTypes = new string[]
         {
             "System.Collections.Generic.Dictionary<",
             "System.Collections.Generic.HashSet<",
@@ -526,20 +526,39 @@ namespace ClrMDRIndex
         //}
 
 
-        public static void TryGetClrtDisplayableTypeFields(IndexProxy ndxProxy, ClrHeap heap, ulong addr,
-                                                            List<int> ambiguousFields, ClrtDisplayableType[] flds)
+        public static void TryGetClrtDisplayableTypeFields(IndexProxy ndxProxy, ClrHeap heap, ulong addr, List<int> ambiguousFields, ClrtDisplayableType[] flds, SortedDictionary<string,List<ulong>>[] fldAddresses)
         {
             for (int i = 0, icnt = ambiguousFields.Count; i < icnt; ++i)
             {
                 int fldNdx = ambiguousFields[i];
+                //if (fldNdx == 53 || fldNdx == 55 || fldNdx == 68)
+                if (fldNdx == 53)
+                {
+                    int a = 1;
+                }
                 var cdt = flds[fldNdx];
+                var dct = fldAddresses[i];
                 var nextParentType = heap.GetObjectType(addr);
                 if (nextParentType == null) return;
                 var nextFld = nextParentType.Fields[fldNdx];
                 (ClrType nextFldType, ClrElementKind nextFldKind, ulong address) = GetRealType(heap, addr, nextFld, nextParentType.IsValueClass);
-                if (nextFldType == null || Utils.SameStrings(nextFldType.Name, cdt.TypeName) || cdt.HasAlternative(nextFldType.Name)) continue;
-                var typeId = ndxProxy.GetTypeId(nextFldType.Name);
-                cdt.AddAlternative(new ClrtDisplayableType(cdt, typeId, fldNdx, nextFldType.Name, nextFld.Name, nextFldKind));
+                if (nextFldType == null) continue;
+                List<ulong> addrLst;
+                if (dct.TryGetValue(nextFldType.Name,out addrLst))
+                {
+                    addrLst.Add(address);
+                }
+                else
+                {
+                    if (fldNdx == 53)
+                    {
+                        int a = 1;
+                    }
+                    addrLst = new List<ulong>(64) { address };
+                    dct.Add(nextFldType.Name,addrLst);
+                    var typeId = ndxProxy.GetTypeId(nextFldType.Name);
+                    cdt.AddAlternative(new ClrtDisplayableType(cdt, typeId, fldNdx, nextFldType.Name, nextFld.Name, nextFldKind));
+                }
             }
         }
 
@@ -626,7 +645,7 @@ namespace ClrMDRIndex
         /// <param name="addresses"></param>
         /// <param name="error"></param>
         /// <returns></returns>
-        public static ClrtDisplayableType GetClrtDisplayableType(IndexProxy ndxProxy, ClrHeap heap, ClrtDisplayableType parent, int typeId, ulong[] addresses, out string error)
+        public static ClrtDisplayableType GetClrtDisplayableType(IndexProxy ndxProxy, ClrHeap heap, int typeId, ulong[] addresses, out string error)
         {
             error = null;
             try
@@ -653,151 +672,14 @@ namespace ClrMDRIndex
                             case ClrElementKind.DateTime:
                             case ClrElementKind.TimeSpan:
                             case ClrElementKind.Decimal:
-                                return new ClrtDisplayableType(parent, typeId, Constants.InvalidIndex, clrType.Name, String.Empty, clrTypeKind);
+                                return new ClrtDisplayableType(null, typeId, Constants.InvalidIndex, clrType.Name, String.Empty, clrTypeKind);
                             case ClrElementKind.Interface:
                                 throw new ApplicationException("Interface kind is not expected from ClrHeap.GetHeapObject(...) method.");
                             case ClrElementKind.Enum:
-                                return new ClrtDisplayableType(parent, typeId, Constants.InvalidIndex, clrType.Name, String.Empty, clrTypeKind);
+                                return new ClrtDisplayableType(null, typeId, Constants.InvalidIndex, clrType.Name, String.Empty, clrTypeKind);
                             case ClrElementKind.System__Canon:
                                 throw new ApplicationException("System__Canon kind is not expected from ClrHeap.GetHeapObject(...) method.");
                             case ClrElementKind.Exception:
-                            case ClrElementKind.Abstract:
-                            case ClrElementKind.SystemVoid:
-                            case ClrElementKind.SystemObject:
-                                return new ClrtDisplayableType(parent, typeId, Constants.InvalidIndex, clrType.Name, String.Empty, clrTypeKind);
-                        }
-                    }
-                    else
-                    {
-                        switch (TypeExtractor.GetStandardKind(clrTypeKind))
-                        {
-                            case ClrElementKind.String:
-                                return new ClrtDisplayableType(parent, typeId, Constants.InvalidIndex, clrType.Name, String.Empty, clrTypeKind);
-                            case ClrElementKind.SZArray:
-                            case ClrElementKind.Array:
-                                return new ClrtDisplayableType(parent, typeId, Constants.InvalidIndex, clrType.Name, String.Empty, clrTypeKind);
-                            case ClrElementKind.Struct:
-                            case ClrElementKind.Object:
-                            case ClrElementKind.Class:
-                                var dispType = new ClrtDisplayableType(parent, typeId, Constants.InvalidIndex, clrType.Name, String.Empty, clrTypeKind);
-                                var dispFlds = GetClrtDisplayableTypeFields(ndxProxy, heap, dispType, clrType, addr, ambiguousFields);
-                                for (int j = 0, jcnt = addresses.Length; j < jcnt; ++j)
-                                {
-                                    var jaddr = addresses[j];
-									try
-									{
-										TryGetClrtDisplayableTypeFields(ndxProxy, heap, jaddr, ambiguousFields, dispFlds);
-									}
-									catch (Exception ex)
-									{
-										int a = 1;
-									}
-
-								}
-								if (ambiguousFields.Count > 0)
-								{
-									HandleAlternatives(dispType, dispFlds, ambiguousFields);
-								}
-								dispType.AddFields(dispFlds);
-                                return dispType;
-                            case ClrElementKind.Unknown:
-                                continue;
-                            default:
-                                return new ClrtDisplayableType(parent, typeId, Constants.InvalidIndex, clrType.Name, String.Empty, clrTypeKind);
-                        }
-                    }
-                }
-                return new ClrtDisplayableType(parent, typeId, Constants.InvalidIndex, Constants.NullName, String.Empty, ClrElementKind.Unknown);
-            }
-            catch (Exception ex)
-            {
-                error = Utils.GetExceptionErrorString(ex);
-                return null;
-            }
-        }
-
-		private static void HandleAlternatives(ClrtDisplayableType parent, ClrtDisplayableType[] fields, List<int> ambLst)
-		{
-			List<string> names = new List<string>(8);
-			for (int i = 0, icnt = fields.Length; i < icnt; ++i)
-			{
-				var fld = fields[i];
-				if (!fld.HasAlternatives) continue;
-                if (fld.Alternatives.Length==1)
-                {
-                    var alt = fld.Alternatives[0];
-                    alt.SetParent(parent);
-                    alt.SetAlterntives(null);
-                    alt.SetFieldIndex(fld.FieldIndex);
-                    fields[i] = alt;
-                    continue;
-                }
-				names.Clear();
-				var dummyAry = Utils.EmptyArray<ClrtDisplayableType>.Value;
-                var dummy = ClrtDisplayableType.GetDummy(parent, fld.TypeName, fld.FieldName + " ALTERNATIVES", fld.FieldIndex);
-                for (int k = 0, kcnt = fld.Alternatives.Length; k < kcnt; ++k)
-				{
-					var alt = fld.Alternatives[k];
-					alt.SetParent(dummy);
-					alt.SetAlterntives(dummyAry);
-					alt.SetFieldIndex(fld.FieldIndex);
-					if (!names.Contains(alt.FieldName))
-					{
-						names.Add(alt.FieldName);
-					}
-				}
-				var fldName = string.Join(",", names);
-                dummy.SetAlterntives(fld.Alternatives);
-                dummy.SetFieldName(fldName + " ALTERNATIVES");
-				fields[i] = dummy;
-			}
-		}
-
-			/// <summary>
-			/// 
-			/// </summary>
-			/// <param name="ndxProxy">Basic indexed dump data.</param>
-			/// <param name="heap">MDR's a crash dump heap.</param>
-			/// <param name="addresses"></param>
-			/// <param name="error"></param>
-			/// <returns></returns>
-			public static ClrtDisplayableType GetClrtDisplayableType(IndexProxy ndxProxy, ClrHeap heap, ulong[] addresses, out string error)
-			{
-            error = null;
-            try
-            {
-                List<int> ambiguousFields = new List<int>();
-                ClrType clrType = null;
-
-                for (int i = 0, icnt = addresses.Length; i < icnt; ++i)
-                {
-                    var addr = Utils.RealAddress(addresses[i]);
-                    if (Utils.IsInvalidAddress(addr)) continue;
-                    clrType = heap.GetObjectType(addr);
-                    if (clrType == null) continue;
-                    var typeId = ndxProxy.GetTypeId(clrType.Name);
-                    var clrTypeKind = GetElementKind(clrType);
-
-                    //(bool isAmbiguous, ClrElementKind clrTypeKind, ClrType baseType, ClrElementKind baseTypeKind) = IsUndecidedType(clrType);
-
-
-                    var specKind = TypeExtractor.GetSpecialKind(clrTypeKind);
-                    if (specKind != ClrElementKind.Unknown)
-                    {
-                        switch (specKind)
-                        {
-                            case ClrElementKind.Free:
-                            case ClrElementKind.Guid:
-                            case ClrElementKind.DateTime:
-                            case ClrElementKind.TimeSpan:
-                            case ClrElementKind.Decimal:
-                                return new ClrtDisplayableType(null, typeId, Constants.InvalidIndex, clrType.Name, String.Empty, clrTypeKind);
-                            case ClrElementKind.Interface:
-                                throw new ApplicationException("Interface kind is not expected from ClrHeap.GetHeapObject(...) method.");
-                            case ClrElementKind.Enum:
-                                return new ClrtDisplayableType(null, typeId, Constants.InvalidIndex, clrType.Name, String.Empty, clrTypeKind);
-                            case ClrElementKind.System__Canon:
-                                throw new ApplicationException("System__Canon kind is not expected from ClrHeap.GetHeapObject(...) method.");
                             case ClrElementKind.Abstract:
                             case ClrElementKind.SystemVoid:
                             case ClrElementKind.SystemObject:
@@ -818,16 +700,29 @@ namespace ClrMDRIndex
                             case ClrElementKind.Class:
                                 var dispType = new ClrtDisplayableType(null, typeId, Constants.InvalidIndex, clrType.Name, String.Empty, clrTypeKind);
                                 var dispFlds = GetClrtDisplayableTypeFields(ndxProxy, heap, dispType, clrType, addr, ambiguousFields);
-                                for (int j = 0, jcnt = addresses.Length; j < jcnt; ++j)
+
+                                if (ambiguousFields.Count > 0)
                                 {
-                                    var jaddr = addresses[j];
-                                    TryGetClrtDisplayableTypeFields(ndxProxy, heap, jaddr, ambiguousFields, dispFlds);
+                                    SortedDictionary<string, List<ulong>>[] fldAddrDcts = new SortedDictionary<string, List<ulong>>[ambiguousFields.Count];
+                                    for (int j = 0, jcnt = fldAddrDcts.Length; j < jcnt; ++j)
+                                    {
+                                        fldAddrDcts[j] = new SortedDictionary<string, List<ulong>>(StringComparer.Ordinal);
+                                    }
+                                    for (int j = 0, jcnt = addresses.Length; j < jcnt; ++j)
+                                    {
+                                        var jaddr = addresses[j];
+                                        try
+                                        {
+                                            TryGetClrtDisplayableTypeFields(ndxProxy, heap, jaddr, ambiguousFields, dispFlds,fldAddrDcts);
+                                        }
+                                        catch (Exception ex)
+                                        {
+                                            int a = 1;
+                                        }
+                                    }
+                                    HandleAlternatives(dispType, dispFlds, ambiguousFields, fldAddrDcts);
                                 }
-								if (ambiguousFields.Count > 0)
-								{
-									HandleAlternatives(dispType, dispFlds, ambiguousFields);
-								}
-								dispType.AddFields(dispFlds);
+                                dispType.AddFields(dispFlds);
                                 return dispType;
                             case ClrElementKind.Unknown:
                                 continue;
@@ -836,7 +731,7 @@ namespace ClrMDRIndex
                         }
                     }
                 }
-                return new ClrtDisplayableType(null, Constants.InvalidIndex, Constants.InvalidIndex, Constants.NullName, String.Empty, ClrElementKind.Unknown);
+                return new ClrtDisplayableType(null, typeId, Constants.InvalidIndex, Constants.NullName, String.Empty, ClrElementKind.Unknown);
             }
             catch (Exception ex)
             {
@@ -844,6 +739,233 @@ namespace ClrMDRIndex
                 return null;
             }
         }
+
+
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="ndxProxy">Basic indexed dump data.</param>
+        /// <param name="heap">MDR's a crash dump heap.</param>
+        /// <param name="parent"></param>
+        /// <param name="typeId">Type id of the parent's field.</param>
+        /// <param name="addresses"></param>
+        /// <param name="error"></param>
+        /// <returns></returns>
+        public static ClrtDisplayableType GetClrtDisplayableType(IndexProxy ndxProxy, ClrHeap heap, ClrtDisplayableType parent, int typeId, ulong[] addresses, out string error)
+        {
+            error = null;
+            try
+            {
+                List<int> ambiguousFields = new List<int>();
+                ClrType clrType = null;
+                Debug.Assert(!parent.HasFields);
+
+                for (int i = 0, icnt = addresses.Length; i < icnt; ++i)
+                {
+                    var addr = Utils.RealAddress(addresses[i]);
+                    if (Utils.IsInvalidAddress(addr)) continue;
+                    clrType = heap.GetObjectType(addr);
+                    if (clrType == null) continue;
+
+                    (bool isAmbiguous, ClrElementKind clrTypeKind, ClrType baseType, ClrElementKind baseTypeKind) = IsUndecidedType(clrType);
+
+                    var specKind = TypeExtractor.GetSpecialKind(clrTypeKind);
+                    if (specKind != ClrElementKind.Unknown)
+                    {
+                        switch (specKind)
+                        {
+                            case ClrElementKind.Interface:
+                                throw new ApplicationException("Interface kind is not expected from ClrHeap.GetHeapObject(...) method.");
+                            case ClrElementKind.System__Canon:
+                                throw new ApplicationException("System__Canon kind is not expected from ClrHeap.GetHeapObject(...) method.");
+                            case ClrElementKind.Abstract:
+                                throw new ApplicationException("Abstract kind is not expected from ClrHeap.GetHeapObject(...) method.");
+                        }
+                    }
+
+                    switch (TypeExtractor.GetStandardKind(clrTypeKind))
+                    {
+                        case ClrElementKind.Struct:
+                        case ClrElementKind.Object:
+                        case ClrElementKind.Class:
+                            var dispFlds = GetClrtDisplayableTypeFields(ndxProxy, heap, parent, clrType, addr, ambiguousFields);
+                            if (ambiguousFields.Count > 0)
+                            {
+                                SortedDictionary<string, List<ulong>>[] fldAddrDcts = new SortedDictionary<string, List<ulong>>[ambiguousFields.Count];
+                                for (int j = 0, jcnt = fldAddrDcts.Length; j < jcnt; ++j)
+                                {
+                                    fldAddrDcts[j] = new SortedDictionary<string, List<ulong>>(StringComparer.Ordinal);
+                                }
+                                for (int j = 0, jcnt = addresses.Length; j < jcnt; ++j)
+                                {
+                                    var jaddr = addresses[j];
+                                    try
+                                    {
+                                        TryGetClrtDisplayableTypeFields(ndxProxy, heap, jaddr, ambiguousFields, dispFlds, fldAddrDcts);
+                                    }
+                                    catch (Exception ex)
+                                    {
+                                        int a = 1;
+                                    }
+                                }
+                                HandleAlternatives(parent, dispFlds, ambiguousFields, fldAddrDcts);
+                            }
+                            parent.AddFields(dispFlds);
+                            return parent;
+                        case ClrElementKind.Unknown:
+                            continue;
+                        default:
+                            return new ClrtDisplayableType(null, typeId, Constants.InvalidIndex, clrType.Name, String.Empty, clrTypeKind);
+                    }
+                }
+                return new ClrtDisplayableType(null, typeId, Constants.InvalidIndex, Constants.NullName, String.Empty, ClrElementKind.Unknown);
+            }
+            catch (Exception ex)
+            {
+                error = Utils.GetExceptionErrorString(ex);
+                return null;
+            }
+        }
+
+
+
+        private static void HandleAlternatives(ClrtDisplayableType parent, ClrtDisplayableType[] fields, List<int> ambiguousFields, SortedDictionary<string, List<ulong>>[] fldAddrDcts)
+        {
+            List<string> names = new List<string>(8);
+            for (int i = 0, icnt = ambiguousFields.Count; i < icnt; ++i)
+            {
+                var fldNdx = ambiguousFields[i];
+                var fld = fields[fldNdx];
+                var dct = fldAddrDcts[i];
+                if (!fld.HasAlternatives) // not found any instance
+                {
+                    fld.SetAddresses(Utils.EmptyArray<ulong>.Value);
+                    continue;
+                }
+
+                if (fld.Alternatives.Length == 1)
+                {
+                    var alt = fld.Alternatives[0];
+                    alt.SetParent(parent);
+                    alt.SetAlterntives(null);
+                    alt.SetFieldIndex(fld.FieldIndex);
+                    alt.SetAddresses(dct[alt.TypeName].ToArray());
+                    fields[fldNdx] = alt;
+                    continue;
+                }
+                names.Clear();
+                var dummyAry = Utils.EmptyArray<ClrtDisplayableType>.Value;
+                var dummy = ClrtDisplayableType.GetDummy(parent, fld.TypeName, fld.FieldName + " ALTERNATIVES", fld.FieldIndex);
+                for (int k = 0, kcnt = fld.Alternatives.Length; k < kcnt; ++k)
+                {
+                    var alt = fld.Alternatives[k];
+                    alt.SetParent(dummy);
+                    alt.SetAlterntives(dummyAry);
+                    alt.SetFieldIndex(fld.FieldIndex);
+                    if (!names.Contains(alt.FieldName))
+                    {
+                        names.Add(alt.FieldName);
+                    }
+                    alt.SetAddresses(dct[alt.TypeName].ToArray());
+                }
+                var fldName = string.Join(",", names);
+                dummy.SetAlterntives(fld.Alternatives);
+                dummy.SetFieldName("{" + fldName + "} alternatives");
+                fields[fldNdx] = dummy;
+            }
+        }
+
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="ndxProxy">Basic indexed dump data.</param>
+        /// <param name="heap">MDR's a crash dump heap.</param>
+        /// <param name="addresses"></param>
+        /// <param name="error"></param>
+        /// <returns></returns>
+        //public static ClrtDisplayableType GetClrtDisplayableType(IndexProxy ndxProxy, ClrHeap heap, ulong[] addresses, out string error)
+        //{
+        //    error = null;
+        //    try
+        //    {
+        //        List<int> ambiguousFields = new List<int>();
+        //        ClrType clrType = null;
+
+        //        for (int i = 0, icnt = addresses.Length; i < icnt; ++i)
+        //        {
+        //            var addr = Utils.RealAddress(addresses[i]);
+        //            if (Utils.IsInvalidAddress(addr)) continue;
+        //            clrType = heap.GetObjectType(addr);
+        //            if (clrType == null) continue;
+        //            var typeId = ndxProxy.GetTypeId(clrType.Name);
+        //            var clrTypeKind = GetElementKind(clrType);
+
+        //            //(bool isAmbiguous, ClrElementKind clrTypeKind, ClrType baseType, ClrElementKind baseTypeKind) = IsUndecidedType(clrType);
+
+
+        //            var specKind = TypeExtractor.GetSpecialKind(clrTypeKind);
+        //            if (specKind != ClrElementKind.Unknown)
+        //            {
+        //                switch (specKind)
+        //                {
+        //                    case ClrElementKind.Free:
+        //                    case ClrElementKind.Guid:
+        //                    case ClrElementKind.DateTime:
+        //                    case ClrElementKind.TimeSpan:
+        //                    case ClrElementKind.Decimal:
+        //                        return new ClrtDisplayableType(null, typeId, Constants.InvalidIndex, clrType.Name, String.Empty, clrTypeKind);
+        //                    case ClrElementKind.Interface:
+        //                        throw new ApplicationException("Interface kind is not expected from ClrHeap.GetHeapObject(...) method.");
+        //                    case ClrElementKind.Enum:
+        //                        return new ClrtDisplayableType(null, typeId, Constants.InvalidIndex, clrType.Name, String.Empty, clrTypeKind);
+        //                    case ClrElementKind.System__Canon:
+        //                        throw new ApplicationException("System__Canon kind is not expected from ClrHeap.GetHeapObject(...) method.");
+        //                    case ClrElementKind.Abstract:
+        //                    case ClrElementKind.SystemVoid:
+        //                    case ClrElementKind.SystemObject:
+        //                        return new ClrtDisplayableType(null, typeId, Constants.InvalidIndex, clrType.Name, String.Empty, clrTypeKind);
+        //                }
+        //            }
+        //            else
+        //            {
+        //                switch (TypeExtractor.GetStandardKind(clrTypeKind))
+        //                {
+        //                    case ClrElementKind.String:
+        //                        return new ClrtDisplayableType(null, typeId, Constants.InvalidIndex, clrType.Name, String.Empty, clrTypeKind);
+        //                    case ClrElementKind.SZArray:
+        //                    case ClrElementKind.Array:
+        //                        return new ClrtDisplayableType(null, typeId, Constants.InvalidIndex, clrType.Name, String.Empty, clrTypeKind);
+        //                    case ClrElementKind.Struct:
+        //                    case ClrElementKind.Object:
+        //                    case ClrElementKind.Class:
+        //                        var dispType = new ClrtDisplayableType(null, typeId, Constants.InvalidIndex, clrType.Name, String.Empty, clrTypeKind);
+        //                        var dispFlds = GetClrtDisplayableTypeFields(ndxProxy, heap, dispType, clrType, addr, ambiguousFields);
+        //                        for (int j = 0, jcnt = addresses.Length; j < jcnt; ++j)
+        //                        {
+        //                            var jaddr = addresses[j];
+        //                            TryGetClrtDisplayableTypeFields(ndxProxy, heap, jaddr, ambiguousFields, dispFlds);
+        //                        }
+        //                        if (ambiguousFields.Count > 0)
+        //                        {
+        //                            HandleAlternatives(dispType, dispFlds, ambiguousFields);
+        //                        }
+        //                        dispType.AddFields(dispFlds);
+        //                        return dispType;
+        //                    case ClrElementKind.Unknown:
+        //                        continue;
+        //                    default:
+        //                        return new ClrtDisplayableType(null, typeId, Constants.InvalidIndex, clrType.Name, String.Empty, clrTypeKind);
+        //                }
+        //            }
+        //        }
+        //        return new ClrtDisplayableType(null, Constants.InvalidIndex, Constants.InvalidIndex, Constants.NullName, String.Empty, ClrElementKind.Unknown);
+        //    }
+        //    catch (Exception ex)
+        //    {
+        //        error = Utils.GetExceptionErrorString(ex);
+        //        return null;
+        //    }
+        //}
 
 
         //public static ClrtDisplayableType GetClrtDisplayableType(IndexProxy ndxProxy, ClrHeap heap, ClrtDisplayableType[] parents, int typeId, ulong[] addresses, out string error)

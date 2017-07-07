@@ -2021,7 +2021,7 @@ namespace MDRDesk
 
             (string error, ClrtDisplayableType dispType, ulong[] instances) = await Task.Run(() =>
             {
-                return CurrentIndex.GetTypeDisplayableRecord(typeId, null);
+                return CurrentIndex.GetTypeDisplayableRecord(typeId);
             });
 
             SetEndTaskMainWindowState("Getting type details for: '" + baseTypeName + "', done");
@@ -2033,7 +2033,7 @@ namespace MDRDesk
                 return;
             }
 #pragma warning disable CS4014
-            Dispatcher.CurrentDispatcher.InvokeAsync(() => DoDisplayTypeValueReportSetup(dispType, instances));
+            Dispatcher.CurrentDispatcher.InvokeAsync(() => DoDisplayTypeValueReportSetup(dispType));
 #pragma warning restore CS4014
         }
 

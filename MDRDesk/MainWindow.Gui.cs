@@ -1636,9 +1636,9 @@ namespace MDRDesk
 
 		#region type values report
 
-		private void DoDisplayTypeValueReportSetup(ClrtDisplayableType dispType, ulong[] instances)
+		private void DoDisplayTypeValueReportSetup(ClrtDisplayableType dispType)
 		{
-			var dlg = new TypeValuesReportSetup(CurrentIndex.IndexProxy, dispType, instances) { Owner = this };
+			var dlg = new TypeValuesReportSetup(CurrentIndex.IndexProxy, dispType) { Owner = this };
 			var result = dlg.ShowDialog();
 			if (result == true)
 			{

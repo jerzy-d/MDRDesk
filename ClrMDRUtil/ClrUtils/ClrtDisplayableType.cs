@@ -37,6 +37,7 @@ namespace ClrMDRIndex
         private ClrtDisplayableType[] _fields;
         public ClrtDisplayableType[] Fields => _fields;
         public long Id => _id;
+        public ulong[] Addresses => _addresses;
 
         public ClrtDisplayableType RealParent
         {
@@ -117,7 +118,7 @@ namespace ClrMDRIndex
 
         public bool HasFields => _fields != null && _fields.Length > 0;
 
-        public bool HasAddresses => _addresses != null && _addresses.Length > 0;
+        public bool HasAddresses => _addresses != null;
 
         public bool SameAlternativeField(ClrtDisplayableType fld, int dispIndex, int fldType, int fldIndex, string fldName)
         {
@@ -327,6 +328,8 @@ namespace ClrMDRIndex
                         return false;
                     case ClrElementKind.SZArray:
                     case ClrElementKind.Array:
+                        msg = "Cannot get fields, this is array type.";
+                        return false;
                     case ClrElementKind.Object:
                     case ClrElementKind.Class:
                         return true;
@@ -462,7 +465,7 @@ namespace ClrMDRIndex
         }
     }
 
-    public class ClrtDisplayableTypeIdComparer : IEqualityComparer<ClrtDisplayableType>
+    public class ClrtDisplayableIdComparer : IEqualityComparer<ClrtDisplayableType>
     {
         public bool Equals(ClrtDisplayableType b1, ClrtDisplayableType b2)
         {
