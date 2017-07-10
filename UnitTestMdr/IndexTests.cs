@@ -1883,34 +1883,34 @@ namespace UnitTestMdr
 
         #region type values report
 
-        [TestMethod]
-        public void TestSavedTypeValuesReport()
-        {
-            string error;
-            Stopwatch stopWatch = new Stopwatch();
-            stopWatch.Start();
-            var index = OpenIndex(@"C:\WinDbgStuff\dumps\Analytics\Highline\analyticsdump111.dlk.dmp.map");
-            TestContext.WriteLine(index.DumpFileName + " INDEX OPEN DURATION: " + Utils.StopAndGetDurationString(stopWatch));
+        //[TestMethod]
+        //public void TestSavedTypeValuesReport()
+        //{
+        //    string error;
+        //    Stopwatch stopWatch = new Stopwatch();
+        //    stopWatch.Start();
+        //    var index = OpenIndex(@"C:\WinDbgStuff\dumps\Analytics\Highline\analyticsdump111.dlk.dmp.map");
+        //    TestContext.WriteLine(index.DumpFileName + " INDEX OPEN DURATION: " + Utils.StopAndGetDurationString(stopWatch));
 
-            using (index)
-            {
-                // deserialize query
-                //
-                string qpath = @"C:\WinDbgStuff\Dumps\Analytics\Highline\analyticsdump111.dlk.dmp.map\ad-hoc.queries\ClrtDisplayableType.2017-05-27-05-58-41-608.bin";
-                ClrtDisplayableType[] queryItems = ClrtDisplayableType.DeserializeArray(qpath, out error);
-                try
-                {
-                    ListingInfo listing = index.GetTypeValuesReport(queryItems, out error);
-                }
-                catch (Exception ex)
-                {
-                    Assert.IsTrue(false, ex.ToString());
-                }
+        //    using (index)
+        //    {
+        //        // deserialize query
+        //        //
+        //        string qpath = @"C:\WinDbgStuff\Dumps\Analytics\Highline\analyticsdump111.dlk.dmp.map\ad-hoc.queries\ClrtDisplayableType.2017-05-27-05-58-41-608.bin";
+        //        ClrtDisplayableType[] queryItems = ClrtDisplayableType.DeserializeArray(qpath, out error);
+        //        try
+        //        {
+        //            ListingInfo listing = index.GetTypeValuesReport(queryItems, out error);
+        //        }
+        //        catch (Exception ex)
+        //        {
+        //            Assert.IsTrue(false, ex.ToString());
+        //        }
 
-            }
+        //    }
 
-            Assert.IsNull(error, error);
-        }
+        //    Assert.IsNull(error, error);
+        //}
 
 
         [TestMethod]

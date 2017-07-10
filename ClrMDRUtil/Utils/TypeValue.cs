@@ -11,48 +11,100 @@ namespace ClrMDRIndex
 
     public class TypeValueQuery
     {
+        private long _id;
         private TypeValueQuery _parent;
-        private int _parentIndex;
+        private TypeValueQuery[] _children;
+        private string _typeName;
+        private string _fieldName;
         private ClrType _type;
         private ClrElementKind _kind;
         private ClrInstanceField _field;
         private int _fldIndex;
         private FilterValue _filter;
-        private List<string> _values;
-        public bool IsAmbiguousKind { get; private set; }
+        private string[] _values;
+        private int _valIndex;
+        private int _valOffset;
+        private bool _alternative;
+        private bool _alternativeChild;
 
+        public long Id => _id;
         public TypeValueQuery Parent => _parent;
-        public int ParentIndex => _parentIndex;
+        public TypeValueQuery[] Children => _children;
         public ClrType Type => _type;
         public ClrInstanceField Field => _field;
         public ClrElementKind Kind => _kind;
+        public int FieldIndex => _fldIndex;
         public FilterValue Filter => _filter;
-		public List<string> Values => _values;
+		public string[] Values => _values;
+        public bool IsAlternative => _alternative;
+        public bool HasAlternativeChild => _alternativeChild;
+        public string TypeName => _typeName;
+        public string FieldName => _fieldName;
 
-		public bool GetValue => _values != null;
+        public bool GetValue => _values != null;
         public bool HasFilter => _filter != null;
+        public bool IsInternal => TypeExtractor.IsInternal(_kind);
+        public bool HasChildren => _children != null;
 
-        public TypeValueQuery(TypeValueQuery parent, int parentIndex)
+        public string[] Data => _values;
+        public int RowValueCount => _valOffset;
+        public int ValueCount => _valIndex / _valOffset;
+
+
+
+        public TypeValueQuery(long id, TypeValueQuery parent, string typeName, string fieldName, int fieldIndex, bool isAlternative, FilterValue filter, string[] values, int valIndex, int valOffset)
         {
+            _id = id;
             _parent = parent;
-            _parentIndex = parentIndex;
+            _typeName = typeName;
+            _fieldName = fieldName;
+            _fldIndex = fieldIndex;
+            _alternative = isAlternative;
+            if (values != null)
+            {
+                _values = values;
+                _valIndex = valIndex;
+                _valOffset = valOffset;
+            }
+
         }
 
-        public void SetFields(ClrType type_, ClrElementKind kind, ClrInstanceField field, int fldIndex, FilterValue filter, bool getValues, int valuCntHint=0)
+        public void AddChild(TypeValueQuery child)
         {
-            _type = type_;
+            if (_children == null)
+            {
+                _children = new TypeValueQuery[] { child };
+                return;
+            }
+            TypeValueQuery[] ary = new TypeValueQuery[_children.Length + 1];
+            int ndx = 0;
+            for (int i = 0, icnt = _children.Length; i < icnt; ++i)
+            {
+                if (child != null && child._fldIndex < _children[i]._fldIndex)
+                {
+                    ary[ndx++] = child;
+                    child = null;
+                }
+                ary[ndx++] = _children[i];
+            }
+            if (child != null) ary[_children.Length] = child;
+            _children = ary;
+            if (child.IsAlternative)
+                _alternativeChild = true;
+        }
+
+        public void SetTypeAndKind(ClrType clrType, ClrElementKind kind)
+        {
+            _type = clrType;
             _kind = kind;
-            _field = field;
-            _fldIndex = fldIndex;
-            _filter = filter;
-            _values = getValues ? new List<string>(valuCntHint <= 0 ? 256 : valuCntHint) : null;
-            IsAmbiguousKind = TypeExtractor.IsAmbiguousKind(kind);
         }
 
         public void AddValue(string val)
         {
-            _values.Add(val);
+            _values[_valIndex] = val;
+            _valIndex += _valOffset;
         }
+
     }
 
     //public class TypeValueQueryParentFieldCmp : IComparer<TypeValueQuery>

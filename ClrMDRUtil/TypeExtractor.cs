@@ -140,6 +140,13 @@ namespace ClrMDRIndex
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static bool IsInternal(ClrElementKind kind)
+        {
+            var stdKind = GetStandardKind(kind);
+            return stdKind == ClrElementKind.Struct;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool IsNonStringObjectReference(ClrElementKind kind)
         {
             var stdKind = GetStandardKind(kind);
@@ -360,6 +367,19 @@ namespace ClrMDRIndex
             return null;
         }
 
+        public static ValueTuple<ClrType, ClrElementKind> GetReferenceFieldRealTypeAndKind(ClrHeap heap, ulong parentAddr, ClrInstanceField fld)
+        {
+            if (fld == null) return (null, ClrElementKind.Unknown);
+            var addrObj = fld.GetValue(parentAddr);
+            if (addrObj == null) return (null, ClrElementKind.Unknown);
+            if (addrObj is ulong)
+            {
+                var clrType = heap.GetObjectType((ulong)addrObj);
+                return (clrType, GetElementKind(clrType));
+            }
+            return (null, ClrElementKind.Unknown);
+        }
+
         public static ValueTuple<bool, ClrElementKind, ClrType, ClrElementKind> IsUndecidedType(ClrType clrType)
         {
             var kind = GetElementKind(clrType);
@@ -526,7 +546,7 @@ namespace ClrMDRIndex
         //}
 
 
-        public static void TryGetClrtDisplayableTypeFields(IndexProxy ndxProxy, ClrHeap heap, ulong addr, List<int> ambiguousFields, ClrtDisplayableType[] flds, SortedDictionary<string,List<ulong>>[] fldAddresses)
+        public static void TryGetClrtDisplayableTypeFields(IndexProxy ndxProxy, ClrHeap heap, ulong addr, List<int> ambiguousFields, ClrtDisplayableType[] flds, SortedDictionary<string, List<ulong>>[] fldAddresses)
         {
             for (int i = 0, icnt = ambiguousFields.Count; i < icnt; ++i)
             {
@@ -544,7 +564,7 @@ namespace ClrMDRIndex
                 (ClrType nextFldType, ClrElementKind nextFldKind, ulong address) = GetRealType(heap, addr, nextFld, nextParentType.IsValueClass);
                 if (nextFldType == null) continue;
                 List<ulong> addrLst;
-                if (dct.TryGetValue(nextFldType.Name,out addrLst))
+                if (dct.TryGetValue(nextFldType.Name, out addrLst))
                 {
                     addrLst.Add(address);
                 }
@@ -555,7 +575,7 @@ namespace ClrMDRIndex
                         int a = 1;
                     }
                     addrLst = new List<ulong>(64) { address };
-                    dct.Add(nextFldType.Name,addrLst);
+                    dct.Add(nextFldType.Name, addrLst);
                     var typeId = ndxProxy.GetTypeId(nextFldType.Name);
                     cdt.AddAlternative(new ClrtDisplayableType(cdt, typeId, fldNdx, nextFldType.Name, nextFld.Name, nextFldKind));
                 }
@@ -713,7 +733,7 @@ namespace ClrMDRIndex
                                         var jaddr = addresses[j];
                                         try
                                         {
-                                            TryGetClrtDisplayableTypeFields(ndxProxy, heap, jaddr, ambiguousFields, dispFlds,fldAddrDcts);
+                                            TryGetClrtDisplayableTypeFields(ndxProxy, heap, jaddr, ambiguousFields, dispFlds, fldAddrDcts);
                                         }
                                         catch (Exception ex)
                                         {

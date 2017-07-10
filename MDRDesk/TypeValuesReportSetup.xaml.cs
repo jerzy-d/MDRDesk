@@ -23,7 +23,10 @@ namespace MDRDesk
         private HashSet<ClrtDisplayableType> _selection;
         private ClrtDisplayableType[] _needed;
         public ClrtDisplayableType[] Selections => _needed;
-
+        private TypeValueQuery _query;
+        public TypeValueQuery Query => _query;
+        public ulong[] Instances => _typeInfo.Addresses;
+ 
 
         public TypeValuesReportSetup(IndexProxy proxy, ClrtDisplayableType typeInfo)
         {
@@ -274,6 +277,61 @@ namespace MDRDesk
             }
         }
 
+
+        private TypeValueQuery FindQuery(long id, List<TypeValueQuery> qryLst)
+        {
+            for (int i = qryLst.Count-1; i >=0; --i)
+            {
+                if (qryLst[i].Id == id) return qryLst[i];
+            }
+            return null;
+        }
+
+        private TypeValueQuery GetQuery()
+        {
+            int valCount = 1;
+            foreach (var sel in _selection)
+            {
+                if (sel.GetValue) ++valCount;
+            }
+            string[] values = new string[valCount * _typeInfo.Addresses.Length];
+            TypeValueQuery root = new TypeValueQuery(_typeInfo.Id, null, _typeInfo.TypeName, "ADDRESS", Constants.InvalidIndex, false, null, values, 0, valCount);
+            var needed = new HashSet<ClrtDisplayableType>(new ClrtDisplayableIdComparer());
+            needed.Add(_typeInfo);
+            var tempLst = new List<ClrtDisplayableType>(16);
+            var qryLst = new List<TypeValueQuery>(16);
+            qryLst.Add(root);
+            int valOffset = valCount;
+            int valIndex = 1;
+            foreach (var sel in _selection)
+            {
+                if (needed.Contains(sel)) continue;
+                var parent = sel.RealParent;
+                while (parent != null && !needed.Contains(parent))
+                {
+                    tempLst.Add(parent);
+                    needed.Add(parent);
+                    parent = parent.RealParent;
+                }
+                tempLst.Reverse();
+                foreach (var item in tempLst)
+                {
+                    var qry = FindQuery(item.RealParent.Id, qryLst);
+                    if (qry == null) throw new ArgumentException("[TypeValuesReportSetup.GetQuery] FindQuery returned null.");
+                    TypeValueQuery q = item.GetValue 
+                        ? new TypeValueQuery(item.Id, qry, item.TypeName, item.FieldName, item.FieldIndex, item.IsAlternative, item.Filter, values, valIndex, valCount)
+                        : new TypeValueQuery(item.Id, qry, item.TypeName, item.FieldName, item.FieldIndex, item.IsAlternative, item.Filter, null,   0,        0);
+                    if (item.GetValue)
+                    {
+                        valIndex += valCount;
+                    }
+                    qryLst.Add(q);
+                    qry.AddChild(q);
+                }
+            }
+            return root;
+        }
+
         private ClrtDisplayableType[] GetOrderedSelection()
         {
             var lst = new LinkedList<ClrtDisplayableType>();
@@ -437,6 +495,7 @@ namespace MDRDesk
 
         private void RunClicked(object sender, RoutedEventArgs e)
         {
+            _query = GetQuery();
             _needed = GetOrderedSelection();
             if (TypeValueSaveReportCheckBox.IsChecked.Value)
             {
