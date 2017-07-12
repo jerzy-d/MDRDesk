@@ -103,3 +103,13 @@ ProcessMemory
 	Displays current and max working set sizes of MRDDesk application.
 	The values are updated every 5 sec.
 LbCurrentAdHocDump
+
+
+CREDITS:
+
+http://www.journeyofcode.com Matthias (matthiaswelz)
+https://github.com/matthiaswelz/journeyofcode
+Files: SingleThreadTaskScheduler.cs, TaskFactoryExtensions.cs, TaskLazy.cs.
+
+
+

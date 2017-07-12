@@ -1834,28 +1834,55 @@ namespace ClrMDRIndex
                 }
                 return accepted;
             }
-            if (qry.IsAlternative)
-            {
-                var kv = TypeExtractor.TryGetRealType(heap, addr);
-                var fld = parentQry.Type.Fields[qry.FieldIndex];
-                ulong faddr = ValueExtractor.GetReferenceFieldAddress(addr, fld, qry.IsInternal);
 
-                if (qry.GetValue) qry.AddValue(Utils.RealAddressString(faddr));
+            if (qry.Field == null)
+            {
+                qry.SetField(parentQry.Type);
                 if (qry.HasChildren)
                 {
-                    for (int i = 0, icnt = qry.Children.Length; i < icnt; ++i)
-                    {
-                        if (!GetValues(heap, qry, faddr, qry.Children[i]))
-                            accepted = false;
-                    }
+                    ulong faddr = ValueExtractor.GetReferenceFieldAddress(addr, qry.Field, qry.IsInternal);
+                    var kv = TypeExtractor.TryGetRealType(heap, faddr);
+                    qry.SetTypeAndKind(kv.Key, kv.Value);
                 }
-                return accepted;
             }
 
+            //if (qry.IsAlternative)
+            //{
+            //    if (qry.Type == null)
+            //    {
+            //        ulong fldaddr = ValueExtractor.GetReferenceFieldAddress(addr, qry.Field, qry.IsInternal);
+            //        var typeAndKind = TypeExtractor.TryGetRealType(heap, fldaddr);
+            //        qry.SetTypeAndKind(typeAndKind.Key, typeAndKind.Value);
+
+
+
+            //    }
+            //    if (parentQry.IsCompatibleField(qry.FieldIndex,qry.FieldName,qry.TypeName))
+            //    {
+
+            //    }
+            //    var kv = TypeExtractor.TryGetRealType(heap, addr);
+            //    qry.SetTypeAndKind(kv.Key, kv.Value);
+
+            //    var fld = parentQry.Type.Fields[qry.FieldIndex];
+            //    ulong faddr = ValueExtractor.GetReferenceFieldAddress(addr, fld, qry.IsInternal);
+
+            //    if (qry.GetValue) qry.AddValue(Utils.RealAddressString(faddr));
+            //    if (qry.HasChildren)
+            //    {
+            //        for (int i = 0, icnt = qry.Children.Length; i < icnt; ++i)
+            //        {
+            //            if (!GetValues(heap, qry, faddr, qry.Children[i]))
+            //                accepted = false;
+            //        }
+            //    }
+            //    return accepted;
+            //}
+
             object val = ValueExtractor.GetFieldValue(heap, addr, qry.Field, qry.Type, qry.Kind, parentQry.IsInternal, true);
-            if (qry.HasFilter)
+            if (qry.GetValue)
             {
-                if (!qry.Filter.Accept(val))
+                if (!qry.Accept(val))
                 {
                     qry.AddValue(Constants.NotApplicaleValue);
                     if (qry.HasChildren)
@@ -1867,19 +1894,18 @@ namespace ClrMDRIndex
                     }
                     return false;
                 }
+                else
+                    qry.AddValue(ValueExtractor.ValueToString(val, qry.Kind));
             }
-            if (qry.GetValue)
+            if (qry.HasChildren)
             {
-                qry.AddValue(ValueExtractor.ValueToString(val, qry.Kind));
-                if (qry.HasChildren)
+                ulong qaddr = (ulong)val;
+                for (int i = 0, icnt = qry.Children.Length; i < icnt; ++i)
                 {
-                    for (int i = 0, icnt = qry.Children.Length; i < icnt; ++i)
-                    {
-                        if (!GetValues(null, qry, Constants.InvalidAddress, qry.Children[i]))
-                            accepted = false;
-                    }
+                    if (!GetValues(heap, qry, qaddr, qry.Children[i]))
+                        accepted = false;
                 }
-             }
+            }
 
             return accepted;
         }
@@ -1903,27 +1929,32 @@ namespace ClrMDRIndex
                 // prepare query items types and their fields
                 //
                 var heap = Heap;
-                bool[] accepted = new bool[instances.Length];
+                bool[] accepted = Enumerable.Repeat(true, instances.Length).ToArray();
                 int nonAcceptedCount = 0;
                 for (int i = 0, icnt = instances.Length; i < icnt; ++i)
                 {
-                    accepted[i] = true;
                     var addr = Utils.RealAddress(instances[i]);
                     var curAddr = addr;
-                    if (query.Type == null || query.HasAlternativeChild)
+                    if (query.Type == null)
                     {
                         var kv = TypeExtractor.TryGetRealType(heap, addr);
                         query.SetTypeAndKind(kv.Key, kv.Value);
                     }
                     query.AddValue(Utils.AddressString(instances[i]));
+
+                    bool acceptedRow = true;
                     for (int j = 0, jcnt = query.Children.Length; j < jcnt; ++j)
                     {
-                        var child = query.Children[i];
+                        var child = query.Children[j];
                         if (!GetValues(heap, query, addr, child))
                         {
-                            accepted[i] = false;
-                            ++nonAcceptedCount;
+                            acceptedRow = false;
                         }
+                    }
+                    if (!acceptedRow)
+                    {
+                        accepted[i] = false;
+                        ++nonAcceptedCount;
                     }
                 }
  
@@ -1987,16 +2018,16 @@ namespace ClrMDRIndex
 
         private void GetTypeValueReportColumns(TypeValueQuery qry, List<ColumnInfo> colInfos, ref int ndx)
         {
-            colInfos.Add(new ColumnInfo(qry.Field.Name, ReportFile.ColumnType.String, 150, ndx, true));
+            if (qry.GetValue)
+            {
+                ++ndx;
+                colInfos.Add(new ColumnInfo(qry.Field.Name, ReportFile.ColumnType.String, 150, ndx, true));
+            }
             if (qry.HasChildren)
             {
                 foreach (var child in qry.Children)
                 {
-                    if (child.GetValue)
-                    {
-                        ndx = ndx + 1;
-                        GetTypeValueReportColumns(child, colInfos, ref ndx);
-                    }
+                    GetTypeValueReportColumns(child, colInfos, ref ndx);
                 }
             }
         }
@@ -2005,15 +2036,12 @@ namespace ClrMDRIndex
         {
             List<ColumnInfo> colInfos = new List<ColumnInfo>();
             int ndx = 1;
-            colInfos.Add(new ColumnInfo("ADDRESS", ReportFile.ColumnType.UInt64, 100, ndx, true));
+            colInfos.Add(new ColumnInfo("ADDRESS", ReportFile.ColumnType.UInt64, 150, ndx, true));
             if (qry.HasChildren)
             {
                 foreach(var child in qry.Children)
                 {
-                    if (child.GetValue)
-                    {
-                        GetTypeValueReportColumns(child, colInfos, ref ndx);
-                    }
+                    GetTypeValueReportColumns(child, colInfos, ref ndx);
                 }
             }
             return colInfos.ToArray();

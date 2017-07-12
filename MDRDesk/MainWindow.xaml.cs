@@ -46,6 +46,7 @@ namespace MDRDesk
         public static DumpIndex CurrentIndex;
         public static ClrtDump CurrentAdhocDump;
         private static Version _myVersion;
+        private SingleThreadTaskScheduler _adhocSTAScheduler;
 
         #region Ctors/Initialization
 
@@ -101,6 +102,8 @@ namespace MDRDesk
                 //myresourcedictionary = new ResourceDictionary();
                 //myresourcedictionary.Source = new Uri("/MDRDesk;component/Resources/MDRDeskResourceDct.xaml",
                 //UriKind.RelativeOrAbsolute);
+
+                _adhocSTAScheduler = new SingleThreadTaskScheduler();
                 return result;
             }
             catch (Exception ex)
@@ -167,11 +170,14 @@ namespace MDRDesk
             if (RecentIndexList != null) Setup.ResetRecentFileList(RecentIndexList.GetPaths(), Setup.RecentFiles.Map);
             if (RecentAdhocList != null) Setup.ResetRecentFileList(RecentAdhocList.GetPaths(), Setup.RecentFiles.Adhoc);
             Setup.SaveConfigSettings(out error);
-            var task = Task.Factory.StartNew(() =>
+
+            // if ad-hoc dump is opened, close it
+            if (_adhocSTAScheduler != null)
             {
-                CurrentAdhocDump?.Dispose();
-            });
-            task.Wait();
+                var task = Task.Factory.StartNew(() => CurrentAdhocDump?.Dispose(), _adhocSTAScheduler);
+                task.Wait();
+            }
+            _adhocSTAScheduler?.Dispose();
         }
 
         private void CloseTab(object source, RoutedEventArgs args)
@@ -873,6 +879,36 @@ namespace MDRDesk
         #endregion Context Menu
 
         #region AdhocQueries
+
+        private async void AhqSelectDumpClicked(object sender, RoutedEventArgs e)
+        {
+            string error = null;
+            string path = string.Empty;
+            try
+            {
+                path = GuiUtils.SelectCrashDumpFile();
+                if (path == null) return;
+                if (CurrentAdhocDump != null && string.Compare(CurrentAdhocDump.DumpPath,path,StringComparison.OrdinalIgnoreCase)==0)
+                {
+                    MessageBox.Show(path + Environment.NewLine + "is already opened.", "Crash Dump Already Opened",MessageBoxButton.OK,MessageBoxImage.Information);
+                    return;
+                }
+
+                ClrtDump dump = await Task.Factory.StartNew( ()=> ClrtDump.OpenDump(path, out error), _adhocSTAScheduler);
+
+                if (dump != null)
+                {
+                    if (CurrentAdhocDump != null) CurrentAdhocDump.Dispose();
+                    CurrentAdhocDump = dump;
+                    AhqCurrentDump.Header = System.IO.Path.GetFileName(CurrentAdhocDump.DumpPath);
+                    AhqCurrentDumpPath.Header = CurrentAdhocDump.DumpPath;
+                }
+            }
+            catch (Exception ex)
+            {
+                error = Utils.GetExceptionErrorString(ex);
+            }
+        }
 
         private async void StringUsageClicked(object sender, RoutedEventArgs e)
         {
@@ -2029,7 +2065,10 @@ namespace MDRDesk
 
             if (error != null)
             {
-                GuiUtils.ShowError(error, this);
+                if (Utils.IsInformation(error))
+                    ShowInformation("Type Values Report","Cannot be done.",error,null);
+                else 
+                    GuiUtils.ShowError(error, this);
                 return;
             }
 #pragma warning disable CS4014
@@ -2202,6 +2241,71 @@ namespace MDRDesk
 
             (string error, string[] types) = res;
             // TODO JRD -- display this in some window
+        }
+
+        private async void AhqImplementedInterfaceObjectsClicked(object sender, RoutedEventArgs e)
+        {
+            if (CurrentAdhocDump == null)
+            {
+                MessageBox.Show("No ad-hoc crash dump is opened.", "Action Aborted");
+                return;
+            }
+
+            string interfaceName = null;
+            if (!GetDlgString("Interface Name", "Enter Interface Full Name", " ", out interfaceName)) return;
+
+            SetStartTaskMainWindowState("Searching for interface implementors, please wait...");
+            (string error, SortedDictionary<string, List<ulong>> dct) = await Task.Factory.StartNew(() =>
+            {
+                return DmpNdxQueries.FQry.getObjectsImplementingInterface(CurrentAdhocDump.Heap, interfaceName);
+            }, _adhocSTAScheduler);
+            SetEndTaskMainWindowState("Searching for interface implementors done.");
+
+            //(string error, SortedDictionary<string, List<ulong>> dct) = DmpNdxQueries.FQry.getObjectsImplementingInterface(CurrentAdhocDump.Heap, interfaceName);
+
+            if (error != null)
+            {
+                ShowError(error);
+                return;
+            }
+
+            string outPath = Path.GetDirectoryName(CurrentAdhocDump.DumpPath) + Path.DirectorySeparatorChar + Path.GetFileName(CurrentAdhocDump.DumpPath) + "." + interfaceName + ".objects.txt";
+            StreamWriter wr = null;
+            try
+            {
+                wr = new StreamWriter(outPath);
+                foreach (var kv in dct)
+                {
+                    wr.WriteLine(kv.Key);
+                    wr.WriteLine("   [" + kv.Value.Count + "]");
+                    for (int i = 0, icnt = kv.Value.Count; i < icnt; ++i)
+                    {
+                        if (i == 0) wr.Write("   ");
+                        if (i > 0 && (i % 5) == 0)
+                        {
+                            wr.WriteLine();
+                            wr.Write("   ");
+                        }
+                        else
+                        {
+                            wr.Write(Utils.RealAddressString(kv.Value[i]) + ", ");
+                        }
+                    }
+                    wr.WriteLine();
+                }
+                wr.Close();
+                wr = null;
+            }
+            catch (Exception ex)
+            {
+                error = Utils.GetExceptionErrorString(ex);
+                ShowError(error);
+            }
+            finally
+            {
+                wr?.Close();
+            }
+
         }
     }
 }

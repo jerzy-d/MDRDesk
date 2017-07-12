@@ -2596,6 +2596,43 @@ namespace UnitTestMdr
         }
 
         [TestMethod]
+        public void TestAlternativeTypeReferences()
+        {
+            string typeName = "Eze.Server.Common.Pulse.Common.Types.PositionLevelCache";
+            string dumpPath = @"D:\Jerzy\WinDbgStuff\dumps\Analytics\Highline\analyticsdump111.dlk.dmp";
+            var dmp = OpenDump(dumpPath);
+            HashSet<string> set = new HashSet<string>();
+            using (dmp)
+            {
+                var heap = dmp.Heap;
+                var segs = heap.Segments;
+                for (int i = 0, icnt = segs.Count; i < icnt; ++i)
+                {
+                    var seg = segs[i];
+                    ulong addr = seg.FirstObject;
+                    while (addr != 0ul)
+                    {
+                        var clrType = heap.GetObjectType(addr);
+                        if (clrType == null || !Utils.SameStrings(clrType.Name,typeName)) goto NEXT_OBJECT;
+
+                        //var fld = clrType.GetFieldByName("owner");
+                        var fld = clrType.Fields[5];
+                        (ClrType fldType, ClrElementKind fldKind) = TypeExtractor.GetReferenceFieldRealTypeAndKind(heap, addr, fld);
+                        if (set.Add(fldType.Name))
+                        {
+                            int a = 1;
+                        }
+
+                        NEXT_OBJECT:
+                        addr = seg.NextObject(addr);
+                    }
+                }
+
+            } // using dump
+        }
+
+
+        [TestMethod]
         public void TestCompareInstanceFiles()
         {
             string path1 = @"D:\Jerzy\WinDbgStuff\dumps\Analytics\Highline\analyticsdump111.dlk.dmp.map\analyticsdump111.dlk.dmp.`INSTANCES[0].bin";

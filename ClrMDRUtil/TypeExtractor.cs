@@ -679,6 +679,11 @@ namespace ClrMDRIndex
                     if (Utils.IsInvalidAddress(addr)) continue;
                     clrType = heap.GetObjectType(addr);
                     if (clrType == null) continue;
+                    if (clrType.Fields == null || clrType.Fields.Count < 1)
+                    {
+                        error = Constants.InformationSymbolHeader + "Type: '" + clrType.Name + "' has no fields.";
+                        return null;
+                    }
 
                     (bool isAmbiguous, ClrElementKind clrTypeKind, ClrType baseType, ClrElementKind baseTypeKind) = IsUndecidedType(clrType);
 
@@ -786,6 +791,12 @@ namespace ClrMDRIndex
                     if (Utils.IsInvalidAddress(addr)) continue;
                     clrType = heap.GetObjectType(addr);
                     if (clrType == null) continue;
+
+                    if (clrType.Fields == null || clrType.Fields.Count < 1)
+                    {
+                        error = Constants.InformationSymbolHeader + "Type '" + clrType.Name + "' has no fields.";
+                        return null;
+                    }
 
                     (bool isAmbiguous, ClrElementKind clrTypeKind, ClrType baseType, ClrElementKind baseTypeKind) = IsUndecidedType(clrType);
 

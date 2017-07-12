@@ -21,11 +21,17 @@ namespace ClrMDRIndex
         private ClrInstanceField _field;
         private int _fldIndex;
         private FilterValue _filter;
+        private bool _getValue;
         private string[] _values;
         private int _valIndex;
         private int _valOffset;
-        private bool _alternative;
-        private bool _alternativeChild;
+
+        // alternative types
+        private bool _alternative; // am I alternative
+        private bool _alternativeChild; // do I have alternative children
+        private ClrType _altParentType; // I am alternative and this is corresponding parent instance type
+        private ClrElementKind _altParentKind; // and corresponding kind
+        private ClrInstanceField _altParentField; // and corresponding field
 
         public long Id => _id;
         public TypeValueQuery Parent => _parent;
@@ -41,18 +47,19 @@ namespace ClrMDRIndex
         public string TypeName => _typeName;
         public string FieldName => _fieldName;
 
-        public bool GetValue => _values != null;
+        public bool GetValue => _getValue;
         public bool HasFilter => _filter != null;
         public bool IsInternal => TypeExtractor.IsInternal(_kind);
         public bool HasChildren => _children != null;
 
         public string[] Data => _values;
         public int RowValueCount => _valOffset;
-        public int ValueCount => _valIndex / _valOffset;
+        public int ValueCount => _valOffset < 1 ? 0 : _valIndex / _valOffset;
 
 
 
-        public TypeValueQuery(long id, TypeValueQuery parent, string typeName, string fieldName, int fieldIndex, bool isAlternative, FilterValue filter, string[] values, int valIndex, int valOffset)
+
+        public TypeValueQuery(long id, TypeValueQuery parent, string typeName, string fieldName, int fieldIndex, bool isAlternative, FilterValue filter, bool getValue)
         {
             _id = id;
             _parent = parent;
@@ -60,17 +67,14 @@ namespace ClrMDRIndex
             _fieldName = fieldName;
             _fldIndex = fieldIndex;
             _alternative = isAlternative;
-            if (values != null)
-            {
-                _values = values;
-                _valIndex = valIndex;
-                _valOffset = valOffset;
-            }
-
+            _altParentKind = ClrElementKind.Unknown;
+            _getValue = getValue;
         }
 
         public void AddChild(TypeValueQuery child)
         {
+            if (child.IsAlternative)
+                _alternativeChild = true;
             if (_children == null)
             {
                 _children = new TypeValueQuery[] { child };
@@ -89,8 +93,18 @@ namespace ClrMDRIndex
             }
             if (child != null) ary[_children.Length] = child;
             _children = ary;
-            if (child.IsAlternative)
-                _alternativeChild = true;
+        }
+
+        public bool AssignAlternativeParent(ClrType type, ClrElementKind kind, ClrInstanceField fld)
+        {
+            if (Utils.SameStrings(_fieldName,fld.Name) && Utils.SameStrings(_typeName,type.Name) )
+            {
+                _altParentType = type;
+                _altParentKind = kind;
+                _altParentField = fld;
+                return true;
+            }
+            return false;
         }
 
         public void SetTypeAndKind(ClrType clrType, ClrElementKind kind)
@@ -99,10 +113,42 @@ namespace ClrMDRIndex
             _kind = kind;
         }
 
+        public bool IsCompatibleField(int fldIndex, string fldName, string fldTypeName)
+        {
+            if (_children != null &&   fldIndex >= 0 && fldIndex < _children.Length)
+            {
+                var child = _children[fldIndex];
+                return Utils.SameStrings(fldName, child._fieldName) && Utils.SameStrings(fldTypeName, child._typeName);
+            }
+            return false;
+        }
+
+        public void SetField(ClrType parent)
+        {
+            if (parent.Fields != null && _fldIndex >= 0 && _fldIndex < parent.Fields.Count)
+            {
+                _field = parent.Fields[_fldIndex];
+                _kind = TypeExtractor.GetElementKind(_field.Type);
+            }
+        }
+
+        public void SetValuesStore(string[] data, int index, int width)
+        {
+            _values = data;
+            _valIndex = index;
+            _valOffset = width;
+        }
+
         public void AddValue(string val)
         {
             _values[_valIndex] = val;
             _valIndex += _valOffset;
+        }
+
+        public bool Accept(object val)
+        {
+            if (_filter == null) return true;
+            return _filter.Accept(val);
         }
 
     }

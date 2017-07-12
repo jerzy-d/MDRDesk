@@ -791,12 +791,24 @@
                         <MenuItem x:Name="RecentIndexMenuItem" Header="Recent Indices"/>
                     </MenuItem>
                     <MenuItem x:Name="AdhocQueries" Header="Ad-hoc Queries" Background="LightBlue" VerticalAlignment="Center">
+                        <MenuItem x:Name="AhqCurrentDump" Header="..." Foreground="DarkRed" FontWeight="Bold">
+                            <MenuItem.ToolTip>
+                                <ToolTip Style="{StaticResource MenuTooltip}">
+                                    <TextBlock>"Current Ad-Hoc Crash Dump."</TextBlock>
+                                </ToolTip>
+                            </MenuItem.ToolTip>
+                            <MenuItem x:Name="AhqCurrentDumpPath" Header="..." FontSize="12" FontStyle="Italic" Foreground="DarkGray" VerticalAlignment="Center"/>
+                        </MenuItem>
+                        <MenuItem x:Name="AhqSelectDump" Header="Select Crash Dump..." Click="AhqSelectDumpClicked"/>
                         <MenuItem x:Name="AhqStringUsage" Header="String Usage..." Click="StringUsageClicked"/>
                         <MenuItem x:Name="AhqTypeCount" Header="Type Count..." Click="AhqTypeCountClicked"/>
                         <MenuItem x:Name="AhqCollectionContent" Header="Collection Content">
-                            <MenuItem x:Name="AhqArray" Header="Array..." Click="AhqCollectionContentArray"/>
+                            <MenuItem x:Name="AhqArray" Header="Array..." Click="AhqCollectionContentArray" />
                         </MenuItem>
                         <MenuItem x:Name="AhqTypesSizeCountCmp" Header="Type Count..." Click="AhqTypesSizeCountCmpClicked"/>
+                        <Separator></Separator>
+                        <MenuItem x:Name="AhqImplementedInterfaceObjects" Header="Objects Implementing Interface..." Click="AhqImplementedInterfaceObjectsClicked"/>
+
                         <!--<Separator></Separator>
                     <MenuItem x:Name="AhqInstanceRefs" Header="Instance Reference Map">
                             <MenuItem x:Name="AhqCreateInstanceRefs" Header="Create Instance Reference Map..." Click="AhqCreateInstanceRefsClicked"/>

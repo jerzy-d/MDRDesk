@@ -334,52 +334,99 @@ namespace UnitTestMdr
 		public void TestGetInterfaceObjects()
 		{
 			string error = null;
-			var clrDump = GetDump();
-			StreamWriter wr = null;
+			var clrDump = GetDump(@"D:\Jerzy\WinDbgStuff\dumps\Analytics\Highline\analyticsdump111.dlk.new2.dmp");
+            //string interfaceName = "ECS.CalculationService.Service.Interface.ICalculationProvider";
+            //string interfaceName = "ECS.CalculationService.Service.Module.ICalcItemManager";
+            //string interfaceName = "ECS.CalculationService.Service.Module.IVisitable";
+            string interfaceName = "ECS.CalculationService.Service.Module.IVisitor";
+
+
+            StreamWriter wr = null;
+            Tuple<string, SortedDictionary<string, List<ulong>>> result = null;
+            string outPath = null;
+
 			using (clrDump)
 			{
 				try
 				{
 					var runtime = clrDump.Runtimes[0];
-					var result = FQry.getInterfaceObjects(runtime.Heap, "System.ServiceModel.ICommunicationObject");
+					result = FQry.getInterfaceObjects(runtime.Heap, interfaceName);
 					Assert.IsNull(result.Item1, result.Item1);
-					var path = TestConfiguration.OutPath0 + "System.ServiceModel.ICommunicationObject.objects.txt";
-					wr = new StreamWriter(path);
-					foreach (var kv in result.Item2)
-					{
-						wr.WriteLine(kv.Key);
-						wr.WriteLine("   [" + kv.Value.Count + "]");
-						for (int i = 0, icnt = kv.Value.Count; i < icnt; ++i)
-						{
-							if (i == 0) wr.Write("   ");
-							if (i > 0 && (i % 5) == 0)
-							{
-								wr.WriteLine();
-								wr.Write("   ");
-							}
-							else
-							{
-								wr.Write(Utils.AddressString(kv.Value[i]) + ", ");
-							}
-						}
-						wr.WriteLine();
-					}
-					wr.Close();
-					wr = null;
+                    outPath = Path.GetDirectoryName(clrDump.DumpPath) + Path.DirectorySeparatorChar + Path.GetFileName(clrDump.DumpPath) + "." + interfaceName + ".objects.txt";
+
+
+					//wr = new StreamWriter(path);
+					//foreach (var kv in result.Item2)
+					//{
+					//	wr.WriteLine(kv.Key);
+					//	wr.WriteLine("   [" + kv.Value.Count + "]");
+					//	for (int i = 0, icnt = kv.Value.Count; i < icnt; ++i)
+					//	{
+					//		if (i == 0) wr.Write("   ");
+					//		if (i > 0 && (i % 5) == 0)
+					//		{
+					//			wr.WriteLine();
+					//			wr.Write("   ");
+					//		}
+					//		else
+					//		{
+					//			wr.Write(Utils.AddressString(kv.Value[i]) + ", ");
+					//		}
+					//	}
+					//	wr.WriteLine();
+					//}
+					//wr.Close();
+					//wr = null;
 				}
 				catch (Exception ex)
 				{
 					error = Utils.GetExceptionErrorString(ex);
 					Assert.IsTrue(false, error);
 				}
-				finally
-				{
-					wr?.Close();
-				}
-			}
-		}
+				//finally
+				//{
+				//	wr?.Close();
+				//}
+			} // end of using
 
-		[TestMethod]
+            try
+            {
+                wr = new StreamWriter(outPath);
+                foreach (var kv in result.Item2)
+                {
+                    wr.WriteLine(kv.Key);
+                    wr.WriteLine("   [" + kv.Value.Count + "]");
+                    for (int i = 0, icnt = kv.Value.Count; i < icnt; ++i)
+                    {
+                        if (i == 0) wr.Write("   ");
+                        if (i > 0 && (i % 5) == 0)
+                        {
+                            wr.WriteLine();
+                            wr.Write("   ");
+                        }
+                        else
+                        {
+                            wr.Write(Utils.RealAddressString(kv.Value[i]) + ", ");
+                        }
+                    }
+                    wr.WriteLine();
+                }
+                wr.Close();
+                wr = null;
+            }
+            catch (Exception ex)
+            {
+                error = Utils.GetExceptionErrorString(ex);
+                Assert.IsTrue(false, error);
+            }
+            finally
+            {
+                wr?.Close();
+            }
+
+        }
+
+        [TestMethod]
 		public void TestGetNamespaceObjects()
 		{
 			string error = null;

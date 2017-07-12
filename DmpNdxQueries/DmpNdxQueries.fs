@@ -170,6 +170,25 @@ module FQry =
          with
             | exn -> (Utils.GetExceptionErrorString(exn),null)
 
+    let getObjectsImplementingInterface (heap:ClrHeap, interfaceName:string) : struct (string * SortedDictionary<string,List<address>>) =
+         try
+            let mutable ndx:int32 = 0
+            let result = new SortedDictionary<string,List<address>>()
+            while ndx < heap.Segments.Count do
+                let seg = heap.Segments.[ndx]
+                let mutable addr = seg.FirstObject;
+                while addr <> 0UL do
+                    let clrtype = heap.GetObjectType(addr)
+                    if not (isNull clrtype) then
+                        if Seq.exists (fun (intf:ClrInterface) -> String.Equals(intf.Name,interfaceName)) clrtype.Interfaces then
+                             addStrAddrLstDct result clrtype.Name addr
+                    addr <- seg.NextObject(addr)
+                ndx <- ndx + 1
+            struct (null,result)
+         with
+            | exn -> struct (Utils.GetExceptionErrorString(exn),null)
+
+
     let getTypeWithMethodTables (heap: ClrHeap) =
         let dct = new SortedDictionary<KeyValuePair<string,address>,int>(kvStringAddressComparer)
         try
@@ -299,7 +318,7 @@ module FQry =
         let value =
             match TypeKinds.GetParticularTypeKind(kind) with
             | TypeKind.Decimal  -> ValueExtractor.GetDecimalValue(addr,clrType,null)
-            | TypeKind.DateTime -> ValueExtractor.GetDateTimeValue(addr,clrType,true)
+            | TypeKind.DateTime -> ValueExtractor.GetDateTimeValue(addr,clrType)
             | TypeKind.TimeSpan -> ValueExtractor.GetTimeSpanValue(addr,clrType)
             | TypeKind.Guid     -> ValueExtractor.GetGuidValue(addr,clrType)
             | _ ->

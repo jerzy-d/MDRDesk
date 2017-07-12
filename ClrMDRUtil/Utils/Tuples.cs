@@ -147,6 +147,8 @@ namespace ClrMDRIndex
 
 	public struct listing<T>
 	{
+        public static int MaxListingCount => PropertyNames.Length;
+
 		public static string[] PropertyNames = new[]
 		{
 			"First",
