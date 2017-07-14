@@ -5,6 +5,7 @@ using System.Text;
 using System.Threading.Tasks;
 using Microsoft.Diagnostics.Runtime;
 using System.Text.RegularExpressions;
+using System.Diagnostics;
 
 namespace ClrMDRIndex
 {
@@ -18,6 +19,7 @@ namespace ClrMDRIndex
         private string _fieldName;
         private ClrType _type;
         private ClrElementKind _kind;
+        private int _typeId;
         private ClrInstanceField _field;
         private int _fldIndex;
         private FilterValue _filter;
@@ -29,14 +31,18 @@ namespace ClrMDRIndex
         // alternative types
         private bool _alternative; // am I alternative
         private bool _alternativeChild; // do I have alternative children
-        private ClrType _altParentType; // I am alternative and this is corresponding parent instance type
-        private ClrElementKind _altParentKind; // and corresponding kind
-        private ClrInstanceField _altParentField; // and corresponding field
+        //private ClrType _altParentType; // I am alternative and this is corresponding parent instance type
+        //private ClrElementKind _altParentKind; // and corresponding kind
+        //private ClrInstanceField _altParentField; // and corresponding field
+        private TypeValueQuery _leftAlternativeSibling; // useful when collecting values
+        private TypeValueQuery _rightAlternativeSibling;
+
 
         public long Id => _id;
         public TypeValueQuery Parent => _parent;
         public TypeValueQuery[] Children => _children;
         public ClrType Type => _type;
+        public int TypeId => _typeId;
         public ClrInstanceField Field => _field;
         public ClrElementKind Kind => _kind;
         public int FieldIndex => _fldIndex;
@@ -59,15 +65,15 @@ namespace ClrMDRIndex
 
 
 
-        public TypeValueQuery(long id, TypeValueQuery parent, string typeName, string fieldName, int fieldIndex, bool isAlternative, FilterValue filter, bool getValue)
+        public TypeValueQuery(long id, TypeValueQuery parent, string typeName, int typeId, string fieldName, int fieldIndex, bool isAlternative, FilterValue filter, bool getValue)
         {
             _id = id;
             _parent = parent;
             _typeName = typeName;
+            _typeId = typeId;
             _fieldName = fieldName;
             _fldIndex = fieldIndex;
             _alternative = isAlternative;
-            _altParentKind = ClrElementKind.Unknown;
             _getValue = getValue;
         }
 
@@ -95,16 +101,32 @@ namespace ClrMDRIndex
             _children = ary;
         }
 
-        public bool AssignAlternativeParent(ClrType type, ClrElementKind kind, ClrInstanceField fld)
+        public void SetAlternativeSiblings()
         {
-            if (Utils.SameStrings(_fieldName,fld.Name) && Utils.SameStrings(_typeName,type.Name) )
+            if (Parent == null || !IsAlternative) return;
+            var children = Parent.Children;
+            for (int i = 0, icnt = children.Length; i < icnt; ++i)
             {
-                _altParentType = type;
-                _altParentKind = kind;
-                _altParentField = fld;
-                return true;
+                var child = children[i];
+                if (child.Id == Id) // this is me
+                {
+                    int j = i - 1;
+                    if (j>=0 && children[j].FieldIndex == FieldIndex)
+                    {
+                        var sibling = children[j];
+                        Debug.Assert(sibling.IsAlternative);
+                        _leftAlternativeSibling = sibling;
+                    }
+                    j = i + 1;
+                    if (j < children.Length && children[j].FieldIndex == FieldIndex)
+                    {
+                        var sibling = children[j];
+                        Debug.Assert(sibling.IsAlternative);
+                        _rightAlternativeSibling = sibling;
+                    }
+                    break;
+                }
             }
-            return false;
         }
 
         public void SetTypeAndKind(ClrType clrType, ClrElementKind kind)

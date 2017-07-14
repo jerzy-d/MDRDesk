@@ -259,9 +259,9 @@ namespace MDRDesk
                 if (dispType.GetValue)
                 {
                     int currentCount = _selection.Count(s => s.GetValue);
-                    if (listing<string>.MaxListingCount == currentCount)
+                    if (listing<string>.MaxListingCount <= currentCount)
                     {
-                        MessageBox.Show("Cannot have more than " + currentCount + " items selected.", "Type Values Report", MessageBoxButton.OK, MessageBoxImage.Information);
+                        GuiUtils.ShowInformation("Type Value Report","Cannot select this item.","We must not have more than " + listing<string>.MaxListingCount + " items selected.", null, this);
                         return;
                     }
                 }
@@ -308,7 +308,7 @@ namespace MDRDesk
             {
                 if (sel.GetValue) ++valCount;
             }
-            TypeValueQuery root = new TypeValueQuery(_typeInfo.Id, null, _typeInfo.TypeName, "ADDRESS", Constants.InvalidIndex, false, null, true);
+            TypeValueQuery root = new TypeValueQuery(_typeInfo.Id, null, _typeInfo.TypeName, _typeInfo.TypeId, "ADDRESS", Constants.InvalidIndex, false, null, true);
             var needed = new HashSet<ClrtDisplayableType>(new ClrtDisplayableIdComparer());
             needed.Add(_typeInfo);
             var tempLst = new List<ClrtDisplayableType>(16);
@@ -333,8 +333,8 @@ namespace MDRDesk
                     var qry = FindQuery(item.RealParent.Id, qryLst);
                     if (qry == null) throw new ArgumentException("[TypeValuesReportSetup.GetQuery] FindQuery returned null.");
                     TypeValueQuery q = item.GetValue
-                        ? new TypeValueQuery(item.Id, qry, item.TypeName, item.FieldName, item.FieldIndex, item.IsAlternative, item.Filter, item.GetValue)
-                        : new TypeValueQuery(item.Id, qry, item.TypeName, item.FieldName, item.FieldIndex, item.IsAlternative, item.Filter, item.GetValue);
+                        ? new TypeValueQuery(item.Id, qry, item.TypeName, item.TypeId, item.FieldName, item.FieldIndex, item.IsAlternative, item.Filter, item.GetValue)
+                        : new TypeValueQuery(item.Id, qry, item.TypeName, item.TypeId, item.FieldName, item.FieldIndex, item.IsAlternative, item.Filter, item.GetValue);
                     qryLst.Add(q);
                     qry.AddChild(q);
                 }
@@ -348,6 +348,7 @@ namespace MDRDesk
                 foreach (var child in root.Children)
                 {
                     SetValuesStore(child, values, ref dataNdx, valCount);
+                    SetAlternativeSiblings(child);
                 }
             }
 
@@ -370,6 +371,17 @@ namespace MDRDesk
             }
         }
 
+        private void SetAlternativeSiblings(TypeValueQuery qry)
+        {
+            qry.SetAlternativeSiblings();
+            if (qry.HasChildren)
+            {
+                foreach (var child in qry.Children)
+                {
+                    SetAlternativeSiblings(child);
+                }
+            }
+        }
 
         //private ClrtDisplayableType[] GetOrderedSelection()
         //{

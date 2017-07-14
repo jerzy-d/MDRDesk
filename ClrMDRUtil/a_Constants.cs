@@ -14,7 +14,7 @@ namespace ClrMDRIndex
 		public const string CrashDumpFileExt = "dmp";
 		public const string TextFileExt = "txt";
         public const string NoValue = "{`??`}";
-        public const string NotApplicaleValue = "{n/a}";
+        public const string NotAvailableValue = "{n/a}";
         public const string FieldTypeNull = "!field-type-null";
 		public const string FieldNameNull = "!field-name-null";
 		public const string ZeroAddressStr = "0x0000000000000000";

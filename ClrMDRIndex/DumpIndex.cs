@@ -1823,7 +1823,7 @@ namespace ClrMDRIndex
             bool accepted = true;
             if (addr == Constants.InvalidAddress)
             {
-                if (qry.GetValue) qry.AddValue(Constants.NotApplicaleValue);
+                if (qry.GetValue) qry.AddValue(Constants.NotAvailableValue);
                 if (qry.HasChildren)
                 {
                     for (int i = 0, icnt = qry.Children.Length; i < icnt; ++i)
@@ -1835,17 +1835,29 @@ namespace ClrMDRIndex
                 return accepted;
             }
 
+            if (qry.IsAlternative)
+            {
+                ulong faddr = ValueExtractor.GetReferenceFieldAddress(addr, qry.Field, qry.IsInternal);
+                KeyValuePair<ClrType, ClrElementKind> kv = TypeExtractor.TryGetRealType(heap, faddr);
+
+                if (qry.Field == null)
+                {
+
+                }
+            }
+
             if (qry.Field == null)
             {
                 qry.SetField(parentQry.Type);
                 if (qry.HasChildren)
                 {
                     ulong faddr = ValueExtractor.GetReferenceFieldAddress(addr, qry.Field, qry.IsInternal);
-                    var kv = TypeExtractor.TryGetRealType(heap, faddr);
+                    KeyValuePair<ClrType, ClrElementKind> kv = TypeExtractor.TryGetRealType(heap, faddr);
                     qry.SetTypeAndKind(kv.Key, kv.Value);
                 }
             }
 
+ 
             //if (qry.IsAlternative)
             //{
             //    if (qry.Type == null)
@@ -1884,7 +1896,7 @@ namespace ClrMDRIndex
             {
                 if (!qry.Accept(val))
                 {
-                    qry.AddValue(Constants.NotApplicaleValue);
+                    qry.AddValue(Constants.NotAvailableValue);
                     if (qry.HasChildren)
                     {
                         for (int i = 0, icnt = qry.Children.Length; i < icnt; ++i)
