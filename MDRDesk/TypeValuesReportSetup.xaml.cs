@@ -165,6 +165,11 @@ namespace MDRDesk
             if (_currentTreeViewItem == null) return;
             var curDispItem = _currentTreeViewItem.Tag as ClrtDisplayableType;
             Debug.Assert(curDispItem != null);
+            if (curDispItem.HasAlternatives)
+            {
+                StatusText.Text = "This field '" + curDispItem.FieldName + "', has alternatives, itself cannot be queried.";
+                return;
+            }
             curDispItem.ToggleGetValue();
             GuiUtils.UpdateTypeValueSetupTreeViewItem(_currentTreeViewItem, curDispItem);
             UpdateSelection(curDispItem);
@@ -175,6 +180,11 @@ namespace MDRDesk
             if (_currentTreeViewItem == null) return;
             var curDispItem = _currentTreeViewItem.Tag as ClrtDisplayableType;
             Debug.Assert(curDispItem != null);
+            if (curDispItem.HasAlternatives)
+            {
+                StatusText.Text = "This field '" + curDispItem.FieldName + "', has alternatives, itself cannot be queried.";
+                return;
+            }
             var dlg = new TypeValueFilterDlg(_currentTreeViewItem.Tag as ClrtDisplayableType) { Owner = this };
             bool? dlgResult = dlg.ShowDialog();
             if (dlgResult == true)
@@ -301,44 +311,50 @@ namespace MDRDesk
             return null;
         }
 
+        private void GetQueryHelper(ClrtDisplayableType disp, TypeValueQuery qry, Dictionary<long, List<ClrtDisplayableType>> dct)
+        {
+            var items = dct[disp.Id]; // has to be there
+            for(int i = 0, icnt = items.Count; i < icnt; ++i)
+            {
+                var item = items[i];
+                TypeValueQuery q = new TypeValueQuery(item.Id, qry, item.TypeName, item.TypeId, item.FieldName, item.FieldIndex, item.IsAlternative, item.Filter, item.GetValue);
+                qry.AddChild(q);
+                GetQueryHelper(item, q, dct);
+            }
+        }
+
         private TypeValueQuery GetQuery()
         {
             int valCount = 1;
+            var dct = new Dictionary<long, List<ClrtDisplayableType>>(_selection.Count*4);
+            dct.Add(_typeInfo.Id, new List<ClrtDisplayableType>());
+            var cmp = new ClrtDisplayableIdComparer();
             foreach (var sel in _selection)
             {
                 if (sel.GetValue) ++valCount;
-            }
-            TypeValueQuery root = new TypeValueQuery(_typeInfo.Id, null, _typeInfo.TypeName, _typeInfo.TypeId, "ADDRESS", Constants.InvalidIndex, false, null, true);
-            var needed = new HashSet<ClrtDisplayableType>(new ClrtDisplayableIdComparer());
-            needed.Add(_typeInfo);
-            var tempLst = new List<ClrtDisplayableType>(16);
-            var qryLst = new List<TypeValueQuery>(16);
-            qryLst.Add(root);
-            foreach (var sel in _selection)
-            {
-                if (needed.Contains(sel)) continue;
-                tempLst.Clear();
-                tempLst.Add(sel);
+                if (!dct.ContainsKey(sel.Id))
+                    dct.Add(sel.Id, new List<ClrtDisplayableType>());
                 var parent = sel.RealParent;
+                var cursel = sel;
                 while (parent != null)
                 {
-                    tempLst.Add(parent);
-                    needed.Add(parent);
+                    List<ClrtDisplayableType> lst;
+                    if (dct.TryGetValue(parent.Id,out lst))
+                    {
+                        if (!lst.Contains(cursel,cmp))
+                            lst.Add(cursel);
+                    }
+                    else
+                    {
+                        dct.Add(parent.Id, new List<ClrtDisplayableType>() { cursel });
+                    }
+                    cursel = parent;
                     parent = parent.RealParent;
                 }
-                tempLst.Reverse();
-                foreach (var item in tempLst)
-                {
-                    if (item.RealParent == null) continue;
-                    var qry = FindQuery(item.RealParent.Id, qryLst);
-                    if (qry == null) throw new ArgumentException("[TypeValuesReportSetup.GetQuery] FindQuery returned null.");
-                    TypeValueQuery q = item.GetValue
-                        ? new TypeValueQuery(item.Id, qry, item.TypeName, item.TypeId, item.FieldName, item.FieldIndex, item.IsAlternative, item.Filter, item.GetValue)
-                        : new TypeValueQuery(item.Id, qry, item.TypeName, item.TypeId, item.FieldName, item.FieldIndex, item.IsAlternative, item.Filter, item.GetValue);
-                    qryLst.Add(q);
-                    qry.AddChild(q);
-                }
             }
+
+            TypeValueQuery root = new TypeValueQuery(_typeInfo.Id, null, _typeInfo.TypeName, _typeInfo.TypeId, "ADDRESS", Constants.InvalidIndex, false, null, true);
+            GetQueryHelper(_typeInfo, root, dct);
 
             string[] values = new string[valCount * _typeInfo.Addresses.Length];
             root.SetValuesStore(values, 0, valCount);

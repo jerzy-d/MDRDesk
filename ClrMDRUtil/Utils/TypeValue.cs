@@ -74,6 +74,7 @@ namespace ClrMDRIndex
             _fieldName = fieldName;
             _fldIndex = fieldIndex;
             _alternative = isAlternative;
+            _filter = filter;
             _getValue = getValue;
         }
 
@@ -135,14 +136,9 @@ namespace ClrMDRIndex
             _kind = kind;
         }
 
-        public bool IsCompatibleField(int fldIndex, string fldName, string fldTypeName)
+        public bool IsMyType(string fldTypeName)
         {
-            if (_children != null &&   fldIndex >= 0 && fldIndex < _children.Length)
-            {
-                var child = _children[fldIndex];
-                return Utils.SameStrings(fldName, child._fieldName) && Utils.SameStrings(fldTypeName, child._typeName);
-            }
-            return false;
+            return Utils.SameStrings(fldTypeName, _typeName);
         }
 
         public void SetField(ClrType parent)
@@ -152,6 +148,12 @@ namespace ClrMDRIndex
                 _field = parent.Fields[_fldIndex];
                 _kind = TypeExtractor.GetElementKind(_field.Type);
             }
+        }
+
+        public void SetField(ClrInstanceField fld)
+        {
+            _field = fld;
+            _kind = TypeExtractor.GetElementKind(_field.Type);
         }
 
         public void SetValuesStore(string[] data, int index, int width)
@@ -292,7 +294,10 @@ namespace ClrMDRIndex
 			GTEQ = 1 << 9,
 			NOTEQ = 1 << 10,
 
-			COUNT = 12
+            CONTAINS = 1 << 11,
+            NOTCONTAINS = 1 << 12,
+
+            COUNT = 14
 		}
 
 		public static string GetOpDescr(Op op)
@@ -323,7 +328,11 @@ namespace ClrMDRIndex
 					return "greater then or equal";
 				case Op.NOTEQ:
 					return "not equal";
-				default:
+                case Op.CONTAINS:
+                    return "contains";
+                case Op.NOTCONTAINS:
+                    return "not contains";
+                default:
 					return "none";
 			}
 		}
@@ -357,7 +366,11 @@ namespace ClrMDRIndex
 					return Op.GTEQ;
 				case "not equal":
 					return Op.NOTEQ;
-				default:
+                case "contains":
+                    return Op.CONTAINS;
+                case "not contains":
+                    return Op.NOTCONTAINS;
+                default:
 					return Op.NONE;
 			}
 		}
@@ -585,16 +598,21 @@ namespace ClrMDRIndex
 				return true;
 		}
 
-		private bool AcceptString(string val, string other, Op op)
+		private bool AcceptString(string val, string filterValue, Op op)
 		{
 			if (FilterValue.IsOp(Op.REGEX, op))
-				return _regex.IsMatch(other);
+				return _regex.IsMatch(filterValue);
 
 			else if (FilterValue.IsOp(Op.EQ, op))
-				return string.Compare(val, other, op == Op.IGNORECASE ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal) == 0;
+				return string.Compare(val, filterValue, FilterValue.IsOp(Op.IGNORECASE, op) ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal) == 0;
 			else if (FilterValue.IsOp(Op.NOTEQ, op))
-				return string.Compare(val, other, op == Op.IGNORECASE ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal) != 0;
-			return true;
+				return string.Compare(val, filterValue, FilterValue.IsOp(Op.IGNORECASE, op) ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal) != 0;
+            else if (FilterValue.IsOp(Op.CONTAINS, op))
+                return val.IndexOf(filterValue, FilterValue.IsOp(Op.IGNORECASE, op) ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal) >= 0;
+            else if (FilterValue.IsOp(Op.NOTCONTAINS, op))
+                return val.IndexOf(filterValue, FilterValue.IsOp(Op.IGNORECASE, op) ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal) < 0;
+
+            return true;
 		}
 
 

@@ -1489,7 +1489,7 @@ namespace ClrMDRIndex
 
         #endregion instance hierarchy 
 
-        #region Type Value Reports
+        #region type values report
 
         public ValueTuple<string, ClrtDisplayableType, ulong[]> GetTypeDisplayableRecord(int typeId)
         {
@@ -1763,64 +1763,8 @@ namespace ClrMDRIndex
 
         }
 
-
-        //public ClrtDisplayableType GetTypeDisplayableRecord(int typeId, ClrtDisplayableType parent, out string error)
-        //{
-        //	error = null;
-        //	try
-        //	{
-        //		ulong[] instances = GetTypeRealAddresses(typeId);
-        //		if (instances == null || instances.Length < 1)
-        //		{
-        //			error = "Type instances not found.";
-        //			return null;
-        //		}
-        //		return TypeExtractor.GetClrtDisplayableType(_indexProxy, Dump.Heap, parent, typeId, instances, out error);
-        //	}
-        //	catch (Exception ex)
-        //	{
-        //		error = Utils.GetExceptionErrorString(ex);
-        //		return null;
-        //	}
-
-        //}
-
-        ///// <summary>
-        ///// 
-        ///// </summary>
-        ///// <param name="dispTypeParent"></param>
-        ///// <param name="dispTypeField"></param>
-        ///// <param name="error"></param>
-        ///// <returns></returns>
-        //public ClrtDisplayableType GetTypeDisplayableRecord(ClrtDisplayableType dispTypeParent, out string error)
-        //{
-        //	error = null;
-        //	try
-        //	{
-        //		ulong[] parentInstances = null;
-        //		if (dispTypeParent != null)
-        //		{
-        //			parentInstances = GetTypeRealAddresses(dispTypeParent.TypeId);
-        //			if (parentInstances == null || parentInstances.Length < 1)
-        //			{
-        //				error = Constants.InformationSymbolHeader + "Parent type instances not found (should not happen)." + Environment.NewLine + dispTypeParent.TypeName;
-        //				return null;
-        //			}
-        //		}
-
-        //		return TypeExtractor.GetClrtDisplayableTypeFields(_indexProxy, Dump.Heap, dispTypeParent, parentInstances, out error);
-        //	}
-        //	catch (Exception ex)
-        //	{
-        //		error = Utils.GetExceptionErrorString(ex);
-        //		return null;
-        //	}
-
-        //}
-
         private bool GetValues(ClrHeap heap, TypeValueQuery parentQry, ulong addr, TypeValueQuery qry)
         {
-            bool accepted = true;
             if (addr == Constants.InvalidAddress)
             {
                 if (qry.GetValue) qry.AddValue(Constants.NotAvailableValue);
@@ -1828,22 +1772,48 @@ namespace ClrMDRIndex
                 {
                     for (int i = 0, icnt = qry.Children.Length; i < icnt; ++i)
                     {
-                        if (!GetValues(null, qry, Constants.InvalidAddress, qry.Children[i]))
+                        GetValues(null, qry, Constants.InvalidAddress, qry.Children[i]);
+                    }
+                }
+                return true;
+            }
+
+            bool accepted = true;
+            if (qry.IsAlternative)
+            {
+                KeyValuePair<ClrType, ClrElementKind> kv0 = TypeExtractor.TryGetRealType(heap, addr);
+                ulong faddr = ValueExtractor.GetReferenceFieldAddress(addr, parentQry.Type.Fields[qry.FieldIndex], qry.IsInternal);
+                KeyValuePair<ClrType, ClrElementKind> kv = TypeExtractor.TryGetRealType(heap, faddr);
+                if (kv.Key == null || !qry.IsMyType(kv.Key.Name))
+                {
+                    if (qry.GetValue) qry.AddValue(Constants.NotAvailableValue);
+                    if (qry.HasChildren)
+                    {
+                        for (int i = 0, icnt = qry.Children.Length; i < icnt; ++i)
+                        {
+                            GetValues(null, qry, Constants.InvalidAddress, qry.Children[i]);
+                        }
+                    }
+                    return true;
+                }
+                if (qry.Type == null)
+                {
+                    qry.SetTypeAndKind(kv.Key, kv.Value);
+                }
+
+                if (qry.GetValue) // this must be address only
+                {
+                    qry.AddValue(Utils.RealAddressString(faddr));
+                }
+                if (qry.HasChildren)
+                {
+                    for (int i = 0, icnt = qry.Children.Length; i < icnt; ++i)
+                    {
+                        if (!GetValues(null, qry,faddr, qry.Children[i]))
                             accepted = false;
                     }
                 }
                 return accepted;
-            }
-
-            if (qry.IsAlternative)
-            {
-                ulong faddr = ValueExtractor.GetReferenceFieldAddress(addr, qry.Field, qry.IsInternal);
-                KeyValuePair<ClrType, ClrElementKind> kv = TypeExtractor.TryGetRealType(heap, faddr);
-
-                if (qry.Field == null)
-                {
-
-                }
             }
 
             if (qry.Field == null)
@@ -1856,41 +1826,6 @@ namespace ClrMDRIndex
                     qry.SetTypeAndKind(kv.Key, kv.Value);
                 }
             }
-
- 
-            //if (qry.IsAlternative)
-            //{
-            //    if (qry.Type == null)
-            //    {
-            //        ulong fldaddr = ValueExtractor.GetReferenceFieldAddress(addr, qry.Field, qry.IsInternal);
-            //        var typeAndKind = TypeExtractor.TryGetRealType(heap, fldaddr);
-            //        qry.SetTypeAndKind(typeAndKind.Key, typeAndKind.Value);
-
-
-
-            //    }
-            //    if (parentQry.IsCompatibleField(qry.FieldIndex,qry.FieldName,qry.TypeName))
-            //    {
-
-            //    }
-            //    var kv = TypeExtractor.TryGetRealType(heap, addr);
-            //    qry.SetTypeAndKind(kv.Key, kv.Value);
-
-            //    var fld = parentQry.Type.Fields[qry.FieldIndex];
-            //    ulong faddr = ValueExtractor.GetReferenceFieldAddress(addr, fld, qry.IsInternal);
-
-            //    if (qry.GetValue) qry.AddValue(Utils.RealAddressString(faddr));
-            //    if (qry.HasChildren)
-            //    {
-            //        for (int i = 0, icnt = qry.Children.Length; i < icnt; ++i)
-            //        {
-            //            if (!GetValues(heap, qry, faddr, qry.Children[i]))
-            //                accepted = false;
-            //        }
-            //    }
-            //    return accepted;
-            //}
-
             object val = ValueExtractor.GetFieldValue(heap, addr, qry.Field, qry.Type, qry.Kind, parentQry.IsInternal, true);
             if (qry.GetValue)
             {
@@ -1984,13 +1919,16 @@ namespace ClrMDRIndex
                 int ndx = 0;
                 for (int i = 0, icnt = valCnt; i < icnt; ++i)
                 {
-                    if (!accepted[i]) continue;
+                    if (!accepted[i])
+                    {
+                        continue;
+                    }
                     items[ndx++] = new listing<string>(data, dataNdx, qryGetValueCnt);
                     if (nonAcceptedCount > 0)
                     {
                         for(int j =0, jcnt= qryGetValueCnt; j < jcnt; ++j)
                         {
-                            data[dataNdx++] = qryData[i + j];
+                            data[dataNdx++] = qryData[i* qryGetValueCnt + j];
                         }
                     }
                     else
@@ -2033,7 +1971,7 @@ namespace ClrMDRIndex
             if (qry.GetValue)
             {
                 ++ndx;
-                colInfos.Add(new ColumnInfo(qry.Field.Name, ReportFile.ColumnType.String, 150, ndx, true));
+                colInfos.Add(new ColumnInfo(qry.FieldName, ReportFile.ColumnType.String, 150, ndx, true));
             }
             if (qry.HasChildren)
             {
@@ -2114,7 +2052,7 @@ namespace ClrMDRIndex
 //        }
 
 
-        #endregion Type Value Reports
+        #endregion type values report
 
         #region disassemble
 
