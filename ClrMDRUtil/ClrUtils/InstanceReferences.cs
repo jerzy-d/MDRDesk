@@ -651,14 +651,15 @@ namespace ClrMDRIndex
             for (; i < count; ++i)
                 if (!Utils.SameRealAddresses(lst[i], parent)) break;
             if (i == count) return 0;
-            lst[0] = lst[i++];
+            ulong prevVal = 0UL;
             for (; i < count; ++i)
             {
                 var val = lst[i];
-                if (val == parent || val == lst[ndx]) continue;
-                lst[++ndx] = val;
+                if (val == 0UL || val == parent || val == prevVal) continue;
+                prevVal = val;
+                lst[ndx++] = val;
             }
-            return ndx + 1;
+            return ndx;
         }
 
         bool copy_addr_flags_check(ulong[] ary, int from, int to)

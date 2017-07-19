@@ -147,3 +147,7 @@ private void listView1_MouseDoubleClick ( object sender, MouseEventArgs e ) {
    };
 }
 Note that the above code reacts to clicking anywhere on the item.  You can get specific (icon, label, etc).
+0035 07/18/17
+Instance value display - include arrays of interfaces.
+ECS.Cache.Service.Interface.ICacheNotificationSubscription[]
+ECS.Cache.Service.Interface.ICacheNotification[]

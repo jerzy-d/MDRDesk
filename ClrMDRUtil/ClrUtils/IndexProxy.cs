@@ -11,21 +11,23 @@ namespace ClrMDRIndex
 		public readonly ClrtDump Dump;
 		public readonly ulong[] Instances;
 		public readonly int[] InstanceTypes;
-		public readonly string[] TypeNames;
-		public readonly ClrtRootInfo Roots;
+        public readonly string[] TypeNames;
+        public readonly ClrElementKind[] TypeKinds;
+        public readonly ClrtRootInfo Roots;
 		public readonly DumpFileMoniker FileMoniker;
 
 		public static bool _is64Bit;
 		public static bool Is64Bit => Environment.Is64BitProcess;
 		public static uint WordSize => Environment.Is64BitProcess ? 8u : 4u;
 
-		public IndexProxy(ClrtDump dump, ulong[] instances, int[] instanceTypes, string[] typeNames, ClrtRootInfo roots, DumpFileMoniker fileMoniker)
+		public IndexProxy(ClrtDump dump, ulong[] instances, int[] instanceTypes, string[] typeNames, ClrElementKind[] typeKinds, ClrtRootInfo roots, DumpFileMoniker fileMoniker)
 		{
 			Dump = dump;
 			Instances = instances;
 			InstanceTypes = instanceTypes;
 			TypeNames = typeNames;
-			Roots = roots;
+            TypeKinds = typeKinds;
+            Roots = roots;
 			FileMoniker = fileMoniker;
 		}
 
@@ -40,7 +42,12 @@ namespace ClrMDRIndex
 			return typeId >= 0 && typeId < TypeNames.Length ? TypeNames[typeId] : Constants.UnknownTypeName;
 		}
 
-		public KeyValuePair<string, int> GetTypeNameAndIdAtAddr(ulong addr)
+        public ClrElementKind GetTypeKind(int typeId)
+        {
+            return typeId >= 0 && typeId < TypeNames.Length ? TypeKinds[typeId] : ClrElementKind.Unknown;
+        }
+
+        public KeyValuePair<string, int> GetTypeNameAndIdAtAddr(ulong addr)
 		{
 			var ndx = Utils.AddressSearch(Instances, addr);
 			if (ndx < 0)

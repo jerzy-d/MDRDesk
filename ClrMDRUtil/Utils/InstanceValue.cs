@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -16,6 +17,7 @@ namespace ClrMDRIndex
 		private string _fieldName;
 		private DisplayableString _value;
 		private DisplayableString[] _aryValues;
+        private string[] _aryTypes;
 		private InstanceValue[] _fields;
 		private InstanceValue _parent;
 
@@ -68,6 +70,17 @@ namespace ClrMDRIndex
 	    {
 			_fields = fields;
 	    }
+
+        public void AddArrayTypes(List<string> lst)
+        {
+            Debug.Assert(lst.Count > 2);
+            _aryTypes = new string[lst.Count - 1];
+            for (int i = 1, icnt = lst.Count; i < icnt; ++i)
+            {
+                _aryTypes[i - 1] = lst[i];
+            }
+            Array.Sort(_aryTypes, StringComparer.Ordinal);
+        }
 
 		public void AddArrayValues(string[] aryvalues)
 		{

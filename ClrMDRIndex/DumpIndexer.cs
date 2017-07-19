@@ -677,7 +677,7 @@ namespace ClrMDRIndex
                 int segIndex = 0;
                 uint[] sizes = new uint[addresses.Length];
                 uint[] baseSizes = new uint[addresses.Length];
-                int[] elemetTypes = new int[addresses.Length];
+                int[] typeKinds = new int[typeNames.Length];
                 var arraySizes = new List<KeyValuePair<int, int>>(addresses.Length / 25);
 
                 for (int segNdx = 0, icnt = segs.Count; segNdx < icnt; ++segNdx)
@@ -697,7 +697,7 @@ namespace ClrMDRIndex
                         var typeNameKey = clrType == null ? Constants.NullTypeName : clrType.Name;
                         int typeId = Array.BinarySearch(typeNames, typeNameKey, StringComparer.Ordinal);
                         typeIds[addrNdx] = typeId;
-                        elemetTypes[addrNdx] = clrType == null ? (int)ClrElementType.Unknown : (int)clrType.ElementType;
+                        if (typeKinds[typeId] == 0) typeKinds[typeId] = (int)TypeExtractor.GetElementKind(clrType);
                         if (clrType == null) goto NEXT_OBJECT;
                         addresses[addrNdx] = addr;
                         var isFree = Utils.SameStrings(clrType.Name, Constants.FreeTypeName);
@@ -742,27 +742,19 @@ namespace ClrMDRIndex
 
                 // dump sizes
                 //
-                if (
-                    !Utils.WriteUintArray(_fileMoniker.GetFilePath(_currentRuntimeIndex, Constants.MapInstanceSizesFilePostfix), sizes,
-                        out error))
+                if (!Utils.WriteUintArray(_fileMoniker.GetFilePath(_currentRuntimeIndex, Constants.MapInstanceSizesFilePostfix), sizes, out error))
                 {
                     _errors[_currentRuntimeIndex].Add("Dumping sizes failed." + Environment.NewLine + error);
                 }
-                if (
-                    !Utils.WriteUintArray(_fileMoniker.GetFilePath(_currentRuntimeIndex, Constants.MapInstanceBaseSizesFilePostfix),
-                        baseSizes, out error))
+                if (!Utils.WriteUintArray(_fileMoniker.GetFilePath(_currentRuntimeIndex, Constants.MapInstanceBaseSizesFilePostfix), baseSizes, out error))
                 {
                     _errors[_currentRuntimeIndex].Add("Dumping base sizes failed." + Environment.NewLine + error);
                 }
-                if (
-                    !Utils.WriteIntArray(_fileMoniker.GetFilePath(_currentRuntimeIndex, Constants.MapInstanceElemTypesFilePostfix),
-                        elemetTypes, out error))
+                if (!Utils.WriteIntArray(_fileMoniker.GetFilePath(_currentRuntimeIndex, Constants.MapKindsFilePostfix), typeKinds, out error))
                 {
-                    _errors[_currentRuntimeIndex].Add("Dumping element types failed." + Environment.NewLine + error);
+                    _errors[_currentRuntimeIndex].Add("Dumping type kinds failed." + Environment.NewLine + error);
                 }
-                if (
-                    !Utils.WriteKvIntIntArray(_fileMoniker.GetFilePath(_currentRuntimeIndex, Constants.MapArraySizesFilePostfix),
-                        arraySizes, out error))
+                if (!Utils.WriteKvIntIntArray(_fileMoniker.GetFilePath(_currentRuntimeIndex, Constants.MapArraySizesFilePostfix), arraySizes, out error))
                 {
                     _errors[_currentRuntimeIndex].Add("Dumping array sizes failed." + Environment.NewLine + error);
                 }

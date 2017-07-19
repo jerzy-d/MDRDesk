@@ -167,6 +167,8 @@ namespace ClrMDRIndex
 		private int _offset;
 		private int _count;
 
+        public static listing<T> Empty = new listing<T>(null, Constants.InvalidIndex, Constants.InvalidIndex);
+        
 		public listing(T[] ary, int offset, int count)
 		{
 			_ary = ary;
@@ -180,6 +182,8 @@ namespace ClrMDRIndex
 			_offset = other._offset;
 			_count = other._count;
 		}
+
+        public bool IsEmpty => _ary == null;
 
 	    public T Item(int i)
 	    {

@@ -593,7 +593,7 @@ namespace ClrMDRIndex
 			}
 		}
 
-		public static ClrElementType[] ReadClrElementTypeArray(string path, out string error)
+		public static ClrElementKind[] ReadClrElementKindArray(string path, out string error)
 		{
 			error = null;
 			BinaryReader br = null;
@@ -601,10 +601,10 @@ namespace ClrMDRIndex
 			{
 				br = new BinaryReader(File.Open(path, FileMode.Open));
 				var cnt = br.ReadInt32();
-				var ary = new ClrElementType[cnt];
+				var ary = new ClrElementKind[cnt];
 				for (int i = 0; i < cnt; ++i)
 				{
-					ary[i] = (ClrElementType)br.ReadInt32();
+					ary[i] = (ClrElementKind)br.ReadInt32();
 				}
 				return ary;
 			}

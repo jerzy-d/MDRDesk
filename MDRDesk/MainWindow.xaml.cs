@@ -872,12 +872,6 @@ namespace MDRDesk
 
         #endregion Index
 
-        #region Context Menu
-
-
-
-        #endregion Context Menu
-
         #region AdhocQueries
 
         private async void AhqSelectDumpClicked(object sender, RoutedEventArgs e)
@@ -1693,7 +1687,7 @@ namespace MDRDesk
 
         #endregion Dialogs
 
-        #region Context Menus
+        #region context menus
 
         private void CopyAddressSelectionClicked(object sender, RoutedEventArgs e)
         {
@@ -1987,7 +1981,97 @@ namespace MDRDesk
             return (contextMenu.Tag is ListView) ? contextMenu.Tag as ListView : null;
         }
 
-        #endregion Context Menus
+        #region TypeValuesReportContextMenu
+
+
+        private listing<string> GetypeValuesReportRow()
+        {
+            try
+            {
+                var lstView = GetCurrentListView(TypeValuesReportView);
+                Debug.Assert(lstView != null);
+                var ndx = lstView.SelectedIndex;
+                if (ndx < 0)
+                {
+                    // TODO JRD
+                    return listing<string>.Empty;
+                }
+
+                var entries = lstView.ItemsSource as listing<string>[];
+                return entries[ndx];
+            }
+            catch (Exception ex)
+            {
+                var error = Utils.GetExceptionErrorString(ex);
+                MessageBox.Show(error, "GetypeValuesReportRow", MessageBoxButton.OK, MessageBoxImage.Error);
+                return listing<string>.Empty;
+            }
+
+        }
+
+        private void TypeValuesReportCopyRowClicked(object sender, RoutedEventArgs e)
+        {
+            var row = GetypeValuesReportRow();
+            if (row.IsEmpty) return;
+            var rowStr = GetListingRow(row);
+            Clipboard.SetText(rowStr);
+            MessageBox.Show(rowStr, "Copied to clipboard.", MessageBoxButton.OK, MessageBoxImage.Information);
+        }
+
+        private void TypeValuesReportCopyAddressClicked(object sender, RoutedEventArgs e)
+        {
+            var row = GetypeValuesReportRow();
+            if (row.IsEmpty) return;
+            ulong addr = Utils.GetAddressValue(row.GetItem(0));
+            string addrStr = Utils.RealAddressString(addr);
+            Clipboard.SetText(addrStr);
+            MessageBox.Show(addrStr, "Copied to clipboard.", MessageBoxButton.OK, MessageBoxImage.Information);
+        }
+
+        private void TypeValuesReportGetParentRefsClicked(object sender, RoutedEventArgs e)
+        {
+            var row = GetypeValuesReportRow();
+            if (row.IsEmpty) return;
+            ulong addr = Utils.GetAddressValue(row.GetItem(0));
+            DisplayInstanceParentReferences(addr);
+        }
+
+        private void TypeValuesReportGetInstSizesClicked(object sender, RoutedEventArgs e)
+        {
+            var row = GetypeValuesReportRow();
+            if (row.IsEmpty) return;
+            ulong addr = Utils.GetAddressValue(row.GetItem(0));
+            GetInstSizes(addr);
+        }
+
+        private void TypeValuesReportGetInstValueClicked(object sender, RoutedEventArgs e)
+        {
+            var row = GetypeValuesReportRow();
+            if (row.IsEmpty) return;
+            ulong addr = Utils.GetAddressValue(row.GetItem(0));
+            var msg = "Getting object value at: " + Utils.RealAddressString(addr);
+            Dispatcher.CurrentDispatcher.InvokeAsync(() => ExecuteInstanceValueQuery(msg, addr));
+        }
+
+        private void TypeValuesReportGetInstHierarchyClicked(object sender, RoutedEventArgs e)
+        {
+            var row = GetypeValuesReportRow();
+            if (row.IsEmpty) return;
+            ulong addr = Utils.GetAddressValue(row.GetItem(0));
+            Dispatcher.CurrentDispatcher.InvokeAsync(() => ExecuteInstanceHierarchyQuery("Get instance hierarchy " + Utils.AddressStringHeader(addr), addr, Constants.InvalidIndex));
+        }
+
+        private void TypeValuesReportViewMemoryClicked(object sender, RoutedEventArgs e)
+        {
+            var row = GetypeValuesReportRow();
+            if (row.IsEmpty) return;
+            ulong addr = Utils.GetAddressValue(row.GetItem(0));
+            ShowMemoryViewWindow(addr);
+        }
+
+        #endregion TypeValuesReportContextMenu
+
+        #endregion context menus
 
         //private void RecentDumpSelectionClicked(object sender, RoutedEventArgs e)
         //{

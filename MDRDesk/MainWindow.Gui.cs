@@ -83,6 +83,12 @@ namespace MDRDesk
         private const string FinalizerQueAddrListBox = "FinalizerQueAddresses";
         private const string FinalizerQueTextBox = "FinalizerQueTextBox";
 
+
+
+        private const string TypeValuesReportGrid = "TypeValuesGrid";
+        private const string TypeValuesReportView = "TypeValuesView";
+        private const string TypeValuesReportInfo = "TypeValuesInformation";
+
         // writing report supported
         //
         private const string ListingGrid = "ListingGrid";
@@ -1667,126 +1673,47 @@ namespace MDRDesk
                 return;
             }
 
-            DisplayListingGrid(listing, Constants.BlackDiamondHeader, ListingGrid + "__TypeValues", Utils.BaseTypeName(query.TypeName));
-
-            //	var grid = TryFindResource(ListingGrid) as Grid;
-            //Debug.Assert(grid != null);
-            //var listView = (ListView)LogicalTreeHelper.FindLogicalNode(grid, ListingGridView);
-            //Debug.Assert(listView != null);
-
-            //listView.Tag = listing;
-            //GridView gridView = (GridView)listView.View;
-            //for (int i = 0, icnt = listing.ColInfos.Length; i < icnt; ++i)
-            //{
-            //	var gridColumn = new GridViewColumn
-            //	{
-            //		Header = listing.ColInfos[i].Name,
-            //		DisplayMemberBinding = new Binding(listing<string>.PropertyNames[i]),
-            //		Width = listing.ColInfos[i].Width,
-            //	};
-            //	gridView.Columns.Add(gridColumn);
-            //}
-            //listView.Items.Clear();
-            //listView.ItemsSource = listing.Items;
-
-            //var textBox = (TextBox)LogicalTreeHelper.FindLogicalNode(grid, ListingGridInformation);
-            //Debug.Assert(textBox != null);
-            //textBox.Text = listing.Notes;
-
-            //grid.Name = ListingGrid + "__" + Utils.GetNewID();
-            //DisplayTab(Constants.BlackDiamond, Utils.BaseTypeName(queryItems[0].TypeName), grid, ThreadViewGrid);
-            //listView.SelectedIndex = 0;
-
+            DisplayTypeValuesGrid(listing, Constants.BlackDiamondHeader, TypeValuesReportGrid, Utils.BaseTypeName(query.TypeName));
         }
 
-        //private TreeView UpdateTypeValueSetupGrid(ClrtDisplayableType dispType, Grid mainGrid, TreeViewItem root)
-        //{
-        //	bool realRoot = false;
-        //	if (root == null)
-        //	{
-        //		realRoot = true;
-        //		root = GuiUtils.GetTypeValueSetupTreeViewItem(dispType);
-        //	}
-        //	var fields = dispType.Fields;
-        //	for (int i = 0, icnt = fields.Length; i < icnt; ++i)
-        //	{
-        //		var fld = fields[i];
-        //		var node = GuiUtils.GetTypeValueSetupTreeViewItem(fld);
-        //		root.Items.Add(node);
-        //	}
 
-        //	var treeView = (TreeView)LogicalTreeHelper.FindLogicalNode(mainGrid, "TypeValueReportTreeView");
-        //	Debug.Assert(treeView != null);
-        //	if (realRoot)
-        //	{
-        //		treeView.Items.Clear();
-        //		treeView.Items.Add(root);
-        //	}
-        //	root.ExpandSubtree();
-        //	return treeView;
-        //}
+        private void DisplayTypeValuesGrid(ListingInfo info, string prefix, string name, string reportTitle)
+        {
+            var grid = TryFindResource(TypeValuesReportGrid) as Grid;
+            grid.Name = name + "__" + Utils.GetNewID();
+            Debug.Assert(grid != null);
+            string path = CurrentIndex != null ? CurrentIndex.DumpPath : CurrentAdhocDump?.DumpPath;
+            grid.Tag = new Tuple<string, DumpFileMoniker>(reportTitle, new DumpFileMoniker(path));
+            var listView = (ListView)LogicalTreeHelper.FindLogicalNode(grid, TypeValuesReportView);
+            GridView gridView = (GridView)listView.View;
 
-        //private async void TypeValueReportTreeViewDoubleClicked(object sender, MouseButtonEventArgs e)
-        //{
-        //	TreeView tv = sender as TreeView;
-        //	var selItem = tv.SelectedItem as TreeViewItem;
-        //	Debug.Assert(selItem != null);
-        //	var dispType = selItem.Tag as ClrtDisplayableType;
-        //	Debug.Assert(dispType != null);
+            // save data and listing name in listView
+            //
+            listView.Tag = new Tuple<ListingInfo, string>(info, reportTitle);
 
-        //	string msg;
-        //	if (!dispType.CanGetFields(out msg))
-        //	{
-        //		MainStatusShowMessage("Action failed for: '" + dispType.FieldName + "'. " + msg);
-        //		return;
-        //	}
+            for (int i = 0, icnt = info.ColInfos.Length; i < icnt; ++i)
+            {
+                var gridColumn = new GridViewColumn
+                {
+                    Header = info.ColInfos[i].Name,
+                    DisplayMemberBinding = new Binding(listing<string>.PropertyNames[i]),
+                    Width = info.ColInfos[i].Width,
+                };
+                gridView.Columns.Add(gridColumn);
+            }
 
-        //	if (dispType.FieldIndex == Constants.InvalidIndex) // this root type, fields are already displayed
-        //	{
-        //		return;
-        //	}
+            listView.Items.Clear();
+            listView.ItemsSource = info.Items;
 
-        //	var parent = selItem.Parent as TreeViewItem;
-        //	Debug.Assert(parent != null);
-        //	var parentDispType = parent.Tag as ClrtDisplayableType;
-        //	Debug.Assert(parentDispType != null);
+            if (!string.IsNullOrEmpty(info.Notes))
+            {
+                var txtBox = (TextBox)LogicalTreeHelper.FindLogicalNode(grid, TypeValuesReportInfo);
+                Debug.Assert(txtBox != null);
+                txtBox.Text = info.Notes;
+            }
 
-        //	SetStartTaskMainWindowState("Getting type details for field: '" + dispType.FieldName + "', please wait...");
-
-        //	var result = await Task.Run(() =>
-        //	{
-        //		string error;
-        //		ClrtDisplayableType fldDispType = CurrentIndex.GetTypeDisplayableRecord(parentDispType, dispType, out error);
-        //		if (fldDispType == null)
-        //			return new Tuple<string, ClrtDisplayableType>(error, null);
-        //		return new Tuple<string, ClrtDisplayableType>(null, fldDispType);
-        //	});
-
-        //	if (result.Item1 != null)
-        //	{
-        //		if (Utils.IsInformation(result.Item1))
-        //		{
-        //			SetEndTaskMainWindowState("Action failed for: '" + dispType.FieldName + "'. " + result.Item1);
-        //			return;
-        //		}
-        //		ShowError(result.Item1);
-        //		SetEndTaskMainWindowState("Getting type details for field: '" + dispType.FieldName + "', failed");
-        //		return;
-        //	}
-
-        //	var fields = result.Item2.Fields;
-        //	selItem.Items.Clear();
-        //	for (int i = 0, icnt = fields.Length; i < icnt; ++i)
-        //	{
-        //		var fld = fields[i];
-        //		var node = GuiUtils.GetTypeValueSetupTreeViewItem(fld);
-        //		selItem.Items.Add(node);
-        //	}
-        //	selItem.ExpandSubtree();
-
-        //	SetEndTaskMainWindowState("Getting type details for field: '" + dispType.FieldName + "', done");
-        //}
-
+            DisplayTab(prefix, reportTitle, grid, name);
+        }
 
         private void DisplayDependencyNodeGrid(DependencyNode root)
         {
@@ -3019,6 +2946,17 @@ namespace MDRDesk
                 return str.Substring(0, len) + "...";
             return str;
         }
+
+
+        public ListView GetCurrentListView(string name)
+        {
+            var grid = GetCurrentTabGrid();
+            if (grid == null) return null;
+            object lv = LogicalTreeHelper.FindLogicalNode(grid, name);
+            if (lv is ListView) return lv as ListView;
+            return null;
+        }
+
         //public static void SetSelectedItem(TreeView control, object item)
         //{
         //	try

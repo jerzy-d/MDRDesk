@@ -203,7 +203,7 @@ namespace UnitTestMdr
 				string error;
 				var sizeInfo = map.GetSizeArrays(out error);
 				Assert.IsNull(error, error);
-				ClrElementType[] elems = map.GetElementTypeList(out error);
+				ClrElementKind[] elems = map.TypeKinds;
 				Assert.IsNull(error, error);
 				Assert.IsTrue(sizeInfo.Key.Length == sizeInfo.Value.Length);
 				Assert.IsTrue(map.Instances.Length == sizeInfo.Key.Length);
@@ -214,7 +214,7 @@ namespace UnitTestMdr
 				uint maxDiff = 0;
 				ulong maxAddr = 0UL;
 				string maxTypeName = string.Empty;
-				ClrElementType maxElem = ClrElementType.Unknown;
+				ClrElementKind maxElem = ClrElementKind.Unknown;
 				for (int i = 0; i < totalCount; ++i)
 				{
 					var typeId = map.GetTypeId(i);
@@ -229,7 +229,7 @@ namespace UnitTestMdr
 					}
 					string typeName = map.GetTypeName(typeId);
 					set.Add(typeName);
-					ClrElementType elem = elems[i];
+					ClrElementKind elem = elems[typeId];
 					Assert.IsTrue(tsize >= bsize);
 					uint diff = tsize - bsize;
 					if (diff > maxDiff)

@@ -186,12 +186,13 @@ namespace ClrMDRIndex
 
 		// types
 		//
-		public const string TxtTypeNamesFilePostfix = ".`TYPENAMES[0].txt";
-		public const string TxtReversedTypeNamesFilePostfix = ".`REVERSEDTYPENAMES[0].txt";
+		public const string TxtTypeNamesFilePostfix = ".`TYPENAMES[0].txt"; // list of all type names, not all of them are in the heap
+		public const string TxtReversedTypeNamesFilePostfix = ".`REVERSEDTYPENAMES[0].txt"; // type name followed by namespace, for one of type grids
+        public const string MapKindsFilePostfix = ".`KINDS[0].bin"; // our special type kind to ease digging up values 
 
-		// segmnents, generation info
-		//
-		public const string MapSegmentInfoFilePostfix = ".`SEGMENTS[0].bin";
+        // segmnents, generation info
+        //
+        public const string MapSegmentInfoFilePostfix = ".`SEGMENTS[0].bin";
 
 		// roots
 		//
@@ -207,7 +208,7 @@ namespace ClrMDRIndex
 		public const string MapInstanceTypesFilePostfix = ".`INSTANCETYPES[0].bin"; // instance addresses and corresponding type ids
 		public const string MapInstanceSizesFilePostfix = ".`INSTANCESIZES[0].bin"; // instance addresses and corresponding type ids
 		public const string MapInstanceBaseSizesFilePostfix = ".`INSTANCEBASESIZES[0].bin"; // instance addresses and corresponding type ids
-		public const string MapInstanceElemTypesFilePostfix = ".`INSTANCEELEMTYPESS[0].bin"; //
+		//public const string MapInstanceElemTypesFilePostfix = ".`INSTANCEELEMTYPESS[0].bin"; //
 		public const string MapArraySizesFilePostfix = ".`ARRAYSIZES[0].bin"; //
 
 		public const string MapTypeInstanceOffsetsFilePostfix = ".`TYPEINSTANCEOFFSETS[0].bin"; // instance addresses and corresponding type ids

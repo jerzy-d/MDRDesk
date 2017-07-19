@@ -133,5 +133,16 @@ namespace MDRDesk
                 }
             }
         }
+
+        private void ItemLstGetTypeValuesReportClicked(object sender, RoutedEventArgs e)
+        {
+            if (_instanceValue.ArrayValues == null || _instanceValue.ArrayValues.Length < 2) return;
+            if ((TypeExtractor.IsNonStringObjectReference(_instanceValue.Fields[0].Kind)))
+            {
+                var owner = (MainWindow)Owner;
+                //System.Windows.Threading.Dispatcher.CurrentDispatcher.InvokeAsync(() => owner.ExecuteInstanceValueQuery("Getting object value at: " + Utils.RealAddressString(addr), addr));
+            }
+
+        }
     }
 }

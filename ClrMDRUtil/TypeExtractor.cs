@@ -195,6 +195,29 @@ namespace ClrMDRIndex
             return false;
         }
 
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static int GetFieldCount(ClrType type)
+        {
+            return  (type == null || type.Fields == null) ? 0 : type.Fields.Count;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static ValueTuple<ClrType, ClrInstanceField, ClrElementKind>[] GetFieldsAndKinds(ClrType type)
+        {
+            int cnt = GetFieldCount(type);
+            if (cnt < 1) return Utils.EmptyArray<ValueTuple<ClrType, ClrInstanceField, ClrElementKind>>.Value;
+            var ary = new ValueTuple<ClrType, ClrInstanceField, ClrElementKind>[cnt];
+            for(int i = 0; i < cnt; ++i)
+            {
+                ClrInstanceField fld = type.Fields[i];
+                ClrType fldType = fld.Type;
+                ClrElementKind fldKind = GetElementKind(fldType);
+                ary[i] = (fldType, fld, fldKind);
+            }
+            return ary;
+        }
+
         public static bool GetTypeFromString(string str, ClrElementKind kind, out object val)
         {
             bool ok = false;

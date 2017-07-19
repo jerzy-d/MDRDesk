@@ -813,14 +813,6 @@ namespace ClrMDRIndex
             return "uknown_element_type";
         }
 
-        public static string GetEnumValueString(ulong fieldAddr, ClrInstanceField field, bool intr)
-        {
-            //var addrObj = field.GetAddress(parentAddr, intr);
-            var primVal = field.Type.GetValue(fieldAddr);
-            var enumName = field.Type.GetEnumName(primVal);
-            return primVal + (enumName == null ? string.Empty : " " + enumName);
-        }
-
         public static int GetEnumValue(ulong parentAddr, ClrInstanceField field, bool intr)
         {
             var addrObj = field.GetAddress(parentAddr, intr);
@@ -835,21 +827,6 @@ namespace ClrMDRIndex
             var enumName = field.Type.GetEnumName(primVal);
             return primVal + (enumName == null ? string.Empty : " " + enumName);
         }
-
-
-        //public static long GetEnumValue(ulong parentAddr, ClrInstanceField field, bool intr)
-        //{
-        //	var addrObj = field.GetValue(parentAddr, intr, intr);
-        //	var primVal = GetPrimitiveValueObject(addrObj, field.Type,false);
-        //	return primVal;
-        //}
-
-        //public static object GetEnumValueObject(ulong parentAddr, ClrInstanceField field, bool intr)
-        //{
-        //    var addrObj = field.GetValue(parentAddr, intr, false);
-        //    var primVal = GetPrimitiveValueObject(addrObj, field, intr);
-        //    return primVal;
-        //}
 
         public static string GetEnumValueString(ulong addr, ClrType clrType)
         {
@@ -971,7 +948,7 @@ namespace ClrMDRIndex
         {
             Debug.Assert(Utils.IsRealAddress(addr));
             var fldSpecKind = TypeExtractor.GetSpecialKind(fldKind);
-            if (fldSpecKind != ClrElementKind.Unknown)
+            if (fldSpecKind != ClrElementKind.Unknown && fldSpecKind != ClrElementKind.System__Canon)
             {
                 switch (fldSpecKind)
                 {
@@ -987,18 +964,20 @@ namespace ClrMDRIndex
                         return theValue ? (object)addr : Utils.RealAddressString(addr);
                     case ClrElementKind.Enum:
                         return theValue ? (object)GetEnumValue(addr, fld, intern) : GetEnumString(addr, fld, intern);
-                    case ClrElementKind.Free:
+                   // case ClrElementKind.Free:
                     case ClrElementKind.Abstract:
                     case ClrElementKind.SystemVoid:
                     case ClrElementKind.SystemObject:
-                        return theValue ? (object)addr : Utils.RealAddressString(addr);
+                        var fldAddr = GetReferenceFieldAddress(addr, fld, intern);
+                        return theValue ? (object)fldAddr : Utils.RealAddressString(fldAddr);
+                        //return theValue ? (object)addr : Utils.RealAddressString(addr);
                     default:
                         return theValue ? (object)addr : Utils.RealAddressString(addr);
                 }
             }
             else
             {
-                switch (fldKind)
+                switch (TypeExtractor.GetStandardKind(fldKind))
                 {
                     case ClrElementKind.String:
                         ulong address = (ulong)fld.GetValue(addr, intern, false);
@@ -1041,8 +1020,21 @@ namespace ClrMDRIndex
                         return (((DateTime)val)).ToString("c");
                     case ClrElementKind.Decimal:
                         return (((decimal)val)).ToString(CultureInfo.InvariantCulture);
-                    case ClrElementKind.Exception:
                     case ClrElementKind.Enum:
+                        switch(TypeExtractor.GetStandardKind(kind))
+                        {
+                            case ClrElementKind.Int32:
+                                return (((int)val)).ToString(CultureInfo.InvariantCulture);
+                            case ClrElementKind.Int64:
+                                return (((long)val)).ToString(CultureInfo.InvariantCulture);
+                            case ClrElementKind.UInt32:
+                                return (((uint)val)).ToString(CultureInfo.InvariantCulture);
+                            case ClrElementKind.UInt64:
+                                return (((ulong)val)).ToString(CultureInfo.InvariantCulture);
+                            default:
+                                return Constants.NotAvailableValue;
+                        }
+                    case ClrElementKind.Exception:
                     case ClrElementKind.Free:
                     case ClrElementKind.Abstract:
                     case ClrElementKind.SystemVoid:
@@ -1122,7 +1114,7 @@ namespace ClrMDRIndex
                     case ClrElementKind.Exception:
                         return Utils.RealAddressString(fldAddr);
                     case ClrElementKind.Enum:
-                        return GetEnumValueString(fldAddr, fld, intern);
+                        return GetEnumString(fldAddr, fld, intern);
                     case ClrElementKind.Free:
                     case ClrElementKind.Abstract:
                     case ClrElementKind.SystemVoid:
@@ -1513,7 +1505,29 @@ namespace ClrMDRIndex
             var elemTypeId = ndxProxy.GetTypeId(elemType.Name);
             var elemInst = new InstanceValue(elemTypeId, elemKind, Constants.InvalidAddress, elemType.Name, String.Empty, Utils.CountString(len), Constants.InvalidIndex, aryInst);
             aryInst.SetFields(new InstanceValue[] { elemInst });
-            var aryItems = GetAryItems(heap, addr, clrType, elemType, elemKind, len);
+            List<string> types = new List<string>() { elemType.Name };
+            var aryItems = TypeExtractor.IsStruct(elemKind)
+                ? GetAryStructItems(heap, addr, clrType, elemType, elemKind, len, types)
+                : GetAryItems(heap, addr, clrType, elemType, elemKind, len, types);
+            if (types.Count > 1) // we have alternative types in the array
+            {
+                if (types.Count > 2)
+                {
+                    aryInst.AddArrayTypes(types);
+                }
+                else
+                {
+                    Debug.Assert(types.Count == 2);
+                    var elemTypeName = types[1];
+                    elemTypeId = ndxProxy.GetTypeId(elemTypeName);
+                    if (elemTypeId >= 0)
+                    {
+                        elemKind = ndxProxy.GetTypeKind(elemTypeId);
+                        elemInst = new InstanceValue(elemTypeId, elemKind, Constants.InvalidAddress, elemTypeName, String.Empty, Utils.CountString(len), Constants.InvalidIndex, aryInst);
+                        aryInst.SetFields(new InstanceValue[] { elemInst });
+                    }
+                }
+            }
             aryInst.AddArrayValues(aryItems);
             return (null, aryInst);
 
@@ -1531,17 +1545,44 @@ namespace ClrMDRIndex
             return (null, clrType, clrType.ComponentType, kind, len);
         }
 
-        public static string[] GetAryItems(ClrHeap heap, ulong addr, ClrType aryType, ClrType elemType, ClrElementKind elemKind, int aryCnt)
+        public static string[] GetAryItems(ClrHeap heap, ulong addr, ClrType aryType, ClrType elemType, ClrElementKind elemKind, int aryCnt, List<string> types)
         {
             var ary = new string[aryCnt];
-
             for (int i = 0; i < aryCnt; ++i)
-                ary[i] = GetAryItem(heap, addr, aryType, elemType, elemKind, i);
-
+                ary[i] = GetAryItem(heap, addr, aryType, elemType, elemKind, i, types);
             return ary;
         }
 
-        public static string GetAryItem(ClrHeap heap, ulong addr, ClrType aryType, ClrType elemType, ClrElementKind elemKind, int aryNdx)
+        public static string[] GetAryStructItems(ClrHeap heap, ulong addr, ClrType aryType, ClrType elemType, ClrElementKind elemKind, int aryCnt, List<string> types)
+        {
+            var ary = new string[aryCnt];
+            Debug.Assert(TypeExtractor.IsStruct(elemKind));
+            List<ValueTuple<ClrType, ClrInstanceField, ClrElementKind>> fields = new List<(ClrType, ClrInstanceField, ClrElementKind)>(elemType.Fields.Count);
+            ValueTuple<ClrType, ClrInstanceField, ClrElementKind>[] fldInfos = TypeExtractor.GetFieldsAndKinds(elemType);
+            var sb = StringBuilderCache.Acquire(StringBuilderCache.MaxCapacity);
+            for (int i = 0; i < aryCnt; ++i)
+                ary[i] = GetAryStructItem(heap, addr, aryType, elemType, i, fldInfos, sb);
+            StringBuilderCache.Release(sb);
+            return ary;
+        }
+        public static string GetAryStructItem(ClrHeap heap, ulong addr, ClrType aryType, ClrType elemType, int aryNdx, ValueTuple<ClrType, ClrInstanceField, ClrElementKind>[] fldInfos, StringBuilder sb)
+        {
+            sb.Clear();
+            var elemAddr = aryType.GetArrayElementAddress(addr, aryNdx);
+            (ClrType fldType, ClrInstanceField fld, ClrElementKind fldKind) = fldInfos[0];
+            string val = (string)GetFieldValue(heap, elemAddr, fld, fldType, fldKind, true, false);
+            sb.Append(val);
+            for (int i = 1, icnt = fldInfos.Length; i < icnt; ++i)
+            {
+                (fldType, fld, fldKind) = fldInfos[i];
+                val = (string)GetFieldValue(heap, elemAddr, fld, fldType, fldKind, true, false);
+                sb.Append(Constants.HeavyGreekCrossPadded).Append(val);
+            }
+            return sb.ToString();
+        }
+
+
+        public static string GetAryItem(ClrHeap heap, ulong addr, ClrType aryType, ClrType elemType, ClrElementKind elemKind, int aryNdx, List<string> types)
         {
 
             if (elemKind == ClrElementKind.Unknown)
@@ -1552,12 +1593,22 @@ namespace ClrMDRIndex
 
             if (TypeExtractor.IsAmbiguousKind(elemKind))
             {
-                var tempType = heap.GetObjectType(elemAddr);
-                if (tempType != null)
+                var ambAddr = aryType.GetArrayElementValue(addr, aryNdx);
+                if (ambAddr is ulong)
                 {
-                    elemType = tempType;
-                    elemKind = TypeExtractor.GetElementKind(elemType);
+                    var tempType = heap.GetObjectType((ulong)ambAddr);
+                    if (tempType != null)
+                    {
+                        if (!types.Contains(tempType.Name))
+                        {
+                            types.Add(tempType.Name);
+                        }
+                        elemType = tempType;
+                        elemKind = TypeExtractor.GetElementKind(elemType);
+                    }
+                    return Utils.RealAddressString((ulong)ambAddr);
                 }
+                return Constants.UnknownValue;
             }
             if (TypeExtractor.IsStruct(elemKind))
             {

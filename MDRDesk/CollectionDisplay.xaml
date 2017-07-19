@@ -12,10 +12,13 @@
         <ContextMenu x:Key="ItemListContextMenu" x:Shared="False">
             <MenuItem x:Name="ItemLstCopy" Header="Copy (clipboard)" Click="CopyItemSelectionClicked" ></MenuItem>
             <MenuItem x:Name="ItemLstCopyAll" Header="Copy All (clipboard)" Click="CopyItemAllClicked"></MenuItem>
+            <Separator></Separator>
             <MenuItem x:Name="ItemLstGetParentRefs" Header="Get Instance References" Click="ItemLstGetParentRefsClicked"/>
             <MenuItem x:Name="ItemLstGetInstSizes" Header="Get Instance Sizes" Click="ItemLstGetInstsClicked"/>
             <MenuItem x:Name="ItemLstGetInstValue" Header="Get Instance Value" Click="ItemLstGetInstValueClicked"/>
             <MenuItem x:Name="ItemLstGetInstHierarchy" Header="Get Instance Hierarchy" Click="ItemLstGetInstHierarchyClicked"/>
+            <Separator></Separator>
+            <MenuItem x:Name="ItemLstGetTypeValuesReport" Header="Try Type Values Report" Click="ItemLstGetTypeValuesReportClicked"/>
             <Separator></Separator>
             <MenuItem x:Name="ItemLstViewMemory" Header="View Memory" Click="ItenLstViewMemoryClicked"/>
         </ContextMenu>

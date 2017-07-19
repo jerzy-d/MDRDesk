@@ -170,7 +170,7 @@ module Types =
             | _ ->
                 Constants.NullValue
         | TypeKind.EnumKind ->
-            ValueExtractor.GetEnumValueString(addr, fld, intr)
+            ValueExtractor.GetEnumString(addr, fld, intr)
         | TypeKind.InterfaceKind ->
             ValueExtractor.GetPrimitiveValue(addr, fld, intr)
         | TypeKind.PrimitiveKind ->

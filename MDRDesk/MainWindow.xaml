@@ -94,7 +94,6 @@
             <MenuItem x:Name="TypeListGenerateSizeDetailsReport" Header="Generate Size Details Report" Click="GenerateSizeDetailsReport"></MenuItem>
             <MenuItem x:Name="TypeListGetTypeValuesReport" Header="Type Values Report" Click="GetTypeValuesReportClicked"></MenuItem>
         </ContextMenu>
-        
         <ContextMenu x:Key="TypeTreeContextMenu" x:Shared="False">
             <MenuItem x:Name="TypeTreeCopyTypeName" Header="Copy Type Name" Click="TypeTreeCopyTypeNameClicked"></MenuItem>
             <MenuItem x:Name="TypeTreeGenerationDistribution" Header="Generation Ditribution" Click="TypeTreeGenerationDistributionClicked"></MenuItem>
@@ -103,6 +102,16 @@
             <MenuItem x:Name="TypeTreeGetBaseHeapSize" Header="Get Type Total Size" Click="TypeTreeGetTypeSizesClicked"></MenuItem>
             <Separator></Separator>
             <MenuItem x:Name="TypeTreeGetStringUsage" Header="Get String Usage" Click="TypeTreeGetTypeStringUsageClicked"></MenuItem>
+        </ContextMenu>
+        <ContextMenu x:Key="TypeValuesReportContextMenu" x:Shared="False">
+            <MenuItem x:Name="TypeValuesReportCopyRow" Header="Copy Row (clipboard)" Click="TypeValuesReportCopyRowClicked" ></MenuItem>
+            <MenuItem x:Name="TypeValuesReportCopyAddress" Header="Copy Address (clipboard)" Click="TypeValuesReportCopyAddressClicked" ></MenuItem>
+            <MenuItem x:Name="TypeValuesReportGetParentRefs" Header="Get Instance References" Click="TypeValuesReportGetParentRefsClicked"/>
+            <MenuItem x:Name="TypeValuesReportGetInstSizes" Header="Get Instance Sizes" Click="TypeValuesReportGetInstSizesClicked"/>
+            <MenuItem x:Name="TypeValuesReportGetInstValue" Header="Get Instance Value" Click="TypeValuesReportGetInstValueClicked"/>
+            <MenuItem x:Name="TypeValuesReportGetInstHierarchy" Header="Get Instance Hierarchy" Click="TypeValuesReportGetInstHierarchyClicked"/>
+            <Separator></Separator>
+            <MenuItem x:Name="TypeValuesReportViewMemory" Header="View Memory" Click="TypeValuesReportViewMemoryClicked"/>
         </ContextMenu>
 
         <!--Grid x:Key="ListingGrid" x:Shared="False">
@@ -509,6 +518,7 @@
             <Grid Name="BottomGrid" Row="4" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" Margin="2,2,2,2">
             </Grid>
         </Grid>
+        
         <Grid x:Key="ListingGrid" x:Shared="False">
             <Grid.RowDefinitions>
                 <RowDefinition Height="75*"/>
@@ -530,6 +540,30 @@
             <TextBox Name="ListingInformation" v4:Grid.Row="2" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" Margin="2,2,2,2">
             </TextBox>
         </Grid>
+        
+        <Grid x:Key="TypeValuesGrid" x:Shared="False">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="75*"/>
+                <RowDefinition Height="5"/>
+                <RowDefinition Height="20*"/>
+            </Grid.RowDefinitions>
+            <ListView  Name="TypeValuesView" Grid.Row="0" VerticalAlignment="Stretch" HorizontalAlignment="Stretch" Margin="2,2,2,2" GridViewColumnHeader.Click="ListViewBottomGridHeaderClick" ContextMenu="{StaticResource TypeValuesReportContextMenu}">
+                <ListView.ItemContainerStyle>
+                    <Style TargetType="ListViewItem">
+                        <Setter Property="HorizontalContentAlignment" Value="Left" />
+                    </Style>
+                </ListView.ItemContainerStyle>
+                <ListView.View>
+                    <GridView AllowsColumnReorder="True">
+                    </GridView>
+                </ListView.View>
+            </ListView>
+            <GridSplitter Grid.Row="1" VerticalAlignment="Center" HorizontalAlignment="Stretch" Height="5" ShowsPreview="False" Background="DarkGray"></GridSplitter>
+            <TextBox Name="TypeValuesInformation" v4:Grid.Row="2" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" Margin="2,2,2,2">
+            </TextBox>
+        </Grid>
+
+
         <Grid x:Key="IndexingGrid" x:Shared="False">
             <Grid.RowDefinitions>
                 <RowDefinition Height="35*"/>
@@ -677,56 +711,6 @@
                 </DockPanel>
             </Expander>
         </Grid>
-        <!-- display setup of type values report 
-        <Grid x:Key="TypeValueReportSetupGrid" x:Shared="False">
-            <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="75*"/>
-                <ColumnDefinition Width="5"/>
-                <ColumnDefinition Width="25*"/>
-            </Grid.ColumnDefinitions>
-            <Grid.RowDefinitions>
-                <RowDefinition Height="5*"/>
-                <RowDefinition Height="5"/>
-                <RowDefinition Height="75*"/>
-                <RowDefinition Height="5"/>
-                <RowDefinition Height="8*"/>
-            </Grid.RowDefinitions>
-            <TextBox x:Name="TypeValueReportTopTextBox" Grid.Row="0" Grid.Column="0" Grid.ColumnSpan="2" VerticalAlignment="Stretch" HorizontalAlignment="Stretch" Margin="1,1,1,1"/>
-            <Button Grid.Row="0" Grid.Column="2" Style="{StaticResource ButtonStyle5}" Width="115" Margin="0,2,0,2" Content="Run"/>
-            <GridSplitter Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="3" VerticalAlignment="Center" HorizontalAlignment="Stretch" Height="5" ShowsPreview="False" Background="DarkGray"></GridSplitter>
-            <TreeView x:Name="TypeValueReportTreeView" Grid.Row="2" Grid.Column="0" VerticalAlignment="Stretch" HorizontalAlignment="Stretch" Margin="20,1,1,1" SelectedItemChanged="TypeValueReportMouseOnSelectedItemChanged"
-                       MouseDoubleClick="TypeValueReportTreeViewDoubleClicked"  FontSize="12" >
-                <TreeView.ContextMenu>
-                    <ContextMenu>
-                        <MenuItem x:Name="TypeValueReportSelectMenuitem" Header="Get Value Select/Unselect" Click="TypeValueReportSelectClicked"></MenuItem>
-                        <MenuItem x:Name="TypeValueReportFilterMenuitem" Header="Set Filter Value..." Click="TypeValueReportFilterClicked"></MenuItem>
-                    </ContextMenu>
-                </TreeView.ContextMenu>
-                <TreeView.ItemContainerStyle>
-                    <Style TargetType="TreeViewItem">
-                        <EventSetter Event="RequestBringIntoView" Handler="TreeViewItem_RequestBringIntoView"/>
-                    </Style>
-                </TreeView.ItemContainerStyle>
-            </TreeView>
-            <GridSplitter Grid.Row="2" Grid.Column="1" VerticalAlignment="Stretch" HorizontalAlignment="Center" Width="5" ShowsPreview="False" Background="DarkGray"></GridSplitter>
-            <Grid Grid.Row="2" Grid.Column="2">
-                <Grid.RowDefinitions>
-                    <RowDefinition Height="65*"/>
-                    <RowDefinition Height="5"/>
-                    <RowDefinition Height="35*"/>
-                </Grid.RowDefinitions>
-                <ListBox x:Name="TypeValueReportSelectedList" Grid.Row="0">
-
-                </ListBox>
-                <GridSplitter Grid.Row="1" VerticalAlignment="Center" HorizontalAlignment="Stretch" Height="5" ShowsPreview="False" Background="DarkGray"></GridSplitter>
-                <ListBox  x:Name="TypeValueReportFilterList" Grid.Row="2">
-
-                </ListBox>
-            </Grid>
-            <GridSplitter Grid.Row="3"  Grid.Column="0"  Grid.ColumnSpan="3" VerticalAlignment="Center" HorizontalAlignment="Stretch" Height="5" ShowsPreview="False" Background="DarkGray"></GridSplitter>
-            <TextBox x:Name="TypeValueReportBottomTextBox" Grid.Row="4" Grid.Column="0" Grid.ColumnSpan="3" VerticalAlignment="Stretch" HorizontalAlignment="Stretch" Margin="1,1,1,1"/>
-        </Grid>
-        -->
     </Window.Resources>
     <Grid x:Name="MainGrid">
         <Grid.RowDefinitions>
