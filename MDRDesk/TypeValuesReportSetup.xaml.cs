@@ -399,147 +399,67 @@ namespace MDRDesk
             }
         }
 
-        //private ClrtDisplayableType[] GetOrderedSelection()
-        //{
-        //    var lst = new LinkedList<ClrtDisplayableType>();
-        //    var needed = new HashSet<ClrtDisplayableType>(new ClrtDisplayableIdComparer());
-        //    var tempLst = new List<ClrtDisplayableType>(16);
-        //    needed.Add(_typeInfo);
-        //    lst.AddFirst(_typeInfo); // parent of all
-        //    foreach (var sel in _selection)
-        //    {
-        //        if (needed.Contains(sel)) continue;
-        //        if (sel.Parent == null)
-        //        {
-        //            lst.AddFirst(sel);
-        //            needed.Add(sel);
-        //            continue;
-        //        }
-        //        tempLst.Clear();
-        //        tempLst.Add(sel);
-        //        var parent = sel.RealParent;
-        //        while (parent != null && !needed.Contains(parent))
-        //        {
-        //            tempLst.Add(parent);
-        //            needed.Add(parent);
-        //            parent = parent.RealParent;
-        //        }
-        //        tempLst.Reverse();
-        //        foreach(var item in tempLst)
-        //        {
-        //            var itemParentId = item.RealParent.Id;
-        //            var itemFieldIndex = item.FieldIndex;
-
-        //            // look for parent
-        //            var prev = lst.Last;
-        //            while (prev.Value.Id != itemParentId)
-        //            {
-        //                var node = prev.Previous;
-        //                if (node != null) prev = node;
-        //            }
-        //            lst.AddAfter(prev, item);
-        //            //// look for place
-        //            //var next = prev.Next;
-        //            //while(next != null && next.Value.RealParent.Id == itemParentId && next.Value.FieldIndex < itemFieldIndex)
-        //            //{
-        //            //    prev = next;
-        //            //    next = next.Next;
-        //            //}
-
-        //        }
-        //    }
-
-        //    //var que = new Queue<ClrtDisplayableType>(Math.Max(needed.Count * 2, 64));
-        //    //var lst = new LinkedList<ClrtDisplayableType>();
-        //    //int ndx = 0;
-        //    //lst.AddFirst(_typeInfo);
-        //    //if (_typeInfo.Fields == null)
-        //    //{
-        //    //    return lst.ToArray();
-        //    //}
-        //    //for (int i = 0, icnt = _typeInfo.Fields.Length; i < icnt; ++i)
-        //    //{
-        //    //    que.Enqueue(_typeInfo.Fields[i]);
-        //    //}
-        //    //while (que.Count > 0)
-        //    //{
-        //    //    var cdt = que.Dequeue();
-        //    //    if (needed.Contains(cdt))
-        //    //    {
-        //    //        InsertClrtDisplayableType(lst, cdt);
-        //    //    }
-
-        //    //    if (cdt.HasFields)
-        //    //    {
-        //    //        for (int i = 0, icnt = cdt.Fields.Length; i < icnt; ++i)
-        //    //        {
-        //    //            que.Enqueue(cdt.Fields[i]);
-        //    //        }
-        //    //    }
-        //    //    if (cdt.HasAlternatives)
-        //    //    {
-        //    //        for (int i = 0, icnt = cdt.Alternatives.Length; i < icnt; ++i)
-        //    //        {
-        //    //            que.Enqueue(cdt.Alternatives[i]);
-        //    //        }
-        //    //    }
-        //    //}
-
-        //    return lst.ToArray();
-        //}
-
-        private ClrtDisplayableType[] GetOrderedSelectionForSaving()
+        private ClrtDisplayableType[] GetOrderedSelectionForSaving(out string error)
         {
-            var needed = new HashSet<ClrtDisplayableType>(new ClrtDisplayableIdComparer());
-            needed.Add(_typeInfo);
-            foreach (var sel in _selection)
+            error = null;
+            try
             {
-                needed.Add(sel);
-                if (sel.Parent == null) continue;
-                var parent = sel.Parent;
-                while (parent != null)
+                var needed = new HashSet<ClrtDisplayableType>(new ClrtDisplayableIdComparer());
+                needed.Add(_typeInfo);
+                foreach (var sel in _selection)
                 {
-                    needed.Add(parent);
-                    parent = parent.Parent;
+                    needed.Add(sel);
+                    if (sel.Parent == null) continue;
+                    var parent = sel.Parent;
+                    while (parent != null)
+                    {
+                        needed.Add(parent);
+                        parent = parent.Parent;
+                    }
                 }
-            }
 
-            var que = new Queue<ClrtDisplayableType>(Math.Max(needed.Count * 2, 64));
-            var lst = new LinkedList<ClrtDisplayableType>();
-            int ndx = 0;
-            lst.AddFirst(_typeInfo);
-            if (_typeInfo.Fields == null)
-            {
+                var que = new Queue<ClrtDisplayableType>(Math.Max(needed.Count * 2, 64));
+                var lst = new LinkedList<ClrtDisplayableType>();
+                int ndx = 0;
+                lst.AddFirst(_typeInfo);
+                if (_typeInfo.Fields == null)
+                {
+                    return lst.ToArray();
+                }
+                for (int i = 0, icnt = _typeInfo.Fields.Length; i < icnt; ++i)
+                {
+                    que.Enqueue(_typeInfo.Fields[i]);
+                }
+                while (que.Count > 0)
+                {
+                    var cdt = que.Dequeue();
+                    if (needed.Contains(cdt))
+                    {
+                        InsertClrtDisplayableType(lst, cdt);
+                    }
+
+                    if (cdt.HasFields)
+                    {
+                        for (int i = 0, icnt = cdt.Fields.Length; i < icnt; ++i)
+                        {
+                            que.Enqueue(cdt.Fields[i]);
+                        }
+                    }
+                    if (cdt.HasAlternatives)
+                    {
+                        for (int i = 0, icnt = cdt.Alternatives.Length; i < icnt; ++i)
+                        {
+                            que.Enqueue(cdt.Alternatives[i]);
+                        }
+                    }
+                }
                 return lst.ToArray();
             }
-            for (int i = 0, icnt = _typeInfo.Fields.Length; i < icnt; ++i)
+            catch(Exception ex)
             {
-                que.Enqueue(_typeInfo.Fields[i]);
+                error = Utils.GetExceptionErrorString(ex);
+                return null;
             }
-            while (que.Count > 0)
-            {
-                var cdt = que.Dequeue();
-                if (needed.Contains(cdt))
-                {
-                    InsertClrtDisplayableType(lst, cdt);
-                }
-
-                if (cdt.HasFields)
-                {
-                    for (int i = 0, icnt = cdt.Fields.Length; i < icnt; ++i)
-                    {
-                        que.Enqueue(cdt.Fields[i]);
-                    }
-                }
-                if (cdt.HasAlternatives)
-                {
-                    for (int i = 0, icnt = cdt.Alternatives.Length; i < icnt; ++i)
-                    {
-                        que.Enqueue(cdt.Alternatives[i]);
-                    }
-                }
-            }
-            return lst.ToArray();
         }
 
         private void InsertClrtDisplayableType(LinkedList<ClrtDisplayableType> lst, ClrtDisplayableType cdt)
@@ -563,10 +483,15 @@ namespace MDRDesk
         private void RunClicked(object sender, RoutedEventArgs e)
         {
             _query = GetQuery();
-            //_needed = GetOrderedSelection();
             if (TypeValueSaveReportCheckBox.IsChecked.Value)
             {
-                ClrtDisplayableType[] tosave = GetOrderedSelectionForSaving();
+                string error;
+                ClrtDisplayableType[] tosave = GetOrderedSelectionForSaving(out error);
+                if (error != null)
+                {
+                    GuiUtils.ShowError(error,this);
+                    return;
+                }
                 var tpName = Utils.BaseTypeName(tosave[0].TypeName);
                 tpName = DumpFileMoniker.GetValidFileName(tpName);
 
@@ -578,8 +503,12 @@ namespace MDRDesk
                     ++pathNdx;
                     spath = _indexProxy.FileMoniker.OutputFolder + Path.DirectorySeparatorChar + "TypeValuesSetup." + newTpName + ".tvr";
                 }
-                string error;
                 bool r = ClrtDisplayableType.SerializeArray(spath, tosave, out error);
+                if (error != null)
+                {
+                    GuiUtils.ShowError(error, this);
+                    return;
+                }
             }
             DialogResult = _selection.Count > 0;
         }

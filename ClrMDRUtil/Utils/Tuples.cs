@@ -161,7 +161,8 @@ namespace ClrMDRIndex
 			"Eighth",
 			"Ninth",
 			"Tenth",
-		};
+            "Eleventh"
+        };
 
 		private T[] _ary;
 		private int _offset;
@@ -199,9 +200,10 @@ namespace ClrMDRIndex
 		public T Seventh => _ary[_offset + 6];
 		public T Eighth => _ary[_offset + 7];
 		public T Ninth	=> _ary[_offset + 8];
-		public T Tenth	=> _ary[_offset + 9];
+        public T Tenth => _ary[_offset + 9];
+        public T Eleventh => _ary[_offset + 9];
 
-		public int Count => _count;
+        public int Count => _count;
 		public int Offset => _offset;
 		public int ItemsCount => _ary.Length/_count;
 
