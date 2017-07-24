@@ -1,0 +1,64 @@
+﻿<Window x:Class="MDRDesk.KeyValueCollectionDisplay"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:MDRDesk"
+        mc:Ignorable="d"
+        Title="KeyValueCollectionDisplay" Height="500" Width="400"
+        WindowStartupLocation="CenterOwner"
+        Closing="Window_Closing">
+    <Window.Resources>
+        <ContextMenu x:Key="KeyValueContextMenu" x:Shared="False">
+            <MenuItem x:Name="KeyCopy" Header="Copy Key (clipboard)" Click="KeyCopyClicked" ></MenuItem>
+            <MenuItem x:Name="ValueCopy" Header="Copy Value (clipboard)" Click="CopyValueClicked"></MenuItem>
+            <Separator></Separator>
+            <MenuItem x:Name="KeyGetParentRefs" Header="Get Key Instance References" Click="KeyGetParentRefsClicked"/>
+            <MenuItem x:Name="ValueGetParentRefs" Header="Get Value Instance References" Click="ValueGetParentRefsClicked"/>
+            <MenuItem x:Name="KeyGetInstSizes" Header="Get Key Instance Sizes" Click="KeyGetInstSizesClicked"/>
+            <MenuItem x:Name="ValueGetInstSizes" Header="Get Value Instance Sizes" Click="ValueGetInstSizesClicked"/>
+            <MenuItem x:Name="KeyGetInstValue" Header="Get Key Instance Value" Click="KeyGetInstValueClicked"/>
+            <MenuItem x:Name="ValueGetInstValue" Header="Get Value Instance Value" Click="ValueGetInstValueClicked"/>
+            <MenuItem x:Name="KeyGetInstHierarchy" Header="Get Key Instance Hierarchy" Click="KeyGetInstHierarchyClicked"/>
+            <MenuItem x:Name="ValueGetInstHierarchy" Header="Get Value Instance Hierarchy" Click="ValueGetInstHierarchyClicked"/>
+            <Separator></Separator>
+            <MenuItem x:Name="KeyViewMemory" Header="Key View Memory" Click="KeyViewMemoryClicked"/>
+            <MenuItem x:Name="ValueViewMemory" Header="Value View Memory" Click="ValueViewMemoryClicked"/>
+        </ContextMenu>
+    </Window.Resources>
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="15*"/>
+            <RowDefinition Height="5"/>
+            <RowDefinition Height="77*"/>
+            <RowDefinition Height="8*"/>
+        </Grid.RowDefinitions>
+        <TextBox x:Name="CollectionInfo" Grid.Row="0" Margin="2,2,2,2" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" FontFamily="Consolas" FontSize="11" TextWrapping="NoWrap">
+            <TextBox.BorderBrush>BlanchedAlmond</TextBox.BorderBrush>
+        </TextBox>
+        <GridSplitter Grid.Row="1" VerticalAlignment="Center" HorizontalAlignment="Stretch" Height="5" ShowsPreview="False" Background="DarkGray"></GridSplitter>
+        <ListView x:Name="KeyValuePairs" Grid.Row="2" Margin="2,2,2,2" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" FontFamily="Consolas" FontSize="11" ContextMenu="{StaticResource KeyValueContextMenu}"  MouseDoubleClick="KeyValueDoubleClicked">
+            <ListView.View>
+                <GridView>
+                    <GridViewColumn Header="Key" Width="200" DisplayMemberBinding="{Binding Key}" />
+                    <GridViewColumn Header="Value" Width="200" DisplayMemberBinding="{Binding Value}" />
+                </GridView>
+            </ListView.View>
+        </ListView>
+        <Grid Grid.Row="3" Margin="2,2,2,2">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="80*"/>
+                <ColumnDefinition Width="20*"/>
+            </Grid.ColumnDefinitions>
+            <Button  x:Name="ShowArrayIndices" Grid.Column="1" Width="20" Height="20" HorizontalAlignment="Center" VerticalAlignment="Center" BorderThickness="0" Click="ShowArrayIndicesClicked"
+                         Background="AliceBlue">
+                <Button.ToolTip>Show/hide array indices.</Button.ToolTip>
+                <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                    <Image Source=".\Images\ListView_16x.png" Width="16" Height="16" Margin="0,0,0,0" VerticalAlignment="Center" HorizontalAlignment="Center"/>
+                </StackPanel>
+            </Button>
+
+        </Grid>
+
+    </Grid>
+</Window>

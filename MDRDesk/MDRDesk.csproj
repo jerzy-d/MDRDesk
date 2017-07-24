@@ -188,6 +188,9 @@
       <DependentUpon>HexView.xaml</DependentUpon>
     </Compile>
     <Compile Include="IndexingProgress.cs" />
+    <Compile Include="KeyValueCollectionDisplay.xaml.cs">
+      <DependentUpon>KeyValueCollectionDisplay.xaml</DependentUpon>
+    </Compile>
     <Compile Include="MainWindow.Gui.cs" />
     <Compile Include="MDRDeskSetup.xaml.cs">
       <DependentUpon>MDRDeskSetup.xaml</DependentUpon>
@@ -231,6 +234,10 @@
       <Generator>MSBuild:Compile</Generator>
     </Page>
     <Page Include="InputStringDlg.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="KeyValueCollectionDisplay.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>

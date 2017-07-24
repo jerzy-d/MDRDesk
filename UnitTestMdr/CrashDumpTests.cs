@@ -851,85 +851,85 @@ namespace UnitTestMdr
 
         #region System.Collections.Generic.Dictionary<TKey,TValue> content
 
-        [TestMethod]
-        public void TestGetDictionaryContent()
-        {
-            ulong dctAddr = 0x6aa051f410; //0xe0859ab3e8; // 0x0000e0859ab388; // 0x000084d7ce3938;
-            var dmp = OpenDump(@"D:\Jerzy\WinDbgStuff\dumps\Analytics\Ellerston\Eze.Analytics.Svc_170607_214916.dmp");
-            using (dmp)
-            {
-                var heap = dmp.Heap;
-                var clrType = heap.GetObjectType(dctAddr);
-                if (!clrType.Name.StartsWith("System.Collections.Generic.Dictionary<")
-                    && !clrType.BaseType.Name.StartsWith("System.Collections.Generic.Dictionary<")) return;
+        //[TestMethod]
+        //public void TestGetDictionaryContent()
+        //{
+        //    ulong dctAddr = 0x6aa051f410; //0xe0859ab3e8; // 0x0000e0859ab388; // 0x000084d7ce3938;
+        //    var dmp = OpenDump(@"D:\Jerzy\WinDbgStuff\dumps\Analytics\Ellerston\Eze.Analytics.Svc_170607_214916.dmp");
+        //    using (dmp)
+        //    {
+        //        var heap = dmp.Heap;
+        //        var clrType = heap.GetObjectType(dctAddr);
+        //        if (!clrType.Name.StartsWith("System.Collections.Generic.Dictionary<")
+        //            && !clrType.BaseType.Name.StartsWith("System.Collections.Generic.Dictionary<")) return;
 
-                var dctAry = ValueExtractor.GetDictionaryInfo(heap, dctAddr, clrType);
-                var lst = new List<KeyValuePair<ulong, ulong>>();
-                for (int i = 0, icnt = dctAry.Length; i < icnt; ++i)
-                {
-                    if (dctAry[i].Key == 0ul) continue;
-                    lst.Add(dctAry[i]);
-                }
-
-
-
-                return;
-
-                var result = CollectionContent.getDictionaryInfo(heap, dctAddr, clrType);
-                Assert.IsNotNull(result);
+        //        var dctAry = ValueExtractor.GetDictionaryInfo(heap, dctAddr, clrType);
+        //        var lst = new List<KeyValuePair<ulong, ulong>>();
+        //        for (int i = 0, icnt = dctAry.Length; i < icnt; ++i)
+        //        {
+        //            if (dctAry[i].Key == 0ul) continue;
+        //            lst.Add(dctAry[i]);
+        //        }
 
 
 
+        //        return;
 
-                var dctResult = CollectionContent.dictionaryContent(heap, dctAddr);
-                var entries = dctResult.Item7;
-
-                StreamWriter sw = null;
-                string error;
-                try
-                {
-                    var path = DumpFileMoniker.GetAndCreateOutFolder(dmp.DumpPath, out error) + Path.DirectorySeparatorChar + "DctHashesContent.txt";
-                    sw = new StreamWriter(path);
-
-                    for (int i = 0; i < entries.Length; ++i)
-                    {
-                        var entry = entries[i];
-                        var hsetAddr = Convert.ToUInt64(entry.Value, 16);
-
-                        //                        var hcontent = CollectionContent.getHashSetContent(heap, hsetAddr);
-                        sw.Write(entry.Key);
-                        sw.Write(" : ");
-                        sw.Write(Utils.RealAddressString(hsetAddr));
-                        var entryType = heap.GetObjectType(hsetAddr);
-                        var typeName = entryType == null ? "{null type}" : entryType.Name;
-                        sw.Write("  ");
-                        sw.Write(typeName);
-                        //if (hcontent == null)
-                        //{
-                        //    sw.Write("{null}");
-                        //}
-                        //else
-                        //{
-                        //    for (int j = 0, jcnt = hcontent.Item2.Length; j < jcnt; ++j)
-                        //    {
-                        //        sw.Write(" ");
-                        //        sw.Write(hcontent.Item2[j]);
-                        //    }
-                        //}
-                        sw.WriteLine();
-                    }
-                }
-                finally
-                {
-                    sw?.Close();
-                }
+        //        var result = CollectionContent.getDictionaryInfo(heap, dctAddr, clrType);
+        //        Assert.IsNotNull(result);
 
 
 
-                Assert.IsNotNull(dctResult);
-                Assert.IsNull(dctResult.Item1, dctResult.Item1);
-            }
-        }
+
+        //        var dctResult = CollectionContent.dictionaryContent(heap, dctAddr);
+        //        var entries = dctResult.Item7;
+
+        //        StreamWriter sw = null;
+        //        string error;
+        //        try
+        //        {
+        //            var path = DumpFileMoniker.GetAndCreateOutFolder(dmp.DumpPath, out error) + Path.DirectorySeparatorChar + "DctHashesContent.txt";
+        //            sw = new StreamWriter(path);
+
+        //            for (int i = 0; i < entries.Length; ++i)
+        //            {
+        //                var entry = entries[i];
+        //                var hsetAddr = Convert.ToUInt64(entry.Value, 16);
+
+        //                //                        var hcontent = CollectionContent.getHashSetContent(heap, hsetAddr);
+        //                sw.Write(entry.Key);
+        //                sw.Write(" : ");
+        //                sw.Write(Utils.RealAddressString(hsetAddr));
+        //                var entryType = heap.GetObjectType(hsetAddr);
+        //                var typeName = entryType == null ? "{null type}" : entryType.Name;
+        //                sw.Write("  ");
+        //                sw.Write(typeName);
+        //                //if (hcontent == null)
+        //                //{
+        //                //    sw.Write("{null}");
+        //                //}
+        //                //else
+        //                //{
+        //                //    for (int j = 0, jcnt = hcontent.Item2.Length; j < jcnt; ++j)
+        //                //    {
+        //                //        sw.Write(" ");
+        //                //        sw.Write(hcontent.Item2[j]);
+        //                //    }
+        //                //}
+        //                sw.WriteLine();
+        //            }
+        //        }
+        //        finally
+        //        {
+        //            sw?.Close();
+        //        }
+
+
+
+        //        Assert.IsNotNull(dctResult);
+        //        Assert.IsNull(dctResult.Item1, dctResult.Item1);
+        //    }
+        //}
 
         ulong[] relatedViews = new ulong[] {
  0x000006ca17ed798

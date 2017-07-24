@@ -151,3 +151,8 @@ Note that the above code reacts to clicking anywhere on the item.  You can get s
 Instance value display - include arrays of interfaces.
 ECS.Cache.Service.Interface.ICacheNotificationSubscription[]
 ECS.Cache.Service.Interface.ICacheNotification[]
+0036 07/23/17
+Make sure we display proper type value (ex. string) when key/value is System.__Canon
+Test case:
+Cowen.Analytics.Svc_170717_165238.dmp
+System.Collections.Generic.Dictionary<System.String,System.Boolean> at 0x00005409b849a8

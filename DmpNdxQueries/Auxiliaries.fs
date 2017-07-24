@@ -196,7 +196,7 @@ module Auxiliaries =
 
     let getFieldIntValue (heap:ClrHeap) (addr:address) (clrType:ClrType) (fldName:string) =
         let fld = clrType.GetFieldByName(fldName);
-        unbox<int32>(fld.GetValue(addr))
+        if isNull fld then 0 else unbox<int32>(fld.GetValue(addr))
 
     let getIntValue (addr:address) (fld:ClrInstanceField) (intr:bool) =
         unbox<int32>(fld.GetValue(addr,intr))

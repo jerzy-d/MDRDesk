@@ -1361,62 +1361,62 @@ namespace UnitTestMdr
 		//}
 
 
-		[TestMethod]
-		public void TestDictionaryCounts2()
-		{
-			const string typeName0 = "ECS.Common.HierarchyCache.Structure.PositionIndexGroup";
-			SortedDictionary<string, int> dct = new SortedDictionary<string, int>(StringComparer.Ordinal);
-			int recalcRequiredPoisonPositionsIfTtzSignChangesEmpty = 0;
-			int recalcRequiredPositionsInducingRecalcEmpty = 0;
+		//[TestMethod]
+		//public void TestDictionaryCounts2()
+		//{
+		//	const string typeName0 = "ECS.Common.HierarchyCache.Structure.PositionIndexGroup";
+		//	SortedDictionary<string, int> dct = new SortedDictionary<string, int>(StringComparer.Ordinal);
+		//	int recalcRequiredPoisonPositionsIfTtzSignChangesEmpty = 0;
+		//	int recalcRequiredPositionsInducingRecalcEmpty = 0;
 
-			StringBuilder sb = new StringBuilder(256);
-			using (var index = OpenMap(@"D:\Jerzy\WinDbgStuff\dumps\Analytics\Lou\Analytics3.dmp.map"))
-			{
-				try
-				{
-					int typeId0 = index.GetTypeId(typeName0);
-					var addresses = index.GetTypeRealAddresses(typeId0);
-					var heap = index.GetFreshHeap();
-					int clrTypeNullCount = 0;
-					for (int i = 0, icnt = addresses.Length; i < icnt; ++i)
-					{
-						var clrType = heap.GetObjectType(addresses[i]);
-						if (clrType == null)
-						{
-							++clrTypeNullCount;
-							continue;
-						}
+		//	StringBuilder sb = new StringBuilder(256);
+		//	using (var index = OpenMap(@"D:\Jerzy\WinDbgStuff\dumps\Analytics\Lou\Analytics3.dmp.map"))
+		//	{
+		//		try
+		//		{
+		//			int typeId0 = index.GetTypeId(typeName0);
+		//			var addresses = index.GetTypeRealAddresses(typeId0);
+		//			var heap = index.GetFreshHeap();
+		//			int clrTypeNullCount = 0;
+		//			for (int i = 0, icnt = addresses.Length; i < icnt; ++i)
+		//			{
+		//				var clrType = heap.GetObjectType(addresses[i]);
+		//				if (clrType == null)
+		//				{
+		//					++clrTypeNullCount;
+		//					continue;
+		//				}
 
-						var addr = addresses[i];
-						var fld1 = clrType.GetFieldByName("recalcRequiredPoisonPositionsIfTtzSignChanges");
-						var addr1 = Auxiliaries.getReferenceFieldAddress(addr, fld1, false);
-						var fld2 = clrType.GetFieldByName("recalcRequiredPositionsInducingRecalc");
-						var addr2 = Auxiliaries.getReferenceFieldAddress(addr, fld2, false);
-						int cnt1 = 0;
-						if (addr1 != Constants.InvalidAddress)
-						{
-							cnt1 = CollectionContent.getDictionaryCount(heap, addr1).Item2;
-							if (cnt1 == 0)
-								++recalcRequiredPoisonPositionsIfTtzSignChangesEmpty;
-						}
-						int cnt2 = 0;
-						if (addr2 != Constants.InvalidAddress)
-						{
-							cnt2 = CollectionContent.getDictionaryCount(heap, addr2).Item2;
-							if (cnt2 == 0)
-								++recalcRequiredPositionsInducingRecalcEmpty;
-						}
+		//				var addr = addresses[i];
+		//				var fld1 = clrType.GetFieldByName("recalcRequiredPoisonPositionsIfTtzSignChanges");
+		//				var addr1 = Auxiliaries.getReferenceFieldAddress(addr, fld1, false);
+		//				var fld2 = clrType.GetFieldByName("recalcRequiredPositionsInducingRecalc");
+		//				var addr2 = Auxiliaries.getReferenceFieldAddress(addr, fld2, false);
+		//				int cnt1 = 0;
+		//				if (addr1 != Constants.InvalidAddress)
+		//				{
+		//					cnt1 = CollectionContent.getDictionaryCount(heap, addr1).Item2;
+		//					if (cnt1 == 0)
+		//						++recalcRequiredPoisonPositionsIfTtzSignChangesEmpty;
+		//				}
+		//				int cnt2 = 0;
+		//				if (addr2 != Constants.InvalidAddress)
+		//				{
+		//					cnt2 = CollectionContent.getDictionaryCount(heap, addr2).Item2;
+		//					if (cnt2 == 0)
+		//						++recalcRequiredPositionsInducingRecalcEmpty;
+		//				}
 
-					}
+		//			}
 
 
-				}
-				catch (Exception ex)
-				{
-					Assert.IsTrue(false, ex.ToString());
-				}
-			}
-		}
+		//		}
+		//		catch (Exception ex)
+		//		{
+		//			Assert.IsTrue(false, ex.ToString());
+		//		}
+		//	}
+		//}
 
 		//[TestMethod]
 		//public void TestDictionaryCounts3()

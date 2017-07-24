@@ -1380,25 +1380,51 @@ namespace ClrMDRIndex
         //    }
         //}
 
-        public (string, InstanceValue) GetInstanceValue(ulong addr, InstanceValue parent)
+        public (string, InstanceValue, TypeExtractor.KnownTypes) GetInstanceValue(ulong addr, InstanceValue parent)
         {
             try
             {
+                addr = Utils.RealAddress(addr);
                 int instId = GetInstanceIndex(addr);
                 if (instId < 0)
                 {
                     string err = Constants.InformationSymbolHeader + "Cannot find address on the heap: " + Utils.RealAddressString(addr);
-                    return (err, null);
+                    return (err, null,TypeExtractor.KnownTypes.Unknown);
+                }
+                int typeId = _instanceTypes[instId];
+                string typeName = GetTypeName(typeId);
+                var knownCollection = TypeExtractor.IsKnownCollection(typeName);
+                string error;
+                InstanceValue inst;
+                if (knownCollection != TypeExtractor.KnownTypes.Unknown)
+                {
+                    switch(knownCollection)
+                    {
+                        case TypeExtractor.KnownTypes.Dictionary:
+                            return GetDictionaryContent(addr, typeId, typeName);
+                    }
                 }
 
-                (string error, InstanceValue inst) = ValueExtractor.GetInstanceValue(IndexProxy, Dump.Heap, addr, Constants.InvalidIndex, parent);
+                (error, inst) = ValueExtractor.GetInstanceValue(IndexProxy, Dump.Heap, addr, Constants.InvalidIndex, parent);
                 if (inst != null) inst.SortByFieldName();
-                return (error, inst);
+                return (error, inst, TypeExtractor.KnownTypes.Unknown);
             }
             catch (Exception ex)
             {
-                return (Utils.GetExceptionErrorString(ex), null);
+                return (Utils.GetExceptionErrorString(ex), null, TypeExtractor.KnownTypes.Unknown);
             }
+        }
+
+        public (string error, InstanceValue inst, TypeExtractor.KnownTypes) GetDictionaryContent(ulong addr, int typeId, string typeName)
+        {
+            Debug.Assert(TypeExtractor.IsKnownCollection(typeName) != TypeExtractor.KnownTypes.Unknown);
+            (string error, KeyValuePair<string, string>[] description, KeyValuePair<string, string>[] values) =
+                ValueExtractor.GetDictionaryContent(Heap, addr);
+            if (error != null) return (error, null, TypeExtractor.KnownTypes.Unknown);
+            var inst = new InstanceValue(typeId, ClrElementKind.Object, addr, typeName, null, null);
+            inst.AddExtraData(description);
+            inst.AddKeyValuePairs(values);
+            return (null, inst, TypeExtractor.KnownTypes.Dictionary);
         }
 
         public (string, InstanceValue[]) GetInstanceValueFields(ulong addr, InstanceValue parent)
@@ -1452,7 +1478,7 @@ namespace ClrMDRIndex
                 //var heap = GetFreshHeap();
                 //var result = FQry.getInstanceValue(_indexProxy, heap, addr, fldNdx);
 
-                (string err, InstanceValue inst) = GetInstanceValue(addr, null);
+                (string err, InstanceValue inst, TypeExtractor.KnownTypes knownType) = GetInstanceValue(addr, null);
                 //var instValue = GetInstanceValue(addr, out error);
                 //instValue.Item1?.SortByFieldName();
                 return new InstanceValueAndAncestors(inst, ancestorInfos);
@@ -2131,6 +2157,25 @@ namespace ClrMDRIndex
         }
 
         #endregion disassemble
+
+        #region ah-hoc queries
+
+        public ClrHeap GetHeap()
+        {
+            return Dump.Heap;
+        }
+
+        public ClrType GetObjectType(ulong addr)
+        {
+             return GetObjectType(Dump.Heap, addr);
+        }
+
+        public static ClrType GetObjectType(ClrHeap heap, ulong addr)
+        {
+            return heap.GetObjectType(addr);
+        }
+
+        #endregion ah-hoc queries
 
         #endregion queries
 

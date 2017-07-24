@@ -199,7 +199,7 @@ module CollectionContent =
         let entryValueFld = entryType.GetFieldByName("value")
         let entryKeyType = tryGetFieldType heap (entryAddr + (uint64)entryKeyFld.Offset) entryKeyFld 
         let entryValueType = tryGetFieldType heap (entryAddr + (uint64)entryValueFld.Offset) entryValueFld 
-        (fldDescription, count, entriesType, entriesAddr, entryHashCodeFld, entryNextFld, entryKeyFld, entryKeyType, entryValueFld, entryValueType)
+        (fldDescription, count-freeCount, entriesType, entriesAddr, entryHashCodeFld, entryNextFld, entryKeyFld, entryKeyType, entryValueFld, entryValueType)
 
     let dictionaryContent (heap:ClrHeap) (addr:address) =
         try
@@ -218,19 +218,19 @@ module CollectionContent =
                     let valVal = getFieldValue heap entryAddr true entryValueFld entryValueKind
                     entryList.Add(new KeyValuePair<string,string>(keyVal,valVal))
                 index <- index + 1
-            (null, fldDescription, count, dctType, entryKeyType, entryValueType, entryList.ToArray())
+            struct (null, fldDescription, count, dctType, entryKeyType, entryValueType, entryList.ToArray())
         with
-            | exn -> (Utils.GetExceptionErrorString(exn),null,0,null,null,null,null)
+            | exn -> struct (Utils.GetExceptionErrorString(exn),null,0,null,null,null,null)
 
 
     let getDictionaryCount (heap:ClrHeap) (addr:address) =
         let clrType = heap.GetObjectType(addr)
         if (isNull clrType) then
-            ("Cannot get type at address: " + Utils.AddressString(addr), -1)
+            struct ("Cannot get type at address: " + Utils.AddressString(addr), -1)
         else
-            let fld = clrType.GetFieldByName("count")
-            let count = fld.GetValue(addr,false,false)
-            (null,unbox<int>(count))
+            let count = getFieldIntValue heap addr clrType "count"
+            let free = getFieldIntValue heap addr clrType "freeCount"
+            struct (null, count-free)
     
     (*
         System.Collections.Generic.SortedDictionary<TKey,TValue>

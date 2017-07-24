@@ -1868,9 +1868,9 @@ namespace UnitTestMdr
 		{
 			Stopwatch stopWatch = new Stopwatch();
 			stopWatch.Start();
-			var index = OpenIndex(@"D:\Jerzy\WinDbgStuff\dumps\Analytics\Cowen\Cowen.Analytics.Svc_170713_162556.dmp.map");
+			var index = OpenIndex(@"C:\WinDbgStuff\dumps\Analytics\Cowen\Cowen.Analytics.Svc_170713_162556.dmp.map");
 			TestContext.WriteLine(index.DumpFileName + " INDEX OPEN DURATION: " + Utils.StopAndGetDurationString(stopWatch));
-			ulong addr = 0x000087e74b3210;
+			ulong addr = 0x000055099f9b08;
 			using (index)
 			{
 				(string error, InstanceValue inst) = ValueExtractor.ArrayContent(index.IndexProxy, index.Heap, addr,null);
@@ -1878,6 +1878,29 @@ namespace UnitTestMdr
 			}
 
 		}
+
+        [TestMethod]
+        public void TestDictionaryContent()
+        {
+            Stopwatch stopWatch = new Stopwatch();
+            stopWatch.Start();
+            var index = OpenIndex(@"C:\WinDbgStuff\Dumps\Analytics\Cowen\Cowen.Analytics.Svc_170717_165238.dmp.map");
+            TestContext.WriteLine(index.DumpFileName + " INDEX OPEN DURATION: " + Utils.StopAndGetDurationString(stopWatch));
+            ulong addr = 0x000055070662f0;
+            using (index)
+            {
+                //       (string error, InstanceValue inst) = ValueExtractor.GetDictionaryInfo(index.IndexProxy, index.Heap, addr, null);
+                var heap = index.GetHeap();
+                var clrType = index.GetObjectType(addr);
+
+                (string error0, KeyValuePair<string, string>[] fldDescription, int count, ClrType dctType, ClrType entryKeyType, ClrType entryValueType, KeyValuePair< string,string >[] entryList) = CollectionContent.dictionaryContent(heap, addr);
+                Assert.IsNull(error0, error0);
+                (string error1, KeyValuePair<string, string>[] description, KeyValuePair<string, string>[] values) =
+                ValueExtractor.GetDictionaryContent(heap, addr);
+
+            }
+
+        }
 
         #endregion instance value
 

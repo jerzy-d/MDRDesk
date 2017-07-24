@@ -822,8 +822,7 @@ namespace ClrMDRIndex
 
         public static string GetEnumString(ulong parentAddr, ClrInstanceField field, bool intr)
         {
-            var addrObj = field.GetAddress(parentAddr, intr);
-            var primVal = field.Type.GetValue(addrObj);
+            var primVal = field.GetValue(parentAddr, intr,false);
             var enumName = field.Type.GetEnumName(primVal);
             return primVal + (enumName == null ? string.Empty : " " + enumName);
         }
@@ -944,6 +943,17 @@ namespace ClrMDRIndex
             intervals.Add(new triple<bool, ulong, ulong>(false, lastAddr, curLastAddr - lastAddr));
         }
 
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="heap"></param>
+        /// <param name="addr"></param>
+        /// <param name="fld"></param>
+        /// <param name="fldType"></param>
+        /// <param name="fldKind"></param>
+        /// <param name="intern">Is parent a structure.</param>
+        /// <param name="theValue">If we want object (actual value), otherwise object is changed to string.</param>
+        /// <returns></returns>
         public static object GetFieldValue(ClrHeap heap, ulong addr, ClrInstanceField fld, ClrType fldType, ClrElementKind fldKind, bool intern, bool theValue)
         {
             Debug.Assert(Utils.IsRealAddress(addr));
@@ -1419,63 +1429,69 @@ namespace ClrMDRIndex
         {
             var fld = clrType.GetFieldByName(fldName);
             if (fld == null) return int.MinValue;
-            var obj = fld.GetValue(addr);
+            var obj = fld.GetValue(addr,clrType.IsValueClass,false);
             if (obj == null) return 0;
             Debug.Assert(obj is Int32);
             return (int)obj;
         }
 
-        public static KeyValuePair<ulong, ulong>[] GetDictionaryInfo(ClrHeap heap, ulong addr, ClrType clrType)
+        public static int GetFieldIntValue(ClrHeap heap, ulong addr, ClrInstanceField fld, bool intr)
         {
-            int count = GetFieldIntValue(heap, addr, clrType, "count");
-            int version = GetFieldIntValue(heap, addr, clrType, "version");
-            int freeCount = GetFieldIntValue(heap, addr, clrType, "freeCount");
-            KeyValuePair<string, string>[] fldDescription = new KeyValuePair<string, string>[]
+            var obj = fld.GetValue(addr, intr, false);
+            if (obj == null) return 0;
+            Debug.Assert(obj is Int32);
+            return (int)obj;
+        }
+
+        public static (string, KeyValuePair<string, string>[] , KeyValuePair<string, string>[]) GetDictionaryContent(ClrHeap heap, ulong addr)
+        {
+            try
             {
-                new KeyValuePair<string, string>("count", count.ToString()),
-                new KeyValuePair<string, string>("free count", freeCount.ToString()),
+                ClrType clrType = heap.GetObjectType(addr);
+
+
+                var entriesFld = clrType.GetFieldByName("entries");
+                (ClrType entriesFldType, ClrElementKind entriesFldKind, ulong entriesFldAddr) =
+                    TypeExtractor.GetRealType(heap, addr, entriesFld, false);
+                int count = GetFieldIntValue(heap, addr, clrType, "count");
+                int version = GetFieldIntValue(heap, addr, clrType, "version");
+                int freeCount = GetFieldIntValue(heap, addr, clrType, "freeCount");
+                var aryLen = entriesFldType == null ? 0 :entriesFldType.GetArrayLength(entriesFldAddr);
+                KeyValuePair<string, string>[] fldDescription = new KeyValuePair<string, string>[]
+                {
+                new KeyValuePair<string, string>("count", (count-freeCount).ToString()),
+                new KeyValuePair<string, string>("array count", aryLen.ToString()),
                 new KeyValuePair<string, string>("version", version.ToString())
-            };
-
-            var entriesFld = clrType.GetFieldByName("entries");
-            (ClrType entriesFldType, ClrElementKind entriesFldKind, ulong entriesFldAddr) =
-                TypeExtractor.GetRealType(heap, addr, entriesFld, false);
-
-            var aryLen = entriesFldType.GetArrayLength(entriesFldAddr);
-            var entryType = entriesFldType.ComponentType;
-            var entryHashCodeFld = entryType.GetFieldByName("hashCode");
-            var entryNextFld = entryType.GetFieldByName("next");
-            var entryKeyFld = entryType.GetFieldByName("key");
-            var entryValFld = entryType.GetFieldByName("value");
-            List<KeyValuePair<ulong, ulong>> lst = new List<KeyValuePair<ulong, ulong>>(256);
-            var names = new List<KeyValuePair<string, string>>(256);
-            for (int i = 0; i < aryLen; ++i)
-            {
-                var eaddr = entriesFldType.GetArrayElementAddress(entriesFldAddr, i);
-                var keyAddr = entryKeyFld.GetValue(eaddr, true, false);
-                var valAddr = entryValFld.GetValue(eaddr, true, false);
-                if (keyAddr == null)
+                };
+                if (entriesFldType == null)
                 {
-                    continue;
+                    return (null, fldDescription, Utils.EmptyArray< KeyValuePair<string, string>>.Value);
                 }
+                var entryType = entriesFldType.ComponentType;
+                var entryHashCodeFld = entryType.GetFieldByName("hashCode");
+                var entryNextFld = entryType.GetFieldByName("next");
+                var entryKeyFld = entryType.GetFieldByName("key");
+                var entryKeyFldKind = TypeExtractor.GetElementKind(entryKeyFld.Type);
+                var entryValFld = entryType.GetFieldByName("value");
+                var entryValFldKind = TypeExtractor.GetElementKind(entryValFld.Type);
 
-                if (keyAddr is ulong && valAddr is ulong)
+                var values = new List<KeyValuePair<string, string>>(count - freeCount);
+                for (int i = 0; i < aryLen; ++i)
                 {
-                    var ka = (ulong)keyAddr;
-                    var va = (ulong)valAddr;
-                    //if (ka != 0ul && va != 0ul)
-                    {
-                        lst.Add(new KeyValuePair<ulong, ulong>(ka, va));
-                    }
-                    //var kType = heap.GetObjectType(ka);
-                    //var vType = heap.GetObjectType(va);
-                    //if (kType != null && vType != null)
-                    //{
-                    //    names.Add(new KeyValuePair<string, string>(kType.Name, vType.Name));
-                    //}
+                    var eaddr = entriesFldType.GetArrayElementAddress(entriesFldAddr, i);
+                    var hash = GetFieldIntValue(heap, eaddr, entryHashCodeFld, true);
+                    if (hash <= 0) continue;
+                    string keyVal = (string)GetFieldValue(heap, eaddr, entryKeyFld, entryKeyFld.Type, entryKeyFldKind, true, false);
+                    string valueVal = (string)GetFieldValue(heap, eaddr, entryValFld, entryValFld.Type, entryValFldKind, true, false);
+                    values.Add(new KeyValuePair<string, string>(keyVal, valueVal));
                 }
+                return (null, fldDescription,values.ToArray());
             }
-            return lst.ToArray();
+            catch (Exception ex)
+            {
+                string error = Utils.GetExceptionErrorString(ex);
+                return (error, null, null);
+            }
         }
 
         //let entriesAddr = getReferenceFieldAddress addr entries false

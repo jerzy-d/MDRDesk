@@ -15,11 +15,13 @@ namespace ClrMDRIndex
 		private ulong _address;
 		private string _typeName;
 		private string _fieldName;
-		private DisplayableString _value;
-		private DisplayableString[] _aryValues;
+        private DisplayableString _value;
+        private KeyValuePair<DisplayableString, DisplayableString>[] _keyValuePairs;
+        private DisplayableString[] _aryValues;
         private string[] _aryTypes;
 		private InstanceValue[] _fields;
 		private InstanceValue _parent;
+        private object _extraData;
 
         public int TypeId => _typeId;
         public ClrElementKind Kind => _kind;
@@ -30,6 +32,8 @@ namespace ClrMDRIndex
         public DisplayableString Value => _value;
 		public InstanceValue[] Fields => _fields;
 		public DisplayableString[] ArrayValues => _aryValues;
+        public KeyValuePair<DisplayableString, DisplayableString>[] KeyValuePairs => _keyValuePairs;
+        public object ExtraData => _extraData;
 		public InstanceValue Parent => _parent;
 
 		public InstanceValue(int typeId, ClrElementKind kind, ulong addr, string typeName, string fldName, string value, int fldNdx = Constants.InvalidIndex, InstanceValue parent = null)
@@ -96,7 +100,28 @@ namespace ClrMDRIndex
             }
 		}
 
-		public bool IsArray()
+        public void AddKeyValuePairs(KeyValuePair<string,string>[] keyValuePairs)
+        {
+            if (keyValuePairs == null)
+            {
+                _keyValuePairs = null;
+                return;
+            }
+            _keyValuePairs = new KeyValuePair<DisplayableString, DisplayableString>[keyValuePairs.Length];
+            for (int i = 0, icnt = keyValuePairs.Length; i < icnt; ++i)
+            {
+                _keyValuePairs[i] = new KeyValuePair<DisplayableString, DisplayableString>(
+                                            new DisplayableString(keyValuePairs[i].Key),
+                                            new DisplayableString(keyValuePairs[i].Value));
+            }
+        }
+
+        public void AddExtraData(object data)
+        {
+            _extraData = data;
+        }
+
+        public bool IsArray()
 		{
 			return _aryValues != null;
 		}

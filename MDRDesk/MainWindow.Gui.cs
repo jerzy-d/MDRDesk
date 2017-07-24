@@ -2112,7 +2112,7 @@ namespace MDRDesk
         {
             SetStartTaskMainWindowState(msg);
 
-            (string error, InstanceValue inst) = await Task.Run(() =>
+            (string error, InstanceValue inst,TypeExtractor.KnownTypes knownType) = await Task.Run(() =>
             {
                 return CurrentIndex.GetInstanceValue(addr, null);
             });
@@ -2129,6 +2129,18 @@ namespace MDRDesk
             }
 
             Debug.Assert(inst != null);
+
+            if (knownType != TypeExtractor.KnownTypes.Unknown)
+            {
+                if (inst.KeyValuePairs == null || inst.KeyValuePairs.Length < 1)
+                {
+                    ShowInformation("Empty Collection", TypeExtractor.GetKnowTypeName(knownType), "The collection at address " + Utils.RealAddressString(addr) + " is empty.", inst.TypeName);
+                    return;
+                }
+                var wnd = new KeyValueCollectionDisplay(Utils.GetNewID(), _wndDct, inst, knownType) { Owner = this };
+                wnd.Show();
+                return;
+            }
 
             if (!inst.HaveFields() && !inst.Value.IsLong())
             {
