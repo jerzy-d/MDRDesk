@@ -47,6 +47,7 @@ namespace MDRDesk
         public static ClrtDump CurrentAdhocDump;
         private static Version _myVersion;
         private SingleThreadTaskScheduler _adhocSTAScheduler;
+        private SingleThreadTaskScheduler _dumpSTAScheduler;
 
         #region Ctors/Initialization
 
@@ -99,11 +100,9 @@ namespace MDRDesk
                         break;
 
                 }
-                //myresourcedictionary = new ResourceDictionary();
-                //myresourcedictionary.Source = new Uri("/MDRDesk;component/Resources/MDRDeskResourceDct.xaml",
-                //UriKind.RelativeOrAbsolute);
 
                 _adhocSTAScheduler = new SingleThreadTaskScheduler();
+                _dumpSTAScheduler = new SingleThreadTaskScheduler();
                 return result;
             }
             catch (Exception ex)
@@ -178,6 +177,7 @@ namespace MDRDesk
                 task.Wait();
             }
             _adhocSTAScheduler?.Dispose();
+            _dumpSTAScheduler?.Dispose();
         }
 
         private void CloseTab(object source, RoutedEventArgs args)
@@ -298,7 +298,6 @@ namespace MDRDesk
             }
         }
 
-
         private void CreateCrashDumpClicked(object sender, RoutedEventArgs e)
         {
             ClrtDump dump = null;
@@ -326,7 +325,6 @@ namespace MDRDesk
                 ShowError(Utils.GetExceptionErrorString(ex));
             }
         }
-
 
         #endregion Dump
 
@@ -770,42 +768,56 @@ namespace MDRDesk
 
         #region InstanceInfo
 
-        private void InstReferenceClicked(object sender, RoutedEventArgs e)
+        private ulong GetInstanceAddressFromUser(string title)
         {
-            if (!IsIndexAvailable("Get Instance Information")) return;
-            var menuItem = sender as MenuItem;
-            Debug.Assert(menuItem != null);
-
-            // first get the address
-            //
+            if (!IsIndexAvailable(title)) return Constants.InvalidAddress;
             ulong addr;
-            if (
-                !GetUserEnteredAddress("Instance Address", "Enter instance address, if not hex format prefix with n/N.", out addr))
-                return;
-
-            switch (menuItem.Header.ToString().ToUpper())
-            {
-                case "PARENT REFERENCES":
-                    Dispatcher.CurrentDispatcher.InvokeAsync(() => ExecuteReferenceQuery(addr));
-                    break;
-                case "INSTANCE VALUE":
-                    var msg = "Getting object value at: " + Utils.RealAddressString(addr);
-                    Dispatcher.CurrentDispatcher.InvokeAsync(() => ExecuteInstanceValueQuery(msg, addr));
-                    break;
-                case "GENERATION HISTOGRAM":
-                    var grid = GetCurrentTabGrid();
-                    Dispatcher.CurrentDispatcher.InvokeAsync(
-                        () => ExecuteGenerationQuery("Get instance generation", new ulong[] { addr }, grid));
-                    break;
-                case "INSTANCE HIERARCHY WALK":
-                    Dispatcher.CurrentDispatcher.InvokeAsync(
-                        () =>
-                            ExecuteInstanceHierarchyQuery("Get instance hierarchy " + Utils.AddressStringHeader(addr), addr,
-                                Constants.InvalidIndex));
-                    break;
-            }
+            if (!GetUserEnteredAddress("Instance Address", "Enter instance address, if not hex format prefix with n/N.", out addr)) return Constants.InvalidAddress;
+            return addr;
         }
 
+        private void ExecuteInstanceValue(object sender, ExecutedRoutedEventArgs e)
+        {
+            ulong addr = GetInstanceAddressFromUser("Instance Information");
+            if (addr == Constants.InvalidAddress) return;
+
+            if (!GetUserEnteredAddress("Instance Address", "Enter instance address, if not hex format prefix with n/N.", out addr)) return;
+            var msg = "Getting object value at: " + Utils.RealAddressString(addr);
+            Dispatcher.CurrentDispatcher.InvokeAsync(() => ExecuteInstanceValueQuery(msg, addr));
+        }
+
+        private void CanExecuteInstanceValue(object sender, CanExecuteRoutedEventArgs e)
+        {
+            e.CanExecute = true;
+        }
+
+        private void ExecuteInstanceReferences(object sender, ExecutedRoutedEventArgs e)
+        {
+            ulong addr = GetInstanceAddressFromUser("Instance Information");
+            if (addr == Constants.InvalidAddress) return;
+            var msg = "Getting object references at: " + Utils.RealAddressString(addr);
+            Dispatcher.CurrentDispatcher.InvokeAsync(() => ExecuteReferenceQuery(addr));
+        }
+
+        private void CanExecuteInstanceReferences(object sender, CanExecuteRoutedEventArgs e)
+        {
+            e.CanExecute = true;
+        }
+
+        private void ExecuteInstanceHierarchy(object sender, ExecutedRoutedEventArgs e)
+        {
+            ulong addr = GetInstanceAddressFromUser("Instance Information");
+            if (addr == Constants.InvalidAddress) return;
+            var msg = "Getting object hierarchy at: " + Utils.RealAddressString(addr);
+            Dispatcher.CurrentDispatcher.InvokeAsync(() => ExecuteInstanceHierarchyQuery("Get instance hierarchy " + Utils.AddressStringHeader(addr),
+                                                                                          addr,
+                                                                                          Constants.InvalidIndex));
+        }
+
+        private void CanExecuteInstanceHierarchy(object sender, CanExecuteRoutedEventArgs e)
+        {
+            e.CanExecute = true;
+        }
 
         private void AddressListDoubleClicked(object sender, MouseButtonEventArgs e)
         {
@@ -1166,7 +1178,6 @@ namespace MDRDesk
                 var error = Utils.GetExceptionErrorString(ex);
                 MessageBox.Show(error, "ListViewBottomGridClick", MessageBoxButton.OK, MessageBoxImage.Error);
             }
-
         }
 
         private static string GetListingRow(listing<string> lst)
@@ -2391,5 +2402,42 @@ namespace MDRDesk
             }
 
         }
+         
     }
+
+    public static class MenuCommands
+    {
+        public static readonly RoutedUICommand InstanceValueCmd = new RoutedUICommand
+        (
+            "Get Instance Value",
+            "GetInstanceValue",
+            typeof(MenuCommands),
+            new InputGestureCollection()
+            {
+                new KeyGesture(Key.V, ModifierKeys.Alt)
+            }
+        );
+        public static readonly RoutedUICommand InstanceReferencesCmd = new RoutedUICommand
+        (
+            "Get Instance References",
+            "GetInstanceRefrences",
+            typeof(MenuCommands),
+            new InputGestureCollection()
+            {
+                new KeyGesture(Key.R, ModifierKeys.Alt)
+            }
+        );
+        public static readonly RoutedUICommand InstanceHierarchyCmd = new RoutedUICommand
+        (
+            "Get Instance Hierarchy",
+            "GetInstanceHierarchy",
+            typeof(MenuCommands),
+            new InputGestureCollection()
+            {
+                new KeyGesture(Key.H, ModifierKeys.Alt)
+            }
+        );
+        //Define more commands here, just like the one above
+    }
+
 }

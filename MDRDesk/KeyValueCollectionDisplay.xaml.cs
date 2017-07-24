@@ -30,14 +30,15 @@ namespace MDRDesk
             _wndDct = wndDct;
             InitializeComponent();
             Title = TypeExtractor.GetKnowTypeName(knownType);
-            CollectionInfo.Text = GetExtraDataString(instVal.ExtraData as KeyValuePair<string, string>[],instVal.TypeName);
+            CollectionInfo.Text = GetExtraDataString(instVal.ExtraData as KeyValuePair<string, string>[],instVal.TypeName, instVal.Address);
             KeyValuePairs.ItemsSource = instVal.KeyValuePairs;
         }
 
-        private string GetExtraDataString(KeyValuePair<string, string>[] data, string typeName)
+        private string GetExtraDataString(KeyValuePair<string, string>[] data, string typeName, ulong addr)
         {
             var sb = StringBuilderCache.Acquire(StringBuilderCache.MaxCapacity);
-            sb.Append(typeName).AppendLine();
+            sb.AppendLine(typeName);
+            sb.AppendLine(Utils.AddressString(addr));
             if (data == null || data.Length < 1)
             {
                 sb.Append("No information available.").AppendLine();

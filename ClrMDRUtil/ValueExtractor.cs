@@ -990,10 +990,11 @@ namespace ClrMDRIndex
                 switch (TypeExtractor.GetStandardKind(fldKind))
                 {
                     case ClrElementKind.String:
-                        ulong address = (ulong)fld.GetValue(addr, intern, false);
                         try
                         {
-                            return fld.GetValue(addr, intern, true);
+                            ulong strAddr = (ulong)fld.GetValue(addr, intern, false);
+                            string str = (string)fldType.GetValue(strAddr);
+                            return str;
                         }
                         catch (Exception ex)
                         {
@@ -1472,8 +1473,12 @@ namespace ClrMDRIndex
                 var entryNextFld = entryType.GetFieldByName("next");
                 var entryKeyFld = entryType.GetFieldByName("key");
                 var entryKeyFldKind = TypeExtractor.GetElementKind(entryKeyFld.Type);
+                var entryKeyFldType = entryKeyFld.Type;
                 var entryValFld = entryType.GetFieldByName("value");
                 var entryValFldKind = TypeExtractor.GetElementKind(entryValFld.Type);
+                var entryValFldType = entryValFld.Type;
+                ClrType tempClrType;
+                ClrElementKind tempKind;
 
                 var values = new List<KeyValuePair<string, string>>(count - freeCount);
                 for (int i = 0; i < aryLen; ++i)
@@ -1481,8 +1486,18 @@ namespace ClrMDRIndex
                     var eaddr = entriesFldType.GetArrayElementAddress(entriesFldAddr, i);
                     var hash = GetFieldIntValue(heap, eaddr, entryHashCodeFld, true);
                     if (hash <= 0) continue;
-                    string keyVal = (string)GetFieldValue(heap, eaddr, entryKeyFld, entryKeyFld.Type, entryKeyFldKind, true, false);
-                    string valueVal = (string)GetFieldValue(heap, eaddr, entryValFld, entryValFld.Type, entryValFldKind, true, false);
+                    if (TypeExtractor.IsSystem__Canon(entryKeyFldKind)) // try to get real type
+                    {
+                        (tempClrType, tempKind) = TypeExtractor.TryGetFieldReferenceType(heap, eaddr, entryKeyFld, true);
+                        if (tempKind != ClrElementKind.Unknown) { entryKeyFldType = tempClrType; entryKeyFldKind = tempKind; }
+                    }
+                    string keyVal = (string)GetFieldValue(heap, eaddr, entryKeyFld, entryKeyFldType, entryKeyFldKind, true, false);
+                    if (TypeExtractor.IsSystem__Canon(entryKeyFldKind)) // try to get real type
+                    {
+                        (tempClrType, tempKind) = TypeExtractor.TryGetFieldReferenceType(heap, eaddr, entryValFld, true);
+                        if (tempKind != ClrElementKind.Unknown) { entryValFldType = tempClrType; entryValFldKind = tempKind; }
+                    }
+                    string valueVal = (string)GetFieldValue(heap, eaddr, entryValFld, entryValFldType, entryValFldKind, true, false);
                     values.Add(new KeyValuePair<string, string>(keyVal, valueVal));
                 }
                 return (null, fldDescription,values.ToArray());

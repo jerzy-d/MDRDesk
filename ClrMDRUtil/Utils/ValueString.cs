@@ -9,23 +9,26 @@ namespace ClrMDRIndex
     public struct DisplayableString
     {
         private const int MaxLength = 40;
-        public readonly string Content;
+        private readonly string _content;
 
         public DisplayableString(string str)
         {
-            Content = str;
+            _content = str;
             if (str == null) str = Constants.NullValue;
         }
 
         public bool IsNull()
         {
-            return Content == null;
+            return _content == null;
         }
 
         public bool IsLong()
         {
-            return Content != null && Content.Length > MaxLength;
+            return _content != null && _content.Length > MaxLength;
         }
+
+        public string FullContent => (_content == null) ? Constants.NonValueChar + Constants.NullValue : _content;
+
 
         public static string ReplaceNewlines(string str)
         {
@@ -44,14 +47,14 @@ namespace ClrMDRIndex
 
         public override string ToString()
         {
-            if (Content == null) return Constants.NullValue;
-            if (Content.Length > MaxLength)
+            if (_content == null) return Constants.NonValueChar + Constants.NullValue;
+            if (_content.Length > MaxLength)
             {
-                var newStr = Content.Substring(0, MaxLength - 3) + "...";
-                return ReplaceNewlines(Content);
+                var newStr = _content.Substring(0, MaxLength - 3) + "...";
+                return ReplaceNewlines(newStr);
             }
             else
-                return ReplaceNewlines(Content);
+                return ReplaceNewlines(_content);
         }
     }
 }

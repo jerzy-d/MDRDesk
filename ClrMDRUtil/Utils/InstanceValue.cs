@@ -145,7 +145,7 @@ namespace ClrMDRIndex
 
         public override string ToString()
 	    {
-	        string value = _value.Content;
+	        string value = _value.ToString();
 	        return
 				_fieldName
 				+ "  "

@@ -163,6 +163,12 @@ namespace ClrMDRIndex
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static bool IsSystem__Canon(ClrElementKind kind)
+        {
+            return (GetSpecialKind(kind) & ClrElementKind.System__Canon) != 0;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool IsKnownPrimitive(ClrElementKind kind)
         {
             var stdKind = GetStandardKind(kind);
@@ -1198,13 +1204,19 @@ namespace ClrMDRIndex
         //      }
 
 
-        public static KeyValuePair<ClrType, ulong> TryGetReferenceType(ClrHeap heap, ulong addr, ClrInstanceField fld, bool intr)
+        public static (ClrType, ClrElementKind) TryGetFieldReferenceType(ClrHeap heap, ulong addr, ClrInstanceField fld, bool intr)
         {
-            var valueObj = fld.GetValue(addr, intr);
-            Debug.Assert(valueObj is ulong);
-            ulong value = (ulong)valueObj;
-            var clrType = heap.GetObjectType(value);
-            return new KeyValuePair<ClrType, ulong>(clrType, value);
+            var valueObj = fld.GetValue(addr, intr, false);
+            if (valueObj == null) return (null, ClrElementKind.Unknown);
+            if (valueObj is ulong)
+            {
+                ulong value = (ulong)valueObj;
+                if (value==0UL) return (null, ClrElementKind.Unknown);
+                var clrType = heap.GetObjectType(value);
+                var kind = GetElementKind(clrType);
+                return (clrType, kind);
+            }
+            return (null, ClrElementKind.Unknown);
         }
 
         public static (ClrType, ClrInstanceField, ulong) GetReferenceTypeField(ClrHeap heap, ClrType clrType, ulong addr, string fldName)

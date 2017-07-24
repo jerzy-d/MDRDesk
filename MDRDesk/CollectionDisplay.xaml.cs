@@ -75,7 +75,7 @@ namespace MDRDesk
         {
             if (CollectionValues.SelectedIndex < 0) return;
             DisplayableString item = (DisplayableString)CollectionValues.SelectedItem;
-            string value = item.Content;
+            string value = item.FullContent;
             Clipboard.SetText(value);
         }
 
@@ -87,7 +87,7 @@ namespace MDRDesk
             var sb = StringBuilderCache.Acquire(maxLen * 18);
             for (int i = 0, icnt = data.Length; i < icnt; ++i)
             {
-                sb.AppendLine(data[i].Content);
+                sb.AppendLine(data[i].FullContent);
             }
             string str = StringBuilderCache.GetStringAndRelease(sb);
             Clipboard.SetText(str);
@@ -122,7 +122,7 @@ namespace MDRDesk
         {
             if (CollectionValues.SelectedIndex < 0) return;
             DisplayableString item = (DisplayableString)CollectionValues.SelectedItem;
-            string value = item.Content;
+            string value = item.FullContent;
             if (TypeExtractor.IsArray(_instanceValue.Kind) && _instanceValue.Fields != null && _instanceValue.Fields.Length > 0)
             {
                 if ((TypeExtractor.IsNonStringObjectReference(_instanceValue.Fields[0].Kind)))

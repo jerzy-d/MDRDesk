@@ -712,6 +712,11 @@
             </Expander>
         </Grid>
     </Window.Resources>
+    <Window.CommandBindings>
+        <CommandBinding Command="local:MenuCommands.InstanceValueCmd" CanExecute="CanExecuteInstanceValue" Executed="ExecuteInstanceValue" />
+        <CommandBinding Command="local:MenuCommands.InstanceReferencesCmd" CanExecute="CanExecuteInstanceReferences" Executed="ExecuteInstanceReferences" />
+        <CommandBinding Command="local:MenuCommands.InstanceHierarchyCmd" CanExecute="CanExecuteInstanceHierarchy" Executed="ExecuteInstanceHierarchy" />
+    </Window.CommandBindings>
     <Grid x:Name="MainGrid">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"></RowDefinition>
@@ -756,11 +761,10 @@
                         <MenuItem x:Name="IndexStringUsage" Header="String Usage" Click="IndexStringUsageClicked"/>
                         <MenuItem x:Name="IndexStringUsageGen" Header="String Usage with GC Generations" Click="IndexStringUsageClicked"/>
                         <Separator></Separator>
-                        <MenuItem x:Name="InstanceInfo" Header="Get Instance Information">
-                            <MenuItem x:Name="InstImmediateReference" Header="Parent References" Click="InstReferenceClicked"/>
-                            <MenuItem x:Name="InstValue" Header="Instance Value" Click="InstReferenceClicked"/>
-                            <MenuItem x:Name="InstGenDistribution" Header="Generation Histogram" Click="InstReferenceClicked"/>
-                            <MenuItem x:Name="InstHierarchyWalk" Header="Instance Hierarchy Walk" Click="InstReferenceClicked"/>
+                        <MenuItem x:Name="InstanceInfo" Header="Instance Information">
+                            <MenuItem x:Name="InstReferences" Header="References" Command="local:MenuCommands.InstanceReferencesCmd"/>
+                            <MenuItem x:Name="InstValue" Header="Value" Command="local:MenuCommands.InstanceValueCmd"/>
+                            <MenuItem x:Name="InstHierarchy" Header="Hierarchy" Command="local:MenuCommands.InstanceHierarchyCmd"/>
                         </MenuItem>
                         <Separator></Separator>
                         <MenuItem x:Name="TypeInfo" Header="Get Type Information">

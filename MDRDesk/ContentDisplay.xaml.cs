@@ -35,7 +35,7 @@ namespace MDRDesk
 			_wordWrapped = true;
 			_instanceValue = instVal;
 			ContentInfo.Text = description;
-			ContentValue.Text = instVal.Value.Content;
+			ContentValue.Text = instVal.Value.FullContent;
 			wndDct.TryAdd(id, this);
 		}
 

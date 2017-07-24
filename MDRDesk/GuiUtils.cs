@@ -259,7 +259,7 @@ namespace MDRDesk
 
 		public static string InstanceValueValueString(InstanceValue val)
 		{
-			var value = val.Value.Content;
+			var value = val.Value.ToString();
 			return ((value.Length > 0 && value[0] == Constants.NonValueChar)
 						? (Constants.FancyKleeneStar.ToString() + Utils.RealAddressString(val.Address))
 						: val.Value.ToString());
