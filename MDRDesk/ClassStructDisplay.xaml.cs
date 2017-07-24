@@ -17,6 +17,7 @@ namespace MDRDesk
 	{
 		private int _id;
 		private ConcurrentDictionary<int, Window> _wndDct;
+        private MainWindow _mainWindow;
 
 		public ClassStructDisplay(int id, ConcurrentDictionary<int, Window> wndDct, string description, InstanceValue instValue)
 		{
@@ -24,7 +25,8 @@ namespace MDRDesk
 			_id = id;
 			_wndDct = wndDct;
 			InitializeComponent();
-			ClassStructInfo.Text = description;
+            _mainWindow = GuiUtils.MainWindowInstance;
+            ClassStructInfo.Text = description;
 			UpdateInstanceValue(instValue, out root);
 			wndDct.TryAdd(id, this);
 		}
@@ -94,10 +96,16 @@ namespace MDRDesk
 			StatusText.Text = "Getting value at address: " + selInstValue.Address + ", please wait...";
 			Mouse.OverrideCursor = Cursors.Wait;
 
-			(string error, InstanceValue[] fields) = await Task.Run(() =>
-			{
+			//(string error, InstanceValue[] fields) = await Task.Run(() =>
+			//{
+   //             return index.GetInstanceValueFields(selInstValue.Address, selInstValue.Parent);
+			//});
+
+            (string error, InstanceValue[] fields) = await Task.Factory.StartNew(() =>
+            {
                 return index.GetInstanceValueFields(selInstValue.Address, selInstValue.Parent);
-			});
+            }, _mainWindow.DumpSTAScheduler);
+
 
             if (Utils.IsInformation(error))
                 StatusText.Text = error;

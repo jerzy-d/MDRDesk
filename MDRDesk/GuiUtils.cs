@@ -13,7 +13,10 @@ namespace MDRDesk
 	{
 		public static string LastError { get; private set; }
 
-		public static string SelectCrashDumpFile()
+        public static MainWindow MainWindowInstance => (MainWindow)(((App)Application.Current).MainWindow);
+
+
+        public static string SelectCrashDumpFile()
 		{
 			return SelectFile(string.Format("*.{0}", Constants.CrashDumpFileExt),
 							string.Format("Dump Map Files|*.{0}|All Files|*.*", Constants.CrashDumpFileExt));

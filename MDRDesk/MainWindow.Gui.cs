@@ -1134,10 +1134,18 @@ namespace MDRDesk
             int typeId;
             if (!GetTypeNameInfo(sender, out typeName, out typeId)) return;
             SetStartTaskMainWindowState("generating type field default values report, please wait...");
-            var result = await Task.Run(() =>
+
+            //var result = await Task.Run(() =>
+            //{
+            //    return CurrentIndex.GetTypeFieldDefaultValues(typeId);
+            //});
+
+            var result = await Task.Factory.StartNew(() =>
             {
                 return CurrentIndex.GetTypeFieldDefaultValues(typeId);
-            });
+            }, DumpSTAScheduler);
+
+
             string msg;
             if (result.Error != null)
             {
@@ -1196,12 +1204,20 @@ namespace MDRDesk
             int typeId;
             if (!GetTypeNameInfo(sender, out typeName, out typeId)) return;
             SetStartTaskMainWindowState("getting type sizes, please wait...");
-            var result = await Task.Run(() =>
+            //var result = await Task.Run(() =>
+            //{
+            //    string error;
+            //    var tuple = CurrentIndex.GetTypeSizes(typeId, out error);
+            //    return new Tuple<string, ulong, ulong>(error, tuple.Key, tuple.Value);
+            //});
+
+            var result = await Task.Factory.StartNew(() =>
             {
                 string error;
                 var tuple = CurrentIndex.GetTypeSizes(typeId, out error);
                 return new Tuple<string, ulong, ulong>(error, tuple.Key, tuple.Value);
-            });
+            }, DumpSTAScheduler);
+
             string msg;
             if (result.Item1 != null)
             {
@@ -1239,7 +1255,12 @@ namespace MDRDesk
             if (dispMode == ReferenceSearchSetup.DispMode.List)
             {
                 SetStartTaskMainWindowState("Getting parent references for: '" + typeName + "', please wait...");
-                var report = await Task.Run(() => CurrentIndex.GetTypeReferenceReport(typeId, searchFlag, level));
+
+                //var report = await Task.Run(() => CurrentIndex.GetTypeReferenceReport(typeId, searchFlag, level));
+                var report = await Task.Factory.StartNew(() =>
+                {
+                    return CurrentIndex.GetTypeReferenceReport(typeId, searchFlag, level);
+                }, DumpSTAScheduler);
 
                 if (report.Error != null)
                 {
@@ -1253,7 +1274,12 @@ namespace MDRDesk
             if (dispMode == ReferenceSearchSetup.DispMode.Tree)
             {
                 SetStartTaskMainWindowState("Getting parent references for: '" + typeName + "', please wait...");
-                var report = await Task.Run(() => CurrentIndex.GetParentTree(typeId, level));
+
+                //var report = await Task.Run(() => CurrentIndex.GetParentTree(typeId, level));
+                var report = await Task.Factory.StartNew(() =>
+                {
+                    return CurrentIndex.GetParentTree(typeId, level);
+                }, DumpSTAScheduler);
 
                 if (report.Item1 != null)
                 {
@@ -1311,7 +1337,13 @@ namespace MDRDesk
             if (dispMode == ReferenceSearchSetup.DispMode.List)
             {
                 SetStartTaskMainWindowState(msg + "please wait...");
-                var report = await Task.Run(() => CurrentIndex.GetParentReferencesReport(addr, level));
+
+                //var report = await Task.Run(() => CurrentIndex.GetParentReferencesReport(addr, level));
+                var report = await Task.Factory.StartNew(() =>
+                {
+                    return CurrentIndex.GetParentReferencesReport(addr, level);
+                }, DumpSTAScheduler);
+
                 if (report.Error != null)
                 {
                     SetEndTaskMainWindowState(msg + "failed.");
@@ -1324,7 +1356,13 @@ namespace MDRDesk
             if (dispMode == ReferenceSearchSetup.DispMode.Tree)
             {
                 SetStartTaskMainWindowState(msg + "please wait...");
-                (string error, AncestorNode node) = await Task.Run(() => CurrentIndex.GetParentTree(addr, level));
+
+                //(string error, AncestorNode node) = await Task.Run(() => CurrentIndex.GetParentTree(addr, level));
+                (string error, AncestorNode node) = await Task.Factory.StartNew(() =>
+                {
+                    return CurrentIndex.GetParentTree(addr, level);
+                }, DumpSTAScheduler);
+
                 if (error != null)
                 {
                     SetEndTaskMainWindowState(msg + "failed.");
@@ -1656,12 +1694,19 @@ namespace MDRDesk
         {
             Debug.Assert(instances != null && instances.Length > 0);
             SetStartTaskMainWindowState("Please wait... Type values report: " + query.TypeName);
-            (string error, ListingInfo listing) = await Task.Run(() =>
+
+            //(string error, ListingInfo listing) = await Task.Run(() =>
+            //{
+            //    string err;
+            //    var info = CurrentIndex.GetTypeValuesReport(query, instances, out err);
+            //    return (err, info);
+            //});
+            (string error, ListingInfo listing) = await Task.Factory.StartNew(() =>
             {
                 string err;
                 var info = CurrentIndex.GetTypeValuesReport(query, instances, out err);
                 return (err, info);
-            });
+            }, DumpSTAScheduler);
 
             SetEndTaskMainWindowState(error == null
                 ? "DONE. Type values report: " + query.TypeName
@@ -2112,10 +2157,14 @@ namespace MDRDesk
         {
             SetStartTaskMainWindowState(msg);
 
-            (string error, InstanceValue inst,TypeExtractor.KnownTypes knownType) = await Task.Run(() =>
+            //(string error, InstanceValue inst,TypeExtractor.KnownTypes knownType) = await Task.Run(() =>
+            //{
+            //    return CurrentIndex.GetInstanceValue(addr, null);
+            //});
+            (string error, InstanceValue inst, TypeExtractor.KnownTypes knownType) = await Task.Factory.StartNew(() =>
             {
                 return CurrentIndex.GetInstanceValue(addr, null);
-            });
+            }, DumpSTAScheduler);
 
 
             SetEndTaskMainWindowState(error == null
@@ -2187,12 +2236,19 @@ namespace MDRDesk
         private async void ExecuteGetThreadinfos()
         {
             SetStartTaskMainWindowState("Getting thread infos, please wait...");
-            var result = await Task.Run(() =>
+
+            //var result = await Task.Run(() =>
+            //{
+            //    string error = null;
+            //    var info = CurrentIndex.GetThreads(out error);
+            //    return new Tuple<string, ClrtThread[], string[], KeyValuePair<int, ulong>[]>(error, info.Item1, info.Item2, info.Item3);
+            //});
+            var result = await Task.Factory.StartNew(() =>
             {
                 string error = null;
                 var info = CurrentIndex.GetThreads(out error);
                 return new Tuple<string, ClrtThread[], string[], KeyValuePair<int, ulong>[]>(error, info.Item1, info.Item2, info.Item3);
-            });
+            }, DumpSTAScheduler);
 
             string msg = result.Item1 != null ? "Getting thread infos failed." : "Getting thread infos succeeded.";
             SetEndTaskMainWindowState(msg);
@@ -2381,13 +2437,19 @@ namespace MDRDesk
         {
             SetStartTaskMainWindowState(statusMessage + ", please wait...");
 
-            var result = await Task.Run(() =>
+            //var result = await Task.Run(() =>
+            //{
+            //    string error;
+            //    InstanceValueAndAncestors instanceInfo = CurrentIndex.GetInstanceInfo(Utils.RealAddress(addr), fldNdx, out error);
+            //    return Tuple.Create(error, instanceInfo);
+            //});
+            var result = await Task.Factory.StartNew(() =>
             {
                 string error;
                 InstanceValueAndAncestors instanceInfo = CurrentIndex.GetInstanceInfo(Utils.RealAddress(addr), fldNdx, out error);
-
                 return Tuple.Create(error, instanceInfo);
-            });
+            }, DumpSTAScheduler);
+
 
             if (result.Item1 != null)
             {
@@ -2514,12 +2576,20 @@ namespace MDRDesk
                 if (existing == null)
                 {
                     SetStartTaskMainWindowState("Getting instance info" + ", please wait...");
-                    result = await Task.Run(() =>
+
+                    //result = await Task.Run(() =>
+                    //{
+                    //    string error;
+                    //    InstanceValueAndAncestors instanceInfo = CurrentIndex.GetInstanceInfo(addr, fldNdx, out error);
+                    //    return Tuple.Create(error, instanceInfo);
+                    //});
+                    result = await Task.Factory.StartNew(() =>
                     {
                         string error;
                         InstanceValueAndAncestors instanceInfo = CurrentIndex.GetInstanceInfo(addr, fldNdx, out error);
                         return Tuple.Create(error, instanceInfo);
-                    });
+                    }, DumpSTAScheduler);
+
                     if (result.Item1 != null)
                     {
                         SetEndTaskMainWindowState("Getting instance info" + ", FAILED.");
@@ -2561,12 +2631,18 @@ namespace MDRDesk
                 if (instanceInfo == null)
                 {
                     SetStartTaskMainWindowState("Getting instance info" + ", please wait...");
-                    result = await Task.Run(() =>
+                    //result = await Task.Run(() =>
+                    //{
+                    //    string error;
+                    //    instanceInfo = CurrentIndex.GetInstanceInfo(selectedAddress, Constants.InvalidIndex, out error);
+                    //    return Tuple.Create(error, instanceInfo);
+                    //});
+                    result = await Task.Factory.StartNew(() =>
                     {
                         string error;
                         instanceInfo = CurrentIndex.GetInstanceInfo(selectedAddress, Constants.InvalidIndex, out error);
                         return Tuple.Create(error, instanceInfo);
-                    });
+                    }, DumpSTAScheduler);
 
                     if (result.Item1 != null)
                     {
@@ -2761,10 +2837,15 @@ namespace MDRDesk
         {
             SetStartTaskMainWindowState(statusMessage + ", please wait...");
 
-            var result = await Task.Run(() =>
+            //var result = await Task.Run(() =>
+            //{
+            //    return CurrentIndex.GetGenerationHistogram(addresses);
+            //});
+            var result = await Task.Factory.StartNew(() =>
             {
                 return CurrentIndex.GetGenerationHistogram(addresses);
-            });
+            }, DumpSTAScheduler);
+
 
             Expander expander = null;
             if (grid.Name.StartsWith("HeapIndexTypeView__"))
@@ -2804,7 +2885,22 @@ namespace MDRDesk
             MainToolbarTray.IsEnabled = false;
 
             Mouse.OverrideCursor = Cursors.Wait;
-            var result = await Task.Run(() =>
+            //var result = await Task.Run(() =>
+            //{
+            //    string error;
+            //    int[] genHistogram = null;
+            //    switch (reportTitle)
+            //    {
+            //        case ReportTitleStringUsage:
+            //            genHistogram = CurrentIndex.GetStringGcGenerationHistogram(str, out error);
+            //            break;
+            //        default:
+            //            genHistogram = CurrentIndex.GetTypeGcGenerationHistogram(str, out error);
+            //            break;
+            //    }
+            //    return new Tuple<string, int[]>(error, genHistogram);
+            //});
+            var result = await Task.Factory.StartNew(() =>
             {
                 string error;
                 int[] genHistogram = null;
@@ -2818,7 +2914,7 @@ namespace MDRDesk
                         break;
                 }
                 return new Tuple<string, int[]>(error, genHistogram);
-            });
+            }, DumpSTAScheduler);
 
             Mouse.OverrideCursor = null;
             MainToolbarTray.IsEnabled = true;

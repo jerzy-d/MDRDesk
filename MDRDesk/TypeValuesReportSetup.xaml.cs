@@ -113,7 +113,25 @@ namespace MDRDesk
             StatusText.Text = "Getting type details for field: '" + dispType.FieldName + "', please wait...";
             Mouse.OverrideCursor = Cursors.Wait;
 
-            (string error, ClrtDisplayableType cdt, ulong[] instances) = await Task.Run(() =>
+            //(string error, ClrtDisplayableType cdt, ulong[] instances) = await Task.Run(() =>
+            //{
+            //    // TODO JRD -- replace with other method !!!!
+            //    List<ClrtDisplayableType> lst = new List<ClrtDisplayableType>() { dispType };
+            //    if (dispType.HasAddresses)
+            //    {
+            //        return MainWindow.CurrentIndex.GetTypeDisplayableRecord(dispType.TypeId, dispType, null, dispType.Addresses);
+            //    }
+            //    var parent = dispType.RealParent;
+            //    while (parent != null)
+            //    {
+            //        lst.Add(parent);
+            //        if (parent.HasAddresses) break;
+            //        parent = parent.RealParent;
+            //    }
+            //    lst.Reverse();
+            //    return MainWindow.CurrentIndex.GetTypeDisplayableRecord(dispType.TypeId, dispType, lst.ToArray(), lst[0].Addresses);
+            //});
+            (string error, ClrtDisplayableType cdt, ulong[] instances) = await Task.Factory.StartNew(() =>
             {
                 // TODO JRD -- replace with other method !!!!
                 List<ClrtDisplayableType> lst = new List<ClrtDisplayableType>() { dispType };
@@ -130,7 +148,7 @@ namespace MDRDesk
                 }
                 lst.Reverse();
                 return MainWindow.CurrentIndex.GetTypeDisplayableRecord(dispType.TypeId, dispType, lst.ToArray(), lst[0].Addresses);
-            });
+            }, GuiUtils.MainWindowInstance.DumpSTAScheduler);
 
             Mouse.OverrideCursor = null;
 

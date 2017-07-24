@@ -48,6 +48,7 @@ namespace MDRDesk
         private static Version _myVersion;
         private SingleThreadTaskScheduler _adhocSTAScheduler;
         private SingleThreadTaskScheduler _dumpSTAScheduler;
+        public SingleThreadTaskScheduler DumpSTAScheduler => _dumpSTAScheduler;
 
         #region Ctors/Initialization
 
@@ -425,15 +426,23 @@ namespace MDRDesk
             SetStartTaskMainWindowState("Indexing: " + dmpFileName + ", please wait.");
             SetTitle(dmpFileName);
 
-            var result = await Task.Run(() =>
-            {
+            //var result = await Task.Run(() =>
+            //{
+            //    string error;
+            //    string indexPath;
+            //    var indexer = new DumpIndexer(path);
+            //    var ok = indexer.CreateDumpIndex2(_myVersion, indexingProgress.Progress, out indexPath, out error);
+            //    return new Tuple<bool, string, string>(ok, error, indexPath);
+            //});
+
+            var result = await Task.Factory.StartNew(() =>
+                {
                 string error;
                 string indexPath;
                 var indexer = new DumpIndexer(path);
                 var ok = indexer.CreateDumpIndex2(_myVersion, indexingProgress.Progress, out indexPath, out error);
                 return new Tuple<bool, string, string>(ok, error, indexPath);
-            });
-
+                }, _dumpSTAScheduler);
 
             indexingProgress.Close(DumpFileMoniker.GetFilePath(-1, path, Constants.TxtIndexingInfoFilePostfix));
 
@@ -494,7 +503,29 @@ namespace MDRDesk
             var progress = progressHandler as IProgress<string>;
             SetStartTaskMainWindowState("Opening index: " + Utils.GetPathLastFolder(path) + ", please wait...");
 
-            var result = await Task.Run(() =>
+            //var result = await Task.Run(() =>
+            //{
+            //    string error;
+            //    DumpIndex index = DumpIndex.OpenIndexInstanceReferences(_myVersion, path, runtimeIndex, out error, progress);
+            //    KeyValuePair<string, KeyValuePair<string, int>[]>[] namespaces = null;
+            //    progress.Report("OpenIndexInstanceReferences done");
+
+            //    if (error == null && index != null)
+            //    {
+            //        try
+            //        {
+            //            namespaces = index.GetNamespaceDisplay();
+            //            progress.Report("GetNamespaceDisplay done");
+            //        }
+            //        catch (Exception ex)
+            //        {
+            //            error = Utils.GetExceptionErrorString(ex);
+            //        }
+            //    }
+            //    return new Tuple<string, DumpIndex, KeyValuePair<string, KeyValuePair<string, int>[]>[]>(error, index, namespaces);
+            //});
+
+            var result = await Task.Factory.StartNew(() =>
             {
                 string error;
                 DumpIndex index = DumpIndex.OpenIndexInstanceReferences(_myVersion, path, runtimeIndex, out error, progress);
@@ -514,7 +545,7 @@ namespace MDRDesk
                     }
                 }
                 return new Tuple<string, DumpIndex, KeyValuePair<string, KeyValuePair<string, int>[]>[]>(error, index, namespaces);
-            });
+            }, _dumpSTAScheduler);
 
             try
             {
@@ -612,7 +643,11 @@ namespace MDRDesk
 
             SetStartTaskMainWindowState("Getting finalizer queue info, please wait...");
 
-            var finalizerInfo = await Task.Run(() => CurrentIndex.GetDisplayableFinalizationQueue());
+            // var finalizerInfo = await Task.Run(() => CurrentIndex.GetDisplayableFinalizationQueue());
+            var finalizerInfo = await Task.Factory.StartNew(() =>
+            {
+                return CurrentIndex.GetDisplayableFinalizationQueue();
+            }, DumpSTAScheduler);
 
             if (finalizerInfo.Item1 != null)
             {
@@ -636,12 +671,18 @@ namespace MDRDesk
             if (!IsIndexAvailable("Show Weak References")) return;
 
             SetStartTaskMainWindowState("Getting WeakReference information, please wait...");
-            var result = await Task.Run(() =>
+            //var result = await Task.Run(() =>
+            //{
+            //    string error;
+            //    var info = CurrentIndex.GetWeakReferenceInfo(out error);
+            //    return error == null ? info : new ListingInfo(error);
+            //});
+            var result = await Task.Factory.StartNew(() =>
             {
                 string error;
                 var info = CurrentIndex.GetWeakReferenceInfo(out error);
                 return error == null ? info : new ListingInfo(error);
-            });
+            }, DumpSTAScheduler);
 
             SetEndTaskMainWindowState(result.Error == null
                 ? "Getting WeakReference information done."
@@ -701,7 +742,12 @@ namespace MDRDesk
             if (!IsIndexAvailable("Get Size Information")) return;
 
             SetStartTaskMainWindowState("Getting type size information: , please wait...");
-            var result = await Task.Run(() => CurrentIndex.GetAllTypesSizesInfo(baseSize));
+            // var result = await Task.Run(() => CurrentIndex.GetAllTypesSizesInfo(baseSize));
+            var result = await Task.Factory.StartNew(() =>
+            {
+                return CurrentIndex.GetAllTypesSizesInfo(baseSize);
+            }, DumpSTAScheduler);
+
             SetEndTaskMainWindowState(result.Error == null
                 ? "Getting type size information done."
                 : "Getting sizes info failed.");
@@ -738,10 +784,14 @@ namespace MDRDesk
                     "Getting string usage, string cache has to be created, it will take a while. Please wait...");
 
 
-            var taskResult = await Task.Run(() =>
+            //var taskResult = await Task.Run(() =>
+            //{
+            //    return CurrentIndex.GetStringStats((int)_minStringUsage, addGenerationInfo);
+            //});
+            var taskResult = await Task.Factory.StartNew(() =>
             {
                 return CurrentIndex.GetStringStats((int)_minStringUsage, addGenerationInfo);
-            });
+            }, DumpSTAScheduler);
 
             SetEndTaskMainWindowState(taskResult.Error == null
                 ? "Collecting strings of: " + CurrentIndex.DumpFileName + " done."
@@ -780,8 +830,6 @@ namespace MDRDesk
         {
             ulong addr = GetInstanceAddressFromUser("Instance Information");
             if (addr == Constants.InvalidAddress) return;
-
-            if (!GetUserEnteredAddress("Instance Address", "Enter instance address, if not hex format prefix with n/N.", out addr)) return;
             var msg = "Getting object value at: " + Utils.RealAddressString(addr);
             Dispatcher.CurrentDispatcher.InvokeAsync(() => ExecuteInstanceValueQuery(msg, addr));
         }
@@ -833,10 +881,14 @@ namespace MDRDesk
             if (path == null) return;
             SetStartTaskMainWindowState("Getting type sizes to compare. Please wait...");
 
-            var taskResult = await Task.Run(() =>
+            //var taskResult = await Task.Run(() =>
+            //{
+            //    return CurrentIndex.CompareTypesWithOther(path);
+            //});
+            var taskResult = await Task.Factory.StartNew(() =>
             {
                 return CurrentIndex.CompareTypesWithOther(path);
-            });
+            }, DumpSTAScheduler);
 
             SetEndTaskMainWindowState(taskResult.Error == null
                 ? "Collecting sizes of: " + CurrentIndex.DumpFileName + " done."
@@ -852,10 +904,14 @@ namespace MDRDesk
             if (path == null) return;
             SetStartTaskMainWindowState("Getting string instances to compare. Please wait...");
 
-            var taskResult = await Task.Run(() =>
+            //var taskResult = await Task.Run(() =>
+            //{
+            //    return CurrentIndex.CompareStringsWithOther(path);
+            //});
+            var taskResult = await Task.Factory.StartNew(() =>
             {
                 return CurrentIndex.CompareStringsWithOther(path);
-            });
+            }, DumpSTAScheduler);
 
             SetEndTaskMainWindowState(taskResult.Error == null
                 ? "Collecting strings of: " + CurrentIndex.DumpFileName + " done."
@@ -928,7 +984,26 @@ namespace MDRDesk
 
             SetStartTaskMainWindowState("Getting string usage. Please wait...");
 
-            var taskResult = await Task.Run(() =>
+            //var taskResult = await Task.Run(() =>
+            //{
+            //    var dmp = ClrtDump.OpenDump(dumpFilePath, out error);
+            //    if (dmp == null)
+            //    {
+            //        return new ListingInfo(error);
+            //    }
+            //    using (dmp)
+            //    {
+            //        var heap = dmp.Runtime.Heap;
+            //        var addresses = ClrtDump.GetTypeAddresses(heap, "System.String", out error);
+            //        if (error != null)
+            //        {
+            //            return new ListingInfo(error);
+            //        }
+            //        var strStats = ClrtDump.GetStringStats(heap, addresses, dumpFilePath, out error);
+            //        return strStats.GetGridData((int)_minStringUsage, out error);
+            //    }
+            //});
+            var taskResult = await Task.Factory.StartNew(() =>
             {
                 var dmp = ClrtDump.OpenDump(dumpFilePath, out error);
                 if (dmp == null)
@@ -946,7 +1021,7 @@ namespace MDRDesk
                     var strStats = ClrtDump.GetStringStats(heap, addresses, dumpFilePath, out error);
                     return strStats.GetGridData((int)_minStringUsage, out error);
                 }
-            });
+            }, DumpSTAScheduler);
 
             SetEndTaskMainWindowState("Getting Strings: " + System.IO.Path.GetFileName(dumpFilePath) +
                                       (taskResult.Error == null ? ", done." : ", failed."));
@@ -978,7 +1053,21 @@ namespace MDRDesk
             string typeName;
             if (!GetDlgString("Get Type Count", "EnterTypeName", " ", out typeName)) return;
             SetStartTaskMainWindowState("Getting type count. Please wait...");
-            var taskResult = await Task.Run(() =>
+            //var taskResult = await Task.Run(() =>
+            //{
+            //    var dmp = ClrtDump.OpenDump(dumpFilePath, out error);
+            //    if (dmp == null)
+            //    {
+            //        return new KeyValuePair<string, int>(error, -1);
+            //    }
+            //    using (dmp)
+            //    {
+            //        var heap = dmp.Runtime.Heap;
+            //        var count = ClrtDump.GetTypeCount(heap, typeName, out error);
+            //        return new KeyValuePair<string, int>(error, count);
+            //    }
+            //});
+            var taskResult = await Task.Factory.StartNew(() =>
             {
                 var dmp = ClrtDump.OpenDump(dumpFilePath, out error);
                 if (dmp == null)
@@ -991,7 +1080,7 @@ namespace MDRDesk
                     var count = ClrtDump.GetTypeCount(heap, typeName, out error);
                     return new KeyValuePair<string, int>(error, count);
                 }
-            });
+            }, DumpSTAScheduler);
 
             string msg;
             if (taskResult.Key != null)
@@ -1396,13 +1485,20 @@ namespace MDRDesk
             var outpath = DumpFileMoniker.GetOutputPathWithDumpPrefix(gridInfo.Item2, Utils.RemoveWhites(gridInfo.Item1) + ".txt");
 
             SetStartTaskMainWindowState("Writing report. Please wait...");
-            var taskResult = await Task.Run(() =>
+            //var taskResult = await Task.Run(() =>
+            //{
+            //    string error;
+            //    var ok = ReportFile.WriteReport(outpath, gridName, gridInfo.Item1, colSortInfo.Item1.ColInfos, descrLines, data,
+            //        out error);
+            //    return new Tuple<string, string>(error, outpath);
+            //});
+            var taskResult = await Task.Factory.StartNew(() =>
             {
                 string error;
                 var ok = ReportFile.WriteReport(outpath, gridName, gridInfo.Item1, colSortInfo.Item1.ColInfos, descrLines, data,
                     out error);
                 return new Tuple<string, string>(error, outpath);
-            });
+            }, DumpSTAScheduler);
 
             SetEndTaskMainWindowState(taskResult.Item1 == null
                 ? "Report written: " + taskResult.Item2
@@ -1783,12 +1879,18 @@ namespace MDRDesk
             if (addr == Constants.InvalidAddress) return;
             SetStartTaskMainWindowState("Getting instance[" + Utils.RealAddressString(addr) + "], please wait...");
 
-            var result = await Task.Run(() =>
+            //var result = await Task.Run(() =>
+            //{
+            //    string error;
+            //    KeyValuePair<uint, uint> info = CurrentIndex.GetInstanceSizes(addr, out error);
+            //    return new Tuple<string, KeyValuePair<uint, uint>>(error, info);
+            //});
+            var result = await Task.Factory.StartNew(() =>
             {
                 string error;
                 KeyValuePair<uint, uint> info = CurrentIndex.GetInstanceSizes(addr, out error);
                 return new Tuple<string, KeyValuePair<uint, uint>>(error, info);
-            });
+            }, DumpSTAScheduler);
 
             if (result.Item1 != null)
             {
@@ -2111,7 +2213,19 @@ namespace MDRDesk
 
             SetStartTaskMainWindowState("Getting size details for: '" + baseTypeName + "', please wait...");
 
-            var result = await Task.Run(() =>
+            //var result = await Task.Run(() =>
+            //{
+            //    string error;
+            //    var info = CurrentIndex.GetTypeSizeDetails(typeId, out error);
+            //    if (info == null)
+            //        return new Tuple<string, string, string>(error, null, null);
+
+            //    var rep = Reports.DumpTypeSizeDetails(CurrentIndex.OutputFolder, typeName, info.Item1, info.Item2, info.Item3, info.Item4, info.Item5,
+            //        out error);
+
+            //    return new Tuple<string, string, string>(null, rep.Item1, rep.Item2);
+            //});
+            var result = await Task.Factory.StartNew(() =>
             {
                 string error;
                 var info = CurrentIndex.GetTypeSizeDetails(typeId, out error);
@@ -2122,7 +2236,8 @@ namespace MDRDesk
                     out error);
 
                 return new Tuple<string, string, string>(null, rep.Item1, rep.Item2);
-            });
+            }, DumpSTAScheduler);
+
 
             SetEndTaskMainWindowState("Getting size details for: '" + baseTypeName + "', done");
 
@@ -2150,10 +2265,14 @@ namespace MDRDesk
 
             SetStartTaskMainWindowState("Getting type details for: '" + baseTypeName + "', please wait...");
 
-            (string error, ClrtDisplayableType dispType, ulong[] instances) = await Task.Run(() =>
+            //(string error, ClrtDisplayableType dispType, ulong[] instances) = await Task.Run(() =>
+            //{
+            //    return CurrentIndex.GetTypeDisplayableRecord(typeId);
+            //});
+            (string error, ClrtDisplayableType dispType, ulong[] instances) = await Task.Factory.StartNew(() =>
             {
                 return CurrentIndex.GetTypeDisplayableRecord(typeId);
-            });
+            }, DumpSTAScheduler);
 
             SetEndTaskMainWindowState("Getting type details for: '" + baseTypeName + "', done");
 
@@ -2325,12 +2444,18 @@ namespace MDRDesk
             answer = answer.Trim();
             SetStartTaskMainWindowState("Getting types impl. interface: '" + answer + "', please wait...");
 
-            var res = await Task.Run(() =>
+            //var res = await Task.Run(() =>
+            //{
+            //    string err;
+            //    string[] lst = CurrentIndex.GetTypesImplementingInterface(answer, out err);
+            //    return new ValueTuple<string, string[]>(null, lst);
+            //});
+            var res = await Task.Factory.StartNew(() =>
             {
                 string err;
                 string[] lst = CurrentIndex.GetTypesImplementingInterface(answer, out err);
                 return new ValueTuple<string, string[]>(null, lst);
-            });
+            }, DumpSTAScheduler);
 
             SetEndTaskMainWindowState("Getting types impl. interface: '" + answer + "', done");
 
