@@ -24,6 +24,8 @@
             <Separator></Separator>
             <MenuItem x:Name="KeyViewMemory" Header="Key View Memory" Click="KeyViewMemoryClicked"/>
             <MenuItem x:Name="ValueViewMemory" Header="Value View Memory" Click="ValueViewMemoryClicked"/>
+            <Separator></Separator>
+            <MenuItem x:Name="KeyValueCopyAll" Header="Copy All" Click="KeyValueCopyAllClicked"/>
         </ContextMenu>
     </Window.Resources>
     <Grid>

@@ -437,18 +437,21 @@ namespace ClrMDRIndex
 
         private static readonly string[] KnownTypeNames = new string[]
         {
+            "System.Text.StringBuilder",
             "System.Collections.Generic.Dictionary<",
             "System.Collections.Generic.HashSet<",
             "System.Collections.Generic.SortedDictionary<",
+            "System.Collections.Generic.List<"
         };
 
         public enum KnownTypes
         {
-            Unknown,
             StringBuilder,
             Dictionary,
             HashSet,
-            SortedDictionary
+            SortedDictionary,
+            List,
+            Unknown,
         }
 
         public static string GetKnowTypeName(KnownTypes kt)
@@ -458,11 +461,13 @@ namespace ClrMDRIndex
                 case KnownTypes.StringBuilder:
                     return "StringBuilder";
                 case KnownTypes.Dictionary:
-                    return "System.Collections.Generic.Dictionary<TKey,TValue>";
+                    return "Dictionary<TKey,TValue>";
                 case KnownTypes.HashSet:
-                    return "System.Collections.Generic.HashSet<T>";
+                    return "HashSet<T>";
                 case KnownTypes.SortedDictionary:
-                    return "System.Collections.Generic.SortedDictionary<TKey,TValue>";
+                    return "SortedDictionary<TKey,TValue>";
+                case KnownTypes.List:
+                    return "List<T>";
                 default:
                     return "Unknown Type";
             }
@@ -470,8 +475,6 @@ namespace ClrMDRIndex
 
         public static bool IsKnownType(string typeName)
         {
-            if (string.Compare("System.Text.StringBuilder", typeName, StringComparison.Ordinal) == 0) return true;
-
             for (int i = 0, icnt = KnownTypeNames.Length; i < icnt; ++i)
             {
                 if (typeName.StartsWith(KnownTypeNames[i], StringComparison.Ordinal))
@@ -482,19 +485,10 @@ namespace ClrMDRIndex
 
         public static KnownTypes IsKnownCollection(string typeName)
         {
-            // TODO JRD -- handle all cases
-            if (typeName.StartsWith(KnownTypeNames[0], StringComparison.Ordinal))
-            {
-                return KnownTypes.Dictionary;
-            }
-            return KnownTypes.Unknown;
-            
-            if (string.Compare("System.Text.StringBuilder", typeName, StringComparison.Ordinal) == 0) return KnownTypes.StringBuilder;
-
             for (int i = 0, icnt = KnownTypeNames.Length; i < icnt; ++i)
             {
                 if (typeName.StartsWith(KnownTypeNames[i], StringComparison.Ordinal))
-                    return (KnownTypes)(i+2);
+                    return (KnownTypes)(i);
             }
             return KnownTypes.Unknown;
         }

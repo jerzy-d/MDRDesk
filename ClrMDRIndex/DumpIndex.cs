@@ -1402,6 +1402,8 @@ namespace ClrMDRIndex
                     {
                         case TypeExtractor.KnownTypes.Dictionary:
                             return GetDictionaryContent(addr, typeId, typeName);
+                        case TypeExtractor.KnownTypes.HashSet:
+                            return GetHashSetContent(addr, typeId, typeName);
                     }
                 }
 
@@ -1425,6 +1427,18 @@ namespace ClrMDRIndex
             inst.AddExtraData(description);
             inst.AddKeyValuePairs(values);
             return (null, inst, TypeExtractor.KnownTypes.Dictionary);
+        }
+        public (string error, InstanceValue inst, TypeExtractor.KnownTypes) GetHashSetContent(ulong addr, int typeId, string typeName)
+        {
+            Debug.Assert(TypeExtractor.IsKnownCollection(typeName) != TypeExtractor.KnownTypes.Unknown);
+            (string error, KeyValuePair<string, string>[] description, string[] values) =
+                ValueExtractor.GetHashSetContent(Heap, addr);
+
+            if (error != null) return (error, null, TypeExtractor.KnownTypes.Unknown);
+            var inst = new InstanceValue(typeId, ClrElementKind.Object, addr, typeName, null, null);
+            inst.AddExtraData(description);
+            inst.AddArrayValues(values);
+            return (null, inst, TypeExtractor.KnownTypes.HashSet);
         }
 
         public (string, InstanceValue[]) GetInstanceValueFields(ulong addr, InstanceValue parent)

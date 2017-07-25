@@ -1902,6 +1902,24 @@ namespace UnitTestMdr
 
         }
 
+        [TestMethod]
+        public void TestHashSetContent()
+        {
+            Stopwatch stopWatch = new Stopwatch();
+            stopWatch.Start();
+            var index = OpenIndex(@"D:\Jerzy\WinDbgStuff\Dumps\Analytics\Cowen\Cowen.Analytics.Svc_170717_165238.dmp.map");
+            TestContext.WriteLine(index.DumpFileName + " INDEX OPEN DURATION: " + Utils.StopAndGetDurationString(stopWatch));
+            ulong addr = 0x00005407533ca0;
+            using (index)
+            {
+                var heap = index.GetHeap();
+                (string error, KeyValuePair<string, string>[] description, string[] values) =
+                ValueExtractor.GetHashSetContent(heap, addr);
+                Assert.IsNull(error, error);
+            }
+
+        }
+
         #endregion instance value
 
         #region type values report

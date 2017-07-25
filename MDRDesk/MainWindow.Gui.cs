@@ -2157,15 +2157,10 @@ namespace MDRDesk
         {
             SetStartTaskMainWindowState(msg);
 
-            //(string error, InstanceValue inst,TypeExtractor.KnownTypes knownType) = await Task.Run(() =>
-            //{
-            //    return CurrentIndex.GetInstanceValue(addr, null);
-            //});
             (string error, InstanceValue inst, TypeExtractor.KnownTypes knownType) = await Task.Factory.StartNew(() =>
             {
                 return CurrentIndex.GetInstanceValue(addr, null);
             }, DumpSTAScheduler);
-
 
             SetEndTaskMainWindowState(error == null
                 ? "value at " + Utils.RealAddressString(addr) + ":  " + inst.Value.ToString()
@@ -2181,7 +2176,11 @@ namespace MDRDesk
 
             if (knownType != TypeExtractor.KnownTypes.Unknown)
             {
-                if (inst.KeyValuePairs == null || inst.KeyValuePairs.Length < 1)
+                if (knownType == TypeExtractor.KnownTypes.StringBuilder)
+                {
+                    // TODO JRD -- display as string
+                }
+                if ((inst.KeyValuePairs == null || inst.KeyValuePairs.Length < 1) && (inst.ArrayValues==null || inst.ArrayValues.Length < 1))
                 {
                     ShowInformation("Empty Collection", TypeExtractor.GetKnowTypeName(knownType), "The collection at address " + Utils.RealAddressString(addr) + " is empty.", inst.TypeName);
                     return;

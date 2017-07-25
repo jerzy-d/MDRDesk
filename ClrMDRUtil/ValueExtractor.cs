@@ -992,6 +992,8 @@ namespace ClrMDRIndex
                     case ClrElementKind.String:
                         try
                         {
+                            if (TypeExtractor.IsString(fldKind))
+                                return (string)fld.GetValue(addr, intern, true);
                             ulong strAddr = (ulong)fld.GetValue(addr, intern, false);
                             string str = (string)fldType.GetValue(strAddr);
                             return str;
@@ -1400,6 +1402,25 @@ namespace ClrMDRIndex
             return new DisplayableString("Test");
         }
 
+        #region known collections
+
+        public static int GetFieldIntValue(ClrHeap heap, ulong addr, ClrType clrType, string fldName)
+        {
+            var fld = clrType.GetFieldByName(fldName);
+            if (fld == null) return int.MinValue;
+            var obj = fld.GetValue(addr, clrType.IsValueClass, false);
+            if (obj == null) return 0;
+            Debug.Assert(obj is Int32);
+            return (int)obj;
+        }
+
+        public static int GetFieldIntValue(ClrHeap heap, ulong addr, ClrInstanceField fld, bool intr)
+        {
+            var obj = fld.GetValue(addr, intr, false);
+            if (obj == null) return 0;
+            Debug.Assert(obj is Int32);
+            return (int)obj;
+        }
 
         #region List<T> content
 
@@ -1425,24 +1446,6 @@ namespace ClrMDRIndex
         #endregion List<T> content
 
         #region System.Collections.Generic.Dictionary<TKey, TValue>
-
-        public static int GetFieldIntValue(ClrHeap heap, ulong addr, ClrType clrType, string fldName)
-        {
-            var fld = clrType.GetFieldByName(fldName);
-            if (fld == null) return int.MinValue;
-            var obj = fld.GetValue(addr,clrType.IsValueClass,false);
-            if (obj == null) return 0;
-            Debug.Assert(obj is Int32);
-            return (int)obj;
-        }
-
-        public static int GetFieldIntValue(ClrHeap heap, ulong addr, ClrInstanceField fld, bool intr)
-        {
-            var obj = fld.GetValue(addr, intr, false);
-            if (obj == null) return 0;
-            Debug.Assert(obj is Int32);
-            return (int)obj;
-        }
 
         public static (string, KeyValuePair<string, string>[] , KeyValuePair<string, string>[]) GetDictionaryContent(ClrHeap heap, ulong addr)
         {
@@ -1509,18 +1512,73 @@ namespace ClrMDRIndex
             }
         }
 
-        //let entriesAddr = getReferenceFieldAddress addr entries false
-        //let entriesType = heap.GetObjectType(entriesAddr) // that is address of entries array
-
-        //    GetRealType(ClrHeap heap, ulong addr, ClrInstanceField fld, bool isInternal)
-        //}
-        //let entryAddr = entriesType.GetArrayElementAddress(entriesAddr, 0)
-
-        //let entryKeyType = tryGetFieldType heap(entryAddr + (uint64) entryKeyFld.Offset) entryKeyFld
-        //let entryValueType = tryGetFieldType heap(entryAddr + (uint64) entryValueFld.Offset) entryValueFld
-        //(fldDescription, count, entriesType, entriesAddr, entryHashCodeFld, entryNextFld, entryKeyFld, entryKeyType, entryValueFld, entryValueType)
-
         #endregion System.Collections.Generic.Dictionary<TKey, TValue>
+
+        #region System.Collections.Generic.HashSet<T>
+
+        private static (ClrType, ClrInstanceField, ClrElementKind, ClrInstanceField, ClrInstanceField) GetHashSetSlotTypeInfo(ClrHeap heap, ulong hashSetAddr, ulong slotAddr, ClrType slotsType, int lastIndex)
+        {
+            int index = 0;
+            ClrType slotType = slotsType.ComponentType;
+            ClrInstanceField hashCodeFld = slotType.GetFieldByName("hashCode");
+            ClrInstanceField valueFld = slotType.GetFieldByName("value");
+            ClrInstanceField nextFld = slotType.GetFieldByName("next");
+            ClrElementKind valueFldTypeKind = TypeExtractor.GetElementKind(valueFld.Type);
+
+            return (slotType, valueFld, valueFldTypeKind, hashCodeFld, nextFld);
+        }
+
+        public static (string, KeyValuePair<string, string>[], string[]) GetHashSetContent(ClrHeap heap, ulong addr)
+        {
+            try
+            {
+                addr = Utils.RealAddress(addr);
+                ClrType clrType = heap.GetObjectType(addr);
+                if (!clrType.Name.StartsWith("System.Collections.Generic.HashSet<"))
+                    return ("Object at address: " + Utils.RealAddressString(addr) + " is not a HashSet.", null, null);
+
+                int count = GetFieldIntValue(heap, addr, clrType, "m_count");
+                int lastIndex = GetFieldIntValue(heap, addr, clrType, "m_lastIndex");
+                int version = GetFieldIntValue(heap, addr, clrType, "m_version");
+                ClrInstanceField slotsFld = clrType.GetFieldByName("m_slots");
+                (ClrType slotsFldType, ClrElementKind slotsFldKind, ulong slotsFldAddr) = TypeExtractor.GetRealType(heap, addr, slotsFld, false);
+                var aryLen = slotsFldType == null ? 0 : slotsFldType.GetArrayLength(slotsFldAddr);
+                KeyValuePair<string, string>[] fldDescription = new KeyValuePair<string, string>[]
+                {
+                    new KeyValuePair<string, string>("count", count.ToString()),
+                    new KeyValuePair<string, string>("slot count", aryLen.ToString()),
+                    new KeyValuePair<string, string>("last index", lastIndex.ToString()),
+                    new KeyValuePair<string, string>("version", version.ToString())
+                };
+
+                (ClrType slotType, ClrInstanceField slotValueFld, ClrElementKind valueFldTypeKind, ClrInstanceField slotHashFld, ClrInstanceField slotNextFld) = GetHashSetSlotTypeInfo(heap, addr, slotsFldAddr, slotsFldType, lastIndex);
+
+                var slotTypeName = slotType.Name;
+                var slotValueFldTypeName = slotValueFld.Type.Name;
+
+                string[] values = new string[count];
+                int copied = 0;
+                for (int i = 0; i < lastIndex && copied < count; ++i)
+                {
+                    var eaddr = slotsFldType.GetArrayElementAddress(slotsFldAddr, i);
+                    int hash = GetFieldIntValue(heap, eaddr, slotHashFld, true);
+                    if (hash < 0) continue;
+                    string val = (string)GetFieldValue(heap, eaddr, slotValueFld, slotValueFld.Type, valueFldTypeKind, true, false);
+                    values[copied++] = val;
+                }
+
+                return (null, fldDescription, values);
+            }
+            catch (Exception ex)
+            {
+                string error = Utils.GetExceptionErrorString(ex);
+                return (error, null, null);
+            }
+
+        }
+
+
+        #endregion System.Collections.Generic.HashSet<T>
 
         #region array values
 
@@ -1698,6 +1756,7 @@ namespace ClrMDRIndex
 
         #endregion array values
 
+        #endregion known collections
 
         private static IPAddress GetIPAddress(ClrType clrType, ulong address)
         {

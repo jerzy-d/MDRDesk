@@ -23,12 +23,14 @@ namespace MDRDesk
     {
         private int _id;
         private ConcurrentDictionary<int, Window> _wndDct;
+        InstanceValue _instValue;
 
         public KeyValueCollectionDisplay(int id, ConcurrentDictionary<int, Window> wndDct, InstanceValue instVal, TypeExtractor.KnownTypes knownType)
         {
             _id = id;
             _wndDct = wndDct;
             InitializeComponent();
+            _instValue = instVal;
             Title = TypeExtractor.GetKnowTypeName(knownType);
             CollectionInfo.Text = GetExtraDataString(instVal.ExtraData as KeyValuePair<string, string>[],instVal.TypeName, instVal.Address);
             KeyValuePairs.ItemsSource = instVal.KeyValuePairs;
@@ -126,6 +128,35 @@ namespace MDRDesk
         private void ShowArrayIndicesClicked(object sender, RoutedEventArgs e)
         {
 
+        }
+
+        private void KeyValueCopyAllClicked(object sender, RoutedEventArgs e)
+        {
+            var data = _instValue.KeyValuePairs;
+            string addrStr = Utils.RealAddressStringHeader(_instValue.Address);
+            long size = addrStr.Length + _instValue.TypeName.Length + Environment.NewLine.Length;
+            for (int i = 0, icnt = data.Length; i < icnt; ++i)
+            {
+                var kv = data[i];
+                size += kv.Key.SizeInBytes;
+                size += kv.Value.SizeInBytes;
+                size += Environment.NewLine.Length + Constants.HeavyGreekCrossPadded.Length;
+            }
+            if (size < 64*1024)
+            {
+                StringBuilder sb = new StringBuilder((int)size);
+                sb.Append(addrStr).AppendLine(_instValue.TypeName);
+                for (int i = 0, icnt = data.Length; i < icnt; ++i)
+                {
+                    var kv = data[i];
+                    sb.Append(kv.Key.FullContent).Append(Constants.HeavyGreekCrossPadded).Append(kv.Value.FullContent);
+                    sb.AppendLine();
+                }
+                Clipboard.SetText(sb.ToString());
+                MessageBox.Show("Collection content copied to clipboard.", string.Empty, MessageBoxButton.OK, MessageBoxImage.Information);
+            }
+
+            // otherwise write to a file TODO JRD
         }
     }
 }

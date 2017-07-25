@@ -30,6 +30,8 @@ namespace ClrMDRIndex
         public string FullContent => (_content == null) ? Constants.NonValueChar + Constants.NullValue : _content;
 
 
+        public int SizeInBytes =>  _content == null ? 0 : _content.Length * sizeof(char);
+
         public static string ReplaceNewlines(string str)
         {
             if (string.IsNullOrEmpty(str)) return str;
