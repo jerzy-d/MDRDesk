@@ -818,6 +818,15 @@ namespace MDRDesk
 
         #region InstanceInfo
 
+        public bool IsValidHeapAddress(ulong addr)
+        {
+            if (CurrentIndex != null)
+            {
+                return CurrentIndex.GetInstanceIndex(addr) != Constants.InvalidIndex;
+            }
+            return false;
+        }
+
         private ulong GetInstanceAddressFromUser(string title)
         {
             if (!IsIndexAvailable(title)) return Constants.InvalidAddress;

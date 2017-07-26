@@ -2185,9 +2185,18 @@ namespace MDRDesk
                     ShowInformation("Empty Collection", TypeExtractor.GetKnowTypeName(knownType), "The collection at address " + Utils.RealAddressString(addr) + " is empty.", inst.TypeName);
                     return;
                 }
-                var wnd = new KeyValueCollectionDisplay(Utils.GetNewID(), _wndDct, inst, knownType) { Owner = this };
-                wnd.Show();
-                return;
+
+                if (knownType == TypeExtractor.KnownTypes.HashSet)
+                {
+                    var wnd = new CollectionDisplay(Utils.GetNewID(), _wndDct, inst, null, TypeExtractor.KnownTypes.Unknown) { Owner = this };
+                    wnd.Show();
+                    return;
+                }
+                {
+                    var wnd = new KeyValueCollectionDisplay(Utils.GetNewID(), _wndDct, inst, knownType) { Owner = this };
+                    wnd.Show();
+                    return;
+                }
             }
 
             if (!inst.HaveFields() && !inst.Value.IsLong())
@@ -2199,13 +2208,15 @@ namespace MDRDesk
 
             if (inst.IsArray())
             {
-                var wnd = new CollectionDisplay(Utils.GetNewID(), _wndDct, inst, GetInstanceValueDescription(inst)) { Owner = this };
+                var wnd = new CollectionDisplay(Utils.GetNewID(), _wndDct, inst, GetInstanceValueDescription(inst), TypeExtractor.KnownTypes.Unknown) { Owner = this };
                 wnd.Show();
                 return;
             }
 
-            var awnd = new ClassStructDisplay(Utils.GetNewID(), _wndDct, GetInstanceValueDescription(inst), inst) { Owner = this };
-            awnd.Show();
+            {
+                var wnd = new ClassStructDisplay(Utils.GetNewID(), _wndDct, GetInstanceValueDescription(inst), inst) { Owner = this };
+                wnd.Show();
+            }
 
         }
 

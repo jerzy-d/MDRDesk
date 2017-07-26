@@ -1538,6 +1538,10 @@ namespace ClrMDRIndex
                     return ("Object at address: " + Utils.RealAddressString(addr) + " is not a HashSet.", null, null);
 
                 int count = GetFieldIntValue(heap, addr, clrType, "m_count");
+                if (count < 1)
+                {
+                    return (null, Utils.EmptyArray<KeyValuePair<string, string>>.Value, Utils.EmptyArray<string>.Value);
+                }
                 int lastIndex = GetFieldIntValue(heap, addr, clrType, "m_lastIndex");
                 int version = GetFieldIntValue(heap, addr, clrType, "m_version");
                 ClrInstanceField slotsFld = clrType.GetFieldByName("m_slots");
@@ -1579,6 +1583,13 @@ namespace ClrMDRIndex
 
 
         #endregion System.Collections.Generic.HashSet<T>
+
+        #region System.Collections.Generic.Queue<T>
+
+
+
+
+        #endregion System.Collections.Generic.Queue<T>
 
         #region array values
 

@@ -32,26 +32,8 @@ namespace MDRDesk
             InitializeComponent();
             _instValue = instVal;
             Title = TypeExtractor.GetKnowTypeName(knownType);
-            CollectionInfo.Text = GetExtraDataString(instVal.ExtraData as KeyValuePair<string, string>[],instVal.TypeName, instVal.Address);
+            CollectionInfo.Text = GuiUtils.GetExtraDataString(instVal.ExtraData as KeyValuePair<string, string>[],instVal.TypeName, instVal.Address);
             KeyValuePairs.ItemsSource = instVal.KeyValuePairs;
-        }
-
-        private string GetExtraDataString(KeyValuePair<string, string>[] data, string typeName, ulong addr)
-        {
-            var sb = StringBuilderCache.Acquire(StringBuilderCache.MaxCapacity);
-            sb.AppendLine(typeName);
-            sb.AppendLine(Utils.AddressString(addr));
-            if (data == null || data.Length < 1)
-            {
-                sb.Append("No information available.").AppendLine();
-                return StringBuilderCache.GetStringAndRelease(sb);
-            }
-            for (int i = 0, icnt = data.Length; i < icnt; ++i)
-            {
-                sb.Append(data[i].Key).Append(" = ").Append(data[i].Value).AppendLine();
-            }
-
-            return StringBuilderCache.GetStringAndRelease(sb);
         }
 
         private void Window_Closing(object sender, System.ComponentModel.CancelEventArgs e)

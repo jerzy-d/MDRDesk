@@ -1909,7 +1909,7 @@ namespace UnitTestMdr
             stopWatch.Start();
             var index = OpenIndex(@"D:\Jerzy\WinDbgStuff\Dumps\Analytics\Cowen\Cowen.Analytics.Svc_170717_165238.dmp.map");
             TestContext.WriteLine(index.DumpFileName + " INDEX OPEN DURATION: " + Utils.StopAndGetDurationString(stopWatch));
-            ulong addr = 0x00005407533ca0;
+            ulong addr = 0x000053078c26e0; // 0x00005504146250; // 0x00005407533ca0;
             using (index)
             {
                 var heap = index.GetHeap();

@@ -29,7 +29,7 @@ namespace MDRDesk
         private bool _indicesShown;
         private InstanceValue _instanceValue;
 
-        public CollectionDisplay(int id, ConcurrentDictionary<int, Window> wndDct, InstanceValue instVal, string descr)
+        public CollectionDisplay(int id, ConcurrentDictionary<int, Window> wndDct, InstanceValue instVal, string descr, TypeExtractor.KnownTypes knownType)
         {
             _id = id;
             _wndDct = wndDct;
@@ -37,7 +37,7 @@ namespace MDRDesk
             _instanceValue = instVal;
             Debug.Assert(instVal.ArrayValues != null);
             CollectionValues.ItemsSource = instVal.ArrayValues;
-            CollectionInfo.Text = descr;
+            CollectionInfo.Text = descr == null ? GuiUtils.GetExtraDataString(instVal.ExtraData as KeyValuePair<string, string>[], instVal.TypeName, instVal.Address) : descr;
             wndDct.TryAdd(id, this);
         }
 
@@ -118,20 +118,27 @@ namespace MDRDesk
             GuiUtils.NotImplementedMsgBox("ItenLstViewMemoryClicked");
         }
 
+        private ulong GetAddressFromEntry(string entry)
+        {
+            ulong addr = GuiUtils.TryGetAddressValue(entry);
+            if (addr != Constants.InvalidAddress)
+            {
+                return ((MainWindow)Owner).IsValidHeapAddress(addr) ? addr : Constants.InvalidAddress;
+            }
+            return Constants.InvalidAddress;
+        }
+
         private void ItemListDoubleClicked(object sender, MouseButtonEventArgs e)
         {
             if (CollectionValues.SelectedIndex < 0) return;
             DisplayableString item = (DisplayableString)CollectionValues.SelectedItem;
-            string value = item.FullContent;
-            if (TypeExtractor.IsArray(_instanceValue.Kind) && _instanceValue.Fields != null && _instanceValue.Fields.Length > 0)
+            ulong addr = GetAddressFromEntry(item.FullContent);
+            if (addr != Constants.InvalidAddress)
             {
-                if ((TypeExtractor.IsNonStringObjectReference(_instanceValue.Fields[0].Kind)))
-                {
-                    var owner = (MainWindow)Owner;
-                    var addr = Utils.GetAddressValue(value);
-                    System.Windows.Threading.Dispatcher.CurrentDispatcher.InvokeAsync(() => owner.ExecuteInstanceValueQuery("Getting object value at: " + Utils.RealAddressString(addr), addr));
-                }
+                System.Windows.Threading.Dispatcher.CurrentDispatcher.InvokeAsync(() => ((MainWindow)Owner).ExecuteInstanceValueQuery("Getting object value at: " + Utils.RealAddressString(addr), addr));
             }
+            
+            // TODO JRD -- display large strings
         }
 
         private void ItemLstGetTypeValuesReportClicked(object sender, RoutedEventArgs e)
@@ -140,6 +147,7 @@ namespace MDRDesk
             if ((TypeExtractor.IsNonStringObjectReference(_instanceValue.Fields[0].Kind)))
             {
                 var owner = (MainWindow)Owner;
+                // TODO JRD
                 //System.Windows.Threading.Dispatcher.CurrentDispatcher.InvokeAsync(() => owner.ExecuteInstanceValueQuery("Getting object value at: " + Utils.RealAddressString(addr), addr));
             }
 

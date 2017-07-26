@@ -6,6 +6,7 @@ using System.Windows.Controls;
 using System.Windows.Documents;
 using System.Windows.Media;
 using ClrMDRIndex;
+using System.Collections.Generic;
 
 namespace MDRDesk
 {
@@ -333,5 +334,53 @@ namespace MDRDesk
         {
             MessageBox.Show("Not implemented yet.", what, MessageBoxButton.OK, MessageBoxImage.Information);
         }
-	}
+
+        public static  string GetExtraDataString(KeyValuePair<string, string>[] data, string typeName, ulong addr)
+        {
+            var sb = StringBuilderCache.Acquire(StringBuilderCache.MaxCapacity);
+            sb.AppendLine(typeName);
+            sb.AppendLine(Utils.AddressString(addr));
+            if (data == null || data.Length < 1)
+            {
+                sb.Append("No information available.").AppendLine();
+                return StringBuilderCache.GetStringAndRelease(sb);
+            }
+            for (int i = 0, icnt = data.Length; i < icnt; ++i)
+            {
+                sb.Append(data[i].Key).Append(" = ").Append(data[i].Value).AppendLine();
+            }
+
+            return StringBuilderCache.GetStringAndRelease(sb);
+        }
+
+        /// <summary>
+        /// Getting ulong value from string, which might be our standard report entry.
+        /// First good hex string value is returned.
+        /// </summary>
+        /// <param name="dispAddr">Some string possibly contaning address (ulong value).</param>
+        /// <returns>Ulong value, or 0 if no hex string present.</returns>
+        public static ulong TryGetAddressValue(string dispAddr)
+        {
+            dispAddr = dispAddr.Trim();
+            // it might be our standard entry with  ✚  separator
+            var entries = dispAddr.Split(new string[] { Constants.HeavyGreekCrossPadded },StringSplitOptions.RemoveEmptyEntries);
+            for (int i = 0, icnt = entries.Length; i < icnt; ++i)
+            {
+                var str = entries[i].Trim();
+                if (str.Length != Constants.AddressStringLength) continue;
+                var subStr = str.Substring(4); // get rid of flags and x char
+                if (!Utils.IsHex(subStr)) continue;
+                try
+                {
+                    ulong addr = Convert.ToUInt64(subStr, 16);
+                    return addr;
+                }
+                catch
+                {
+                    continue;
+                }
+            }
+            return Constants.InvalidAddress;
+        }
+    }
 }

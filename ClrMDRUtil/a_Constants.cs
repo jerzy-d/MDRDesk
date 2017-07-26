@@ -160,6 +160,7 @@ namespace ClrMDRIndex
 		public const uint InvalidThreadId = uint.MaxValue;
 
 		public const ulong InvalidAddress = 0ul;
+        public const int AddressStringLength = 16;
 
 		public const string ReportPath = @"ad-hoc.queries";
 
