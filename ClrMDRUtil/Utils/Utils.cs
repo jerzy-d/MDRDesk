@@ -1554,14 +1554,14 @@ namespace ClrMDRIndex
         public static string GetShorterString(string str, int len)
         {
             if (str.Length <= len) return str;
-            return str.Substring(0, len) + "...";
+            return str.Substring(0, len-1) + Constants.HorizontalEllipsisChar;
         }
 
         public static string GetShorterStringRemoveNewlines(string str, int len)
         {
             str = str.Replace(Environment.NewLine, Constants.HeavyRightArrowPadded);
             if (str.Length <= len) return str;
-            return str.Substring(0, len) + "...";
+            return str.Substring(0, len-1) + Constants.HorizontalEllipsisChar;
         }
 
         #endregion String Utils

@@ -73,7 +73,7 @@ Add static variables getters, for types add static variables to types context me
 0026 04/21/17
 Add feature to change a tab into a free flowing window.
 0027 05/04/17
-Add indexing without references.
+*** Add indexing without references.
 Make sure that indexing and index work properly without references.
 0028 05/04/17
 Fix thread frames, something fishy about VikingServiceFrozen.dmp
@@ -84,61 +84,11 @@ Fix total sizes of instances and types.
 0031 06/08/17
 Double fields showing - D:\Jerzy\WinDbgStuff\dumps\Analytics\Ellerston\LouBug\Eze.Analytics.Svc_170607_214916.dmp.map
 0032 06/09/17
-Make sure that DumpIndex does not acces _references when they not present.
+*** Make sure that DumpIndex does not acces _references when they not present.
 0033 06/22/17
-Finish new reference builder and reference (InstanceReferences), and incoporate them in indexer and index.
-
-DUMP PATH: D:\Jerzy\WinDbgStuff\dumps\Analytics\Highline\analyticsdump111.dlk.dmp
-analyticsdump111.dlk.dmp size: 1,314,951,945, created: 2016-11-02-09-10-44-021, last written: 2016-11-02-09-10-44-021
-DUMP OPEN DURATION:  00:00:00.00
-COLLECTING INSTANCES DURATION:  00:00:01.57
-INSTANCE COUNT: 5,807,682 READING INSTANCES DURATION:  00:00:00.19
-SAVING REFERENCE DATA DURATION:  00:00:04.27
-REFLAG COUNT: 0
-NOTFOUND COUNT: 0
-REVERSED MINMAX: 0 - 0
-BUILDING REFERENCES DURATION:  00:00:30.30
-TOTAL DURATION:  00:00:36.35
-
-DUMP PATH: D:\Jerzy\WinDbgStuff\dumps\TradingService\Tortoise\tradingservice_0615.dmp
-tradingservice_0615.dmp size: 1,699,662,952, created: 2017-06-21-07-01-19-422, last written: 2017-06-21-07-01-19-422
-DUMP OPEN DURATION:  00:00:00.00
-COLLECTING INSTANCES DURATION:  00:00:09.09
-INSTANCE COUNT: 2,759,330 READING INSTANCES DURATION:  00:00:00.06
-SAVING REFERENCE DATA DURATION:  00:00:05.12
-REFLAG COUNT: 0
-NOTFOUND COUNT: 0
-REVERSED MINMAX: 0 - 0
-BUILDING REFERENCES DURATION:  00:00:09.87
-TOTAL DURATION:  00:00:24.16
-
-DUMP PATH: D:\Jerzy\WinDbgStuff\dumps\Analytics\Baly\analytics7_1510301630.Baly.dmp
-analytics7_1510301630.Baly.dmp size: 4,886,740,896, created: 2015-11-03-11-25-34-741, last written: 2015-11-03-11-25-34-741
-DUMP OPEN DURATION:  00:00:00.00
-COLLECTING INSTANCES DURATION:  00:00:34.27
-INSTANCE COUNT: 40,736,711 READING INSTANCES DURATION:  00:00:00.95
-SAVING REFERENCE DATA DURATION:  00:00:30.60
-REFLAG COUNT: 0
-NOTFOUND COUNT: 0
-REVERSED MINMAX: 0 - 0
-BUILDING REFERENCES DURATION:  00:03:54.52
-TOTAL DURATION:  00:05:00.36
-
-DUMP PATH: D:\Jerzy\WinDbgStuff\dumps\Analytics\BigOne\Analytics11_042015_2.BigOne.dmp
-Analytics11_042015_2.BigOne.dmp size: 15,090,522,609, created: 2015-11-03-04-12-47-494, last written: 2015-11-03-04-12-47-494
-DUMP OPEN DURATION:  00:00:00.00
-COLLECTING INSTANCES DURATION:  00:02:04.51
-INSTANCE COUNT: 165,448,895 READING INSTANCES DURATION:  00:00:03.94
-SAVING REFERENCE DATA DURATION:  00:03:04.71
-REFLAG COUNT: 0
-NOTFOUND COUNT: 0
-REVERSED MINMAX: 0 - 0
-BUILDING REFERENCES DURATION:  00:14:07.24
-TOTAL DURATION:  00:19:20.41
-
-
+*** Finish new reference builder and reference (InstanceReferences), and incoporate them in indexer and index.
 0034 06/28/17
-Double click on list view:
+*** Double click on list view:
 Generally one only responds to a single click on an item but if you want a double click it isn't hard to do.
 private void listView1_MouseDoubleClick ( object sender, MouseEventArgs e ) {
    ListViewHitTestInfo hit = listView1.HitTest(e.Location);

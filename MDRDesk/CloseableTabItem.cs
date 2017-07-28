@@ -46,7 +46,7 @@ namespace MDRDesk
 			dlg = null;
 			if (string.IsNullOrWhiteSpace(str)) return;
 			if (str.Length > 32)
-				str = str.Substring(0, 29) + "...";
+				str = str.Substring(0, 31) + '\u2026';
 			this.Header = str;
 		}
 

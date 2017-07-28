@@ -52,7 +52,7 @@ namespace ClrMDRIndex
             if (_content == null) return Constants.NonValueChar + Constants.NullValue;
             if (_content.Length > MaxLength)
             {
-                var newStr = _content.Substring(0, MaxLength - 3) + "...";
+                var newStr = _content.Substring(0, MaxLength - 1) + Constants.HorizontalEllipsisChar;
                 return ReplaceNewlines(newStr);
             }
             else

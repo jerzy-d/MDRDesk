@@ -139,12 +139,13 @@ namespace ClrMDRIndex
 		public const char RightDashedArrow = '\u279F'; // ➟ DASHED TRIANGLE-HEADED RIGHTWARDS ARROW
 		public const string RightDashedArrowPadded = " \u279F "; // ➟ DASHED TRIANGLE-HEADED RIGHTWARDS ARROW
 
-		
-		//27A0 ➠ HEAVY DASHED TRIANGLE-HEADED RIGHTWARDS ARROW 
-		//27A1 ➡ BLACK RIGHTWARDS ARROW
-		//279D ➝ TRIANGLE-HEADED RIGHTWARDS ARROW
+        public const char HorizontalEllipsisChar = '\u2026'; // … HORIZONTAL ELLIPSIS
 
-		public char[] SubDigits = new[]
+        //27A0 ➠ HEAVY DASHED TRIANGLE-HEADED RIGHTWARDS ARROW 
+        //27A1 ➡ BLACK RIGHTWARDS ARROW
+        //279D ➝ TRIANGLE-HEADED RIGHTWARDS ARROW
+
+        public char[] SubDigits = new[]
 		{
 			'\u2080', // ₀ SUBSCRIPT ZERO
 		};

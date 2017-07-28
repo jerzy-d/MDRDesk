@@ -42,19 +42,85 @@ namespace MDRDesk
             _wndDct.TryRemove(_id, out wnd);
         }
 
+        private ulong GetAddressFromEntry(string entry)
+        {
+            ulong addr = GuiUtils.TryGetAddressValue(entry);
+            if (addr != Constants.InvalidAddress)
+            {
+                return ((MainWindow)Owner).IsValidHeapAddress(addr) ? addr : Constants.InvalidAddress;
+            }
+            return Constants.InvalidAddress;
+        }
+
         private void KeyValueDoubleClicked(object sender, MouseButtonEventArgs e)
         {
+            ulong addr = Constants.InvalidAddress;
+            var txtBlk = (TextBlock)e.OriginalSource;
+            if (txtBlk == null) return;
+            string data = txtBlk.Text;
+            if (data == null || data.Length < 16) return;
+            if (data[data.Length - 1] != Constants.HorizontalEllipsisChar)
+            {
+                addr = GetAddressFromEntry(data);
+                if (addr == Constants.InvalidAddress) return;
+            }
 
+            if (addr == Constants.InvalidAddress)
+            {
+                DependencyObject originalSource = (DependencyObject)e.OriginalSource;
+                while ((originalSource != null) && !(originalSource is ListViewItem))
+                {
+                    originalSource = VisualTreeHelper.GetParent(originalSource);
+                }
+                if (originalSource != null)
+                {
+                    if (e.OriginalSource is TextBlock)
+                    {
+                        var item = ((ListView)sender).ItemContainerGenerator.ItemFromContainer(originalSource);
+                        if (item is KeyValuePair<DisplayableString, DisplayableString>)
+                        {
+                            KeyValuePair<DisplayableString, DisplayableString> kv = (KeyValuePair<DisplayableString, DisplayableString>)item;
+                            if (kv.Key.FullContent.StartsWith(data))
+                            {
+                                addr = GetAddressFromEntry(kv.Key.FullContent);
+                            }
+                            else if (kv.Value.FullContent.StartsWith(data))
+                            {
+                                addr = GetAddressFromEntry(kv.Value.FullContent);
+                            }
+                        }
+                    }
+                }
+            }
+
+            if (addr != Constants.InvalidAddress)
+            {
+                System.Windows.Threading.Dispatcher.CurrentDispatcher.InvokeAsync(() => ((MainWindow)Owner).ExecuteInstanceValueQuery("Getting object value at: " + Utils.RealAddressString(addr), addr));
+            }
+
+            // TODO JRD -- display large strings
+
+        }
+
+        private string GetSelectionString(bool getKey)
+        {
+            if (KeyValuePairs.SelectedIndex < 0) return null;
+            var kv = (KeyValuePair<DisplayableString, DisplayableString>)KeyValuePairs.SelectedItem;
+            return getKey ? kv.Key.FullContent : kv.Value.FullContent;
         }
 
         private void KeyCopyClicked(object sender, RoutedEventArgs e)
         {
-
+            string value = GetSelectionString(true); // true for key
+            if (value == null) return;
+            Clipboard.SetText(value);
         }
 
         private void CopyValueClicked(object sender, RoutedEventArgs e)
         {
-
+            string value = GetSelectionString(false); // for value
+            if (value == null) return;
+            Clipboard.SetText(value);
         }
 
         private void KeyGetParentRefsClicked(object sender, RoutedEventArgs e)
@@ -79,12 +145,26 @@ namespace MDRDesk
 
         private void KeyGetInstValueClicked(object sender, RoutedEventArgs e)
         {
-
+            string value = GetSelectionString(true); // true for key
+            if (value == null) return;
+            ulong addr = GetAddressFromEntry(value);
+            if (addr != Constants.InvalidAddress)
+            {
+                System.Windows.Threading.Dispatcher.CurrentDispatcher.InvokeAsync(() => ((MainWindow)Owner).ExecuteInstanceValueQuery("Getting object value at: " + Utils.RealAddressString(addr), addr));
+            }
+            // TODO JRD -- display large strings
         }
 
         private void ValueGetInstValueClicked(object sender, RoutedEventArgs e)
         {
-
+            string value = GetSelectionString(false); // false for value
+            if (value == null) return;
+            ulong addr = GetAddressFromEntry(value);
+            if (addr != Constants.InvalidAddress)
+            {
+                System.Windows.Threading.Dispatcher.CurrentDispatcher.InvokeAsync(() => ((MainWindow)Owner).ExecuteInstanceValueQuery("Getting object value at: " + Utils.RealAddressString(addr), addr));
+            }
+            // TODO JRD -- display large strings
         }
 
         private void KeyGetInstHierarchyClicked(object sender, RoutedEventArgs e)

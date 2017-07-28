@@ -3061,7 +3061,7 @@ namespace MDRDesk
         private string ShortenString(string str, int len)
         {
             if (str.Length > len)
-                return str.Substring(0, len) + "...";
+                return str.Substring(0, len - 1) + Constants.HorizontalEllipsisChar;
             return str;
         }
 
