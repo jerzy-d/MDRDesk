@@ -229,23 +229,6 @@ namespace ClrMDRIndex
             return formatSpec == null ? dt.ToString(CultureInfo.InvariantCulture) : dt.ToString(formatSpec);
         }
 
-        //public static string GetDateTimeValue(ClrHeap heap, ulong addr, string formatSpec = null)
-        //{
-        //	byte[] bytes = new byte[8];
-        //	heap.ReadMemory(addr, bytes, 0, 8);
-        //	ulong data = BitConverter.ToUInt64(bytes, 0);
-        //	data = data & TicksMask;
-        //	try // might throw on bad data
-        //	{
-        //		var dt = DateTime.FromBinary((long)data);
-        //		return formatSpec == null ? dt.ToString(CultureInfo.InvariantCulture) : dt.ToString(formatSpec);
-        //	}
-        //	catch (Exception)
-        //	{
-        //		return formatSpec == null ? DateTime.MinValue.ToString(CultureInfo.InvariantCulture) : DateTime.MinValue.ToString(formatSpec);
-        //	}
-        //}
-
         public static string GetDateTimeValue(ulong addr, ClrType clrType, string formatSpec = null)
         {
             var data = (ulong)clrType.Fields[0].GetValue(addr, false);
@@ -840,52 +823,6 @@ namespace ClrMDRIndex
             return GetPrimitiveValue(addrObj, field.Type);
         }
 
-        //public static string TryGetPrimitiveValue(ClrHeap heap, ulong classAddr, ClrInstanceField field, bool internalAddr)
-        //{
-        //	var clrType = field.Type;
-        //	var kind = TypeKinds.GetTypeKind(clrType);
-        //	object addrObj;
-        //	switch (TypeKinds.GetMainTypeKind(kind))
-        //	{
-        //		case TypeKind.StringKind:
-        //			addrObj = field.GetValue(classAddr, internalAddr, false);
-        //			if (addrObj == null) return Constants.NullValue;
-        //			return GetStringValue(clrType, (ulong)addrObj);
-        //		case TypeKind.ReferenceKind:
-        //			switch (TypeKinds.GetParticularTypeKind(kind))
-        //			{
-        //				case TypeKind.Exception:
-        //					addrObj = field.GetValue(classAddr, internalAddr, false);
-        //					if (addrObj == null) return Constants.NullName;
-        //					return GetShortExceptionValue((ulong)addrObj, clrType, heap);
-        //				default:
-        //					return Constants.NonValue;
-        //			}
-        //		case TypeKind.StructKind:
-        //			switch (TypeKinds.GetParticularTypeKind(kind))
-        //			{
-        //				case TypeKind.Decimal:
-        //					return GetDecimalValue(classAddr, field,internalAddr);
-        //				case TypeKind.DateTime:
-        //					return GetDateTimeValue(classAddr, field, internalAddr);
-        //				case TypeKind.TimeSpan:
-        //					addrObj = field.GetValue(classAddr, internalAddr, false);
-        //					if (addrObj == null) return Constants.NullName;
-        //					return GetTimeSpanValue((ulong)addrObj, clrType);
-        //				case TypeKind.Guid:
-        //					return GetGuidValue(classAddr, field);
-        //				default:
-        //					return Constants.NonValue;
-        //			}
-        //		case TypeKind.PrimitiveKind:
-        //			addrObj = field.GetValue(classAddr, internalAddr, false);
-        //			return GetPrimitiveValue(addrObj, clrType);
-        //		default:
-        //			return Constants.NonValue;
-        //	}
-        //}
-
-
         public static void SetSegmentInterval(List<triple<bool, ulong, ulong>> intervals, ulong addr, ulong sz, bool free)
         {
             Debug.Assert(intervals.Count > 0 && sz > 0ul);
@@ -992,8 +929,8 @@ namespace ClrMDRIndex
                     case ClrElementKind.String:
                         try
                         {
-                            if (TypeExtractor.IsString(fldKind))
-                                return (string)fld.GetValue(addr, intern, true);
+                            //if (TypeExtractor.IsString(fldKind))
+                            //    return (string)fld.GetValue(addr, false, true);
                             ulong strAddr = (ulong)fld.GetValue(addr, intern, false);
                             string str = (string)fldType.GetValue(strAddr);
                             return str;
@@ -1513,6 +1450,87 @@ namespace ClrMDRIndex
         }
 
         #endregion System.Collections.Generic.Dictionary<TKey, TValue>
+
+        public static (string, KeyValuePair<string, string>[], KeyValuePair<string, string>[]) GetSortedDictionaryContent(ClrHeap heap, ulong addr)
+        {
+            try
+            {
+                ClrType dctType = heap.GetObjectType(addr);
+
+                var setFld = dctType.GetFieldByName("_set"); // get TreeSet 
+                var setFldAddr = (ulong)setFld.GetValue(addr, false, false);
+                var setType = heap.GetObjectType(setFldAddr);
+                var count = GetFieldIntValue(heap, setFldAddr, setType, "count");
+                var version = GetFieldIntValue(heap, setFldAddr, setType, "version");
+                var rootFld = setType.GetFieldByName("root"); // get TreeSet root node
+                var rootFldAddr = (ulong)rootFld.GetValue(setFldAddr, false, false);
+                var rootType = heap.GetObjectType(rootFldAddr);
+                var leftNodeFld = rootType.GetFieldByName("Left");
+                var rightNodeFld = rootType.GetFieldByName("Right");
+                var itemNodeFld = rootType.GetFieldByName("Item");
+
+                var keyFld = itemNodeFld.Type.GetFieldByName("key");
+                var valFld = itemNodeFld.Type.GetFieldByName("value");
+                var itemAddr = itemNodeFld.GetAddress(rootFldAddr,false);
+                (ClrType keyFldType, ClrElementKind keyFldKind, ulong keyFldAddr) =
+                        TypeExtractor.GetRealType(heap, itemAddr, keyFld, true);
+                (ClrType valFldType, ClrElementKind valFldKind, ulong valFldAddr) =
+                  TypeExtractor.GetRealType(heap, itemAddr, valFld, true);
+
+                KeyValuePair<string, string>[] fldDescription = new KeyValuePair<string, string>[]
+                {
+                new KeyValuePair<string, string>("count", (count).ToString()),
+                new KeyValuePair<string, string>("version", version.ToString())
+                };
+
+                var stack = new Stack<ulong>(2 * Utils.Log2(count + 1));
+                var node = rootFldAddr;
+                while (node != Constants.InvalidAddress)
+                {
+                    stack.Push(node);
+                    node = GetReferenceFieldAddress(node, leftNodeFld, false);
+                    //if (left != Constants.InvalidAddress) node = left;
+                    //else
+                    //{
+                    //    var right = GetReferenceFieldAddress(node, rightNodeFld, false);
+                    //    node = right;
+                    //}
+                }
+
+                var values = new List<KeyValuePair<string, string>>(count);
+
+                while (stack.Count > 0)
+                {
+                    node = stack.Pop();
+                    var iAddr = itemNodeFld.GetAddress(node); // GetReferenceFieldAddress(node, itemNodeFld, false);
+                    var keyStr = (string)GetFieldValue(heap, iAddr, keyFld, keyFldType, keyFldKind, true, false);
+                    var valStr = (string)GetFieldValue(heap, iAddr, valFld, valFldType, valFldKind, true, false);
+                    values.Add(new KeyValuePair<string, string>(keyStr, valStr));
+                    node = GetReferenceFieldAddress(node, rightNodeFld, false);
+                    //getReferenceFieldAddress node rightNodeFld false
+                    while (node != Constants.InvalidAddress)
+                    {
+                        stack.Push(node);
+                        node = GetReferenceFieldAddress(node, leftNodeFld, false);
+                        if (node == Constants.InvalidAddress)
+                            node = GetReferenceFieldAddress(node, rightNodeFld, false);
+                    }
+                }
+                return (null, fldDescription, values.ToArray());
+            }
+            catch (Exception ex)
+            {
+                string error = Utils.GetExceptionErrorString(ex);
+                return (error, null, null);
+            }
+        }
+
+
+        #region System.Collections.SortedGeneric.Dictionary<TKey, TValue>
+
+
+
+        #endregion System.Collections.SortedGeneric.Dictionary<TKey, TValue>
 
         #region System.Collections.Generic.HashSet<T>
 

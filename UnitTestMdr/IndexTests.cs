@@ -1886,20 +1886,39 @@ namespace UnitTestMdr
             stopWatch.Start();
             var index = OpenIndex(@"C:\WinDbgStuff\Dumps\Analytics\Cowen\Cowen.Analytics.Svc_170717_165238.dmp.map");
             TestContext.WriteLine(index.DumpFileName + " INDEX OPEN DURATION: " + Utils.StopAndGetDurationString(stopWatch));
-            ulong addr = 0x000055070662f0;
+            ulong addr = 0x00005308d8b3c0; // 0x000055070662f0;
             using (index)
             {
                 //       (string error, InstanceValue inst) = ValueExtractor.GetDictionaryInfo(index.IndexProxy, index.Heap, addr, null);
                 var heap = index.GetHeap();
                 var clrType = index.GetObjectType(addr);
 
-                (string error0, KeyValuePair<string, string>[] fldDescription, int count, ClrType dctType, ClrType entryKeyType, ClrType entryValueType, KeyValuePair< string,string >[] entryList) = CollectionContent.dictionaryContent(heap, addr);
-                Assert.IsNull(error0, error0);
+                //(string error0, KeyValuePair<string, string>[] fldDescription, int count, ClrType dctType, ClrType entryKeyType, ClrType entryValueType, KeyValuePair< string,string >[] entryList) = CollectionContent.dictionaryContent(heap, addr);
+                //Assert.IsNull(error0, error0);
                 (string error1, KeyValuePair<string, string>[] description, KeyValuePair<string, string>[] values) =
                 ValueExtractor.GetDictionaryContent(heap, addr);
 
             }
 
+        }
+
+        [TestMethod]
+        public void TestSortedDictionaryContent()
+        {
+            Stopwatch stopWatch = new Stopwatch();
+            stopWatch.Start();
+            var index = OpenIndex(@"C:\WinDbgStuff\Dumps\Analytics\Cowen\Cowen.Analytics.Svc_170717_165238.dmp.map");
+            TestContext.WriteLine(index.DumpFileName + " INDEX OPEN DURATION: " + Utils.StopAndGetDurationString(stopWatch));
+            ulong addr = 0x000056124fa2b8; // 0x0000530f3bec68; // 0x00005604535698;
+            using (index)
+            {
+                var heap = index.GetHeap();
+                //var result = CollectionContent.getSortedDicionaryContent(heap, addr);
+                (string error, KeyValuePair<string, string>[] descr, KeyValuePair<string, string>[] values) =
+                    ValueExtractor.GetSortedDictionaryContent(heap, addr);
+
+                Assert.IsNull(error,error);
+            }
         }
 
         [TestMethod]

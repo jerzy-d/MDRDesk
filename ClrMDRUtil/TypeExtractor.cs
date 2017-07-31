@@ -515,16 +515,39 @@ namespace ClrMDRIndex
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static ValueTuple<ClrType, ClrElementKind, ulong> GetRealType(ClrHeap heap, ulong addr, ClrInstanceField fld, bool isInternal)
+        public static ulong GetFieldValueAsAddress(ClrInstanceField fld, ulong addr, bool intern)
         {
-            var obj = fld.GetValue(addr, isInternal, false);
-            if (obj == null) return new ValueTuple<ClrType, ClrElementKind, ulong>(null, ClrElementKind.Unknown, Constants.InvalidAddress);
-            var oaddr = (ulong)obj;
-            if (oaddr == 0UL) return new ValueTuple<ClrType, ClrElementKind, ulong>(null, ClrElementKind.Unknown, Constants.InvalidAddress);
+            var obj = fld.GetValue(addr, intern, false);
+            if (obj == null) return Constants.InvalidAddress;
+            return (obj is ulong) ? (ulong)obj : Constants.InvalidAddress;
+        }
 
-            ClrType clrType = heap.GetObjectType(oaddr);
-            ClrElementKind kind = clrType == null ? ClrElementKind.Unknown : GetElementKind(clrType);
-            return new ValueTuple<ClrType, ClrElementKind, ulong>(clrType, kind, kind == ClrElementKind.Unknown ? Constants.InvalidAddress : oaddr);
+        public static ValueTuple<ClrType, ClrElementKind, ulong> GetRealType(ClrHeap heap, ulong addr, ClrInstanceField fld, bool intern)
+        {
+            ClrType clrType = null;
+            ClrElementKind kind = ClrElementKind.Unknown;
+            ulong oAddr = Constants.InvalidAddress;
+            if (fld.Type != null)
+            {
+                kind = GetElementKind(fld.Type);
+                if (TypeExtractor.IsAmbiguousKind(kind))
+                {
+                    oAddr = fld.GetAddress(addr, intern);
+                    clrType = heap.GetObjectType(oAddr);
+                    kind = GetElementKind(fld.Type);
+                }
+                if (!(kind== ClrElementKind.Unknown) && !TypeExtractor.IsAmbiguousKind(kind))
+                {
+                    if (TypeExtractor.IsNonStringObjectReference(kind))
+                        oAddr = GetFieldValueAsAddress(fld, addr, intern);
+                    return new ValueTuple<ClrType, ClrElementKind, ulong>(fld.Type, kind, oAddr);
+                }
+            }
+            oAddr = GetFieldValueAsAddress(fld, addr, intern);
+            if (oAddr == Constants.InvalidAddress) return new ValueTuple<ClrType, ClrElementKind, ulong>(null, ClrElementKind.Unknown, Constants.InvalidAddress);
+            clrType = heap.GetObjectType(oAddr);
+            kind = clrType == null ? ClrElementKind.Unknown : GetElementKind(clrType);
+            return new ValueTuple<ClrType, ClrElementKind, ulong>(clrType, kind, oAddr);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -538,81 +561,6 @@ namespace ClrMDRIndex
         {
             return clrType == null ? false : clrType.IsValueClass;
         }
-
-        //public static void TryGetClrtDisplayableTypeFields(IndexProxy ndxProxy, ClrHeap heap, ClrtDisplayableType dispType, ClrType clrType, ulong addr, List<int> ambiguousFields, List<int> ambiguousFields2, ClrtDisplayableType[] fields)
-        //{
-        //    Debug.Assert(clrType.Fields.Count > 0);
-        //    ambiguousFields2.Clear();
-        //    for (int i = 0, icnt = ambiguousFields.Count; i < icnt; ++i)
-        //    {
-        //        var fld = clrType.Fields[i];
-        //        var fldType = fld.Type;
-        //        var kind = GetElementKind(fldType);
-        //        var specKind = TypeExtractor.GetSpecialKind(kind);
-        //        if (kind == ClrElementKind.Unknown)
-        //        {
-        //            fields[i] = new ClrtDisplayableType(dispType, Constants.InvalidIndex, i, Constants.NullName, fld.Name, kind);
-        //            ambiguousFields2.Add(i);
-        //            continue;
-        //        }
-
-        //        var typeId = ndxProxy.GetTypeId(fldType.Name);
-        //        if (specKind != ClrElementKind.Unknown)
-        //        {
-        //            switch (specKind)
-        //            {
-        //                case ClrElementKind.Exception:
-        //                case ClrElementKind.Enum:
-        //                case ClrElementKind.Free:
-        //                case ClrElementKind.Guid:
-        //                case ClrElementKind.DateTime:
-        //                case ClrElementKind.TimeSpan:
-        //                case ClrElementKind.Decimal:
-        //                    fields[i] = new ClrtDisplayableType(dispType, typeId, i, fldType.Name, fld.Name, kind);
-        //                    break;
-        //                case ClrElementKind.SystemVoid:
-        //                case ClrElementKind.SystemObject:
-        //                case ClrElementKind.Interface:
-        //                case ClrElementKind.Abstract:
-        //                case ClrElementKind.System__Canon:
-        //                    var fldInfo = TryGetRealType(heap, addr, fld, clrType.IsValueClass);
-        //                    if (fldInfo.Key != null)
-        //                    {
-        //                        fldType = fldInfo.Key;
-        //                        typeId = ndxProxy.GetTypeId(fldType.Name);
-        //                        kind = GetElementKind(fldType);
-        //                    }
-        //                    else
-        //                    {
-        //                        ambiguousFields2.Add(i);
-        //                    }
-        //                    fields[i] = new ClrtDisplayableType(dispType, typeId, i, fldType.Name, fld.Name, kind);
-        //                    break;
-        //            }
-        //        }
-        //        else
-        //        {
-        //            switch (TypeExtractor.GetStandardKind(kind))
-        //            {
-        //                case ClrElementKind.Class:
-        //                case ClrElementKind.Struct:
-        //                case ClrElementKind.SZArray:
-        //                case ClrElementKind.Array:
-        //                case ClrElementKind.String:
-        //                    fields[i] = new ClrtDisplayableType(dispType, typeId, i, fldType.Name, fld.Name, kind);
-        //                    break;
-        //                case ClrElementKind.Object:
-        //                    fields[i] = new ClrtDisplayableType(dispType, typeId, i, fldType.Name, fld.Name, kind);
-        //                    ambiguousFields2.Add(i);
-        //                    break;
-        //                default:
-        //                    fields[i] = new ClrtDisplayableType(dispType, typeId, i, fldType.Name, fld.Name, kind);
-        //                    break;
-        //            }
-        //        }
-        //    }
-        //}
-
 
         public static void TryGetClrtDisplayableTypeFields(IndexProxy ndxProxy, ClrHeap heap, ulong addr, List<int> ambiguousFields, ClrtDisplayableType[] flds, SortedDictionary<string, List<ulong>>[] fldAddresses)
         {
