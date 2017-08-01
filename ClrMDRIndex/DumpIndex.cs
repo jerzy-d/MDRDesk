@@ -454,6 +454,11 @@ namespace ClrMDRIndex
             return indices.ToArray();
         }
 
+        public string ShortDescription()
+        {
+            return DumpFileName + (Is64Bit ? " (x64)" : " (x86)");
+        }
+
         #endregion utils
 
         #region queries
@@ -1402,6 +1407,8 @@ namespace ClrMDRIndex
                     {
                         case TypeExtractor.KnownTypes.Dictionary:
                             return GetDictionaryContent(addr, typeId, typeName);
+                        case TypeExtractor.KnownTypes.SortedDictionary:
+                            return GetSortedDictionaryContent(addr, typeId, typeName);
                         case TypeExtractor.KnownTypes.HashSet:
                             return GetHashSetContent(addr, typeId, typeName);
                     }
@@ -1427,6 +1434,18 @@ namespace ClrMDRIndex
             inst.AddExtraData(description);
             inst.AddKeyValuePairs(values);
             return (null, inst, TypeExtractor.KnownTypes.Dictionary);
+        }
+
+        public (string error, InstanceValue inst, TypeExtractor.KnownTypes) GetSortedDictionaryContent(ulong addr, int typeId, string typeName)
+        {
+            Debug.Assert(TypeExtractor.IsKnownCollection(typeName) != TypeExtractor.KnownTypes.Unknown);
+            (string error, KeyValuePair<string, string>[] description, KeyValuePair<string, string>[] values) =
+                ValueExtractor.GetSortedDictionaryContent(Heap, addr);
+            if (error != null) return (error, null, TypeExtractor.KnownTypes.Unknown);
+            var inst = new InstanceValue(typeId, ClrElementKind.Object, addr, typeName, null, null);
+            inst.AddExtraData(description);
+            inst.AddKeyValuePairs(values);
+            return (null, inst, TypeExtractor.KnownTypes.SortedDictionary);
         }
         public (string error, InstanceValue inst, TypeExtractor.KnownTypes) GetHashSetContent(ulong addr, int typeId, string typeName)
         {
@@ -2024,7 +2043,9 @@ namespace ClrMDRIndex
             if (qry.GetValue)
             {
                 ++ndx;
-                colInfos.Add(new ColumnInfo(qry.FieldName, ReportFile.ColumnType.String, 150, ndx, true));
+                ReportFile.ColumnType colType = ReportFile.KindToColumnType(qry.Kind);
+
+                colInfos.Add(new ColumnInfo(qry.FieldName, colType, 150, ndx, true));
             }
             if (qry.HasChildren)
             {

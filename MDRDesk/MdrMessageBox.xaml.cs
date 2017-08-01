@@ -1,4 +1,5 @@
-﻿using System;
+﻿using ClrMDRIndex;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -100,6 +101,30 @@ namespace MDRDesk
             set { DetailsText.Text = value; }
         }
 
+        private void CopyToClipboard()
+        {
+            var sb = StringBuilderCache.Acquire(StringBuilderCache.MaxCapacity);
+            if (!string.IsNullOrEmpty(Caption))
+                sb.AppendLine(Caption);
+            if (!string.IsNullOrEmpty(InstructionHeading))
+                sb.AppendLine(InstructionHeading);
+            if (!string.IsNullOrEmpty(InstructionText))
+                sb.AppendLine(InstructionText);
+            if (!string.IsNullOrEmpty(DeatilsText))
+                sb.AppendLine(DeatilsText);
+
+            if (MainWindow.CurrentIndex != null)
+            {
+                sb.Append("Crash Dump: ").AppendLine(MainWindow.CurrentIndex.ShortDescription());
+            }
+            if (Owner is MainWindow)
+            {
+                sb.AppendLine((Owner as MainWindow).Title);
+            }
+
+            Clipboard.SetText(StringBuilderCache.GetStringAndRelease(sb));
+        }
+
         public void SetButtonsPredefined(EnumPredefinedButtons buttons)
         {
             Button1.Visibility = Visibility.Collapsed;
@@ -148,6 +173,11 @@ namespace MDRDesk
                     Button3.Tag = EnumDialogResults.Yes;
                     break;
             }
+        }
+
+        private void ClipboardButton_Click(object sender, RoutedEventArgs e)
+        {
+            CopyToClipboard();
         }
     }
 }

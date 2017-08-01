@@ -1380,7 +1380,62 @@ namespace ClrMDRIndex
             return new Tuple<string, ClrType, ClrType, ClrElementKind, ulong, int>(null, clrType, itemsClrType, kind, itemsAddr, len);
         }
 
-        #endregion List<T> content
+        #endregion System.Collections.Generic.List<T> content
+
+        #region System.Collections.Generic.SortedList<TKey, TValue>
+
+        public static (string, KeyValuePair<string, string>[], KeyValuePair<string, string>[]) GetSortedListContent(ClrHeap heap, ulong addr)
+        {
+            try
+            {
+                ClrType clrType = heap.GetObjectType(addr);
+
+                int count = GetFieldIntValue(heap, addr, clrType, "_size");
+                int version = GetFieldIntValue(heap, addr, clrType, "version");
+
+                var keysFld = clrType.GetFieldByName("keys");
+                (ClrType keysFldType, ClrElementKind keysFldKind, ulong keysFldAddr) =
+                    TypeExtractor.GetRealType(heap, addr, keysFld, false);
+                var valuesFld = clrType.GetFieldByName("values");
+                (ClrType valuesFldType, ClrElementKind valuesFldKind, ulong valuesFldAddr) =
+                    TypeExtractor.GetRealType(heap, addr, valuesFld, false);
+                var aryLen = keysFldType == null ? 0 : keysFldType.GetArrayLength(keysFldAddr);
+
+                KeyValuePair<string, string>[] fldDescription = new KeyValuePair<string, string>[]
+                {
+                new KeyValuePair<string, string>("count", count.ToString()),
+                new KeyValuePair<string, string>("array count", aryLen.ToString()),
+                new KeyValuePair<string, string>("version", version.ToString())
+                };
+
+                if (count < 1)
+                {
+                    return (null, fldDescription, Utils.EmptyArray<KeyValuePair<string, string>>.Value);
+                }
+
+                var keyType = keysFldType.ComponentType;
+                var keyFldKind = TypeExtractor.GetElementKind(keyType);
+                var valueType = valuesFldType.ComponentType;
+                var valueFldKind = TypeExtractor.GetElementKind(valueType);
+                var values = new List<KeyValuePair<string, string>>(count);
+
+                for (int i = 0; i < count; ++i)
+                {
+                    var keyAddr = keysFldType.GetArrayElementAddress(keysFldAddr, i);
+                    var valueAddr = valuesFldType.GetArrayElementAddress(valuesFldAddr, i);
+                    var keyValObj = keysFldType.GetArrayElementValue(keysFldAddr, i);
+                    var valueValObj = keysFldType.GetArrayElementValue(valuesFldAddr, i);
+                }
+                return (null, fldDescription, values.ToArray());
+            }
+            catch (Exception ex)
+            {
+                string error = Utils.GetExceptionErrorString(ex);
+                return (error, null, null);
+            }
+        }
+
+        #endregion SortedList<TKey, TValue> 
 
         #region System.Collections.Generic.Dictionary<TKey, TValue>
 

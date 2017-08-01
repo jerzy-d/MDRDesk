@@ -106,3 +106,16 @@ Make sure we display proper type value (ex. string) when key/value is System.__C
 Test case:
 Cowen.Analytics.Svc_170717_165238.dmp
 System.Collections.Generic.Dictionary<System.String,System.Boolean> at 0x00005409b849a8
+
+
+
+   at System.IO.__Error.WinIOError(Int32 errorCode, String maybeFullPath)
+   at System.IO.FileStream.Init(String path, FileMode mode, FileAccess access, Int32 rights, Boolean useRights, FileShare share, Int32 bufferSize, FileOptions options, SECURITY_ATTRIBUTES secAttrs, String msgPath, Boolean bFromProxy, Boolean useLongPath, Boolean checkHost)
+   at System.IO.FileStream..ctor(String path, FileMode mode, FileAccess access, FileShare share)
+   at ClrMDRIndex.DumpIndex.LoadThreadBlockGraph(String& error) in D:\Jerzy\projects\csharp\15\MDRDesk\ClrMDRIndex\DumpIndex.cs:line 248
+
+
+   [‎7/‎31/‎2017 2:42 PM] Iordanov, Lou: 
+  at ClrMDRIndex.DumpIndex.GetValues(ClrHeap heap, TypeValueQuery parentQry, UInt64 addr, TypeValueQuery qry) in D:\Jerzy\projects\csharp\15\MDRDesk\ClrMDRIndex\DumpIndex.cs:line 1859
+   at ClrMDRIndex.DumpIndex.GetTypeValuesReport(TypeValueQuery query, UInt64[] instances, String& error) in D:\Jerzy\projects\csharp\15\MDRDesk\ClrMDRIndex\DumpIndex.cs:line 1906 
+not urgent, just an fyi

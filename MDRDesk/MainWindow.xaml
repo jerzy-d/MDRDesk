@@ -547,7 +547,7 @@
                 <RowDefinition Height="5"/>
                 <RowDefinition Height="20*"/>
             </Grid.RowDefinitions>
-            <ListView  Name="TypeValuesView" Grid.Row="0" VerticalAlignment="Stretch" HorizontalAlignment="Stretch" Margin="2,2,2,2" GridViewColumnHeader.Click="ListViewBottomGridHeaderClick" ContextMenu="{StaticResource TypeValuesReportContextMenu}">
+            <ListView  Name="TypeValuesView" Grid.Row="0" VerticalAlignment="Stretch" HorizontalAlignment="Stretch" Margin="2,2,2,2" GridViewColumnHeader.Click="ListViewBottomGridHeaderClick" ContextMenu="{StaticResource TypeValuesReportContextMenu}" MouseDoubleClick="ListingViewDoubleClicked">
                 <ListView.ItemContainerStyle>
                     <Style TargetType="ListViewItem">
                         <Setter Property="HorizontalContentAlignment" Value="Left" />

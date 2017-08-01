@@ -51,7 +51,57 @@ namespace ClrMDRIndex
 			}
 		}
 
-		public static bool IsColumnTypeString(ColumnType colType)
+        public static ColumnType KindToColumnType(ClrElementKind kind)
+        {
+            var specKind = TypeExtractor.GetSpecialKind(kind);
+            if (specKind != ClrElementKind.Unknown)
+            {
+                switch (specKind)
+                {
+                    case ClrElementKind.Guid:
+                    case ClrElementKind.DateTime:
+                    case ClrElementKind.TimeSpan:
+                    case ClrElementKind.Decimal:
+                    case ClrElementKind.Enum:
+                    case ClrElementKind.Exception:
+                        return ColumnType.String;
+                    case ClrElementKind.Free:
+                    case ClrElementKind.Abstract:
+                    case ClrElementKind.SystemVoid:
+                    case ClrElementKind.SystemObject:
+                        return ColumnType.UInt64;
+                    default:
+                        throw new ArgumentException("[ReportFile.KindToColumnType(..)] Invalid kind: " + kind.ToString());
+                }
+            }
+            else
+            {
+                switch (kind)
+                {
+                    case ClrElementKind.String:
+                        return ColumnType.String;
+                    case ClrElementKind.SZArray:
+                    case ClrElementKind.Array:
+                    case ClrElementKind.Object:
+                    case ClrElementKind.Class:
+                        return ColumnType.UInt64;
+                    case ClrElementKind.Int16:
+                    case ClrElementKind.Int32:
+                        return ColumnType.Int32;
+                    case ClrElementKind.UInt16:
+                    case ClrElementKind.UInt32:
+                        return ColumnType.UInt32;
+                    case ClrElementKind.Unknown:
+                        throw new ArgumentException("[ReportFile.KindToColumnType(..)] Invalid kind: " + kind.ToString());
+                    default:
+                        return ColumnType.String;
+                }
+            }
+
+        }
+
+
+        public static bool IsColumnTypeString(ColumnType colType)
 		{
 			return colType == ColumnType.String;
 		}

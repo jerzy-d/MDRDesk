@@ -2536,7 +2536,7 @@ namespace MDRDesk
             }
 
         }
-         
+
     }
 
     public static class MenuCommands

@@ -64,6 +64,13 @@
                         Background="#FFECECEC" BorderBrush="#FFC9C9C9" BorderThickness="0,1,0,1"  >
                     <DockPanel Margin="0,8,0,8" Width="Auto" Background="{x:Null}">
 
+                        <Button x:Name="ClipboardButton" Width="Auto" MinWidth="40" Padding="6" Margin="8,0,8,0" HorizontalAlignment="Right" VerticalAlignment="Center" DockPanel.Dock="Left" Click="ClipboardButton_Click">
+                            <Button.ToolTip>Copy to clipboard.</Button.ToolTip>
+                            <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                <Image Source=".\Images\clipboard_16xLG.png" Width="20" Height="20" Margin="0,0,0,0" VerticalAlignment="Center" HorizontalAlignment="Center"/>
+                            </StackPanel>
+                        </Button>
+
                         <Button x:Name="Button1" Width="Auto" MinWidth="60" Padding="6" Margin="0,0,8,0"
                                 Content="Button1" 
                                 HorizontalAlignment="Right" VerticalAlignment="Center" DockPanel.Dock="Right" Click="Button1_Click"/>

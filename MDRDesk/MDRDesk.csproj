@@ -459,6 +459,9 @@
   <ItemGroup>
     <Resource Include="Images\GroupClause_16x.png" />
   </ItemGroup>
+  <ItemGroup>
+    <Resource Include="Images\clipboard_16xLG.png" />
+  </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <PropertyGroup>
     <PostBuildEvent>

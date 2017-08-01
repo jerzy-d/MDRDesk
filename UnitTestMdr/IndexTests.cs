@@ -1907,7 +1907,7 @@ namespace UnitTestMdr
         {
             Stopwatch stopWatch = new Stopwatch();
             stopWatch.Start();
-            var index = OpenIndex(@"C:\WinDbgStuff\Dumps\Analytics\Cowen\Cowen.Analytics.Svc_170717_165238.dmp.map");
+            var index = OpenIndex(@"D:\Jerzy\WinDbgStuff\Dumps\Analytics\Cowen\Cowen.Analytics.Svc_170717_165238.dmp.map");
             TestContext.WriteLine(index.DumpFileName + " INDEX OPEN DURATION: " + Utils.StopAndGetDurationString(stopWatch));
             ulong addr = 0x000056124fa2b8; // 0x0000530f3bec68; // 0x00005604535698;
             using (index)
@@ -1918,6 +1918,24 @@ namespace UnitTestMdr
                     ValueExtractor.GetSortedDictionaryContent(heap, addr);
 
                 Assert.IsNull(error,error);
+            }
+        }
+
+        [TestMethod]
+        public void TestSortedListContent()
+        {
+            Stopwatch stopWatch = new Stopwatch();
+            stopWatch.Start();
+            var index = OpenIndex(@"D:\Jerzy\WinDbgStuff\Dumps\Analytics\Cowen\Cowen.Analytics.Svc_170717_165238.dmp.map");
+            TestContext.WriteLine(index.DumpFileName + " INDEX OPEN DURATION: " + Utils.StopAndGetDurationString(stopWatch));
+            ulong addr = 0x0000560623aab8;
+            using (index)
+            {
+                var heap = index.GetHeap();
+                  (string error, KeyValuePair<string, string>[] descr, KeyValuePair<string, string>[] values) =
+                    ValueExtractor.GetSortedListContent(heap, addr);
+
+                Assert.IsNull(error, error);
             }
         }
 

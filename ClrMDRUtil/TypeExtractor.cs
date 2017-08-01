@@ -297,7 +297,21 @@ namespace ClrMDRIndex
                 switch (stdKind)
                 {
                     case ClrElementKind.Boolean:
-
+                        ok = true;
+                        if (str.Length == 1)
+                        {
+                            char c = char.ToLower(str[0]);
+                            if (c == 't') val = true;
+                            else if (c == 'f') val = false;
+                            else ok = false;
+                        }
+                        else
+                        {
+                            str = str.ToLower();
+                            if (Utils.SameStrings("true", str)) val = true;
+                            else if (Utils.SameStrings("false", str)) val = false;
+                            else ok = false;
+                        }
                         break;
                     case ClrElementKind.Class:
                     case ClrElementKind.Struct:
@@ -317,14 +331,30 @@ namespace ClrMDRIndex
                         }
                         break;
                     case ClrElementKind.Char:
+                        char ch;
+                        if (char.TryParse(str,out ch))
+                        {
+                            val = ch;
+                            ok = true;
+                        }
+                        break;
                     case ClrElementKind.Int8:
                     case ClrElementKind.UInt8:
                     case ClrElementKind.Int16:
                     case ClrElementKind.UInt16:
                     case ClrElementKind.Int32:
+                        Int32 i32;
+                        if (Int32.TryParse(str, out i32))
+                        {
+                            val = i32;
+                            ok = true;
+                        }
+                        break;
                     case ClrElementKind.UInt32:
                     case ClrElementKind.Int64:
                     case ClrElementKind.UInt64:
+
+                        break;
                     case ClrElementKind.Float:
                     case ClrElementKind.Double:
                         break;

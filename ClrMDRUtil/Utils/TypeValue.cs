@@ -476,15 +476,33 @@ namespace ClrMDRIndex
 						accept = AcceptUlong((ulong)obj, (ulong)_value, _op);
 						break;
 					case ClrElementKind.Boolean:
-					case ClrElementKind.Char:
+                        accept = AcceptBoolean((bool)obj, (bool)_value);
+                        break;
+                    case ClrElementKind.Char: // ?
+                        accept = Accept<char>((char)obj, (char)_value, _op);
+                        break;
 					case ClrElementKind.Int8:
-					case ClrElementKind.UInt8:
-					case ClrElementKind.Int16:
-					case ClrElementKind.UInt16:
-					case ClrElementKind.Int32:
-					case ClrElementKind.UInt32:
-					case ClrElementKind.Int64:
-					case ClrElementKind.UInt64:
+                        accept = AcceptLong((long)((sbyte)obj), (long)((sbyte)_value), _op);
+                        break;
+                    case ClrElementKind.Int16:
+                        accept = Accept<Int16>((Int16)obj, (Int16)_value, _op);
+                        break;
+                    case ClrElementKind.Int32:
+                        accept = AcceptLong((long)((Int32)obj), (long)((Int32)_value), _op);
+                        break;
+                    case ClrElementKind.Int64:
+                        accept = AcceptLong((long)obj, (long)_value, _op);
+                        break;
+                    case ClrElementKind.UInt8:
+                        accept = AcceptUlong((ulong)((byte)obj), (ulong)((byte)_value), _op);
+                        break;
+                    case ClrElementKind.UInt16:
+                        accept = AcceptUlong((ulong)((Int16)obj), (ulong)((Int16)_value), _op);
+                        break;
+                    case ClrElementKind.UInt32:
+                        accept = AcceptUlong((ulong)((Int32)obj), (ulong)((Int32)_value), _op);
+                        break;
+                    case ClrElementKind.UInt64:
 						accept = AcceptUlong((ulong)obj, (ulong)_value, _op);
 						break;
 					case ClrElementKind.Float:
@@ -524,7 +542,29 @@ namespace ClrMDRIndex
 				return true;
 		}
 
-		private bool AcceptDouble(double val, double other, Op op)
+        private bool AcceptBoolean(bool val, bool other)
+        {
+            return val == other;
+        }
+
+        private bool Accept<T>(T val, T other, Op op) where T : IComparable<T>, IEquatable<T>
+        {
+            int cmp = val.CompareTo(other);
+            if (FilterValue.IsOp(Op.EQ, op))
+                return cmp == 0;
+            else if (FilterValue.IsOp(Op.LT, op))
+                return cmp < 0;
+            else if (FilterValue.IsOp(Op.LTEQ, op))
+                return cmp == 0 || cmp < 0;
+            else if (FilterValue.IsOp(Op.GT, op))
+                return cmp > 0;
+            else if (FilterValue.IsOp(Op.GTEQ, op))
+                return cmp > 0 || cmp == 0;
+            else
+                return true;
+        }
+
+        private bool AcceptDouble(double val, double other, Op op)
 		{
 			if (FilterValue.IsOp(Op.EQ, op))
 				return val == other;
@@ -556,7 +596,23 @@ namespace ClrMDRIndex
 				return true;
 		}
 
-		private bool AcceptDateTime(DateTime val, DateTime other, Op op)
+        private bool AcceptLong(long val, long other, Op op)
+        {
+            if (FilterValue.IsOp(Op.EQ, op))
+                return val == other;
+            else if (FilterValue.IsOp(Op.LT, op))
+                return val < other;
+            else if (FilterValue.IsOp(Op.LTEQ, op))
+                return val <= other;
+            else if (FilterValue.IsOp(Op.GT, op))
+                return val > other;
+            else if (FilterValue.IsOp(Op.GTEQ, op))
+                return val >= other;
+            else
+                return true;
+        }
+
+        private bool AcceptDateTime(DateTime val, DateTime other, Op op)
 		{
 			if (FilterValue.IsOp(Op.EQ, op))
 				return val == other;

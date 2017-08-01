@@ -2094,6 +2094,12 @@ namespace MDRDesk
         //	}
         //}
 
+
+        private void ListingViewDoubleClicked(object sender, MouseButtonEventArgs e)
+        {
+            var orig = e.OriginalSource;
+        }
+
         #endregion type values report
 
         #region instance value
