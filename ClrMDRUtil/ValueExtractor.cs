@@ -1386,52 +1386,56 @@ namespace ClrMDRIndex
 
         public static (string, KeyValuePair<string, string>[], KeyValuePair<string, string>[]) GetSortedListContent(ClrHeap heap, ulong addr)
         {
+            string error = null;
             try
             {
                 ClrType clrType = heap.GetObjectType(addr);
 
                 int count = GetFieldIntValue(heap, addr, clrType, "_size");
                 int version = GetFieldIntValue(heap, addr, clrType, "version");
-
                 var keysFld = clrType.GetFieldByName("keys");
-                (ClrType keysFldType, ClrElementKind keysFldKind, ulong keysFldAddr) =
-                    TypeExtractor.GetRealType(heap, addr, keysFld, false);
-                var valuesFld = clrType.GetFieldByName("values");
-                (ClrType valuesFldType, ClrElementKind valuesFldKind, ulong valuesFldAddr) =
-                    TypeExtractor.GetRealType(heap, addr, valuesFld, false);
+                ulong keysFldAddr = GetReferenceFieldAddress(addr,keysFld,false);
+                (string err1, ClrType keysFldType, ClrType keyType, ClrElementKind keyFldKind, int len1) = ArrayInfo(heap, keysFldAddr);
                 var aryLen = keysFldType == null ? 0 : keysFldType.GetArrayLength(keysFldAddr);
-
                 KeyValuePair<string, string>[] fldDescription = new KeyValuePair<string, string>[]
                 {
                 new KeyValuePair<string, string>("count", count.ToString()),
                 new KeyValuePair<string, string>("array count", aryLen.ToString()),
                 new KeyValuePair<string, string>("version", version.ToString())
                 };
-
-                if (count < 1)
+                if (err1 != null || count < 1)
                 {
-                    return (null, fldDescription, Utils.EmptyArray<KeyValuePair<string, string>>.Value);
+                    return (err1, fldDescription, Utils.EmptyArray<KeyValuePair<string, string>>.Value);
                 }
+                var valuesFld = clrType.GetFieldByName("values");
+                ulong valuesFldAddr = GetReferenceFieldAddress(addr, valuesFld, false);
+                (string err2, ClrType valuesFldType, ClrType valueType, ClrElementKind valueFldKind, int len2) = ArrayInfo(heap, valuesFldAddr);
+                if (err2!= null)
+                {
+                    return (err1, fldDescription, Utils.EmptyArray<KeyValuePair<string, string>>.Value);
+                }
+                Debug.Assert(len1 == len2);
+                var values = new KeyValuePair<string, string>[count];
 
-                var keyType = keysFldType.ComponentType;
-                var keyFldKind = TypeExtractor.GetElementKind(keyType);
-                var valueType = valuesFldType.ComponentType;
-                var valueFldKind = TypeExtractor.GetElementKind(valueType);
-                var values = new List<KeyValuePair<string, string>>(count);
+                List<string> types = new List<string>() { keyType.Name };
+                var keyItems = TypeExtractor.IsStruct(keyFldKind)
+                    ? GetAryStructItems(heap, keysFldAddr, keysFldType, keyType, keyFldKind, count, types)
+                    : GetAryItems(heap, keysFldAddr, keysFldType, keyType, keyFldKind, count, types);
+                types.Clear();
+                types.Add(valueType.Name);
+                var valueItems = TypeExtractor.IsStruct(valueFldKind)
+                    ? GetAryStructItems(heap, valuesFldAddr, valuesFldType, valueType, valueFldKind, count, types)
+                    : GetAryItems(heap, valuesFldAddr, valuesFldType, valueType, valueFldKind, count, types);
 
                 for (int i = 0; i < count; ++i)
                 {
-                    var keyAddr = keysFldType.GetArrayElementAddress(keysFldAddr, i);
-                    var valueAddr = valuesFldType.GetArrayElementAddress(valuesFldAddr, i);
-                    var keyValObj = keysFldType.GetArrayElementValue(keysFldAddr, i);
-                    var valueValObj = keysFldType.GetArrayElementValue(valuesFldAddr, i);
+                    values[i] = new KeyValuePair<string, string>(keyItems[i], valueItems[i]);
                 }
-                return (null, fldDescription, values.ToArray());
+                return (null, fldDescription, values);
             }
             catch (Exception ex)
             {
-                string error = Utils.GetExceptionErrorString(ex);
-                return (error, null, null);
+                return (Utils.GetExceptionErrorString(ex), null, null);
             }
         }
 
@@ -1819,7 +1823,7 @@ namespace ClrMDRIndex
                 {
                     case ClrElementKind.String:
                         ulong faddr;
-                        if (heap.ReadPointer(addr, out faddr))
+                        if (heap.ReadPointer(elemAddr, out faddr))
                             return GetStringAtAddress(faddr, heap);
                         else
                             return Constants.NullValue;

@@ -2097,7 +2097,32 @@ namespace MDRDesk
 
         private void ListingViewDoubleClicked(object sender, MouseButtonEventArgs e)
         {
-            var orig = e.OriginalSource;
+            var lv = sender as ListView;
+            if (lv == null) return;
+            var lvTag = lv.Tag as Tuple<ListingInfo, string>;
+            if (lvTag == null) return;
+            var tb = e.OriginalSource as TextBlock;
+            if (tb == null) return;
+            string item = tb.Text;
+            var tbParent = tb.Parent as System.Windows.Controls.GridViewRowPresenter;
+            if (tbParent == null)
+                throw new ApplicationException("[MainWindow.ListingViewDoubleClicked] TextBlock parent is not GridViewRowPresenter as expected.");
+            var lstInfo = lvTag.Item1;
+            var listing = (listing<string>)tbParent.Content;
+            int ndx = Constants.InvalidIndex;
+            for (int i = 0, icnt = listing.Count; i < icnt; ++i)
+            {
+                string lstVal = listing.GetItem(i);
+                if (Utils.SameStrings(item,lstVal))
+                {
+                    ndx = i;
+                    break;
+                }
+            }
+            if (ndx == Constants.InvalidIndex) return;
+            ulong addr = GetAddressFromEntry(item);
+            if (addr == Constants.InvalidAddress) return;
+            System.Windows.Threading.Dispatcher.CurrentDispatcher.InvokeAsync(() => ExecuteInstanceValueQuery("Getting object value at: " + Utils.RealAddressString(addr), addr));
         }
 
         #endregion type values report
@@ -3079,6 +3104,16 @@ namespace MDRDesk
             object lv = LogicalTreeHelper.FindLogicalNode(grid, name);
             if (lv is ListView) return lv as ListView;
             return null;
+        }
+
+        private ulong GetAddressFromEntry(string entry)
+        {
+            ulong addr = GuiUtils.TryGetAddressValue(entry);
+            if (addr != Constants.InvalidAddress)
+            {
+                return IsValidHeapAddress(addr) ? addr : Constants.InvalidAddress;
+            }
+            return Constants.InvalidAddress;
         }
 
         //public static void SetSelectedItem(TreeView control, object item)

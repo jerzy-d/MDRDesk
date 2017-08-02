@@ -1409,6 +1409,8 @@ namespace ClrMDRIndex
                             return GetDictionaryContent(addr, typeId, typeName);
                         case TypeExtractor.KnownTypes.SortedDictionary:
                             return GetSortedDictionaryContent(addr, typeId, typeName);
+                        case TypeExtractor.KnownTypes.SortedList:
+                            return GetSortedListContent(addr, typeId, typeName);
                         case TypeExtractor.KnownTypes.HashSet:
                             return GetHashSetContent(addr, typeId, typeName);
                     }
@@ -1447,6 +1449,19 @@ namespace ClrMDRIndex
             inst.AddKeyValuePairs(values);
             return (null, inst, TypeExtractor.KnownTypes.SortedDictionary);
         }
+
+        public (string error, InstanceValue inst, TypeExtractor.KnownTypes) GetSortedListContent(ulong addr, int typeId, string typeName)
+        {
+            Debug.Assert(TypeExtractor.IsKnownCollection(typeName) != TypeExtractor.KnownTypes.Unknown);
+            (string error, KeyValuePair<string, string>[] description, KeyValuePair<string, string>[] values) =
+                ValueExtractor.GetSortedListContent(Heap, addr);
+            if (error != null) return (error, null, TypeExtractor.KnownTypes.Unknown);
+            var inst = new InstanceValue(typeId, ClrElementKind.Object, addr, typeName, null, null);
+            inst.AddExtraData(description);
+            inst.AddKeyValuePairs(values);
+            return (null, inst, TypeExtractor.KnownTypes.SortedList);
+        }
+
         public (string error, InstanceValue inst, TypeExtractor.KnownTypes) GetHashSetContent(ulong addr, int typeId, string typeName)
         {
             Debug.Assert(TypeExtractor.IsKnownCollection(typeName) != TypeExtractor.KnownTypes.Unknown);

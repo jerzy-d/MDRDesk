@@ -1868,13 +1868,14 @@ namespace UnitTestMdr
 		{
 			Stopwatch stopWatch = new Stopwatch();
 			stopWatch.Start();
-			var index = OpenIndex(@"C:\WinDbgStuff\dumps\Analytics\Cowen\Cowen.Analytics.Svc_170713_162556.dmp.map");
+			var index = OpenIndex(@"D:\Jerzy\WinDbgStuff\dumps\Analytics\Cowen\Cowen.Analytics.Svc_170717_165238.dmp.map");
 			TestContext.WriteLine(index.DumpFileName + " INDEX OPEN DURATION: " + Utils.StopAndGetDurationString(stopWatch));
-			ulong addr = 0x000055099f9b08;
+			ulong addr = 0x0000560623a968;
 			using (index)
 			{
-				(string error, InstanceValue inst) = ValueExtractor.ArrayContent(index.IndexProxy, index.Heap, addr,null);
-				Assert.IsNull(error, error);
+                //(string error, InstanceValue inst) = ValueExtractor.ArrayContent(index//.IndexProxy, index.Heap, addr,null);
+                (string error, InstanceValue inst, TypeExtractor.KnownTypes knownType) = index.GetInstanceValue(addr, null);
+                Assert.IsNull(error, error);
 			}
 
 		}
@@ -1928,7 +1929,7 @@ namespace UnitTestMdr
             stopWatch.Start();
             var index = OpenIndex(@"D:\Jerzy\WinDbgStuff\Dumps\Analytics\Cowen\Cowen.Analytics.Svc_170717_165238.dmp.map");
             TestContext.WriteLine(index.DumpFileName + " INDEX OPEN DURATION: " + Utils.StopAndGetDurationString(stopWatch));
-            ulong addr = 0x0000560623aab8;
+            ulong addr = 0x0000550440b180; // 0x0000560623aab8;
             using (index)
             {
                 var heap = index.GetHeap();

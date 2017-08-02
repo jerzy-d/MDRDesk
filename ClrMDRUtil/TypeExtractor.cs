@@ -471,6 +471,7 @@ namespace ClrMDRIndex
             "System.Collections.Generic.Dictionary<",
             "System.Collections.Generic.HashSet<",
             "System.Collections.Generic.SortedDictionary<",
+            "System.Collections.Generic.SortedList<",
             "System.Collections.Generic.List<"
         };
 
@@ -480,6 +481,7 @@ namespace ClrMDRIndex
             Dictionary,
             HashSet,
             SortedDictionary,
+            SortedList,
             List,
             Unknown,
         }
@@ -496,6 +498,8 @@ namespace ClrMDRIndex
                     return "HashSet<T>";
                 case KnownTypes.SortedDictionary:
                     return "SortedDictionary<TKey,TValue>";
+                case KnownTypes.SortedList:
+                    return "SortedList<TKey,TValue>";
                 case KnownTypes.List:
                     return "List<T>";
                 default:

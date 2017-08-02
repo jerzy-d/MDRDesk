@@ -220,7 +220,7 @@ namespace ClrMDRIndex
             if (!clrtDump.Init(out error)) return false;
             _errors = new ConcurrentBag<string>[clrtDump.RuntimeCount];
             Thread threadInfoWorker = null, referenceBuilderWorker = null;
-            ClrtDump dumpClone = clrtDump.Clone(out error);
+            //ClrtDump dumpClone = clrtDump.Clone(out error);
             DateTime indexingStart = DateTime.UtcNow;
             InstanceReferences builder = null;
 
@@ -284,7 +284,7 @@ namespace ClrMDRIndex
                         progress?.Report(runtimeIndexHeader + "Getting threads, blocking objecks information...");
                         var addressesCopy = Utils.CopyArray(addresses);
                         threadInfoWorker = new Thread(GetThreadsInfos);
-                        threadInfoWorker.Start(new Tuple<ClrtDump, ulong[], int[], string[]>(dumpClone, addresses, typeIds, typeNames));
+                        threadInfoWorker.Start(new Tuple<string, ulong[], int[], string[]>(DumpPath, addresses, typeIds, typeNames));
                         //addresses = null;
                         //progress?.Report("Waiting for thread info worker...");
                         //threadInfoWorker.Join();
@@ -422,7 +422,7 @@ namespace ClrMDRIndex
                 finally
                 {
                     builder?.Dispose();
-                    dumpClone?.Dispose();
+                    //dumpClone?.Dispose();
                     DumpErrors();
                     GCSettings.LargeObjectHeapCompactionMode = GCLargeObjectHeapCompactionMode.CompactOnce;
                     GC.Collect();
@@ -777,9 +777,11 @@ namespace ClrMDRIndex
 
         private void GetThreadsInfos(object param)
         {
-            var parameters = param as Tuple<ClrtDump, ulong[], int[], string[]>;
+            string error;
+            var parameters = param as Tuple<string, ulong[], int[], string[]>;
             Debug.Assert(parameters != null);
-            var clrtDump = parameters.Item1;
+            var clrtDump = new ClrtDump(parameters.Item1);
+            if (!clrtDump.Init(out error)) return;
             var instances = parameters.Item2;
             var typeIds = parameters.Item3;
             var typeNames = parameters.Item4;
@@ -928,7 +930,6 @@ namespace ClrMDRIndex
                 {
                     bw.Write(blkMap[i]);
                 }
-                string error;
                 graph.Dump(bw, out error);
                 bw.Close();
                 bw = null;
