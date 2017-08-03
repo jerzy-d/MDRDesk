@@ -76,12 +76,32 @@ namespace MDRDesk
 			e.Handled = true;
 		}
 
-		private async void InstanceValueTreeview_OnMouseDoubleClick(object sender, MouseButtonEventArgs e)
+        private bool GetSelectedItem(out TreeViewItem selTreeItem, out InstanceValue inst)
+        {
+            inst = null;
+            selTreeItem = InstanceValueTreeview.SelectedItem as TreeViewItem;
+            if (selTreeItem == null) return false;
+            var selInstValue = selTreeItem.Tag as InstanceValue;
+            Debug.Assert(selInstValue != null);
+            inst = selInstValue;
+            return true;
+        }
+
+        private async void InstanceValueTreeview_OnMouseDoubleClick(object sender, MouseButtonEventArgs e)
 		{
-			var selTreeItem = InstanceValueTreeview.SelectedItem as TreeViewItem;
-			if (selTreeItem == null) return;
-			var selInstValue = selTreeItem.Tag as InstanceValue;
-			Debug.Assert(selInstValue != null);
+            TreeViewItem selTreeItem;
+            InstanceValue selInstValue;
+            if (!GetSelectedItem(out selTreeItem, out selInstValue)) return;
+
+            if (StatusRawMode.IsChecked.Value==false) // if known collection show it in a collection window
+            {
+                if (TypeExtractor.IsKnownType(selInstValue.TypeName))
+                {
+                    var msg = "Getting object value at: " + Utils.RealAddressString(selInstValue.Address);
+                    _mainWindow.ExecuteInstanceValueQuery(msg, selInstValue.Address);
+                    return;
+                }
+            }
 
 			if (selInstValue.HaveFields()) return; // already has values
 
@@ -95,11 +115,6 @@ namespace MDRDesk
 
 			StatusText.Text = "Getting value at address: " + selInstValue.Address + ", please wait...";
 			Mouse.OverrideCursor = Cursors.Wait;
-
-			//(string error, InstanceValue[] fields) = await Task.Run(() =>
-			//{
-   //             return index.GetInstanceValueFields(selInstValue.Address, selInstValue.Parent);
-			//});
 
             (string error, InstanceValue[] fields) = await Task.Factory.StartNew(() =>
             {
@@ -128,6 +143,7 @@ namespace MDRDesk
 
 			if (fields.Length > 0)
             {
+                selInstValue.SetFields(fields);
                 for (int i = 0, icount = fields.Length; i < icount; ++i)
                 {
                     var fld = fields[i];
@@ -148,5 +164,44 @@ namespace MDRDesk
 			Window wnd;
 			_wndDct.TryRemove(_id, out wnd);
 		}
-	}
+
+        private void InstanceValueCopyAddressClicked(object sender, RoutedEventArgs e)
+        {
+            TreeViewItem selTreeItem;
+            InstanceValue selInstValue;
+            if (!GetSelectedItem(out selTreeItem, out selInstValue)) return;
+            if (selInstValue.Address == Constants.InvalidAddress)
+            {
+                StatusText.Text = "The value's address is invalid.";
+                return;
+            }
+            var addrStr = Utils.RealAddressString(selInstValue.Address);
+            Clipboard.SetText(addrStr);
+            StatusText.Text = "The address was copied to the clipboard.";
+        }
+
+        private void InstanceValueCopyValueClicked(object sender, RoutedEventArgs e)
+        {
+            TreeViewItem selTreeItem;
+            InstanceValue selInstValue;
+            if (!GetSelectedItem(out selTreeItem, out selInstValue)) return;
+            var val = selInstValue.Value.FullContent;
+            Clipboard.SetText(val);
+            StatusText.Text = "The value was copied to the clipboard";
+        }
+
+        private void InstanceValueViewMemoryClicked(object sender, RoutedEventArgs e)
+        {
+            TreeViewItem selTreeItem;
+            InstanceValue selInstValue;
+            if (!GetSelectedItem(out selTreeItem, out selInstValue)) return;
+            if (selInstValue.Address == Constants.InvalidAddress)
+            {
+                StatusText.Text = "The value's address is invalid.";
+                return;
+            }
+            var addr = Utils.RealAddress(selInstValue.Address);
+            _mainWindow.ShowMemoryViewWindow(addr);
+        }
+    }
 }

@@ -2336,6 +2336,7 @@ namespace MDRDesk
             Dispatcher.CurrentDispatcher.InvokeAsync(() => ExecuteInstanceValueQuery(msg, addr));
         }
 
+
         private void LbGetInstHierarchyClicked(object sender, RoutedEventArgs e)
         {
             ulong addr = GetAddressFromList(sender);
@@ -2412,7 +2413,7 @@ namespace MDRDesk
             ShowMemoryViewWindow(addr);
         }
 
-        private void ShowMemoryViewWindow(ulong addr)
+        public void ShowMemoryViewWindow(ulong addr)
         {
             if (!IsIndexAvailable("Show Memory View")) return;
             string error;

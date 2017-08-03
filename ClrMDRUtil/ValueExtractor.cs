@@ -1069,7 +1069,7 @@ namespace ClrMDRIndex
                     case ClrElementKind.Abstract:
                     case ClrElementKind.SystemVoid:
                     case ClrElementKind.SystemObject:
-                        return Utils.RealAddressString(fldAddr);
+                        return Utils.RealAddressString(fldItemAddr);
                     default:
                         return Utils.RealAddressString(fldAddr);
                 }

@@ -8,6 +8,14 @@
         WindowStartupLocation="CenterOwner"
         Closing="Window_Closing"
         Title="Class/Struct Fields" Height="500" Width="500">
+    <Window.Resources>
+        <ContextMenu x:Key="InstanceValueContextMenu" x:Shared="False">
+            <MenuItem x:Name="InstanceValueCopyAddress" Header="Copy Address (clipboard)" Click="InstanceValueCopyAddressClicked" ></MenuItem>
+            <MenuItem x:Name="InstanceValueCopyValue" Header="Copy Value (clipboard)" Click="InstanceValueCopyValueClicked"></MenuItem>
+            <Separator></Separator>
+            <MenuItem x:Name="InstanceValueViewMemory" Header="View Memory" Click="InstanceValueViewMemoryClicked"/>
+        </ContextMenu>
+    </Window.Resources>
     <Grid>
         <Grid.RowDefinitions>
             <RowDefinition Height="8*"/>
@@ -15,18 +23,13 @@
             <RowDefinition Height="92*"/>
             <RowDefinition Height="20"/>
         </Grid.RowDefinitions>
-        <Grid.ColumnDefinitions>
-            <ColumnDefinition Width="90*"/>
-            <ColumnDefinition Width="5"/>
-            <ColumnDefinition Width="5*"/>
-        </Grid.ColumnDefinitions>
 
-        <TextBox x:Name="ClassStructInfo" Grid.Row="0" Grid.Column="0" Margin="2,2,2,2" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" FontFamily="Consolas" FontSize="11">
+        <TextBox x:Name="ClassStructInfo" Grid.Row="0" Margin="2,2,2,2" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" FontFamily="Consolas" FontSize="11">
             <TextBox.BorderBrush>BlanchedAlmond</TextBox.BorderBrush>
         </TextBox>
-        <GridSplitter Grid.Row="1" Grid.Column="0" VerticalAlignment="Center" HorizontalAlignment="Stretch" Height="5" ShowsPreview="False" Background="DarkGray"></GridSplitter>
-        <TreeView x:Name="InstanceValueTreeview" Grid.Row="2" Grid.Column="0" VerticalAlignment="Stretch" HorizontalAlignment="Stretch" Margin="2,2,2,2" FontSize="12" 
-                          MouseDoubleClick="InstanceValueTreeview_OnMouseDoubleClick">
+        <GridSplitter Grid.Row="1" VerticalAlignment="Center" HorizontalAlignment="Stretch" Height="5" ShowsPreview="False" Background="DarkGray"></GridSplitter>
+        <TreeView x:Name="InstanceValueTreeview" Grid.Row="2" VerticalAlignment="Stretch" HorizontalAlignment="Stretch" Margin="2,2,2,2" FontSize="12" 
+                          MouseDoubleClick="InstanceValueTreeview_OnMouseDoubleClick" ContextMenu="{StaticResource InstanceValueContextMenu}" >
             <TreeView.ItemContainerStyle>
                 <Style TargetType="TreeViewItem">
                     <EventSetter Event="RequestBringIntoView" Handler="EventSetter_OnHandler"/>
@@ -34,14 +37,27 @@
             </TreeView.ItemContainerStyle>
             <TreeView.BorderBrush>BlanchedAlmond</TreeView.BorderBrush>
         </TreeView>
-        <GridSplitter Grid.Row="0" Grid.Column="1" Grid.RowSpan="3" VerticalAlignment="Stretch" HorizontalAlignment="Center" Width="5" ShowsPreview="False" Background="DarkGray"></GridSplitter>
-        <Expander x:Name="CollectionExpander" Margin="0,7,0,0" DockPanel.Dock="Bottom" Header="..." Grid.Row="0" Grid.Column="2" Grid.RowSpan="3" ExpandDirection="Left">
-            <DockPanel x:Name="CollectionExpanderPanel" Margin="3" LastChildFill="True">
-            </DockPanel>
-        </Expander>
-        <StatusBar x:Name="InstanceValueStatusBar" Grid.Row="3" Grid.Column="0" Grid.ColumnSpan="3" HorizontalAlignment="Stretch" VerticalAlignment="Center" Margin="2,0,2,0" VerticalContentAlignment="Center">
-            <StatusBarItem>
+        <StatusBar x:Name="InstanceValueStatusBar" Grid.Row="3" HorizontalAlignment="Stretch" VerticalAlignment="Center" Margin="2,0,2,0" VerticalContentAlignment="Center">
+            <StatusBar.ItemsPanel>
+                <ItemsPanelTemplate>
+                    <Grid>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="*"/>
+                        </Grid.RowDefinitions>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="80*"/>
+                            <ColumnDefinition Width="20*"/>
+                        </Grid.ColumnDefinitions>
+                    </Grid>
+                </ItemsPanelTemplate>
+            </StatusBar.ItemsPanel>
+            <StatusBarItem Grid.Column="0" Margin="2,0,0,0" HorizontalAlignment="Left">
                 <TextBlock x:Name="StatusText" FontStyle="Italic" Foreground="Blue"/>
+            </StatusBarItem>
+            <StatusBarItem Grid.Column="1" Margin="8,0,2,0" HorizontalAlignment="Right">
+                <CheckBox x:Name="StatusRawMode" Content="Raw Mode" IsChecked="False">
+                    <CheckBox.ToolTip>Do not expand known collections.</CheckBox.ToolTip>
+                </CheckBox>
             </StatusBarItem>
         </StatusBar>
     </Grid>

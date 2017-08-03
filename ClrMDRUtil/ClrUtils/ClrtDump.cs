@@ -154,7 +154,8 @@ namespace ClrMDRIndex
 			}
 			catch (Exception ex)
 			{
-				error = Utils.GetExceptionErrorString(ex);
+                _dataTarget?.Dispose();
+                error = Utils.GetExceptionErrorString(ex);
 				return false;
 			}
 		}
