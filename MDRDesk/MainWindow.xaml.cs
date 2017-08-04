@@ -2538,6 +2538,12 @@ namespace MDRDesk
 
         }
 
+        private void HelpViewHelpClicked(object sender, RoutedEventArgs e)
+        {
+            var wnd = new HelpWindow(Utils.GetNewID(), _wndDct, Setup.HelpFolder + Path.DirectorySeparatorChar + "README.md") { Owner = this };
+            wnd.Show();
+
+        }
     }
 
     public static class MenuCommands

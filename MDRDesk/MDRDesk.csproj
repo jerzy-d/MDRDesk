@@ -108,6 +108,9 @@
     <Reference Include="GraphX.WPF.Controls">
       <HintPath>..\GraphX\GraphX.WPF.Controls.dll</HintPath>
     </Reference>
+    <Reference Include="Markdown.Xaml">
+      <HintPath>..\Markdown.XAML\Markdown.Xaml.dll</HintPath>
+    </Reference>
     <Reference Include="Microsoft.Diagnostics.Runtime">
       <HintPath>..\ClrMd\Microsoft.Diagnostics.Runtime.dll</HintPath>
     </Reference>
@@ -184,6 +187,9 @@
     <Compile Include="Graphs\DlkGraph.cs" />
     <Compile Include="Graphs\DlkGXLogicCore.cs" />
     <Compile Include="GuiUtils.cs" />
+    <Compile Include="HelpWindow.xaml.cs">
+      <DependentUpon>HelpWindow.xaml</DependentUpon>
+    </Compile>
     <Compile Include="HexView.xaml.cs">
       <DependentUpon>HexView.xaml</DependentUpon>
     </Compile>
@@ -229,6 +235,10 @@
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>
+    <Page Include="HelpWindow.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
     <Page Include="HexView.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
@@ -257,6 +267,11 @@
       <DependentUpon>MainWindow.xaml</DependentUpon>
       <SubType>Code</SubType>
     </Compile>
+    <None Include="Markdown.Help.Styles.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
     <Page Include="MDRDeskResourceDct.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
@@ -464,8 +479,10 @@
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <PropertyGroup>
-    <PostBuildEvent>
-    </PostBuildEvent>
+    <PostBuildEvent>mkdir "$(TargetDir)Documentation"
+xcopy "$(SolutionDir)README.md" "$(TargetDir)" /Y /D /R
+xcopy "$(SolutionDir)Documentation\*.*" "$(TargetDir)Documentation" /Y /D /R  /E
+</PostBuildEvent>
   </PropertyGroup>
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.

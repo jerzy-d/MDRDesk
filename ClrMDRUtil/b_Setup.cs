@@ -6,76 +6,84 @@ using System.Text;
 
 namespace ClrMDRIndex
 {
-	public class Setup
-	{
-	    public enum RecentFiles
-	    {
-	        Unknown,
+    public class Setup
+    {
+        public enum RecentFiles
+        {
+            Unknown,
             Adhoc,
             Map,
             MaxCount = 5
-	    }
+        }
 
-		public static string DacFolder { get; private set; }
-		public static string ProcDumpFolder { get; private set; }
-		public static string DumpsFolder { get; private set; }
+        public static string DacFolder { get; private set; }
+        public static string ProcDumpFolder { get; private set; }
+        public static string DumpsFolder { get; private set; }
+        public static string HelpFolder { get; private set; }
 
-		public static List<string> RecentIndexList { get; private set; }
+
+
+        public static List<string> RecentIndexList { get; private set; }
         public static List<string> RecentAdhocList { get; private set; }
 
-		public static string GraphDbJar { get; private set; }
-		public static int GraphPort { get; private set; }
+        public static string GraphDbJar { get; private set; }
+        public static int GraphPort { get; private set; }
 
-		public static string TypesDisplayMode { get; private set; }
+        public static string TypesDisplayMode { get; private set; }
         public static int ShortReportLineCount { get; private set; }
         public static bool SkipReferences { get; private set; }
 
         public static void SetDacFolder(string folder)
-		{
-			DacFolder = folder;
-		}
+        {
+            DacFolder = folder;
+        }
 
-		public static void SetDumpsFolder(string folder)
-		{
-			DumpsFolder = folder;
-		}
-		public static void SetProcdumpFolder(string folder)
-		{
-			ProcDumpFolder = folder;
-		}
+        public static void SetDumpsFolder(string folder)
+        {
+            DumpsFolder = folder;
+        }
+        public static void SetProcdumpFolder(string folder)
+        {
+            ProcDumpFolder = folder;
+        }
 
-		public static void SetRecentIndexList(List<string> lst)
-		{
-			RecentIndexList = lst;
-		}
+        public static void SetHelpFolder(string folder)
+        {
+            HelpFolder = folder;
+        }
 
-		public static void SetRecentAdhocList(List<string> lst)
-		{
-			RecentAdhocList = lst;
-		}
+        public static void SetRecentIndexList(List<string> lst)
+        {
+            RecentIndexList = lst;
+        }
 
-		public static void SetTypesDisplayMode(string mode)
-	    {
-	        TypesDisplayMode = mode;
-	    }
+        public static void SetRecentAdhocList(List<string> lst)
+        {
+            RecentAdhocList = lst;
+        }
 
-		public static void SetShortReportLineCount(string count)
-		{
-			if (!string.IsNullOrWhiteSpace(count))
-			{
-				int cnt;
-				if (Int32.TryParse(count,out cnt))
-					ShortReportLineCount = cnt;
-			}
-		}
+        public static void SetTypesDisplayMode(string mode)
+        {
+            TypesDisplayMode = mode;
+        }
 
-		public static void SetSkipIndexingRefs(bool skip)
-		{
-			SkipReferences = skip;
-		}
+        public static void SetShortReportLineCount(string count)
+        {
+            if (!string.IsNullOrWhiteSpace(count))
+            {
+                int cnt;
+                if (Int32.TryParse(count, out cnt))
+                    ShortReportLineCount = cnt;
+            }
+        }
 
-		public static void AddRecentFileList(string path, RecentFiles files )
-	    {
+        public static void SetSkipIndexingRefs(bool skip)
+        {
+            SkipReferences = skip;
+        }
+
+        public static void AddRecentFileList(string path, RecentFiles files)
+        {
             if (files == RecentFiles.Adhoc)
             {
                 if (RecentAdhocList.Count > (int)RecentFiles.MaxCount)
@@ -106,11 +114,11 @@ namespace ClrMDRIndex
 
 
         public static bool GetConfigSettings(out string error)
-		{
-			error = null;
-			DacFolder = string.Empty;
-			DumpsFolder = string.Empty;
-			ProcDumpFolder = string.Empty;
+        {
+            error = null;
+            DacFolder = string.Empty;
+            DumpsFolder = string.Empty;
+            ProcDumpFolder = string.Empty;
             RecentIndexList = new List<string>();
             RecentAdhocList = new List<string>();
             StringBuilder errors = StringBuilderCache.Acquire(256);
@@ -118,7 +126,7 @@ namespace ClrMDRIndex
             try
             {
                 var config = ConfigurationManager.OpenExeConfiguration(ConfigurationUserLevel.None);
-                var appSettings = (AppSettingsSection) config.GetSection("appSettings");
+                var appSettings = (AppSettingsSection)config.GetSection("appSettings");
                 if (appSettings.Settings.Count != 0)
                 {
                     foreach (string key in appSettings.Settings.AllKeys)
@@ -126,23 +134,29 @@ namespace ClrMDRIndex
                         var ky = key.ToLower();
                         if (Utils.SameStrings(ky, "dacfolder"))
                         {
-							var folder = appSettings.Settings[key].Value.Trim();
-	                        if (Directory.Exists(folder)) DacFolder = folder;
-							else errors.AppendLine("Dac folder does not exist: " + folder);
-						}
-						else if (Utils.SameStrings(ky, "mapfolder"))
+                            var folder = appSettings.Settings[key].Value.Trim();
+                            if (Directory.Exists(folder)) DacFolder = folder;
+                            else errors.AppendLine("Dac folder does not exist: " + folder);
+                        }
+                        else if (Utils.SameStrings(ky, "mapfolder"))
                         {
-							var folder = appSettings.Settings[key].Value.Trim();
-							if (Directory.Exists(folder)) DumpsFolder = folder;
-							else errors.AppendLine("Dumps folder does not exist: " + folder);
-						}
-						else if (Utils.SameStrings(ky, "procdumpfolder"))
-						{
-							var folder = appSettings.Settings[key].Value.Trim();
-							if (Directory.Exists(folder)) ProcDumpFolder = folder;
-							else errors.AppendLine("procdum.exe folder does not exist: " + folder);
-						}
-						else if (Utils.SameStrings(ky, "graphproxy"))
+                            var folder = appSettings.Settings[key].Value.Trim();
+                            if (Directory.Exists(folder)) DumpsFolder = folder;
+                            else errors.AppendLine("Dumps folder does not exist: " + folder);
+                        }
+                        else if (Utils.SameStrings(ky, "procdumpfolder"))
+                        {
+                            var folder = appSettings.Settings[key].Value.Trim();
+                            if (Directory.Exists(folder)) ProcDumpFolder = folder;
+                            else errors.AppendLine("procdum.exe folder does not exist: " + folder);
+                        }
+                        else if (Utils.SameStrings(ky, "helpfolder"))
+                        {
+                            var folder = appSettings.Settings[key].Value.Trim();
+                            if (Directory.Exists(folder)) HelpFolder = folder;
+                            else errors.AppendLine("help folder does not exist: " + folder);
+                        }
+                        else if (Utils.SameStrings(ky, "graphproxy"))
                         {
                             GraphDbJar = appSettings.Settings[key].Value.Trim();
                         }
@@ -152,38 +166,38 @@ namespace ClrMDRIndex
                         }
                         else if (Utils.SameStrings(ky, "recentindices"))
                         {
-							GetSemicolonDelimitedFolderPaths(RecentIndexList, appSettings.Settings[key].Value);
+                            GetSemicolonDelimitedFolderPaths(RecentIndexList, appSettings.Settings[key].Value);
                         }
                         else if (Utils.SameStrings(ky, "recentadhocs"))
                         {
                             GetSemicolonDelimitedFilePaths(RecentAdhocList, appSettings.Settings[key].Value);
                         }
-						else if (Utils.SameStrings(ky, "typedisplaymode"))
-						{
-							TypesDisplayMode = appSettings.Settings[key].Value.Trim();
-						}
-						else if (Utils.SameStrings(ky, "shortreportcount"))
-						{
-							int count = 100;
-							var intStr = appSettings.Settings[key].Value.Trim();
-							if (!string.IsNullOrWhiteSpace(intStr))
-							{
-								if (!Int32.TryParse(intStr, out count))
-									count = 100;
-							}
-							ShortReportLineCount = count;
-						}
+                        else if (Utils.SameStrings(ky, "typedisplaymode"))
+                        {
+                            TypesDisplayMode = appSettings.Settings[key].Value.Trim();
+                        }
+                        else if (Utils.SameStrings(ky, "shortreportcount"))
+                        {
+                            int count = 100;
+                            var intStr = appSettings.Settings[key].Value.Trim();
+                            if (!string.IsNullOrWhiteSpace(intStr))
+                            {
+                                if (!Int32.TryParse(intStr, out count))
+                                    count = 100;
+                            }
+                            ShortReportLineCount = count;
+                        }
                         else if (Utils.SameStrings(ky, "skipreferences"))
                         {
                             var intStr = appSettings.Settings[key].Value.Trim();
                             if (!string.IsNullOrWhiteSpace(intStr))
                             {
-                                if (string.Compare(intStr,"true",StringComparison.OrdinalIgnoreCase)==0)
+                                if (string.Compare(intStr, "true", StringComparison.OrdinalIgnoreCase) == 0)
                                     SkipReferences = true;
                             }
                         }
                     }
-				}
+                }
                 else
                 {
                     error = "The appSettings section is empty.";
@@ -211,7 +225,7 @@ namespace ClrMDRIndex
                     StringBuilderCache.Release(errors);
                 }
             }
-		}
+        }
 
         public static bool SaveConfigSettings(out string error)
         {
@@ -219,20 +233,21 @@ namespace ClrMDRIndex
             try
             {
                 var config = ConfigurationManager.OpenExeConfiguration(ConfigurationUserLevel.None);
-				var settings = config.AppSettings.Settings;
-				settings["typedisplaymode"].Value = TypesDisplayMode;
-				settings["shortreportcount"].Value = ShortReportLineCount.ToString();
-				settings["recentindices"].Value = JoinSemicolonDelimitedList(RecentIndexList);
-				settings["recentadhocs"].Value = JoinSemicolonDelimitedList(RecentAdhocList);
-				settings["dacfolder"].Value = DacFolder;
-				settings["mapfolder"].Value = DumpsFolder;
-				settings["procdumpfolder"].Value = ProcDumpFolder;
-				var skip = SkipReferences ? "true" : "false";
-				if (settings["skipreferences"]==null)
-					settings.Add("skipreferences", skip);
-				else
-					settings["skipreferences"].Value = skip;
-				config.Save(ConfigurationSaveMode.Modified);
+                var settings = config.AppSettings.Settings;
+                settings["typedisplaymode"].Value = TypesDisplayMode;
+                settings["shortreportcount"].Value = ShortReportLineCount.ToString();
+                settings["recentindices"].Value = JoinSemicolonDelimitedList(RecentIndexList);
+                settings["recentadhocs"].Value = JoinSemicolonDelimitedList(RecentAdhocList);
+                settings["dacfolder"].Value = DacFolder;
+                settings["mapfolder"].Value = DumpsFolder;
+                settings["procdumpfolder"].Value = ProcDumpFolder;
+                settings["helpfolder"].Value = HelpFolder;
+                var skip = SkipReferences ? "true" : "false";
+                if (settings["skipreferences"] == null)
+                    settings.Add("skipreferences", skip);
+                else
+                    settings["skipreferences"].Value = skip;
+                config.Save(ConfigurationSaveMode.Modified);
                 return true;
             }
             catch (Exception ex)
@@ -243,9 +258,9 @@ namespace ClrMDRIndex
         }
 
         private static void GetSemicolonDelimitedFilePaths(List<string> lst, string str)
-	    {
-	        if (string.IsNullOrWhiteSpace(str)) return;
-	        str = str.Trim();
+        {
+            if (string.IsNullOrWhiteSpace(str)) return;
+            str = str.Trim();
             var parts = str.Split(';');
             for (var i = 0; i < parts.Length; ++i)
             {
@@ -258,78 +273,45 @@ namespace ClrMDRIndex
             }
         }
 
-		private static void GetSemicolonDelimitedFolderPaths(List<string> lst, string str)
-		{
-			if (string.IsNullOrWhiteSpace(str)) return;
-			str = str.Trim();
-			var parts = str.Split(';');
-			for (var i = 0; i < parts.Length; ++i)
-			{
-				if (!string.IsNullOrWhiteSpace(parts[i]))
-				{
-					var path = parts[i].Trim();
-					if (Directory.Exists(path))
-						lst.Add(path);
-				}
-			}
-		}
-
-		private static string JoinSemicolonDelimitedList(List<string> lst)
+        private static void GetSemicolonDelimitedFolderPaths(List<string> lst, string str)
         {
-            if (lst.Count < 1) return string.Empty;
-            return  string.Join(";", lst);
+            if (string.IsNullOrWhiteSpace(str)) return;
+            str = str.Trim();
+            var parts = str.Split(';');
+            for (var i = 0; i < parts.Length; ++i)
+            {
+                if (!string.IsNullOrWhiteSpace(parts[i]))
+                {
+                    var path = parts[i].Trim();
+                    if (Directory.Exists(path))
+                        lst.Add(path);
+                }
+            }
         }
 
-		public static string GetRecentIndexPath(int ndx = 0)
-		{
-			if (RecentIndexList != null && RecentIndexList.Count > ndx)
-			{
-				return RecentIndexList[ndx];
-			}
-			return null;
-		}
+        private static string JoinSemicolonDelimitedList(List<string> lst)
+        {
+            if (lst.Count < 1) return string.Empty;
+            return string.Join(";", lst);
+        }
+
+        public static string GetRecentIndexPath(int ndx = 0)
+        {
+            if (RecentIndexList != null && RecentIndexList.Count > ndx)
+            {
+                return RecentIndexList[ndx];
+            }
+            return null;
+        }
 
 
-		public static string GetRecentAdhocPath(int ndx = 0)
-		{
-			if (RecentAdhocList != null && RecentAdhocList.Count > ndx)
-			{
-				return RecentAdhocList[ndx];
-			}
-			return null;
-		}
-
-		//public static bool ReadAppSettings()
-		//{
-		//	try
-		//	{
-		//		var appSettings = ConfigurationManager.AppSettings;
-
-		//		if (appSettings.Count == 0)
-		//		{
-		//			_dacPaths = Utils.EmptyArray<string>.Value;
-		//			_dumpPaths = Utils.EmptyArray<string>.Value;
-		//		}
-		//		else
-		//		{
-		//			List<string> dacs = new List<string>();
-		//			List<string> dumps = new List<string>();
-		//			foreach (var key in appSettings.AllKeys)
-		//			{
-		//				if (key.StartsWith("dac")) dacs.Add(appSettings[key]);
-		//				else if (key.StartsWith("dump")) dumps.Add(appSettings[key]);
-		//			}
-		//			_dacPaths = dacs.ToArray();
-		//			_dumpPaths = dumps.ToArray();
-		//		}
-		//		return true;
-		//	}
-		//	catch (ConfigurationErrorsException ex)
-		//	{
-		//		Error = "Error reading app settings" + Environment.NewLine + ex.ToString();
-		//		return false;
-		//	}
-
-		//}
-	}
+        public static string GetRecentAdhocPath(int ndx = 0)
+        {
+            if (RecentAdhocList != null && RecentAdhocList.Count > ndx)
+            {
+                return RecentAdhocList[ndx];
+            }
+            return null;
+        }
+    }
 }
