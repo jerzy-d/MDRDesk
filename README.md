@@ -1,5 +1,5 @@
 # MDRDesk
-Microsoft.Diagnostics.Runtime Gui Interface
+## Microsoft.Diagnostics.Runtime Gui Interface
 
 1. [Getting Started](./Documentation/GettingStarted.md) - A brief introduction
    to the API and how to create a CLRRuntime instance.

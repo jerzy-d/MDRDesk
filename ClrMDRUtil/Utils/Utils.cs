@@ -3091,10 +3091,10 @@ namespace ClrMDRIndex
 					+ details ?? string.Empty;
 		}
 
-		public static string GetExceptionErrorString(Exception ex)
+		public static string GetExceptionErrorString(Exception ex, string prefix = null)
 		{
-
-			return ex.GetType().Name + Constants.HeavyGreekCrossPadded // caption
+            string title = (prefix != null) ? prefix + ex.GetType().Name : ex.GetType().Name;
+			return title + Constants.HeavyGreekCrossPadded // caption
 			       + ex.Source + Constants.HeavyGreekCrossPadded // heading
 			       + ex.Message + Constants.HeavyGreekCrossPadded // text
 			       + ex.StackTrace; // details;

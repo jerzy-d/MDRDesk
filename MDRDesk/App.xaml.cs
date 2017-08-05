@@ -6,6 +6,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Threading;
+using ClrMDRIndex;
 
 namespace MDRDesk
 {
@@ -45,16 +46,29 @@ namespace MDRDesk
 
 			if (this.DoHandle)
 			{
-				//Handling the exception within the UnhandledException handler.
-				MessageBox.Show(e.Exception.Message, "Exception Caught",
-										MessageBoxButton.OK, MessageBoxImage.Error);
-				e.Handled = true;
+                //Handling the exception within the UnhandledException handler.
+                if (e.Exception != null)
+                {
+                    GuiUtils.ShowError(Utils.GetExceptionErrorString(e.Exception, "[APPLICATION WILL CLOSE] "), GuiUtils.MainWindowInstance);
+                }
+                else
+                {
+                    MessageBox.Show("Application is going to close! ", "Exception caught.");
+                }
+                e.Handled = false;
 			}
 			else
 			{
-				//If you do not set e.Handled to true, the application will close due to crash.
-				MessageBox.Show("Application is going to close! ", "Uncaught Exception");
-				e.Handled = true;
+                //If you do not set e.Handled to true, the application will close due to crash.
+                if (e.Exception != null)
+                {
+                    GuiUtils.ShowError(Utils.GetExceptionErrorString(e.Exception, "[APPLICATION WILL CLOSE] "), GuiUtils.MainWindowInstance);
+                }
+                else
+                {
+                    MessageBox.Show("Application is going to close! ", "Uncaught Exception");
+                }
+                e.Handled = false;
 			}
 		}
 

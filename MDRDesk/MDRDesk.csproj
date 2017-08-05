@@ -267,11 +267,6 @@
       <DependentUpon>MainWindow.xaml</DependentUpon>
       <SubType>Code</SubType>
     </Compile>
-    <None Include="Markdown.Help.Styles.xaml">
-      <Generator>MSBuild:Compile</Generator>
-      <SubType>Designer</SubType>
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
     <Page Include="MDRDeskResourceDct.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
