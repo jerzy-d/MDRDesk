@@ -88,16 +88,20 @@ namespace MDRDesk
                 switch (Setup.TypesDisplayMode)
                 {
                     case "namespaces":
-                        TypeDisplayNamespaceClass.IsChecked = true;
+                        //TypeDisplayNamespaceClass.IsChecked = true;
+                        TypeDisplayMode.SelectedIndex = 0;
                         break;
                     case "types":
-                        TypeDisplayClass.IsChecked = true;
+                        //TypeDisplayClass.IsChecked = true;
+                        TypeDisplayMode.SelectedIndex = 1;
                         break;
                     case "fulltypenames":
-                        TypeDisplayNamespace.IsChecked = true;
+                        //TypeDisplayNamespace.IsChecked = true;
+                        TypeDisplayMode.SelectedIndex = 2;
                         break;
                     default:
-                        TypeDisplayNamespace.IsChecked = true;
+                        //TypeDisplayNamespace.IsChecked = true;
+                        TypeDisplayMode.SelectedIndex = 0;
                         break;
 
                 }
@@ -331,80 +335,139 @@ namespace MDRDesk
 
         #region Index
 
-        private void ToggleButton_OnChecked(object sender, RoutedEventArgs e)
+        private void TypeDisplayModeChanged(object sender, SelectionChangedEventArgs e)
         {
-            RadioButton button = sender as RadioButton;
-            string buttonName = button.Name;
-            if (!IsIndexAvailable())
+            if (TypeDisplayMode.SelectedItem == null) return;
+            string sel = (TypeDisplayMode.SelectedValue as ComboBoxItem).Content as string;
+            if (sel == null) return;
+            switch(sel)
             {
-                switch (buttonName)
-                {
-                    case "TypeDisplayNamespaceClass":
-                        Setup.SetTypesDisplayMode("namespaces");
-                        break;
-                    case "TypeDisplayClass":
-                        Setup.SetTypesDisplayMode("types");
-                        break;
-                    case "TypeDisplayNamespace":
-                        Setup.SetTypesDisplayMode("fulltypenames");
-                        break;
-                }
-                return;
+                case "Namespace/Class":
+                    Setup.SetTypesDisplayMode("namespaces");
+                    break;
+                case "Class/Namespace":
+                    Setup.SetTypesDisplayMode("types");
+                    break;
+                case "Full Name":
+                    Setup.SetTypesDisplayMode("fulltypenames");
+                    break;
             }
+            if (!IsIndexAvailable(null) || TypeDisplayExists()) return;
+            switch (Setup.TypesDisplayMode)
+            {
+                case "namespaces":
+                    var namespaces = CurrentIndex.GetNamespaceDisplay();
+                    DisplayNamespaceGrid(namespaces);
+                    break;
+                case "types":
+                    DisplayTypesGrid(true);
+                    break;
+                default:
+                    DisplayTypesGrid(false);
+                    break;
+            }
+        }
 
-            bool openNewTab = true;
-            List<string> lst = new List<string>(3);
+        private bool TypeDisplayExists()
+        {
+            string currentMode;
+            switch(Setup.TypesDisplayMode)
+            {
+                case "namespaces":
+                    currentMode = "NamespaceTypeView";
+                    break;
+                case "types":
+                    currentMode = "ReversedNameTypeView";
+                    break;
+                default:
+                    currentMode = "NameTypeView";
+                    break;
+            }
             foreach (TabItem tabItem in MainTab.Items)
             {
                 if (tabItem.Content is Grid)
                 {
                     var grid = tabItem.Content as Grid;
-                    if (grid.Name.StartsWith(GridReversedNameTypeView))
-                    {
-                        if (buttonName == "TypeDisplayClass")
-                        {
-                            openNewTab = false;
-                            break;
-                        }
-                    }
-                    if (grid.Name.StartsWith(GridNameNamespaceTypeView))
-                    {
-                        if (buttonName == "TypeDisplayNamespaceClass")
-                        {
-                            openNewTab = false;
-                            break;
-                        }
-                    }
-                    if (grid.Name.StartsWith(GridKeyNameTypeView))
-                    {
-                        if (buttonName == "TypeDisplayNamespace")
-                        {
-                            openNewTab = false;
-                            break;
-                        }
-                    }
+                    if (grid.Name.StartsWith(currentMode)) return true;
                 }
             }
-            if (openNewTab)
-            {
-                switch (buttonName)
-                {
-                    case "TypeDisplayNamespaceClass":
-                        Setup.SetTypesDisplayMode("namespaces");
-                        var namespaces = CurrentIndex.GetNamespaceDisplay();
-                        DisplayNamespaceGrid(namespaces);
-                        break;
-                    case "TypeDisplayClass":
-                        Setup.SetTypesDisplayMode("types");
-                        DisplayTypesGrid(true);
-                        break;
-                    case "TypeDisplayNamespace":
-                        Setup.SetTypesDisplayMode("fulltypenames");
-                        DisplayTypesGrid(false);
-                        break;
-                }
-            }
+            return false;
         }
+
+        //private void ToggleButton_OnChecked(object sender, RoutedEventArgs e)
+        //{
+        //    RadioButton button = sender as RadioButton;
+        //    string buttonName = button.Name;
+        //    if (!IsIndexAvailable())
+        //    {
+        //        switch (buttonName)
+        //        {
+        //            case "TypeDisplayNamespaceClass":
+        //                Setup.SetTypesDisplayMode("namespaces");
+        //                break;
+        //            case "TypeDisplayClass":
+        //                Setup.SetTypesDisplayMode("types");
+        //                break;
+        //            case "TypeDisplayNamespace":
+        //                Setup.SetTypesDisplayMode("fulltypenames");
+        //                break;
+        //        }
+        //        return;
+        //    }
+
+        //    bool openNewTab = true;
+        //    List<string> lst = new List<string>(3);
+        //    foreach (TabItem tabItem in MainTab.Items)
+        //    {
+        //        if (tabItem.Content is Grid)
+        //        {
+        //            var grid = tabItem.Content as Grid;
+        //            if (grid.Name.StartsWith(GridReversedNameTypeView))
+        //            {
+        //                if (buttonName == "TypeDisplayClass")
+        //                {
+        //                    openNewTab = false;
+        //                    break;
+        //                }
+        //            }
+        //            if (grid.Name.StartsWith(GridNameNamespaceTypeView))
+        //            {
+        //                if (buttonName == "TypeDisplayNamespaceClass")
+        //                {
+        //                    openNewTab = false;
+        //                    break;
+        //                }
+        //            }
+        //            if (grid.Name.StartsWith(GridKeyNameTypeView))
+        //            {
+        //                if (buttonName == "TypeDisplayNamespace")
+        //                {
+        //                    openNewTab = false;
+        //                    break;
+        //                }
+        //            }
+        //        }
+        //    }
+        //    if (openNewTab)
+        //    {
+        //        switch (buttonName)
+        //        {
+        //            case "TypeDisplayNamespaceClass":
+        //                Setup.SetTypesDisplayMode("namespaces");
+        //                var namespaces = CurrentIndex.GetNamespaceDisplay();
+        //                DisplayNamespaceGrid(namespaces);
+        //                break;
+        //            case "TypeDisplayClass":
+        //                Setup.SetTypesDisplayMode("types");
+        //                DisplayTypesGrid(true);
+        //                break;
+        //            case "TypeDisplayNamespace":
+        //                Setup.SetTypesDisplayMode("fulltypenames");
+        //                DisplayTypesGrid(false);
+        //                break;
+        //        }
+        //    }
+        //}
 
         private void CreateDumpIndexClicked(object sender, RoutedEventArgs e)
         {
@@ -566,19 +629,21 @@ namespace MDRDesk
                 }
                 CurrentIndex = result.Item2;
 
-                //var genInfo = CurrentIndex.GetGenerationTotals();
                 DisplayGeneralInfoGrid(CurrentIndex.DumpInfo);
-                if ((TypeDisplayNamespaceClass.IsChecked ?? (bool)TypeDisplayNamespaceClass.IsChecked) && result.Item3 != null)
+                switch (Setup.TypesDisplayMode)
                 {
-                    DisplayNamespaceGrid(result.Item3);
-                }
-                else
-                {
-                    if ((TypeDisplayClass.IsChecked ?? (bool)TypeDisplayNamespaceClass.IsChecked))
+                    case "namespaces":
+                        var namespaces = CurrentIndex.GetNamespaceDisplay();
+                        DisplayNamespaceGrid(namespaces);
+                        break;
+                    case "types":
                         DisplayTypesGrid(true);
-                    else
+                        break;
+                    default:
                         DisplayTypesGrid(false);
+                        break;
                 }
+
                 if (CurrentIndex.DeadlockFound)
                 {
                     string error;
@@ -1642,16 +1707,16 @@ namespace MDRDesk
                 switch (Setup.TypesDisplayMode)
                 {
                     case "namespaces":
-                        TypeDisplayNamespaceClass.IsChecked = true;
+                        TypeDisplayMode.SelectedIndex = 0;
                         break;
                     case "types":
-                        TypeDisplayClass.IsChecked = true;
+                        TypeDisplayMode.SelectedIndex = 1;
                         break;
                     case "fulltypenames":
-                        TypeDisplayNamespace.IsChecked = true;
+                        TypeDisplayMode.SelectedIndex = 2;
                         break;
                     default:
-                        TypeDisplayNamespace.IsChecked = true;
+                        TypeDisplayMode.SelectedIndex = 0;
                         break;
 
                 }
@@ -2544,6 +2609,7 @@ namespace MDRDesk
             wnd.Show();
 
         }
+
     }
 
     public static class MenuCommands

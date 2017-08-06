@@ -1,7 +1,8 @@
 # MDRDesk
+[Up](../README.md)
 ## Main Menu
 
-![Main Menu](MainMenu.PNG)
+![Main Menu](../Documentation/MainMenu.PNG)
 
 #### File
 **Open Report File...**

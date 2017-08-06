@@ -1130,7 +1130,41 @@ namespace ClrMDRIndex
 			return null;
 		}
 
-		private static string LookForDacDll(DirectoryInfo dir)
+        /// <summary>
+        /// Cache dac dll in our mscordacwks folder.
+        /// There's sometimea problem with finding a proper dac file, so this makes life easier.
+        /// We always first looking for dacs here.
+        /// </summary>
+        /// <param name="dacPath">Path of the dac dll.</param>
+        /// <param name="dacFileFolder">Where to copy this dll/</param>
+        /// <param name="error">Error message if upon failure.</param>
+        /// <returns></returns>
+        public static bool SaveDac(string dacPath, string dacFileFolder, out string error)
+        {
+            error = null;
+            try
+            {
+                if (!Directory.Exists(dacFileFolder)) return false;
+                string dacName = Path.GetFileName(dacPath);
+                var folder = new DirectoryInfo(dacFileFolder);
+                foreach (var dir in folder.EnumerateDirectories())
+                {
+                    var pathName = dir.Name;
+                    var dirName = Path.GetFileName(pathName);
+                    if (SameStrings(dirName, dacName)) return false;
+                }
+                Directory.CreateDirectory(dacFileFolder + Path.DirectorySeparatorChar + dacName);
+                File.Copy(dacPath, dacFileFolder + Path.DirectorySeparatorChar + dacName + Path.DirectorySeparatorChar + dacName);
+                return true;
+            }
+            catch(Exception ex)
+            {
+                error = GetExceptionErrorString(ex);
+                return false;
+            }
+        }
+
+        private static string LookForDacDll(DirectoryInfo dir)
 		{
 			Queue<DirectoryInfo> que = new Queue<DirectoryInfo>();
 			que.Enqueue(dir);

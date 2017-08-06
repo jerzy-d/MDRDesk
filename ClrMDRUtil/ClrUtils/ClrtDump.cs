@@ -7,6 +7,9 @@ using Microsoft.Diagnostics.Runtime;
 
 namespace ClrMDRIndex
 {
+    /// <summary>
+    /// Holder of some clrmd dump data.
+    /// </summary>
 	public class ClrtDump : IDisposable
 	{
 		#region Fields/Properties
@@ -130,7 +133,8 @@ namespace ClrMDRIndex
 					{
 						_dacPaths[i] = _dataTarget.SymbolLocator.FindBinary(_clrInfos[i].DacInfo);
 						if (_dacPaths[i] != null) _runtimes[i] = _clrInfos[i].CreateRuntime(_dacPaths[i]);
-						if (_runtimes[i] != null && _curRuntimeIndex < 1) _curRuntimeIndex = i;
+                        if (_runtimes[i] != null) Utils.SaveDac(_dacPaths[i], Setup.DacFolder, out error);
+                        if (_runtimes[i] != null && _curRuntimeIndex < 1) _curRuntimeIndex = i;
 					}
 				}
 

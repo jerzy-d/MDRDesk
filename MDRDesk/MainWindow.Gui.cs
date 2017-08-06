@@ -955,7 +955,7 @@ namespace MDRDesk
             var nsCountLabel = (Label)LogicalTreeHelper.FindLogicalNode(grid, @"lTpNsCount");
             Debug.Assert(nsCountLabel != null);
             nsCountLabel.Content = Utils.LargeNumberString(namespaces.Length);
-            var tab = new CloseableTabItem() { Header = Constants.BlackDiamond + " Type Instances", Content = grid, Name = "HeapIndexTypeViewTab" };
+            var tab = new CloseableTabItem() { Header = Constants.BlackDiamond + " Instances [1]", Content = grid, Name = "HeapIndexTypeViewTab" };
             var addressList = (ListBox)LogicalTreeHelper.FindLogicalNode(grid, @"lbTypeNamespaceAddresses");
             Debug.Assert(addressList != null);
             addressList.ContextMenu.Tag = addressList;
@@ -1026,7 +1026,8 @@ namespace MDRDesk
             Debug.Assert(addressList != null);
             addressList.ContextMenu.Tag = addressList;
 
-            var tab = new CloseableTabItem() { Header = Constants.BlackDiamond + " Type Instances", Content = grid, Name = "HeapIndexTypeViewTab" };
+            string title = reversedTypeNames ? " Instances [2]" : " Instances [3]";
+            var tab = new CloseableTabItem() { Header = Constants.BlackDiamond + title, Content = grid, Name = "HeapIndexTypeViewTab" };
             MainTab.Items.Add(tab);
             MainTab.SelectedItem = tab;
             MainTab.UpdateLayout();

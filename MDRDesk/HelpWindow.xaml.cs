@@ -66,6 +66,8 @@ namespace MDRDesk
             var separatorStyle = this.TryFindResource("SeparatorStyle") as Style;
             _markdown.SeparatorStyle = separatorStyle;
 
+            _markdown.AssetPathRoot = ClrMDRIndex.Setup.HelpFolder + System.IO.Path.DirectorySeparatorChar + "Documentation";
+
         }
 
         public void Navigate(object sender, ExecutedRoutedEventArgs e)

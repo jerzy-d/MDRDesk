@@ -727,7 +727,7 @@
         <!--<Grid.Resources>
             <local:RecentFileList x:Key="RecentDumps"/>
         </Grid.Resources>-->
-        <ToolBarTray x:Name="MainToolbarTray" Height="40" Grid.Row="0" Margin="1,0,1,0">
+        <ToolBarTray x:Name="MainToolbarTray" Height="50" Grid.Row="0" Margin="1,0,1,0">
             <ToolBar x:Name="MainToolbar" HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
                 <Menu x:Name="MainMenu" HorizontalAlignment="Center" VerticalContentAlignment="Center" Height="38" Margin="1,1,1,1" VerticalAlignment="Center" FontFamily="Consolas" FontSize="14">
                     <MenuItem x:Name="File" Header="File" VerticalAlignment="Center">
@@ -841,6 +841,20 @@
                 -->
                 </Menu>
             </ToolBar>
+            <ToolBar>
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="50*"/>
+                        <RowDefinition Height="50*"/>
+                    </Grid.RowDefinitions>
+                    <Label Grid.Row="0" Content="Type Display"  FontFamily="Arial" FontSize="10" FontStyle="Italic" Foreground="Blue"/>
+                    <ComboBox x:Name="TypeDisplayMode"  Grid.Row="1" IsEditable="False" FontFamily="Arial" FontSize="10" FontWeight="Bold" BorderThickness="0" SelectionChanged="TypeDisplayModeChanged">
+                        <ComboBoxItem Content="Namespace/Class"></ComboBoxItem>
+                        <ComboBoxItem Content="Class/Namespace"></ComboBoxItem>
+                        <ComboBoxItem Content="Full Name"></ComboBoxItem>
+                    </ComboBox>
+                </Grid>
+            </ToolBar>
             <ToolBar HorizontalAlignment="Right">
                 <Label x:Name="ProcessMemory" HorizontalAlignment="Right" HorizontalContentAlignment="Right"  VerticalAlignment="Center" Content="Working Set (Memory)" FontFamily="Consolas" FontSize="11" FontWeight="Bold" FontStyle="Italic" Foreground="Brown">
                     <Label.ToolTip>
@@ -850,14 +864,15 @@
                     </Label.ToolTip>
                 </Label>
             </ToolBar>
+ 
         </ToolBarTray>
-        <ToolBarTray x:Name="SuplementalToolbarTray" Grid.Row="1" Margin="1,0,1,0">
+        <!--<ToolBarTray x:Name="SuplementalToolbarTray" Grid.Row="1" Margin="1,0,1,0">
             <ToolBar x:Name="SuplementalToolbar">
                 <RadioButton x:Name ="TypeDisplayNamespaceClass" GroupName="TypeDisplayMode" Checked="ToggleButton_OnChecked" Margin="4,0,4,0" FontWeight="Bold" >Namespace/Class Display</RadioButton>
                 <RadioButton x:Name ="TypeDisplayClass" GroupName="TypeDisplayMode" Checked="ToggleButton_OnChecked" Margin="4,0,4,0" FontWeight="Bold">Class Display</RadioButton>
                 <RadioButton x:Name ="TypeDisplayNamespace" GroupName="TypeDisplayMode" Checked="ToggleButton_OnChecked" Margin="4,0,4,0" FontWeight="Bold">Namespace Display</RadioButton>
             </ToolBar>
-        </ToolBarTray>
+        </ToolBarTray>-->
         <TabControl Name="MainTab" Grid.Row="2" HorizontalAlignment="Stretch" Margin="1,1,1,1" VerticalAlignment="Stretch" >
         </TabControl>
         <StatusBar x:Name="MainStatusBar" Grid.Row="3" HorizontalAlignment="Stretch" Height="36.142" RenderTransformOrigin="0.276,-0.08" Background="LightGray">
