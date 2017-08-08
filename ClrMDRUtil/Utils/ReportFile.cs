@@ -498,7 +498,8 @@ namespace ClrMDRIndex
 		private string _notes;
 		private object _data;
 
-		public string Error => _error;
+        public string Error => _error;
+        public bool HasError => _error != null;
 		public listing<string>[] Items => _items;
 		public ColumnInfo[] ColInfos => _colInfos;
 		public string Notes => _notes;

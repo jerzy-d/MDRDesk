@@ -1511,33 +1511,43 @@ namespace MDRDesk
         {
             Grid grid = GetReportGrid(true);
             if (grid == null) return;
+            DumpFileMoniker dmpInfo;
+            ListView listView;
             string gridName = Utils.GetNameWithoutId(grid.Name);
             switch (gridName)
             {
                 case "IndexSizesInfo":
-                    var info = grid.Tag as Tuple<DumpFileMoniker, ulong>;
-                    Debug.Assert(info != null);
-                    var listView = (ListView)LogicalTreeHelper.FindLogicalNode(grid, "TopListView");
+                    dmpInfo = (grid.Tag as Tuple<DumpFileMoniker, ulong>).Item1;
+                    Debug.Assert(dmpInfo != null);
+                    listView = (ListView)LogicalTreeHelper.FindLogicalNode(grid, "TopListView");
                     Debug.Assert(listView != null);
                     var dataAry = listView.ItemsSource as sextuple<int, ulong, ulong, ulong, ulong, string>[];
                     Debug.Assert(dataAry != null);
                     var sortBy = listView.Tag as string;
                     Debug.Assert(sortBy != null);
-                    var reportPath = info.Item1.OutputFolder + System.IO.Path.DirectorySeparatorChar + info.Item1.DumpFileName +
+                    var reportPath = dmpInfo.OutputFolder + System.IO.Path.DirectorySeparatorChar + dmpInfo.DumpFileName +
                                      ".TYPESIZES." + sortBy + ".txt";
                     break;
                 case "IndexStringUsage":
-                    var dmpInf = grid.Tag as DumpFileMoniker;
-                    Debug.Assert(dmpInf != null);
-                    var lstView = (ListView)LogicalTreeHelper.FindLogicalNode(grid, "TopListView");
-                    Debug.Assert(lstView != null);
-                    var datAry = lstView.ItemsSource as StringStatsDispEntry[];
+                    dmpInfo = grid.Tag as DumpFileMoniker;
+                    Debug.Assert(dmpInfo != null);
+                    listView = (ListView)LogicalTreeHelper.FindLogicalNode(grid, "TopListView");
+                    Debug.Assert(listView != null);
+                    var datAry = listView.ItemsSource as StringStatsDispEntry[];
                     Debug.Assert(datAry != null);
-                    var repPath = dmpInf.OutputFolder + System.IO.Path.DirectorySeparatorChar + "ALLSTRINGUSAGE.txt";
+                    var repPath = dmpInfo.OutputFolder + System.IO.Path.DirectorySeparatorChar + "ALLSTRINGUSAGE.txt";
                     string error;
                     StringStatsDispEntry.WriteShortReport(datAry, repPath, "String usage in: " + CurrentIndex.DumpFileName,
                         datAry.Length,
                         new string[] { "Count" }, null, out error);
+                    break;
+                case ReportNameSizeDiffs:
+                    dmpInfo = (grid.Tag as Tuple<string, DumpFileMoniker>).Item2;
+                    Debug.Assert(dmpInfo != null);
+                    listView = (ListView)LogicalTreeHelper.FindLogicalNode(grid, "TopListView");
+                    Debug.Assert(listView != null);
+
+ 
                     break;
             }
 
@@ -1559,6 +1569,7 @@ namespace MDRDesk
             var outpath = DumpFileMoniker.GetOutputPathWithDumpPrefix(gridInfo.Item2, Utils.RemoveWhites(gridInfo.Item1) + ".txt");
 
             SetStartTaskMainWindowState("Writing report. Please wait...");
+
             //var taskResult = await Task.Run(() =>
             //{
             //    string error;
@@ -2287,18 +2298,6 @@ namespace MDRDesk
 
             SetStartTaskMainWindowState("Getting size details for: '" + baseTypeName + "', please wait...");
 
-            //var result = await Task.Run(() =>
-            //{
-            //    string error;
-            //    var info = CurrentIndex.GetTypeSizeDetails(typeId, out error);
-            //    if (info == null)
-            //        return new Tuple<string, string, string>(error, null, null);
-
-            //    var rep = Reports.DumpTypeSizeDetails(CurrentIndex.OutputFolder, typeName, info.Item1, info.Item2, info.Item3, info.Item4, info.Item5,
-            //        out error);
-
-            //    return new Tuple<string, string, string>(null, rep.Item1, rep.Item2);
-            //});
             var result = await Task.Factory.StartNew(() =>
             {
                 string error;

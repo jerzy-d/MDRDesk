@@ -150,6 +150,17 @@ namespace ClrMDRIndex
             }
         }
 
+        public bool ParentFieldMatch(ClrType parent, out ClrInstanceField fld)
+        {
+            fld = null;
+            if (parent.Fields != null && _fldIndex >= 0 && _fldIndex < parent.Fields.Count)
+            {
+                fld = parent.Fields[_fldIndex];
+                if (fld.Type != null && Utils.SameStrings(fld.Type.Name, TypeName)) return true;
+            }
+            return false;
+        }
+
         public void SetField(ClrInstanceField fld)
         {
             _field = fld;

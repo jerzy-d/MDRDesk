@@ -569,7 +569,7 @@ namespace ClrMDRIndex
 			try
 			{
 				var runtime = dmp.Runtime;
-				runtime.Flush();
+				//runtime.Flush();
 				var heap = runtime.Heap;
 				HashSet<ulong> done = new HashSet<ulong>();
 				var aryDct = new SortedDictionary<string, List<int>>(StringComparer.Ordinal);

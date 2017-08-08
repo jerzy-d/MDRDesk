@@ -17,8 +17,11 @@ namespace ClrMDRIndex
 
         public static ulong GetReferenceFieldAddress(ulong addr, ClrInstanceField fld, bool intern)
         {
+            Debug.Assert(fld != null);
             object valObj = fld.GetValue(addr, intern, false);
-            return valObj == null ? Constants.InvalidAddress : (ulong)valObj;
+            if (valObj == null) return Constants.InvalidAddress;
+            Debug.Assert(valObj is ulong);
+            return (ulong)valObj;
         }
 
         //
@@ -932,8 +935,9 @@ namespace ClrMDRIndex
                             //if (TypeExtractor.IsString(fldKind))
                             //    return (string)fld.GetValue(addr, false, true);
                             ulong strAddr = (ulong)fld.GetValue(addr, intern, false);
-                            string str = (string)fldType.GetValue(strAddr);
-                            return str;
+                            return GetStringAtAddress(strAddr, heap);
+                            //string str = (string)fldType.GetValue(strAddr);
+                            //return str;
                         }
                         catch (Exception ex)
                         {
@@ -1015,40 +1019,58 @@ namespace ClrMDRIndex
         }
 
 
-        public static string GetFieldValue(IndexProxy ndxProxy, ClrHeap heap, ulong addr, ClrInstanceField fld, bool intern, out ClrType fldType, out ClrElementKind kind, out ulong fldItemAddr)
+        public static string GetFieldValue(IndexProxy ndxProxy, ClrHeap heap, ulong addr, ClrInstanceField fld, bool intern, out ClrType fldType, out ClrElementKind kind, out ulong fldAddr)
         {
             fldType = fld.Type;
-            fldItemAddr = Constants.InvalidAddress;
             kind = TypeExtractor.GetElementKind(fldType);
-            var fldAddr = fld.GetAddress(addr, intern);
-            var fldObj = fld.GetValue(addr, intern, false);
-
-            if (fldObj != null && fldObj is ulong)
+            fldAddr = Constants.InvalidAddress;
+            if (TypeExtractor.IsStruct(kind))
             {
-                fldItemAddr = (ulong)fldObj;
+                fldAddr = fld.GetAddress(addr, true);
+                return Utils.RealAddressString(fldAddr);
+            }
+
+            object fldObj = null;
+            var specKind = TypeExtractor.GetSpecialKind(kind);
+            if (specKind != ClrElementKind.Unknown)
+            {
+                fldAddr = fld.GetAddress(addr, true);
+                switch (specKind)
+                {
+                    case ClrElementKind.Guid:
+                        return GuidValue(fldAddr, fld);
+                    case ClrElementKind.DateTime:
+                        return DateTimeValue(fldAddr, fld);
+                    case ClrElementKind.TimeSpan:
+                        return TimeSpanValue(fldAddr, fld);
+                    case ClrElementKind.Decimal:
+                        return DecimalValue(fldAddr, fld);
+                    case ClrElementKind.Exception:
+                        return Utils.RealAddressString(fldAddr);
+                    case ClrElementKind.Enum:
+                        return GetEnumString(addr, fld, false);
+                    case ClrElementKind.Free:
+                    case ClrElementKind.SystemVoid: // TODO JRD -- get the pointer address?
+                        fldAddr = GetReferenceFieldAddress(addr, fld, false);
+                        return Utils.RealAddressString(fldAddr);
+                }
+
                 if (TypeExtractor.IsAmbiguousKind(kind))
                 {
-                    var tempType = heap.GetObjectType(fldItemAddr);
+                    fldAddr = GetReferenceFieldAddress(addr, fld, false);
+                    var tempType = heap.GetObjectType(fldAddr);
                     if (tempType != null)
                     {
                         fldType = tempType;
                         kind = TypeExtractor.GetElementKind(fldType);
-                        fldAddr = fldItemAddr;
+                        specKind = TypeExtractor.GetSpecialKind(kind);
                     }
                 }
-
             }
 
-            if (TypeExtractor.IsStruct(kind))
-            {
-                return Utils.RealAddressString(fldAddr);
-            }
-            if (TypeExtractor.IsObjectReference(kind))
-            {
-                fldItemAddr = (ulong)fldObj;
-            }
+            if (kind == ClrElementKind.Unknown)
+                throw new ApplicationException("[ValueExtractor.GetFieldValue(...)] Some strange address: " + Utils.RealAddressString(addr) + " fld " + fld.Name + " " + Utils.RealAddressString(fldAddr));
 
-            var specKind = TypeExtractor.GetSpecialKind(kind);
             if (specKind != ClrElementKind.Unknown)
             {
                 switch (specKind)
@@ -1066,10 +1088,9 @@ namespace ClrMDRIndex
                     case ClrElementKind.Enum:
                         return GetEnumString(fldAddr, fld, intern);
                     case ClrElementKind.Free:
-                    case ClrElementKind.Abstract:
-                    case ClrElementKind.SystemVoid:
-                    case ClrElementKind.SystemObject:
-                        return Utils.RealAddressString(fldItemAddr);
+                    case ClrElementKind.SystemVoid: // TODO JRD -- get the pointer address?
+                        fldAddr = GetReferenceFieldAddress(addr, fld, false);
+                        return Utils.RealAddressString(fldAddr);
                     default:
                         return Utils.RealAddressString(fldAddr);
                 }
@@ -1079,99 +1100,97 @@ namespace ClrMDRIndex
                 switch (kind)
                 {
                     case ClrElementKind.String:
-                        ulong faddr;
-                        if (heap.ReadPointer(fldAddr, out faddr))
-                            return GetStringAtAddress(faddr, heap);
+                        fldAddr = GetReferenceFieldAddress(addr, fld, false);
+                        if (fldAddr != Constants.InvalidAddress)
+                            return GetStringAtAddress(fldAddr, heap);
                         else
                             return Constants.NullValue;
                     case ClrElementKind.SZArray:
                     case ClrElementKind.Array:
                     case ClrElementKind.Object:
                     case ClrElementKind.Class:
-                        return Utils.RealAddressString(fldItemAddr);
-                    case ClrElementKind.Unknown:
-                        return Utils.RealAddressString(fldAddr) + Constants.HeavyAsteriskPadded + Utils.RealAddressString(fldItemAddr);
+                        fldAddr = GetReferenceFieldAddress(addr, fld, false);
+                        return Utils.RealAddressString(fldAddr);
                     default:
                         return PrimitiveValue(addr, fld, intern);
                 }
             }
 
-
             return Constants.NullValue;
         }
 
 
-        public static InstanceValue GetFieldValue(IndexProxy ndxProxy, ClrHeap heap, ClrType clrType, ulong addr, InstanceValue parent, int fldNdx, out string error)
-        {
-            error = null;
-            var fld = clrType.Fields[fldNdx];
-            var typeId = ndxProxy.GetTypeId(fld.Type.Name);
-            var kind = TypeExtractor.GetElementKind(fld.Type);
-            if (kind == ClrElementKind.Unknown)
-            {
-                // TODO JRD
-                return null;
-            }
-            if (TypeExtractor.IsStruct(kind))
-            {
-                // TODO JRD
-                return null;
-            }
-            var specKind = TypeExtractor.GetSpecialKind(kind);
-            string value;
-            if (specKind != ClrElementKind.Unknown)
-            {
-                switch (specKind)
-                {
-                    case ClrElementKind.Guid:
-                        value = GetGuidValue(addr, clrType);
-                        return new InstanceValue(typeId, kind, addr, clrType.Name, value, Utils.RealAddressString(addr), fldNdx, parent);
-                    case ClrElementKind.DateTime:
-                        value = GetDateTimeValue(addr, clrType);
-                        return new InstanceValue(typeId, kind, addr, clrType.Name, value, Utils.RealAddressString(addr), fldNdx, parent);
-                    case ClrElementKind.TimeSpan:
-                        value = GetTimeSpanValue(addr, clrType);
-                        return new InstanceValue(typeId, kind, addr, clrType.Name, value, Utils.RealAddressString(addr), fldNdx, parent);
-                    case ClrElementKind.Decimal:
-                        value = GetDecimalValue(addr, clrType, "0,0.00");
-                        return new InstanceValue(typeId, kind, addr, clrType.Name, value, Utils.RealAddressString(addr), fldNdx, parent);
-                    case ClrElementKind.Exception:
-                        value = GetShortExceptionValue(addr, clrType, heap);
-                        return new InstanceValue(typeId, kind, addr, clrType.Name, value, Utils.RealAddressString(addr), fldNdx, parent);
-                    case ClrElementKind.Free:
-                    case ClrElementKind.Abstract:
-                    case ClrElementKind.SystemVoid:
-                    case ClrElementKind.SystemObject:
-                        return new InstanceValue(typeId, kind, addr, clrType.Name, string.Empty, Utils.RealAddressString(addr), fldNdx, parent);
-                    default:
-                        error = "Unexpected special kind";
-                        return new InstanceValue(typeId, kind, addr, clrType.Name, string.Empty, Utils.RealAddressString(addr), fldNdx, parent);
-                }
-            }
-            else
-            {
-                //switch (kind)
-                //{
-                //	case ClrElementKind.String:
-                //		return new KeyValuePair<string, InstanceValue>(null, null);
-                //	case ClrElementKind.SZArray:
-                //	case ClrElementKind.Array:
-                //		return new KeyValuePair<string, InstanceValue>(null, null);
-                //	case ClrElementKind.Object:
-                //	case ClrElementKind.Class:
+        //public static InstanceValue GetFieldValue(IndexProxy ndxProxy, ClrHeap heap, ClrType clrType, ulong addr, InstanceValue parent, int fldNdx, out string error)
+        //{
+        //    error = null;
+        //    var fld = clrType.Fields[fldNdx];
+        //    var typeId = ndxProxy.GetTypeId(fld.Type.Name);
+        //    var kind = TypeExtractor.GetElementKind(fld.Type);
+        //    if (kind == ClrElementKind.Unknown)
+        //    {
+        //        // TODO JRD
+        //        return null;
+        //    }
+        //    if (TypeExtractor.IsStruct(kind))
+        //    {
+        //        // TODO JRD
+        //        return null;
+        //    }
+        //    var specKind = TypeExtractor.GetSpecialKind(kind);
+        //    string value;
+        //    if (specKind != ClrElementKind.Unknown)
+        //    {
+        //        switch (specKind)
+        //        {
+        //            case ClrElementKind.Guid:
+        //                value = GetGuidValue(addr, clrType);
+        //                return new InstanceValue(typeId, kind, addr, clrType.Name, value, Utils.RealAddressString(addr), fldNdx, parent);
+        //            case ClrElementKind.DateTime:
+        //                value = GetDateTimeValue(addr, clrType);
+        //                return new InstanceValue(typeId, kind, addr, clrType.Name, value, Utils.RealAddressString(addr), fldNdx, parent);
+        //            case ClrElementKind.TimeSpan:
+        //                value = GetTimeSpanValue(addr, clrType);
+        //                return new InstanceValue(typeId, kind, addr, clrType.Name, value, Utils.RealAddressString(addr), fldNdx, parent);
+        //            case ClrElementKind.Decimal:
+        //                value = GetDecimalValue(addr, clrType, "0,0.00");
+        //                return new InstanceValue(typeId, kind, addr, clrType.Name, value, Utils.RealAddressString(addr), fldNdx, parent);
+        //            case ClrElementKind.Exception:
+        //                value = GetShortExceptionValue(addr, clrType, heap);
+        //                return new InstanceValue(typeId, kind, addr, clrType.Name, value, Utils.RealAddressString(addr), fldNdx, parent);
+        //            case ClrElementKind.Free:
+        //            case ClrElementKind.Abstract:
+        //            case ClrElementKind.SystemVoid:
+        //            case ClrElementKind.SystemObject:
+        //                return new InstanceValue(typeId, kind, addr, clrType.Name, string.Empty, Utils.RealAddressString(addr), fldNdx, parent);
+        //            default:
+        //                error = "Unexpected special kind";
+        //                return new InstanceValue(typeId, kind, addr, clrType.Name, string.Empty, Utils.RealAddressString(addr), fldNdx, parent);
+        //        }
+        //    }
+        //    else
+        //    {
+        //        //switch (kind)
+        //        //{
+        //        //	case ClrElementKind.String:
+        //        //		return new KeyValuePair<string, InstanceValue>(null, null);
+        //        //	case ClrElementKind.SZArray:
+        //        //	case ClrElementKind.Array:
+        //        //		return new KeyValuePair<string, InstanceValue>(null, null);
+        //        //	case ClrElementKind.Object:
+        //        //	case ClrElementKind.Class:
 
-                //		var inst = new InstanceValue(typeId, kind, addr, clrType.Name, string.Empty, Utils.AddressString(decoratedAddr), fldNdx, parent);
-                //		return new KeyValuePair<string, InstanceValue>(error, inst);
-                //	case ClrElementKind.Unknown:
-                //		return new KeyValuePair<string, InstanceValue>(null, null);
-                //	default:
-                //		return new KeyValuePair<string, InstanceValue>(null, null);
-                //}
-            }
+        //        //		var inst = new InstanceValue(typeId, kind, addr, clrType.Name, string.Empty, Utils.AddressString(decoratedAddr), fldNdx, parent);
+        //        //		return new KeyValuePair<string, InstanceValue>(error, inst);
+        //        //	case ClrElementKind.Unknown:
+        //        //		return new KeyValuePair<string, InstanceValue>(null, null);
+        //        //	default:
+        //        //		return new KeyValuePair<string, InstanceValue>(null, null);
+        //        //}
+        //    }
 
 
-            return null;
-        }
+        //    return null;
+        //}
 
 
         public static InstanceValue[] GetFieldValues(IndexProxy ndxProxy, ClrHeap heap, ClrType clrType, ClrElementKind kind, ulong addr, InstanceValue parent, out string error)
@@ -1359,7 +1378,7 @@ namespace ClrMDRIndex
             return (int)obj;
         }
 
-        #region List<T> content
+        #region System.Collections.Generic.List<T>
 
         public static Tuple<string, ClrType, ClrType, ClrElementKind, ulong, int> ListInfo(ClrHeap heap, ulong addr)
         {

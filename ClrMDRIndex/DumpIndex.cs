@@ -155,8 +155,6 @@ namespace ClrMDRIndex
                 if (!index.InitDump(out error, progress)) return null;
                 index._indexProxy = new IndexProxy(index.Dump, index._instances, index._instanceTypes, index._typeNames, index.TypeKinds,
                     index._roots, index._fileMoniker);
-                //if (index._references != null)
-                //	index._references.SetIndexProxy(index.IndexProxy);
                 return index;
             }
             catch (Exception ex)
@@ -212,17 +210,6 @@ namespace ClrMDRIndex
                     Array.Sort(_reversedTypeNames, new KvStrIntKeyCmp());
                     _typeNamespaces = GetTypeNamespaceOrdering(_reversedTypeNames);
                 }
-
-                //// check if we indexed referrences, and load them if we did
-                ////
-                //{
-                //	string refsFilePath = _fileMoniker.GetFilePath(_currentRuntimeIndex, Constants.MapRefsObjectFieldPostfix);
-                //	if (File.Exists(refsFilePath))
-                //	{
-                //		_references = new References(_currentRuntimeIndex, _fileMoniker);
-                //		_references.Init(out error);
-                //	}
-                //}
 
                 if (error != null) return false;
 
@@ -404,7 +391,6 @@ namespace ClrMDRIndex
 
             return result;
         }
-
 
         /// <summary>
         /// Read a text file with general dump information.
@@ -977,8 +963,7 @@ namespace ClrMDRIndex
                         var inst = instances[i];
                         if (!set.Add(inst)) continue;
 
-                        var ancestors = //_references.GetReferences(inst, References.Direction.FieldParent, References.DataSource.All, out error);
-                        _instanceReferences.GetReferences(inst, out error, InstanceReferences.ReferenceType.Ancestors | InstanceReferences.ReferenceType.All);
+                        var ancestors = _instanceReferences.GetReferences(inst, out error, InstanceReferences.ReferenceType.Ancestors | InstanceReferences.ReferenceType.All);
 
 
                         for (int j = 0, jcnt = ancestors.Length; j < jcnt; ++j)
@@ -1022,76 +1007,6 @@ namespace ClrMDRIndex
                 return (error, null);
             }
         }
-
-        //public Tuple<DependencyNode, int> GetAddressesDescendants(int typeId, ulong[] addresses, int maxLevel, out string error)
-        //{
-        //    error = null;
-        //    int nodeCount = 0;
-        //    try
-        //    {
-        //        string typeName = GetTypeName(typeId);
-        //        DependencyNode root = new DependencyNode(0, typeId, typeName, string.Empty, addresses);
-        //        ++nodeCount;
-        //        HashSet<ulong> addrSet = new HashSet<ulong>();
-        //        Queue<DependencyNode> que = new Queue<DependencyNode>(1024);
-
-        //        DependencyNode[] nodes = DependencyNode.BuildBranches(Types, _instances, InstanceTypeIds, StringIds, FieldDependencies, root, addresses, out error);
-        //        for (int i = 0, icnt = nodes.Length; i < icnt; ++i)
-        //        {
-        //            que.Enqueue(nodes[i]);
-        //            ++nodeCount;
-        //        }
-
-        //        while (que.Count > 0)
-        //        {
-        //            var node = que.Dequeue();
-        //            if (node.Level == maxLevel) continue;
-
-        //            nodes = DependencyNode.BuildBranches(Types, _instances, InstanceTypeIds, StringIds, FieldDependencies, node, node.Addresses, out error);
-        //            for (int i = 0, icnt = nodes.Length; i < icnt; ++i)
-        //            {
-        //                que.Enqueue(nodes[i]);
-        //                ++nodeCount;
-        //            }
-        //        }
-
-        //        return Tuple.Create(root, nodeCount);
-        //    }
-        //    catch (Exception ex)
-        //    {
-        //        error = Utils.GetExceptionErrorString(ex);
-        //        return null;
-        //    }
-        //}
-
-        private void GetInstanceNodeExtraInfo(object data)
-        {
-            var args = data as Tuple<ulong[], ClrtRoots, BlockingCollection<InstanceNode>>;
-            var instances = args.Item1;
-            var roots = args.Item2;
-            var que = args.Item3;
-
-            while (true)
-            {
-                InstanceNode node = que.Take();
-                if (node == null) break;
-                var instNdx = Array.BinarySearch(instances, node.Address);
-                if (instNdx >= 0) node.SetInstanceIndex(instNdx);
-                ClrtRoot root;
-                bool inFinalizerQueue;
-                if (roots.GetRootInfo(node.Address, out root, out inFinalizerQueue))
-                {
-                    node.SetRootInfo(new RootInfo(root, inFinalizerQueue));
-                }
-            }
-        }
-
-
-        //public KeyValuePair<IndexNode, int> GetReferenceNodes(int instNdx, References.Direction dir, References.DataSource source, out string error, int level)
-        //{
-        //    return _references.GetReferenceNodes(instNdx, dir, source, out error, level);
-        //}
-
 
         public ListingInfo GetParentReferencesReport(ulong addr, int level = Int32.MaxValue)
         {
@@ -1155,14 +1070,6 @@ namespace ClrMDRIndex
             }
             return lst.ToArray();
         }
-
-
-        //public KeyValuePair<IndexNode, int>[] GetReferenceNodes(ulong[] typeInstances, References.Direction  dir, References.DataSource dataSource, out string error, int level)
-        //{
-        //    int[] indices = GetRealAddressIndices(typeInstances);
-        //    return _references.GetReferenceNodes(indices, References.Direction.FieldParent, References.DataSource.All, out error, level);
-        //}
-
 
         /// <summary>
         /// Get references for all instances of a given type.
@@ -1288,102 +1195,9 @@ namespace ClrMDRIndex
             return new ListingInfo(null, items, colInfos, sb.ToString());
         }
 
-
-        public AncestorNode[] GetGcRootPath(AncestorNode gcRootNode, AncestorNode targetNode)
-        {
-            List<AncestorNode> lst = new List<AncestorNode>(gcRootNode.Level + 1);
-            lst.Add(gcRootNode);
-            var curNode = gcRootNode;
-            while (!Object.ReferenceEquals(curNode, targetNode))
-            {
-                curNode = curNode.Parent;
-                lst.Add(curNode);
-            }
-            return lst.ToArray();
-        }
-
         #endregion instance references
 
         #region instance value
-
-        //public Tuple<InstanceValue, string> GetInstanceValue(ulong addr, out string error)
-        //{
-        //    error = null;
-        //    StringBuilder sb;
-        //    try
-        //    {
-        //        InstanceValue inst;
-        //        var realAddr = Utils.RealAddress(addr);
-        //        var typeId = GetTypeId(addr);
-        //        var heap = Dump.Heap;
-        //        var clrType = heap.GetObjectType(realAddr);
-        //        if (clrType == null)
-        //        {
-        //            error = "DumpIndex.GetInstanceValue" + Constants.HeavyGreekCrossPadded + "Object at address: " +
-        //                    Utils.AddressString(addr) + " is null.";
-        //            return null;
-        //        }
-
-        //        if (clrType.Name == "Free" || clrType.Name == "Error")
-        //        {
-        //            error = "DumpIndex.GetInstanceValue" + Constants.HeavyGreekCrossPadded + "Invalid object at address: " +
-        //                    Utils.AddressString(addr) + ", type name is: " + clrType.Name + ".";
-        //            return null;
-        //        }
-
-        //        var newkind = TypeExtractor.GetElementKind(clrType);
-
-
-        //        if (TypeExtractor.IsArray(newkind))
-        //        {
-        //            var aryResult = CollectionContent.getAryContent(heap, realAddr);
-        //            if (aryResult.Item1 != null)
-        //            {
-        //                error = aryResult.Item1;
-        //                return null;
-        //            }
-        //            sb = StringBuilderCache.Acquire(StringBuilderCache.MaxCapacity);
-        //            sb.Append("Type:      ").AppendLine(aryResult.Item2.Name);
-        //            sb.Append("Item Type: ").AppendLine(aryResult.Item3.Name);
-        //            sb.Append("Address:   ").AppendLine(Utils.AddressString(addr));
-        //            sb.Append("Lenght:    ").AppendLine(aryResult.Item4.ToString());
-        //            inst = new InstanceValue(typeId, newkind, addr, aryResult.Item2.Name, aryResult.Item3.Name,
-        //                Utils.BaseArrayName(aryResult.Item2.Name, aryResult.Item4));
-        //            inst.AddArrayValues(aryResult.Item5);
-        //            return new Tuple<InstanceValue, string>(inst, StringBuilderCache.GetStringAndRelease(sb));
-        //        }
-
-        //        if (TypeKinds.IsClassStruct(kind))
-        //        {
-        //            var result = Types.getClassStructValue(this.IndexProxy, heap, addr, clrType, kind, -1);
-        //            error = result.Item1;
-        //            string info = string.Empty;
-        //            if (result.Item2 != null)
-        //            {
-        //                sb = StringBuilderCache.Acquire(StringBuilderCache.MaxCapacity);
-        //                sb.Append("Type:      ").AppendLine(result.Item2.TypeName);
-        //                sb.Append("Address:   ").AppendLine(Utils.AddressString(addr));
-        //                info = StringBuilderCache.GetStringAndRelease(sb);
-        //                result.Item2?.SortByFieldName();
-        //            }
-        //            return new Tuple<InstanceValue, string>(result.Item2, info);
-        //        }
-
-        //        var val = Types.getTypeValue(heap, realAddr, clrType, kind);
-        //        var typeName = GetTypeName(typeId);
-        //        sb = StringBuilderCache.Acquire(StringBuilderCache.MaxCapacity);
-        //        sb.Append("Type:      ").AppendLine(typeName);
-        //        sb.Append("Address:   ").AppendLine(Utils.AddressString(addr));
-        //        var newKind = TypeExtractor.GetElementKind(clrType);
-        //        inst = new InstanceValue(typeId, newKind, addr, typeName, string.Empty, val);
-        //        return new Tuple<InstanceValue, string>(inst, StringBuilderCache.GetStringAndRelease(sb));
-        //    }
-        //    catch (Exception ex)
-        //    {
-        //        error = Utils.GetExceptionErrorString(ex);
-        //        return null;
-        //    }
-        //}
 
         public (string, InstanceValue, TypeExtractor.KnownTypes) GetInstanceValue(ulong addr, InstanceValue parent)
         {
@@ -1413,6 +1227,7 @@ namespace ClrMDRIndex
                             return GetSortedListContent(addr, typeId, typeName);
                         case TypeExtractor.KnownTypes.HashSet:
                             return GetHashSetContent(addr, typeId, typeName);
+                        // TODO JRD -- generic list add
                     }
                 }
 
@@ -1513,8 +1328,7 @@ namespace ClrMDRIndex
                 var instNdx = GetInstanceIndex(addr);
                 if (instNdx >= 0)
                 {
-                    var ancestors = //_references.GetReferences(instNdx, References.Direction.FieldParent, References.DataSource.All,out error);
-                    _instanceReferences.GetReferences(instNdx, out error, InstanceReferences.ReferenceType.Ancestors | InstanceReferences.ReferenceType.All);
+                    var ancestors = _instanceReferences.GetReferences(instNdx, out error, InstanceReferences.ReferenceType.Ancestors | InstanceReferences.ReferenceType.All);
 
                     if (error != null && !Utils.IsInformation(error)) return null;
                     if (ancestors != null && ancestors.Length > 0)
@@ -1523,12 +1337,7 @@ namespace ClrMDRIndex
 
                 // get instance info: fields and values
                 //
-                //var heap = GetFreshHeap();
-                //var result = FQry.getInstanceValue(_indexProxy, heap, addr, fldNdx);
-
                 (string err, InstanceValue inst, TypeExtractor.KnownTypes knownType) = GetInstanceValue(addr, null);
-                //var instValue = GetInstanceValue(addr, out error);
-                //instValue.Item1?.SortByFieldName();
                 return new InstanceValueAndAncestors(inst, ancestorInfos);
             }
             catch (Exception ex)
@@ -1624,137 +1433,12 @@ namespace ClrMDRIndex
             try
             {
                 return GetInstanceFieldAddresses2(instances, types, out error);
-
-                //bool hasAmbiguousField = Array.FindIndex(types, t => t.IsAlternative) != -1;
-                //if (!hasAmbiguousField)
-                //{
-                //    List<int> fieldIndices = new List<int>(types.Length - 1);
-                //    // we need to get addresses of parent, starting at root instances, first item in the list is root type
-                //    for (int j = 1, jcnt = types.Length; j < jcnt; ++j)
-                //    {
-                //        if (types[j].IsDummy) continue;
-                //        fieldIndices.Add(types[j].FieldIndex);
-                //    }
-                //    return GetInstanceFieldAddresses2(instances, fieldIndices.ToArray(), out error);
-                //}
-
-                //var heap = Heap;
-                //ClrType rootType = null;
-                //ClrInstanceField[] fields = new ClrInstanceField[types.Length];
-                //int icount = instances.Length;
-                //List<ulong> addresses = new List<ulong>(instances.Length);
-
-                //for (int i = 0; i < icount; ++i)
-                //{
-                //    var found = true;
-                //    var addr = instances[i];
-                //    rootType = heap.GetObjectType(addr);
-                //    if (rootType == null) continue;
-
-                //    var curType = rootType;
-                //    var curAddr = addr;
-                //    for (int j = 1, jcnt = types.Length; j < jcnt; ++j)
-                //    {
-                //        var fld = curType.Fields[types[j].FieldIndex];
-                //        curAddr = ValueExtractor.GetReferenceFieldAddress(curAddr, fld, false);
-                //        curType = heap.GetObjectType(curAddr);
-                //        if (!Utils.SameStrings(curType.Name, types[j].TypeName)) { found = false; break; }
-                //    }
-
-                //    if (found)
-                //    {
-                //        addresses.Add(curAddr);
-                //    }
-                //}
-                //return addresses.ToArray();
             }
             catch (Exception ex)
             {
                 error = Utils.GetExceptionErrorString(ex);
                 return null;
             }
-
-        }
-
-        private ulong[] GetInstanceFieldAddresses(ulong[] instances, int[] fieldIndices, out string error)
-        {
-            error = null;
-            List<ulong> addresses = new List<ulong>(instances.Length);
-            try
-            {
-                var heap = Heap;
-                int i = 0;
-                ClrType rootType = null;
-                ClrInstanceField[] fields = new ClrInstanceField[fieldIndices.Length];
-                int icount = instances.Length;
-
-                bool done = true;
-                for (; i < icount; ++i)
-                {
-                    done = true;
-                    var addr = instances[i];
-                    rootType = heap.GetObjectType(addr);
-                    if (rootType == null) continue;
-                    var curType = rootType;
-                    var curAddr = addr;
-                    for (int j = 0, jcnt = fieldIndices.Length; j < jcnt; ++j)
-                    {
-                        if (fields[j] != null) continue;
-                        var fld = curType.Fields[fieldIndices[j]];
-                        curAddr = ValueExtractor.GetReferenceFieldAddress(curAddr, fld, false);
-                        curType = heap.GetObjectType(curAddr);
-                        if (curType == null) { done = false; break; }
-                        fields[j] = fld;
-                    }
-
-                    if (done) break;
-                }
-                if (!done)
-                {
-                    error = Utils.GetErrorString("Type Report", "Cannot resolve field chain.", rootType != null ? rootType.Name : "Getting root type failed.");
-                    return null;
-                }
-                for (; i < icount; ++i)
-                {
-                    var addr = instances[i];
-                    for (int j = 0, jcnt = fieldIndices.Length; j < jcnt; ++j)
-                    {
-                        var fld = fields[j];
-                        addr = ValueExtractor.GetReferenceFieldAddress(addr, fld, false);
-                    }
-                    if (addr != Constants.InvalidAddress)
-                        addresses.Add(addr);
-                }
-
-                return addresses.ToArray();
-            }
-            catch (Exception ex)
-            {
-                error = Utils.GetExceptionErrorString(ex);
-                return null;
-            }
-
-        }
-
-        private ulong[] GetInstanceFieldAddresses2(ulong[] instances, int[] fieldIndices, out string error)
-        {
-            error = null;
-            ulong[] addresses = instances;
-            try
-            {
-                for (int i = 0, icnt = fieldIndices.Length; i < icnt; ++i)
-                {
-                    addresses = GetInstanceFieldAddresses(addresses, fieldIndices[i], out error);
-                    if (addresses == null) return null;
-                }
-                return addresses;
-            }
-            catch (Exception ex)
-            {
-                error = Utils.GetExceptionErrorString(ex);
-                return null;
-            }
-
         }
 
         private ulong[] GetInstanceFieldAddresses2(ulong[] instances, ClrtDisplayableType[] fields, out string error)
@@ -1896,7 +1580,16 @@ namespace ClrMDRIndex
 
             if (qry.Field == null)
             {
-                qry.SetField(parentQry.Type);
+                ClrInstanceField pFld;
+                bool pmatch = qry.ParentFieldMatch(parentQry.Type, out pFld);
+                qry.SetField(pFld);
+                if (!pmatch)
+                {
+                    ulong faddr = ValueExtractor.GetReferenceFieldAddress(addr, pFld, qry.IsInternal);
+                    KeyValuePair<ClrType, ClrElementKind> kv = TypeExtractor.TryGetRealType(heap, faddr);
+                    qry.SetTypeAndKind(kv.Key, kv.Value);
+                }
+
                 if (qry.HasChildren)
                 {
                     ulong faddr = ValueExtractor.GetReferenceFieldAddress(addr, qry.Field, qry.IsInternal);
@@ -2086,61 +1779,6 @@ namespace ClrMDRIndex
             return colInfos.ToArray();
         }
 
-
-
-///// <summary>
-///// Get type report values for one instance.
-///// </summary>
-///// <param name="heap">Current dump's heap (from MDR).</param>
-///// <param name="qrys">Info about the values to be collected.</param>
-///// <param name="addresses">Buffer for parent addresses.</param>
-///// <param name="values">Buffer for values as strings.</param>
-///// <param name="addr">An instance decorated address.</param>
-///// <returns>True if values were accepted by filter(s).</returns>
-//private bool GetTypeValues(ClrHeap heap, TypeValueQuery[] qrys, ulong[] addresses, string[] values, ulong addr)
-//        {
-//            // first item collects the object address
-//            //
-//            values[0] = Utils.RealAddressString(addr);
-//            addr = Utils.RealAddress(addr); // switch to real address
-//            addresses[0] = addr;
-//            for (int i = 1, icnt = qrys.Length; i < icnt; ++i)
-//            {
-//                values[i] = null;
-//                addresses[i] = Constants.InvalidAddress;
-//                var qry = qrys[i];
-//                var qparent = qrys[qry.ParentIndex];
-//                var parentAddr = addresses[qry.ParentIndex];
-//                if (parentAddr == Constants.InvalidAddress)
-//                {
-//                    if (qry.HasFilter)
-//                    {
-//                        if (!qry.Filter.AcceptNull()) return false;
-//                    }
-//                    values[i] = Constants.NullValue;
-//                    continue;
-//                }
-//                if (qry.HasFilter)
-//                {
-//                    object val = ValueExtractor.GetFieldValue(heap, parentAddr, qry.Field, qry.Type, qry.Kind, TypeExtractor.IsStruct(qparent.Kind), true);
-//                    if (!qry.Filter.Accept(val)) return false;
-//                    if (qry.GetValue)
-//                        values[i] = ValueExtractor.ValueToString(val, qry.Kind);
-//                    if (TypeExtractor.IsNonStringObjectReference(qry.Kind))
-//                        addresses[i] = (ulong)val;
-//                    continue;
-//                }
-//                if (qry.GetValue)
-//                {
-//                    values[i] = (string)ValueExtractor.GetFieldValue(heap, parentAddr, qry.Field, qry.Type, qry.Kind, TypeExtractor.IsStruct(qparent.Kind), false);
-//                }
-//                if (TypeExtractor.IsNonStringObjectReference(qry.Kind))
-//                    addresses[i] = (ulong)qry.Field.GetValue(parentAddr, TypeExtractor.IsStruct(qparent.Kind), false);
-//            }
-//            return true;
-//        }
-
-
         #endregion type values report
 
         #region disassemble
@@ -2295,7 +1933,7 @@ namespace ClrMDRIndex
                 if (ids.Length < 1) return new ListingInfo(Constants.InformationSymbolHeader + "No System.WeakReference instances found.");
                 var indices = new KeyValuePair<int, int[]>[ids.Length];
                 var dct = new SortedDictionary<int, Dictionary<int, List<int>>>();
-                var heap = Dump.GetFreshHeap();
+                var heap = Dump.Heap;
                 for (int i = 0, icnt = ids.Length; i < icnt; ++i)
                 {
                     var refs = GetTypeAllInstanceIndices(ids[i]);
@@ -2395,8 +2033,6 @@ namespace ClrMDRIndex
                 string descr = StringBuilderCache.GetStringAndRelease(sb);
 
                 return new ListingInfo(null, infoAry, colInfos, descr, addrData);
-
-                // ReSharper restore InconsistentNaming
             }
             catch (Exception ex)
             {
@@ -2411,21 +2047,9 @@ namespace ClrMDRIndex
             return GetTypeAddresses(ids, out totalCount, out unrootedCount);
         }
 
-        //public KeyValuePair<int, int[]>[] GetTypeWithPrefixIndices(string prefix, bool includeArrays, out int totalCount)
-        //{
-        //	int[] ids = GetTypeIds(prefix, includeArrays);
-        //	return GetTypeAddresses(ids, out totalCount);
-        //}
-
         #endregion weakreferences
 
         #region strings
-
-        public string GetString(int id)
-        {
-            if (id < 0 || id >= _stringIds.Length) return Constants.Unknown;
-            return _stringIds[id];
-        }
 
         public bool AreStringDataFilesAvailable()
         {
@@ -2584,7 +2208,6 @@ namespace ClrMDRIndex
                 .Append(" Unique Total Size: ").Append(Utils.LargeNumberString(otherTotalUniqueSize)).AppendLine();
 
             return new ListingInfo(null, listing, colInfos, sb.ToString());
-            // ReSharper restore RedundantAssignment
         }
 
         private void GetStringsDiffLine(string str, int myCount, int otCount, uint size, List<string> data)
@@ -2637,7 +2260,7 @@ namespace ClrMDRIndex
                 Debug.Assert(strTypeId != Constants.InvalidIndex);
                 ulong[] addresses = GetTypeRealAddresses(strTypeId);
                 var runtime = Dump.Runtime;
-                runtime.Flush();
+                //runtime.Flush();
                 var heap = runtime.Heap;
 
                 var stats = ClrtDump.GetStringStats(heap, addresses, DumpPath, out error);
@@ -2682,7 +2305,7 @@ namespace ClrMDRIndex
                 int unrootedCount;
                 ulong[] addresses = GetTypeInstances(strTypeId, out unrootedCount);
                 var runtime = Dump.Runtime;
-                runtime.Flush();
+                //runtime.Flush();
                 var heap = runtime.Heap;
 
 
@@ -2792,27 +2415,6 @@ namespace ClrMDRIndex
             }
         }
 
-        //public static ulong[] GetStringAddresses(ClrHeap heap, string str, ulong[] addresses, out string error)
-        //{
-        //	error = null;
-        //	try
-        //	{
-        //		List<ulong> lst = new List<ulong>(10 * 1024);
-        //		for (int i = 0, icnt = addresses.Length; i < icnt; ++i)
-        //		{
-        //			var heapStr = ValueExtractor.GetStringAtAddress(addresses[i], heap);
-        //			if (Utils.SameStrings(str, heapStr))
-        //				lst.Add(addresses[i]);
-        //		}
-        //		return lst.ToArray();
-        //	}
-        //	catch (Exception ex)
-        //	{
-        //		error = Utils.GetExceptionErrorString(ex);
-        //		return null;
-        //	}
-        //}
-
         #endregion strings
 
         #region segments/generations/sizes
@@ -2842,7 +2444,6 @@ namespace ClrMDRIndex
             if (error != null) return new KeyValuePair<uint, uint>(0, 0);
             var baseSize = baseSizes[instNdx];
             return new KeyValuePair<uint, uint>(baseSize, totalSize);
-
         }
 
         public Tuple<int[], ulong[], int[], ulong[], int[], ulong[]> GetTotalGenerationDistributions(out string error)
@@ -2850,45 +2451,6 @@ namespace ClrMDRIndex
             var sizes = GetSizeArray(false, out error);
             return ClrtSegment.GetTotalGenerationDistributions(_currentRuntimeIndex, _segments, _instances, sizes, _fileMoniker, _segmentInfoUnrooted);
         }
-
-
-        //public Tuple<string, long>[][] GetGenerationTotals()
-        //{
-        //	Tuple<int[], ulong[], int[], ulong[]> histograms =
-        //		ClrtSegment.GetTotalGenerationDistributions(_segments);
-
-        //	Tuple<string, long>[] ary0 = new Tuple<string, long>[4];
-        //	ary0[0] = new Tuple<string, long>("G0", histograms.Item1[0]);
-        //	ary0[1] = new Tuple<string, long>("G1", histograms.Item1[1]);
-        //	ary0[2] = new Tuple<string, long>("G2", histograms.Item1[2]);
-        //	ary0[3] = new Tuple<string, long>("LOH", histograms.Item1[3]);
-
-        //	Tuple<string, long>[] ary1 = new Tuple<string, long>[4];
-        //	ary1[0] = new Tuple<string, long>("G0", (long)histograms.Item2[0]);
-        //	ary1[1] = new Tuple<string, long>("G1", (long)histograms.Item2[1]);
-        //	ary1[2] = new Tuple<string, long>("G2", (long)histograms.Item2[2]);
-        //	ary1[3] = new Tuple<string, long>("LOH", (long)histograms.Item2[3]);
-
-        //	Tuple<string, long>[] ary2 = new Tuple<string, long>[4];
-        //	ary2[0] = new Tuple<string, long>("G0", histograms.Item3[0]);
-        //	ary2[1] = new Tuple<string, long>("G1", histograms.Item3[1]);
-        //	ary2[2] = new Tuple<string, long>("G2", histograms.Item3[2]);
-        //	ary2[3] = new Tuple<string, long>("LOH", histograms.Item3[3]);
-
-        //	Tuple<string, long>[] ary3 = new Tuple<string, long>[4];
-        //	ary3[0] = new Tuple<string, long>("G0", (long)histograms.Item4[0]);
-        //	ary3[1] = new Tuple<string, long>("G1", (long)histograms.Item4[1]);
-        //	ary3[2] = new Tuple<string, long>("G2", (long)histograms.Item4[2]);
-        //	ary3[3] = new Tuple<string, long>("LOH", (long)histograms.Item4[3]);
-
-        //	return new Tuple<string, long>[][]
-        //	{
-        //		ary0,
-        //		ary1,
-        //		ary2,
-        //		ary3,
-        //	};
-        //}
 
         public int[] GetGenerationHistogram(ulong[] addresses)
         {
@@ -2928,7 +2490,7 @@ namespace ClrMDRIndex
             error = null;
             try
             {
-                runtime.Flush();
+                //runtime.Flush();
                 var heap = runtime.Heap;
 
                 var segs = heap.Segments;
@@ -3394,7 +2956,7 @@ namespace ClrMDRIndex
             const int ColumnCount = 6;
             string error;
             var runtime = Dump.Runtime;
-            runtime.Flush();
+            //runtime.Flush();
             var heap = runtime.Heap;
             var myTypeDCT = GetTypeSizesInfo(out error);
             if (error != null) return new ListingInfo(error);
