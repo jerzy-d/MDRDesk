@@ -3179,6 +3179,49 @@ namespace ClrMDRIndex
 
         #endregion dump
 
+        #region testing
+
+        public bool TestInstanceValues(out string error)
+        {
+            error = null;
+            StreamWriter sw = null;
+            try
+            {
+                sw = new StreamWriter(OutputFolder + Path.DirectorySeparatorChar + "InstanceValuesTest.txt");
+                HashSet<int> doneTypes = new HashSet<int>();
+                string err;
+                InstanceValue inst;
+                TypeExtractor.KnownTypes knownType;
+                for (int i = 0, icnt = _instances.Length; i < icnt; ++i)
+                {
+                    int typeId = _instanceTypes[i];
+                    if (!doneTypes.Add(typeId)) continue;
+                    ulong addr = _instances[i];
+                    (err, inst, knownType) = GetInstanceValue(addr, null);
+                    if (err != null)
+                    {
+                        string typeName = this.GetTypeName(typeId);
+                        string logErr = DisplayableString.ReplaceNewlines(err);
+                        sw.WriteLine(Utils.RealAddressStringHeader(addr) + typeName + Constants.HeavyCheckMarkPadded + logErr);
+                    }
+                }
+                return true;
+            }
+            catch (Exception ex)
+            {
+                sw?.WriteLine("#### [DumpIndex.TestInstanceValues(...)] EXCEPTION!");
+                sw?.WriteLine(ex.ToString());
+                error = Utils.GetExceptionErrorString(ex);
+                return false;
+            }
+            finally
+            {
+                sw?.Close();
+            }
+        }
+
+        #endregion testing
+
         #region dispose
 
         volatile

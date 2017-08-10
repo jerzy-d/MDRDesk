@@ -1304,16 +1304,18 @@ namespace ClrMDRIndex
 			return map;
 		}
 
-		public static string[] CloneIntArray(string[] ary)
+		public static T[] CloneArray<T>(T[] ary)
 		{
 			var cnt = ary.Length;
-			var nary = new string[cnt];
+			var nary = new T[cnt];
 			for (int i = 0; i < cnt; ++i)
 			{
 				nary[i] = ary[i];
 			}
 			return nary;
 		}
+
+
 
 		public static string ReplaceNewlines(string str)
 		{
@@ -2563,25 +2565,7 @@ namespace ClrMDRIndex
 	        return first;
 	    }
 
-		public static int[] CloneIntArray(int[] ary)
-		{
-			const int INT_SIZE = 4;
-
-			var cnt = ary.Length;
-			var nary = new int[cnt];
-			Buffer.BlockCopy(ary, 0, nary, 0, cnt * INT_SIZE);
-			return nary;
-		}
-
-		public static T[] CloneArray<T>(T[] ary)
-		{
-			var cnt = ary.Length;
-			var nary = new T[cnt];
-			Array.Copy(ary,nary,cnt);
-			return nary;
-		}
-
-		public static int[] SortAndGetMap(int[] ary)
+        public static int[] SortAndGetMap(int[] ary)
 		{
 			int cnt = ary.Length;
 			var map = new int[cnt];

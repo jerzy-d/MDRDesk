@@ -219,6 +219,8 @@
     <Compile Include="TypeValuesReportSetup.xaml.cs">
       <DependentUpon>TypeValuesReportSetup.xaml</DependentUpon>
     </Compile>
+    <Compile Include="ValueWindows.cs" />
+    <Compile Include="IValueWindow.cs" />
     <Page Include="ClassStructDisplay.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
@@ -471,6 +473,12 @@
   </ItemGroup>
   <ItemGroup>
     <Resource Include="Images\clipboard_16xLG.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <Resource Include="Images\BehaviorAction_16x.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <Resource Include="Images\CopyToClipboard_16x.png" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <PropertyGroup>

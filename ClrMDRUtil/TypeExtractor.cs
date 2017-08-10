@@ -1189,21 +1189,31 @@ namespace ClrMDRIndex
                 ulong value = (ulong)valueObj;
                 if (value==0UL) return (null, ClrElementKind.Unknown);
                 var clrType = heap.GetObjectType(value);
+                if (clrType != null)
+                {
+                    var kind = GetElementKind(clrType);
+                    return (clrType, kind);
+                }
+            }
+            ulong faddr = fld.GetAddress(addr, true);
+            if (faddr != Constants.InvalidAddress)
+            {
+                var clrType = heap.GetObjectType(faddr);
                 var kind = GetElementKind(clrType);
                 return (clrType, kind);
             }
             return (null, ClrElementKind.Unknown);
         }
 
-        public static (ClrType, ClrInstanceField, ulong) GetReferenceTypeField(ClrHeap heap, ClrType clrType, ulong addr, string fldName)
-        {
-            ClrInstanceField fld = clrType.GetFieldByName(fldName);
-            var valueObj = fld.GetValue(addr, false);
-            Debug.Assert(valueObj is ulong);
-            ulong value = (ulong)valueObj;
-            var fldType = heap.GetObjectType(value);
-            return (fldType, fld, value);
-        }
+        //public static (ClrType, ClrInstanceField, ulong) GetReferenceTypeField(ClrHeap heap, ClrType clrType, ulong addr, string fldName)
+        //{
+        //    ClrInstanceField fld = clrType.GetFieldByName(fldName);
+        //    var valueObj = fld.GetValue(addr, false);
+        //    Debug.Assert(valueObj is ulong);
+        //    ulong value = (ulong)valueObj;
+        //    var fldType = heap.GetObjectType(value);
+        //    return (fldType, fld, value);
+        //}
         public static (ClrType, ClrInstanceField, ulong) GetStructTypeField(ClrHeap heap, ClrType clrType, ulong addr, string fldName)
         {
             ClrInstanceField fld = clrType.GetFieldByName(fldName);

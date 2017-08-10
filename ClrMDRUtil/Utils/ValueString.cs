@@ -59,4 +59,62 @@ namespace ClrMDRIndex
                 return ReplaceNewlines(_content);
         }
     }
+
+    public struct StringEx : IComparer<StringEx>, IEquatable<StringEx>
+    {
+        private const int MaxLength = 40;
+        private readonly string _content;
+        private readonly string _expo;
+
+        public StringEx(string str)
+        {
+            _content = str;
+            _expo = GetExpo(str);
+        }
+
+        public bool IsNull()
+        {
+            return _content == null;
+        }
+
+        public bool IsLong()
+        {
+            return _content != null && _content.Length > MaxLength;
+        }
+
+        public string FullContent => (_content == null) ? Constants.NonValueChar + Constants.NullValue : _content;
+
+        public int SizeInBytes => _content == null ? 0 : _content.Length * sizeof(char);
+
+        public static string GetExpo(string str)
+        {
+            if (str == null) return Constants.NonValueChar + Constants.NullValue;
+            if (str.Length > MaxLength)
+            {
+                var newStr = str.Substring(0, MaxLength - 1) + Constants.HorizontalEllipsisChar;
+                return DisplayableString.ReplaceNewlines(newStr);
+            }
+            else
+                return DisplayableString.ReplaceNewlines(str);
+        }
+
+        public override string ToString()
+        {
+            return _expo;
+        }
+
+        public int Compare(StringEx str1, StringEx str2)
+        {
+            return string.Compare(str1._content, str2._content, StringComparison.Ordinal);
+        }
+
+        public bool Equals(StringEx other)
+        {
+            if ((Object)_content == (Object)(other._content)) return true;
+            if ((Object)_content == null || (Object)(other._content) == null) return false;
+            return string.Compare(_content, other._content, StringComparison.Ordinal) == 0;
+        }
+    }
 }
+
+

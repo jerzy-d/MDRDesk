@@ -67,7 +67,7 @@
                         <Button x:Name="ClipboardButton" Width="Auto" MinWidth="40" Padding="6" Margin="8,0,8,0" HorizontalAlignment="Right" VerticalAlignment="Center" DockPanel.Dock="Left" Click="ClipboardButton_Click">
                             <Button.ToolTip>Copy to clipboard.</Button.ToolTip>
                             <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                                <Image Source=".\Images\clipboard_16xLG.png" Width="20" Height="20" Margin="0,0,0,0" VerticalAlignment="Center" HorizontalAlignment="Center"/>
+                                <Image Source=".\Images\CopyToClipboard_16x.png" Width="20" Height="20" Margin="0,0,0,0" VerticalAlignment="Center" HorizontalAlignment="Center"/>
                             </StackPanel>
                         </Button>
 

@@ -12,6 +12,7 @@
         <ContextMenu x:Key="InstanceValueContextMenu" x:Shared="False">
             <MenuItem x:Name="InstanceValueCopyAddress" Header="Copy Address (clipboard)" Click="InstanceValueCopyAddressClicked" ></MenuItem>
             <MenuItem x:Name="InstanceValueCopyValue" Header="Copy Value (clipboard)" Click="InstanceValueCopyValueClicked"></MenuItem>
+            <MenuItem x:Name="InstanceValueGetValue" Header="Copy Value (clipboard)" Click="InstanceValueGetValueClicked"></MenuItem>
             <Separator></Separator>
             <MenuItem x:Name="InstanceValueViewMemory" Header="View Memory" Click="InstanceValueViewMemoryClicked"/>
         </ContextMenu>

@@ -55,7 +55,7 @@ namespace MDRDesk
         private void KeyValueDoubleClicked(object sender, MouseButtonEventArgs e)
         {
             ulong addr = Constants.InvalidAddress;
-            var txtBlk = (TextBlock)e.OriginalSource;
+            var txtBlk = e.OriginalSource as TextBlock;
             if (txtBlk == null) return;
             string data = txtBlk.Text;
             if (data == null || data.Length < 16) return;

@@ -13,14 +13,19 @@ namespace MDRDesk
 	/// <summary>
 	/// Interaction logic for ClassStructDisplay.xaml
 	/// </summary>
-	public partial class ClassStructDisplay
+	public partial class ClassStructDisplay : IValueWindow
 	{
 		private int _id;
 		private ConcurrentDictionary<int, Window> _wndDct;
         private MainWindow _mainWindow;
+        private ValueWindows.WndType _wndType;
 
-		public ClassStructDisplay(int id, ConcurrentDictionary<int, Window> wndDct, string description, InstanceValue instValue)
+        public ValueWindows.WndType WndType => _wndType;
+        public int Id => _id;
+
+        public ClassStructDisplay(int id, ConcurrentDictionary<int, Window> wndDct, string description, InstanceValue instValue)
 		{
+            _wndType = ValueWindows.WndType.Tree;
 			TreeViewItem root;
 			_id = id;
 			_wndDct = wndDct;
@@ -93,76 +98,88 @@ namespace MDRDesk
             InstanceValue selInstValue;
             if (!GetSelectedItem(out selTreeItem, out selInstValue)) return;
 
-            if (StatusRawMode.IsChecked.Value==false) // if known collection show it in a collection window
+            if (TypeExtractor.IsString(selInstValue.Kind))
             {
-                if (TypeExtractor.IsKnownType(selInstValue.TypeName))
+                if (selInstValue.Value.IsLong())
                 {
-                    var msg = "Getting object value at: " + Utils.RealAddressString(selInstValue.Address);
-                    _mainWindow.ExecuteInstanceValueQuery(msg, selInstValue.Address);
-                    return;
+                    var wnd = new ContentDisplay(Utils.GetNewID(), _wndDct, selInstValue.GetDescription(), selInstValue) { Owner = _mainWindow };
+                    wnd.Show();
                 }
+                return;
             }
 
-			if (selInstValue.HaveFields()) return; // already has values
+            if (selInstValue.HaveFields()) return; // already has values
 
-			if (selInstValue.Address == Constants.InvalidAddress)
+            ulong addr = _mainWindow.GetAddressFromEntry(selInstValue.Value.FullContent);
+            if (selInstValue.Address != Constants.InvalidAddress && addr != Constants.InvalidAddress && addr == selInstValue.Address)
+            {
+                if (StatusRawMode.IsChecked.Value == false) // if known collection show it in a collection window
+                {
+                    if (TypeExtractor.IsKnownType(selInstValue.TypeName))
+                    {
+                        var msg = "Getting object value at: " + Utils.RealAddressString(selInstValue.Address);
+                        _mainWindow.ExecuteInstanceValueQuery(msg, selInstValue.Address);
+                        return;
+                    }
+                }
+                var index = MainWindow.CurrentIndex;
+
+                StatusText.Text = "Getting value at address: " + selInstValue.Address + ", please wait...";
+                Mouse.OverrideCursor = Cursors.Wait;
+
+                (string error, InstanceValue[] fields) = await Task.Factory.StartNew(() =>
+                {
+                    return index.GetInstanceValueFields(selInstValue.Address, selInstValue.Parent);
+                }, _mainWindow.DumpSTAScheduler);
+
+
+                if (Utils.IsInformation(error))
+                    StatusText.Text = error;
+                else
+                    StatusText.Text = "Getting fields at address: " + selInstValue.Address + (fields != null ? ", done." : ", failed.");
+                Mouse.OverrideCursor = null;
+
+                if (error != null && !Utils.IsInformation(error))
+                {
+                    GuiUtils.ShowError(error, this);
+                    return;
+                }
+
+                if (fields.Length == 1 && fields[0].IsArray())
+                {
+                    var wnd = new CollectionDisplay(Utils.GetNewID(), _wndDct, fields[0], fields[0].GetDescription(), TypeExtractor.KnownTypes.Unknown) { Owner = Application.Current.MainWindow };
+                    wnd.Show();
+                    return;
+                }
+
+                if (fields.Length > 0)
+                {
+                    selInstValue.SetFields(fields);
+                    for (int i = 0, icount = fields.Length; i < icount; ++i)
+                    {
+                        var fld = fields[i];
+                        var tvNode = new TreeViewItem
+                        {
+                            Header = GuiUtils.GetInstanceValueStackPanel(fld),
+                            Tag = fld
+                        };
+                        selTreeItem.Items.Add(tvNode);
+                    }
+                }
+
+                selTreeItem.ExpandSubtree();
+
+            }
+            else
 			{
 				StatusText.Text = "Value for " + selInstValue.TypeName + " cannot be expanded.";
 				return;
 			}
-
-			var index = MainWindow.CurrentIndex;
-
-			StatusText.Text = "Getting value at address: " + selInstValue.Address + ", please wait...";
-			Mouse.OverrideCursor = Cursors.Wait;
-
-            (string error, InstanceValue[] fields) = await Task.Factory.StartNew(() =>
-            {
-                return index.GetInstanceValueFields(selInstValue.Address, selInstValue.Parent);
-            }, _mainWindow.DumpSTAScheduler);
-
-
-            if (Utils.IsInformation(error))
-                StatusText.Text = error;
-            else
-    			StatusText.Text = "Getting fields at address: " + selInstValue.Address + (fields != null ? ", done." : ", failed.");
-			Mouse.OverrideCursor = null;
-
-			if (error != null && !Utils.IsInformation(error))
-			{
-				GuiUtils.ShowError(error,this);
-				return;
-			}
-
-			if (fields.Length == 1 && fields[0].IsArray())
-			{
-				var wnd = new CollectionDisplay(Utils.GetNewID(), _wndDct, fields[0], MainWindow.GetInstanceValueDescription(fields[0]), TypeExtractor.KnownTypes.Unknown) { Owner = Application.Current.MainWindow };
-				wnd.Show();
-				return;
-			}
-
-			if (fields.Length > 0)
-            {
-                selInstValue.SetFields(fields);
-                for (int i = 0, icount = fields.Length; i < icount; ++i)
-                {
-                    var fld = fields[i];
-                    var tvNode = new TreeViewItem
-                    {
-                        Header = GuiUtils.GetInstanceValueStackPanel(fld),
-                        Tag = fld
-                    };
-                    selTreeItem.Items.Add(tvNode);
-                }
-            }
- 
-			selTreeItem.ExpandSubtree();
 		}
 
 		private void Window_Closing(object sender, System.ComponentModel.CancelEventArgs e)
 		{
-			Window wnd;
-			_wndDct.TryRemove(_id, out wnd);
+            ValueWindows.RemoveWindow(_id, _wndType);
 		}
 
         private void InstanceValueCopyAddressClicked(object sender, RoutedEventArgs e)
@@ -202,6 +219,24 @@ namespace MDRDesk
             }
             var addr = Utils.RealAddress(selInstValue.Address);
             _mainWindow.ShowMemoryViewWindow(addr);
+        }
+
+        private void InstanceValueGetValueClicked(object sender, RoutedEventArgs e)
+        {
+            TreeViewItem selTreeItem;
+            InstanceValue selInstValue;
+            if (!GetSelectedItem(out selTreeItem, out selInstValue)) return;
+            if (selInstValue.Address == Constants.InvalidAddress)
+            {
+                StatusText.Text = "The value's address is invalid.";
+                return;
+            }
+            if (selInstValue.Value.IsLong())
+            {
+                var wnd = new ContentDisplay(Utils.GetNewID(), _wndDct, selInstValue.GetDescription(), selInstValue) { Owner = _mainWindow };
+                wnd.Show();
+                return;
+            }
         }
     }
 }

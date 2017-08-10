@@ -1696,12 +1696,6 @@ namespace MDRDesk
             Debug.Assert(instances != null && instances.Length > 0);
             SetStartTaskMainWindowState("Please wait... Type values report: " + query.TypeName);
 
-            //(string error, ListingInfo listing) = await Task.Run(() =>
-            //{
-            //    string err;
-            //    var info = CurrentIndex.GetTypeValuesReport(query, instances, out err);
-            //    return (err, info);
-            //});
             (string error, ListingInfo listing) = await Task.Factory.StartNew(() =>
             {
                 string err;
@@ -1794,8 +1788,6 @@ namespace MDRDesk
             Debug.Assert(treeView != null);
             treeView.Items.Add(tvRoot);
 
-            //tvRoot.ExpandSubtree();
-
             var tab = new CloseableTabItem() { Header = Constants.BlackDiamond + " Type References", Content = grid, Name = "HeapIndexTypeViewTab" };
             MainTab.Items.Add(tab);
             MainTab.SelectedItem = tab;
@@ -1837,7 +1829,6 @@ namespace MDRDesk
             Debug.Assert(treeView != null);
             treeView.Items.Add(tvRoot);
             tvRoot.IsExpanded = true;
-            //tvRoot.ExpandSubtree();
 
             // display general information, this will be updated when tree selection changes
             var txtBlk = (TextBlock)LogicalTreeHelper.FindLogicalNode(grid, "AncestorInformation");
@@ -1968,8 +1959,6 @@ namespace MDRDesk
             MessageBox.Show("Not implemented yet.", "TypeTreeGetTypeStringUsageClicked", MessageBoxButton.OK, MessageBoxImage.Information);
         }
 
-
-
         private void UpdateAncestorInfoLine(InlineCollection lines, string inlineName, string text)
         {
             Inline line = null;
@@ -1988,113 +1977,6 @@ namespace MDRDesk
                 lines.Remove(line);
             }
         }
-
-        //private void TypeValueReportMouseDown(object sender, MouseButtonEventArgs e)
-        //{
-        //	//TreeViewItem item = e.Source as TreeViewItem;
-        //	Run item = e.Source as Run;
-        //	StackPanel panel = null;
-        //	while (item is Run)
-        //	{
-        //		if (item.Parent is TextBlock)
-        //		{
-        //			var txtBlk = item.Parent as TextBlock;
-        //			panel = txtBlk.Parent as StackPanel;
-        //			break;
-        //		}
-        //		item = item.Parent as Run;
-        //	}
-        //	if (panel != null)
-        //	{
-        //		var grid = GetCurrentTabGrid();
-        //		var curSelectionInfo = grid.Tag as TypeValuesQuery;
-        //		Debug.Assert(curSelectionInfo != null);
-        //		curSelectionInfo.SetCurrentTreeViewItem(panel.Tag as TreeViewItem);
-        //	}
-
-        //}
-
-        //private void TypeValueReportSelectClicked(object sender, RoutedEventArgs e)
-        //{
-        //	var grid = GetCurrentTabGrid();
-        //	Debug.Assert(grid != null);
-        //	var curSelectionInfo = grid.Tag as TypeValuesQuery;
-        //	Debug.Assert(curSelectionInfo != null);
-        //	if (curSelectionInfo.CurrentTreeViewItem != null)
-        //	{
-        //		var dispType = curSelectionInfo.CurrentTreeViewItem.Tag as ClrtDisplayableType;
-        //		Debug.Assert(dispType != null);
-        //		dispType.ToggleGetValue();
-        //		GuiUtils.UpdateTypeValueSetupTreeViewItem(curSelectionInfo.CurrentTreeViewItem, dispType);
-        //	}
-        //}
-
-        //private void TypeValueReportMouseOnSelectedItemChanged(object sender, RoutedPropertyChangedEventArgs<object> e)
-        //{
-        //	var item = e.NewValue as TreeViewItem;
-        //	if (item != null)
-        //	{
-        //		var grid = GetCurrentTabGrid();
-        //		Debug.Assert(grid != null);
-        //		var curSelectionInfo = grid.Tag as TypeValuesQuery;
-        //		Debug.Assert(curSelectionInfo != null);
-        //		curSelectionInfo.SetCurrentTreeViewItem(item);
-        //		item.BringIntoView();
-        //	}
-
-        //}
-
-        //private string SetFilterChar(string header, bool set)
-        //{
-        //	if (string.IsNullOrEmpty(header)) return header;
-        //	if (set)
-        //	{
-        //		if (set && header[0] == Constants.HeavyCheckMark && header[1] != Constants.FilterChar)
-        //		{
-        //			header = header[0].ToString() + Constants.FilterHeader + header.Substring(2);
-        //		}
-        //		else if (header[0] != Constants.FilterChar)
-        //		{
-        //			header = Constants.FilterHeader + header;
-        //		}
-        //	}
-        //	return header;
-        //}
-
-        //private void TypeValueReportFilterClicked(object sender, RoutedEventArgs e)
-        //{
-        //	var grid = GetCurrentTabGrid();
-        //	Debug.Assert(grid != null);
-        //	var curSelectionInfo = grid.Tag as TypeValuesQuery;
-        //	Debug.Assert(curSelectionInfo != null);
-        //	if (curSelectionInfo.CurrentTreeViewItem != null)
-        //	{
-        //		var dlg = new TypeValueFilterDlg(curSelectionInfo.CurrentTreeViewItem.Tag as ClrtDisplayableType)
-        //		{
-        //			Owner = this,
-
-        //		};
-        //		bool? dlgResult = dlg.ShowDialog();
-        //		if (dlgResult == true)
-        //		{
-        //			string val = dlg.Value;
-
-        //			var dispType = curSelectionInfo.CurrentTreeViewItem.Tag as ClrtDisplayableType;
-        //			Debug.Assert(dispType != null);
-        //			dispType.SetFilter(new FilterValue(val));
-        //			curSelectionInfo.CurrentTreeViewItem.Header = dispType.ToString();
-
-        //			//string header = curSelectionInfo.CurrentTreeViewItem.Header as string;
-        //			//               curSelectionInfo.CurrentTreeViewItem.Header = SetFilterChar(header, true);
-        //		}
-
-        //		//Debug.Assert(header != null);
-        //		//curSelectionInfo.CurrentTreeViewItem.Header = (header[0] == Constants.HeavyCheckMark)
-        //		//    ? header.Substring(2)
-        //		//    : Constants.HeavyCheckMarkHeader + header;
-        //	}
-        //}
-
 
         private void ListingViewDoubleClicked(object sender, MouseButtonEventArgs e)
         {
@@ -2135,55 +2017,6 @@ namespace MDRDesk
         /// Used to close them when index is closing.
         /// </summary>
         private ConcurrentDictionary<int, Window> _wndDct = new ConcurrentDictionary<int, Window>();
-
-        //      private async void ExecuteInstanceValueQuery(string msg, ulong addr)
-        //{
-        //	SetStartTaskMainWindowState(msg);
-
-        //	var result = await Task.Run(() =>
-        //	{
-        //		string error;
-        //		var instValue = CurrentIndex.GetInstanceValue(addr, out error);
-        //		if (error != null)
-        //			return new Tuple<string, InstanceValue, string>(error, null, null);
-        //		return new Tuple<string, InstanceValue, string>(null, instValue.Item1, instValue.Item2);
-        //	});
-
-
-        //	SetEndTaskMainWindowState(result.Item1 == null
-        //		? "value at " + Utils.RealAddressString(addr) + ":  " + result.Item2.Value.ToString()
-        //		: msg + " failed.");
-
-        //	if (result.Item1 != null)
-        //	{
-        //		ShowError(result.Item1);
-        //		return;
-        //	}
-
-        //	Debug.Assert(result.Item2 != null);
-        //	InstanceValue instVal = result.Item2;
-
-        //	if (!instVal.HaveFields())
-        //	{
-        //		if (instVal.ArrayValues != null)
-        //		{
-        //			var wnd = new CollectionDisplay(Utils.GetNewID(), _wndDct, instVal, result.Item3) { Owner = this };
-        //			wnd.Show();
-        //			return;
-        //		}
-
-        //		if (!instVal.Value.IsLong())
-        //		{
-        //			var wnd = new ContentDisplay(Utils.GetNewID(), _wndDct, result.Item3, instVal) { Owner = this };
-        //			wnd.Show();
-        //			return;
-        //		}
-        //	}
-
-        //	var awnd = new ClassStructDisplay(Utils.GetNewID(), _wndDct, result.Item3, instVal) { Owner = this };
-        //	awnd.Show();
-
-        //}
 
         public async void ExecuteInstanceValueQuery(string msg, ulong addr)
         {
@@ -2233,44 +2066,25 @@ namespace MDRDesk
 
             if (!inst.HaveFields() && !inst.Value.IsLong())
             {
-                var wnd = new ContentDisplay(Utils.GetNewID(), _wndDct, GetInstanceValueDescription(inst), inst) { Owner = this };
+                var wnd = new ContentDisplay(Utils.GetNewID(), _wndDct, inst.GetDescription(), inst) { Owner = this };
                 wnd.Show();
                 return;
             }
 
             if (inst.IsArray())
             {
-                var wnd = new CollectionDisplay(Utils.GetNewID(), _wndDct, inst, GetInstanceValueDescription(inst), TypeExtractor.KnownTypes.Unknown) { Owner = this };
+                var wnd = new CollectionDisplay(Utils.GetNewID(), _wndDct, inst, inst.GetDescription(), TypeExtractor.KnownTypes.Unknown) { Owner = this };
                 wnd.Show();
                 return;
             }
 
             {
-                var wnd = new ClassStructDisplay(Utils.GetNewID(), _wndDct, GetInstanceValueDescription(inst), inst) { Owner = this };
+                var wnd = new ClassStructDisplay(Utils.GetNewID(), _wndDct, inst.GetDescription(), inst) { Owner = this };
                 wnd.Show();
             }
 
         }
-
-        public static string GetInstanceValueDescription(InstanceValue inst)
-        {
-            var sb = StringBuilderCache.Acquire(StringBuilderCache.MaxCapacity);
-            if (inst.IsArray())
-            {
-                sb.Append("Type:      ").AppendLine(inst.TypeName);
-                sb.Append("Item Type: ").AppendLine(inst.Fields[0].TypeName);
-                sb.Append("Address:   ").AppendLine(Utils.AddressString(inst.Address));
-                sb.Append("Lenght:    ").AppendLine(Utils.CountString(inst.ArrayLength()));
-            }
-            else
-            {
-                sb.Append("Type:      ").AppendLine(inst.TypeName);
-                sb.Append("Address:   ").AppendLine(Utils.AddressString(inst.Address));
-            }
-
-            return StringBuilderCache.GetStringAndRelease(sb);
-        }
-
+         
         #endregion instance value
 
         #region threads
@@ -3107,7 +2921,7 @@ namespace MDRDesk
             return null;
         }
 
-        private ulong GetAddressFromEntry(string entry)
+        public ulong GetAddressFromEntry(string entry)
         {
             ulong addr = GuiUtils.TryGetAddressValue(entry);
             if (addr != Constants.InvalidAddress)

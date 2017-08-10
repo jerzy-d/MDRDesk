@@ -812,13 +812,15 @@
                     <MenuItem x:Name="Extras" Header="Extras" VerticalAlignment="Center">
                         <MenuItem x:Name="ExtrasGetIpAddressValue" Header="Get IP Address Int64 Value..."  Click="ExtrasGetIpAddressValueClicked"/>
                         <MenuItem x:Name="ExtrasGetIpValueAddress" Header="Get IP Int64 Value Address..."  Click="ExtrasGetIpValueAddressClicked"/>
+                        <Separator></Separator>
+                        <MenuItem x:Name="ExtrasTestInstanceValues" Header="Test Instance Values..."  Click="ExtrasTestInstanceValuesClicked"/>
                     </MenuItem>
                     <MenuItem x:Name="Help" Header="Help" Background="LightBlue" VerticalAlignment="Center">
                         <MenuItem x:Name="HelpViewHelp" Header="View Help"  Click="HelpViewHelpClicked"/>
                     </MenuItem>
                     <MenuItem x:Name="FileReport"  HorizontalContentAlignment="Center" HorizontalAlignment="Center" Click="FileReportClicked">
                         <MenuItem.Icon>
-                            <Image Source="./Images/WriteToHistory_32x.png" ToolTip="Write detailed report, from current tab." ToolTipService.HasDropShadow="True" Height="32" Width="32" HorizontalAlignment="Center" VerticalAlignment="Center" Margin="16,0,0,0"></Image>
+                            <Image Source="./Images/WriteToHistory_32x.png" ToolTip="Write detailed report, from current tab." ToolTipService.HasDropShadow="True" Height="24" Width="24" HorizontalAlignment="Center" VerticalAlignment="Center" Margin="16,0,0,0"></Image>
                         </MenuItem.Icon>
                     </MenuItem>
                     <MenuItem x:Name="FileReportShort" Background="LightBlue" HorizontalContentAlignment="Center" HorizontalAlignment="Center" Click="FileReportShortClicked">
@@ -828,7 +830,7 @@
                     </MenuItem>
                     <MenuItem x:Name="Settings" HorizontalContentAlignment="Center" HorizontalAlignment="Center" Click="SettingsClicked">
                         <MenuItem.Icon>
-                            <Image Source="./Images/Settings_32x.png" ToolTip="MDR Desk settings/configuration" ToolTipService.HasDropShadow="True" Height="32" Width="32" HorizontalAlignment="Center" VerticalAlignment="Center" Margin="16,0,0,0"></Image>
+                            <Image Source="./Images/BehaviorAction_16x.png" ToolTip="MDR Desk settings/configuration" ToolTipService.HasDropShadow="True" Height="16" Width="16" HorizontalAlignment="Center" VerticalAlignment="Center" Margin="16,0,0,0"></Image>
                         </MenuItem.Icon>
                     </MenuItem>
                     <MenuItem x:Name="ForceGC" Background="LightBlue" HorizontalContentAlignment="Center" HorizontalAlignment="Center" Click="ForceGCClicked">
@@ -848,7 +850,7 @@
                         <RowDefinition Height="50*"/>
                     </Grid.RowDefinitions>
                     <Label Grid.Row="0" Content="Type Display"  FontFamily="Arial" FontSize="10" FontStyle="Italic" Foreground="Blue"/>
-                    <ComboBox x:Name="TypeDisplayMode"  Grid.Row="1" IsEditable="False" FontFamily="Arial" FontSize="10" FontWeight="Bold" BorderThickness="0" SelectionChanged="TypeDisplayModeChanged">
+                    <ComboBox x:Name="TypeDisplayMode"  Grid.Row="1" IsEditable="False" FontFamily="Arial" FontSize="10" Background="LightGray" FontWeight="Bold" BorderThickness="0" SelectionChanged="TypeDisplayModeChanged" Style="{StaticResource ComboBoxFlatStyle}">
                         <ComboBoxItem Content="Namespace/Class"></ComboBoxItem>
                         <ComboBoxItem Content="Class/Namespace"></ComboBoxItem>
                         <ComboBoxItem Content="Full Name"></ComboBoxItem>

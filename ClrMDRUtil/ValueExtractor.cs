@@ -58,10 +58,16 @@ namespace ClrMDRIndex
 
         public static string DecimalValue(ulong addr, ClrInstanceField field)
         {
-            var flags = (int)field.Type.Fields[0].GetValue(addr, true);
-            var hi = (int)field.Type.Fields[1].GetValue(addr, true);
-            var lo = (int)field.Type.Fields[2].GetValue(addr, true);
-            var mid = (int)field.Type.Fields[3].GetValue(addr, true);
+            //var flags = (int)field.Type.Fields[0].GetValue(addr, true);
+            //var hi = (int)field.Type.Fields[1].GetValue(addr, true);
+            //var lo = (int)field.Type.Fields[2].GetValue(addr, true);
+            //var mid = (int)field.Type.Fields[3].GetValue(addr, true);
+
+            var flags = (int)field.Type.Fields[0].GetValue(addr, false);
+            var hi = (int)field.Type.Fields[1].GetValue(addr, false);
+            var lo = (int)field.Type.Fields[2].GetValue(addr, false);
+            var mid = (int)field.Type.Fields[3].GetValue(addr, false);
+
 
             int[] bits = { lo, mid, hi, flags };
             decimal d = new decimal(bits);
@@ -242,7 +248,8 @@ namespace ClrMDRIndex
 
         public static string DateTimeValue(ulong addr, ClrInstanceField fld, string formatSpec = null)
         {
-            var data = (ulong)fld.Type.Fields[0].GetValue(addr, true);
+            //var data = (ulong)fld.Type.Fields[0].GetValue(addr, true);
+            var data = (ulong)fld.Type.Fields[0].GetValue(addr, false, false);
             data = data & TicksMask;
             var dt = DateTime.FromBinary((long)data);
             return formatSpec == null ? dt.ToString(CultureInfo.InvariantCulture) : dt.ToString(formatSpec);
@@ -815,9 +822,9 @@ namespace ClrMDRIndex
 
         public static string GetEnumValueString(ulong addr, ClrType clrType)
         {
-            var primVal = GetPrimitiveValue(addr, clrType);
-            var enumName = clrType.GetEnumName(addr);
-            return primVal + (enumName == null ? string.Empty : " " + enumName);
+            int data = (int)clrType.Fields[0].GetValue(addr, false);
+            var enumName = clrType.GetEnumName(data);
+            return data + (enumName == null ? string.Empty : " " + enumName);
         }
 
         public static string GetPrimitiveValue(ulong parentAddr, ClrInstanceField field, bool intr)
@@ -1240,6 +1247,9 @@ namespace ClrMDRIndex
                     case ClrElementKind.Exception:
                         value = GetShortExceptionValue(addr, clrType, heap);
                         return (null, new InstanceValue(typeId, kind, addr, clrType.Name, value, Utils.RealAddressString(decoratedAddr), fldNdx, parent));
+                    case ClrElementKind.Enum:
+                        value = GetEnumValueString(addr, clrType);
+                        return (null, new InstanceValue(typeId, kind, addr, clrType.Name, string.Empty, value, fldNdx, parent));
                     case ClrElementKind.Free:
                     case ClrElementKind.Abstract:
                     case ClrElementKind.SystemVoid:
@@ -1486,6 +1496,10 @@ namespace ClrMDRIndex
                 {
                     return (null, fldDescription, Utils.EmptyArray< KeyValuePair<string, string>>.Value);
                 }
+                if (entriesFldType.IsRuntimeType)
+                {
+                    entriesFldType = entriesFldType.GetRuntimeType(entriesFldAddr);
+                }
                 var entryType = entriesFldType.ComponentType;
                 var entryHashCodeFld = entryType.GetFieldByName("hashCode");
                 var entryNextFld = entryType.GetFieldByName("next");
@@ -1504,13 +1518,15 @@ namespace ClrMDRIndex
                     var eaddr = entriesFldType.GetArrayElementAddress(entriesFldAddr, i);
                     var hash = GetFieldIntValue(heap, eaddr, entryHashCodeFld, true);
                     if (hash <= 0) continue;
+                    var entryType2 = heap.GetObjectType(eaddr); 
+
                     if (TypeExtractor.IsSystem__Canon(entryKeyFldKind)) // try to get real type
                     {
                         (tempClrType, tempKind) = TypeExtractor.TryGetFieldReferenceType(heap, eaddr, entryKeyFld, true);
                         if (tempKind != ClrElementKind.Unknown) { entryKeyFldType = tempClrType; entryKeyFldKind = tempKind; }
                     }
                     string keyVal = (string)GetFieldValue(heap, eaddr, entryKeyFld, entryKeyFldType, entryKeyFldKind, true, false);
-                    if (TypeExtractor.IsSystem__Canon(entryKeyFldKind)) // try to get real type
+                    if (TypeExtractor.IsSystem__Canon(entryValFldKind)) // try to get real type
                     {
                         (tempClrType, tempKind) = TypeExtractor.TryGetFieldReferenceType(heap, eaddr, entryValFld, true);
                         if (tempKind != ClrElementKind.Unknown) { entryValFldType = tempClrType; entryValFldKind = tempKind; }

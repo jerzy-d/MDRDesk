@@ -143,6 +143,25 @@ namespace ClrMDRIndex
             Array.Sort(_fields, new InstanceValueFieldNdxCmp());
         }
 
+        public string GetDescription()
+        {
+            var sb = StringBuilderCache.Acquire(StringBuilderCache.MaxCapacity);
+            if (IsArray())
+            {
+                sb.Append("Type:      ").AppendLine(TypeName);
+                sb.Append("Item Type: ").AppendLine(Fields[0].TypeName);
+                sb.Append("Address:   ").AppendLine(Utils.RealAddressString(Address));
+                sb.Append("Lenght:    ").AppendLine(Utils.CountString(ArrayLength()));
+            }
+            else
+            {
+                sb.Append("Type:      ").AppendLine(TypeName);
+                sb.Append("Address:   ").AppendLine(Utils.RealAddressString(Address));
+            }
+
+            return StringBuilderCache.GetStringAndRelease(sb);
+        }
+
         public override string ToString()
 	    {
 	        string value = _value.ToString();

@@ -516,6 +516,7 @@ namespace MDRDesk
 
             if (!result.Item1)
             {
+                SetTitle(dmpFileName + " [INDEXING FAILED]");
                 ShowError(result.Item2);
                 return;
             }
@@ -1501,6 +1502,22 @@ namespace MDRDesk
             {
                 ShowError(Utils.GetExceptionErrorString(ex));
             }
+        }
+
+        private async void ExtrasTestInstanceValuesClicked(object sender, RoutedEventArgs e)
+        {
+            if (!IsIndexAvailable("Test Instance Values")) return;
+            SetStartTaskMainWindowState("Testing instance values, probably will take very long time. Please wait.");
+            string error=null;
+
+            var result = await Task.Factory.StartNew(() =>
+            {
+                return CurrentIndex.TestInstanceValues(out error);
+            }, _dumpSTAScheduler);
+
+            SetEndTaskMainWindowState(error == null
+                ? "Testing instance values done."
+                : "Testing instance values failed.");
         }
 
         #endregion Extras
@@ -2608,7 +2625,6 @@ namespace MDRDesk
             wnd.Show();
 
         }
-
     }
 
     public static class MenuCommands
