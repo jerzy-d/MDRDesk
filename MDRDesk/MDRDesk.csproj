@@ -480,6 +480,10 @@
   <ItemGroup>
     <Resource Include="Images\CopyToClipboard_16x.png" />
   </ItemGroup>
+  <ItemGroup>
+    <Resource Include="Images\Lock_24px.png" />
+    <Resource Include="Images\Unlock_24px.png" />
+  </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <PropertyGroup>
     <PostBuildEvent>mkdir "$(TargetDir)Documentation"

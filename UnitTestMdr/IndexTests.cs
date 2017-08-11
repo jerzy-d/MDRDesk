@@ -1870,8 +1870,9 @@ namespace UnitTestMdr
 			stopWatch.Start();
 			var index = OpenIndex(@"D:\Jerzy\WinDbgStuff\dumps\Analytics\Cowen\Cowen.Analytics.Svc_170717_165238.dmp.map");
 			TestContext.WriteLine(index.DumpFileName + " INDEX OPEN DURATION: " + Utils.StopAndGetDurationString(stopWatch));
-			ulong addr = 0x0000560623a968;
-			using (index)
+			ulong addr = 0x0000055099f9b08; //0x0000055070662f0; // 0x0000560623a968;
+
+            using (index)
 			{
                 //(string error, InstanceValue inst) = ValueExtractor.ArrayContent(index//.IndexProxy, index.Heap, addr,null);
                 (string error, InstanceValue inst, TypeExtractor.KnownTypes knownType) = index.GetInstanceValue(addr, null);
@@ -1885,9 +1886,9 @@ namespace UnitTestMdr
         {
             Stopwatch stopWatch = new Stopwatch();
             stopWatch.Start();
-            var index = OpenIndex(@"C:\WinDbgStuff\Dumps\Analytics\Cowen\Cowen.Analytics.Svc_170717_165238.dmp.map");
+            var index = OpenIndex(@"D:\Jerzy\WinDbgStuff\Dumps\Analytics\Cowen\Cowen.Analytics.Svc_170717_165238.dmp.map");
             TestContext.WriteLine(index.DumpFileName + " INDEX OPEN DURATION: " + Utils.StopAndGetDurationString(stopWatch));
-            ulong addr = 0x00005308d8b3c0; // 0x000055070662f0;
+            ulong addr = 0x0000550415a8f8; // 0x00005308d8b3c0; // 0x000055070662f0;
             using (index)
             {
                 //       (string error, InstanceValue inst) = ValueExtractor.GetDictionaryInfo(index.IndexProxy, index.Heap, addr, null);

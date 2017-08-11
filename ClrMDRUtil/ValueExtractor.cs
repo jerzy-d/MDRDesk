@@ -1368,6 +1368,33 @@ namespace ClrMDRIndex
             return new DisplayableString("Test");
         }
 
+
+        #region utils
+
+        public static ValueTuple<ClrType, ClrInstanceField, ClrElementKind> FindFieldByName(ValueTuple<ClrType, ClrInstanceField, ClrElementKind>[] fldInfos, string name)
+        {
+            for (int i = 0, icnt = fldInfos.Length; i < icnt; ++i)
+            {
+                if (Utils.SameStrings(fldInfos[i].Item2.Name, name))
+                    return fldInfos[i];
+            }
+            return (null, null, ClrElementKind.Unknown);
+        }
+
+        public static int GetFieldIntValue(ValueTuple<ClrType, ClrInstanceField, ClrElementKind>[] fldInfos, string name, ClrHeap heap, ulong addr, bool intr)
+        {
+            for (int i = 0, icnt = fldInfos.Length; i < icnt; ++i)
+            {
+                if (Utils.SameStrings(fldInfos[i].Item2.Name, name))
+                {
+                    return GetFieldIntValue(heap, addr, fldInfos[i].Item2, intr);
+                }
+            }
+            return 0; // TODO JRD ???
+        }
+
+        #endregion utils
+
         #region known collections
 
         public static int GetFieldIntValue(ClrHeap heap, ulong addr, ClrType clrType, string fldName)
@@ -1476,62 +1503,48 @@ namespace ClrMDRIndex
         {
             try
             {
-                ClrType clrType = heap.GetObjectType(addr);
+                ClrType dctClrType = heap.GetObjectType(addr);
+                if (!TypeExtractor.Is(TypeExtractor.KnownTypes.Dictionary, dctClrType.Name))
+                    return ("Instance at: " + Utils.RealAddressString(addr) + " is not " + TypeExtractor.GetKnowTypeName(TypeExtractor.KnownTypes.Dictionary), null, null);
+                ValueTuple<ClrType, ClrInstanceField, ClrElementKind>[] dctFldInfos = TypeExtractor.GetFieldsAndKinds(dctClrType);
+                (ClrType entriesType, ClrInstanceField entriesFld, ClrElementKind emtriesKind) = FindFieldByName(dctFldInfos, "entries");
+                Debug.Assert(entriesType != null);
+                ulong entriesAddr = GetReferenceFieldAddress(addr, entriesFld, false);
+ 
+                int count = GetFieldIntValue(dctFldInfos, "count", heap, addr, false);
+                int version = GetFieldIntValue(dctFldInfos, "version", heap, addr, false);
+                int freeCount = GetFieldIntValue(dctFldInfos, "freeCount", heap, addr, false);
+                var aryLen = entriesType == null ? 0 : entriesType.GetArrayLength(entriesAddr);
 
-
-                var entriesFld = clrType.GetFieldByName("entries");
-                (ClrType entriesFldType, ClrElementKind entriesFldKind, ulong entriesFldAddr) =
-                    TypeExtractor.GetRealType(heap, addr, entriesFld, false);
-                int count = GetFieldIntValue(heap, addr, clrType, "count");
-                int version = GetFieldIntValue(heap, addr, clrType, "version");
-                int freeCount = GetFieldIntValue(heap, addr, clrType, "freeCount");
-                var aryLen = entriesFldType == null ? 0 :entriesFldType.GetArrayLength(entriesFldAddr);
                 KeyValuePair<string, string>[] fldDescription = new KeyValuePair<string, string>[]
                 {
                 new KeyValuePair<string, string>("count", (count-freeCount).ToString()),
                 new KeyValuePair<string, string>("array count", aryLen.ToString()),
                 new KeyValuePair<string, string>("version", version.ToString())
                 };
-                if (entriesFldType == null)
-                {
-                    return (null, fldDescription, Utils.EmptyArray< KeyValuePair<string, string>>.Value);
-                }
-                if (entriesFldType.IsRuntimeType)
-                {
-                    entriesFldType = entriesFldType.GetRuntimeType(entriesFldAddr);
-                }
-                var entryType = entriesFldType.ComponentType;
-                var entryHashCodeFld = entryType.GetFieldByName("hashCode");
-                var entryNextFld = entryType.GetFieldByName("next");
-                var entryKeyFld = entryType.GetFieldByName("key");
-                var entryKeyFldKind = TypeExtractor.GetElementKind(entryKeyFld.Type);
-                var entryKeyFldType = entryKeyFld.Type;
-                var entryValFld = entryType.GetFieldByName("value");
-                var entryValFldKind = TypeExtractor.GetElementKind(entryValFld.Type);
-                var entryValFldType = entryValFld.Type;
-                ClrType tempClrType;
-                ClrElementKind tempKind;
+
+                if (entriesType == null || entriesAddr == Constants.InvalidAddress || (count - freeCount) < 1)
+                    return (TypeExtractor.GetKnowTypeName(TypeExtractor.KnownTypes.Dictionary) + " is empty.", fldDescription, null);
+
+                (string error, ClrType exEntriesType, ClrType elemType, ClrElementKind elemKind, int len) = ArrayInfo(heap, entriesAddr);
+                if (error != null)
+                    return (error, fldDescription, null);
+                ValueTuple<ClrType, ClrInstanceField, ClrElementKind>[] fldInfos = TypeExtractor.GetFieldsAndKinds(elemType);
+
+                (ClrType hashType, ClrInstanceField hashFld, ClrElementKind hashKind) = FindFieldByName(fldInfos, "hashCode");
+                (ClrType nextType, ClrInstanceField nextFld, ClrElementKind nextKind) = FindFieldByName(fldInfos, "next");
+                (ClrType keyType, ClrInstanceField keyFld, ClrElementKind keyKind) = FindFieldByName(fldInfos, "key");
+                (ClrType valType, ClrInstanceField valFld, ClrElementKind valKind) = FindFieldByName(fldInfos, "value");
 
                 var values = new List<KeyValuePair<string, string>>(count - freeCount);
                 for (int i = 0; i < aryLen; ++i)
                 {
-                    var eaddr = entriesFldType.GetArrayElementAddress(entriesFldAddr, i);
-                    var hash = GetFieldIntValue(heap, eaddr, entryHashCodeFld, true);
+                    // TODO JRD -- handle structures here as in array
+                    var eaddr = entriesType.GetArrayElementAddress(entriesAddr, i);
+                    var hash = GetFieldIntValue(heap, eaddr, hashFld, true);
                     if (hash <= 0) continue;
-                    var entryType2 = heap.GetObjectType(eaddr); 
-
-                    if (TypeExtractor.IsSystem__Canon(entryKeyFldKind)) // try to get real type
-                    {
-                        (tempClrType, tempKind) = TypeExtractor.TryGetFieldReferenceType(heap, eaddr, entryKeyFld, true);
-                        if (tempKind != ClrElementKind.Unknown) { entryKeyFldType = tempClrType; entryKeyFldKind = tempKind; }
-                    }
-                    string keyVal = (string)GetFieldValue(heap, eaddr, entryKeyFld, entryKeyFldType, entryKeyFldKind, true, false);
-                    if (TypeExtractor.IsSystem__Canon(entryValFldKind)) // try to get real type
-                    {
-                        (tempClrType, tempKind) = TypeExtractor.TryGetFieldReferenceType(heap, eaddr, entryValFld, true);
-                        if (tempKind != ClrElementKind.Unknown) { entryValFldType = tempClrType; entryValFldKind = tempKind; }
-                    }
-                    string valueVal = (string)GetFieldValue(heap, eaddr, entryValFld, entryValFldType, entryValFldKind, true, false);
+                    string keyVal = (string)GetFieldValue(heap, eaddr, keyFld, keyType, keyKind, true, false);
+                    string valueVal = (string)GetFieldValue(heap, eaddr, valFld, valType, valKind, true, false);
                     values.Add(new KeyValuePair<string, string>(keyVal, valueVal));
                 }
                 return (null, fldDescription,values.ToArray());
@@ -1623,7 +1636,6 @@ namespace ClrMDRIndex
         #region System.Collections.SortedGeneric.Dictionary<TKey, TValue>
 
 
-
         #endregion System.Collections.SortedGeneric.Dictionary<TKey, TValue>
 
         #region System.Collections.Generic.HashSet<T>
@@ -1646,8 +1658,8 @@ namespace ClrMDRIndex
             {
                 addr = Utils.RealAddress(addr);
                 ClrType clrType = heap.GetObjectType(addr);
-                if (!clrType.Name.StartsWith("System.Collections.Generic.HashSet<"))
-                    return ("Object at address: " + Utils.RealAddressString(addr) + " is not a HashSet.", null, null);
+                if (!TypeExtractor.Is(TypeExtractor.KnownTypes.HashSet, clrType.Name))
+                    return ("Instance at: " + Utils.RealAddressString(addr) + " is not " + TypeExtractor.GetKnowTypeName(TypeExtractor.KnownTypes.HashSet), null, null);
 
                 int count = GetFieldIntValue(heap, addr, clrType, "m_count");
                 if (count < 1)

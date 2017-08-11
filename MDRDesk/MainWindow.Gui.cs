@@ -2079,8 +2079,9 @@ namespace MDRDesk
             }
 
             {
-                var wnd = new ClassStructDisplay(Utils.GetNewID(), _wndDct, inst.GetDescription(), inst) { Owner = this };
-                wnd.Show();
+                ValueWindows.ShowTreeContentWindow(inst.GetDescription(), inst, this);
+                //var wnd = new ClassStructDisplay(Utils.GetNewID(), _wndDct, inst.GetDescription(), inst) { Owner = this };
+                //wnd.Show();
             }
 
         }

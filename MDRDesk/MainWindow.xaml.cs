@@ -166,6 +166,7 @@ namespace MDRDesk
         public void MainWindow_Closing(object sender, CancelEventArgs e)
         {
             string error;
+            
             foreach (var kv in _wndDct)
             {
                 kv.Value.Close();

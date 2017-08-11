@@ -486,6 +486,12 @@ namespace ClrMDRIndex
             Unknown,
         }
 
+        public static bool Is(KnownTypes knownType, string typeName)
+        {
+            if (knownType == KnownTypes.StringBuilder) return Utils.SameStrings(typeName, KnownTypeNames[(int)KnownTypes.StringBuilder]);
+            return typeName.StartsWith(KnownTypeNames[(int)knownType], StringComparison.Ordinal);
+        }
+
         public static string GetKnowTypeName(KnownTypes kt)
         {
             switch(kt)

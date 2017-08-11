@@ -9,6 +9,9 @@
     <Image x:Key="EnumPng" Source="./Images/EnumItem_exp_16x.png"/>
     <Image x:Key="QuestionPng" Source="./Images/Question_16x.png"/>
     <Image x:Key="GroupPng" Source="./Images/GroupClause_16x.png"/>
+    <Image x:Key="LockPng" Source="./Images/Lock_24px.png"/>
+    <Image x:Key="UnlockPng" Source="./Images/Unlock_24px.png"/>
+    
     <!-- Flat ComboBox -->
     <SolidColorBrush x:Key="ComboBoxNormalBorderBrush" Color="#e3e9ef" />
     <SolidColorBrush x:Key="ComboBoxNormalBackgroundBrush" Color="#fff" />

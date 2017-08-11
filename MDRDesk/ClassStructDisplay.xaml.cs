@@ -16,33 +16,44 @@ namespace MDRDesk
 	public partial class ClassStructDisplay : IValueWindow
 	{
 		private int _id;
-		private ConcurrentDictionary<int, Window> _wndDct;
+		//private ConcurrentDictionary<int, Window> _wndDct;
         private MainWindow _mainWindow;
         private ValueWindows.WndType _wndType;
+        private bool _locked;
 
         public ValueWindows.WndType WndType => _wndType;
         public int Id => _id;
+        public bool Locked => _locked;
+        private Image _lockedImg, _unlockedImg;
+        Button _lockBtn;
 
-        public ClassStructDisplay(int id, ConcurrentDictionary<int, Window> wndDct, string description, InstanceValue instValue)
+
+        public ClassStructDisplay(int id, string description, InstanceValue instValue, bool locked = false)
 		{
             _wndType = ValueWindows.WndType.Tree;
-			TreeViewItem root;
 			_id = id;
-			_wndDct = wndDct;
+            _locked = locked;
 			InitializeComponent();
             _mainWindow = GuiUtils.MainWindowInstance;
-            ClassStructInfo.Text = description;
-			UpdateInstanceValue(instValue, out root);
-			wndDct.TryAdd(id, this);
-		}
+            _lockedImg = ValueWindows.LockedImage;
+            _unlockedImg = ValueWindows.UnlockedImage;
+            _lockBtn = new Button();
+            _lockBtn.Click += LockBtnClicked;
+            _lockBtn.ToolTip = "Lock/unlock content of this window.";
+            LockBtnBarItem.Content = _lockBtn;
+            UpdateInstanceValue(instValue, description);
+            //_lockBtn.Content = locked ? _lockedImg : _unlockedImg;
+            _lockBtn.Content = locked ? Constants.HeavyCheckMarkPadded : Constants.FilterHeader;
+        }
 
-		private void UpdateInstanceValue(InstanceValue instVal, out TreeViewItem tvRoot)
+        public void UpdateInstanceValue(InstanceValue instVal, string descr)
 		{
-			var stackPanel = new StackPanel() { Orientation = Orientation.Horizontal };
+            ClassStructInfo.Text = descr;
+            var stackPanel = new StackPanel() { Orientation = Orientation.Horizontal };
 			var textBlk = new TextBlock();
 			textBlk.Inlines.Add(instVal.ToString());
 			stackPanel.Children.Add(textBlk);
-			tvRoot = new TreeViewItem
+			var tvRoot = new TreeViewItem
 			{
 				Header = GuiUtils.GetInstanceValueStackPanel(instVal),
 				Tag = instVal
@@ -98,15 +109,16 @@ namespace MDRDesk
             InstanceValue selInstValue;
             if (!GetSelectedItem(out selTreeItem, out selInstValue)) return;
 
-            if (TypeExtractor.IsString(selInstValue.Kind))
-            {
-                if (selInstValue.Value.IsLong())
-                {
-                    var wnd = new ContentDisplay(Utils.GetNewID(), _wndDct, selInstValue.GetDescription(), selInstValue) { Owner = _mainWindow };
-                    wnd.Show();
-                }
-                return;
-            }
+            // TODO JRD -- 
+            //if (TypeExtractor.IsString(selInstValue.Kind))
+            //{
+            //    if (selInstValue.Value.IsLong())
+            //    {
+            //        var wnd = new ContentDisplay(Utils.GetNewID(), _wndDct, selInstValue.GetDescription(), selInstValue) { Owner = _mainWindow };
+            //        wnd.Show();
+            //    }
+            //    return;
+            //}
 
             if (selInstValue.HaveFields()) return; // already has values
 
@@ -145,12 +157,13 @@ namespace MDRDesk
                     return;
                 }
 
-                if (fields.Length == 1 && fields[0].IsArray())
-                {
-                    var wnd = new CollectionDisplay(Utils.GetNewID(), _wndDct, fields[0], fields[0].GetDescription(), TypeExtractor.KnownTypes.Unknown) { Owner = Application.Current.MainWindow };
-                    wnd.Show();
-                    return;
-                }
+                // TODO JRD
+                //if (fields.Length == 1 && fields[0].IsArray())
+                //{
+                //    var wnd = new CollectionDisplay(Utils.GetNewID(), _wndDct, fields[0], fields[0].GetDescription(), TypeExtractor.KnownTypes.Unknown) { Owner = Application.Current.MainWindow };
+                //    wnd.Show();
+                //    return;
+                //}
 
                 if (fields.Length > 0)
                 {
@@ -179,7 +192,8 @@ namespace MDRDesk
 
 		private void Window_Closing(object sender, System.ComponentModel.CancelEventArgs e)
 		{
-            ValueWindows.RemoveWindow(_id, _wndType);
+            var wndtask = Task.Factory.StartNew(() => ValueWindows.RemoveWindow(_id, _wndType));
+            wndtask.Wait();
 		}
 
         private void InstanceValueCopyAddressClicked(object sender, RoutedEventArgs e)
@@ -231,12 +245,35 @@ namespace MDRDesk
                 StatusText.Text = "The value's address is invalid.";
                 return;
             }
-            if (selInstValue.Value.IsLong())
+
+            // TODO JRD -- ContentDisplay, get this back
+            //if (selInstValue.Value.IsLong())
+            //{
+            //    var wnd = new ContentDisplay(Utils.GetNewID(), _wndDct, selInstValue.GetDescription(), selInstValue) { Owner = _mainWindow };
+            //    wnd.Show();
+            //    return;
+            //}
+        }
+
+        private void LockBtnClicked(object sender, RoutedEventArgs e)
+        {
+            if (_locked)
             {
-                var wnd = new ContentDisplay(Utils.GetNewID(), _wndDct, selInstValue.GetDescription(), selInstValue) { Owner = _mainWindow };
-                wnd.Show();
-                return;
+                _locked = false;
+                //_lockBtn.Content = _unlockedImg;
+                _lockBtn.Content = Constants.FilterHeader;                    ;
+                ValueWindows.ChangeMyLock(_id, _wndType, false);
+            }
+            else
+            {
+                _locked = true;
+                //_lockBtn.Content = _lockedImg;
+                _lockBtn.Content = Constants.HeavyCheckMarkPadded;
+                ValueWindows.ChangeMyLock(_id, _wndType, true);
             }
         }
+
+
+        // https://stackoverflow.com/questions/16319063/wpf-change-button-background-image-when-clicked
     }
 }
