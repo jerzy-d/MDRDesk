@@ -25,8 +25,6 @@ namespace MDRDesk
         public int Id => _id;
         public bool Locked => _locked;
         private Image _lockedImg, _unlockedImg;
-        Button _lockBtn;
-
 
         public ClassStructDisplay(int id, string description, InstanceValue instValue, bool locked = false)
 		{
@@ -35,15 +33,12 @@ namespace MDRDesk
             _locked = locked;
 			InitializeComponent();
             _mainWindow = GuiUtils.MainWindowInstance;
-            _lockedImg = ValueWindows.LockedImage;
-            _unlockedImg = ValueWindows.UnlockedImage;
-            _lockBtn = new Button();
-            _lockBtn.Click += LockBtnClicked;
-            _lockBtn.ToolTip = "Lock/unlock content of this window.";
-            LockBtnBarItem.Content = _lockBtn;
+            _lockedImg = new Image();
+            _lockedImg.Source = ValueWindows.LockedImage.Source;
+            _unlockedImg = new Image();
+            _unlockedImg.Source = ValueWindows.UnlockedImage.Source;
             UpdateInstanceValue(instValue, description);
-            //_lockBtn.Content = locked ? _lockedImg : _unlockedImg;
-            _lockBtn.Content = locked ? Constants.HeavyCheckMarkPadded : Constants.FilterHeader;
+            LockBtn.Content = locked ? _lockedImg : _unlockedImg;
         }
 
         public void UpdateInstanceValue(InstanceValue instVal, string descr)
@@ -109,16 +104,16 @@ namespace MDRDesk
             InstanceValue selInstValue;
             if (!GetSelectedItem(out selTreeItem, out selInstValue)) return;
 
-            // TODO JRD -- 
-            //if (TypeExtractor.IsString(selInstValue.Kind))
-            //{
-            //    if (selInstValue.Value.IsLong())
-            //    {
-            //        var wnd = new ContentDisplay(Utils.GetNewID(), _wndDct, selInstValue.GetDescription(), selInstValue) { Owner = _mainWindow };
-            //        wnd.Show();
-            //    }
-            //    return;
-            //}
+            if (TypeExtractor.IsString(selInstValue.Kind))
+            {
+                // if (selInstValue.Value.IsLong()) -- TODO JRD if has to be here
+                {
+                    ValueWindows.ShowContentWindow(selInstValue.GetDescription(), selInstValue, _mainWindow);
+                    //var wnd = new ContentDisplay(Utils.GetNewID(), _wndDct, selInstValue.GetDescription(), selInstValue) { Owner = _mainWindow };
+                    //wnd.Show();
+                }
+                return;
+            }
 
             if (selInstValue.HaveFields()) return; // already has values
 
@@ -260,20 +255,15 @@ namespace MDRDesk
             if (_locked)
             {
                 _locked = false;
-                //_lockBtn.Content = _unlockedImg;
-                _lockBtn.Content = Constants.FilterHeader;                    ;
+                LockBtn.Content = _unlockedImg;
                 ValueWindows.ChangeMyLock(_id, _wndType, false);
             }
             else
             {
                 _locked = true;
-                //_lockBtn.Content = _lockedImg;
-                _lockBtn.Content = Constants.HeavyCheckMarkPadded;
+                LockBtn.Content = _lockedImg;
                 ValueWindows.ChangeMyLock(_id, _wndType, true);
             }
         }
-
-
-        // https://stackoverflow.com/questions/16319063/wpf-change-button-background-image-when-clicked
     }
 }

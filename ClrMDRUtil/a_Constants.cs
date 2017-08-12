@@ -141,6 +141,9 @@ namespace ClrMDRIndex
 
         public const char HorizontalEllipsisChar = '\u2026'; // … HORIZONTAL ELLIPSIS
 
+        public static string LockStr = char.ConvertFromUtf32(0x1F512);
+        public static string UnlockStr = char.ConvertFromUtf32(0x1F513);
+
         //27A0 ➠ HEAVY DASHED TRIANGLE-HEADED RIGHTWARDS ARROW 
         //27A1 ➡ BLACK RIGHTWARDS ARROW
         //279D ➝ TRIANGLE-HEADED RIGHTWARDS ARROW

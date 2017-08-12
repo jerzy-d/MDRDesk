@@ -2066,8 +2066,9 @@ namespace MDRDesk
 
             if (!inst.HaveFields() && !inst.Value.IsLong())
             {
-                var wnd = new ContentDisplay(Utils.GetNewID(), _wndDct, inst.GetDescription(), inst) { Owner = this };
-                wnd.Show();
+                ValueWindows.ShowTreeContentWindow(inst.GetDescription(), inst, this);
+                //var wnd = new ContentDisplay(Utils.GetNewID(), _wndDct, inst.GetDescription(), inst) { Owner = this };
+                //wnd.Show();
                 return;
             }
 

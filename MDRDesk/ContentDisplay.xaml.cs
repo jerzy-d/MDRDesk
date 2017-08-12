@@ -20,26 +20,42 @@ namespace MDRDesk
 	/// <summary>
 	/// Interaction logic for ContentDisplay.xaml
 	/// </summary>
-	public partial class ContentDisplay : Window
-	{
+	public partial class ContentDisplay : Window, IValueWindow
+    {
 		private int _id;
-		private ConcurrentDictionary<int, Window> _wndDct;
 		private bool _wordWrapped;
 		private InstanceValue _instanceValue;
+        private bool _locked;
+        private ValueWindows.WndType _wndType;
+        private Image _lockedImg, _unlockedImg;
 
-		public ContentDisplay(int id, ConcurrentDictionary<int, Window> wndDct, string description, InstanceValue instVal)
+        public int Id => _id;
+        public bool Locked => _locked;
+        public ValueWindows.WndType WndType => _wndType;
+
+        public ContentDisplay(int id, string description, InstanceValue instVal, bool locked = false)
 		{
-			_id = id;
-			_wndDct = wndDct;
+            _wndType = ValueWindows.WndType.Content;
+            _id = id;
 			InitializeComponent();
 			_wordWrapped = true;
 			_instanceValue = instVal;
-			ContentInfo.Text = description;
-			ContentValue.Text = instVal.Value.FullContent;
-			wndDct.TryAdd(id, this);
-		}
+            _lockedImg = new Image();
+            _lockedImg.Source = ValueWindows.LockedImage.Source;
+            _unlockedImg = new Image();
+            _unlockedImg.Source = ValueWindows.UnlockedImage.Source;
+            UpdateInstanceValue(instVal, description);
+            LockBtn.Content = locked ? _lockedImg : _unlockedImg;
+        }
 
-		private void WordWrapButtonClicked(object sender, RoutedEventArgs e)
+        public void UpdateInstanceValue(InstanceValue instVal, string descr)
+        {
+            ContentInfo.Text = descr;
+            ContentValue.Text = instVal.Value.FullContent;
+        }
+
+
+        private void WordWrapButtonClicked(object sender, RoutedEventArgs e)
 		{
 			if (_wordWrapped)
 			{
@@ -55,8 +71,24 @@ namespace MDRDesk
 		}
 		public void Window_Closing(object sender, CancelEventArgs e)
 		{
-			Window wnd;
-			_wndDct.TryRemove(_id, out wnd);
-		}
-	}
+            var wndtask = Task.Factory.StartNew(() => ValueWindows.RemoveWindow(_id, _wndType));
+            wndtask.Wait();
+        }
+
+        private void LockBtnClicked(object sender, RoutedEventArgs e)
+        {
+            if (_locked)
+            {
+                _locked = false;
+                LockBtn.Content = _unlockedImg;
+                ValueWindows.ChangeMyLock(_id, _wndType, false);
+            }
+            else
+            {
+                _locked = true;
+                LockBtn.Content = _lockedImg;
+                ValueWindows.ChangeMyLock(_id, _wndType, true);
+            }
+        }
+}
 }

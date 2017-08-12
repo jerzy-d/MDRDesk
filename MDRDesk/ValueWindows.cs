@@ -68,6 +68,30 @@ namespace MDRDesk
             }
         }
 
+        public static void ShowContentWindow(string description, InstanceValue inst, Window owner)
+        {
+            lock (_lock)
+            {
+                var list = _unlockledWindows[(int)WndType.Content];
+                if (list.Count > 0)
+                {
+                    var node = list.First;
+                    list.RemoveFirst();
+                    list.AddLast(node);
+                    ((ContentDisplay)node.Value).UpdateInstanceValue(inst, description);
+                    return;
+                }
+                int id = Utils.GetNewID();
+                var wnd = new ContentDisplay(id, inst.GetDescription(), inst) { Owner = owner };
+                _wndDct.Add(id, wnd);
+                if (!wnd.Locked)
+                {
+                    list.AddFirst(wnd);
+                }
+                wnd.Show();
+            }
+        }
+
         public static void RemoveWindow(int id, WndType wndType)
         {
             lock (_lock)
