@@ -39,7 +39,8 @@
         </ListBox>
         <Grid Grid.Row="3" Margin="2,2,2,2">
             <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="80*"/>
+                <ColumnDefinition Width="60*"/>
+                <ColumnDefinition Width="20*"/>
                 <ColumnDefinition Width="20*"/>
             </Grid.ColumnDefinitions>
             <Button  x:Name="ShowArrayIndices" Grid.Column="1" Width="20" Height="20" HorizontalAlignment="Center" VerticalAlignment="Center" BorderThickness="0" Click="ShowArrayIndicesClicked"
@@ -49,8 +50,9 @@
                     <Image Source=".\Images\ListView_16x.png" Width="16" Height="16" Margin="0,0,0,0" VerticalAlignment="Center" HorizontalAlignment="Center"/>
                 </StackPanel>
             </Button>
-
+            <Button x:Name="LockBtn"  Grid.Column="2" Click="LockBtnClicked" Width="28" Height="28" VerticalAlignment="Center" HorizontalAlignment="Right">
+                <Button.ToolTip>Lock/unlock content of this window.</Button.ToolTip>
+            </Button>
         </Grid>
-
     </Grid>
 </Window>

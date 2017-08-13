@@ -879,7 +879,7 @@ namespace ClrMDRIndex
                 }
                 else if (diff < 0)
                 {
-                    throw new ApplicationException("address less then last address");
+                    throw new MdrException("[ValueExtractor.SetSegmentInterval] Address less then last address.");
                 }
                 intervals.Add(new triple<bool, ulong, ulong>(false, addr, sz));
                 return;
@@ -1076,7 +1076,7 @@ namespace ClrMDRIndex
             }
 
             if (kind == ClrElementKind.Unknown)
-                throw new ApplicationException("[ValueExtractor.GetFieldValue(...)] Some strange address: " + Utils.RealAddressString(addr) + " fld " + fld.Name + " " + Utils.RealAddressString(fldAddr));
+                throw new MdrException("[ValueExtractor.GetFieldValue] Some strange address: " + Utils.RealAddressString(addr) + " fld " + fld.Name + " " + Utils.RealAddressString(fldAddr));
 
             if (specKind != ClrElementKind.Unknown)
             {

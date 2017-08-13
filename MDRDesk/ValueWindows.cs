@@ -1,13 +1,8 @@
-﻿using ClrMDRIndex;
-using System;
-using System.Collections.Concurrent;
+﻿using System;
 using System.Collections.Generic;
-using System.Drawing;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
+using ClrMDRIndex;
 
 namespace MDRDesk
 {
@@ -44,51 +39,93 @@ namespace MDRDesk
         private static object _lock = new object();
 
 
-        public static void ShowTreeContentWindow(string description, InstanceValue inst, Window owner)
-        {
-            lock(_lock)
-            {
-                var list = _unlockledWindows[(int)WndType.Tree];
-                if (list.Count > 0)
-                {
-                    var node = list.First;
-                    list.RemoveFirst();
-                    list.AddLast(node);
-                    ((ClassStructDisplay)node.Value).UpdateInstanceValue(inst, description);
-                    return;
-                }
-                int id = Utils.GetNewID();
-                var wnd = new ClassStructDisplay(id, inst.GetDescription(), inst) { Owner = owner };
-                _wndDct.Add(id, wnd);
-                if (!wnd.Locked)
-                {
-                    list.AddFirst(wnd);
-                }
-                wnd.Show();
-            }
-        }
+        //public static void ShowTreeContentWindow(string description, InstanceValue inst, Window owner)
+        //{
+        //    lock(_lock)
+        //    {
+        //        var list = _unlockledWindows[(int)WndType.Tree];
+        //        if (list.Count > 0)
+        //        {
+        //            var node = list.First;
+        //            list.RemoveFirst();
+        //            list.AddLast(node);
+        //            ((ClassStructDisplay)node.Value).UpdateInstanceValue(inst, description);
+        //            return;
+        //        }
+        //        int id = Utils.GetNewID();
+        //        var wnd = new ClassStructDisplay(id, inst.GetDescription(), inst) { Owner = owner };
+        //        _wndDct.Add(id, wnd);
+        //        if (!wnd.Locked)
+        //        {
+        //            list.AddFirst(wnd);
+        //        }
+        //        wnd.Show();
+        //    }
+        //}
 
-        public static void ShowContentWindow(string description, InstanceValue inst, Window owner)
+        //public static void ShowContentWindow(string description, InstanceValue inst, Window owner)
+        //{
+        //    lock (_lock)
+        //    {
+        //        var list = _unlockledWindows[(int)WndType.Content];
+        //        if (list.Count > 0)
+        //        {
+        //            var node = list.First;
+        //            list.RemoveFirst();
+        //            list.AddLast(node);
+        //            ((ContentDisplay)node.Value).UpdateInstanceValue(inst, description);
+        //            return;
+        //        }
+        //        int id = Utils.GetNewID();
+        //        var wnd = new ContentDisplay(id, inst.GetDescription(), inst) { Owner = owner };
+        //        _wndDct.Add(id, wnd);
+        //        if (!wnd.Locked)
+        //        {
+        //            list.AddFirst(wnd);
+        //        }
+        //        wnd.Show();
+        //    }
+        //}
+
+        public static void ShowContentWindow(string description, InstanceValue inst, WndType wndType)
         {
             lock (_lock)
             {
-                var list = _unlockledWindows[(int)WndType.Content];
+                var list = _unlockledWindows[(int)wndType];
                 if (list.Count > 0)
                 {
                     var node = list.First;
                     list.RemoveFirst();
                     list.AddLast(node);
-                    ((ContentDisplay)node.Value).UpdateInstanceValue(inst, description);
+                    node.Value.UpdateInstanceValue(inst, description);
                     return;
                 }
                 int id = Utils.GetNewID();
-                var wnd = new ContentDisplay(id, inst.GetDescription(), inst) { Owner = owner };
+                IValueWindow wnd = null;
+                switch (wndType)
+                {
+                    case WndType.Content:
+                        wnd = new ContentDisplay(id, inst.GetDescription(), inst) { Owner = GuiUtils.MainWindowInstance };
+                        break;
+                    case WndType.Tree:
+                        wnd = new ClassStructDisplay(id, inst.GetDescription(), inst) { Owner = GuiUtils.MainWindowInstance };
+                        break;
+                    case WndType.List:
+                        wnd = new CollectionDisplay(id, inst.GetDescription(), inst) { Owner = GuiUtils.MainWindowInstance };
+                        break;
+                    case WndType.KeyValues:
+                        wnd = new KeyValueCollectionDisplay(id, inst.GetDescription(), inst) { Owner = GuiUtils.MainWindowInstance };
+                        break;
+
+                }
+                if (wnd == null)
+                    throw new MdrDeskException("[ValueWindows.ShowContentWindow] Creating content window failed.");
                 _wndDct.Add(id, wnd);
                 if (!wnd.Locked)
                 {
                     list.AddFirst(wnd);
                 }
-                wnd.Show();
+                ((Window)wnd).Show();
             }
         }
 

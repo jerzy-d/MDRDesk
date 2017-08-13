@@ -35,7 +35,7 @@
                     <Image Source=".\Images\WrapPanel_16x.png" Width="16" Height="16" Margin="0,0,0,0" VerticalAlignment="Center" HorizontalAlignment="Center"/>
                 </StackPanel>
             </Button>
-            <Button x:Name="LockBtn"  Grid.Column="2" Click="LockBtnClicked">
+            <Button x:Name="LockBtn"  Grid.Column="2" Click="LockBtnClicked" Width="28" Height="28" VerticalAlignment="Center" HorizontalAlignment="Right">
                 <Button.ToolTip>Lock/unlock content of this window.</Button.ToolTip>
             </Button>
 

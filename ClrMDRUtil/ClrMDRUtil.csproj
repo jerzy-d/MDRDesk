@@ -114,6 +114,7 @@
     <Compile Include="Graph\Digraph.cs" />
     <Compile Include="Graph\DirectedCycle.cs" />
     <Compile Include="Graph\TopologicalSort.cs" />
+    <Compile Include="MdrException.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="QueriesAndReports\DumpComparison.cs" />
     <Compile Include="Scullion.cs" />

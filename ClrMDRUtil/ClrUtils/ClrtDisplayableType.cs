@@ -224,7 +224,7 @@ namespace ClrMDRIndex
                     case ClrElementKind.Abstract:
                         return Constants.ClassHeader;
                 }
-                throw new ApplicationException("ClrtDisplayableType.TypeHeader() Not all cases are handled for (specKind != ClrElementKind.Unknown).");
+                throw new MdrException("[ClrtDisplayableType.TypeHeader] Not all cases are handled for (specKind != ClrElementKind.Unknown).");
             }
             else
             {
@@ -317,7 +317,7 @@ namespace ClrMDRIndex
                         msg = "Cannot get fields, this is abstract class.";
                         return false;
                 }
-                throw new ApplicationException("ClrtDisplayableType.TypeHeader() Not all cases are handled for (specKind != ClrElementKind.Unknown).");
+                throw new MdrException("[ClrtDisplayableType.TypeHeader] Not all cases are handled for (specKind != ClrElementKind.Unknown).");
             }
             else
             {

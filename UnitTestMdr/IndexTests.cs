@@ -1651,18 +1651,66 @@ namespace UnitTestMdr
 			}
 		}
 
+        private static bool Found(ClrtRoot root, ulong[] addrs)
+        {
+            for (int i = 0, icnt = addrs.Length; i < icnt; ++i)
+            {
+                var addr = addrs[i];
+                if (Utils.RealAddress(root.Address) == addr) return true;
+                if (Utils.RealAddress(root.Object) == addr) return true;
+            }
+            return false;
+        }
 
 		[TestMethod]
 		public void TestIndexRoots()
 		{
 			Stopwatch stopWatch = new Stopwatch();
 			stopWatch.Start();
-			var index = OpenIndex();
+			var index = OpenIndex(@"C:\WinDbgStuff\Dumps\Analytics\Cowen\Cowen.Analytics.Svc_170717_165238.dmp.map");
 			Assert.IsNotNull(index);
 			TestContext.WriteLine(index.DumpFileName + " INDEX OPEN DURATION: " + Utils.StopAndGetDurationString(stopWatch));
 			stopWatch.Restart();
+
+            ulong[] addrs = new ulong[]
+            {
+                0x000005403f97450,
+                0x000005503f47028,
+                0x000005503f47068,
+                0x000005504557878,
+            };
+
+            int rAddrCnt = 0;
+            int oAddrCnt = 0;
+
 			using (index)
 			{
+                var roots = index.Roots;
+                var staticVars = roots.StaticVariables;
+
+                for (int i =0, icnt = staticVars.Length; i < icnt; ++i)
+                {
+                    var root = staticVars[i];
+                    if (index.GetInstanceIndex(root.Address)!=Constants.InvalidIndex)
+                    {
+                        ++rAddrCnt;
+                    }
+                    if (index.GetInstanceIndex(root.Object) != Constants.InvalidIndex)
+                    {
+                        ++oAddrCnt;
+                    }
+                    if (Found(root, addrs))
+                    {
+                        var typeId = root.TypeId;
+                        var typeName = index.GetTypeName(typeId);
+                        TestContext.WriteLine(Utils.RealAddressStringHeader(root.Address)
+                            + Utils.RealAddressStringHeader(root.Object)
+                            + typeName);
+                    }
+                }
+
+
+
 				var instances = index.Instances;
 				var markedRoooted = 0;
 				var markedFinalizer = 0;
@@ -1672,7 +1720,17 @@ namespace UnitTestMdr
 					if (Utils.IsRooted(addr)) ++markedRoooted;
 					if (Utils.IsFinalizer(addr)) ++markedFinalizer;
 				}
-				TestContext.WriteLine("INSTANCE COUNT: " + Utils.LargeNumberString(instances.Length));
+                TestContext.WriteLine("FOUND ROOT ADDR COUNT: " 
+                    + Utils.CountString(rAddrCnt)
+                    + " out of "
+                    + Utils.CountString(staticVars.Length));
+                TestContext.WriteLine("FOUND OBJS ADDR COUNT: "
+                    + Utils.CountString(oAddrCnt)
+                    + " out of "
+                    + Utils.CountString(staticVars.Length));
+
+
+                TestContext.WriteLine("INSTANCE COUNT: " + Utils.LargeNumberString(instances.Length));
 				TestContext.WriteLine("MARKED ROOTED COUNT: " + Utils.LargeNumberString(markedRoooted));
 				TestContext.WriteLine("MARKED FINALIZER COUNT: " + Utils.LargeNumberString(markedFinalizer));
 			}

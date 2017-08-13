@@ -19,27 +19,38 @@ namespace MDRDesk
     /// <summary>
     /// Interaction logic for KeyValueCollectionDisplay.xaml
     /// </summary>
-    public partial class KeyValueCollectionDisplay : Window
+    public partial class KeyValueCollectionDisplay : Window, IValueWindow
     {
         private int _id;
-        private ConcurrentDictionary<int, Window> _wndDct;
         InstanceValue _instValue;
+        private ValueWindows.WndType _wndType;
+        private bool _locked;
+        public ValueWindows.WndType WndType => _wndType;
+        public int Id => _id;
+        public bool Locked => _locked;
+        private Image _lockedImg, _unlockedImg;
 
-        public KeyValueCollectionDisplay(int id, ConcurrentDictionary<int, Window> wndDct, InstanceValue instVal, TypeExtractor.KnownTypes knownType)
+        public KeyValueCollectionDisplay(int id, string description, InstanceValue instVal, bool locked = false)
         {
+            _wndType = ValueWindows.WndType.KeyValues;
             _id = id;
-            _wndDct = wndDct;
-            InitializeComponent();
+             InitializeComponent();
+            UpdateInstanceValue(instVal, description);
+            LockBtn.Content = locked ? _lockedImg : _unlockedImg;
+        }
+
+        public void UpdateInstanceValue(InstanceValue instVal, string descr)
+        {
             _instValue = instVal;
-            Title = TypeExtractor.GetKnowTypeName(knownType);
-            CollectionInfo.Text = GuiUtils.GetExtraDataString(instVal.ExtraData as KeyValuePair<string, string>[],instVal.TypeName, instVal.Address);
+            Title = TypeExtractor.GetKnowTypeName(instVal.TypeName);
+            CollectionInfo.Text = GuiUtils.GetExtraDataString(instVal.ExtraData as KeyValuePair<string, string>[], instVal.TypeName, instVal.Address);
             KeyValuePairs.ItemsSource = instVal.KeyValuePairs;
         }
 
         private void Window_Closing(object sender, System.ComponentModel.CancelEventArgs e)
         {
-            Window wnd;
-            _wndDct.TryRemove(_id, out wnd);
+            var wndtask = Task.Factory.StartNew(() => ValueWindows.RemoveWindow(_id, _wndType));
+            wndtask.Wait();
         }
 
         private ulong GetAddressFromEntry(string entry)
@@ -219,6 +230,22 @@ namespace MDRDesk
             }
 
             // otherwise write to a file TODO JRD
+        }
+
+        private void LockBtnClicked(object sender, RoutedEventArgs e)
+        {
+            if (_locked)
+            {
+                _locked = false;
+                LockBtn.Content = _unlockedImg;
+                ValueWindows.ChangeMyLock(_id, _wndType, false);
+            }
+            else
+            {
+                _locked = true;
+                LockBtn.Content = _lockedImg;
+                ValueWindows.ChangeMyLock(_id, _wndType, true);
+            }
         }
     }
 }

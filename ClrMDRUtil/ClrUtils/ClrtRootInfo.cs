@@ -10,14 +10,65 @@ namespace ClrMDRIndex
 {
 	public class ClrtRootInfo
 	{
-		private readonly ClrtRoot[][] _roots; // rooots by Kind
+        private object _lock;
+        public ClrtRoot[] StaticVariables => _roots[(int)GCRootKind.StaticVar];
+        private readonly ClrtRoot[][] _roots; // rooots by Kind
+        private int[] _staticVarTypeIds;
+        private int[] _staticVarTypeIdMap;
 
-		public ClrtRootInfo(ClrtRoot[][] roots)
+        public ClrtRootInfo(ClrtRoot[][] roots)
 		{
 			_roots = roots;
-		}
+            _lock = new object();
+            InitStaticVarsLookup(roots[(int)GCRootKind.StaticVar]);
+         }
 
-		public ulong[] RootAddresses
+        private void InitStaticVarsLookup(ClrtRoot[] staticVars)
+        {
+            if (staticVars == null || staticVars.Length < 1) return;
+            _staticVarTypeIds = new int[staticVars.Length];
+            _staticVarTypeIdMap = Utils.Iota(staticVars.Length);
+            for (int i = 0, icnt = staticVars.Length; i < icnt; ++i)
+            {
+                _staticVarTypeIds[i] = staticVars[i].TypeId;
+            }
+            Array.Sort(_staticVarTypeIds, _staticVarTypeIdMap);
+        }
+
+        public bool GetTypeStaticVars(int typeId, List<ClrtRoot> lst)
+        {
+            lst.Clear();
+            if (_staticVarTypeIds == null || _staticVarTypeIds.Length < 1) return false;
+            int ndx = Array.BinarySearch(_staticVarTypeIds, typeId);
+            if (ndx < 0) return false;
+
+            // is more then one?
+            int last = ndx;
+            while (ndx > 0)
+            {
+                if (_staticVarTypeIds[ndx - 1] == typeId) --ndx;
+                else break;
+            }
+            int len = _staticVarTypeIds.Length - 1;
+            if (len > 1)
+            {
+                while (last < len)
+                {
+                    if (_staticVarTypeIds[last + 1] == typeId) ++last;
+                    else break;
+                }
+            }
+            var staticVars = StaticVariables;
+            while(ndx <= last)
+            {
+                lst.Add(staticVars[_staticVarTypeIdMap[ndx]]);
+                ++ndx;
+            }
+            return true;
+        }
+
+
+        public ulong[] RootAddresses
 		{
 			get
 			{

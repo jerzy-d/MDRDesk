@@ -103,14 +103,13 @@ namespace MDRDesk
             TreeViewItem selTreeItem;
             InstanceValue selInstValue;
             if (!GetSelectedItem(out selTreeItem, out selInstValue)) return;
+            if (selInstValue == null || selInstValue.Parent == null) return;
 
             if (TypeExtractor.IsString(selInstValue.Kind))
             {
                 // if (selInstValue.Value.IsLong()) -- TODO JRD if has to be here
                 {
-                    ValueWindows.ShowContentWindow(selInstValue.GetDescription(), selInstValue, _mainWindow);
-                    //var wnd = new ContentDisplay(Utils.GetNewID(), _wndDct, selInstValue.GetDescription(), selInstValue) { Owner = _mainWindow };
-                    //wnd.Show();
+                    ValueWindows.ShowContentWindow(selInstValue.GetDescription(), selInstValue, ValueWindows.WndType.Content);
                 }
                 return;
             }

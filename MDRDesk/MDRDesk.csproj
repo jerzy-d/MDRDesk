@@ -201,6 +201,7 @@
     <Compile Include="MDRDeskSetup.xaml.cs">
       <DependentUpon>MDRDeskSetup.xaml</DependentUpon>
     </Compile>
+    <Compile Include="MdrDeskException.cs" />
     <Compile Include="MdrMessageBox.xaml.cs">
       <DependentUpon>MdrMessageBox.xaml</DependentUpon>
     </Compile>

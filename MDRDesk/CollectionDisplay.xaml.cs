@@ -22,23 +22,33 @@ namespace MDRDesk
     /// <summary>
     /// Interaction logic for CollectionDisplay.xaml
     /// </summary>
-    public partial class CollectionDisplay : Window
+    public partial class CollectionDisplay : Window, IValueWindow
     {
         private int _id;
-        private ConcurrentDictionary<int, Window> _wndDct;
         private bool _indicesShown;
         private InstanceValue _instanceValue;
+        private ValueWindows.WndType _wndType;
+        private bool _locked;
+        public ValueWindows.WndType WndType => _wndType;
+        public int Id => _id;
+        public bool Locked => _locked;
+        private Image _lockedImg, _unlockedImg;
 
-        public CollectionDisplay(int id, ConcurrentDictionary<int, Window> wndDct, InstanceValue instVal, string descr, TypeExtractor.KnownTypes knownType)
+        public CollectionDisplay(int id, string descr, InstanceValue instVal, bool locked = false)
         {
+            _wndType = ValueWindows.WndType.List;
             _id = id;
-            _wndDct = wndDct;
-            InitializeComponent();
+             InitializeComponent();
+            UpdateInstanceValue(instVal, descr);
+            LockBtn.Content = locked ? _lockedImg : _unlockedImg;
+        }
+
+        public void UpdateInstanceValue(InstanceValue instVal, string descr)
+        {
             _instanceValue = instVal;
             Debug.Assert(instVal.ArrayValues != null);
             CollectionValues.ItemsSource = instVal.ArrayValues;
             CollectionInfo.Text = descr == null ? GuiUtils.GetExtraDataString(instVal.ExtraData as KeyValuePair<string, string>[], instVal.TypeName, instVal.Address) : descr;
-            wndDct.TryAdd(id, this);
         }
 
         private void ShowArrayIndicesClicked(object sender, RoutedEventArgs e)
@@ -67,8 +77,8 @@ namespace MDRDesk
 
         public void Window_Closing(object sender, CancelEventArgs e)
         {
-            Window wnd;
-            _wndDct.TryRemove(_id, out wnd);
+            var wndtask = Task.Factory.StartNew(() => ValueWindows.RemoveWindow(_id, _wndType));
+            wndtask.Wait();
         }
 
         private void CopyItemSelectionClicked(object sender, RoutedEventArgs e)
@@ -151,6 +161,22 @@ namespace MDRDesk
                 //System.Windows.Threading.Dispatcher.CurrentDispatcher.InvokeAsync(() => owner.ExecuteInstanceValueQuery("Getting object value at: " + Utils.RealAddressString(addr), addr));
             }
 
+        }
+
+        private void LockBtnClicked(object sender, RoutedEventArgs e)
+        {
+            if (_locked)
+            {
+                _locked = false;
+                LockBtn.Content = _unlockedImg;
+                ValueWindows.ChangeMyLock(_id, _wndType, false);
+            }
+            else
+            {
+                _locked = true;
+                LockBtn.Content = _lockedImg;
+                ValueWindows.ChangeMyLock(_id, _wndType, true);
+            }
         }
     }
 }

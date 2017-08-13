@@ -1,8 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using ClrMDRIndex;
 
 namespace MDRDesk
 {
@@ -22,5 +18,10 @@ namespace MDRDesk
         /// If locked we cannot replace window's content.
         /// </summary>
         bool Locked { get;  }
+
+        /// <summary>
+        /// If a content window is unlocked we just update its content.
+        /// </summary>
+        void UpdateInstanceValue(InstanceValue instVal, string descr);
     }
 }

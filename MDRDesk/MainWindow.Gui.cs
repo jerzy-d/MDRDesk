@@ -1989,7 +1989,7 @@ namespace MDRDesk
             string item = tb.Text;
             var tbParent = tb.Parent as System.Windows.Controls.GridViewRowPresenter;
             if (tbParent == null)
-                throw new ApplicationException("[MainWindow.ListingViewDoubleClicked] TextBlock parent is not GridViewRowPresenter as expected.");
+                throw new MdrDeskException("[MainWindow.ListingViewDoubleClicked] TextBlock parent is not GridViewRowPresenter as expected.");
             var lstInfo = lvTag.Item1;
             var listing = (listing<string>)tbParent.Content;
             int ndx = Constants.InvalidIndex;
@@ -2053,38 +2053,28 @@ namespace MDRDesk
 
                 if (knownType == TypeExtractor.KnownTypes.HashSet)
                 {
-                    var wnd = new CollectionDisplay(Utils.GetNewID(), _wndDct, inst, null, TypeExtractor.KnownTypes.Unknown) { Owner = this };
-                    wnd.Show();
+                    ValueWindows.ShowContentWindow(inst.GetDescription(), inst, ValueWindows.WndType.List);
                     return;
                 }
                 {
-                    var wnd = new KeyValueCollectionDisplay(Utils.GetNewID(), _wndDct, inst, knownType) { Owner = this };
-                    wnd.Show();
+                    ValueWindows.ShowContentWindow(inst.GetDescription(), inst, ValueWindows.WndType.KeyValues);
                     return;
                 }
             }
 
             if (!inst.HaveFields() && !inst.Value.IsLong())
             {
-                ValueWindows.ShowTreeContentWindow(inst.GetDescription(), inst, this);
-                //var wnd = new ContentDisplay(Utils.GetNewID(), _wndDct, inst.GetDescription(), inst) { Owner = this };
-                //wnd.Show();
+                ValueWindows.ShowContentWindow(inst.GetDescription(), inst, ValueWindows.WndType.Tree);
                 return;
             }
 
             if (inst.IsArray())
             {
-                var wnd = new CollectionDisplay(Utils.GetNewID(), _wndDct, inst, inst.GetDescription(), TypeExtractor.KnownTypes.Unknown) { Owner = this };
-                wnd.Show();
+                ValueWindows.ShowContentWindow(inst.GetDescription(), inst, ValueWindows.WndType.List);
                 return;
             }
 
-            {
-                ValueWindows.ShowTreeContentWindow(inst.GetDescription(), inst, this);
-                //var wnd = new ClassStructDisplay(Utils.GetNewID(), _wndDct, inst.GetDescription(), inst) { Owner = this };
-                //wnd.Show();
-            }
-
+            ValueWindows.ShowContentWindow(inst.GetDescription(), inst, ValueWindows.WndType.Tree);
         }
          
         #endregion instance value

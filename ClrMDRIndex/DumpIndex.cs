@@ -92,6 +92,7 @@ namespace ClrMDRIndex
         public string[] StringIds => _stringIds;
 
         private ClrtRootInfo _roots;
+        public ClrtRootInfo Roots => _roots;
 
         public ulong[] RootObjects => _roots.RootObjects;
 

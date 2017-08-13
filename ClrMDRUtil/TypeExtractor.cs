@@ -523,6 +523,12 @@ namespace ClrMDRIndex
             return false;
         }
 
+        public static string GetKnowTypeName(string typeName)
+        {
+            KnownTypes kt = IsKnownCollection(typeName);
+            return GetKnowTypeName(kt);
+        }
+
         public static KnownTypes IsKnownCollection(string typeName)
         {
             for (int i = 0, icnt = KnownTypeNames.Length; i < icnt; ++i)
@@ -755,11 +761,11 @@ namespace ClrMDRIndex
                             case ClrElementKind.Decimal:
                                 return new ClrtDisplayableType(null, typeId, Constants.InvalidIndex, clrType.Name, String.Empty, clrTypeKind);
                             case ClrElementKind.Interface:
-                                throw new ApplicationException("Interface kind is not expected from ClrHeap.GetHeapObject(...) method.");
+                                throw new MdrException("[GetClrtDisplayableType.GetClrtDisplayableType] Interface kind is not expected from ClrHeap.GetHeapObject(...) method.");
                             case ClrElementKind.Enum:
                                 return new ClrtDisplayableType(null, typeId, Constants.InvalidIndex, clrType.Name, String.Empty, clrTypeKind);
                             case ClrElementKind.System__Canon:
-                                throw new ApplicationException("System__Canon kind is not expected from ClrHeap.GetHeapObject(...) method.");
+                                throw new MdrException("[GetClrtDisplayableType.GetClrtDisplayableType] System__Canon kind is not expected from ClrHeap.GetHeapObject(...) method.");
                             case ClrElementKind.Exception:
                             case ClrElementKind.Abstract:
                             case ClrElementKind.SystemVoid:
@@ -862,11 +868,11 @@ namespace ClrMDRIndex
                         switch (specKind)
                         {
                             case ClrElementKind.Interface:
-                                throw new ApplicationException("Interface kind is not expected from ClrHeap.GetHeapObject(...) method.");
+                                throw new MdrException("[TypeExtractor.GetClrtDisplayableType] Interface kind is not expected from ClrHeap.GetHeapObject(...) method.");
                             case ClrElementKind.System__Canon:
-                                throw new ApplicationException("System__Canon kind is not expected from ClrHeap.GetHeapObject(...) method.");
+                                throw new MdrException("[TypeExtractor.GetClrtDisplayableType] System__Canon kind is not expected from ClrHeap.GetHeapObject(...) method.");
                             case ClrElementKind.Abstract:
-                                throw new ApplicationException("Abstract kind is not expected from ClrHeap.GetHeapObject(...) method.");
+                                throw new MdrException("[TypeExtractor.GetClrtDisplayableType] Abstract kind is not expected from ClrHeap.GetHeapObject(...) method.");
                         }
                     }
 

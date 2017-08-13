@@ -119,3 +119,21 @@ System.Collections.Generic.Dictionary<System.String,System.Boolean> at 0x0000540
   at ClrMDRIndex.DumpIndex.GetValues(ClrHeap heap, TypeValueQuery parentQry, UInt64 addr, TypeValueQuery qry) in D:\Jerzy\projects\csharp\15\MDRDesk\ClrMDRIndex\DumpIndex.cs:line 1859
    at ClrMDRIndex.DumpIndex.GetTypeValuesReport(TypeValueQuery query, UInt64[] instances, String& error) in D:\Jerzy\projects\csharp\15\MDRDesk\ClrMDRIndex\DumpIndex.cs:line 1906 
 not urgent, just an fyi
+0036 08/13/17
+ArgumentOutOfRangeException
+mscorlib
+Index was out of range. Must be non-negative and less than the size of the collection.
+Parameter name: index
+   at System.ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument argument, ExceptionResource resource)
+   at System.Collections.Generic.List`1.get_Item(Int32 index)
+   at ClrMDRIndex.ValueExtractor.DecimalValue(UInt64 addr, ClrInstanceField field) in C:\projects\csharp17\MDRDesk\ClrMDRUtil\ValueExtractor.cs:line 66
+   at ClrMDRIndex.ValueExtractor.GetFieldValue(IndexProxy ndxProxy, ClrHeap heap, UInt64 addr, ClrInstanceField fld, Boolean intern, ClrType& fldType, ClrElementKind& kind, UInt64& fldAddr) in C:\projects\csharp17\MDRDesk\ClrMDRUtil\ValueExtractor.cs:line 1092
+   at ClrMDRIndex.ValueExtractor.GetFieldValues(IndexProxy ndxProxy, ClrHeap heap, ClrType clrType, ClrElementKind kind, UInt64 addr, InstanceValue parent, String& error) in C:\projects\csharp17\MDRDesk\ClrMDRUtil\ValueExtractor.cs:line 1214
+   at ClrMDRIndex.ValueExtractor.GetInstanceValue(IndexProxy ndxProxy, ClrHeap heap, UInt64 decoratedAddr, Int32 fldNdx, InstanceValue parent) in C:\projects\csharp17\MDRDesk\ClrMDRUtil\ValueExtractor.cs:line 1278
+   at ClrMDRIndex.DumpIndex.GetInstanceValue(UInt64 addr, InstanceValue parent) in C:\projects\csharp17\MDRDesk\ClrMDRIndex\DumpIndex.cs:line 1234
+Crash Dump: Cowen.Analytics.Svc_170717_165238.dmp (x64)
+MDR Desk (debug) 0.6.0.11  [64-bit] ❖ Cowen.Analytics.Svc_170717_165238.dmp
+
+0x000053053a46d0
+ECS.Common.HierarchyCache.MarketData.BoxedValueHolder
+
