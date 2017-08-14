@@ -20,8 +20,9 @@ namespace ClrMDRIndex
         public static string ProcDumpFolder { get; private set; }
         public static string DumpsFolder { get; private set; }
         public static string HelpFolder { get; private set; }
+        public static string WndDbgFolder { get; private set; }
 
-
+        public static bool HasWndDbgFolder => !string.IsNullOrEmpty(WndDbgFolder);
 
         public static List<string> RecentIndexList { get; private set; }
         public static List<string> RecentAdhocList { get; private set; }
@@ -155,6 +156,12 @@ namespace ClrMDRIndex
                             var folder = appSettings.Settings[key].Value.Trim();
                             if (Directory.Exists(folder)) HelpFolder = folder;
                             else errors.AppendLine("help folder does not exist: " + folder);
+                        }
+                        else if (Utils.SameStrings(ky, "wnddbgfolder"))
+                        {
+                            var folder = appSettings.Settings[key].Value.Trim();
+                            if (Directory.Exists(folder)) WndDbgFolder = folder;
+                            //else errors.AppendLine("help folder does not exist: " + folder);
                         }
                         else if (Utils.SameStrings(ky, "graphproxy"))
                         {

@@ -120,6 +120,7 @@
     <Compile Include="Scullion.cs" />
     <Compile Include="TypeExtractor.cs" />
     <Compile Include="TypeKinds.cs" />
+    <Compile Include="Unsafe\DbgEng.cs" />
     <Compile Include="Unsafe\FileReader.cs" />
     <Compile Include="Unsafe\FileWriter.cs" />
     <Compile Include="Utils\AncestorDispRecord.cs" />

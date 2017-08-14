@@ -2043,7 +2043,7 @@ namespace MDRDesk
             {
                 if (knownType == TypeExtractor.KnownTypes.StringBuilder)
                 {
-                    // TODO JRD -- display as string
+                    ValueWindows.ShowContentWindow(inst.GetDescription(), inst, ValueWindows.WndType.Content);
                 }
                 if ((inst.KeyValuePairs == null || inst.KeyValuePairs.Length < 1) && (inst.ArrayValues==null || inst.ArrayValues.Length < 1))
                 {
@@ -2062,19 +2062,18 @@ namespace MDRDesk
                 }
             }
 
-            if (!inst.HaveFields() && !inst.Value.IsLong())
-            {
-                ValueWindows.ShowContentWindow(inst.GetDescription(), inst, ValueWindows.WndType.Tree);
-                return;
-            }
-
             if (inst.IsArray())
             {
                 ValueWindows.ShowContentWindow(inst.GetDescription(), inst, ValueWindows.WndType.List);
-                return;
             }
-
-            ValueWindows.ShowContentWindow(inst.GetDescription(), inst, ValueWindows.WndType.Tree);
+            else if (!inst.HaveFields())
+            {
+                ValueWindows.ShowContentWindow(inst.GetDescription(), inst, ValueWindows.WndType.Content);
+            }
+            else
+            {
+                ValueWindows.ShowContentWindow(inst.GetDescription(), inst, ValueWindows.WndType.Tree);
+            }
         }
          
         #endregion instance value

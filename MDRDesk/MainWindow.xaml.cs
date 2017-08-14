@@ -42,6 +42,7 @@ namespace MDRDesk
 
         private RecentFileList RecentAdhocList;
 
+        public static bool WndDbgLoaded { get; private set; }
         public static string BaseTitle;
         public static DumpIndex CurrentIndex;
         public static ClrtDump CurrentAdhocDump;
@@ -56,9 +57,13 @@ namespace MDRDesk
         {
             InitializeComponent();
             string error;
-            if (!Init(out error))
+            if (!Init(out error) || error != null)
             {
                 Dispatcher.CurrentDispatcher.InvokeAsync(() => MessageBoxShowError(error));
+            }
+            if (error != null)
+            {
+                Dispatcher.CurrentDispatcher.InvokeAsync(() => ShowError(error));
             }
         }
 
@@ -67,6 +72,10 @@ namespace MDRDesk
             error = null;
             try
             {
+
+                var sysdir = Environment.GetFolderPath(Environment.SpecialFolder.System);
+
+
                 _myVersion = Assembly.GetExecutingAssembly().GetName().Version;
 #if DEBUG
                 MainWindow.BaseTitle = "MDR Desk (debug) " + _myVersion + (Environment.Is64BitProcess ? "  [64-bit]" : "  [32-bit]");
@@ -79,6 +88,17 @@ namespace MDRDesk
 
                 var result = Setup.GetConfigSettings(out error);
                 if (!result) return false;
+
+                // load dbgend.dll if required
+                //if (Setup.HasWndDbgFolder)
+                //{
+                //    WndDbgLoaded = dbgdeng.DbgEng.LoadDebugEngine(Setup.WndDbgFolder, out error);
+                //    if (!WndDbgLoaded)
+                //    {
+                //        error = error + Environment.NewLine + "All dbgeng queries will be disabled.";
+                //    }
+                //}
+
                 RecentIndexList = new RecentFileList(RecentIndexMenuItem, (int)Setup.RecentFiles.MaxCount);
                 RecentIndexList.Add(Setup.RecentIndexList);
                 RecentAdhocList = new RecentFileList(RecentAdhocMenuItem, (int)Setup.RecentFiles.MaxCount);
@@ -88,22 +108,17 @@ namespace MDRDesk
                 switch (Setup.TypesDisplayMode)
                 {
                     case "namespaces":
-                        //TypeDisplayNamespaceClass.IsChecked = true;
                         TypeDisplayMode.SelectedIndex = 0;
                         break;
                     case "types":
-                        //TypeDisplayClass.IsChecked = true;
                         TypeDisplayMode.SelectedIndex = 1;
                         break;
                     case "fulltypenames":
-                        //TypeDisplayNamespace.IsChecked = true;
                         TypeDisplayMode.SelectedIndex = 2;
                         break;
                     default:
-                        //TypeDisplayNamespace.IsChecked = true;
                         TypeDisplayMode.SelectedIndex = 0;
                         break;
-
                 }
 
                 _adhocSTAScheduler = new SingleThreadTaskScheduler();

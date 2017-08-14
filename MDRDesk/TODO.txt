@@ -136,4 +136,15 @@ MDR Desk (debug) 0.6.0.11  [64-bit] ❖ Cowen.Analytics.Svc_170717_165238.dmp
 
 0x000053053a46d0
 ECS.Common.HierarchyCache.MarketData.BoxedValueHolder
-
+0037 08/14/17
+[APPLICATION WILL CLOSE] IndexOutOfRangeException
+MDRDesk
+Index was outside the bounds of the array.
+   at MDRDesk.ClassStructDisplay.<InstanceValueTreeview_OnMouseDoubleClick>d__16.MoveNext() in D:\Jerzy\projects\csharp\15\MDRDesk\MDRDesk\ClassStructDisplay.xaml.cs:line 142
+--- End of stack trace from previous location where exception was thrown ---
+   at System.Runtime.CompilerServices.AsyncMethodBuilderCore.<>c.<ThrowAsync>b__6_0(Object state)
+   at System.Windows.Threading.ExceptionWrapper.InternalRealCall(Delegate callback, Object args, Int32 numArgs)
+   at System.Windows.Threading.ExceptionWrapper.TryCatchWhen(Object source, Delegate callback, Object args, Int32 numArgs, Delegate catchHandler)
+Crash Dump: Cowen.Analytics.Svc_170717_165238.dmp (x64)
+MDR Desk  0.6.0.11  [64-bit] ❖ Cowen.Analytics.Svc_170717_165238.dmp
+ProtoBuf.Serializers.TagDecorator - Tail field

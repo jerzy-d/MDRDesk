@@ -107,7 +107,7 @@ namespace MDRDesk
 
             if (TypeExtractor.IsString(selInstValue.Kind))
             {
-                // if (selInstValue.Value.IsLong()) -- TODO JRD if has to be here
+                if (selInstValue.Value.IsLong())
                 {
                     ValueWindows.ShowContentWindow(selInstValue.GetDescription(), selInstValue, ValueWindows.WndType.Content);
                 }
@@ -119,15 +119,15 @@ namespace MDRDesk
             ulong addr = _mainWindow.GetAddressFromEntry(selInstValue.Value.FullContent);
             if (selInstValue.Address != Constants.InvalidAddress && addr != Constants.InvalidAddress && addr == selInstValue.Address)
             {
-                if (StatusRawMode.IsChecked.Value == false) // if known collection show it in a collection window
-                {
-                    if (TypeExtractor.IsKnownType(selInstValue.TypeName))
-                    {
-                        var msg = "Getting object value at: " + Utils.RealAddressString(selInstValue.Address);
-                        _mainWindow.ExecuteInstanceValueQuery(msg, selInstValue.Address);
-                        return;
-                    }
-                }
+                //if (StatusRawMode.IsChecked.Value == false) // if known collection show it in a collection window
+                //{
+                //    if (TypeExtractor.IsKnownType(selInstValue.TypeName))
+                //    {
+                //        var msg = "Getting object value at: " + Utils.RealAddressString(selInstValue.Address);
+                //        _mainWindow.ExecuteInstanceValueQuery(msg, selInstValue.Address);
+                //        return;
+                //    }
+                //}
                 var index = MainWindow.CurrentIndex;
 
                 StatusText.Text = "Getting value at address: " + selInstValue.Address + ", please wait...";
@@ -151,13 +151,35 @@ namespace MDRDesk
                     return;
                 }
 
-                // TODO JRD
-                //if (fields.Length == 1 && fields[0].IsArray())
-                //{
-                //    var wnd = new CollectionDisplay(Utils.GetNewID(), _wndDct, fields[0], fields[0].GetDescription(), TypeExtractor.KnownTypes.Unknown) { Owner = Application.Current.MainWindow };
-                //    wnd.Show();
-                //    return;
-                //}
+                if (fields.Length < 1) return;
+
+                if (fields.Length == 1 && fields[0].IsArray())
+                {
+                    ValueWindows.ShowContentWindow(fields[0].GetDescription(), fields[0], ValueWindows.WndType.List);
+                    return;
+                }
+
+                TypeExtractor.KnownTypes knownType = TypeExtractor.IsKnownCollection(fields[0].TypeName);
+                if (knownType != TypeExtractor.KnownTypes.Unknown)
+                {
+                    var inst = fields[0];
+                    switch(knownType)
+                    {
+                        case TypeExtractor.KnownTypes.StringBuilder:
+                            ValueWindows.ShowContentWindow(inst.GetDescription(), inst, ValueWindows.WndType.Content);
+                            return;
+                        case TypeExtractor.KnownTypes.HashSet:
+                        case TypeExtractor.KnownTypes.List:
+                            ValueWindows.ShowContentWindow(inst.GetDescription(), inst, ValueWindows.WndType.List);
+                            return;
+
+                        case TypeExtractor.KnownTypes.Dictionary:
+                        case TypeExtractor.KnownTypes.SortedDictionary:
+                        case TypeExtractor.KnownTypes.SortedList:
+                            ValueWindows.ShowContentWindow(inst.GetDescription(), inst, ValueWindows.WndType.KeyValues);
+                            return;
+                    }
+                }
 
                 if (fields.Length > 0)
                 {
@@ -173,9 +195,7 @@ namespace MDRDesk
                         selTreeItem.Items.Add(tvNode);
                     }
                 }
-
                 selTreeItem.ExpandSubtree();
-
             }
             else
 			{
