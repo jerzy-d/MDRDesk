@@ -56,20 +56,17 @@ namespace MDRDesk
         public MainWindow()
         {
             InitializeComponent();
-            string error;
-            if (!Init(out error) || error != null)
-            {
-                Dispatcher.CurrentDispatcher.InvokeAsync(() => MessageBoxShowError(error));
-            }
-            if (error != null)
-            {
-                Dispatcher.CurrentDispatcher.InvokeAsync(() => ShowError(error));
-            }
+            Dispatcher.CurrentDispatcher.InvokeAsync(() => MdrInit());
         }
 
-        private bool Init(out string error)
+        private void MdrInit()
         {
-            error = null;
+            Init();
+        }
+
+        private async void Init()
+        {
+            string error = null;
             try
             {
 
@@ -87,17 +84,11 @@ namespace MDRDesk
                 this.AddHandler(CloseableTabItem.CloseTabEvent, new RoutedEventHandler(this.CloseTab));
 
                 var result = Setup.GetConfigSettings(out error);
-                if (!result) return false;
-
-                // load dbgend.dll if required
-                //if (Setup.HasWndDbgFolder)
-                //{
-                //    WndDbgLoaded = dbgdeng.DbgEng.LoadDebugEngine(Setup.WndDbgFolder, out error);
-                //    if (!WndDbgLoaded)
-                //    {
-                //        error = error + Environment.NewLine + "All dbgeng queries will be disabled.";
-                //    }
-                //}
+                if (!result)
+                {
+                    Dispatcher.CurrentDispatcher.InvokeAsync(() => MessageBoxShowError(error));
+                    return;
+                }
 
                 RecentIndexList = new RecentFileList(RecentIndexMenuItem, (int)Setup.RecentFiles.MaxCount);
                 RecentIndexList.Add(Setup.RecentIndexList);
@@ -123,12 +114,27 @@ namespace MDRDesk
 
                 _adhocSTAScheduler = new SingleThreadTaskScheduler();
                 _dumpSTAScheduler = new SingleThreadTaskScheduler();
-                return result;
+
+                // load dbgend.dll if required
+                if (Setup.HasWndDbgFolder)
+                {
+                    (WndDbgLoaded, error) = await Task.Factory.StartNew(() =>
+                     {
+                         string err;
+                         bool ok = dbgdeng.DbgEng.LoadDebugEngine(Setup.WndDbgFolder, out err);
+                         return (ok, err);
+                     }, _dumpSTAScheduler);
+                    if (!WndDbgLoaded)
+                    {
+                        error = error + Environment.NewLine + "All dbgeng queries will be disabled.";
+                        Dispatcher.CurrentDispatcher.InvokeAsync(() => ShowError(error));
+                    }
+                }
             }
             catch (Exception ex)
             {
                 error = Utils.GetExceptionErrorString(ex);
-                return false;
+                Dispatcher.CurrentDispatcher.InvokeAsync(() => MessageBoxShowError(error));
             }
         }
 

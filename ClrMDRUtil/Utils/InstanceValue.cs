@@ -146,7 +146,16 @@ namespace ClrMDRIndex
         public string GetDescription()
         {
             var sb = StringBuilderCache.Acquire(StringBuilderCache.MaxCapacity);
-            if (IsArray())
+            if (_extraData != null && _extraData is KeyValuePair<string,string>[])
+            {
+                sb.Append("Type:      ").AppendLine(TypeName);
+                var ary = _extraData as KeyValuePair<string, string>[];
+                for (int i = 0, icnt=ary.Length; i < icnt; ++i)
+                {
+                    sb.Append(ary[i].Key).Append(" : ").AppendLine(ary[i].Value);
+                }
+            }
+            else if (IsArray())
             {
                 sb.Append("Type:      ").AppendLine(TypeName);
                 sb.Append("Item Type: ").AppendLine(Fields[0].TypeName);
