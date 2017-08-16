@@ -1889,9 +1889,8 @@ namespace MDRDesk
             addr = Constants.InvalidAddress;
             string str;
             if (!GetDlgString(title, "Enter address:", " ", out str)) return false;
-            str = str.Trim();
-            if (str.StartsWith("0x") || str.StartsWith("0X")) str = str.Substring(2);
-            if (!ulong.TryParse(str, System.Globalization.NumberStyles.AllowHexSpecifier, null, out addr))
+            var cleanStr = Utils.CleanupHexString(str);
+            if (cleanStr==string.Empty || !ulong.TryParse(cleanStr, System.Globalization.NumberStyles.AllowHexSpecifier, null, out addr))
             {
                 MessageBox.Show("Not valid hex number string: " + str + ".", "INVALID INPUT", MessageBoxButton.OK,
                     MessageBoxImage.Error);

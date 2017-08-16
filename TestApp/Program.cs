@@ -17,6 +17,9 @@ namespace TestApp
 			var testClass = new TestClass(Process.GetCurrentProcess().Id);
 			testClass.Init();
 
+            Guid guid1 = Guid.NewGuid();
+            var cls = (object)guid1;
+
 			Console.ReadLine();
 			testClass.Stop();
 		}

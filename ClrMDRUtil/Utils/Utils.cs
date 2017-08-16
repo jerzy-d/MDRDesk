@@ -2379,6 +2379,25 @@ namespace ClrMDRIndex
 						 (c >= 'A' && c <= 'F'));
 		}
 
+        public static string CleanupHexString(string hexStr)
+        {
+            if (hexStr == null || hexStr.Length < 1) return string.Empty;
+            int last = hexStr.Length - 1;
+            for (; last >= 0; --last)
+            {
+                if (IsHexChar(hexStr[last])) break;
+            }
+            if (last < 0) return string.Empty;
+            int first = 0;
+            for (; first < last; ++first)
+            {
+                char c = hexStr[first];
+                if (c != '0' && IsHexChar(c)) break;
+            }
+            if (first >= last) return new string(hexStr[last], 1);
+            return hexStr.Substring(first, last - first + 1);
+        }
+
         public static KeyValuePair<bool, ulong> GetFirstUlong(string str)
         {
             var ndx = str.IndexOf("0x", StringComparison.OrdinalIgnoreCase);

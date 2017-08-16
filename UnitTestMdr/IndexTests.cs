@@ -1872,7 +1872,104 @@ namespace UnitTestMdr
             Assert.IsNull(error, error);
         }
 
-		[TestMethod]
+
+        private static string[] GetTypeValueAsStringOfAll(ClrHeap heap, ClrType clrType, ClrElementKind kind, ulong[] addrs, out string error)
+        {
+            error = null;
+            try
+            {
+                string[] values = new string[addrs.Length];
+                for (int i = 0, icnt = addrs.Length; i < icnt; ++i)
+                {
+                    var addr = addrs[i];
+                    values[i] = ValueExtractor.GetTypeValueAsString(heap, addr, clrType, kind);
+
+                }
+                return values;
+            }
+            catch (Exception ex)
+            {
+                error = ex.ToString();
+                return null;
+            }
+        }
+
+        private static string[] GetTypeValues(DumpIndex index, ClrHeap heap, string typeName)
+        {
+            string error;
+            int typeId = index.GetTypeId(typeName);
+            ulong[] addrs = index.GetTypeRealAddresses(typeId);
+
+            if (addrs != null || addrs.Length > 0)
+            {
+                ClrType clrType = heap.GetObjectType(addrs[0]);
+                Assert.IsNotNull(clrType);
+                ClrElementKind kind = TypeExtractor.GetElementKind(clrType);
+                Assert.IsFalse(kind == ClrElementKind.Unknown);
+                string[] values = GetTypeValueAsStringOfAll(heap, clrType, kind, addrs, out error);
+                Assert.IsNull(error, error);
+                Assert.IsNotNull(values);
+                return values;
+            }
+            return Utils.EmptyArray<string>.Value;
+        }
+
+        private static string[] GetTypeValues(DumpIndex index, ClrHeap heap, ulong[] addrs)
+        {
+            string error;
+            if (addrs != null || addrs.Length > 0)
+            {
+                ClrType clrType = heap.GetObjectType(addrs[0]);
+                Assert.IsNotNull(clrType);
+                ClrElementKind kind = TypeExtractor.GetElementKind(clrType);
+                Assert.IsFalse(kind == ClrElementKind.Unknown);
+                string[] values = GetTypeValueAsStringOfAll(heap, clrType, kind, addrs, out error);
+                Assert.IsNull(error, error);
+                Assert.IsNotNull(values);
+                return values;
+            }
+            return Utils.EmptyArray<string>.Value;
+        }
+
+
+
+        [TestMethod]
+        public void GetTypeValueAsString_Test()
+        {
+            string error = null;
+            Stopwatch stopWatch = new Stopwatch();
+            stopWatch.Start();
+            var index = OpenIndex(@"D:\Jerzy\WinDbgStuff\dumps\Analytics\Cowen\Cowen.Analytics.Svc_170717_165238.dmp.map");
+            //var index = OpenIndex(@"D:\Jerzy\WinDbgStuff\dumps\Analytics\Highline\analyticsdump111.dlk.new2.dmp.map");
+            TestContext.WriteLine(index.DumpFileName + " INDEX OPEN DURATION: " + Utils.StopAndGetDurationString(stopWatch));
+
+            using (index)
+            {
+                var heap = index.Heap;
+
+                try
+                {
+                    string[] values = GetTypeValues(index, heap, "System.Guid");
+                    values = GetTypeValues(index, heap, "System.DateTime");
+                    values = GetTypeValues(index, heap, "System.TimeSpan");
+                    values = GetTypeValues(index, heap, "System.Decimal");
+
+                    ulong[] addrs = index.GetSpecialKindTypeInstances(ClrElementKind.Exception);
+                    values = GetTypeValues(index, heap, addrs);
+
+                }
+                catch (Exception ex)
+                {
+                    error = ex.ToString();
+                    Assert.IsTrue(false, error);
+                    TestContext.WriteLine(Environment.NewLine + error);
+                }
+            }
+
+            Assert.IsNull(error, error);
+        }
+
+        [TestMethod]
 		public void TestInstanceValueMisc()
 		{
 			// ulong addr = 0x0001e0d8eb77f8; // 64 bit
@@ -2106,7 +2203,31 @@ namespace UnitTestMdr
 			}
 		}
 
-		[TestMethod]
+        [TestMethod]
+        public void TestHexString()
+        {
+            ulong value;
+            string s0 = Utils.CleanupHexString("0x00000055099f9b08");
+            Assert.IsTrue(ulong.TryParse(s0, System.Globalization.NumberStyles.AllowHexSpecifier, null, out value));
+            string s1 = Utils.CleanupHexString("✔x00005507066658");
+            Assert.IsTrue(ulong.TryParse(s1, System.Globalization.NumberStyles.AllowHexSpecifier, null, out value));
+            string s2 = Utils.CleanupHexString("x0000");
+            Assert.IsTrue(ulong.TryParse(s2, System.Globalization.NumberStyles.AllowHexSpecifier, null, out value));
+            string s3 = Utils.CleanupHexString("x300");
+            Assert.IsTrue(ulong.TryParse(s3, System.Globalization.NumberStyles.AllowHexSpecifier, null, out value));
+            string s4 = Utils.CleanupHexString("0x000300");
+            Assert.IsTrue(ulong.TryParse(s4, System.Globalization.NumberStyles.AllowHexSpecifier, null, out value));
+
+            string snull = Utils.CleanupHexString(null);
+            Assert.IsTrue(snull == string.Empty);
+            string sbad = Utils.CleanupHexString("zxxx");
+            Assert.IsTrue(snull == string.Empty);
+
+
+        }
+
+
+        [TestMethod]
 		public void TestMapping()
 		{
 			char[] chars = new[] {'d', 'a', 'b', 'f', 'h', 'e', 'g', 'c'};

@@ -704,30 +704,69 @@ namespace ClrMDRIndex
             return result;
         }
 
-        //private int[] RemoveArrayType(int[] typeIds)
-        //{
-        //	int cntToRemove = 0;
-        //	for (int i = 0, icnt = typeIds.Length; i < icnt; ++i)
-        //	{
-        //		if (Types.IsArray(typeIds[i]))
-        //		{
-        //			typeIds[i] = Int32.MaxValue;
-        //			++cntToRemove;
-        //		}
-        //	}
-        //	if (cntToRemove > 0)
-        //	{
-        //		int[] newAry = new int[typeIds.Length - cntToRemove];
-        //		int ndx = 0;
-        //		for (int i = 0, icnt = typeIds.Length; i < icnt; ++i)
-        //		{
-        //			if (typeIds[i] != Int32.MaxValue)
-        //				newAry[ndx++] = typeIds[i];
-        //		}
-        //		return newAry;
-        //	}
-        //	return typeIds;
-        //}
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="kind">This is special kind.</param>
+        /// <returns></returns>
+        public int[] GetSpecialKindTypeIds(ClrElementKind specKind)
+        {
+            List<int> ids = new List<int>(256);
+            var kinds = GetElementKindList();
+            for (int i = 0, icnt = kinds.Length; i < icnt; ++i)
+            {
+                var skind = TypeExtractor.GetSpecialKind(kinds[i]);
+                if (skind == specKind)
+                {
+                    ids.Add(i);
+                }
+            }
+            return ids.ToArray();
+        }
+
+        public ulong[] GetInstancesOfTypes(int[] typeIds)
+        {
+            List<ulong> addrLst = new List<ulong>(1024);
+            for (int i = 0, icnt = typeIds.Length; i < icnt; ++i)
+            {
+                var insts = GetTypeRealAddresses(typeIds[i]);
+                if (insts.Length == 0) continue;
+                addrLst.AddRange(insts);
+            }
+            addrLst.Sort();
+            return addrLst.ToArray();
+        }
+
+        public ulong[] GetSpecialKindTypeInstances(ClrElementKind specKind)
+        {
+            int[] ids = GetSpecialKindTypeIds(specKind);
+            return GetInstancesOfTypes(ids);
+        }
+
+            //private int[] RemoveArrayType(int[] typeIds)
+            //{
+            //	int cntToRemove = 0;
+            //	for (int i = 0, icnt = typeIds.Length; i < icnt; ++i)
+            //	{
+            //		if (Types.IsArray(typeIds[i]))
+            //		{
+            //			typeIds[i] = Int32.MaxValue;
+            //			++cntToRemove;
+            //		}
+            //	}
+            //	if (cntToRemove > 0)
+            //	{
+            //		int[] newAry = new int[typeIds.Length - cntToRemove];
+            //		int ndx = 0;
+            //		for (int i = 0, icnt = typeIds.Length; i < icnt; ++i)
+            //		{
+            //			if (typeIds[i] != Int32.MaxValue)
+            //				newAry[ndx++] = typeIds[i];
+            //		}
+            //		return newAry;
+            //	}
+            //	return typeIds;
+            //}
 
         public ListingInfo GetAllTypesSizesInfo(bool baseSize)
         {

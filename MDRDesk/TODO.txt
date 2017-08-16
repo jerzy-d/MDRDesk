@@ -137,3 +137,4 @@ MDR Desk (debug) 0.6.0.11  [64-bit] ❖ Cowen.Analytics.Svc_170717_165238.dmp
 0x000053053a46d0
 ECS.Common.HierarchyCache.MarketData.BoxedValueHolder
 *** 0037 08/14/17 [APPLICATION WILL CLOSE] IndexOutOfRangeException || Crash Dump: Cowen.Analytics.Svc_170717_165238.dmp (x64) ProtoBuf.Serializers.TagDecorator - Tail field
+0038 08/16/17 Fix opening the index when we have one already opened.

@@ -24,9 +24,7 @@ namespace ClrMDRIndex
             return (ulong)valObj;
         }
 
-        //
-        // System.Decimal
-        //
+        #region decimal
 
         public static string GetDecimalValue(ulong parentAddr, ClrInstanceField field, bool intr)
         {
@@ -135,9 +133,10 @@ namespace ClrMDRIndex
             return formatSpec == null ? d.ToString(CultureInfo.InvariantCulture) : d.ToString(formatSpec);
         }
 
-        //
-        // System.String
-        //
+        #endregion decimal
+
+
+        #region string
 
         public static string GetStringAtAddress(ulong addr, ClrHeap heap)
         {
@@ -223,9 +222,9 @@ namespace ClrMDRIndex
             return new string(charArray);
         }
 
-        //
-        // System.DateTime
-        //
+        #endregion string
+
+        #region System.Datetime
 
         private const ulong TicksMask = 0x3FFFFFFFFFFFFFFF;
 
@@ -304,6 +303,8 @@ namespace ClrMDRIndex
             return formatSpec == null ? dt.ToString("s") : dt.ToString(formatSpec);
         }
 
+        #endregion System.Datetime
+
         //
         // System.TimeSpan
         //
@@ -360,27 +361,26 @@ namespace ClrMDRIndex
             }
         }
 
-        //
-        // System.Guid
-        //
+        #region System.Guid
+
         // TODO JRD -- bad
         public static string GetGuidValue(ulong addr, ClrType type)
         {
             StringBuilder sb = StringBuilderCache.Acquire(64);
 
-            var ival = (int)type.Fields[0].GetValue(addr, true);
+            var ival = (int)type.Fields[0].GetValue(addr, false);
             sb.AppendFormat("{0:X8}", ival);
             sb.Append('-');
-            var sval = (short)type.Fields[1].GetValue(addr, true);
+            var sval = (short)type.Fields[1].GetValue(addr, false);
             sb.AppendFormat("{0:X4}", sval);
             sb.Append('-');
-            sval = (short)type.Fields[2].GetValue(addr, true);
+            sval = (short)type.Fields[2].GetValue(addr, false);
             sb.AppendFormat("{0:X4}", sval);
             sb.Append('-');
             for (var i = 3; i < 11; ++i)
             {
                 if (i == 5) sb.Append('-');
-                var val = (byte)type.Fields[i].GetValue(addr, true);
+                var val = (byte)type.Fields[i].GetValue(addr, false);
                 sb.AppendFormat("{0:X2}", val);
             }
             return StringBuilderCache.GetStringAndRelease(sb);
@@ -480,9 +480,9 @@ namespace ClrMDRIndex
             return true;
         }
 
-        //
-        // Exceptions
-        //
+        #endregion System.Guid
+
+        #region exception
 
         public static string GetExceptionValue(ulong addr, ClrType type, ClrHeap heap)
         {
@@ -568,6 +568,20 @@ namespace ClrMDRIndex
             sb.Append("TYPE: ").Append(classNameVal);
             return StringBuilderCache.GetStringAndRelease(sb);
         }
+
+        #endregion exception
+
+        #region enum
+
+        public static string GetEnumValueString(ulong addr, ClrType clrType)
+        {
+            ClrElementType enumElem = clrType.GetEnumElementType();
+            var enumVal = clrType.GetValue(addr);
+
+        }
+
+        #endregion enum
+
 
         //
         // Primitive types.
@@ -1026,6 +1040,44 @@ namespace ClrMDRIndex
         }
 
 
+        public static string GetTypeValueAsString(ClrHeap heap, ulong addr, ClrType clrType, ClrElementKind kind)
+        {
+            if (kind == ClrElementKind.Unknown)
+            {
+                kind = TypeExtractor.GetElementKind(clrType);
+                if (kind == ClrElementKind.Unknown)
+                {
+                    return Constants.UnknownValue;
+                }
+            }
+            var specKind = TypeExtractor.GetSpecialKind(kind);
+
+            if (specKind != ClrElementKind.Unknown)
+            {
+                switch (specKind)
+                {
+                    case ClrElementKind.Guid:
+                        return GetGuidValue(addr, clrType);
+                    case ClrElementKind.DateTime:
+                        return GetDateTimeValue(addr, clrType);
+                    case ClrElementKind.TimeSpan:
+                        return GetTimeSpanValue(addr, clrType);
+                    case ClrElementKind.Decimal:
+                        return GetDecimalValue(addr, clrType, null);
+                    case ClrElementKind.Exception:
+                        return GetShortExceptionValue(addr, clrType, heap);
+                    //case ClrElementKind.Enum:
+                    //    return GetEnumString(addr, fld, false);
+                    case ClrElementKind.Free:
+                    case ClrElementKind.SystemVoid:
+                        return Utils.RealAddressString(addr);
+                }
+
+            }
+            return Constants.UnknownValue;
+        }
+
+
         public static string GetFieldValue(IndexProxy ndxProxy, ClrHeap heap, ulong addr, ClrInstanceField fld, bool intern, out ClrType fldType, out ClrElementKind kind, out ulong fldAddr)
         {
             fldType = fld.Type;
@@ -1069,7 +1121,12 @@ namespace ClrMDRIndex
                     if (tempType != null)
                     {
                         fldType = tempType;
-                        kind = TypeExtractor.GetElementKind(fldType);
+                        var newkind = TypeExtractor.GetElementKind(fldType);
+                        if (newkind != kind)
+                        {
+                            return GetTypeValueAsString(heap, fldAddr, fldType, newkind);
+                        }
+
                         specKind = TypeExtractor.GetSpecialKind(kind);
                     }
                 }
