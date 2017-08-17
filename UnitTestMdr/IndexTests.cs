@@ -1873,17 +1873,33 @@ namespace UnitTestMdr
         }
 
 
-        private static string[] GetTypeValueAsStringOfAll(ClrHeap heap, ClrType clrType, ClrElementKind kind, ulong[] addrs, out string error)
+        private static string[] GetTypeValueAsStringOfAll(ClrHeap heap, ClrType clrType, ClrElementKind kind, ulong[] addrs, out string error, string path = null)
         {
             error = null;
+            StreamWriter sw = null;
+            ClrType myType = clrType;
             try
             {
+                if (path != null) sw = new StreamWriter(path);
                 string[] values = new string[addrs.Length];
                 for (int i = 0, icnt = addrs.Length; i < icnt; ++i)
                 {
                     var addr = addrs[i];
-                    values[i] = ValueExtractor.GetTypeValueAsString(heap, addr, clrType, kind);
+                    if (clrType == null)
+                    {
+                        myType = heap.GetObjectType(addr);
+                        if (myType == null)
+                        {
+                            int a = 1;
+                        }
+                        Assert.IsNotNull(myType);
+                        kind = TypeExtractor.GetElementKind(myType);
+                        Assert.IsFalse(kind == ClrElementKind.Unknown);
+                    }
 
+                    values[i] = ValueExtractor.GetTypeValueAsString(heap, addr, myType, kind);
+                    if (sw != null)
+                        sw.WriteLine(Utils.RealAddressStringHeader(addr) + values[i] + Constants.HeavyGreekCrossPadded + (clrType==null?myType.Name:string.Empty));
                 }
                 return values;
             }
@@ -1892,9 +1908,13 @@ namespace UnitTestMdr
                 error = ex.ToString();
                 return null;
             }
+            finally
+            {
+                sw?.Close();
+            }
         }
 
-        private static string[] GetTypeValues(DumpIndex index, ClrHeap heap, string typeName)
+        private static string[] GetTypeValues(DumpIndex index, ClrHeap heap, string typeName, string path)
         {
             string error;
             int typeId = index.GetTypeId(typeName);
@@ -1906,7 +1926,8 @@ namespace UnitTestMdr
                 Assert.IsNotNull(clrType);
                 ClrElementKind kind = TypeExtractor.GetElementKind(clrType);
                 Assert.IsFalse(kind == ClrElementKind.Unknown);
-                string[] values = GetTypeValueAsStringOfAll(heap, clrType, kind, addrs, out error);
+                Assert.IsTrue(Utils.SameStrings(clrType.Name,typeName));
+                string[] values = GetTypeValueAsStringOfAll(heap, clrType, kind, addrs, out error, path);
                 Assert.IsNull(error, error);
                 Assert.IsNotNull(values);
                 return values;
@@ -1914,16 +1935,12 @@ namespace UnitTestMdr
             return Utils.EmptyArray<string>.Value;
         }
 
-        private static string[] GetTypeValues(DumpIndex index, ClrHeap heap, ulong[] addrs)
+        private static string[] GetTypeValues(DumpIndex index, ClrHeap heap, ulong[] addrs, string path)
         {
             string error;
             if (addrs != null || addrs.Length > 0)
             {
-                ClrType clrType = heap.GetObjectType(addrs[0]);
-                Assert.IsNotNull(clrType);
-                ClrElementKind kind = TypeExtractor.GetElementKind(clrType);
-                Assert.IsFalse(kind == ClrElementKind.Unknown);
-                string[] values = GetTypeValueAsStringOfAll(heap, clrType, kind, addrs, out error);
+                string[] values = GetTypeValueAsStringOfAll(heap, null, ClrElementKind.Unknown, addrs, out error, path);
                 Assert.IsNull(error, error);
                 Assert.IsNotNull(values);
                 return values;
@@ -1949,14 +1966,21 @@ namespace UnitTestMdr
 
                 try
                 {
-                    string[] values = GetTypeValues(index, heap, "System.Guid");
-                    values = GetTypeValues(index, heap, "System.DateTime");
-                    values = GetTypeValues(index, heap, "System.TimeSpan");
-                    values = GetTypeValues(index, heap, "System.Decimal");
+                    string[] values = null;
+                    ulong[] addrs = null;
+                    var folder = index.OutputFolder + Path.DirectorySeparatorChar;
 
-                    ulong[] addrs = index.GetSpecialKindTypeInstances(ClrElementKind.Exception);
-                    values = GetTypeValues(index, heap, addrs);
+#if FALSE
+                    values = GetTypeValues(index, heap, "System.Guid", folder + "System.Guid" + ".Values" + ".txt");
+                    values = GetTypeValues(index, heap, "System.DateTime", folder + "System.DateTime" + ".Values" + ".txt");
+                    values = GetTypeValues(index, heap, "System.TimeSpan", folder + "System.TimeSpan" + ".Values" + ".txt");
+                    values = GetTypeValues(index, heap, "System.Decimal", folder + "System.Decimal" + ".Values" + ".txt");
 
+                    addrs = index.GetSpecialKindTypeInstances(ClrElementKind.Exception);
+                    values = GetTypeValues(index, heap, addrs, folder + "Exception" + ".Values" + ".txt");
+#endif
+                    addrs = index.GetSpecialKindTypeInstances(ClrElementKind.Enum);
+                    values = GetTypeValues(index, heap, addrs, folder + "Enum" + ".Values" + ".txt");
                 }
                 catch (Exception ex)
                 {
@@ -2114,9 +2138,9 @@ namespace UnitTestMdr
 
         }
 
-        #endregion instance value
+#endregion instance value
 
-        #region type values report
+#region type values report
 
         //[TestMethod]
         //public void TestSavedTypeValuesReport()
@@ -2178,13 +2202,13 @@ namespace UnitTestMdr
             Assert.IsNull(error, error);
         }
 
-		#endregion type values report
+#endregion type values report
 
-		#region get list of specific clr objects
+#region get list of specific clr objects
 
-		#endregion get list of specific clr objects
+#endregion get list of specific clr objects
 
-		#region misc
+#region misc
 
 		[TestMethod]
 		public void TestKnownTypes()
@@ -2245,9 +2269,9 @@ namespace UnitTestMdr
 			}
 		}
 
-		#endregion misc
+#endregion misc
 
-		#region template
+#region template
 
 		[TestMethod]
 		public void TestSnippet()
@@ -2266,9 +2290,9 @@ namespace UnitTestMdr
 			Assert.IsNull(error,error);
 		}
 
-		#endregion template
+#endregion template
 
-		#region open index
+#region open index
 
 		public static DumpIndex OpenIndex(int indexNdx=0)
 		{
@@ -2290,7 +2314,7 @@ namespace UnitTestMdr
 			return index;
 		}
 
-		#endregion open index
+#endregion open index
 
 	}
 }

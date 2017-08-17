@@ -573,15 +573,170 @@ namespace ClrMDRIndex
 
         #region enum
 
-        public static string GetEnumValueString(ulong addr, ClrType clrType)
+        public static string GetEnumValueString(ulong addr, ClrType clrType, out int intVal)
         {
             ClrElementType enumElem = clrType.GetEnumElementType();
-            var enumVal = clrType.GetValue(addr);
+            object enumVal = clrType.GetValue(addr);
+            string name = null;
+            intVal = int.MinValue;
 
+            // The approved types for an enum are byte, sbyte, short, ushort, int, uint, long, or ulong.
+            string num = null;
+            switch(enumElem)
+            {
+                case ClrElementType.Int32:
+                    intVal = (int)enumVal;
+                    num = intVal.ToString();
+                    break;
+                case ClrElementType.UInt32:
+                    intVal = (int)((uint)enumVal);
+                    num = intVal.ToString();
+                    break;
+                case ClrElementType.UInt8:
+                    if (enumVal is int)
+                    {
+                        intVal = (int)enumVal & 0x000000FF;
+                        name = clrType.GetEnumName(intVal);
+                        num = intVal.ToString();
+                    }
+                    else
+                    {
+                        intVal = (int)((byte)enumVal) & 0x000000FF;
+                        name = clrType.GetEnumName(intVal);
+                        num = intVal.ToString();
+                    }
+                    break;
+                case ClrElementType.Int8:
+                    if (enumVal is int)
+                    {
+                        name = clrType.GetEnumName(intVal);
+                        num = intVal.ToString();
+                    }
+                    else
+                    {
+                        intVal = (int)((sbyte)enumVal) & 0x000000FF;
+                        num = intVal.ToString();
+                    }
+                    break;
+                case ClrElementType.Int16:
+                    intVal = (int)((short)enumVal);
+                    num = intVal.ToString();
+                    break;
+                case ClrElementType.UInt16:
+                    intVal = (int)((ushort)enumVal);
+                    num = intVal.ToString();
+                    break;
+                case ClrElementType.Int64:
+                    num = ((long)enumVal).ToString();
+                    break;
+                case ClrElementType.UInt64:
+                    num = ((ulong)enumVal).ToString();
+                    break;
+            }
+            if (name == null)
+            {
+                if (intVal != int.MinValue) name = clrType.GetEnumName(intVal);
+                if (name == null) name = clrType.GetEnumName(enumVal);
+            }
+            return (num == null ? "?":num) + " " + (name == null ? "?" : name);
+        }
+
+
+        //public static int GetEnumValue(ClrType clrType, ClrElementType enumElem, object enumVal, out string outStr)
+        //{
+        //    string name = null;
+        //    int intVal = -1;
+
+        //    // The approved types for an enum are byte, sbyte, short, ushort, int, uint, long, or ulong.
+        //    string num = null;
+        //    switch (enumElem)
+        //    {
+        //        case ClrElementType.Int32:
+        //            intVal = ((int)enumVal);
+        //            num = intVal.ToString();
+        //            break;
+        //        case ClrElementType.UInt32:
+        //            intVal = (int)((uint)enumVal);
+        //            num = intVal.ToString();
+        //            break;
+        //        case ClrElementType.UInt8:
+        //            if (enumVal is int)
+        //            {
+        //                intVal = (int)enumVal & 0x000000FF;
+        //                name = clrType.GetEnumName(intVal);
+        //                num = intVal.ToString();
+        //            }
+        //            else
+        //            {
+        //                intVal = ((int)(byte)enumVal) & 0x000000FF;
+        //                num = intVal.ToString();
+        //            }
+        //            break;
+        //        case ClrElementType.Int8:
+        //            if (enumVal is int)
+        //            {
+        //                intVal = (int)enumVal & 0x000000FF;
+        //                name = clrType.GetEnumName(intVal);
+        //                num = intVal.ToString();
+        //            }
+        //            else
+        //            {
+        //                intVal = ((int)(sbyte)enumVal) & 0x000000FF;
+        //                num = intVal.ToString();
+        //            }
+        //            break;
+        //        case ClrElementType.Int16:
+        //            intVal = (int)((short)enumVal);
+        //            num = intVal.ToString();
+        //            break;
+        //        case ClrElementType.UInt16:
+        //            intVal = (int)((ushort)enumVal);
+        //            num = intVal.ToString();
+        //            break;
+        //        case ClrElementType.Int64:
+        //            intVal = (int)(long)enumVal;
+        //            num = ((long)enumVal).ToString();
+        //            break;
+        //        case ClrElementType.UInt64:
+        //            intVal = (int)(ulong)enumVal;
+        //            num = ((ulong)enumVal).ToString();
+        //            break;
+        //    }
+        //    if (name == null)
+        //    {
+        //        name = (intVal != -1) ? clrType.GetEnumName(intVal) : clrType.GetEnumName(enumVal);
+        //    }
+
+        //    outStr = (num == null ? "?" : num) + " " + (name == null ? "?" : name);
+
+        //    return intVal;
+        //}
+
+        public static int GetEnumValue(ulong parentAddr, ClrInstanceField field, bool intr)
+        {
+            var addrObj = field.GetAddress(parentAddr, intr);
+            if (field.Type != null)
+            {
+                int intVal;
+                string outStr = GetEnumValueString(addrObj, field.Type, out intVal);
+                return intVal;
+            }
+            return int.MinValue;
+        }
+
+        public static string GetEnumString(ulong parentAddr, ClrInstanceField field, bool intr)
+        {
+            var addrObj = field.GetAddress(parentAddr, intr);
+            if (field.Type != null)
+            {
+                int intVal;
+                string outStr = GetEnumValueString(addrObj, field.Type, out intVal);
+                return outStr;
+            }
+            return Constants.UnknownValue;
         }
 
         #endregion enum
-
 
         //
         // Primitive types.
@@ -820,27 +975,6 @@ namespace ClrMDRIndex
             return "uknown_element_type";
         }
 
-        public static int GetEnumValue(ulong parentAddr, ClrInstanceField field, bool intr)
-        {
-            var addrObj = field.GetAddress(parentAddr, intr);
-            var primVal = field.Type.GetValue(addrObj);
-            return (int)primVal;
-        }
-
-        public static string GetEnumString(ulong parentAddr, ClrInstanceField field, bool intr)
-        {
-            var primVal = field.GetValue(parentAddr, intr,false);
-            var enumName = field.Type.GetEnumName(primVal);
-            return primVal + (enumName == null ? string.Empty : " " + enumName);
-        }
-
-        public static string GetEnumValueString(ulong addr, ClrType clrType)
-        {
-            int data = (int)clrType.Fields[0].GetValue(addr, false);
-            var enumName = clrType.GetEnumName(data);
-            return data + (enumName == null ? string.Empty : " " + enumName);
-        }
-
         public static string GetPrimitiveValue(ulong parentAddr, ClrInstanceField field, bool intr)
         {
             var addrObj = field.GetValue(parentAddr, intr, false);
@@ -1066,8 +1200,9 @@ namespace ClrMDRIndex
                         return GetDecimalValue(addr, clrType, null);
                     case ClrElementKind.Exception:
                         return GetShortExceptionValue(addr, clrType, heap);
-                    //case ClrElementKind.Enum:
-                    //    return GetEnumString(addr, fld, false);
+                    case ClrElementKind.Enum:
+                        int enumInt;
+                        return GetEnumValueString(addr, clrType, out enumInt);
                     case ClrElementKind.Free:
                     case ClrElementKind.SystemVoid:
                         return Utils.RealAddressString(addr);
@@ -1305,7 +1440,8 @@ namespace ClrMDRIndex
                         value = GetShortExceptionValue(addr, clrType, heap);
                         return (null, new InstanceValue(typeId, kind, addr, clrType.Name, value, Utils.RealAddressString(decoratedAddr), fldNdx, parent));
                     case ClrElementKind.Enum:
-                        value = GetEnumValueString(addr, clrType);
+                        int enumVal;
+                        value = GetEnumValueString(addr, clrType,out enumVal);
                         return (null, new InstanceValue(typeId, kind, addr, clrType.Name, string.Empty, value, fldNdx, parent));
                     case ClrElementKind.Free:
                     case ClrElementKind.Abstract:
