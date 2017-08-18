@@ -48,170 +48,6 @@ namespace ClrMDRIndex
             _fileMoniker = new DumpFileMoniker(dmpPath);
         }
 
-        //public bool CreateDumpIndex(Version version, IProgress<string> progress, IndexingArguments indexArguments,
-        //	out string indexPath, out string error)
-        //{
-        //	error = null;
-        //	indexPath = _fileMoniker.MapFolder;
-        //	var clrtDump = new ClrtDump(DumpPath);
-        //	if (!clrtDump.Init(out error)) return false;
-        //	_errors = new ConcurrentBag<string>[clrtDump.RuntimeCount];
-        //	Thread extraWorker = null;
-        //	ClrtDump dumpClone = clrtDump.Clone(out error);
-        //	DateTime indexingStart = DateTime.UtcNow;
-
-        //	using (clrtDump)
-        //	{
-        //		try
-        //		{
-        //			if (DumpFileMoniker.GetAndCreateMapFolders(DumpPath, out error) == null) return false;
-        //			indexPath = IndexFolder;
-
-        //			// indexing
-        //			//
-        //			if (!GetPrerequisites(clrtDump, progress, out _stringIdDcts, out error)) return false;
-        //			if (!GetTargetModuleInfos(clrtDump, progress, out error)) return false;
-
-        //			for (int r = 0, rcnt = clrtDump.RuntimeCount; r < rcnt; ++r)
-        //			{
-        //				_currentRuntimeIndex = r;
-        //				string runtimeIndexHeader = Utils.RuntimeStringHeader(r);
-        //				clrtDump.SetRuntime(r);
-        //				ClrRuntime runtime = clrtDump.Runtime;
-        //				ClrHeap heap = runtime.Heap;
-        //				ConcurrentBag<string> errors = new ConcurrentBag<string>();
-        //				_errors[r] = errors;
-        //				var strIds = _stringIdDcts[r];
-
-        //				string[] typeNames = null;
-        //				ulong[] addresses = null;
-        //				int[] typeIds = null;
-
-        //				// get heap address count
-        //				//
-        //				progress?.Report(runtimeIndexHeader + "Getting instance count...");
-        //				var addrCount = DumpIndexer.GetHeapAddressCount(heap);
-        //				progress?.Report(runtimeIndexHeader + "Instance count: " + Utils.CountString(addrCount));
-
-        //				// get type names
-        //				//
-        //				progress?.Report(runtimeIndexHeader + "Getting type names...");
-        //				typeNames = DumpIndexer.GetTypeNames(heap, out error);
-        //				Debug.Assert(error == null);
-
-        //				// get roots
-        //				//
-        //				progress?.Report(runtimeIndexHeader + "Getting roots...");
-        //				var rootAddrInfo = ClrtRootInfo.GetRootAddresses(r, runtime, heap, typeNames, strIds, _fileMoniker, out error);
-        //				Debug.Assert(error == null);
-
-        //				// get addresses and types
-        //				//
-        //				progress?.Report(runtimeIndexHeader + "Getting addresses and types...");
-        //				addresses = new ulong[addrCount];
-        //				typeIds = new int[addrCount];
-        //				if (!GetAddressesAndTypes(heap, addresses, typeIds, typeNames, out error))
-        //				{
-        //					return false;
-        //				}
-
-
-
-        //				// threads and blocking objects
-        //				//
-        //				extraWorker = new Thread(GetThreadsInfos);
-        //				extraWorker.Start(new Tuple<ClrtDump, ulong[], int[], string[]>(dumpClone, addresses, typeIds, typeNames));
-
-        //				progress?.Report(runtimeIndexHeader + "Getting threads, blocking objecks information...");
-
-        //				// field dependencies
-        //				//
-        //				progress?.Report(runtimeIndexHeader + "Creating instance reference data...");
-        //				Bitset bitset = null;
-        //                      if (!Setup.SkipReferences)
-        //                      {
-        //                          bitset = new Bitset(addresses.Length);
-        //                          //if (!References.CreateReferences2(r, heap, rootAddrInfo.Item1, addresses, typeIds, typeNames, bitset, _fileMoniker, progress, out error))
-        //                          //{
-        //                          //    progress?.Report(runtimeIndexHeader + "Indexing failed, CreateReferences method errored.");
-        //                          //    AddError(r, "CreateReferences failed." + Environment.NewLine + error);
-        //                          //    return false;
-        //                          //}
-        //                      }
-
-        //				progress?.Report(runtimeIndexHeader + "Building type instance map...");
-        //				if (!BuildTypeInstanceMap(r, typeIds, out error))
-        //				{
-        //					AddError(r, "BuildTypeInstanceMap failed." + Environment.NewLine + error);
-        //					return false;
-        //				}
-
-        //				// save index data
-        //				//
-        //				progress?.Report(runtimeIndexHeader + "Saving data...");
-
-        //				var path = _fileMoniker.GetFilePath(r, Constants.MapInstanceTypesFilePostfix);
-        //				Utils.WriteIntArray(path, typeIds, out error);
-        //				// save type names
-        //				path = _fileMoniker.GetFilePath(r, Constants.TxtTypeNamesFilePostfix);
-        //				Utils.WriteStringList(path, typeNames, out error);
-        //				{
-        //					var reversedNames = Utils.ReverseTypeNames(typeNames);
-        //					path = _fileMoniker.GetFilePath(r, Constants.TxtReversedTypeNamesFilePostfix);
-        //					Utils.WriteStringList(path, reversedNames, out error);
-        //				}
-        //				// save string ids
-        //				//
-        //				path = _fileMoniker.GetFilePath(r, Constants.TxtCommonStringIdsPostfix);
-        //				if (!strIds.DumpInIdOrder(path, out error))
-        //				{
-        //					AddError(_currentRuntimeIndex, "StringIdDct.DumpInIdOrder failed." + Environment.NewLine + error);
-        //				}
-
-        //				progress?.Report("Waiting for thread info worker...");
-        //				extraWorker.Join();
-
-        //				ulong[] finalizer = rootAddrInfo.Item2;
-        //				Debug.Assert(Utils.IsSorted(rootAddrInfo.Item2));
-        //				int rootedCnt = Utils.SetAddressBit(bitset, addresses, Utils.RootBits.Rooted);
-        //				int fnlzrCnt = Utils.SetAddressBit(finalizer, addresses, Utils.RootBits.Finalizer);
-        //				int rootCnt = Utils.SetAddressBit(rootAddrInfo.Item1, addresses, Utils.RootBits.Root);
-
-        //				path = _fileMoniker.GetFilePath(r, Constants.MapInstancesFilePostfix);
-        //				Utils.WriteUlongArray(path, addresses, out error);
-
-        //				int fnlRootedCnt = Utils.SetAddressBitIfSet(addresses, finalizer, Utils.RootBits.Rooted);
-        //				if (!ClrtRootInfo.FinalyzerAddressFixup(r, finalizer, _fileMoniker, out error))
-        //				{
-        //					AddError(_currentRuntimeIndex, "Finalyzer Address Fixup failed." + Environment.NewLine + error);
-        //				}
-
-        //				runtime.Flush();
-        //				heap = null;
-        //			}
-
-        //			var durationStr = Utils.DurationString(DateTime.UtcNow - indexingStart);
-        //			DumpIndexInfo(version, clrtDump, durationStr);
-        //			progress?.Report("Indexing done, total duration: " + durationStr);
-        //			return true;
-        //		}
-        //		catch (Exception ex)
-        //		{
-        //			error = Utils.GetExceptionErrorString(ex);
-        //			AddError(_currentRuntimeIndex, "Exception in CreateDumpIndex." + Environment.NewLine + error);
-        //			return false;
-        //		}
-        //		finally
-        //		{
-        //			dumpClone?.Dispose();
-        //			DumpErrors();
-        //			GCSettings.LargeObjectHeapCompactionMode = GCLargeObjectHeapCompactionMode.CompactOnce;
-        //			GC.Collect();
-        //		}
-        //	}
-        //}
-
-
         public bool CreateDumpIndex2(Version version, IProgress<string> progress, out string indexPath, out string error)
         {
             error = null;
@@ -220,7 +56,6 @@ namespace ClrMDRIndex
             if (!clrtDump.Init(out error)) return false;
             _errors = new ConcurrentBag<string>[clrtDump.RuntimeCount];
             Thread threadInfoWorker = null, referenceBuilderWorker = null;
-            //ClrtDump dumpClone = clrtDump.Clone(out error);
             DateTime indexingStart = DateTime.UtcNow;
             InstanceReferences builder = null;
 
@@ -285,9 +120,6 @@ namespace ClrMDRIndex
                         var addressesCopy = Utils.CopyArray(addresses);
                         threadInfoWorker = new Thread(GetThreadsInfos);
                         threadInfoWorker.Start(new Tuple<string, ulong[], int[], string[]>(DumpPath, addresses, typeIds, typeNames));
-                        //addresses = null;
-                        //progress?.Report("Waiting for thread info worker...");
-                        //threadInfoWorker.Join();
 
                         // setting root information
                         //
@@ -338,7 +170,6 @@ namespace ClrMDRIndex
                             referenceBuilderWorker = new Thread(new ThreadStart(bld.BuildReferences));
                             referenceBuilderWorker.Start();
 #else
-                            //heap = clrtDump.GetFreshHeap();
                             builder = new InstanceReferences(addressesCopy,
                                                                     new string[]
                                                                     {
@@ -666,6 +497,59 @@ namespace ClrMDRIndex
         //	}
         //}
 
+        private void SaveFieldTypes(ClrType clrType, int typeId, HashSet<int> doneTypeFields, HashSet<int> tofixTypeFields, string[] typeNames, SortedDictionary<int, int[]> typeFields)
+        {
+            if (doneTypeFields.Add(typeId))
+            {
+                int fldCnt = clrType.Fields == null ? 0 : clrType.Fields.Count;
+                if (fldCnt < 1) return;
+                int[] fields = new int[fldCnt];
+                bool fixit = false;
+                for (int i = 0; i < fldCnt; ++i)
+                {
+                    ClrType fldType = clrType.Fields[i].Type;
+                    if (fldType == null)
+                    {
+                        fixit = true;
+                        fields[i] = Constants.InvalidIndex;
+                    }
+                    else
+                    {
+                        int fldTypeId = Array.BinarySearch(typeNames, fldType.Name, StringComparer.Ordinal);
+                        if (fldTypeId < 0)
+                        {
+                            fields[i] = Constants.InvalidIndex;
+                            fixit = true;
+                        }
+                        else
+                        {
+                            fields[i] = fldTypeId;
+                        }
+                    }
+                }
+                if (fixit)
+                {
+                    tofixTypeFields.Add(typeId);
+                }
+                else
+                {
+                    if (tofixTypeFields.Contains(typeId))
+                        tofixTypeFields.Remove(typeId);
+                }
+                int[] old;
+                if (typeFields.TryGetValue(typeId,out old))
+                {
+                    typeFields[typeId] = fields;
+                }
+                else
+                {
+                    typeFields.Add(typeId, fields);
+                }
+
+            }
+        }
+
+
         public bool GetAddressesAndTypes(ClrHeap heap, ulong[] addresses, int[] typeIds, string[] typeNames, out string error)
         {
             error = null;
@@ -679,6 +563,9 @@ namespace ClrMDRIndex
                 uint[] baseSizes = new uint[addresses.Length];
                 int[] typeKinds = new int[typeNames.Length];
                 var arraySizes = new List<KeyValuePair<int, int>>(addresses.Length / 25);
+                HashSet<int> doneTypeFields = new HashSet<int>();
+                HashSet<int> tofixTypeFields = new HashSet<int>();
+                SortedDictionary<int, int[]> typeFields = new SortedDictionary<int, int[]>();
 
                 for (int segNdx = 0, icnt = segs.Count; segNdx < icnt; ++segNdx)
                 {
@@ -706,6 +593,8 @@ namespace ClrMDRIndex
                         var size = clrType.GetSize(addr);
                         if (size > (ulong)UInt32.MaxValue) size = (ulong)UInt32.MaxValue;
                         sizes[addrNdx] = (uint)size;
+
+                        SaveFieldTypes(clrType, typeId, doneTypeFields, tofixTypeFields, typeNames, typeFields);
 
                         // get generation stats
                         //

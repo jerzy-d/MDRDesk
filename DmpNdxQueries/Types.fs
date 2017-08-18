@@ -209,8 +209,9 @@ module Types =
             | _ ->
                 Constants.NullValue
         | TypeKind.EnumKind ->
-            let enumVal = ValueExtractor.GetPrimitiveValue(addr, clrType)
-            ValueExtractor.GetEnumValueString(addr, clrType)
+            ValueExtractor.GetPrimitiveValue(addr, clrType)
+            //let enumVal = ValueExtractor.GetPrimitiveValue(addr, clrType)
+            //ValueExtractor.GetEnumValueString(addr, clrType)
         | TypeKind.InterfaceKind ->
             Constants.NullValue
         | TypeKind.PrimitiveKind ->

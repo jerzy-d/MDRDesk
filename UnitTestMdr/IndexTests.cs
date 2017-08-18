@@ -1956,8 +1956,10 @@ namespace UnitTestMdr
             string error = null;
             Stopwatch stopWatch = new Stopwatch();
             stopWatch.Start();
-            var index = OpenIndex(@"D:\Jerzy\WinDbgStuff\dumps\Analytics\Cowen\Cowen.Analytics.Svc_170717_165238.dmp.map");
+            var index = OpenIndex(@"D:\Jerzy\WinDbgStuff\dumps\TestApp\TestApp.exe_170818_102413.dmp.map");
+            //var index = OpenIndex(@"D:\Jerzy\WinDbgStuff\dumps\Analytics\Cowen\Cowen.Analytics.Svc_170717_165238.dmp.map");
             //var index = OpenIndex(@"D:\Jerzy\WinDbgStuff\dumps\Analytics\Highline\analyticsdump111.dlk.new2.dmp.map");
+            
             TestContext.WriteLine(index.DumpFileName + " INDEX OPEN DURATION: " + Utils.StopAndGetDurationString(stopWatch));
 
             using (index)

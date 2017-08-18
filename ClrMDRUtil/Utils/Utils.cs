@@ -1107,14 +1107,47 @@ namespace ClrMDRIndex
 			}
 		}
 
+        public static bool SaveIndicesReferences(string path, SortedDictionary<int, int[]> refs, out string error)
+        {
+            error = null;
+            BinaryWriter bw = null;
+            try
+            {
+                bw = new BinaryWriter(File.Open(path, FileMode.Create));
+                bw.Write(refs.Count);
+                int totalRefCount=0;
+                int[] roffs = new int[refs.Count];
+                int off = 0;
+                int ndx = 0;
+                foreach(var r in refs)
+                {
+                    bw.Write(r.Key);
+                    roffs[ndx] = off;
+                    off += r.Value.Length;
+                    totalRefCount += r.Value.Length + 1;
+                }
 
 
 
-		#endregion IO
+                return true;
+            }
+            catch (Exception ex)
+            {
+                error = Utils.GetExceptionErrorString(ex);
+                return false;
+            }
+            finally
+            {
+                bw?.Close();
+            }
+        }
 
-		#region Dac File Search
 
-		public static string SearchDacFolder(string dacFileName, string dacFileFolder)
+        #endregion IO
+
+        #region Dac File Search
+
+        public static string SearchDacFolder(string dacFileName, string dacFileFolder)
 		{
 
 			var folder = new DirectoryInfo(dacFileFolder);
