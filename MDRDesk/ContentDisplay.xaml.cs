@@ -72,7 +72,6 @@ namespace MDRDesk
 		public void Window_Closing(object sender, CancelEventArgs e)
 		{
             var wndtask = Task.Factory.StartNew(() => ValueWindows.RemoveWindow(_id, _wndType));
-            wndtask.Wait();
         }
 
         private void LockBtnClicked(object sender, RoutedEventArgs e)

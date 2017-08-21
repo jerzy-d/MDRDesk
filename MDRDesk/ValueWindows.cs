@@ -1,7 +1,5 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Windows;
-using System.Windows.Controls;
 using ClrMDRIndex;
 
 namespace MDRDesk
@@ -14,11 +12,13 @@ namespace MDRDesk
             List,
             KeyValues,
             Tree,
+            Help,
             WndTypeCount
         }
 
         private static LinkedList<IValueWindow>[] _unlockledWindows= new[] 
         {
+            new LinkedList<IValueWindow>(),
             new LinkedList<IValueWindow>(),
             new LinkedList<IValueWindow>(),
             new LinkedList<IValueWindow>(),
@@ -38,54 +38,31 @@ namespace MDRDesk
 
         private static object _lock = new object();
 
-
-        //public static void ShowTreeContentWindow(string description, InstanceValue inst, Window owner)
-        //{
-        //    lock(_lock)
-        //    {
-        //        var list = _unlockledWindows[(int)WndType.Tree];
-        //        if (list.Count > 0)
-        //        {
-        //            var node = list.First;
-        //            list.RemoveFirst();
-        //            list.AddLast(node);
-        //            ((ClassStructDisplay)node.Value).UpdateInstanceValue(inst, description);
-        //            return;
-        //        }
-        //        int id = Utils.GetNewID();
-        //        var wnd = new ClassStructDisplay(id, inst.GetDescription(), inst) { Owner = owner };
-        //        _wndDct.Add(id, wnd);
-        //        if (!wnd.Locked)
-        //        {
-        //            list.AddFirst(wnd);
-        //        }
-        //        wnd.Show();
-        //    }
-        //}
-
-        //public static void ShowContentWindow(string description, InstanceValue inst, Window owner)
-        //{
-        //    lock (_lock)
-        //    {
-        //        var list = _unlockledWindows[(int)WndType.Content];
-        //        if (list.Count > 0)
-        //        {
-        //            var node = list.First;
-        //            list.RemoveFirst();
-        //            list.AddLast(node);
-        //            ((ContentDisplay)node.Value).UpdateInstanceValue(inst, description);
-        //            return;
-        //        }
-        //        int id = Utils.GetNewID();
-        //        var wnd = new ContentDisplay(id, inst.GetDescription(), inst) { Owner = owner };
-        //        _wndDct.Add(id, wnd);
-        //        if (!wnd.Locked)
-        //        {
-        //            list.AddFirst(wnd);
-        //        }
-        //        wnd.Show();
-        //    }
-        //}
+        public static void ShowHelpWindow(string path)
+        {
+            lock(_lock)
+            {
+                var list = _unlockledWindows[(int)WndType.Help];
+                if (list.Count > 0)
+                {
+                    var node = list.First;
+                    list.RemoveFirst();
+                    list.AddLast(node);
+                    node.Value.UpdateInstanceValue(null, path);
+                    return;
+                }
+                int id = Utils.GetNewID();
+                var wnd = new HelpWindow(Utils.GetNewID(), path) { Owner = GuiUtils.MainWindowInstance };
+                if (wnd == null)
+                    throw new MdrDeskException("[ValueWindows.ShowHelpWindow] Creating help window failed.");
+                _wndDct.Add(id, wnd);
+                if (!wnd.Locked)
+                {
+                    list.AddFirst(wnd);
+                }
+                ((Window)wnd).Show();
+            }
+        }
 
         public static void ShowContentWindow(string description, InstanceValue inst, WndType wndType)
         {
@@ -116,7 +93,6 @@ namespace MDRDesk
                     case WndType.KeyValues:
                         wnd = new KeyValueCollectionDisplay(id, inst.GetDescription(), inst) { Owner = GuiUtils.MainWindowInstance };
                         break;
-
                 }
                 if (wnd == null)
                     throw new MdrDeskException("[ValueWindows.ShowContentWindow] Creating content window failed.");

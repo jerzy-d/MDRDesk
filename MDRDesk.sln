@@ -31,6 +31,7 @@ EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Documentation", "Documentation", "{A32781E3-ED13-4692-8186-B140B2C6E4D9}"
 	ProjectSection(SolutionItems) = preProject
 		Documentation\Credits.md = Documentation\Credits.md
+		Documentation\DumpLocalProcess.md = Documentation\DumpLocalProcess.md
 		Documentation\GettingStarted.md = Documentation\GettingStarted.md
 		Documentation\MainMenu.md = Documentation\MainMenu.md
 	EndProjectSection

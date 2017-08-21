@@ -108,7 +108,8 @@
     <Reference Include="GraphX.WPF.Controls">
       <HintPath>..\GraphX\GraphX.WPF.Controls.dll</HintPath>
     </Reference>
-    <Reference Include="Markdown.Xaml">
+    <Reference Include="Markdown.Xaml, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
       <HintPath>..\Markdown.XAML\Markdown.Xaml.dll</HintPath>
     </Reference>
     <Reference Include="Microsoft.Diagnostics.Runtime">

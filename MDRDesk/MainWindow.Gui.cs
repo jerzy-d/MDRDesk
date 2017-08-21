@@ -2799,9 +2799,10 @@ namespace MDRDesk
 
         #region TabItem Cleanup
 
-        private void CloseCurrentIndex()
+        private async void CloseCurrentIndex()
         {
             MainStatusShowMessage("Closing current index...");
+            ValueWindows.CloseAll();
             foreach (var kv in _wndDct)
             {
                 kv.Value.Close();
@@ -2810,20 +2811,14 @@ namespace MDRDesk
             MainTab.Items.Clear();
             if (IsIndexAvailable(null))
             {
-                var task = DisposeCurrentIndex();
-                task.Wait();
+                var result = await Task.Factory.StartNew(() =>
+                {
+                    CurrentIndex.Dispose();
+                    CurrentIndex = null;
+                    return true;
+                }, _dumpSTAScheduler);
             }
             MainStatusShowMessage("Current index is no more.");
-        }
-
-        private Task<bool> DisposeCurrentIndex()
-        {
-            return Task.Run(() =>
-           {
-               CurrentIndex.Dispose();
-               CurrentIndex = null;
-               return true;
-           });
         }
 
 

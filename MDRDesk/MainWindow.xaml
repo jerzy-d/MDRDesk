@@ -776,6 +776,8 @@
                         <Separator></Separator>
                         <MenuItem x:Name="IndexViewMemory" Header="View Memory..." Click="IndexViewMemoryClicked"/>
                         <Separator></Separator>
+                        <MenuItem x:Name="IndexViewCopyPath" Header="Copy Index Path (clipboard)" Click="IndexViewCopyIndexPathClicked"/>
+                        <Separator></Separator>
                         <MenuItem x:Name="RecentIndexMenuItem" Header="Recent Indices"/>
                     </MenuItem>
                     <MenuItem x:Name="AdhocQueries" Header="Ad-hoc Queries" Background="LightBlue" VerticalAlignment="Center">

@@ -1,20 +1,14 @@
-﻿0001 09/27/16 
-Clean up after closing TabItem. ???
-0002 09/27/16
-Add to index menu => Copy Index Path to Clippboard.
-0003 12/27/16
-*** (12/28/16) Cleanup addresses from display of Show Loaded Module Info
-0004 12/27/16
-*** (12/28/16) Fix Instance Value (addresses context menu) for DateTime type
+﻿??? 0001 09/27/16 Clean up after closing TabItem.
+*** 0002 09/27/16 Add to index menu => Copy Index Path to Clippboard.
+*** 0003 12/27/16 (12/28/16) Cleanup addresses from display of Show Loaded Module Info
+*** 0004 12/27/16 (12/28/16) Fix Instance Value (addresses context menu) for DateTime type
 0005 12/28/16
-Multicolumn sorting of listing report.
-0006 12/29/16
-*** (12/30/16) Heap bytes reading (like dd command).
+	Multicolumn sorting of listing report.
+*** 0006 12/29/16 (12/30/16) Heap bytes reading (like dd command).
 0007 12/30/16
-Implement show roots grid. Header="Show Roots" Click="IndexShowRootsClicked"
+	Implement show roots grid. Header="Show Roots" Click="IndexShowRootsClicked"
 0008 12/30/16
-Implement show roots grid. Header="Show Roots" Click="IndexShowRootsClicked"
-
+	Implement show roots grid. Header="Show Roots" Click="IndexShowRootsClicked"
         /// <summary>
         /// When you enumerate a object, the offset within the object is returned.  This offset might represent
         /// nested fields (obj.Field1.Field2).    GetFieldOffset returns the first of these field (Field1), 
@@ -23,118 +17,65 @@ Implement show roots grid. Header="Show Roots" Click="IndexShowRootsClicked"
         /// </summary>
         /// <returns>true if successful.  Will fail if it 'this' is an array type</returns>
         abstract public bool GetFieldForOffset(int fieldOffset, bool inner, out ClrInstanceField childField, out int childFieldOffset);
-
-0009 02/23/17
-*** Value of the instance for a Concurrent.ConcurrentDictionary<TKey, TValue>.m_tables.m_buckets is always null, but should not.
-0010 02/24/17
-??? Recent lists do not work properly.
-0011 02/24/17
-*** In Type/Instance Reference tree, show in parent number of unique child references [100/3]
-0012 02/24/17
-System.Collections.Generic.List<System.Collections.Generic.KeyValuePair<System.Guid,ECS.Common.HierarchyCache.MarketData.MarketDataSetType>>
-For the type above, check unrooted parents
+*** 0009 02/23/17 Value of the instance for a Concurrent.ConcurrentDictionary<TKey, TValue>.m_tables.m_buckets is always null, but should not.
+*** 0010 02/24/17 Recent lists do not work properly.
+*** 0011 02/24/17 In Type/Instance Reference tree, show in parent number of unique child references [100/3]
+*** 0012 02/24/17 Check unrooted parents
 0013 03/01/17
-Thread grid - backround of cell to underscore the same frames.
+	Thread grid - backround of cell to underscore the same frames.
 0014 03/01/17
-Ancestor tree - show types and instances, and directions in 'AncestorTreeViewGrid' grid. 
-0015 03/01/17
-*** Show in address list count of unrooted instances. (in all where this is possible).
-0016 03/01/17
-*** In AncestorTreeViewGrid display live help (explaning references for current selection).
+	Ancestor tree - show types and instances, and directions in 'AncestorTreeViewGrid' grid. 
+*** 0015 03/01/17 Show in address list count of unrooted instances. (in all where this is possible).
+*** 0016 03/01/17 In AncestorTreeViewGrid display live help (explaning references for current selection).
 0017 03/02/17
-To the Type Sizes grid, bring type context menu from Types grid. (Roshabh)
-0018 03/02/17
-*** Expanding all tree by user. Added collapsing too.
-0019 03/03/17
-at Microsoft.Diagnostics.Runtime.DbgEngDataReader.GetPointerSize() in D:\Jerzy\projects\csharp\15\clrmd-master\clrmd-master\src\Microsoft.Diagnostics.Runtime\DataTarget.cs:line 1587
-   at Microsoft.Diagnostics.Runtime.MemoryReader..ctor(IDataReader dataReader, Int32 cacheSize) in D:\Jerzy\projects\csharp\15\clrmd-master\clrmd-master\src\Microsoft.Diagnostics.Runtime\internal.cs:line 289
-   at Microsoft.Diagnostics.Runtime.HeapBase..ctor(RuntimeBase runtime) in D:\Jerzy\projects\csharp\15\clrmd-master\clrmd-master\src\Microsoft.Diagnostics.Runtime\ClrHeap.cs:line 677
-   at Microsoft.Diagnostics.Runtime.Desktop.DesktopGCHeap..ctor(DesktopRuntimeBase runtime) in D:\Jerzy\projects\csharp\15\clrmd-master\clrmd-master\src\Microsoft.Diagnostics.Runtime\Desktop\heap.cs:line 19
-   at Microsoft.Diagnostics.Runtime.Desktop.DesktopRuntimeBase.Heap in D:\Jerzy\projects\csharp\15\clrmd-master\clrmd-master\src\Microsoft.Diagnostics.Runtime\Desktop\runtimebase.cs:line 294
-   at ClrMDRIndex.DumpIndex.GetInstanceValue(UInt64 addr, String& error) in D:\Jerzy\projects\csharp\15\MDRDesk\ClrMDRIndex\DumpIndex.cs:line 1132
-   IsPointer64Bit failed: 8000ffff
-   (Roshabh)
-   THIS IS MDR LIBRARY ISSUE
-0020 03/03/17
-??? String Usage context menu issues. Get References throwing exceptions.
+	To the Type Sizes grid, bring type context menu from Types grid. (Roshabh)
+*** 0018 03/02/17 Expanding all tree by user. Added collapsing too.
+??? 0019 03/03/17 NOTE: Should be fixed now by STA thread introduction.
+	at Microsoft.Diagnostics.Runtime.DbgEngDataReader.GetPointerSize() in D:\Jerzy\projects\csharp\15\clrmd-master\clrmd-master\src\Microsoft.Diagnostics.Runtime\DataTarget.cs:line 1587
+	at Microsoft.Diagnostics.Runtime.MemoryReader..ctor(IDataReader dataReader, Int32 cacheSize) in D:\Jerzy\projects\csharp\15\clrmd-master\clrmd-master\src\Microsoft.Diagnostics.Runtime\internal.cs:line 289
+	at Microsoft.Diagnostics.Runtime.HeapBase..ctor(RuntimeBase runtime) in D:\Jerzy\projects\csharp\15\clrmd-master\clrmd-master\src\Microsoft.Diagnostics.Runtime\ClrHeap.cs:line 677
+	at Microsoft.Diagnostics.Runtime.Desktop.DesktopGCHeap..ctor(DesktopRuntimeBase runtime) in D:\Jerzy\projects\csharp\15\clrmd-master\clrmd-master\src\Microsoft.Diagnostics.Runtime\Desktop\heap.cs:line 19
+	at Microsoft.Diagnostics.Runtime.Desktop.DesktopRuntimeBase.Heap in D:\Jerzy\projects\csharp\15\clrmd-master\clrmd-master\src\Microsoft.Diagnostics.Runtime\Desktop\runtimebase.cs:line 294
+	at ClrMDRIndex.DumpIndex.GetInstanceValue(UInt64 addr, String& error) in D:\Jerzy\projects\csharp\15\MDRDesk\ClrMDRIndex\DumpIndex.cs:line 1132
+	IsPointer64Bit failed: 8000ffff
+	(Roshabh)
+	THIS IS MDR LIBRARY ISSUE
+??? 0020 03/03/17 String Usage context menu issues. Get References throwing exceptions.
 0021 03/10/17
-D:\Jerzy\WinDbgStuff\dumps\Analytics\Ellerston\Eze.Analytics.Svc_170309_130146.BIG.dmp - Free gen distribution is probably wrong,
-DebugDiag2 gives LOH, me Gen0.
+	D:\Jerzy\WinDbgStuff\dumps\Analytics\Ellerston\Eze.Analytics.Svc_170309_130146.BIG.dmp - Free gen distribution is probably wrong,
+	DebugDiag2 gives LOH, me Gen0.
 0022 03/15/17
-Associate stack variables with a stack frame method call.
+	Associate stack variables with a stack frame method call.
 0023 03/29/17
-Handle System.Void in TypeExtractor, and other places ?
+	Handle System.Void in TypeExtractor, and other places ?
 0024 03/29/17
-Add static variables getters, for types add static variables to types context menu, in instance value add them to value display.
+	Add static variables getters, for types add static variables to types context menu, in instance value add them to value display.
 0025 04/21/17
 *** Double click on instance address list should get instance value.
 0026 04/21/17
 *** Add feature to rename title the tab items.
 0026 04/21/17
-Add feature to change a tab into a free flowing window.
-0027 05/04/17
-*** Add indexing without references.
-Make sure that indexing and index work properly without references.
+	Add feature to change a tab into a free flowing window.
+*** 0027 05/04/17 Add indexing without references. Make sure that indexing and index work properly without references.
 0028 05/04/17
-Fix thread frames, something fishy about VikingServiceFrozen.dmp
+	Fix thread frames, something fishy about VikingServiceFrozen.dmp
 0029 06/01/17
-Add context menu to value windows (all), say... Copy Value, Get Instance Value, Get Parent references, etc...
+	Add context menu to value windows (all), say... Copy Value, Get Instance Value, Get Parent references, etc...
 0030 06/07/17
-Fix total sizes of instances and types.
+	Fix total sizes of instances and types.
 0031 06/08/17
-Double fields showing - D:\Jerzy\WinDbgStuff\dumps\Analytics\Ellerston\LouBug\Eze.Analytics.Svc_170607_214916.dmp.map
-0032 06/09/17
-*** Make sure that DumpIndex does not acces _references when they not present.
-0033 06/22/17
-*** Finish new reference builder and reference (InstanceReferences), and incoporate them in indexer and index.
-0034 06/28/17
-*** Double click on list view:
-Generally one only responds to a single click on an item but if you want a double click it isn't hard to do.
-private void listView1_MouseDoubleClick ( object sender, MouseEventArgs e ) {
-   ListViewHitTestInfo hit = listView1.HitTest(e.Location);
-   if (hit.Item != null) {
-      MessageBox.Show(this, hit.Item.Text);
-   };
-}
-Note that the above code reacts to clicking anywhere on the item.  You can get specific (icon, label, etc).
-0035 07/18/17
-Instance value display - include arrays of interfaces.
-ECS.Cache.Service.Interface.ICacheNotificationSubscription[]
-ECS.Cache.Service.Interface.ICacheNotification[]
-0036 07/23/17
-Make sure we display proper type value (ex. string) when key/value is System.__Canon
-Test case:
-Cowen.Analytics.Svc_170717_165238.dmp
-System.Collections.Generic.Dictionary<System.String,System.Boolean> at 0x00005409b849a8
-
-
-
-   at System.IO.__Error.WinIOError(Int32 errorCode, String maybeFullPath)
-   at System.IO.FileStream.Init(String path, FileMode mode, FileAccess access, Int32 rights, Boolean useRights, FileShare share, Int32 bufferSize, FileOptions options, SECURITY_ATTRIBUTES secAttrs, String msgPath, Boolean bFromProxy, Boolean useLongPath, Boolean checkHost)
-   at System.IO.FileStream..ctor(String path, FileMode mode, FileAccess access, FileShare share)
-   at ClrMDRIndex.DumpIndex.LoadThreadBlockGraph(String& error) in D:\Jerzy\projects\csharp\15\MDRDesk\ClrMDRIndex\DumpIndex.cs:line 248
-
-
-   [‎7/‎31/‎2017 2:42 PM] Iordanov, Lou: 
-  at ClrMDRIndex.DumpIndex.GetValues(ClrHeap heap, TypeValueQuery parentQry, UInt64 addr, TypeValueQuery qry) in D:\Jerzy\projects\csharp\15\MDRDesk\ClrMDRIndex\DumpIndex.cs:line 1859
-   at ClrMDRIndex.DumpIndex.GetTypeValuesReport(TypeValueQuery query, UInt64[] instances, String& error) in D:\Jerzy\projects\csharp\15\MDRDesk\ClrMDRIndex\DumpIndex.cs:line 1906 
-not urgent, just an fyi
-0036 08/13/17
-ArgumentOutOfRangeException
-mscorlib
-Index was out of range. Must be non-negative and less than the size of the collection.
-Parameter name: index
-   at System.ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument argument, ExceptionResource resource)
-   at System.Collections.Generic.List`1.get_Item(Int32 index)
-   at ClrMDRIndex.ValueExtractor.DecimalValue(UInt64 addr, ClrInstanceField field) in C:\projects\csharp17\MDRDesk\ClrMDRUtil\ValueExtractor.cs:line 66
-   at ClrMDRIndex.ValueExtractor.GetFieldValue(IndexProxy ndxProxy, ClrHeap heap, UInt64 addr, ClrInstanceField fld, Boolean intern, ClrType& fldType, ClrElementKind& kind, UInt64& fldAddr) in C:\projects\csharp17\MDRDesk\ClrMDRUtil\ValueExtractor.cs:line 1092
-   at ClrMDRIndex.ValueExtractor.GetFieldValues(IndexProxy ndxProxy, ClrHeap heap, ClrType clrType, ClrElementKind kind, UInt64 addr, InstanceValue parent, String& error) in C:\projects\csharp17\MDRDesk\ClrMDRUtil\ValueExtractor.cs:line 1214
-   at ClrMDRIndex.ValueExtractor.GetInstanceValue(IndexProxy ndxProxy, ClrHeap heap, UInt64 decoratedAddr, Int32 fldNdx, InstanceValue parent) in C:\projects\csharp17\MDRDesk\ClrMDRUtil\ValueExtractor.cs:line 1278
-   at ClrMDRIndex.DumpIndex.GetInstanceValue(UInt64 addr, InstanceValue parent) in C:\projects\csharp17\MDRDesk\ClrMDRIndex\DumpIndex.cs:line 1234
-Crash Dump: Cowen.Analytics.Svc_170717_165238.dmp (x64)
-MDR Desk (debug) 0.6.0.11  [64-bit] ❖ Cowen.Analytics.Svc_170717_165238.dmp
-
-0x000053053a46d0
-ECS.Common.HierarchyCache.MarketData.BoxedValueHolder
-*** 0037 08/14/17 [APPLICATION WILL CLOSE] IndexOutOfRangeException || Crash Dump: Cowen.Analytics.Svc_170717_165238.dmp (x64) ProtoBuf.Serializers.TagDecorator - Tail field
-0038 08/16/17 Fix opening the index when we have one already opened.
+	Double fields showing - D:\Jerzy\WinDbgStuff\dumps\Analytics\Ellerston\LouBug\Eze.Analytics.Svc_170607_214916.dmp.map
+*** 0032 06/09/17 Make sure that DumpIndex does not acces _references when they not present.
+*** 0033 06/22/17 Finish new reference builder and reference (InstanceReferences), and incoporate them in indexer and index.
+*** 0034 06/28/17 Double click on list view || Note that the above code reacts to clicking anywhere on the item.  You can get specific (icon, label, etc).
+*** 0035 07/18/17 Instance value display - include arrays of interfaces.
+*** 0036 07/23/17 Make sure we display proper type value (ex. string) when key/value is System.__Canon
+0036 [‎7/‎31/‎2017 2:42 PM] Iordanov, Lou: 
+	at ClrMDRIndex.DumpIndex.GetValues(ClrHeap heap, TypeValueQuery parentQry, UInt64 addr, TypeValueQuery qry) in D:\Jerzy\projects\csharp\15\MDRDesk\ClrMDRIndex\DumpIndex.cs:line 1859
+	at ClrMDRIndex.DumpIndex.GetTypeValuesReport(TypeValueQuery query, UInt64[] instances, String& error) in D:\Jerzy\projects\csharp\15\MDRDesk\ClrMDRIndex\DumpIndex.cs:line 1906 
+	not urgent, just an fyi
+*** 0037 08/13/17 ArgumentOutOfRangeException || Crash Dump: Cowen.Analytics.Svc_170717_165238.dmp (x64) || instance value at : 0x000053053a46d0
+*** 0038 08/14/17 [APPLICATION WILL CLOSE] IndexOutOfRangeException || Crash Dump: Cowen.Analytics.Svc_170717_165238.dmp (x64) ProtoBuf.Serializers.TagDecorator - Tail field
+*** 0039 08/16/17 Fix opening the index when we have one already opened.
+*** 0040 08/19/17 {unknown value} in the array : 0x0000530f94bb08, array elemnt: 0x000056045d7968
+	Crash Dump: Cowen.Analytics.Svc_170717_165238.dmp

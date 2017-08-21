@@ -1107,16 +1107,17 @@ namespace ClrMDRIndex
 			}
 		}
 
-        public static bool SaveIndicesReferences(string path, SortedDictionary<int, int[]> refs, out string error)
+        public static bool SaveIndicesReferences(string path, SortedDictionary<int, int[]> refs, out string error, bool sortValues=false)
         {
             error = null;
             BinaryWriter bw = null;
             try
             {
+                int refCnt = refs.Count;
                 bw = new BinaryWriter(File.Open(path, FileMode.Create));
-                bw.Write(refs.Count);
+                bw.Write(refCnt);
                 int totalRefCount=0;
-                int[] roffs = new int[refs.Count];
+                int[] roffs = new int[refCnt];
                 int off = 0;
                 int ndx = 0;
                 foreach(var r in refs)
@@ -1126,9 +1127,73 @@ namespace ClrMDRIndex
                     off += r.Value.Length;
                     totalRefCount += r.Value.Length + 1;
                 }
+                for(int i = 0; i < refCnt; ++i)
+                {
+                    bw.Write(roffs[i]);
+                }
+                bw.Write(totalRefCount);
+                foreach (var r in refs)
+                {
+                    var ary = r.Value;
+                    if (sortValues)
+                        Array.Sort(ary);
+                    int cnt = ary.Length;
+                    bw.Write(cnt);
+                    for (int i = 0; i < cnt; ++i)
+                    {
+                        bw.Write(ary[i]);
+                    }
+                }
+                return true;
+            }
+            catch (Exception ex)
+            {
+                error = Utils.GetExceptionErrorString(ex);
+                return false;
+            }
+            finally
+            {
+                bw?.Close();
+            }
+        }
 
-
-
+        public static bool SaveIndicesReferences(string path, SortedDictionary<int, List<int>> refs, out string error, bool sortValues = false)
+        {
+            error = null;
+            BinaryWriter bw = null;
+            try
+            {
+                int refCnt = refs.Count;
+                bw = new BinaryWriter(File.Open(path, FileMode.Create));
+                bw.Write(refCnt);
+                int totalRefCount = 0;
+                int[] roffs = new int[refCnt];
+                int off = 0;
+                int ndx = 0;
+                foreach (var r in refs)
+                {
+                    bw.Write(r.Key);
+                    roffs[ndx] = off;
+                    off += r.Value.Count;
+                    totalRefCount += r.Value.Count + 1;
+                }
+                for (int i = 0; i < refCnt; ++i)
+                {
+                    bw.Write(roffs[i]);
+                }
+                bw.Write(totalRefCount);
+                foreach (var r in refs)
+                {
+                    var lst = r.Value;
+                    if (sortValues)
+                        lst.Sort();
+                    int cnt = lst.Count;
+                    bw.Write(cnt);
+                    for (int i = 0; i < cnt; ++i)
+                    {
+                        bw.Write(lst[i]);
+                    }
+                }
                 return true;
             }
             catch (Exception ex)

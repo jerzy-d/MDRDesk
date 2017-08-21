@@ -416,81 +416,6 @@ namespace MDRDesk
             return false;
         }
 
-        //private void ToggleButton_OnChecked(object sender, RoutedEventArgs e)
-        //{
-        //    RadioButton button = sender as RadioButton;
-        //    string buttonName = button.Name;
-        //    if (!IsIndexAvailable())
-        //    {
-        //        switch (buttonName)
-        //        {
-        //            case "TypeDisplayNamespaceClass":
-        //                Setup.SetTypesDisplayMode("namespaces");
-        //                break;
-        //            case "TypeDisplayClass":
-        //                Setup.SetTypesDisplayMode("types");
-        //                break;
-        //            case "TypeDisplayNamespace":
-        //                Setup.SetTypesDisplayMode("fulltypenames");
-        //                break;
-        //        }
-        //        return;
-        //    }
-
-        //    bool openNewTab = true;
-        //    List<string> lst = new List<string>(3);
-        //    foreach (TabItem tabItem in MainTab.Items)
-        //    {
-        //        if (tabItem.Content is Grid)
-        //        {
-        //            var grid = tabItem.Content as Grid;
-        //            if (grid.Name.StartsWith(GridReversedNameTypeView))
-        //            {
-        //                if (buttonName == "TypeDisplayClass")
-        //                {
-        //                    openNewTab = false;
-        //                    break;
-        //                }
-        //            }
-        //            if (grid.Name.StartsWith(GridNameNamespaceTypeView))
-        //            {
-        //                if (buttonName == "TypeDisplayNamespaceClass")
-        //                {
-        //                    openNewTab = false;
-        //                    break;
-        //                }
-        //            }
-        //            if (grid.Name.StartsWith(GridKeyNameTypeView))
-        //            {
-        //                if (buttonName == "TypeDisplayNamespace")
-        //                {
-        //                    openNewTab = false;
-        //                    break;
-        //                }
-        //            }
-        //        }
-        //    }
-        //    if (openNewTab)
-        //    {
-        //        switch (buttonName)
-        //        {
-        //            case "TypeDisplayNamespaceClass":
-        //                Setup.SetTypesDisplayMode("namespaces");
-        //                var namespaces = CurrentIndex.GetNamespaceDisplay();
-        //                DisplayNamespaceGrid(namespaces);
-        //                break;
-        //            case "TypeDisplayClass":
-        //                Setup.SetTypesDisplayMode("types");
-        //                DisplayTypesGrid(true);
-        //                break;
-        //            case "TypeDisplayNamespace":
-        //                Setup.SetTypesDisplayMode("fulltypenames");
-        //                DisplayTypesGrid(false);
-        //                break;
-        //        }
-        //    }
-        //}
-
         private void CreateDumpIndexClicked(object sender, RoutedEventArgs e)
         {
             if (IsIndexAvailable(null)) CloseCurrentIndex();
@@ -510,15 +435,6 @@ namespace MDRDesk
 
             SetStartTaskMainWindowState("Indexing: " + dmpFileName + ", please wait.");
             SetTitle(dmpFileName);
-
-            //var result = await Task.Run(() =>
-            //{
-            //    string error;
-            //    string indexPath;
-            //    var indexer = new DumpIndexer(path);
-            //    var ok = indexer.CreateDumpIndex2(_myVersion, indexingProgress.Progress, out indexPath, out error);
-            //    return new Tuple<bool, string, string>(ok, error, indexPath);
-            //});
 
             var result = await Task.Factory.StartNew(() =>
                 {
@@ -588,28 +504,6 @@ namespace MDRDesk
             var progressHandler = new Progress<string>(MainStatusShowMessage);
             var progress = progressHandler as IProgress<string>;
             SetStartTaskMainWindowState("Opening index: " + Utils.GetPathLastFolder(path) + ", please wait...");
-
-            //var result = await Task.Run(() =>
-            //{
-            //    string error;
-            //    DumpIndex index = DumpIndex.OpenIndexInstanceReferences(_myVersion, path, runtimeIndex, out error, progress);
-            //    KeyValuePair<string, KeyValuePair<string, int>[]>[] namespaces = null;
-            //    progress.Report("OpenIndexInstanceReferences done");
-
-            //    if (error == null && index != null)
-            //    {
-            //        try
-            //        {
-            //            namespaces = index.GetNamespaceDisplay();
-            //            progress.Report("GetNamespaceDisplay done");
-            //        }
-            //        catch (Exception ex)
-            //        {
-            //            error = Utils.GetExceptionErrorString(ex);
-            //        }
-            //    }
-            //    return new Tuple<string, DumpIndex, KeyValuePair<string, KeyValuePair<string, int>[]>[]>(error, index, namespaces);
-            //});
 
             var result = await Task.Factory.StartNew(() =>
             {
@@ -759,12 +653,7 @@ namespace MDRDesk
             if (!IsIndexAvailable("Show Weak References")) return;
 
             SetStartTaskMainWindowState("Getting WeakReference information, please wait...");
-            //var result = await Task.Run(() =>
-            //{
-            //    string error;
-            //    var info = CurrentIndex.GetWeakReferenceInfo(out error);
-            //    return error == null ? info : new ListingInfo(error);
-            //});
+
             var result = await Task.Factory.StartNew(() =>
             {
                 string error;
@@ -787,7 +676,6 @@ namespace MDRDesk
                 return;
             }
 
-            //DisplayListingGrid(result, Constants.BlackDiamond, ReportNameWeakReferenceInfo, ReportTitleWeakReferenceInfo);
             DisplayWeakReferenceGrid(result, Constants.BlackDiamond, ReportNameWeakReferenceInfo, ReportTitleWeakReferenceInfo);
         }
 
@@ -871,11 +759,6 @@ namespace MDRDesk
                 SetStartTaskMainWindowState(
                     "Getting string usage, string cache has to be created, it will take a while. Please wait...");
 
-
-            //var taskResult = await Task.Run(() =>
-            //{
-            //    return CurrentIndex.GetStringStats((int)_minStringUsage, addGenerationInfo);
-            //});
             var taskResult = await Task.Factory.StartNew(() =>
             {
                 return CurrentIndex.GetStringStats((int)_minStringUsage, addGenerationInfo);
@@ -978,10 +861,6 @@ namespace MDRDesk
             if (path == null) return;
             SetStartTaskMainWindowState("Getting type sizes to compare. Please wait...");
 
-            //var taskResult = await Task.Run(() =>
-            //{
-            //    return CurrentIndex.CompareTypesWithOther(path);
-            //});
             var taskResult = await Task.Factory.StartNew(() =>
             {
                 return CurrentIndex.CompareTypesWithOther(path);
@@ -1001,10 +880,6 @@ namespace MDRDesk
             if (path == null) return;
             SetStartTaskMainWindowState("Getting string instances to compare. Please wait...");
 
-            //var taskResult = await Task.Run(() =>
-            //{
-            //    return CurrentIndex.CompareStringsWithOther(path);
-            //});
             var taskResult = await Task.Factory.StartNew(() =>
             {
                 return CurrentIndex.CompareStringsWithOther(path);
@@ -1023,15 +898,23 @@ namespace MDRDesk
             DisplayListViewBottomGrid(taskResult, Constants.BlackDiamond, ReportNameSizeDiffs, ReportTitleSizeDiffs);
         }
 
+        private void IndexViewCopyIndexPathClicked(object sender, RoutedEventArgs e)
+        {
+            if (!IsIndexAvailable("Copy the index path.")) return;
+            string path = CurrentIndex.IndexFolder;
+            Clipboard.SetText(path);
+            MainStatusShowMessage("Copied to clipboard: " + path);
+        }
+
         public void RecentIndicesClicked(object sender, RoutedEventArgs e)
         {
+            if (IsIndexAvailable(null)) CloseCurrentIndex();
             var menuItem = sender as MenuItem;
             Debug.Assert(menuItem != null);
             var fileInfo = menuItem.Header as FileInfo;
             if (fileInfo != null)
             {
                 Dispatcher.CurrentDispatcher.InvokeAsync(() => DoOpenDumpIndex(0, fileInfo.FilePath));
-                //OpenDumpIndexClicked(menuItem, new RoutedEventArgs(null, fileInfo.FilePath)));
             }
         }
 
@@ -2642,10 +2525,10 @@ namespace MDRDesk
 
         private void HelpViewHelpClicked(object sender, RoutedEventArgs e)
         {
-            var wnd = new HelpWindow(Utils.GetNewID(), _wndDct, Setup.HelpFolder + Path.DirectorySeparatorChar + "README.md") { Owner = this };
-            wnd.Show();
-
+            ValueWindows.ShowHelpWindow(Setup.HelpFolder + Path.DirectorySeparatorChar + "README.md");
         }
+
+
     }
 
     public static class MenuCommands

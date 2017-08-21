@@ -497,7 +497,7 @@ namespace ClrMDRIndex
         //	}
         //}
 
-        private void SaveFieldTypes(ClrType clrType, int typeId, HashSet<int> doneTypeFields, HashSet<int> tofixTypeFields, string[] typeNames, SortedDictionary<int, int[]> typeFields)
+        private void RetainFieldTypes(ClrType clrType, int typeId, HashSet<int> doneTypeFields, HashSet<int> tofixTypeFields, string[] typeNames, SortedDictionary<int, int[]> typeFields)
         {
             if (doneTypeFields.Add(typeId))
             {
@@ -549,6 +549,41 @@ namespace ClrMDRIndex
             }
         }
 
+        private void SaveFieldTypes(SortedDictionary<int, int[]> typeFields)
+        {
+            var fieldTypeParents = new SortedDictionary<int, List<int>>();
+            foreach(var kv in typeFields)
+            {
+                var flds = kv.Value;
+                var parent = kv.Key;
+                for (int i = 0, icnt = flds.Length; i < icnt; ++i)
+                {
+                    var fld = flds[i];
+                    List<int> lst;
+                    if (fieldTypeParents.TryGetValue(fld,out lst))
+                    {
+                        lst.Add(parent);
+                    }
+                    else
+                    {
+                        fieldTypeParents.Add(fld, new List<int>() { parent });
+                    }
+                }
+            }
+            var path = _fileMoniker.GetFilePath(_currentRuntimeIndex, Constants.MapTypeFieldTypesPostfix);
+            string error;
+            if (!Utils.SaveIndicesReferences(path, typeFields, out error))
+            {
+                _errors[_currentRuntimeIndex].Add("Dumping field types failed." + Environment.NewLine + error);
+            }
+            typeFields.Clear();
+            path = _fileMoniker.GetFilePath(_currentRuntimeIndex, Constants.MapFieldTypeParentTypesPostfix);
+            if (!Utils.SaveIndicesReferences(path, fieldTypeParents, out error, true))
+            {
+                _errors[_currentRuntimeIndex].Add("Dumping field parent types failed." + Environment.NewLine + error);
+            }
+            fieldTypeParents.Clear();
+        }
 
         public bool GetAddressesAndTypes(ClrHeap heap, ulong[] addresses, int[] typeIds, string[] typeNames, out string error)
         {
@@ -594,7 +629,7 @@ namespace ClrMDRIndex
                         if (size > (ulong)UInt32.MaxValue) size = (ulong)UInt32.MaxValue;
                         sizes[addrNdx] = (uint)size;
 
-                        SaveFieldTypes(clrType, typeId, doneTypeFields, tofixTypeFields, typeNames, typeFields);
+                        RetainFieldTypes(clrType, typeId, doneTypeFields, tofixTypeFields, typeNames, typeFields);
 
                         // get generation stats
                         //
@@ -628,6 +663,8 @@ namespace ClrMDRIndex
                 {
                     _errors[_currentRuntimeIndex].Add("DumpSegments failed." + Environment.NewLine + error);
                 }
+
+                SaveFieldTypes(typeFields);
 
                 // dump sizes
                 //

@@ -207,7 +207,6 @@ namespace MDRDesk
 		private void Window_Closing(object sender, System.ComponentModel.CancelEventArgs e)
 		{
             var wndtask = Task.Factory.StartNew(() => ValueWindows.RemoveWindow(_id, _wndType));
-            wndtask.Wait();
 		}
 
         private void InstanceValueCopyAddressClicked(object sender, RoutedEventArgs e)

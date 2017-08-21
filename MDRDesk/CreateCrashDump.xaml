@@ -37,7 +37,14 @@
         <Button x:Name="ButtonProcdumpPath" Content="Procdump Path..." Grid.Row="3" Grid.Column="0" HorizontalAlignment="Left" Margin="4,2,2,2" VerticalAlignment="Center"  Width="90" Height="28" FontSize="10" Click="ButtonProcdumpPath_OnClick"/>
         <TextBox x:Name="ProcdumpPath" Grid.Row="3" Grid.Column="1" HorizontalAlignment="Stretch"  Height="23" Margin="4,2,4,2" Text="..." VerticalAlignment="Center" />
         <Button x:Name="ButtonCreateDump" Grid.Row="4" Grid.Column="0" Content="Create Dump" HorizontalAlignment="Left" Margin="4,2,2,2" VerticalAlignment="Center" Width="90" Height="28" Background="DarkOliveGreen" Click="ButtonCreateDumpClicked" IsEnabled="False"/>
-        <Button x:Name="ButtonClose" Grid.Row ="4" Grid.Column="1" Content="Close" HorizontalAlignment="Right" Margin="4,2,2,2" VerticalAlignment="Center" Width="75" Height="28" Click="ButtonCloseClicked"/>
         <CheckBox x:Name="IndexCheckBox" Content="index after creating" Grid.Column="1" HorizontalAlignment="Left" Margin="8,2,0,2" Grid.Row="4" VerticalAlignment="Center" IsChecked="True"/>
+        <Button x:Name="ButtonHelp" Grid.Row ="4" Grid.Column="1" HorizontalAlignment="Center" Margin="4,2,2,2" VerticalAlignment="Center" Width="28" Height="28" Click="ButtonHelpClicked" Background="Transparent" BorderThickness="0">
+            <Button.ToolTip>Usage help.</Button.ToolTip>
+            <Image Source=".\Images\Help.png" Width="16" Height="16" Margin="0,0,0,0" VerticalAlignment="Center" HorizontalAlignment="Center"/>
+            <!--<Button.InputBindings>
+                <KeyBinding Key="F1" Command="{Binding ButtonHelpClicked}" />
+            </Button.InputBindings>-->
+        </Button>
+        <Button x:Name="ButtonClose" Grid.Row ="4" Grid.Column="1" Content="Close" HorizontalAlignment="Right" Margin="4,2,2,2" VerticalAlignment="Center" Width="75" Height="28" Click="ButtonCloseClicked"/>
     </Grid>
 </Window>

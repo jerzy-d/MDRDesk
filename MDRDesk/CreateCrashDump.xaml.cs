@@ -5,6 +5,7 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
+using System.Windows.Threading;
 using System.Diagnostics;
 using System.IO;
 using ClrMDRIndex;
@@ -30,8 +31,9 @@ namespace MDRDesk
 		public CreateCrashDump()
 		{
 			InitializeComponent();
+            AddHotKeys();
 
-			Process[] processlist = Process.GetProcesses();
+            Process[] processlist = Process.GetProcesses();
 			KeyValuePair<int, string>[] entries = new KeyValuePair<int, string>[processlist.Length];
 			for (int i = 0, icnt = entries.Length; i < icnt; ++i)
 			{
@@ -185,5 +187,24 @@ namespace MDRDesk
 				_procdumpPath = currentPath + Path.DirectorySeparatorChar + "procdump.exe";
 			}
 		}
-	}
+
+        private void ButtonHelpClicked(object sender, RoutedEventArgs e)
+        {
+            ValueWindows.ShowHelpWindow(Setup.HelpFolder + Path.DirectorySeparatorChar + @"\Documentation\DumpLocalProcess.md");
+        }
+
+        private void AddHotKeys()
+        {
+            try
+            {
+                RoutedCommand firstSettings = new RoutedCommand();
+                firstSettings.InputGestures.Add(new KeyGesture(Key.F1));
+                CommandBindings.Add(new CommandBinding(firstSettings, ButtonHelpClicked));
+            }
+            catch (Exception err)
+            {
+                //handle exception error
+            }
+        }
+    }
 }

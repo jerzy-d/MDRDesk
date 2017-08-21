@@ -58,6 +58,16 @@
                     Value="Light" />
         </Style>
 
+        <Style x:Key="H5Style"
+               TargetType="Paragraph">
+            <Setter Property="FontSize"
+                    Value="12" />
+            <Setter Property="Foreground"
+                    Value="#ff000000" />
+            <Setter Property="FontWeight"
+                    Value="SemiBold" />
+        </Style>
+
         <Style x:Key="LinkStyle"
                TargetType="Hyperlink">
             <Setter Property="TextDecorations"
@@ -92,6 +102,7 @@
                         Heading2Style="{StaticResource H2Style}"
                         Heading3Style="{StaticResource H3Style}"
                         Heading4Style="{StaticResource H4Style}"
+                        Heading5Style="{StaticResource H5Style}"
                         LinkStyle="{StaticResource LinkStyle}"
                         ImageStyle="{StaticResource ImageStyle}"
                         SeparatorStyle="{StaticResource SeparatorStyle}"
@@ -102,6 +113,10 @@
 
     </Window.Resources>
     <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="28"/>
+        </Grid.RowDefinitions>
         <FlowDocumentScrollViewer x:Name="DocumentViewer"
                                   Grid.Row="0"
                                   Grid.Column="0"
@@ -109,5 +124,8 @@
                                   HorizontalAlignment="Stretch"
                                   Margin="5"></FlowDocumentScrollViewer>
                                   <!--Document="{Binding ElementName=HelpWindow, Path=MdString, Converter={StaticResource TextToFlowDocumentConverter}}" />-->
+        <Button x:Name="LockBtn" Grid.Row="1" Grid.Column="0" Click="LockBtnClicked" Width="28" Height="28" VerticalAlignment="Center" HorizontalAlignment="Right" Background="Transparent" BorderThickness="0">
+            <Button.ToolTip>Lock/unlock content of this window.</Button.ToolTip>
+        </Button>
     </Grid>
 </Window>

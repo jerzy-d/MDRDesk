@@ -1,21 +1,13 @@
 ﻿using System;
-using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Diagnostics;
-using System.Linq;
-using System.Text;
 using System.Threading.Tasks;
+using System.Windows.Threading;
 using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Data;
-using System.Windows.Documents;
 using System.Windows.Input;
-using System.Windows.Media;
-using System.Windows.Media.Imaging;
-using System.Windows.Shapes;
 using ClrMDRIndex;
-using System.Windows.Interop;
 
 namespace MDRDesk
 {
@@ -39,12 +31,17 @@ namespace MDRDesk
             _wndType = ValueWindows.WndType.List;
             _id = id;
              InitializeComponent();
+            SetLock(locked);
             UpdateInstanceValue(instVal, descr);
+        }
+
+        private void SetLock(bool locked)
+        {
+            _locked = locked;
             _lockedImg = new Image();
             _lockedImg.Source = ValueWindows.LockedImage.Source;
             _unlockedImg = new Image();
             _unlockedImg.Source = ValueWindows.UnlockedImage.Source;
-            UpdateInstanceValue(instVal, descr);
             LockBtn.Content = locked ? _lockedImg : _unlockedImg;
         }
 
@@ -83,7 +80,6 @@ namespace MDRDesk
         public void Window_Closing(object sender, CancelEventArgs e)
         {
             var wndtask = Task.Factory.StartNew(() => ValueWindows.RemoveWindow(_id, _wndType));
-            wndtask.Wait();
         }
 
         private void CopyItemSelectionClicked(object sender, RoutedEventArgs e)
@@ -147,13 +143,19 @@ namespace MDRDesk
         {
             if (CollectionValues.SelectedIndex < 0) return;
             DisplayableString item = (DisplayableString)CollectionValues.SelectedItem;
+            if (_instanceValue.Fields != null && _instanceValue.Fields.Length == 1 && _instanceValue.Fields[0].Kind == ClrElementKind.String)
+            {
+                if (!item.IsLong()) return;
+                var fld = _instanceValue.Fields[0];
+                var inst = new InstanceValue(fld.TypeId, fld.Address, fld.TypeName, string.Empty, item.FullContent);
+                Dispatcher.CurrentDispatcher.InvokeAsync(() => ValueWindows.ShowContentWindow(fld.GetDescription(), inst, ValueWindows.WndType.Content));
+                return;
+            }
             ulong addr = GetAddressFromEntry(item.FullContent);
             if (addr != Constants.InvalidAddress)
             {
-                System.Windows.Threading.Dispatcher.CurrentDispatcher.InvokeAsync(() => ((MainWindow)Owner).ExecuteInstanceValueQuery("Getting object value at: " + Utils.RealAddressString(addr), addr));
+                Dispatcher.CurrentDispatcher.InvokeAsync(() => ((MainWindow)Owner).ExecuteInstanceValueQuery("Getting object value at: " + Utils.RealAddressString(addr), addr));
             }
-            
-            // TODO JRD -- display large strings
         }
 
         private void ItemLstGetTypeValuesReportClicked(object sender, RoutedEventArgs e)
