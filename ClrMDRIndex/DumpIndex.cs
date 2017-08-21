@@ -53,7 +53,11 @@ namespace ClrMDRIndex
 
         private string[] _typeNames;
         public string[] TypeNames;
- 
+        private WeakReference<IdReferences> _typeFieldIds;
+        public IdReferences TypeFieldIds => GetTypeFieldReferences();
+        private WeakReference<IdReferences> _fieldParentTypeIds;
+        public IdReferences FieldParentTypeIds => GetFieldParentTypeReferences();
+
         private KeyValuePair<string, int>[] _displayableTypeNames;
         public KeyValuePair<string, int>[] DisplayableTypeNames => _displayableTypeNames;
         private KeyValuePair<string, int>[] _reversedTypeNames;
@@ -67,19 +71,19 @@ namespace ClrMDRIndex
         public bool HasInstanceReferences => _instanceReferences != null;
 
         private WeakReference<StringStats> _stringStats;
-        public WeakReference<StringStats> StringStatitics => _stringStats;
+        public StringStats StringStatitics => GetStringStats();
 
         private WeakReference<uint[]> _sizes;
-        public WeakReference<uint[]> Sizes => _sizes;
+        public uint[] Sizes => GetSizes();
 
         private WeakReference<uint[]> _baseSizes;
-        public WeakReference<uint[]> BaseSizes => _baseSizes;
+        public uint[] BaseSizes => GetBaseSizes();
 
         private WeakReference<ClrElementKind[]> _typeKinds;
         public ClrElementKind[] TypeKinds => GetElementKindList();
 
         private WeakReference<Tuple<int[], int[]>> _arraySizes;
-        public WeakReference<Tuple<int[], int[]>> ArraySizes => _arraySizes;
+        public Tuple<int[], int[]> ArraySizes => GetArraySizes();
 
         private ClrtSegment[] _segments; // segment infos, for instances generation histograms
         private bool _segmentInfoUnrooted;
@@ -2268,6 +2272,13 @@ namespace ClrMDRIndex
             data.Add(str);
         }
 
+        public StringStats GetStringStats()
+        {
+            string error;
+            var strStats = GetStringStats(out error);
+            if (error != null) _errors.Add(error);
+            return strStats;
+        }
 
         public ListingInfo GetStringStats(int minReferenceCount, bool includeGenerations = false)
         {
@@ -2599,6 +2610,62 @@ namespace ClrMDRIndex
             }
         }
 
+
+        public IdReferences GetTypeFieldReferences()
+        {
+            return GetTypeFieldReferences(true);
+        }
+        public IdReferences GetFieldParentTypeReferences()
+        {
+            return GetTypeFieldReferences(true);
+        }
+
+        public IdReferences GetTypeFieldReferences(bool typeFields)
+        {
+            try
+            {
+                IdReferences refs = null;
+                if (_typeFieldIds == null || !_typeFieldIds.TryGetTarget(out refs))
+                {
+                    string path = typeFields
+                        ? _fileMoniker.GetFilePath(_currentRuntimeIndex, Constants.MapTypeFieldIndexFilePostfix)
+                        : _fileMoniker.GetFilePath(_currentRuntimeIndex, Constants.MapFieldTypeMapFilePostfix);
+                    (string error, int[] ids, int[] offs, int[] fldRefs) = Utils.LoadIdReferences(path);
+                    if (error != null)
+                    {
+                        _errors.Add(error);
+                        return null;
+                    }
+                    refs = new IdReferences(ids, offs, fldRefs);
+                    if (_typeFieldIds == null)
+                        _typeFieldIds = new WeakReference<IdReferences>(refs);
+                    else
+                        _typeFieldIds.SetTarget(refs);
+                }
+                return refs;
+            }
+            catch (Exception ex)
+            {
+                _errors.Add(Utils.GetExceptionErrorString(ex));
+                return null;
+            }
+        }
+
+        private uint[] GetSizes()
+        {
+            string error;
+            uint[] sizes = GetSizeArray(false, out error);
+            if (error != null) _errors.Add(error);
+            return sizes;
+        }
+        private uint[] GetBaseSizes()
+        {
+            string error;
+            uint[] sizes = GetSizeArray(true, out error);
+            if (error != null) _errors.Add(error);
+            return sizes;
+        }
+
         private uint[] GetSizeArray(bool baseSize, out string error)
         {
             error = null;
@@ -2667,6 +2734,15 @@ namespace ClrMDRIndex
                 return null;
             }
         }
+
+        private Tuple<int[], int[]> GetArraySizes()
+        {
+            string error;
+            var arySizes = GetArraySizes(out error);
+            if (error != null) _errors.Add(error);
+            return arySizes;
+        }
+
 
         private Tuple<int[], int[]> GetArraySizes(out string error)
         {

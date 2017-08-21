@@ -1207,10 +1207,103 @@ namespace ClrMDRIndex
             }
         }
 
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="path"></param>
+        /// <param name="refs"></param>
+        /// <param name="error"></param>
+        /// <param name="sortValues"></param>
+        /// <returns></returns>
+        public static bool SaveIndicesReferences<T>(string path, SortedDictionary<int, T> refs, out string error, bool sortValues = false) where T : IList<int>
+        {
+            error = null;
+            BinaryWriter bw = null;
+            try
+            {
+                int refCnt = refs.Count;
+                bw = new BinaryWriter(File.Open(path, FileMode.Create));
+                bw.Write(refCnt);
+                int totalRefCount = 0;
+                int[] roffs = new int[refCnt];
+                int off = 0;
+                int ndx = 0;
+                foreach (var r in refs)
+                {
+                    bw.Write(r.Key);
+                    roffs[ndx] = off;
+                    off += r.Value.Count;
+                    totalRefCount += r.Value.Count + 1;
+                }
+                for (int i = 0; i < refCnt; ++i)
+                {
+                    bw.Write(roffs[i]);
+                }
+                bw.Write(totalRefCount);
+                foreach (var r in refs)
+                {
+                    IList<int> lst = r.Value;
+                    if (sortValues) lst.OrderBy(v=>v);
+                    int cnt = lst.Count;
+                    bw.Write(cnt);
+                    for (int i = 0; i < cnt; ++i)
+                    {
+                        bw.Write(lst[i]);
+                    }
+                }
+                return true;
+            }
+            catch (Exception ex)
+            {
+                error = Utils.GetExceptionErrorString(ex);
+                return false;
+            }
+            finally
+            {
+                bw?.Close();
+            }
+        }
+        public static (string, int[], int[], int[]) LoadIdReferences(string path)
+        {
+            string error = null;
+            BinaryReader br = null;
+            try
+            {
+                br = new BinaryReader(File.Open(path, FileMode.Open));
+                int refCnt = br.ReadInt32();
+                int[] vals = new int[refCnt];
+                for (int i = 0; i < refCnt; ++i)
+                {
+                    vals[i] = br.ReadInt32();
+                }
+                int[] offs = new int[refCnt];
+                for (int i = 0; i < refCnt; ++i)
+                {
+                    offs[i] = br.ReadInt32();
+                }
+                int totRefCnt = br.ReadInt32();
+                int[] refs = new int[totRefCnt];
+                for (int i = 0; i < totRefCnt; ++i)
+                {
+                    refs[i] = br.ReadInt32();
+                }
+                return (null, vals,offs,refs);
+            }
+            catch(Exception ex)
+            {
+                error = Utils.GetExceptionErrorString(ex);
+                return (error,null,null,null);
+            }
+            finally
+            {
+                br?.Close();
+            }
+        }
 
         #endregion IO
 
-        #region Dac File Search
+            #region Dac File Search
 
         public static string SearchDacFolder(string dacFileName, string dacFileFolder)
 		{
