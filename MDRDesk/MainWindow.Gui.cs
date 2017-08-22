@@ -1696,7 +1696,7 @@ namespace MDRDesk
             Debug.Assert(instances != null && instances.Length > 0);
             SetStartTaskMainWindowState("Please wait... Type values report: " + query.TypeName);
 
-            (string error, ListingInfo listing) = await Task.Factory.StartNew(() =>
+            var (error, listing) = await Task.Factory.StartNew(() =>
             {
                 string err;
                 var info = CurrentIndex.GetTypeValuesReport(query, instances, out err);

@@ -993,47 +993,6 @@ namespace UnitTestMdr
 
 		#endregion type default values
 
-		[TestMethod]
-		public void GetTypeSizeHistogram()
-		{
-			string error = null;
-			Stopwatch stopWatch = new Stopwatch();
-			stopWatch.Start();
-			var index = OpenIndex(Setup.DumpsFolder + @"\Analytics\Ellerston\Eze.Analytics.Svc_170309_130146.BIG.dmp.map");
-			TestContext.WriteLine(index.DumpFileName + " INDEX OPEN DURATION: " + Utils.StopAndGetDurationString(stopWatch));
-			string typeName = "Free";
-			int[] genHistogram = new int[5];
-			SortedDictionary<ulong,int> dct = new SortedDictionary<ulong, int>();
-			using (index)
-			{
-				ClrHeap heap = index.Heap;
-				var typeId = index.GetTypeId(typeName);
-				var addresses = index.GetTypeRealAddresses(typeId);
-				for (int i = 0, icnt = addresses.Length; i < icnt; ++i)
-				{
-					var addr = addresses[i];
-					var gen = heap.GetGeneration(addr);
-					genHistogram[gen] += 1;
-					ClrType clrType = heap.GetObjectType(addr);
-					Assert.IsNotNull(clrType);
-					var sz = clrType.GetSize(addr);
-					int cnt;
-					if (dct.TryGetValue(sz, out cnt))
-					{
-						dct[sz] = cnt + 1;
-					}
-					else
-					{
-						dct.Add(sz,1);
-					}
-				}
-
-				index.GetTypeFieldDefaultValues(typeId);
-			}
-
-			Assert.IsNull(error, error);
-		}
-
 
 		[TestMethod]
 		public void GetTypeNamesAndCounts()
@@ -1137,6 +1096,79 @@ namespace UnitTestMdr
 
         #region type sizes and distribution
 
+        [TestMethod]
+        public void GetTypeSizeHistogram()
+        {
+            string error = null;
+            Stopwatch stopWatch = new Stopwatch();
+            stopWatch.Start();
+            var index = OpenIndex(Setup.DumpsFolder + @"\Analytics\Ellerston\Eze.Analytics.Svc_170309_130146.BIG.dmp.map");
+            TestContext.WriteLine(index.DumpFileName + " INDEX OPEN DURATION: " + Utils.StopAndGetDurationString(stopWatch));
+            string typeName = "Free";
+            int[] genHistogram = new int[5];
+            SortedDictionary<ulong, int> dct = new SortedDictionary<ulong, int>();
+            using (index)
+            {
+                ClrHeap heap = index.Heap;
+                var typeId = index.GetTypeId(typeName);
+                var addresses = index.GetTypeRealAddresses(typeId);
+                for (int i = 0, icnt = addresses.Length; i < icnt; ++i)
+                {
+                    var addr = addresses[i];
+                    var gen = heap.GetGeneration(addr);
+                    genHistogram[gen] += 1;
+                    ClrType clrType = heap.GetObjectType(addr);
+                    Assert.IsNotNull(clrType);
+                    var sz = clrType.GetSize(addr);
+                    int cnt;
+                    if (dct.TryGetValue(sz, out cnt))
+                    {
+                        dct[sz] = cnt + 1;
+                    }
+                    else
+                    {
+                        dct.Add(sz, 1);
+                    }
+                }
+
+                index.GetTypeFieldDefaultValues(typeId);
+            }
+
+            Assert.IsNull(error, error);
+        }
+
+        [TestMethod]
+        public void CompareTypeSizes()
+        {
+            string error = null;
+            Stopwatch stopWatch = new Stopwatch();
+            stopWatch.Start();
+            var index = OpenIndex(Setup.DumpsFolder + @"\Analytics\Cowen\Cowen.Analytics.Svc_170717_165238.dmp.map");
+            //var index = OpenIndex(Setup.DumpsFolder + @"\MDRDesk\MDRDesk.exe_170821_083408.dmp.map");
+            TestContext.WriteLine(index.DumpFileName + " INDEX OPEN DURATION: " + Utils.StopAndGetDurationString(stopWatch));
+
+            using (index)
+            {
+                uint[] sizes = index.Sizes;
+                Assert.IsNotNull(sizes);
+                uint[] basesizes = index.BaseSizes;
+                Assert.IsNotNull(basesizes);
+                Tuple<int[], int[]> aryCounts = index.ArraySizes;
+                Assert.IsNotNull(aryCounts);
+
+                int aryminsize = aryCounts.Item2.Min();
+                int arymaxsize = aryCounts.Item2.Max();
+
+                for (int i = 0, icnt =aryCounts.Item1.Length; i < icnt; ++i)
+                {
+                    var baseSize = 
+                }
+
+
+            }
+
+            Assert.IsNull(error, error);
+        }
 
 
         #endregion type sizes and distribution
@@ -2078,8 +2110,7 @@ namespace UnitTestMdr
 
                 //(string error0, KeyValuePair<string, string>[] fldDescription, int count, ClrType dctType, ClrType entryKeyType, ClrType entryValueType, KeyValuePair< string,string >[] entryList) = CollectionContent.dictionaryContent(heap, addr);
                 //Assert.IsNull(error0, error0);
-                (string error1, KeyValuePair<string, string>[] description, KeyValuePair<string, string>[] values) =
-                ValueExtractor.GetDictionaryContent(heap, addr);
+                var (error1, description, values) = ValueExtractor.GetDictionaryContent(heap, addr);
 
             }
 
@@ -2096,9 +2127,7 @@ namespace UnitTestMdr
             using (index)
             {
                 var heap = index.GetHeap();
-                //var result = CollectionContent.getSortedDicionaryContent(heap, addr);
-                (string error, KeyValuePair<string, string>[] descr, KeyValuePair<string, string>[] values) =
-                    ValueExtractor.GetSortedDictionaryContent(heap, addr);
+                var (error, descr, values) = ValueExtractor.GetSortedDictionaryContent(heap, addr);
 
                 Assert.IsNull(error,error);
             }
@@ -2115,8 +2144,7 @@ namespace UnitTestMdr
             using (index)
             {
                 var heap = index.GetHeap();
-                  (string error, KeyValuePair<string, string>[] descr, KeyValuePair<string, string>[] values) =
-                    ValueExtractor.GetSortedListContent(heap, addr);
+                var (error, descr, values) = ValueExtractor.GetSortedListContent(heap, addr);
 
                 Assert.IsNull(error, error);
             }
@@ -2133,8 +2161,7 @@ namespace UnitTestMdr
             using (index)
             {
                 var heap = index.GetHeap();
-                (string error, KeyValuePair<string, string>[] description, string[] values) =
-                ValueExtractor.GetHashSetContent(heap, addr);
+                var (error, description, values) = ValueExtractor.GetHashSetContent(heap, addr);
                 Assert.IsNull(error, error);
             }
 

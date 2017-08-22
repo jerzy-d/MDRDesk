@@ -747,31 +747,6 @@ namespace ClrMDRIndex
             return GetInstancesOfTypes(ids);
         }
 
-            //private int[] RemoveArrayType(int[] typeIds)
-            //{
-            //	int cntToRemove = 0;
-            //	for (int i = 0, icnt = typeIds.Length; i < icnt; ++i)
-            //	{
-            //		if (Types.IsArray(typeIds[i]))
-            //		{
-            //			typeIds[i] = Int32.MaxValue;
-            //			++cntToRemove;
-            //		}
-            //	}
-            //	if (cntToRemove > 0)
-            //	{
-            //		int[] newAry = new int[typeIds.Length - cntToRemove];
-            //		int ndx = 0;
-            //		for (int i = 0, icnt = typeIds.Length; i < icnt; ++i)
-            //		{
-            //			if (typeIds[i] != Int32.MaxValue)
-            //				newAry[ndx++] = typeIds[i];
-            //		}
-            //		return newAry;
-            //	}
-            //	return typeIds;
-            //}
-
         public ListingInfo GetAllTypesSizesInfo(bool baseSize)
         {
             string error = null;
@@ -1243,7 +1218,7 @@ namespace ClrMDRIndex
 
         #region instance value
 
-        public (string, InstanceValue, TypeExtractor.KnownTypes) GetInstanceValue(ulong addr, InstanceValue parent)
+        public ValueTuple<string, InstanceValue, TypeExtractor.KnownTypes> GetInstanceValue(ulong addr, InstanceValue parent)
         {
             try
             {
@@ -1285,11 +1260,11 @@ namespace ClrMDRIndex
             }
         }
 
-        public (string error, InstanceValue inst, TypeExtractor.KnownTypes) GetDictionaryContent(ulong addr, int typeId, string typeName)
+        public ValueTuple<string, InstanceValue, TypeExtractor.KnownTypes> GetDictionaryContent(ulong addr, int typeId, string typeName)
         {
             Debug.Assert(TypeExtractor.IsKnownCollection(typeName) != TypeExtractor.KnownTypes.Unknown);
-            (string error, KeyValuePair<string, string>[] description, KeyValuePair<string, string>[] values) =
-                ValueExtractor.GetDictionaryContent(Heap, addr);
+            //(string error, KeyValuePair< string, string>[] description, KeyValuePair<string, string>[] values) =
+            var (error, description, values) = ValueExtractor.GetDictionaryContent(Heap, addr);
             if (error != null) return (error, null, TypeExtractor.KnownTypes.Unknown);
             var inst = new InstanceValue(typeId, ClrElementKind.Object, addr, typeName, null, null);
             inst.AddExtraData(description);
@@ -1297,11 +1272,10 @@ namespace ClrMDRIndex
             return (null, inst, TypeExtractor.KnownTypes.Dictionary);
         }
 
-        public (string error, InstanceValue inst, TypeExtractor.KnownTypes) GetSortedDictionaryContent(ulong addr, int typeId, string typeName)
+        public ValueTuple<string, InstanceValue, TypeExtractor.KnownTypes> GetSortedDictionaryContent(ulong addr, int typeId, string typeName)
         {
             Debug.Assert(TypeExtractor.IsKnownCollection(typeName) != TypeExtractor.KnownTypes.Unknown);
-            (string error, KeyValuePair<string, string>[] description, KeyValuePair<string, string>[] values) =
-                ValueExtractor.GetSortedDictionaryContent(Heap, addr);
+            var (error, description, values) = ValueExtractor.GetSortedDictionaryContent(Heap, addr);
             if (error != null) return (error, null, TypeExtractor.KnownTypes.Unknown);
             var inst = new InstanceValue(typeId, ClrElementKind.Object, addr, typeName, null, null);
             inst.AddExtraData(description);
@@ -1309,11 +1283,10 @@ namespace ClrMDRIndex
             return (null, inst, TypeExtractor.KnownTypes.SortedDictionary);
         }
 
-        public (string error, InstanceValue inst, TypeExtractor.KnownTypes) GetSortedListContent(ulong addr, int typeId, string typeName)
+        public ValueTuple<string, InstanceValue, TypeExtractor.KnownTypes> GetSortedListContent(ulong addr, int typeId, string typeName)
         {
             Debug.Assert(TypeExtractor.IsKnownCollection(typeName) != TypeExtractor.KnownTypes.Unknown);
-            (string error, KeyValuePair<string, string>[] description, KeyValuePair<string, string>[] values) =
-                ValueExtractor.GetSortedListContent(Heap, addr);
+            var (error, description, values) = ValueExtractor.GetSortedListContent(Heap, addr);
             if (error != null) return (error, null, TypeExtractor.KnownTypes.Unknown);
             var inst = new InstanceValue(typeId, ClrElementKind.Object, addr, typeName, null, null);
             inst.AddExtraData(description);
@@ -1321,11 +1294,10 @@ namespace ClrMDRIndex
             return (null, inst, TypeExtractor.KnownTypes.SortedList);
         }
 
-        public (string error, InstanceValue inst, TypeExtractor.KnownTypes) GetHashSetContent(ulong addr, int typeId, string typeName)
+        public ValueTuple<string, InstanceValue, TypeExtractor.KnownTypes> GetHashSetContent(ulong addr, int typeId, string typeName)
         {
             Debug.Assert(TypeExtractor.IsKnownCollection(typeName) != TypeExtractor.KnownTypes.Unknown);
-            (string error, KeyValuePair<string, string>[] description, string[] values) =
-                ValueExtractor.GetHashSetContent(Heap, addr);
+            var (error, description, values) = ValueExtractor.GetHashSetContent(Heap, addr);
 
             if (error != null) return (error, null, TypeExtractor.KnownTypes.Unknown);
             var inst = new InstanceValue(typeId, ClrElementKind.Object, addr, typeName, null, null);
@@ -1334,7 +1306,7 @@ namespace ClrMDRIndex
             return (null, inst, TypeExtractor.KnownTypes.HashSet);
         }
 
-        public (string, InstanceValue[]) GetInstanceValueFields(ulong addr, InstanceValue parent)
+        public ValueTuple<string, InstanceValue[]> GetInstanceValueFields(ulong addr, InstanceValue parent)
         {
             try
             {
@@ -2752,7 +2724,7 @@ namespace ClrMDRIndex
                 Tuple<int[], int[]> arySizes = null;
                 if (_arraySizes == null || !_arraySizes.TryGetTarget(out arySizes))
                 {
-                    arySizes = Utils.ReadKvIntIntArrayAsTwoArrays(_fileMoniker.GetFilePath(_currentRuntimeIndex, Constants.MapInstanceBaseSizesFilePostfix),
+                    arySizes = Utils.ReadKvIntIntArrayAsTwoArrays(_fileMoniker.GetFilePath(_currentRuntimeIndex, Constants.MapArraySizesFilePostfix),
                         out error);
                     if (arySizes == null) return null;
                     if (_arraySizes == null)

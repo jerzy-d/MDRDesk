@@ -1332,7 +1332,7 @@ namespace ClrMDRIndex
             return fields;
         }
 
-        public static (string, InstanceValue) GetInstanceValue(IndexProxy ndxProxy, ClrHeap heap, ulong decoratedAddr, int fldNdx, InstanceValue parent)
+        public static ValueTuple<string, InstanceValue> GetInstanceValue(IndexProxy ndxProxy, ClrHeap heap, ulong decoratedAddr, int fldNdx, InstanceValue parent)
         {
             var addr = Utils.RealAddress(decoratedAddr);
             var typeInfo = TypeExtractor.TryGetRealType(heap, addr);
@@ -1403,7 +1403,7 @@ namespace ClrMDRIndex
             }
         }
 
-        public static (string, InstanceValue[]) GetInstanceValueFields(IndexProxy ndxProxy, ClrHeap heap, ulong decoratedAddr, InstanceValue parent)
+        public static ValueTuple<string, InstanceValue[]> GetInstanceValueFields(IndexProxy ndxProxy, ClrHeap heap, ulong decoratedAddr, InstanceValue parent)
         {
             string error;
             InstanceValue[] fldValues;
@@ -1555,7 +1555,7 @@ namespace ClrMDRIndex
 
         #region System.Collections.Generic.SortedList<TKey, TValue>
 
-        public static (string, KeyValuePair<string, string>[], KeyValuePair<string, string>[]) GetSortedListContent(ClrHeap heap, ulong addr)
+        public static ValueTuple<string, KeyValuePair<string, string>[], KeyValuePair<string, string>[]> GetSortedListContent(ClrHeap heap, ulong addr)
         {
             string error = null;
             try
@@ -1614,7 +1614,7 @@ namespace ClrMDRIndex
 
         #region System.Collections.Generic.Dictionary<TKey, TValue>
 
-        public static (string, KeyValuePair<string, string>[] , KeyValuePair<string, string>[]) GetDictionaryContent(ClrHeap heap, ulong addr)
+        public static ValueTuple<string, KeyValuePair<string, string>[] , KeyValuePair<string, string>[]> GetDictionaryContent(ClrHeap heap, ulong addr)
         {
             try
             {
@@ -1673,7 +1673,7 @@ namespace ClrMDRIndex
 
         #endregion System.Collections.Generic.Dictionary<TKey, TValue>
 
-        public static (string, KeyValuePair<string, string>[], KeyValuePair<string, string>[]) GetSortedDictionaryContent(ClrHeap heap, ulong addr)
+        public static ValueTuple<string, KeyValuePair<string, string>[], KeyValuePair<string, string>[]> GetSortedDictionaryContent(ClrHeap heap, ulong addr)
         {
             try
             {
@@ -1755,7 +1755,7 @@ namespace ClrMDRIndex
 
         #region System.Collections.Generic.HashSet<T>
 
-        private static (ClrType, ClrInstanceField, ClrElementKind, ClrInstanceField, ClrInstanceField) GetHashSetSlotTypeInfo(ClrHeap heap, ulong hashSetAddr, ulong slotAddr, ClrType slotsType, int lastIndex)
+        private static ValueTuple<ClrType, ClrInstanceField, ClrElementKind, ClrInstanceField, ClrInstanceField> GetHashSetSlotTypeInfo(ClrHeap heap, ulong hashSetAddr, ulong slotAddr, ClrType slotsType, int lastIndex)
         {
             int index = 0;
             ClrType slotType = slotsType.ComponentType;
@@ -1767,7 +1767,7 @@ namespace ClrMDRIndex
             return (slotType, valueFld, valueFldTypeKind, hashCodeFld, nextFld);
         }
 
-        public static (string, KeyValuePair<string, string>[], string[]) GetHashSetContent(ClrHeap heap, ulong addr)
+        public static ValueTuple<string, KeyValuePair<string, string>[], string[]> GetHashSetContent(ClrHeap heap, ulong addr)
         {
             try
             {
@@ -1832,7 +1832,7 @@ namespace ClrMDRIndex
 
         #region array values
 
-        public static (string, InstanceValue) ArrayContent(IndexProxy ndxProxy, ClrHeap heap, ulong decoratedAddr, InstanceValue parent)
+        public static ValueTuple<string, InstanceValue> ArrayContent(IndexProxy ndxProxy, ClrHeap heap, ulong decoratedAddr, InstanceValue parent)
         {
             var addr = Utils.RealAddress(decoratedAddr);
             (string error, ClrType clrType, ClrType elemType, ClrElementKind elemKind, int len) = ArrayInfo(heap, addr);
@@ -1872,7 +1872,7 @@ namespace ClrMDRIndex
 
         }
 
-        public static (string, ClrType, ClrType, ClrElementKind, int) ArrayInfo(ClrHeap heap, ulong addr)
+        public static ValueTuple<string, ClrType, ClrType, ClrElementKind, int> ArrayInfo(ClrHeap heap, ulong addr)
         {
             var clrType = heap.GetObjectType(addr);
             if (clrType == null)

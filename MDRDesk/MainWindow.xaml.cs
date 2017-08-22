@@ -121,7 +121,7 @@ namespace MDRDesk
                     (WndDbgLoaded, error) = await Task.Factory.StartNew(() =>
                      {
                          string err;
-                         bool ok = dbgdeng.DbgEng.LoadDebugEngine(Setup.WndDbgFolder, out err);
+                         var ok = dbgdeng.DbgEng.LoadDebugEngine(Setup.WndDbgFolder, out err);
                          return (ok, err);
                      }, _dumpSTAScheduler);
                     if (!WndDbgLoaded)
