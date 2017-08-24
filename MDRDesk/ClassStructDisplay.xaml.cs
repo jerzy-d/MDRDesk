@@ -26,7 +26,7 @@ namespace MDRDesk
         public bool Locked => _locked;
         private Image _lockedImg, _unlockedImg;
 
-        public ClassStructDisplay(int id, string description, InstanceValue instValue, bool locked = false)
+        public ClassStructDisplay(int id, string description, InstanceValue instValue, bool locked = true)
 		{
             _wndType = ValueWindows.WndType.Tree;
 			_id = id;
@@ -119,15 +119,15 @@ namespace MDRDesk
             ulong addr = _mainWindow.GetAddressFromEntry(selInstValue.Value.FullContent);
             if (selInstValue.Address != Constants.InvalidAddress && addr != Constants.InvalidAddress && addr == selInstValue.Address)
             {
-                //if (StatusRawMode.IsChecked.Value == false) // if known collection show it in a collection window
-                //{
-                //    if (TypeExtractor.IsKnownType(selInstValue.TypeName))
-                //    {
-                //        var msg = "Getting object value at: " + Utils.RealAddressString(selInstValue.Address);
-                //        _mainWindow.ExecuteInstanceValueQuery(msg, selInstValue.Address);
-                //        return;
-                //    }
-                //}
+                if (StatusRawMode.IsChecked.Value == false) // if known collection show it in a collection window
+                {
+                    if (TypeExtractor.IsKnownType(selInstValue.TypeName))
+                    {
+                        var msg = "Getting object value at: " + Utils.RealAddressString(selInstValue.Address);
+                        _mainWindow.ExecuteInstanceValueQuery(msg, selInstValue.Address);
+                        return;
+                    }
+                }
                 var index = MainWindow.CurrentIndex;
 
                 StatusText.Text = "Getting value at address: " + selInstValue.Address + ", please wait...";

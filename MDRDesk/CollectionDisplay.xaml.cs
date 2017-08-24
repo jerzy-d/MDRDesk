@@ -26,7 +26,7 @@ namespace MDRDesk
         public bool Locked => _locked;
         private Image _lockedImg, _unlockedImg;
 
-        public CollectionDisplay(int id, string descr, InstanceValue instVal, bool locked = false)
+        public CollectionDisplay(int id, string descr, InstanceValue instVal, bool locked = true)
         {
             _wndType = ValueWindows.WndType.List;
             _id = id;

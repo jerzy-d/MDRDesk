@@ -79,3 +79,5 @@
 *** 0039 08/16/17 Fix opening the index when we have one already opened.
 *** 0040 08/19/17 {unknown value} in the array : 0x0000530f94bb08, array elemnt: 0x000056045d7968
 	Crash Dump: Cowen.Analytics.Svc_170717_165238.dmp
+0041 08/23/17 Eze.FXWorkspace.Modeling.Adaptor.FXTradeList [0x00000035c35330] D:\Jerzy\WinDbgStuff\dumps\OMS\local\EzeOMS.exe_170823_091755.dmp.map
+	tradeToFxAggregationMap field {unknown value} ???

@@ -39,18 +39,18 @@
         </ListBox>
         <Grid Grid.Row="3" Margin="2,2,2,2">
             <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="30"/>
                 <ColumnDefinition Width="70*"/>
                 <ColumnDefinition Width="15*"/>
                 <ColumnDefinition Width="15*"/>
             </Grid.ColumnDefinitions>
-            <Button  x:Name="ShowArrayIndices" Grid.Column="1" Width="28" Height="28" HorizontalAlignment="Right" VerticalAlignment="Center" BorderThickness="0" Click="ShowArrayIndicesClicked"
+            <TextBlock Grid.Column="0" VerticalAlignment="Center" HorizontalAlignment="Center" FontFamily="Times New Roman" FontWeight="Bold" FontSize="16">&#x2778;</TextBlock>
+            <Button  x:Name="ShowArrayIndices" Grid.Column="2" Width="28" Height="28" HorizontalAlignment="Right" VerticalAlignment="Center" BorderThickness="0" Click="ShowArrayIndicesClicked"
                          Background="AliceBlue">
                 <Button.ToolTip>Show/hide array indices.</Button.ToolTip>
-                <!--<StackPanel Orientation="Horizontal" VerticalAlignment="Center">-->
                     <Image Source=".\Images\ListView_16x.png" Width="16" Height="16" Margin="0,0,0,0" VerticalAlignment="Center" HorizontalAlignment="Center"/>
-                <!--</StackPanel>-->
             </Button>
-            <Button x:Name="LockBtn"  Grid.Column="2" Click="LockBtnClicked" Width="28" Height="28" VerticalAlignment="Center" HorizontalAlignment="Right">
+            <Button x:Name="LockBtn"  Grid.Column="3" Click="LockBtnClicked" Width="28" Height="28" VerticalAlignment="Center" HorizontalAlignment="Right">
                 <Button.ToolTip>Lock/unlock content of this window.</Button.ToolTip>
             </Button>
         </Grid>

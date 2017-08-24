@@ -13,7 +13,7 @@
             <RowDefinition Height="12*"/>
             <RowDefinition Height="5"/>
             <RowDefinition Height="70*"/>
-            <RowDefinition Height="13*"/>
+            <RowDefinition Height="32"/>
         </Grid.RowDefinitions>
         <TextBox x:Name="ContentInfo" Grid.Row="0" Margin="2,2,2,2" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" FontFamily="Consolas" FontSize="11">
             <TextBox.BorderBrush>BlanchedAlmond</TextBox.BorderBrush>
@@ -24,6 +24,7 @@
         </TextBox>
         <Grid Grid.Row="3" Margin="2,2,2,2">
             <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="30"/>
                 <ColumnDefinition Width="80*"/>
                 <ColumnDefinition Width="10*"/>
                 <ColumnDefinition Width="10*"/>
@@ -35,12 +36,13 @@
                     <Image Source=".\Images\WrapPanel_16x.png" Width="16" Height="16" Margin="0,0,0,0" VerticalAlignment="Center" HorizontalAlignment="Center"/>
                 </StackPanel>
             </Button>-->
-            <Button  x:Name="WordWrapButton" Grid.Column="1" Width="28" Height="28" HorizontalAlignment="Right" VerticalAlignment="Center" BorderThickness="0" Click="WordWrapButtonClicked"
+            <TextBlock Grid.Column="0" VerticalAlignment="Center" HorizontalAlignment="Center" FontFamily="Times New Roman" FontWeight="Bold" FontSize="16">&#x2779;</TextBlock>
+            <Button  x:Name="WordWrapButton" Grid.Column="2" Width="28" Height="28" HorizontalAlignment="Right" VerticalAlignment="Center" BorderThickness="0" Click="WordWrapButtonClicked"
                          Background="AliceBlue">
                 <Button.ToolTip>Toggle word wrap.</Button.ToolTip>
                 <Image Source=".\Images\WrapPanel_16x.png" Width="16" Height="16" Margin="0,0,0,0" VerticalAlignment="Center" HorizontalAlignment="Center"/>
             </Button>
-            <Button x:Name="LockBtn"  Grid.Column="2" Click="LockBtnClicked" Width="28" Height="28" VerticalAlignment="Center" HorizontalAlignment="Right">
+            <Button x:Name="LockBtn"  Grid.Column="3" Click="LockBtnClicked" Width="28" Height="28" VerticalAlignment="Center" HorizontalAlignment="Right">
                 <Button.ToolTip>Lock/unlock content of this window.</Button.ToolTip>
             </Button>
 

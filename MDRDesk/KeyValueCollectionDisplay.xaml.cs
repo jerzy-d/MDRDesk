@@ -30,7 +30,7 @@ namespace MDRDesk
         public bool Locked => _locked;
         private Image _lockedImg, _unlockedImg;
 
-        public KeyValueCollectionDisplay(int id, string description, InstanceValue instVal, bool locked = false)
+        public KeyValueCollectionDisplay(int id, string description, InstanceValue instVal, bool locked = true)
         {
             _wndType = ValueWindows.WndType.KeyValues;
             _id = id;

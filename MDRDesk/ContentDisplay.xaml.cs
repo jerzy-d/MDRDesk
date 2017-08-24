@@ -33,7 +33,7 @@ namespace MDRDesk
         public bool Locked => _locked;
         public ValueWindows.WndType WndType => _wndType;
 
-        public ContentDisplay(int id, string description, InstanceValue instVal, bool locked = false)
+        public ContentDisplay(int id, string description, InstanceValue instVal, bool locked = true)
 		{
             _wndType = ValueWindows.WndType.Content;
             _id = id;

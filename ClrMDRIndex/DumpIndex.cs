@@ -83,7 +83,7 @@ namespace ClrMDRIndex
         public ClrElementKind[] TypeKinds => GetElementKindList();
 
         private WeakReference<Tuple<int[], int[]>> _arraySizes;
-        public Tuple<int[], int[]> ArraySizes => GetArraySizes();
+        public Tuple<int[], int[]> ArrayLengths => GetArrayLenghts();
 
         private ClrtSegment[] _segments; // segment infos, for instances generation histograms
         private bool _segmentInfoUnrooted;
@@ -157,7 +157,7 @@ namespace ClrMDRIndex
                     index._instanceReferences = new InstanceReferences(index._instances, runtimeNdx, index._fileMoniker);
                 }
 
-                if (!index.InitDump(out error, progress)) return null;
+                if (!index.InitDump(out error, progress, index.Instances)) return null;
                 index._indexProxy = new IndexProxy(index.Dump, index._instances, index._instanceTypes, index._typeNames, index.TypeKinds,
                     index._roots, index._fileMoniker);
                 return index;
@@ -851,7 +851,7 @@ namespace ClrMDRIndex
             {
                 ClrElementKind[] elems = GetElementKindList();
                 if (error != null) return null;
-                Tuple<int[], int[]> arySizes = GetArraySizes(out error);
+                Tuple<int[], int[]> arySizes = GetArrayLenghts(out error);
                 if (error != null) return null;
                 Debug.Assert(elems.Length == _instances.Length);
                 SortedDictionary<int, List<pair<ulong, int>>> dct = new SortedDictionary<int, List<pair<ulong, int>>>();
@@ -2589,10 +2589,10 @@ namespace ClrMDRIndex
         }
         public IdReferences GetFieldParentTypeReferences()
         {
-            return GetTypeFieldReferences(true);
+            return GetTypeFieldReferences(false);
         }
 
-        public IdReferences GetTypeFieldReferences(bool typeFields)
+        private IdReferences GetTypeFieldReferences(bool typeFields)
         {
             try
             {
@@ -2707,16 +2707,16 @@ namespace ClrMDRIndex
             }
         }
 
-        private Tuple<int[], int[]> GetArraySizes()
+        private Tuple<int[], int[]> GetArrayLenghts()
         {
             string error;
-            var arySizes = GetArraySizes(out error);
+            var arySizes = GetArrayLenghts(out error);
             if (error != null) _errors.Add(error);
             return arySizes;
         }
 
 
-        private Tuple<int[], int[]> GetArraySizes(out string error)
+        private Tuple<int[], int[]> GetArrayLenghts(out string error)
         {
             error = null;
             try
@@ -3245,13 +3245,13 @@ namespace ClrMDRIndex
 
         #region dump
 
-        private bool InitDump(out string error, IProgress<string> progress)
+        private bool InitDump(out string error, IProgress<string> progress, ulong[] instances=null)
         {
             error = null;
             try
             {
                 _clrtDump = new ClrtDump(DumpPath);
-                if (_clrtDump.Init(out error))
+                if (_clrtDump.Init(out error,instances))
                 {
                     _clrtDump.WarmupHeap();
                     return true;

@@ -52,6 +52,7 @@
                 <ColumnDefinition Width="80*"/>
                 <ColumnDefinition Width="20*"/>
             </Grid.ColumnDefinitions>
+            <TextBlock Grid.Column="0" VerticalAlignment="Center" HorizontalAlignment="Left" FontFamily="Times New Roman" FontWeight="Bold" FontSize="16">&#x2777;</TextBlock>
             <Button x:Name="LockBtn"  Grid.Column="1" Click="LockBtnClicked" Width="28" Height="28" VerticalAlignment="Center" HorizontalAlignment="Right">
                 <Button.ToolTip>Lock/unlock content of this window.</Button.ToolTip>
             </Button>

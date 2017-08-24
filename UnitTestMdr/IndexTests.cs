@@ -1153,15 +1153,26 @@ namespace UnitTestMdr
                 Assert.IsNotNull(sizes);
                 uint[] basesizes = index.BaseSizes;
                 Assert.IsNotNull(basesizes);
-                Tuple<int[], int[]> aryCounts = index.ArraySizes;
-                Assert.IsNotNull(aryCounts);
+                Tuple<int[], int[]> aryLenghts = index.ArrayLengths;
+                Assert.IsNotNull(aryLenghts);
+                ClrElementKind[] kinds = index.TypeKinds;
+                var path = index.OutputFolder + Path.DirectorySeparatorChar + "ArraysTestInfo.txt";
 
-                int aryminsize = aryCounts.Item2.Min();
-                int arymaxsize = aryCounts.Item2.Max();
-
-                for (int i = 0, icnt =aryCounts.Item1.Length; i < icnt; ++i)
+                int aryMinLenght = aryLenghts.Item2.Min();
+                int aryMaxLenght = aryLenghts.Item2.Max();
+                int[] diffs = new int[aryLenghts.Item1.Length];
+                for (int i = 0, icnt =aryLenghts.Item1.Length; i < icnt; ++i)
                 {
-                    var baseSize = 
+                    var ndx = aryLenghts.Item1[i];
+                    var len = aryLenghts.Item2[i];
+                    if (len == aryMaxLenght)
+                    {
+                        int a = 1;
+                    }
+                    var size = sizes[ndx];
+                    var baseSize = basesizes[ndx];
+                    
+                    diffs[i] = (int)size - (int)baseSize;
                 }
 
 

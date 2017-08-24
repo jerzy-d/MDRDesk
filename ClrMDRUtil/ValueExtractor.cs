@@ -1131,6 +1131,19 @@ namespace ClrMDRIndex
                 }
 
             }
+
+            switch (kind)
+            {
+                case ClrElementKind.String:
+                    return GetStringAtAddress(addr,heap);
+                case ClrElementKind.SZArray:
+                case ClrElementKind.Array:
+                case ClrElementKind.Object:
+                case ClrElementKind.Class:
+                    return Utils.RealAddressString(addr);
+                default:
+                    return GetPrimitiveValue(addr, clrType);
+            }
             return Constants.UnknownValue;
         }
 

@@ -140,6 +140,17 @@ namespace ClrMDRIndex
 		public const string RightDashedArrowPadded = " \u279F "; // ➟ DASHED TRIANGLE-HEADED RIGHTWARDS ARROW
 
         public const char HorizontalEllipsisChar = '\u2026'; // … HORIZONTAL ELLIPSIS
+        public const char CircledOneChar = '\u2776'; // ❶ DINGBAT NEGATIVE CIRCLED DIGIT ONE
+        public const char CircledTwoChar = '\u2777'; // ❷ DINGBAT NEGATIVE CIRCLED DIGIT TWO
+        public const char CircledThreeChar = '\u2778'; // ❸ DINGBAT NEGATIVE CIRCLED DIGIT THREE
+
+        public const char CircledFourChar = '\u2779'; // ❹ DINGBAT NEGATIVE CIRCLED DIGIT FOUR
+        public const char CircledFiveChar = '\u277A'; // ❺ DINGBAT NEGATIVE CIRCLED DIGIT FIVE
+        public const char CircledSixChar = '\u277B'; // ❻ DINGBAT NEGATIVE CIRCLED DIGIT SIX
+        public const char CircledSevenChar = '\u277C'; // ❼ DINGBAT NEGATIVE CIRCLED DIGIT SEVEN
+        public const char CircledEightChar = '\u277D'; // ❽ DINGBAT NEGATIVE CIRCLED DIGIT EIGHT
+        public const char CircledNineChar = '\u277E'; // ❾ DINGBAT NEGATIVE CIRCLED DIGIT NINE
+        public const char CircledTenChar = '\u277F'; // ❿ DINGBAT NEGATIVE CIRCLED NUMBER TEN
 
         public static string LockStr = char.ConvertFromUtf32(0x1F512);
         public static string UnlockStr = char.ConvertFromUtf32(0x1F513);
