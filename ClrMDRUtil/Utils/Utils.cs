@@ -312,7 +312,7 @@ namespace ClrMDRIndex
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		public static bool IsRooted(ulong addr)
 		{
-			return (addr & (ulong)RootBits.Rooted) > 0;
+			return (addr & (ulong)RootBits.RootedMask) > 0;
 		}
 
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -2331,7 +2331,7 @@ namespace ClrMDRIndex
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static string SortableSizeString(int sz)
         {
-            return sz == 0 ? "000,000,000,000" : string.Format("{0,12:0##,###,###}", sz);
+            return sz == 0 ? Constants.ZeroStr : string.Format("{0,12:0##,###,###}", sz);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -2349,7 +2349,7 @@ namespace ClrMDRIndex
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static string SizeString(int sz)
         {
-            return sz == 0 ? "000,000,000,000" : string.Format("{0,12:#,###,###}", sz);
+            return sz == 0 ? Constants.ZeroStr : string.Format("{0,12:#,###,###}", sz);
         }
 
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -2380,25 +2380,19 @@ namespace ClrMDRIndex
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static string SizeString(long sz)
         {
-            return sz == 0 ? "000,000,000,000" : string.Format("{0,12:#,###,###}", sz);
+            return sz == 0 ? Constants.ZeroStr : string.Format("{0,12:#,###,###}", sz);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static string SizeString(ulong sz)
         {
-            return sz == 0 ? "000,000,000,000" : string.Format("{0,12:#,###,###}", sz);
+            return sz == 0 ? Constants.ZeroStr : string.Format("{0,12:#,###,###}", sz);
         }
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static string SizeStringHeader(int sz)
-        {
-            return sz == 0 ? "[000,000,000,000] " : string.Format("[{0,12:#,###,###}] ", sz);
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static string CountStringHeader(int sz)
         {
-            return sz == 0 ? "[00,000,000] " : string.Format("[{0,8:#,###,###}] ", sz);
+            return sz == 0 ? "[       0] " : string.Format("[{0,8:#,###,###}] ", sz);
         }
 
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -2410,7 +2404,13 @@ namespace ClrMDRIndex
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static string SizeStringHeader(long sz)
         {
-            return sz == 0 ? "[000,000,000,000] " : string.Format("[{0,12:#,###,###}] ", sz);
+            return sz == 0 ? "[           0] " : string.Format("[{0,12:#,###,###}] ", sz);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static string SizeStringHeader(int sz)
+        {
+            return sz == 0 ? "[           0] " : string.Format("[{0,12:#,###,###}] ", sz);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -3500,8 +3500,26 @@ namespace ClrMDRIndex
 			return name.Replace('+', '_');
 		}
 
-		#endregion Misc
-	}
+
+        public static double GetStandardDeviation(IList<double> lst, out bool suspect, out double average)
+        {
+            suspect = false;
+            average = 0.0;
+            if (lst.Count < 2)
+            {
+                if (lst.Count == 1) average = lst[0];
+                return 0.0;
+            }
+            double avg = lst.Average();
+            double sumOfSquaresOfDifferences = lst.Select(val => (val - avg) * (val - avg)).Sum();
+            double sd = Math.Sqrt(sumOfSquaresOfDifferences / lst.Count);
+            if (sd > avg / 2) suspect = true;
+            average = avg;
+            return sd;
+        }
+ 
+        #endregion Misc
+    }
 
 	//internal class KeyValuePairComparer : Comparer<KeyValuePair<TKey, TValue>>
 	//{

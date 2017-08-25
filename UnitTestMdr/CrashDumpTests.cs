@@ -495,6 +495,42 @@ namespace UnitTestMdr
                 }
             }
         }
+
+        [TestMethod]
+        public void HeapBalance()
+        {
+            string error;
+            string dumpPath = @"D:\Jerzy\WinDbgStuff\Dumps\Analytics\Cowen\Cowen.Analytics.Svc_170717_165238.dmp";
+            using (var clrDump = OpenDump(dumpPath))
+            {
+                try
+                {
+                    var runtime = clrDump.Runtimes[0];
+                    var heap = runtime.Heap;
+
+                    foreach (var item in (from seg in heap.Segments
+                                          group seg by seg.ProcessorAffinity into g
+                                          orderby g.Key
+                                          select new
+                                          {
+                                              Heap = g.Key,
+                                              Size = g.Sum(p => (uint)p.Length)
+                                          }))
+                    {
+                        TestContext.WriteLine("Heap {0,2}: {1:n0} bytes", item.Heap, item.Size);
+                    }
+
+                }
+                catch (Exception ex)
+                {
+                    error = Utils.GetExceptionErrorString(ex);
+                    Assert.IsTrue(false, error);
+                }
+            }
+        }
+
+
+
         [TestMethod]
         public void TestRevert()
         {

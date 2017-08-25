@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Text;
 using System.IO;
+using System.Linq;
 using Microsoft.Diagnostics.Runtime;
 
 namespace ClrMDRIndex
@@ -35,7 +36,7 @@ namespace ClrMDRIndex
 		public int RuntimeCount => _runtimes.Length;
 		public int CurrentRuntimeIndex => _curRuntimeIndex;
 		public ClrRuntime Runtime => _runtimes[_curRuntimeIndex];
-		public ClrHeap Heap => Runtime.Heap;
+        public ClrHeap Heap => Runtime.Heap;
 
         private WeakReference<ClrType[]> _clrTypes;
         public ClrType[] ClrTypes => GetClrTypes();
@@ -65,12 +66,16 @@ namespace ClrMDRIndex
 				_curRuntimeIndex = index;
 			return _curRuntimeIndex;
 		}
+        public ClrRuntime GetRuntime(int ndx)
+        {
+            return ndx < 0 || ndx >= _runtimes.Length ? null : _runtimes[ndx];
+        }
 
-		#endregion Fields/Properties
+        #endregion Fields/Properties
 
-		#region Ctors/Initializations
+        #region Ctors/Initializations
 
-		public ClrtDump(string dmpPath)
+        public ClrtDump(string dmpPath)
 		{
 			_dumpPath = dmpPath;
 			_curRuntimeIndex = Constants.InvalidIndex;
@@ -301,6 +306,41 @@ namespace ClrMDRIndex
         #endregion types
 
         #region Memory Sizes
+
+        /// <summary>
+        /// Gets heap sizes, to check logical heap balance.
+        /// </summary>
+        /// <param name="rtNdx">Runtime index.</param>
+        /// <param name="error">Error message if </param>
+        /// <returns>List of (heap id, heap size) pairs.</returns>
+        /// <remarks>The code is from Microsoft/clrmd documentation.</remarks>
+        public List<KeyValuePair<int,long>> GetHeapBalance(int rtNdx, out string error)
+        {
+            error = null;
+            try
+            {
+                var runtime = GetRuntime(rtNdx);
+                var heap = runtime.Heap;
+                var lst = new List<KeyValuePair<int, long>>(16);
+                foreach (var item in (from seg in heap.Segments
+                                      group seg by seg.ProcessorAffinity into g
+                                      orderby g.Key
+                                      select new
+                                      {
+                                          Heap = g.Key,
+                                          Size = g.Sum(p => (uint)p.Length)
+                                      }))
+                {
+                    lst.Add(new KeyValuePair<int, long>(item.Heap, item.Size));
+                }
+                return lst;
+            }
+            catch (Exception ex)
+            {
+                error = Utils.GetExceptionErrorString(ex);
+                return null;
+            }
+        }
 
         //public static bool GetInstanceSizeHierarchy(ClrRuntime runtime, ulong addr, out InstanceSizeNode root,
         //	out ulong totalInstSize, out string error)

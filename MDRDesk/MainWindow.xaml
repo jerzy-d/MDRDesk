@@ -274,32 +274,32 @@
         </Grid>
         <Grid x:Key="GeneralInfoView" Name="GeneralInfoView" x:Shared="False">
             <Grid.RowDefinitions>
-                <RowDefinition Height="50*"/>
-                <RowDefinition Height="25*"/>
-                <RowDefinition Height="25*"/>
+                <RowDefinition Height="70*"/>
+                <RowDefinition Height="15*"/>
+                <RowDefinition Height="15*"/>
             </Grid.RowDefinitions>
-            <ScrollViewer Grid.Row="0">
-            <TextBlock Name="GeneralInfoText" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" FontFamily="Consolas"></TextBlock>
+            <ScrollViewer Grid.Row="0" BorderBrush="Black" BorderThickness="2" Background="LightGray">
+            <TextBlock Name="GeneralInfoText" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" FontFamily="Consolas" Margin="8,8,2,2"></TextBlock>
             </ScrollViewer>
-            <DataGrid Name="GeneralInfoGenerations" v4:Grid.Row="1" AlternatingRowBackground="LightGray" Width="700" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" IsReadOnly="True" AutoGenerateColumns="False" FontFamily="Consolas">
+            <DataGrid Name="GeneralInfoGenerations" v4:Grid.Row="1" Grid.RowSpan="2"  AlternatingRowBackground="LightGray" Width="700" HorizontalAlignment="Stretch" VerticalAlignment="Center" IsReadOnly="True" AutoGenerateColumns="False" FontFamily="Consolas">
                 <DataGrid.Columns>
-                    <DataGridTextColumn Header="Instances" Binding="{Binding Instance}" CellStyle="{StaticResource LeftDataGridCell}"></DataGridTextColumn>
-                    <DataGridTextColumn Header="Generation 0" Binding="{Binding Generation0}" CellStyle="{StaticResource RightDataGridCell}"></DataGridTextColumn>
-                    <DataGridTextColumn Header="Generation 1" Binding="{Binding Generation1}" CellStyle="{StaticResource RightDataGridCell}"></DataGridTextColumn>
-                    <DataGridTextColumn Header="Generation 2" Binding="{Binding Generation2}" CellStyle="{StaticResource RightDataGridCell}"></DataGridTextColumn>
-                    <DataGridTextColumn Header="LOH" Binding="{Binding LOH}" CellStyle="{StaticResource RightDataGridCell}"></DataGridTextColumn>
-                    <DataGridTextColumn Header="Total" Binding="{Binding TotalCount}" CellStyle="{StaticResource RightDataGridCell}"></DataGridTextColumn>
+                    <DataGridTextColumn Header="Instances" Binding="{Binding Instance}" CellStyle="{StaticResource LeftDataGridCell}" Width="Auto"></DataGridTextColumn>
+                    <DataGridTextColumn Header="Generation 0" Binding="{Binding Generation0}" CellStyle="{StaticResource RightDataGridCell}" Width="Auto"></DataGridTextColumn>
+                    <DataGridTextColumn Header="Generation 1" Binding="{Binding Generation1}" CellStyle="{StaticResource RightDataGridCell}" Width="Auto"></DataGridTextColumn>
+                    <DataGridTextColumn Header="Generation 2" Binding="{Binding Generation2}" CellStyle="{StaticResource RightDataGridCell}" Width="Auto"></DataGridTextColumn>
+                    <DataGridTextColumn Header="LOH" Binding="{Binding LOH}" CellStyle="{StaticResource RightDataGridCell}" Width="Auto"></DataGridTextColumn>
+                    <DataGridTextColumn Header="Total" Binding="{Binding TotalCount}" CellStyle="{StaticResource RightDataGridCell}" Width="*"></DataGridTextColumn>
                 </DataGrid.Columns>
             </DataGrid>
             <!--<Label Name="GenerationInfoLabel" Grid.Row="1" FontWeight="Bold" FontSize="12"></Label>-->
-            <Grid Name="GeneralInfoChart" Grid.Row="2">
+            <!--<Grid Name="GeneralInfoChart" Grid.Row="2">
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="50*"/>
                     <ColumnDefinition Width="50*"/>
                 </Grid.ColumnDefinitions>
                 <Grid Name="GeneralInfoChart1" Grid.Column="0"></Grid>
                 <Grid Name="GeneralInfoChart2" Grid.Column="1"></Grid>
-            </Grid>
+            </Grid>-->
         </Grid>
         <!-- display non-static instances -->
         <Grid x:Key="NameTypeView" x:Shared="False">

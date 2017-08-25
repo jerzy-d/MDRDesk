@@ -52,7 +52,7 @@ namespace ClrMDRIndex
         private KeyValuePair<int, int>[] _typeInstanceOffsets;
 
         private string[] _typeNames;
-        public string[] TypeNames;
+        public string[] TypeNames => _typeNames;
         private WeakReference<IdReferences> _typeFieldIds;
         public IdReferences TypeFieldIds => GetTypeFieldReferences();
         private WeakReference<IdReferences> _fieldParentTypeIds;

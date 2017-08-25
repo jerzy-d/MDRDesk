@@ -1418,6 +1418,24 @@ namespace ClrMDRIndex
                     //txtWriter.WriteLine("Finalizer Queue Count: " +
                     //					Utils.LargeNumberString(_clrtRoots[i].FinalizerQueueCount));
                     //txtWriter.WriteLine("Roots Count: " + Utils.LargeNumberString(_clrtRoots[i].RootsCount));
+                    string error;
+                    var heapBalance = dump.GetHeapBalance(i, out error);
+                    if (error != null)
+                        AddError(i, "[Indexer.DumpIndexInfo]" + Environment.NewLine + error);
+                    else
+                    {
+                        var lst = heapBalance.Select(kv => (double)kv.Value).ToArray();
+                        bool suspect;
+                        double mean;
+                        var stdDev = Utils.GetStandardDeviation(lst, out suspect, out mean);
+                        // TODO JRD -- here we consider heap unbabalanced if standard dev is greater than half of heap sizes average
+                        txtWriter.WriteLine((suspect ? (Constants.HeavyMultiplicationHeader) : "") +  "Heap Balance");
+                        foreach(var kv in heapBalance)
+                        {
+                            txtWriter.WriteLine("Heap {0,2}: {1} bytes", kv.Key, Utils.LargeNumberString(kv.Value));
+                        }
+                        txtWriter.WriteLine("Standard Deviation: " + Utils.LargeNumberString((long)stdDev) + ", Mean: " + Utils.LargeNumberString((long)mean));
+                    }
 
                     txtWriter.WriteLine();
                 }

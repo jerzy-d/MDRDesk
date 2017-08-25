@@ -1161,20 +1161,59 @@ namespace UnitTestMdr
                 int aryMinLenght = aryLenghts.Item2.Min();
                 int aryMaxLenght = aryLenghts.Item2.Max();
                 int[] diffs = new int[aryLenghts.Item1.Length];
-                for (int i = 0, icnt =aryLenghts.Item1.Length; i < icnt; ++i)
+                StreamWriter sw = null;
+                try
                 {
-                    var ndx = aryLenghts.Item1[i];
-                    var len = aryLenghts.Item2[i];
-                    if (len == aryMaxLenght)
+                    goto NEXT_TEST;
+                    sw = new StreamWriter(path);
+                    for (int i = 0, icnt = aryLenghts.Item1.Length; i < icnt; ++i)
                     {
-                        int a = 1;
-                    }
-                    var size = sizes[ndx];
-                    var baseSize = basesizes[ndx];
-                    
-                    diffs[i] = (int)size - (int)baseSize;
-                }
+                        var ndx = aryLenghts.Item1[i];
+                        var len = aryLenghts.Item2[i];
 
+                        var size = sizes[ndx];
+                        var baseSize = basesizes[ndx];
+                        var addr = index.Instances[ndx];
+                        var typeName = index.TypeNames[index.InstanceTypes[ndx]];
+
+                        diffs[i] = (int)size - (int)baseSize;
+                        sw.Write(Utils.RealAddressStringHeader(addr));
+                        sw.Write(Utils.SizeStringHeader(baseSize));
+                        sw.Write(Utils.SizeStringHeader(size));
+                        sw.Write(Utils.SizeStringHeader(len));
+                        sw.WriteLine(typeName);
+
+                        if (len == aryMaxLenght)
+                        {
+                            TestContext.WriteLine("len: " + aryMaxLenght + " addr: " + Utils.RealAddressStringHeader(addr));
+                        }
+                    }
+
+                    NEXT_TEST:
+
+                    var result = index.GetInstanceValue(0x0000571427d208, null);
+
+                    InstanceValue val = result.Item2;
+                    long addrSize = 0L;
+                    long strSize = 0L;
+                    for (int i = 0, icnt = val.ArrayValues.Length; i < icnt; ++i)
+                    {
+                        var elem = val.ArrayValues[i].FullContent;
+                        addrSize += 8;
+                        strSize += elem.Length * sizeof(char);
+                    }
+                    //addrSize 131072  long
+                    //strSize 231122  long
+
+                }
+                catch (Exception ex)
+                {
+                    Assert.IsTrue(false, ex.ToString());
+                }
+                finally
+                {
+                    sw?.Close();
+                }
 
             }
 

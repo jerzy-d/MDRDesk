@@ -54,8 +54,9 @@ namespace ClrMDRIndex
 		public const string ByTypeName = "ByTypeName";
 
 		public const string ImprobableString = @"\u2700\u2700\u2701u\u2758\u2758\u2759\u27BE\u27BF\u27BF";
-
-		public const char HeavyGreekCross = '\u271A'; // ✚ HEAVY GREEK CROSS		
+        public const char HeavyMultiplication = '\u2716'; // ✖ HEAVY MULTIPLICATION X
+        public const string HeavyMultiplicationHeader = "\u2716 "; // ✖ HEAVY MULTIPLICATION X
+        public const char HeavyGreekCross = '\u271A'; // ✚ HEAVY GREEK CROSS		
 		public const string HeavyGreekCrossPadded = " \u271A "; // ✚ HEAVY GREEK CROSS		
 		public const string ReportSeparator = " \u271A "; // ✚ HEAVY GREEK CROSS		
 		public const char HeavyAsterisk = '\u2731'; // ✱ heavy asterisk		
@@ -261,16 +262,6 @@ namespace ClrMDRIndex
 
 		public const string MapTypeFieldIndexFilePostfix = ".TYPEFIELDINDEX[0].map";
 		public const string MapFieldTypeMapFilePostfix = ".FIELDTYPEMAP[0].map";
-		//public const string TxtFieldNamesFilePostfix = ".FIELDNAMES[0].txt";
-
-		/*
-		public const string TxtTypeElementCountsFilePostfix = ".TYPEELEMENTCOUNTS[0].txt";
-		public const string TxtTypeElementsFilePostfix = ".TYPEELEMENTS.txt";
-
-		public const string TxtTypeEmbededElementsFilePostfix = ".TYPEEMBEDEDELEMENTS.txt";
-		public const string MapTypeElementTypeFilePostfix = ".TYPEELEMENTTYPE[0].map";
-		public const string TxtTypeElementTypeFilePostfix = ".TYPEELEMENTTYPE[0].txt";
-		*/
 
 		// roots files
 		//
