@@ -253,7 +253,6 @@ namespace ClrMDRIndex
                 finally
                 {
                     builder?.Dispose();
-                    //dumpClone?.Dispose();
                     DumpErrors();
                     GCSettings.LargeObjectHeapCompactionMode = GCLargeObjectHeapCompactionMode.CompactOnce;
                     GC.Collect();
@@ -366,13 +365,17 @@ namespace ClrMDRIndex
             return ary;
         }
 
-        private void RetainFieldTypes(ClrType clrType, int typeId, HashSet<int> doneTypeFields, HashSet<int> tofixTypeFields, string[] typeNames, SortedDictionary<int, int[]> typeFields)
+        private void RetainFieldTypes(ClrType clrType, int typeId, HashSet<int> doneTypeFields, HashSet<int> tofixTypeFields, string[] typeNames, SortedDictionary<int, long[]> typeFields, StringIdDct idDct)
         {
+            if (Utils.SameStrings("ECS.Common.HierarchyCache.Structure.RealPosition",clrType.Name))
+            {
+                int a = 1;
+            }
             if (doneTypeFields.Add(typeId))
             {
                 int fldCnt = clrType.Fields == null ? 0 : clrType.Fields.Count;
                 if (fldCnt < 1) return;
-                int[] fields = new int[fldCnt];
+                long[] fields = new long[fldCnt];
                 bool fixit = false;
                 for (int i = 0; i < fldCnt; ++i)
                 {
@@ -380,19 +383,20 @@ namespace ClrMDRIndex
                     if (fldType == null)
                     {
                         fixit = true;
-                        fields[i] = Constants.InvalidIndex;
+                        fields[i] = Constants.InvalidIndex | (Constants.InvalidIndex<<32);
                     }
                     else
                     {
                         int fldTypeId = Array.BinarySearch(typeNames, fldType.Name, StringComparer.Ordinal);
                         if (fldTypeId < 0)
                         {
-                            fields[i] = Constants.InvalidIndex;
+                            fields[i] = Constants.InvalidIndex | (Constants.InvalidIndex << 32);
                             fixit = true;
                         }
                         else
                         {
-                            fields[i] = fldTypeId;
+                            int id = idDct.JustGetId(clrType.Fields[i].Name);
+                            fields[i] = fldTypeId | (id << 32);
                         }
                     }
                 }
@@ -405,7 +409,7 @@ namespace ClrMDRIndex
                     if (tofixTypeFields.Contains(typeId))
                         tofixTypeFields.Remove(typeId);
                 }
-                int[] old;
+                long[] old;
                 if (typeFields.TryGetValue(typeId,out old))
                 {
                     typeFields[typeId] = fields;
@@ -418,9 +422,9 @@ namespace ClrMDRIndex
             }
         }
 
-        private void SaveFieldTypes(SortedDictionary<int, int[]> typeFields)
+        private void SaveFieldTypes(SortedDictionary<int, long[]> typeFields)
         {
-            var fieldTypeParents = new SortedDictionary<int, List<int>>();
+            var fieldTypeParents = new SortedDictionary<int, List<long>>();
             foreach(var kv in typeFields)
             {
                 var flds = kv.Value;
@@ -428,26 +432,29 @@ namespace ClrMDRIndex
                 for (int i = 0, icnt = flds.Length; i < icnt; ++i)
                 {
                     var fld = flds[i];
-                    List<int> lst;
-                    if (fieldTypeParents.TryGetValue(fld,out lst))
+                    int fldTypeId = (int)(fld & 0x00000000FFFFFFFF);
+                    int fldNameId = (int)(((ulong)fld & 0xFFFFFFFF00000000)>> 32);
+                    long entry = (long)parent | (long)((ulong)fld & 0xFFFFFFFF00000000);
+                    List<long> lst;
+                    if (fieldTypeParents.TryGetValue(fldTypeId,out lst))
                     {
-                        lst.Add(parent);
+                        lst.Add(entry);
                     }
                     else
                     {
-                        fieldTypeParents.Add(fld, new List<int>() { parent });
+                        fieldTypeParents.Add(fldTypeId, new List<long>() { entry });
                     }
                 }
             }
             var path = _fileMoniker.GetFilePath(_currentRuntimeIndex, Constants.MapTypeFieldTypesPostfix);
             string error;
-            if (!Utils.SaveIndicesReferences(path, typeFields, out error))
+            if (!IdReferences.SaveIndicesReferences(path, typeFields, out error))
             {
                 _errors[_currentRuntimeIndex].Add("Dumping field types failed." + Environment.NewLine + error);
             }
             typeFields.Clear();
             path = _fileMoniker.GetFilePath(_currentRuntimeIndex, Constants.MapFieldTypeParentTypesPostfix);
-            if (!Utils.SaveIndicesReferences(path, fieldTypeParents, out error, true))
+            if (!IdReferences.SaveIndicesReferences(path, fieldTypeParents, out error))
             {
                 _errors[_currentRuntimeIndex].Add("Dumping field parent types failed." + Environment.NewLine + error);
             }
@@ -469,7 +476,7 @@ namespace ClrMDRIndex
                 var arraySizes = new List<KeyValuePair<int, int>>(addresses.Length / 25);
                 HashSet<int> doneTypeFields = new HashSet<int>();
                 HashSet<int> tofixTypeFields = new HashSet<int>();
-                SortedDictionary<int, int[]> typeFields = new SortedDictionary<int, int[]>();
+                var typeFields = new SortedDictionary<int, long[]>();
 
                 for (int segNdx = 0, icnt = segs.Count; segNdx < icnt; ++segNdx)
                 {
@@ -498,7 +505,7 @@ namespace ClrMDRIndex
                         if (size > (ulong)UInt32.MaxValue) size = (ulong)UInt32.MaxValue;
                         sizes[addrNdx] = (uint)size;
 
-                        RetainFieldTypes(clrType, typeId, doneTypeFields, tofixTypeFields, typeNames, typeFields);
+                        RetainFieldTypes(clrType, typeId, doneTypeFields, tofixTypeFields, typeNames, typeFields, _stringIdDcts[_currentRuntimeIndex]);
 
                         // get generation stats
                         //
@@ -576,7 +583,11 @@ namespace ClrMDRIndex
             var parameters = param as Tuple<string, ulong[], int[], string[]>;
             Debug.Assert(parameters != null);
             var clrtDump = new ClrtDump(parameters.Item1);
-            if (!clrtDump.Init(out error)) return;
+            if (!clrtDump.Init(out error))
+            {
+                _errors[_currentRuntimeIndex].Add("GetThreadsInfos failed." + Environment.NewLine + error);
+                return;
+            }
             var instances = parameters.Item2;
             var typeIds = parameters.Item3;
             var typeNames = parameters.Item4;

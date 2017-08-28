@@ -130,7 +130,7 @@ namespace ClrMDRIndex
 				{
 					for (int i = 0, icnt = _clrInfos.Length; i < icnt; ++i)
 					{
-						_dacPaths[i] = Utils.SearchDacFolder(_requiredDacs[i], Setup.DacFolder);
+						_dacPaths[i] = SearchDacFolder(_requiredDacs[i], Setup.DacFolder);
 						if (!string.IsNullOrWhiteSpace(_dacPaths[i]))
 						{
 							_runtimes[i] = _clrInfos[i].CreateRuntime(_dacPaths[i]);
@@ -145,7 +145,7 @@ namespace ClrMDRIndex
 					{
 						_dacPaths[i] = _dataTarget.SymbolLocator.FindBinary(_clrInfos[i].DacInfo);
 						if (_dacPaths[i] != null) _runtimes[i] = _clrInfos[i].CreateRuntime(_dacPaths[i]);
-                        if (_runtimes[i] != null) Utils.SaveDac(_dacPaths[i], Setup.DacFolder, out error);
+                        if (_runtimes[i] != null) SaveDac(_dacPaths[i], Setup.DacFolder, out error);
                         if (_runtimes[i] != null && _curRuntimeIndex < 1) _curRuntimeIndex = i;
 					}
 				}
@@ -211,29 +211,6 @@ namespace ClrMDRIndex
 					return null;
 				}
 				return dmp;
-			}
-			catch (Exception ex)
-			{
-				error = Utils.GetExceptionErrorString(ex);
-				return null;
-			}
-		}
-
-		public static string[] GetRequiredDac(string dump, out string error)
-		{
-			error = null;
-			try
-			{
-				List<string> lst = new List<string>(4);
-				using (var dataTarget = DataTarget.LoadCrashDump(dump))
-				{
-					foreach (var version in dataTarget.ClrVersions)
-					{
-						if (version.DacInfo != null && !string.IsNullOrWhiteSpace(version.DacInfo.FileName))
-							lst.Add(version.DacInfo.FileName);
-					}
-					return lst.ToArray();
-				}
 			}
 			catch (Exception ex)
 			{
@@ -1696,11 +1673,143 @@ namespace ClrMDRIndex
 			}
 		}
 
-		#endregion Queries
+        #endregion Queries
 
-		#region Dispose
+        #region Dac File Search
 
-		volatile bool _disposed;
+        public static string[] GetRequiredDac(string dump, out string error)
+        {
+            error = null;
+            try
+            {
+                List<string> lst = new List<string>(4);
+                using (var dataTarget = DataTarget.LoadCrashDump(dump))
+                {
+                    foreach (var version in dataTarget.ClrVersions)
+                    {
+                        if (version.DacInfo != null && !string.IsNullOrWhiteSpace(version.DacInfo.FileName))
+                            lst.Add(version.DacInfo.FileName);
+                    }
+                    return lst.ToArray();
+                }
+            }
+            catch (Exception ex)
+            {
+                error = Utils.GetExceptionErrorString(ex);
+                return null;
+            }
+        }
+
+        public static string SearchDacFolder(string dacFileName, string dacFileFolder)
+        {
+
+            var folder = new DirectoryInfo(dacFileFolder);
+            foreach (var dir in folder.EnumerateDirectories())
+            {
+                var pathName = dir.Name;
+                var dirName = Path.GetFileName(pathName);
+                if (string.Compare(dirName, dacFileName, StringComparison.OrdinalIgnoreCase) == 0)
+                {
+                    return LookForDacDll(dir);
+                }
+            }
+            return Search_NT_SYMBOL_PATH(dacFileName, dacFileFolder);
+        }
+
+        public static string Search_NT_SYMBOL_PATH(string dacFileName, string dacFileFolder)
+        {
+            var ntSymbolPath = Environment.GetEnvironmentVariable("_NT_SYMBOL_PATH");
+            if (string.IsNullOrEmpty(ntSymbolPath)) return null;
+            string[] elems = ntSymbolPath.Split(new[] { '*', ';' }, StringSplitOptions.RemoveEmptyEntries);
+            for (int i = 0, icnt = elems.Length; i < icnt; ++i)
+            {
+                if (Directory.Exists(elems[i]))
+                {
+                    var folder = new DirectoryInfo(elems[i]);
+                    foreach (var dir in folder.EnumerateDirectories())
+                    {
+                        var pathName = dir.Name;
+                        var dirName = Path.GetFileName(pathName);
+                        if (string.Compare(dirName, dacFileName, StringComparison.OrdinalIgnoreCase) == 0)
+                        {
+                            var dacPath = LookForDacDll(dir);
+                            if (dacPath != null)
+                            {
+                                string error;
+                                SaveDac(dacPath, dacFileFolder, out error); // save in our private cache
+                                return dacPath;
+                            }
+                        }
+                    }
+                }
+            }
+            return null;
+        }
+
+
+        /// <summary>
+        /// Cache dac dll in our mscordacwks folder.
+        /// There's sometimea problem with finding a proper dac file, so this makes life easier.
+        /// We always first looking for dacs here.
+        /// </summary>
+        /// <param name="dacPath">Path of the dac dll.</param>
+        /// <param name="dacFileFolder">Where to copy this dll/</param>
+        /// <param name="error">Error message if upon failure.</param>
+        /// <returns></returns>
+        public static bool SaveDac(string dacPath, string dacFileFolder, out string error)
+        {
+            error = null;
+            try
+            {
+                if (!Directory.Exists(dacFileFolder)) return false;
+                string dacName = Path.GetFileName(dacPath);
+                var folder = new DirectoryInfo(dacFileFolder);
+                foreach (var dir in folder.EnumerateDirectories())
+                {
+                    var pathName = dir.Name;
+                    var dirName = Path.GetFileName(pathName);
+                    if (Utils.SameStrings(dirName, dacName)) return false;
+                }
+                Directory.CreateDirectory(dacFileFolder + Path.DirectorySeparatorChar + dacName);
+                File.Copy(dacPath, dacFileFolder + Path.DirectorySeparatorChar + dacName + Path.DirectorySeparatorChar + dacName);
+                return true;
+            }
+            catch (Exception ex)
+            {
+                error = Utils.GetExceptionErrorString(ex);
+                return false;
+            }
+        }
+
+        private static string LookForDacDll(DirectoryInfo dir)
+        {
+            Queue<DirectoryInfo> que = new Queue<DirectoryInfo>();
+            que.Enqueue(dir);
+            while (que.Count > 0)
+            {
+                dir = que.Dequeue();
+                foreach (var file in dir.EnumerateFiles())
+                {
+                    var fname = Path.GetFileName(file.Name);
+                    if (fname.StartsWith("mscordacwks", StringComparison.OrdinalIgnoreCase)
+                        && fname.EndsWith(".dll", StringComparison.OrdinalIgnoreCase))
+                    {
+                        return file.FullName;
+                    }
+                }
+                foreach (var d in dir.EnumerateDirectories())
+                {
+                    que.Enqueue(d);
+                }
+            }
+            return null;
+        }
+
+        #endregion Dac File Search
+
+        #region Dispose
+
+        volatile bool _disposed;
 
 		public void Dispose()
 		{

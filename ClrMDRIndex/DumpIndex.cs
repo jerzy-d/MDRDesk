@@ -92,8 +92,8 @@ namespace ClrMDRIndex
         public ClrtDump Dump => _clrtDump;
         public ClrRuntime Runtime => _clrtDump.Runtime;
 
-        private string[] _stringIds; // ordered by string ids TODO JRD
-        public string[] StringIds => _stringIds;
+        private WeakReference<string[]> _stringIds; // ordered by string ids TODO JRD
+        public string[] StringIds => GetStringsByIds();
 
         private ClrtRootInfo _roots;
         public ClrtRootInfo Roots => _roots;
@@ -519,6 +519,13 @@ namespace ClrMDRIndex
             return (id >= 0 && id < _typeNames.Length) ? _typeNames[id] : Constants.UnknownTypeName;
         }
 
+        public string GetString(int id)
+        {
+            var strings = StringIds;
+            if (strings == null) return Constants.Unknown;
+            return (id >= 0 && id < strings.Length) ? strings[id] : Constants.Unknown;
+        }
+
         public int GetTypeId(int instanceId)
         {
             return (instanceId >= 0 && instanceId < _instanceTypes.Length) ? _instanceTypes[instanceId] : Constants.InvalidIndex;
@@ -553,7 +560,6 @@ namespace ClrMDRIndex
             Utils.SortAddresses(addresses);
             return addresses;
         }
-
 
         public ulong[] GetTypeRealAddresses(int typeId)
         {
@@ -619,7 +625,6 @@ namespace ClrMDRIndex
             }
             return indices;
         }
-
 
         public int[] GetRealAddressIndices(ulong[] addresses)
         {
@@ -707,6 +712,52 @@ namespace ClrMDRIndex
             }
             return result;
         }
+
+        public ValueTuple<string, int, ClrElementKind, string[], int[], ClrElementKind[], string[]> GetTypeInfo(string typeName, out string error)
+        {
+            error = null;
+            try
+            {
+                var typeId = GetTypeId(typeName);
+                if (typeId == Constants.InvalidIndex)
+                {
+                    error = "Uknown type: " + typeName;
+                    return (null, Constants.InvalidIndex, ClrElementKind.Unknown, null, null, null,null);
+                }
+
+                var kinds = TypeKinds;
+                var typeKind = kinds[typeId];
+                var fldIds = TypeFieldIds.GetReferences(typeId);
+                if (fldIds.Key == null || fldIds.Key.Length < 1)
+                {
+                    error = "No fields found for type: " + typeName;
+                    return (null, Constants.InvalidIndex, ClrElementKind.Unknown, null, null, null,null);
+                }
+
+                string[] fldNames = new string[fldIds.Key.Length];
+                string[] fldTypeNames = new string[fldIds.Key.Length];
+                int[] fldTypeIds = new int[fldIds.Key.Length];
+                string[] strings = StringIds;
+                ClrElementKind[] fldKinds = new ClrElementKind[fldTypeIds.Length];
+                for( int i = 0, icnt = fldIds.Key.Length; i < icnt; ++i)
+                {
+                    var fldTypeId = fldIds.Key[i];
+                    fldTypeIds[i] = fldTypeId;
+                    fldNames[i] = GetString(fldIds.Value[i]);
+
+                    fldTypeNames[i] = GetTypeName(fldTypeId);
+                    fldKinds[i] = kinds[i];
+                }
+                return (typeName, typeId, typeKind, fldTypeNames, fldTypeIds, fldKinds,fldNames);
+            }
+            catch (Exception ex)
+            {
+                error = Utils.GetExceptionErrorString(ex);
+                return (null, Constants.InvalidIndex, ClrElementKind.Unknown, null, null, null,null);
+            }
+
+        }
+        
 
         /// <summary>
         /// 
@@ -2600,9 +2651,9 @@ namespace ClrMDRIndex
                 if (_typeFieldIds == null || !_typeFieldIds.TryGetTarget(out refs))
                 {
                     string path = typeFields
-                        ? _fileMoniker.GetFilePath(_currentRuntimeIndex, Constants.MapTypeFieldIndexFilePostfix)
-                        : _fileMoniker.GetFilePath(_currentRuntimeIndex, Constants.MapFieldTypeMapFilePostfix);
-                    (string error, int[] ids, int[] offs, int[] fldRefs) = Utils.LoadIdReferences(path);
+                        ? _fileMoniker.GetFilePath(_currentRuntimeIndex, Constants.MapTypeFieldTypesPostfix)
+                        : _fileMoniker.GetFilePath(_currentRuntimeIndex, Constants.MapFieldTypeParentTypesPostfix);
+                    (string error, int[] ids, int[] offs, long[] fldRefs) = IdReferences.LoadIdReferences(path);
                     if (error != null)
                     {
                         _errors.Add(error);
@@ -2699,6 +2750,34 @@ namespace ClrMDRIndex
                         _typeKinds.SetTarget(elems);
                 }
                 return elems;
+            }
+            catch (Exception ex)
+            {
+                _errors.Add(Utils.GetExceptionErrorString(ex));
+                return null;
+            }
+        }
+
+        public string[] GetStringsByIds()
+        {
+            try
+            {
+                string[] strings = null;
+                if (_stringIds == null || !_stringIds.TryGetTarget(out strings))
+                {
+                    string error;
+                    strings = Utils.GetStringListFromFile(_fileMoniker.GetFilePath(_currentRuntimeIndex, Constants.TxtCommonStringIdsPostfix), out error);
+                    if (strings == null)
+                    {
+                        if (!string.IsNullOrWhiteSpace(error)) _errors.Add(error);
+                        return null;
+                    }
+                    if (_stringIds == null)
+                        _stringIds = new WeakReference<string[]>(strings);
+                    else
+                        _stringIds.SetTarget(strings);
+                }
+                return strings;
             }
             catch (Exception ex)
             {

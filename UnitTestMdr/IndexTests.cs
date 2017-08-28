@@ -1,26 +1,18 @@
 ﻿using System;
-using System.Collections;
 using System.Collections.Generic;
-using System.Configuration;
 using System.Diagnostics;
-using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Reflection;
-using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
-using System.Runtime.Remoting.Messaging;
-using System.Text;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using ClrMDRIndex;
 using ClrMDRUtil.Utils;
 using Microsoft.Diagnostics.Runtime;
-using DmpNdxQueries;
 
 
 namespace UnitTestMdr
 {
-	[TestClass]
+    [TestClass]
 	public class IndexTests
 	{
 
@@ -2065,6 +2057,56 @@ namespace UnitTestMdr
 #endif
                     addrs = index.GetSpecialKindTypeInstances(ClrElementKind.Enum);
                     values = GetTypeValues(index, heap, addrs, folder + "Enum" + ".Values" + ".txt");
+                }
+                catch (Exception ex)
+                {
+                    error = ex.ToString();
+                    Assert.IsTrue(false, error);
+                    TestContext.WriteLine(Environment.NewLine + error);
+                }
+            }
+
+            Assert.IsNull(error, error);
+        }
+
+        [TestMethod]
+        public void GetTypeReferences_Test()
+        {
+            string error = null;
+            Stopwatch stopWatch = new Stopwatch();
+            stopWatch.Start();
+            //var index = OpenIndex(@"D:\Jerzy\WinDbgStuff\dumps\TestApp\TestApp.exe_170818_102413.dmp.map");
+            var index = OpenIndex(@"C:\WinDbgStuff\dumps\Analytics\Cowen\Cowen.Analytics.Svc_170717_165238.dmp.map");
+            //var index = OpenIndex(@"D:\Jerzy\WinDbgStuff\dumps\Analytics\Highline\analyticsdump111.dlk.dmp.map");
+
+            TestContext.WriteLine(index.DumpFileName + " INDEX OPEN DURATION: " + Utils.StopAndGetDurationString(stopWatch));
+
+            using (index)
+            {
+                var heap = index.Heap;
+
+                try
+                {
+                    string[] values = null;
+                    ulong[] addrs = null;
+                    string[] typeNames = index.TypeNames;
+                    string[] strIds = index.StringIds;
+                    IdReferences typeToFields = index.TypeFieldIds;
+                    Assert.IsNotNull(typeToFields);
+                    IdReferences fieldToTypes = index.FieldParentTypeIds;
+                    Assert.IsNotNull(fieldToTypes);
+                    string typeName = "ECS.Common.HierarchyCache.Structure.RealPosition";
+                    var typeId = index.GetTypeId(typeName);
+                    var ids = typeToFields.GetReferences(typeId);
+                    string[] fldTypes = new string[ids.Key.Length];
+                    string[] fldNames = new string[ids.Value.Length];
+                    for (int i = 0, icnt = ids.Key.Length; i < icnt; ++i)
+                    {
+                        fldTypes[i] = typeNames[ids.Key[i]];
+                        fldNames[i] = strIds[ids.Value[i]];
+                    }
+
+                    var outfolder = index.OutputFolder + Path.DirectorySeparatorChar;
                 }
                 catch (Exception ex)
                 {

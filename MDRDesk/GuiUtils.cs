@@ -7,6 +7,8 @@ using System.Windows.Documents;
 using System.Windows.Media;
 using ClrMDRIndex;
 using System.Collections.Generic;
+using System.Text;
+using System.Linq;
 
 namespace MDRDesk
 {
@@ -143,10 +145,38 @@ namespace MDRDesk
 			return txtBlk;
 		}
 
-		#region displayable type
+        public static TextBlock GetTypeFieldTextBlock(string fldName, string typeName)
+        {
+            var txtBlk = new TextBlock();
+            txtBlk.Inlines.Add(new Italic(new Run(fldName + "   ") { Foreground = Brushes.DarkRed }));
+            txtBlk.Inlines.Add(new Bold(new Run(typeName)));
+            return txtBlk;
+        }
+
+        public static void WalkDrawingForText(List<string> texts, Drawing d)
+        {
+            var glyphs = d as GlyphRunDrawing;
+            if (glyphs != null)
+            {
+                texts.Add(new string(glyphs.GlyphRun.Characters.ToArray()));
+            }
+            else
+            {
+                var g = d as DrawingGroup;
+                if (g != null)
+                {
+                    foreach (Drawing child in g.Children)
+                    {
+                        WalkDrawingForText(texts, child);
+                    }
+                }
+            }
+        }
+
+        #region displayable type
 
 
-		public static TreeViewItem GetTypeValueSetupTreeViewItem(ClrtDisplayableType dispType)
+        public static TreeViewItem GetTypeValueSetupTreeViewItem(ClrtDisplayableType dispType)
 		{
 			var txtBlk = GetClrtDisplayableTypeStackPanel(dispType);
 			var node = new TreeViewItem

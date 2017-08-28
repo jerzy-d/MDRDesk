@@ -244,8 +244,9 @@ namespace ClrMDRIndex
 		public const string TxtTargetModulesPostfix = ".~TARGETMODULES.txt";
 		public const string TxtIndexInfoFilePostfix = ".~INDEXINFO.txt";
 		public const string TxtIndexingInfoFilePostfix = ".~INDEXINGINFO.txt";
+        public const string TxtIndexErrorsFilePostfix = ".~INDEXERRORS[0].txt";
 
-		public const string MapArrayInstanceFilePostfix = ".ARRAYINSTANCES[0].map";
+        public const string MapArrayInstanceFilePostfix = ".ARRAYINSTANCES[0].map";
 
 		public const string MapHeapFreeFilePostfix = ".HEAPFREE[0].map";
 
@@ -263,32 +264,31 @@ namespace ClrMDRIndex
 		public const string MapTypeFieldIndexFilePostfix = ".TYPEFIELDINDEX[0].map";
 		public const string MapFieldTypeMapFilePostfix = ".FIELDTYPEMAP[0].map";
 
-		// roots files
-		//
-		public const string MapFinalizerFilePostfix = ".FINALIZER[0].map"; // list of instance addresses
-		public const string TxtFinalizerFilePostfix = ".FINALIZER[0].txt"; // debugging/testing only
-		public const string MapRootsFilePostfix = ".ROOTS[0].map"; // ClrtRoot structures
-		public const string MapRootAddressesFilePostfix = ".ROOTADDRESSES[0].map"; // root addresses and their map to ClrtRoot array
-		public const string MapRootObjectsFilePostfix = ".ROOTOBJECTS[0].map"; // root objects and their map to ClrtRoot array
-		public const string MapUnrootedAddressesFilePostfix = ".UNROOTEDADDRESSES[0].map"; // addresses with no reference
+		//// roots files
+		////
+		//public const string MapFinalizerFilePostfix = ".FINALIZER[0].map"; // list of instance addresses
+		//public const string TxtFinalizerFilePostfix = ".FINALIZER[0].txt"; // debugging/testing only
+		//public const string MapRootsFilePostfix = ".ROOTS[0].map"; // ClrtRoot structures
+		//public const string MapRootAddressesFilePostfix = ".ROOTADDRESSES[0].map"; // root addresses and their map to ClrtRoot array
+		//public const string MapRootObjectsFilePostfix = ".ROOTOBJECTS[0].map"; // root objects and their map to ClrtRoot array
+		//public const string MapUnrootedAddressesFilePostfix = ".UNROOTEDADDRESSES[0].map"; // addresses with no reference
 
-		public const string MapTypeBaseAndElementFilePostfix = ".TYPEBASEANDELEMENTFILE[0].map";
-		public const string MapTypeFieldCountsFilePostfix = ".TYPEFIELDCOUNTS[0].map";
-		public const string MapTypeIntanceCountsFilePostfix = ".TYPEINTANCECOUNTS[0].map";
+		//public const string MapTypeBaseAndElementFilePostfix = ".TYPEBASEANDELEMENTFILE[0].map";
+		//public const string MapTypeFieldCountsFilePostfix = ".TYPEFIELDCOUNTS[0].map";
+		//public const string MapTypeIntanceCountsFilePostfix = ".TYPEINTANCECOUNTS[0].map";
 
 
-		public const string MapArraysFilePostfix = ".ARRAYS[0].map";
-		public const string MapArrayContentsFilePostfix = ".ARRAYCONTENTS[0].map";
-		public const string TxtArrayValuesFilePostfix = ".ARRAYVALUES[0].txt";
+		//public const string MapArraysFilePostfix = ".ARRAYS[0].map";
+		//public const string MapArrayContentsFilePostfix = ".ARRAYCONTENTS[0].map";
+		//public const string TxtArrayValuesFilePostfix = ".ARRAYVALUES[0].txt";
 
-		public const string TxtIndexErrorsFilePostfix = ".INDEXERRORS[0].txt";
 
 		//public const string TxtUnprocessedTypesFilePostfix = ".UNPROCESSEDTYPES.txt";
 
 
 		//public const string MapFinalizerObjectAddressesPostfix = ".FINALIZEROBJECTADDRESSES[0].map";
 
-		public const string TxtThreadsAndBlocksFilePostfix = ".THREADSANDBLOCKS[0].txt";
+		//public const string TxtThreadsAndBlocksFilePostfix = ".THREADSANDBLOCKS[0].txt";
 		//public const string MapThreadsAndBlocksFilePostfix = ".THREADSANDBLOCKS[0].map";
 
 

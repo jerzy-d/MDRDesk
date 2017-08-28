@@ -218,6 +218,9 @@
     <Compile Include="Threading\SingleThreadTaskScheduler.cs" />
     <Compile Include="Threading\TaskFactoryExtensions.cs" />
     <Compile Include="Threading\TaskLazy.cs" />
+    <Compile Include="TypeFieldValueQrySetup.xaml.cs">
+      <DependentUpon>TypeFieldValueQrySetup.xaml</DependentUpon>
+    </Compile>
     <Compile Include="TypeValueFilterDlg.xaml.cs">
       <DependentUpon>TypeValueFilterDlg.xaml</DependentUpon>
     </Compile>
@@ -294,6 +297,10 @@
     <Page Include="themes\generic.xaml">
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
+    </Page>
+    <Page Include="TypeFieldValueQrySetup.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
     </Page>
     <Page Include="TypeValueFilterDlg.xaml">
       <SubType>Designer</SubType>

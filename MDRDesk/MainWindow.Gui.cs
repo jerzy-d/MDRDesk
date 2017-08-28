@@ -1716,6 +1716,47 @@ namespace MDRDesk
             DisplayTypeValuesGrid(listing, Constants.BlackDiamondHeader, TypeValuesReportGrid, Utils.BaseTypeName(query.TypeName));
         }
 
+        private async void ExecuteTypeFieldUsageQuery(string typeName)
+        {
+            string baseTypeName = Utils.BaseTypeName(typeName);
+            string error = null;
+            (string tpName, int typeId, ClrElementKind typeKind, string[] fldTypeNames, int[] fldIds, ClrElementKind[] fldKinds, string[] fldNames)
+                = CurrentIndex.GetTypeInfo(typeName, out error);
+            if (error == null)
+            {
+                Debug.Assert(Utils.SameStrings(typeName, tpName));
+                KeyValuePair<string, string>[] fldNameTypes = new KeyValuePair<string, string>[fldIds.Length];
+                for (int i = 0, icnt = fldIds.Length; i < icnt; ++i)
+                {
+                    fldNameTypes[i] = new KeyValuePair<string, string>(fldNames[i], fldTypeNames[i]);
+                }
+                var dlg = new TypeFieldValueQrySetup(tpName, fldNameTypes) { Owner = this };
+                dlg.ShowDialog();
+            }
+
+            SetStartTaskMainWindowState("Please wait... Type field usage: " + baseTypeName);
+
+            //var (error, listing) = await Task.Factory.StartNew(() =>
+            //{
+            //    string err;
+            //    var info = CurrentIndex.GetTypeValuesReport(query, instances, out err);
+            //    return (err, info);
+            //}, DumpSTAScheduler);
+
+
+            SetEndTaskMainWindowState(error == null
+                ? "DONE. Type field usage: " + baseTypeName
+                : "FAILED! Type field usage: " + baseTypeName);
+
+            if (error != null)
+            {
+                ShowError(error);
+                return;
+            }
+
+            // TODO JRD
+            //DisplayTypeValuesGrid(listing, Constants.BlackDiamondHeader, TypeValuesReportGrid, Utils.BaseTypeName(query.TypeName));
+        }
 
         private void DisplayTypeValuesGrid(ListingInfo info, string prefix, string name, string reportTitle)
         {
@@ -2280,23 +2321,16 @@ namespace MDRDesk
         #endregion threads
 
         #region Instance Hierarchy Traversing
+
         private async void ExecuteInstanceHierarchyQuery(string statusMessage, ulong addr, int fldNdx)
         {
             SetStartTaskMainWindowState(statusMessage + ", please wait...");
-
-            //var result = await Task.Run(() =>
-            //{
-            //    string error;
-            //    InstanceValueAndAncestors instanceInfo = CurrentIndex.GetInstanceInfo(Utils.RealAddress(addr), fldNdx, out error);
-            //    return Tuple.Create(error, instanceInfo);
-            //});
             var result = await Task.Factory.StartNew(() =>
             {
                 string error;
                 InstanceValueAndAncestors instanceInfo = CurrentIndex.GetInstanceInfo(Utils.RealAddress(addr), fldNdx, out error);
                 return Tuple.Create(error, instanceInfo);
             }, DumpSTAScheduler);
-
 
             if (result.Item1 != null)
             {
@@ -2308,9 +2342,8 @@ namespace MDRDesk
                 return;
             }
 
-            DisplayInstanceHierarchyGrid(result.Item2);
-
             SetEndTaskMainWindowState(statusMessage + ", DONE.");
+            DisplayInstanceHierarchyGrid(result.Item2);
         }
 
         private void DisplayInstanceHierarchyGrid(InstanceValueAndAncestors instanceInfo)
@@ -2385,7 +2418,6 @@ namespace MDRDesk
             return ancestorNameList;
         }
 
-
         private void TreeViewItem_RequestBringIntoView(object sender, RequestBringIntoViewEventArgs e)
         {
             e.Handled = true;
@@ -2401,7 +2433,6 @@ namespace MDRDesk
             var lbInstances = (ListBox)LogicalTreeHelper.FindLogicalNode(grid, @"InstHierarchyAncestorAddresses");
             Debug.Assert(lbInstances != null);
             lbInstances.ItemsSource = (selectedItem as AncestorDispRecord).Instances;
-
         }
 
         private async void InstHierarchyTreeViewDoubleClicked(object sender, MouseButtonEventArgs e)
@@ -2423,13 +2454,6 @@ namespace MDRDesk
                 if (existing == null)
                 {
                     SetStartTaskMainWindowState("Getting instance info" + ", please wait...");
-
-                    //result = await Task.Run(() =>
-                    //{
-                    //    string error;
-                    //    InstanceValueAndAncestors instanceInfo = CurrentIndex.GetInstanceInfo(addr, fldNdx, out error);
-                    //    return Tuple.Create(error, instanceInfo);
-                    //});
                     result = await Task.Factory.StartNew(() =>
                     {
                         string error;
@@ -2453,11 +2477,11 @@ namespace MDRDesk
                     result = new Tuple<string, InstanceValueAndAncestors>(null, existing);
                 }
 
+                SetEndTaskMainWindowState("Getting instance info" + ", DONE.");
                 TreeViewItem tvRoot;
                 TreeView treeView;
                 var ancestorList = UpdateInstanceHierarchyGrid(result.Item2, mainGrid, out treeView, out tvRoot);
                 ancestorList.SelectedIndex = 0;
-                SetEndTaskMainWindowState("Getting instance info" + ", DONE.");
             }
         }
 
@@ -2478,12 +2502,6 @@ namespace MDRDesk
                 if (instanceInfo == null)
                 {
                     SetStartTaskMainWindowState("Getting instance info" + ", please wait...");
-                    //result = await Task.Run(() =>
-                    //{
-                    //    string error;
-                    //    instanceInfo = CurrentIndex.GetInstanceInfo(selectedAddress, Constants.InvalidIndex, out error);
-                    //    return Tuple.Create(error, instanceInfo);
-                    //});
                     result = await Task.Factory.StartNew(() =>
                     {
                         string error;
@@ -2541,24 +2559,8 @@ namespace MDRDesk
                 var ancestorList = UpdateInstanceHierarchyGrid(data, mainGrid, out treeView, out tvItem);
                 ancestorList.SelectedIndex = 0;
                 tvItem.IsSelected = true;
-                //tvItem.BringIntoView();
-                //ScrollToBegin(treeView,mainGrid);
             }
         }
-
-        //static void OnTreeViewItemSelected(object sender, RoutedEventArgs e)
-        //{
-        //	// Only react to the Selected event raised by the TreeViewItem
-        //	// whose IsSelected property was modified. Ignore all ancestors
-        //	// who are merely reporting that a descendant's Selected fired.
-        //	if (!Object.ReferenceEquals(sender, e.OriginalSource))
-        //		return;
-
-        //	TreeViewItem item = e.OriginalSource as TreeViewItem;
-        //	if (item != null)
-        //		item.BringIntoView();
-        //}
-
 
         #endregion Instance Hierarchy Traversing
 
@@ -2986,8 +2988,6 @@ namespace MDRDesk
 
 
         #endregion Utils
-
-
     }
 
 

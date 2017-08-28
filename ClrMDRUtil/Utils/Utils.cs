@@ -19,7 +19,7 @@ namespace ClrMDRIndex
 {
 	public class Utils
 	{
-		#region Address Handling
+		#region address handling
 
 		public struct RootBits
 		{
@@ -415,14 +415,30 @@ namespace ClrMDRIndex
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static ulong GetAddressValue(string addrStr)
         {
-            return Convert.ToUInt64(addrStr.Substring(4), 16);
+            if (string.IsNullOrEmpty(addrStr)) return Constants.InvalidAddress;
+            try
+            {
+                return Convert.ToUInt64(addrStr.Substring(4), 16); // it might contain address flags
+            }
+            catch (FormatException)
+            {
+                return Constants.InvalidAddress;
+            }
+            catch (OverflowException)
+            {
+                return Constants.InvalidAddress;
+            }
+            catch (ArgumentException)
+            {
+                return Constants.InvalidAddress;
+            }
         }
 
-		#endregion Address Handling
+        #endregion address handling
 
-		#region IO
+        #region IO
 
-		public static char[] DirSeps = new char[] {Path.DirectorySeparatorChar,Path.AltDirectorySeparatorChar};
+        public static char[] DirSeps = new char[] {Path.DirectorySeparatorChar,Path.AltDirectorySeparatorChar};
 
 		public static string GetPathLastFolder(string path)
 		{
@@ -1107,279 +1123,7 @@ namespace ClrMDRIndex
 			}
 		}
 
-        public static bool SaveIndicesReferences(string path, SortedDictionary<int, int[]> refs, out string error, bool sortValues=false)
-        {
-            error = null;
-            BinaryWriter bw = null;
-            try
-            {
-                int refCnt = refs.Count;
-                bw = new BinaryWriter(File.Open(path, FileMode.Create));
-                bw.Write(refCnt);
-                int totalRefCount=0;
-                int[] roffs = new int[refCnt];
-                int off = 0;
-                int ndx = 0;
-                foreach(var r in refs)
-                {
-                    bw.Write(r.Key);
-                    roffs[ndx] = off;
-                    off += r.Value.Length;
-                    totalRefCount += r.Value.Length + 1;
-                }
-                for(int i = 0; i < refCnt; ++i)
-                {
-                    bw.Write(roffs[i]);
-                }
-                bw.Write(totalRefCount);
-                foreach (var r in refs)
-                {
-                    var ary = r.Value;
-                    if (sortValues)
-                        Array.Sort(ary);
-                    int cnt = ary.Length;
-                    bw.Write(cnt);
-                    for (int i = 0; i < cnt; ++i)
-                    {
-                        bw.Write(ary[i]);
-                    }
-                }
-                return true;
-            }
-            catch (Exception ex)
-            {
-                error = Utils.GetExceptionErrorString(ex);
-                return false;
-            }
-            finally
-            {
-                bw?.Close();
-            }
-        }
-
-        public static bool SaveIndicesReferences(string path, SortedDictionary<int, List<int>> refs, out string error, bool sortValues = false)
-        {
-            error = null;
-            BinaryWriter bw = null;
-            try
-            {
-                int refCnt = refs.Count;
-                bw = new BinaryWriter(File.Open(path, FileMode.Create));
-                bw.Write(refCnt);
-                int totalRefCount = 0;
-                int[] roffs = new int[refCnt];
-                int off = 0;
-                int ndx = 0;
-                foreach (var r in refs)
-                {
-                    bw.Write(r.Key);
-                    roffs[ndx] = off;
-                    off += r.Value.Count;
-                    totalRefCount += r.Value.Count + 1;
-                }
-                for (int i = 0; i < refCnt; ++i)
-                {
-                    bw.Write(roffs[i]);
-                }
-                bw.Write(totalRefCount);
-                foreach (var r in refs)
-                {
-                    var lst = r.Value;
-                    if (sortValues)
-                        lst.Sort();
-                    int cnt = lst.Count;
-                    bw.Write(cnt);
-                    for (int i = 0; i < cnt; ++i)
-                    {
-                        bw.Write(lst[i]);
-                    }
-                }
-                return true;
-            }
-            catch (Exception ex)
-            {
-                error = Utils.GetExceptionErrorString(ex);
-                return false;
-            }
-            finally
-            {
-                bw?.Close();
-            }
-        }
-
-        /// <summary>
-        /// 
-        /// </summary>
-        /// <typeparam name="T"></typeparam>
-        /// <param name="path"></param>
-        /// <param name="refs"></param>
-        /// <param name="error"></param>
-        /// <param name="sortValues"></param>
-        /// <returns></returns>
-        public static bool SaveIndicesReferences<T>(string path, SortedDictionary<int, T> refs, out string error, bool sortValues = false) where T : IList<int>
-        {
-            error = null;
-            BinaryWriter bw = null;
-            try
-            {
-                int refCnt = refs.Count;
-                bw = new BinaryWriter(File.Open(path, FileMode.Create));
-                bw.Write(refCnt);
-                int totalRefCount = 0;
-                int[] roffs = new int[refCnt];
-                int off = 0;
-                int ndx = 0;
-                foreach (var r in refs)
-                {
-                    bw.Write(r.Key);
-                    roffs[ndx] = off;
-                    off += r.Value.Count;
-                    totalRefCount += r.Value.Count + 1;
-                }
-                for (int i = 0; i < refCnt; ++i)
-                {
-                    bw.Write(roffs[i]);
-                }
-                bw.Write(totalRefCount);
-                foreach (var r in refs)
-                {
-                    IList<int> lst = r.Value;
-                    if (sortValues) lst.OrderBy(v=>v);
-                    int cnt = lst.Count;
-                    bw.Write(cnt);
-                    for (int i = 0; i < cnt; ++i)
-                    {
-                        bw.Write(lst[i]);
-                    }
-                }
-                return true;
-            }
-            catch (Exception ex)
-            {
-                error = Utils.GetExceptionErrorString(ex);
-                return false;
-            }
-            finally
-            {
-                bw?.Close();
-            }
-        }
-        public static (string, int[], int[], int[]) LoadIdReferences(string path)
-        {
-            string error = null;
-            BinaryReader br = null;
-            try
-            {
-                br = new BinaryReader(File.Open(path, FileMode.Open));
-                int refCnt = br.ReadInt32();
-                int[] vals = new int[refCnt];
-                for (int i = 0; i < refCnt; ++i)
-                {
-                    vals[i] = br.ReadInt32();
-                }
-                int[] offs = new int[refCnt];
-                for (int i = 0; i < refCnt; ++i)
-                {
-                    offs[i] = br.ReadInt32();
-                }
-                int totRefCnt = br.ReadInt32();
-                int[] refs = new int[totRefCnt];
-                for (int i = 0; i < totRefCnt; ++i)
-                {
-                    refs[i] = br.ReadInt32();
-                }
-                return (null, vals,offs,refs);
-            }
-            catch(Exception ex)
-            {
-                error = Utils.GetExceptionErrorString(ex);
-                return (error,null,null,null);
-            }
-            finally
-            {
-                br?.Close();
-            }
-        }
-
         #endregion IO
-
-            #region Dac File Search
-
-        public static string SearchDacFolder(string dacFileName, string dacFileFolder)
-		{
-
-			var folder = new DirectoryInfo(dacFileFolder);
-			foreach (var dir in folder.EnumerateDirectories())
-			{
-				var pathName = dir.Name;
-				var dirName = Path.GetFileName(pathName);
-				if (string.Compare(dirName, dacFileName, StringComparison.OrdinalIgnoreCase) == 0)
-				{
-					return LookForDacDll(dir);
-				}
-			}
-			return null;
-		}
-
-        /// <summary>
-        /// Cache dac dll in our mscordacwks folder.
-        /// There's sometimea problem with finding a proper dac file, so this makes life easier.
-        /// We always first looking for dacs here.
-        /// </summary>
-        /// <param name="dacPath">Path of the dac dll.</param>
-        /// <param name="dacFileFolder">Where to copy this dll/</param>
-        /// <param name="error">Error message if upon failure.</param>
-        /// <returns></returns>
-        public static bool SaveDac(string dacPath, string dacFileFolder, out string error)
-        {
-            error = null;
-            try
-            {
-                if (!Directory.Exists(dacFileFolder)) return false;
-                string dacName = Path.GetFileName(dacPath);
-                var folder = new DirectoryInfo(dacFileFolder);
-                foreach (var dir in folder.EnumerateDirectories())
-                {
-                    var pathName = dir.Name;
-                    var dirName = Path.GetFileName(pathName);
-                    if (SameStrings(dirName, dacName)) return false;
-                }
-                Directory.CreateDirectory(dacFileFolder + Path.DirectorySeparatorChar + dacName);
-                File.Copy(dacPath, dacFileFolder + Path.DirectorySeparatorChar + dacName + Path.DirectorySeparatorChar + dacName);
-                return true;
-            }
-            catch(Exception ex)
-            {
-                error = GetExceptionErrorString(ex);
-                return false;
-            }
-        }
-
-        private static string LookForDacDll(DirectoryInfo dir)
-		{
-			Queue<DirectoryInfo> que = new Queue<DirectoryInfo>();
-			que.Enqueue(dir);
-			while (que.Count > 0)
-			{
-				dir = que.Dequeue();
-				foreach (var file in dir.EnumerateFiles())
-				{
-					var fname = Path.GetFileName(file.Name);
-					if (fname.StartsWith("mscordacwks", StringComparison.OrdinalIgnoreCase)
-						&& fname.EndsWith(".dll", StringComparison.OrdinalIgnoreCase))
-					{
-						return file.FullName;
-					}
-				}
-				foreach (var d in dir.EnumerateDirectories())
-				{
-					que.Enqueue(d);
-				}
-			}
-			return null;
-		}
-
-		#endregion Dac File Search
 
 		#region String Utils
 
@@ -3520,27 +3264,4 @@ namespace ClrMDRIndex
  
         #endregion Misc
     }
-
-	//internal class KeyValuePairComparer : Comparer<KeyValuePair<TKey, TValue>>
-	//{
-	//	internal IComparer<T> keyComparer;
-
-	//	public KeyValuePairComparer(IComparer<T> keyComparer)
-	//	{
-	//		if (keyComparer == null)
-	//		{
-	//			this.keyComparer = Comparer<T>.Default;
-	//		}
-	//		else
-	//		{
-	//			this.keyComparer = keyComparer;
-	//		}
-	//	}
-
-	//	public override int Compare(KeyValuePair<T, U> x, KeyValuePair<T, U> y)
-	//	{
-	//		return keyComparer.Compare(x.Key, y.Key);
-	//	}
-	//}
-
 }
