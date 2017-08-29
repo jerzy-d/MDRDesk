@@ -1716,13 +1716,18 @@ namespace MDRDesk
             DisplayTypeValuesGrid(listing, Constants.BlackDiamondHeader, TypeValuesReportGrid, Utils.BaseTypeName(query.TypeName));
         }
 
-        private async void ExecuteTypeFieldUsageQuery(string typeName)
+        private async void ExecuteTypeFieldUsageQuery(string typeName, string fieldTypeName = null, string fieldName = null)
         {
             string baseTypeName = Utils.BaseTypeName(typeName);
             string error = null;
             (string tpName, int typeId, ClrElementKind typeKind, string[] fldTypeNames, int[] fldIds, ClrElementKind[] fldKinds, string[] fldNames)
                 = CurrentIndex.GetTypeInfo(typeName, out error);
-            if (error == null)
+            if (error != null)
+            {
+                GuiUtils.ShowError(error,this);
+                return;
+            }
+            if (fieldTypeName == null && fieldName == null) // let user select a field
             {
                 Debug.Assert(Utils.SameStrings(typeName, tpName));
                 KeyValuePair<string, string>[] fldNameTypes = new KeyValuePair<string, string>[fldIds.Length];
@@ -1733,7 +1738,14 @@ namespace MDRDesk
                 var dlg = new TypeFieldValueQrySetup(tpName, fldNameTypes) { Owner = this };
                 dlg.ShowDialog();
             }
+            else if (fieldName == null) // get usage for all fields of FieldTypeName type
+            {
 
+            }
+            else // get usage for a selected field
+            {
+
+            }
             SetStartTaskMainWindowState("Please wait... Type field usage: " + baseTypeName);
 
             //var (error, listing) = await Task.Factory.StartNew(() =>

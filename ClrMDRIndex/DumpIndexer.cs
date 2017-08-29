@@ -365,6 +365,8 @@ namespace ClrMDRIndex
             return ary;
         }
 
+#region type fields
+
         private void RetainFieldTypes(ClrType clrType, int typeId, HashSet<int> doneTypeFields, HashSet<int> tofixTypeFields, string[] typeNames, SortedDictionary<int, long[]> typeFields, StringIdDct idDct)
         {
             if (Utils.SameStrings("ECS.Common.HierarchyCache.Structure.RealPosition",clrType.Name))
@@ -396,7 +398,7 @@ namespace ClrMDRIndex
                         else
                         {
                             int id = idDct.JustGetId(clrType.Fields[i].Name);
-                            fields[i] = fldTypeId | (id << 32);
+                            fields[i] = (long)fldTypeId | ((long)id << 32);
                         }
                     }
                 }
@@ -418,7 +420,6 @@ namespace ClrMDRIndex
                 {
                     typeFields.Add(typeId, fields);
                 }
-
             }
         }
 
@@ -460,6 +461,8 @@ namespace ClrMDRIndex
             }
             fieldTypeParents.Clear();
         }
+
+        #endregion type fields
 
         public bool GetAddressesAndTypes(ClrHeap heap, ulong[] addresses, int[] typeIds, string[] typeNames, out string error)
         {
@@ -1305,31 +1308,6 @@ namespace ClrMDRIndex
             }
         }
 
-        ///// <summary>
-        ///// Getting domains info.
-        ///// </summary>
-        ///// <param name="runtime">A dump runtime.</param>
-        ///// <param name="idDct">String cache.</param>
-        ///// <returns>Doamins information.</returns>
-        ///// <remarks>It is public and static for unit tests.</remarks>
-        //public static ClrtAppDomains GetAppDomains(ClrRuntime runtime, StringIdDct idDct)
-        //{
-        //	var systenDomain = runtime.SystemDomain == null
-        //		? new ClrtAppDomain()
-        //		: new ClrtAppDomain(runtime.SystemDomain, idDct);
-        //	var sharedDomain = runtime.SharedDomain == null
-        //		? new ClrtAppDomain()
-        //		: new ClrtAppDomain(runtime.SharedDomain, idDct);
-        //	var domains = new ClrtAppDomains(systenDomain, sharedDomain);
-        //	var appDomainCnt = runtime.AppDomains.Count;
-        //	ClrtAppDomain[] appDomains = new ClrtAppDomain[appDomainCnt];
-        //	for (int i = 0; i < appDomainCnt; ++i)
-        //	{
-        //		appDomains[i] = new ClrtAppDomain(runtime.AppDomains[i], idDct);
-        //	}
-        //	domains.AddAppDomains(appDomains);
-        //	return domains;
-        //}
 
         private void DumpErrors()
         {

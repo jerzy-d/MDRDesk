@@ -758,6 +758,27 @@ namespace ClrMDRIndex
 
         }
         
+        public ValueTuple<string,object> GetFieldUsage(int typeId, ClrElementKind typeKind, string[] fldTypeNames, int[] fldIds, ClrElementKind[] fldKinds, string[] fldNames)
+        {
+            try
+            {
+                ulong[] insts = GetTypeRealAddresses(typeId);
+                if (insts == null || insts.Length < 1) return (Constants.InformationSymbol + "No instances of " + GetTypeName(typeId) + " found.", null);
+
+                // string special case
+                if (fldIds == null) // get all fields of the given type
+                {
+                    Debug.Assert(fldTypeNames != null && fldTypeNames.Length == 1);
+
+                }
+
+                return (null, null);
+            }
+            catch(Exception ex)
+            {
+                return (Utils.GetExceptionErrorString(ex), null);
+            }
+        }
 
         /// <summary>
         /// 
