@@ -113,7 +113,7 @@ namespace ClrMDRIndex
                         {
                             return false;
                         }
-
+                        Debug.Assert(Utils.AreAddressesSorted(addresses));
                         // threads and blocking objects
                         //
                         progress?.Report(runtimeIndexHeader + "Getting threads, blocking objecks information...");
@@ -183,9 +183,15 @@ namespace ClrMDRIndex
                                                                     );
                             addressesCopy = null;
                             builder.CreateForwardReferences(heap, out error);
-                            referenceBuilderWorker = new Thread(builder.BuildReveresedReferences);
-                            referenceBuilderWorker.Start();
-
+                            if (error == null)
+                            {
+                                referenceBuilderWorker = new Thread(builder.BuildReveresedReferences);
+                                referenceBuilderWorker.Start();
+                            }
+                            else
+                            {
+                                AddError(r, "CreateForwardReferences failed." + Environment.NewLine + error);
+                            }
 #endif
                         }
                         else
