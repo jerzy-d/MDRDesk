@@ -371,14 +371,81 @@ namespace ClrMDRIndex
             return ary;
         }
 
-#region type fields
+        public static Instances GetHeapAddresses(ClrHeap heap, out ClrtSegment[] segments)
+        {
+            int count = 0;
+            ulong pointerSize = (ulong)heap.PointerSize;
+            var segs = heap.Segments;
+            segments = new ClrtSegment[segs.Count];
+            ulong[][] segAddrs = new ulong[segs.Count][];
+            List<ulong> segAddrLst = new List<ulong>(1024 * 1024 * 10);
+            for (int i = 0, icnt = segs.Count; i < icnt; ++i)
+            {
+                var seg = segs[i];
+
+                ulong first = seg.FirstObject;
+                ulong end = seg.CommittedEnd;
+
+                ulong addr = first;
+                addr = TryFindNextValidAddress(heap, addr, end, pointerSize);
+                // save some segment info
+                ulong segFirst = addr;
+                ulong segLast = addr;
+                int segFirstInst = count;
+                int segLastInst = count;
+                if (addr == 0) ++count;
+                bool firstbad = addr == 0 ? true : false;
+                int badcount = (addr == 0) ? 1 : 0;
+                if (addr != 0) segAddrLst.Add(addr);
+                while (addr != 0ul)
+                {
+                    var newAddr = seg.NextObject(addr);
+                    if (newAddr == 0)
+                    {
+                        newAddr = TryFindNextValidAddress(heap, addr + pointerSize, end, pointerSize);
+                    }
+                    addr = newAddr;
+                    if (addr != 0)
+                    {
+                        segAddrLst.Add(addr);
+                        segLastInst = count;
+                        segLast = addr;
+                        ++count;
+                    }
+                }
+                segments[i] = new ClrtSegment(seg, segFirst, segLast, segFirstInst, segLastInst);
+                segAddrs[i] = segAddrLst.ToArray();
+                segAddrLst.Clear();
+            }
+            segAddrLst = null;
+            return new Instances(segAddrs);
+        }
+
+        private static ulong TryFindNextValidAddress(ClrHeap heap, ulong addr, ulong end, ulong pointerSize)
+        {
+            const int TryCount = 10000;
+            var clrType = heap.GetObjectType(addr);
+            if (clrType != null) return addr;
+            int count = 0;
+            while (clrType == null && ++count < TryCount)
+            {
+                addr += pointerSize;
+                if (addr > end)
+                {
+                    return 0;
+                }
+                clrType = heap.GetObjectType(addr);
+                if (clrType != null)
+                {
+                    return addr;
+                }
+            }
+            return 0;
+        }
+        #region type fields
 
         private void RetainFieldTypes(ClrType clrType, int typeId, HashSet<int> doneTypeFields, HashSet<int> tofixTypeFields, string[] typeNames, SortedDictionary<int, long[]> typeFields, StringIdDct idDct)
         {
-            if (Utils.SameStrings("ECS.Common.HierarchyCache.Structure.RealPosition",clrType.Name))
-            {
-                int a = 1;
-            }
             if (doneTypeFields.Add(typeId))
             {
                 int fldCnt = clrType.Fields == null ? 0 : clrType.Fields.Count;

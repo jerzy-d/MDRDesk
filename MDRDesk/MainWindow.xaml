@@ -739,6 +739,7 @@
                         <MenuItem x:Name="CrashDumpRequiredDac" Header="Crash Dump Required Dac..." Click="CrashDumpRequiredDacClicked"/>
                         <MenuItem x:Name="AddDacFile" Header="Add Dac File..." Click="AddDacFileClicked"/>
                         <MenuItem x:Name="CrashDumpTryOpen" Header="Try Open Dump..." Click="TryOpenCrashDumpClicked"/>
+                        <MenuItem x:Name="CrashDumpWalkable" Header="Is Dump Walkable..." Click="CrashDumpWalkableClicked"/>
                         <Separator></Separator>
                         <MenuItem x:Name="CreateCrashDump" Header="Dump Local Process..." Click="CreateCrashDumpClicked"/>
                         <!--<MenuItem x:Name="RecentDumpsMenuItem" Header="Recent Files" ItemsSource="{StaticResource RecentDumps}" DataContext="{StaticResource RecentDumps}"/>-->

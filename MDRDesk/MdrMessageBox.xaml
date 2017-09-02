@@ -49,10 +49,10 @@
                            Grid.Column="1" Grid.Row="0" Margin="5"
                            Text="Instruction Heading" 
                            HorizontalAlignment="Stretch"  VerticalAlignment="Center" TextWrapping="Wrap"  
-                           FontSize="18" Foreground="#FF006ECD"/>
+                           FontSize="14" Foreground="#FF006ECD"/>
                 <TextBlock x:Name="TbInstructionText" 
                            Grid.Column="1" Grid.Row="1" Margin="5"
-                           Text="Instruction" 
+                           Text="Instruction" FontSize="12"
                            HorizontalAlignment="Stretch" Width="Auto" TextWrapping="Wrap"  />
                 <Expander x:Name="DetailsExpander" Margin="0,7,0,0" DockPanel.Dock="Bottom" Header="Details" Grid.Row="2" Grid.Column="0" Grid.ColumnSpan="2">
                     <DockPanel x:Name="ExpanderPanel" Margin="3" LastChildFill="True">

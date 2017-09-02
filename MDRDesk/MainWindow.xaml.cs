@@ -325,6 +325,43 @@ namespace MDRDesk
             }
         }
 
+        private void CrashDumpWalkableClicked(object sender, RoutedEventArgs e)
+        {
+            ClrtDump dump = null;
+            string error = null;
+            string path = string.Empty;
+            string[] dacFiles = null;
+            try
+            {
+                path = GuiUtils.SelectCrashDumpFile();
+                if (path == null) return;
+                dump = TryOpenCrashDump(path, out error, out dacFiles);
+                if (dump != null)
+                {
+                    bool walkable = dump.Heap.CanWalkHeap;
+                    GuiUtils.ShowInformation("Can Walk Heap",
+                        walkable ? "The heap can be walked." : "The heap cannot be walked. See details.",
+                        Path.GetFileName(path),
+                        "Stopping the process in the middle of a GC, can cause the GC heap to be unwalkable." + Environment.NewLine
+                        + "The dump can still be indexed but some of the heap's objects might be missing." + Environment.NewLine
+                        + "If the heap is unwalkable indexing will take longer because brute force object searches are employed",
+                        this);
+                }
+            }
+            catch (Exception ex)
+            {
+                error = Utils.GetExceptionErrorString(ex);
+            }
+            finally
+            {
+                dump?.Dispose();
+                if (error != null)
+                {
+                    GuiUtils.ShowError(error, this);
+                }
+            }
+        }
+
         private void CreateCrashDumpClicked(object sender, RoutedEventArgs e)
         {
             ClrtDump dump = null;
@@ -2526,8 +2563,6 @@ namespace MDRDesk
         {
             ValueWindows.ShowHelpWindow(Setup.HelpFolder + Path.DirectorySeparatorChar + "README.md");
         }
-
-
     }
 
     public static class MenuCommands

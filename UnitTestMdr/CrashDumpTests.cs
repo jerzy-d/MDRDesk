@@ -2279,6 +2279,131 @@ namespace UnitTestMdr
         #region types
 
         [TestMethod]
+        public void TestBigDump()
+        {
+            ulong address = 0x00000001802cbc68;
+            string error = null;
+            using (var clrDump = OpenDump(@"C:\WinDbgStuff\Dumps\Compliance\Eze.Compliance.Svc_170503_131515.dmp"))
+            {
+                try
+                {
+                    var runtime = clrDump.Runtimes[0];
+                    var heap = runtime.Heap;
+                    var segs = heap.Segments;
+                    var clrType = heap.GetObjectType(address);
+                    var name = clrType.Name;
+                    var seg0 = heap.GetSegmentByAddress(address);
+                    var seg5 = heap.Segments[5];
+                    int cnt = 0;
+                    int invalidCnt = 0;
+                    ulong first = seg0.FirstObject;
+                    ulong end = seg0.End;
+                    ulong pointerSize = (ulong)heap.PointerSize;
+                    ulong addr = first;
+                    List<ulong> deltas = new List<ulong>(128);
+                    bool canWalk = heap.CanWalkHeap;
+                    addr = TryFindNextValidAddress(heap, addr, end, pointerSize,deltas);
+
+                    while (addr != 0ul)
+                    {
+                        ++cnt;
+                        var newAddr = seg0.NextObject(addr);
+                        if (newAddr != 0 && newAddr < first)
+                        {
+                            int c = 1;
+                        }
+                        if (newAddr == 0)
+                        {
+                            ++invalidCnt;
+                            newAddr = TryFindNextValidAddress(heap, addr+pointerSize, end, pointerSize,deltas);
+                            addr = newAddr;
+                        }
+                        else
+                        {
+                            addr = newAddr;
+                        }
+                        if (address == addr)
+                        {
+                            int b = 1;
+                        }
+                    }
+                    HashSet<ulong> set = new HashSet<ulong>();
+                    for (int i = 0, icnt = deltas.Count; i < icnt; ++i)
+                    {
+                        set.Add(deltas[i]);
+                    }
+                    int a = 1;
+
+                    //for (int i = 0, icnt = segs.Count; i < icnt; ++i)
+                    //{
+                    //    var seg = segs[i];
+                    //    ulong addr = seg.FirstObject;
+                    //    while (addr != 0ul)
+                    //    {
+                    //        var clrType = heap.GetObjectType(addr);
+                    //        if (clrType == null) goto NEXT_OBJECT;
+
+
+                    //        NEXT_OBJECT:
+                    //        addr = seg.NextObject(addr);
+                    //    }
+                    //}
+                }
+                catch (Exception ex)
+                {
+                    error = Utils.GetExceptionErrorString(ex);
+                    Assert.IsTrue(false, error);
+                }
+            }
+        }
+
+        [TestMethod]
+        public void TestBigDump2()
+        {
+            string error = null;
+            using (var clrDump = OpenDump(@"C:\WinDbgStuff\Dumps\Compliance\Eze.Compliance.Svc_170503_131515.dmp"))
+            {
+                try
+                {
+                    var runtime = clrDump.Runtimes[0];
+                    var heap = runtime.Heap;
+                    ClrtSegment[] segments;
+                    var instances = DumpIndexer.GetHeapAddresses(heap, out segments);
+                    var addrSorted = Utils.AreAddressesSorted(instances.Addresses);
+                    var addr2Sorted = Utils.AreAddressesSorted(instances.Addresses2);
+                }
+                catch (Exception ex)
+                {
+                    error = Utils.GetExceptionErrorString(ex);
+                    Assert.IsTrue(false, error);
+                }
+            }
+        }
+
+        private ulong TryFindNextValidAddress(ClrHeap heap, ulong addr, ulong end, ulong pointerSize, List<ulong> deltas)
+        {
+            var clrType = heap.GetObjectType(addr);
+            if (clrType != null) return addr;
+            ulong delta = 0;
+            while (clrType == null)
+            {
+                addr += pointerSize;
+                delta += pointerSize;
+                if (addr > end)
+                {
+                    return 0;
+                }
+                clrType = heap.GetObjectType(addr);
+                if (clrType != null)
+                {
+                    deltas.Add(delta);
+                    return addr;
+                }
+            }
+            return 0;
+        }
+
+        [TestMethod]
         public void TestTypeSizesAndGenerations()
         {
             string dumpPath = Setup.DumpsFolder + @"\Analytics\Ellerston\Eze.Analytics.Svc_170309_130146.BIG.dmp";

@@ -80,7 +80,10 @@ namespace ClrMDRIndex
 		private ulong _gen2FreeSize;
 		public ulong Gen2FreeSize => _gen2FreeSize;
 
-		private ClrtSegment() { }
+        public bool FirstObjBad { get; private set; }
+        public int BadCount { get; private set; }
+
+        private ClrtSegment() { }
 
 		public ClrtSegment(ClrSegment seg, ulong firstAddr, ulong lastAddr, int firstNdx, int endNdx)
 		{
@@ -103,6 +106,12 @@ namespace ClrMDRIndex
 			FirstIndex = firstNdx;
 			EndIndex = endNdx;
 		}
+
+        public void SetBad(bool firstBad, int badCount)
+        {
+            FirstObjBad = firstBad;
+            BadCount = badCount;
+        }
 
 		public int Count()
 		{
@@ -428,58 +437,62 @@ namespace ClrMDRIndex
 			writer.Write(_gen0FreeSize);
 			writer.Write(_gen1FreeSize);
 			writer.Write(_gen2FreeSize);
-		}
+            writer.Write(FirstObjBad);
+            writer.Write(BadCount);
+        }
 
-		private static ClrtSegment Read(BinaryReader reader)
+        private static ClrtSegment Read(BinaryReader reader)
 		{
 
-			var seg = new ClrtSegment
-			{
-				CommittedEnd = reader.ReadUInt64(),
-				ReservedEnd = reader.ReadUInt64(),
-				Start = reader.ReadUInt64(),
-				End = reader.ReadUInt64(),
-				Gen0Start = reader.ReadUInt64(),
-				Gen0Length = reader.ReadUInt64(),
-				Gen1Start = reader.ReadUInt64(),
-				Gen1Length = reader.ReadUInt64(),
-				Gen2Start = reader.ReadUInt64(),
-				Gen2Length = reader.ReadUInt64(),
-				FirstObject = reader.ReadUInt64(),
-				FirstAddress = reader.ReadUInt64(),
-				LastAddress = reader.ReadUInt64(),
+            var seg = new ClrtSegment
+            {
+                CommittedEnd = reader.ReadUInt64(),
+                ReservedEnd = reader.ReadUInt64(),
+                Start = reader.ReadUInt64(),
+                End = reader.ReadUInt64(),
+                Gen0Start = reader.ReadUInt64(),
+                Gen0Length = reader.ReadUInt64(),
+                Gen1Start = reader.ReadUInt64(),
+                Gen1Length = reader.ReadUInt64(),
+                Gen2Start = reader.ReadUInt64(),
+                Gen2Length = reader.ReadUInt64(),
+                FirstObject = reader.ReadUInt64(),
+                FirstAddress = reader.ReadUInt64(),
+                LastAddress = reader.ReadUInt64(),
 
-				ProcessorAffinity = reader.ReadInt32(),
-				FirstIndex = reader.ReadInt32(),
-				EndIndex = reader.ReadInt32(),
-				Ephemeral = reader.ReadBoolean(),
-				Large = reader.ReadBoolean(),
+                ProcessorAffinity = reader.ReadInt32(),
+                FirstIndex = reader.ReadInt32(),
+                EndIndex = reader.ReadInt32(),
+                Ephemeral = reader.ReadBoolean(),
+                Large = reader.ReadBoolean(),
 
-				_gen0Count = reader.ReadInt32(),
-				_gen1Count = reader.ReadInt32(),
-				_gen2Count = reader.ReadInt32(),
+                _gen0Count = reader.ReadInt32(),
+                _gen1Count = reader.ReadInt32(),
+                _gen2Count = reader.ReadInt32(),
 
-				_gen0Size = reader.ReadUInt64(),
-				_gen1Size = reader.ReadUInt64(),
-				_gen2Size = reader.ReadUInt64(),
+                _gen0Size = reader.ReadUInt64(),
+                _gen1Size = reader.ReadUInt64(),
+                _gen2Size = reader.ReadUInt64(),
 
-				_gen0UnrootedCount = reader.ReadInt32(),
-				_gen1UnrootedCount = reader.ReadInt32(),
-				_gen2UnrootedCount = reader.ReadInt32(),
+                _gen0UnrootedCount = reader.ReadInt32(),
+                _gen1UnrootedCount = reader.ReadInt32(),
+                _gen2UnrootedCount = reader.ReadInt32(),
 
-				_gen0UnrootedSize = reader.ReadUInt64(),
-				_gen1UnrootedSize = reader.ReadUInt64(),
-				_gen2UnrootedSize = reader.ReadUInt64(),
+                _gen0UnrootedSize = reader.ReadUInt64(),
+                _gen1UnrootedSize = reader.ReadUInt64(),
+                _gen2UnrootedSize = reader.ReadUInt64(),
 
-				_gen0FreeCount = reader.ReadInt32(),
-				_gen1FreeCount = reader.ReadInt32(),
-				_gen2FreeCount = reader.ReadInt32(),
+                _gen0FreeCount = reader.ReadInt32(),
+                _gen1FreeCount = reader.ReadInt32(),
+                _gen2FreeCount = reader.ReadInt32(),
 
-				_gen0FreeSize = reader.ReadUInt64(),
-				_gen1FreeSize = reader.ReadUInt64(),
-				_gen2FreeSize = reader.ReadUInt64(),
+                _gen0FreeSize = reader.ReadUInt64(),
+                _gen1FreeSize = reader.ReadUInt64(),
+                _gen2FreeSize = reader.ReadUInt64(),
+                FirstObjBad = reader.ReadBoolean(),
+                BadCount = reader.ReadInt32()
 
-			};
+        };
 			return seg;
 		}
 
