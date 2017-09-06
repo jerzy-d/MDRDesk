@@ -1,9 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<Wix xmlns="http://schemas.microsoft.com/wix/2006/wi" 
-     xmlns:util="http://schemas.microsoft.com/wix/UtilExtension">
+<Wix xmlns="http://schemas.microsoft.com/wix/2006/wi">
   <?include Globals.wxi?>
 
-	<Product Id="*" Name="MDRDesk" Language="1033" Version="$(var.VersionNumber)" Manufacturer="JRD" UpgradeCode="626e9d9e-72ce-4fea-a38b-2afe926a84e5">
+	<Product Id="*" Name="MDRDesk" Language="1033" Version="$(var.VersionNumber)" Manufacturer="Jerzy Dominczak" UpgradeCode="626e9d9e-72ce-4fea-a38b-2afe926a84e5">
 
     <Package InstallerVersion="200" Compressed="yes" InstallScope="perMachine" />
 
@@ -12,9 +11,7 @@
 
 		<Feature Id="ProductFeature" Title="MDRDesk Installer">
 			<ComponentGroupRef Id="ProductComponents" />
-      <ComponentRef Id="CMP_DumpsDir" />
-      <ComponentRef Id="CleanupMainApplicationFolder" />
-    </Feature>
+		</Feature>
 
     <Property Id="ROOTDRIVE"><![CDATA[C:\]]></Property>
     
@@ -22,27 +19,16 @@
     <WixVariable Id="WixUILicenseRtf" Value="License.rtf"/>
     <Property Id="ApplicationFolderName" Value="MDRDesk" />
     <Property Id="WixAppFolder" Value="WixPerMachineFolder" />
-    <WixVariable Id="WixUI_InstallDir" Value="INSTALLFOLDER"/>
+    <!--<UIRef Id="WixUI_InstallDir" />-->
     <Icon Id="WixUIInfoIco" SourceFile=".\appbar.list.gear.png"/>
     <Icon Id="icon.ico" SourceFile=".\appbar.list.gear.png"/>
     <Property Id="ARPPRODUCTICON" Value="icon.ico" />
-
-    <WixVariable Id="WixUIDialogBmp" Value="data\CalleSegovias2.bmp" />
-
-
-    <InstallUISequence>
-      <Custom Action=""
-    </InstallUISequence>
-
   </Product>
 
 
 
 
   <Fragment>
-    <Property Id="APPLICATIONFOLDER">
-      <RegistrySearch Key="SOFTWARE\$(var.Manufacturer)\$(var.SkuName)" Root="HKLM" Type="raw" Id="APPLICATIONFOLDER_REGSEARCH" Name="Path" />
-    </Property>
 		<Directory Id="TARGETDIR" Name="SourceDir">
         <Directory Id="INSTALLFOLDER" Name="MDRDesk">
           <Directory Id="MDRDeskDir" Name="MDRDesk"></Directory>
@@ -51,35 +37,12 @@
         </Directory>
 		</Directory>
     <!--<Property Id="WIXUI_INSTALLDIR" Value="INSTALLFOLDER" />-->
-
-    <DirectoryRef Id="DumpsDir">
-      <Component Id="CMP_DumpsDir"
-      Guid="838F0013-7439-4D2E-8A57-F75A2DD04954"
-      KeyPath="yes">
-        <CreateFolder />
-      </Component>
-    </DirectoryRef>
-
-
-    <DirectoryRef Id ="INSTALLFOLDER">
-      <Component Id="CleanupMainApplicationFolder" Guid="*">
-        <RegistryValue Root="HKLM" Key="SOFTWARE\$(var.Manufacturer)\$(var.SkuName)" Name="Path" Type="string" Value="[INSTALLFOLDER]" KeyPath="yes" />
-        <!-- We need to use APPLICATIONFOLDER variable here or RemoveFolderEx
-                 will not remove on "install". -->
-        <util:RemoveFolderEx On="uninstall" Property="APPLICATIONFOLDER" />
-      </Component>
-    </DirectoryRef>
-    
 	</Fragment>
 
 	<Fragment>
 		<ComponentGroup Id="ProductComponents">
       <Component Id="MDRDeskExe" Guid="{A33125F8-DD4F-4A3A-8B22-49EAF9E0459F}" Directory="MDRDeskDir">
         <File Source="$(var.MDRDesk.TargetDir)MDRDesk.exe" Id="MdrDeskExe"/>
-        <CreateFolder/>
-      </Component>
-      <Component Id="MDRDeskConfig" Guid="{8F0C1C44-9B27-47CF-849C-5942178B4342}" Directory="MDRDeskDir">
-        <File Source="$(var.MDRDesk.TargetDir)MDRDesk.exe.config"/>
         <CreateFolder/>
       </Component>
       <Component Id="ClrMDRUtilDll" Guid="{1D499E95-1A90-4FA1-B375-0B04CCCCD137}" Directory="MDRDeskDir">
@@ -94,10 +57,6 @@
         <File Source="$(var.MDRDesk.TargetDir)DmpNdxQueries.dll"/>
         <CreateFolder/>
       </Component>
-
-
-
-      
     </ComponentGroup>
 	</Fragment>
 </Wix>

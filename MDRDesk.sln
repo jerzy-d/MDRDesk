@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 15
-VisualStudioVersion = 15.0.26430.16
+VisualStudioVersion = 15.0.26730.12
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MDRDesk", "MDRDesk\MDRDesk.csproj", "{4BB5B249-E4F1-490F-8F40-214BCC05CE64}"
 	ProjectSection(ProjectDependencies) = postProject
@@ -35,6 +35,8 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Documentation", "Documentat
 		Documentation\GettingStarted.md = Documentation\GettingStarted.md
 		Documentation\MainMenu.md = Documentation\MainMenu.md
 	EndProjectSection
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "WixCustomActions", "WixCustomActions\WixCustomActions.csproj", "{E635B178-C0B3-4804-8C6B-4F6A0B016A9C}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -126,8 +128,19 @@ Global
 		{0730657F-33F2-429D-8336-33D310A38718}.Release|x64.ActiveCfg = Release|x86
 		{0730657F-33F2-429D-8336-33D310A38718}.Release|x86.ActiveCfg = Release|x86
 		{0730657F-33F2-429D-8336-33D310A38718}.Release|x86.Build.0 = Release|x86
+		{E635B178-C0B3-4804-8C6B-4F6A0B016A9C}.Debug|Any CPU.ActiveCfg = Debug|x86
+		{E635B178-C0B3-4804-8C6B-4F6A0B016A9C}.Debug|x64.ActiveCfg = Debug|x86
+		{E635B178-C0B3-4804-8C6B-4F6A0B016A9C}.Debug|x86.ActiveCfg = Debug|x86
+		{E635B178-C0B3-4804-8C6B-4F6A0B016A9C}.Debug|x86.Build.0 = Debug|x86
+		{E635B178-C0B3-4804-8C6B-4F6A0B016A9C}.Release|Any CPU.ActiveCfg = Release|x86
+		{E635B178-C0B3-4804-8C6B-4F6A0B016A9C}.Release|x64.ActiveCfg = Release|x86
+		{E635B178-C0B3-4804-8C6B-4F6A0B016A9C}.Release|x86.ActiveCfg = Release|x86
+		{E635B178-C0B3-4804-8C6B-4F6A0B016A9C}.Release|x86.Build.0 = Release|x86
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {72E78ED6-5883-4B9C-972D-D029CDCE319A}
 	EndGlobalSection
 EndGlobal
