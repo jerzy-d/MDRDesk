@@ -1183,6 +1183,19 @@ namespace ClrMDRIndex
             return MultiInstanceParentsReport(result);
         }
 
+        public ListingInfo GetTypeReferenceReport(int[] typeInstances, InstanceReferences.ReferenceType refType, int level = Int32.MaxValue)
+        {
+            string error;
+            if (typeInstances.Length < 1)
+                return new ListingInfo(Constants.InformationSymbolHeader + "No " + InstanceReferences.InstanceTypeString(refType) + " instances found for this type");
+            KeyValuePair<IndexNode, int>[] result = _instanceReferences.GetReferenceNodes(typeInstances, level, _instances, out error, refType);
+            if (!string.IsNullOrEmpty(error) && error[0] != Constants.InformationSymbol)
+            {
+                return new ListingInfo(error);
+            }
+            return MultiInstanceParentsReport(result);
+        }
+
         public ListingInfo OneInstanceParentsReport(IndexNode rootNode, int nodeCnt)
         {
             const int columnCount = 4;

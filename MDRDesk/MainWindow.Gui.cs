@@ -1984,17 +1984,66 @@ namespace MDRDesk
             }
         }
 
-        private void TypeTreeCopyTypeNameClicked(object sender, RoutedEventArgs e)
+        private AncestorNode GetAncestorTreeViewSelectedNode()
         {
             var grid = GetCurrentTabGrid();
             Debug.Assert(grid != null);
-            if (grid == null) return;
+            if (grid == null) return null;
             var treeView = (TreeView)LogicalTreeHelper.FindLogicalNode(grid, "AncestorTreeView");
             var selected = treeView.SelectedItem as TreeViewItem;
-            if (selected == null) return;
-            AncestorNode node = (AncestorNode)selected.Tag;
-            Clipboard.SetText(node.TypeName);
-            MainStatusShowMessage("Copied to Clipboard: " + node.TypeName);
+            if (selected == null) return null;
+            return selected.Tag as AncestorNode;
+        }
+
+        private void TypeTreeCopyTypeNameClicked(object sender, RoutedEventArgs e)
+        {
+            AncestorNode node = GetAncestorTreeViewSelectedNode();
+            if (node != null)
+            {
+                Clipboard.SetText(node.TypeName);
+                MainStatusShowMessage("Copied to Clipboard: " + node.TypeName);
+            }
+            else
+            {
+                MainStatusShowMessage("Node not found. Is a tree item selected?");
+            }
+        }
+
+
+        private async void TypeTreeGetReferences(object sender, RoutedEventArgs e)
+        {
+            AncestorNode node = GetAncestorTreeViewSelectedNode();
+            if (node == null)
+            {
+                MainStatusShowMessage("Node not found. Is a tree item selected?");
+                return;
+            }
+
+            var baseTypeName = Utils.BaseTypeName(node.TypeName);
+
+            ReferenceSearchSetup dlg = new ReferenceSearchSetup(baseTypeName) { Owner = this };
+            dlg.ShowDialog();
+            if (dlg.Cancelled) return;
+            int level = dlg.GetAllReferences ? Int32.MaxValue : dlg.SearchDepthLevel;
+            var dispMode = dlg.DisplayMode;
+            var searchFlag = dlg.DataSource | dlg.Direction | dlg.Strict;
+
+            SetStartTaskMainWindowState("Getting parent references for: '" + baseTypeName + "', please wait...");
+
+            //var report = await Task.Run(() => CurrentIndex.GetParentTree(typeId, level));
+            var report = await Task.Factory.StartNew(() =>
+            {
+                return CurrentIndex.GetParentTree(node.TypeId, node.Instances, level);
+            }, DumpSTAScheduler);
+
+            if (report.Item1 != null)
+            {
+                MessageBox.Show(report.Item1, "Action Aborted", MessageBoxButton.OK, MessageBoxImage.Exclamation);
+                SetEndTaskMainWindowState("Getting parent references for: '" + Utils.BaseTypeName(baseTypeName) + "', failed.");
+                return;
+            }
+            SetEndTaskMainWindowState("Getting parent references for: '" + Utils.BaseTypeName(baseTypeName) + "', done.");
+            DisplayTypeAncestorsGrid(report.Item2);
         }
 
         private void TypeTreeGenerationDistributionClicked(object sender, RoutedEventArgs e)

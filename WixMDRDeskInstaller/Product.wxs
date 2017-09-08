@@ -31,7 +31,7 @@
 
 
     <InstallUISequence>
-      <Custom Action=""
+      <!--<Custom Action=""-->
     </InstallUISequence>
 
   </Product>

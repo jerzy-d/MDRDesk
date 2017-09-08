@@ -1646,8 +1646,8 @@ namespace ClrMDRIndex
 
                 KeyValuePair<string, string>[] fldDescription = new KeyValuePair<string, string>[]
                 {
-                new KeyValuePair<string, string>("count", (count-freeCount).ToString()),
-                new KeyValuePair<string, string>("array count", aryLen.ToString()),
+                new KeyValuePair<string, string>("count", Utils.CountString(count-freeCount)),
+                new KeyValuePair<string, string>("array count", Utils.CountString(aryLen)),
                 new KeyValuePair<string, string>("version", version.ToString())
                 };
 

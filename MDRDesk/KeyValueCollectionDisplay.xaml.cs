@@ -40,6 +40,7 @@ namespace MDRDesk
             _unlockedImg = new Image();
             _unlockedImg.Source = ValueWindows.UnlockedImage.Source;
             UpdateInstanceValue(instVal, description);
+            _locked = locked;
             LockBtn.Content = locked ? _lockedImg : _unlockedImg;
         }
 

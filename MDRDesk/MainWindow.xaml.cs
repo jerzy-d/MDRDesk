@@ -2563,6 +2563,8 @@ namespace MDRDesk
         {
             ValueWindows.ShowHelpWindow(Setup.HelpFolder + Path.DirectorySeparatorChar + "README.md");
         }
+
+ 
     }
 
     public static class MenuCommands

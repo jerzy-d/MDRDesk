@@ -65,7 +65,7 @@
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|x86'">
     <OutputPath>..\..\..\..\..\WinDbgStuff\MDRDesk\32\</OutputPath>
-    <DefineConstants>TRACE</DefineConstants>
+    <DefineConstants>TRACE;X86PLATFORM</DefineConstants>
     <Optimize>true</Optimize>
     <DebugType>pdbonly</DebugType>
     <PlatformTarget>x86</PlatformTarget>
@@ -92,6 +92,7 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Address.cs" />
     <Compile Include="a_Constants.cs" />
     <Compile Include="b_Setup.cs" />
     <Compile Include="ClrUtils\ClrtAppDomain.cs" />
@@ -108,7 +109,6 @@
     <Compile Include="ClrUtils\DumpFileMoniker.cs" />
     <Compile Include="ClrUtils\ElementTypeCount.cs" />
     <Compile Include="ClrUtils\FieldDependency.cs" />
-    <Compile Include="ClrUtils\IndexCurrentInfo.cs" />
     <Compile Include="ClrUtils\IndexProxy.cs" />
     <Compile Include="ClrUtils\InstanceReferences.cs" />
     <Compile Include="ClrUtils\Instances.cs" />
@@ -143,6 +143,7 @@
     <Compile Include="Utils\InstanceSizeNode.cs" />
     <Compile Include="Utils\InstanceTypeNode.cs" />
     <Compile Include="Utils\InstanceValue.cs" />
+    <Compile Include="Utils\IntegralStore.cs" />
     <Compile Include="Utils\IntervalHeap.cs" />
     <Compile Include="Utils\RecordCounter.cs" />
     <Compile Include="Utils\ReportFile.cs" />

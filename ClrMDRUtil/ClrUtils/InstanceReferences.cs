@@ -59,6 +59,7 @@ namespace ClrMDRIndex
         int[] _reversedRefsCounts;
         int _totalReversedRefs;
         string _error;
+        public string Error => _error;
         Stopwatch _stopWatch;
         IProgress<string> _progress;
         string _instanceFilePath;
@@ -470,17 +471,22 @@ namespace ClrMDRIndex
             }
         }
 
-        public void BuildReveresedReferences()
+        public bool BuildReveresedReferences()
         {
             const string progressHeader = Constants.HeavyAsteriskHeader + "[BwdRefs] ";
             BinaryReader brFwdRefs = null;
             BinaryWriter bwBwdRefs = null;
             try
             {
+                Utils.ForceGcWithCompaction();
                 _progress?.Report(progressHeader + "Creating reveresed references data...");
                 Unsafe.FileWriter.CreateFileWithSize(_fileList[(int)RefFile.BwdRefs], _totalReversedRefs * sizeof(int), out _error);
                 Unsafe.FileWriter.CreateFileWithSize(_fileList[(int)RefFile.BwdOffsets], (_instances.Length + 1) * sizeof(long), out _error);
                 long[] bwdRefOffsets = WriteBwdOffsets(_reversedRefsCounts);
+                if (bwdRefOffsets == null)
+                {
+                    return false;
+                }
                 int[] intBuf = new int[1024];
                 brFwdRefs = GetReader(RefFile.FwdRefs, FileMode.Open);
                 bwBwdRefs = GetWriter(RefFile.BwdRefs, FileMode.Create);
@@ -538,6 +544,8 @@ namespace ClrMDRIndex
                 _reversedRefsCounts = null;
                 bwdRefOffsets = null;
 
+                Utils.ForceGcWithCompaction();
+
                 // set rooted flags on references
                 //
                 if (_reflagSet.Count > 0)
@@ -548,6 +556,7 @@ namespace ClrMDRIndex
                     Array.Sort(ary);
                     IntSterta bh = new IntSterta(ary.Length + 8, ary); // transfer reflag items to the binary heap, data is sorted so heap constraints are met
                     ary = null;
+                    Utils.ForceGcWithCompaction();
                     var fwdRefOffsets = new long[_forwardRefsCounts.Length + 1];
                     // put forward offsets in the array for fast access
                     //
@@ -561,7 +570,7 @@ namespace ClrMDRIndex
                     while (bh.Count > 0)
                     {
                         int ndx = bh.Pop();
-                        _reflagSet.Remove(ndx); // keep in this set values which are the the binary heap
+                        _reflagSet.Remove(ndx); // keep in this set values which are in the binary heap
                         int cnt = _forwardRefsCounts[ndx];
                         if (cnt < 1) continue; // this should not happen
                         intBuf = CheckBufferSize(intBuf, cnt);
@@ -582,11 +591,13 @@ namespace ClrMDRIndex
                 _instances = null; // release mem
 
                 _progress?.Report(progressHeader + "Creating reversed references data done. " + Utils.StopAndGetDurationStringAndRestart(_stopWatch));
+                return true;
             }
             catch (Exception ex)
             {
                 _error = Utils.GetExceptionErrorString(ex);
                 _progress?.Report(progressHeader + "EXCEPTION: " + ex.Message);
+                return false;
             }
             finally
             {

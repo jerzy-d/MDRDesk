@@ -97,9 +97,10 @@
         <ContextMenu x:Key="TypeTreeContextMenu" x:Shared="False">
             <MenuItem x:Name="TypeTreeCopyTypeName" Header="Copy Type Name" Click="TypeTreeCopyTypeNameClicked"></MenuItem>
             <MenuItem x:Name="TypeTreeGenerationDistribution" Header="Generation Ditribution" Click="TypeTreeGenerationDistributionClicked"></MenuItem>
+            <MenuItem x:Name="TypeTreeGetBaseHeapSize" Header="Get Type Total Size" Click="TypeTreeGetTypeSizesClicked"></MenuItem>
             <Separator></Separator>
             <!--MenuItem x:Name="TypeTreeGetTotalHeapSizeReport" Header="Get Type Total Heap Size Report" Click="GetTotalHeapSizeReportClicked"></>-->
-            <MenuItem x:Name="TypeTreeGetBaseHeapSize" Header="Get Type Total Size" Click="TypeTreeGetTypeSizesClicked"></MenuItem>
+            <MenuItem x:Name="TypeTreeGetReferences" Header="Get References" Click="TypeTreeGetReferences"></MenuItem>
             <Separator></Separator>
             <MenuItem x:Name="TypeTreeGetStringUsage" Header="Get String Usage" Click="TypeTreeGetTypeStringUsageClicked"></MenuItem>
         </ContextMenu>

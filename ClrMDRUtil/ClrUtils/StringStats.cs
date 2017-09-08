@@ -92,8 +92,9 @@ namespace ClrMDRIndex
 		public ulong[] GetStringAddresses(string str, out string error)
 		{
 			error = null;
+            str = Utils.RestoreNewlines(str);
 #if DEBUG
-			KeyValuePair<string, string>[] bad;
+            KeyValuePair<string, string>[] bad;
 			var result = Utils.IsSorted(_strings, out bad);
 			if (!result)
 				Debug.Assert(false, "StringStats _strings are not sorted: [" + bad.Length + "]");

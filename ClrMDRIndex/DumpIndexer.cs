@@ -117,31 +117,34 @@ namespace ClrMDRIndex
                         // threads and blocking objects
                         //
                         progress?.Report(runtimeIndexHeader + "Getting threads, blocking objecks information...");
-                        var addressesCopy = Utils.CopyArray(addresses);
-                        threadInfoWorker = new Thread(GetThreadsInfos);
-                        threadInfoWorker.Start(new Tuple<string, ulong[], int[], string[]>(DumpPath, addresses, typeIds, typeNames));
+                        //var addressesCopy = Utils.CopyArray(addresses);
+                        //threadInfoWorker = new Thread(GetThreadsInfos);
+                        //threadInfoWorker.Start(new Tuple<string, ulong[], int[], string[]>(DumpPath, addresses, typeIds, typeNames));
+                        //GetThreadsInfos(new Tuple<string, ulong[], int[], string[]>(DumpPath, addresses, typeIds, typeNames));
+
+                        GetThreadsInfos(clrtDump.Runtime, addresses, typeIds, typeNames);
 
                         // setting root information
                         //
-                        Debug.Assert(Utils.AreAddressesSorted(addressesCopy));
+                        Debug.Assert(Utils.AreAddressesSorted(addresses));
                         progress?.Report(runtimeIndexHeader + "Setting root information...");
-                        for (int i = 0, icnt = addressesCopy.Length; i < icnt; ++i)
+                        for (int i = 0, icnt = addresses.Length; i < icnt; ++i)
                         {
-                            ulong addr = addressesCopy[i];
+                            ulong addr = addresses[i];
                             var isroot = Utils.AddressSearch(rootObjectAddrs, addr) >= 0;
                             var isflnz = Utils.AddressSearch(finalizerAddrs, addr) >= 0;
                             if (!isroot && !isflnz) continue;
                             if (isroot && isflnz)
                             {
-                                addressesCopy[i] = addr | Utils.RootBits.Root | Utils.RootBits.Rooted | Utils.RootBits.Finalizer;
+                                addresses[i] = addr | Utils.RootBits.Root | Utils.RootBits.Rooted | Utils.RootBits.Finalizer;
                                 continue;
                             }
                             if (isroot)
                             {
-                                addressesCopy[i] = addr | Utils.RootBits.Root | Utils.RootBits.Rooted;
+                                addresses[i] = addr | Utils.RootBits.Root | Utils.RootBits.Rooted;
                                 continue;
                             }
-                            addressesCopy[i] = addr | Utils.RootBits.Finalizer;
+                            addresses[i] = addr | Utils.RootBits.Finalizer;
                         }
                         rootObjectAddrs = null;
                         finalizerAddrs = null;
@@ -170,7 +173,7 @@ namespace ClrMDRIndex
                             referenceBuilderWorker = new Thread(new ThreadStart(bld.BuildReferences));
                             referenceBuilderWorker.Start();
 #else
-                            builder = new InstanceReferences(addressesCopy,
+                            builder = new InstanceReferences(addresses,
                                                                     new string[]
                                                                     {
                                                                     _fileMoniker.GetFilePath(r, Constants.MapRefFwdOffsetsFilePostfix),
@@ -181,12 +184,16 @@ namespace ClrMDRIndex
                                                                     progress,
                                                                     _fileMoniker.GetFilePath(r, Constants.MapInstancesFilePostfix)
                                                                     );
-                            addressesCopy = null;
+                            //addressesCopy = null;
                             builder.CreateForwardReferences(heap, out error);
                             if (error == null)
                             {
-                                referenceBuilderWorker = new Thread(builder.BuildReveresedReferences);
-                                referenceBuilderWorker.Start();
+                                if (!builder.BuildReveresedReferences())
+                                {
+                                    AddError(r, "CreateBackwardReferences failed." + Environment.NewLine + builder.Error);
+                                }
+                                //referenceBuilderWorker = new Thread(builder.BuildReveresedReferences);
+                                //referenceBuilderWorker.Start();
                             }
                             else
                             {
@@ -199,8 +206,8 @@ namespace ClrMDRIndex
                             progress?.Report(runtimeIndexHeader + "Skipping generation of instance references...");
                             InstanceReferences.DeleteInstanceReferenceFiles(r, _fileMoniker, out error);
                             progress?.Report(runtimeIndexHeader + "Savings instances addresses...");
-                            Utils.WriteUlongArray(_fileMoniker.GetFilePath(r, Constants.MapInstancesFilePostfix), addressesCopy, out error);
-                            addressesCopy = null;
+                            Utils.WriteUlongArray(_fileMoniker.GetFilePath(r, Constants.MapInstancesFilePostfix), addresses, out error);
+                            //addressesCopy = null;
                         }
 
                         progress?.Report(runtimeIndexHeader + "Building type instance map...");
@@ -232,11 +239,12 @@ namespace ClrMDRIndex
                             AddError(_currentRuntimeIndex, "StringIdDct.DumpInIdOrder failed." + Environment.NewLine + error);
                         }
 
-                        progress?.Report("Waiting for thread info worker...");
-                        threadInfoWorker.Join();
-                        progress?.Report("Waiting for instance refrerences builder...");
-                        referenceBuilderWorker.Join();
-
+                        //progress?.Report("Waiting for thread info worker...");
+                        //threadInfoWorker.Join();
+                        //progress?.Report("Waiting for instance refrerences builder...");
+                        //referenceBuilderWorker.Join();
+                        error = builder?.Error;
+                        if (error != null) AddError(_currentRuntimeIndex, "InstanceReferences building failed." + Environment.NewLine + error);
                         //                  path = _fileMoniker.GetFilePath(r, Constants.MapInstancesFilePostfix);
                         //Utils.WriteUlongArray(path, addresses, out error);
 
@@ -279,9 +287,10 @@ namespace ClrMDRIndex
             BinaryWriter brOffsets = null;
             try
             {
-                brOffsets =
-                    new BinaryWriter(File.Open(_fileMoniker.GetFilePath(rtNdx, Constants.MapTypeInstanceOffsetsFilePostfix),
-                        FileMode.Create));
+                brOffsets = new BinaryWriter(File.Open(_fileMoniker.GetFilePath(rtNdx, Constants.MapTypeInstanceOffsetsFilePostfix), FileMode.Create));
+
+                Utils.ForceGcWithCompaction(); // x86 version gives me out of memory exception here
+
                 var indices = Utils.Iota(typeIds.Length);
                 var ids = new int[typeIds.Length];
                 Array.Copy(typeIds, 0, ids, 0, typeIds.Length);
@@ -371,6 +380,122 @@ namespace ClrMDRIndex
             return ary;
         }
 
+        public static Instances GetHeapAddresses(ClrHeap heap, out ClrtSegment[] segments, out SortedDictionary<string, List<ClrType>> typeDct)
+        {
+            typeDct = new SortedDictionary<string, List<ClrType>>();
+            int count = 0;
+            ulong pointerSize = (ulong)heap.PointerSize;
+            var segs = heap.Segments;
+            segments = new ClrtSegment[segs.Count];
+            ulong[][] segAddrs = new ulong[segs.Count][];
+            List<ulong> segAddrLst = new List<ulong>(1024 * 1024 * 10);
+            bool canWalkHeap = heap.CanWalkHeap;
+            if (canWalkHeap)
+            {
+                for (int i = 0, icnt = segs.Count; i < icnt; ++i)
+                {
+                    var seg = segs[i];
+                    ulong addr = seg.FirstObject;
+                    ulong end = seg.CommittedEnd;
+                    ulong segFirst = addr;
+                    ulong segLast = addr;
+                    int segFirstInst = count;
+                    int segLastInst = count;
+                    if (addr == 0) ++count;
+                    bool firstbad = addr == 0 ? true : false;
+                    int badcount = (addr == 0) ? 1 : 0;
+                    if (addr != 0)
+                    {
+                        ClrType tp = heap.GetObjectType(addr);
+                        segAddrLst.Add(addr);
+                        AddClrType(typeDct, tp);
+                    }
+
+                    while (addr != 0ul)
+                    {
+                        ClrType tp;
+                        addr = seg.NextObject(addr, out tp);
+                        if (addr != 0)
+                        {
+                            segAddrLst.Add(addr);
+                            segLastInst = count;
+                            segLast = addr;
+                            ++count;
+                            AddClrType(typeDct, tp);
+                        }
+                    }
+                    segments[i] = new ClrtSegment(seg, segFirst, segLast, segFirstInst, segLastInst);
+                    segAddrs[i] = segAddrLst.ToArray();
+                    segAddrLst.Clear();
+                }
+
+            }
+            else
+            {
+                for (int i = 0, icnt = segs.Count; i < icnt; ++i)
+                {
+                    var seg = segs[i];
+
+                    ulong first = seg.FirstObject;
+                    ulong end = seg.CommittedEnd;
+                    ulong addr = first;
+                    addr = TryFindNextValidAddress(heap, addr, end, pointerSize);
+                    // save some segment info
+                    ulong segFirst = addr;
+                    ulong segLast = addr;
+                    int segFirstInst = count;
+                    int segLastInst = count;
+                    if (addr == 0) ++count;
+                    bool firstbad = addr == 0 ? true : false;
+                    int badcount = (addr == 0) ? 1 : 0;
+                    if (addr != 0) segAddrLst.Add(addr);
+
+                    while (addr != 0ul)
+                    {
+                        var newAddr = seg.NextObject(addr);
+                        if (newAddr == 0)
+                        {
+                            newAddr = TryFindNextValidAddress(heap, addr + pointerSize, end, pointerSize);
+                        }
+                        addr = newAddr;
+                        if (addr != 0)
+                        {
+                            segAddrLst.Add(addr);
+                            segLastInst = count;
+                            segLast = addr;
+                            ++count;
+                         }
+                    }
+                    segments[i] = new ClrtSegment(seg, segFirst, segLast, segFirstInst, segLastInst);
+                    segAddrs[i] = segAddrLst.ToArray();
+                    segAddrLst.Clear();
+                }
+            }
+            segAddrLst = null;
+            return new Instances(segAddrs);
+        }
+
+        private static void AddClrType(SortedDictionary<string, List<ClrType>> typeDc, ClrType tp)
+        {
+            string tpName = tp.Name;
+            List<ClrType> lst;
+            if (typeDc.TryGetValue(tpName,out lst))
+            {
+                bool found = false;
+                for (int i = 0, icnt = lst.Count; i < icnt; ++i)
+                {
+                    if (tp == lst[i]) { found = true; break; }
+                }
+                if (!found) lst.Add(tp);
+            }
+            else
+            {
+                typeDc.Add(tpName, new List<ClrType>() { tp });
+            }
+        }
+
+
+
         public static Instances GetHeapAddresses(ClrHeap heap, out ClrtSegment[] segments)
         {
             int count = 0;
@@ -379,43 +504,80 @@ namespace ClrMDRIndex
             segments = new ClrtSegment[segs.Count];
             ulong[][] segAddrs = new ulong[segs.Count][];
             List<ulong> segAddrLst = new List<ulong>(1024 * 1024 * 10);
-            for (int i = 0, icnt = segs.Count; i < icnt; ++i)
+            bool canWalkHeap = heap.CanWalkHeap;
+            if (canWalkHeap)
             {
-                var seg = segs[i];
-
-                ulong first = seg.FirstObject;
-                ulong end = seg.CommittedEnd;
-
-                ulong addr = first;
-                addr = TryFindNextValidAddress(heap, addr, end, pointerSize);
-                // save some segment info
-                ulong segFirst = addr;
-                ulong segLast = addr;
-                int segFirstInst = count;
-                int segLastInst = count;
-                if (addr == 0) ++count;
-                bool firstbad = addr == 0 ? true : false;
-                int badcount = (addr == 0) ? 1 : 0;
-                if (addr != 0) segAddrLst.Add(addr);
-                while (addr != 0ul)
+                for (int i = 0, icnt = segs.Count; i < icnt; ++i)
                 {
-                    var newAddr = seg.NextObject(addr);
-                    if (newAddr == 0)
+                    var seg = segs[i];
+                    ulong addr = seg.FirstObject;
+                    ulong end = seg.CommittedEnd;
+                    ulong segFirst = addr;
+                    ulong segLast = addr;
+                    int segFirstInst = count;
+                    int segLastInst = count;
+                    if (addr == 0) ++count;
+                    bool firstbad = addr == 0 ? true : false;
+                    int badcount = (addr == 0) ? 1 : 0;
+                    if (addr != 0) segAddrLst.Add(addr);
+
+                    while (addr != 0ul)
                     {
-                        newAddr = TryFindNextValidAddress(heap, addr + pointerSize, end, pointerSize);
+                        addr = seg.NextObject(addr);
+                        if (addr != 0)
+                        {
+                            segAddrLst.Add(addr);
+                            segLastInst = count;
+                            segLast = addr;
+                            ++count;
+                        }
                     }
-                    addr = newAddr;
-                    if (addr != 0)
-                    {
-                        segAddrLst.Add(addr);
-                        segLastInst = count;
-                        segLast = addr;
-                        ++count;
-                    }
+                    segments[i] = new ClrtSegment(seg, segFirst, segLast, segFirstInst, segLastInst);
+                    segAddrs[i] = segAddrLst.ToArray();
+                    segAddrLst.Clear();
                 }
-                segments[i] = new ClrtSegment(seg, segFirst, segLast, segFirstInst, segLastInst);
-                segAddrs[i] = segAddrLst.ToArray();
-                segAddrLst.Clear();
+
+            }
+            else
+            {
+                for (int i = 0, icnt = segs.Count; i < icnt; ++i)
+                {
+                    var seg = segs[i];
+
+                    ulong first = seg.FirstObject;
+                    ulong end = seg.CommittedEnd;
+                    ulong addr = first;
+                    addr = TryFindNextValidAddress(heap, addr, end, pointerSize);
+                    // save some segment info
+                    ulong segFirst = addr;
+                    ulong segLast = addr;
+                    int segFirstInst = count;
+                    int segLastInst = count;
+                    if (addr == 0) ++count;
+                    bool firstbad = addr == 0 ? true : false;
+                    int badcount = (addr == 0) ? 1 : 0;
+                    if (addr != 0) segAddrLst.Add(addr);
+
+                    while (addr != 0ul)
+                    {
+                        var newAddr = seg.NextObject(addr);
+                        if (newAddr == 0)
+                        {
+                            newAddr = TryFindNextValidAddress(heap, addr + pointerSize, end, pointerSize);
+                        }
+                        addr = newAddr;
+                        if (addr != 0)
+                        {
+                            segAddrLst.Add(addr);
+                            segLastInst = count;
+                            segLast = addr;
+                            ++count;
+                        }
+                    }
+                    segments[i] = new ClrtSegment(seg, segFirst, segLast, segFirstInst, segLastInst);
+                    segAddrs[i] = segAddrLst.ToArray();
+                    segAddrLst.Clear();
+                }
             }
             segAddrLst = null;
             return new Instances(segAddrs);
@@ -442,6 +604,7 @@ namespace ClrMDRIndex
             }
             return 0;
         }
+
         #region type fields
 
         private void RetainFieldTypes(ClrType clrType, int typeId, HashSet<int> doneTypeFields, HashSet<int> tofixTypeFields, string[] typeNames, SortedDictionary<int, long[]> typeFields, StringIdDct idDct)
@@ -953,6 +1116,295 @@ namespace ClrMDRIndex
             }
         }
 
+
+        private void GetThreadsInfos(ClrRuntime runtm, ulong[] instances, int[] typeIds, string[] typeNames)
+        {
+            string error;
+            BinaryWriter bw = null;
+            StreamWriter sw = null;
+            try
+            {
+                var heap = runtm.Heap;
+                var threads = DumpIndexer.GetThreads(runtm);
+                var blocks = DumpIndexer.GetBlockingObjects(heap);
+
+
+                var threadSet = new HashSet<ClrThread>(new ClrThreadEqualityCmp());
+                var blkGraph = new List<Tuple<BlockingObject, ClrThread[], ClrThread[]>>();
+                var allBlkList = new List<BlockingObject>();
+                var owners = new List<ClrThread>();
+                var waiters = new List<ClrThread>();
+
+                for (int i = 0, icnt = blocks.Length; i < icnt; ++i)
+                {
+                    var blk = blocks[i];
+                    owners.Clear();
+                    waiters.Clear();
+                    ClrThread owner = null;
+                    if (blk.Taken && blk.HasSingleOwner)
+                    {
+                        owner = blk.Owner;
+                        if (owner != null)
+                        {
+                            threadSet.Add(owner);
+                            owners.Add(owner);
+                        }
+                    }
+
+                    if (blk.Owners != null && blk.Owners.Count > 0)
+                    {
+                        for (int j = 0, jcnt = blk.Owners.Count; j < jcnt; ++j)
+                        {
+                            var th = blk.Owners[j];
+                            if (th != null)
+                            {
+                                threadSet.Add(th);
+                                if (owner == null || owner.Address != th.Address)
+                                    owners.Add(th);
+                            }
+                        }
+                    }
+
+                    if (blk.Waiters != null && blk.Waiters.Count > 0)
+                    {
+                        for (int j = 0, jcnt = blk.Waiters.Count; j < jcnt; ++j)
+                        {
+                            var th = blk.Waiters[j];
+                            if (th != null)
+                            {
+                                threadSet.Add(th);
+                                waiters.Add(th);
+                            }
+                        }
+                    }
+
+                    if (owners.Count > 0)
+                    {
+                        var ownerAry = owners.ToArray();
+                        var waiterAry = waiters.ToArray();
+                        blkGraph.Add(new Tuple<BlockingObject, ClrThread[], ClrThread[]>(blk, ownerAry, waiterAry));
+                        allBlkList.Add(blk);
+                    }
+                    else if (waiters.Count > 0)
+                    {
+                        blkGraph.Add(new Tuple<BlockingObject, ClrThread[], ClrThread[]>(blk, Utils.EmptyArray<ClrThread>.Value,
+                            waiters.ToArray()));
+                        allBlkList.Add(blk);
+                    }
+                }
+
+                var thrCmp = new ClrThreadCmp();
+                var blkCmp = new BlockingObjectCmp();
+                var blkInfoCmp = new BlkObjInfoCmp();
+
+                // blocks and threads found in blocking objects
+                //
+                var blkThreadAry = threadSet.ToArray();
+                Array.Sort(blkThreadAry, thrCmp);
+                var blkBlockAry = allBlkList.ToArray();
+                Array.Sort(blkBlockAry, blkCmp);
+                var threadBlocksAry = blkGraph.ToArray();
+                Array.Sort(threadBlocksAry, blkInfoCmp);
+
+                // create maps
+                //
+                int[] blkMap = new int[blkBlockAry.Length];
+                int[] thrMap = new int[blkThreadAry.Length];
+                for (int i = 0, icnt = blkMap.Length; i < icnt; ++i)
+                {
+                    blkMap[i] = Array.BinarySearch(blocks, blkBlockAry[i], blkCmp);
+                    Debug.Assert(blkMap[i] >= 0);
+                }
+
+                for (int i = 0, icnt = thrMap.Length; i < icnt; ++i)
+                {
+                    thrMap[i] = Array.BinarySearch(threads, blkThreadAry[i], thrCmp);
+                    Debug.Assert(thrMap[i] >= 0);
+                }
+
+                int blkThreadCount = blkThreadAry.Length;
+                Digraph graph = new Digraph(blkThreadCount + blkBlockAry.Length);
+
+                for (int i = 0, cnt = threadBlocksAry.Length; i < cnt; ++i)
+                {
+                    var blkInfo = threadBlocksAry[i];
+                    for (int j = 0, tcnt = blkInfo.Item2.Length; j < tcnt; ++j)
+                    {
+                        var ndx = Array.BinarySearch(blkThreadAry, blkInfo.Item2[j], thrCmp);
+                        Debug.Assert(ndx >= 0);
+                        graph.AddDistinctEdge(blkThreadCount + i, ndx);
+                    }
+                    for (int j = 0, tcnt = blkInfo.Item3.Length; j < tcnt; ++j)
+                    {
+                        var ndx = Array.BinarySearch(blkThreadAry, blkInfo.Item3[j], thrCmp);
+                        Debug.Assert(ndx >= 0);
+                        graph.AddDistinctEdge(ndx, blkThreadCount + i);
+                    }
+                }
+
+                var cycle = new DirectedCycle(graph);
+                var cycles = cycle.GetCycle();
+
+                // save graph
+                //
+                var path = _fileMoniker.GetFilePath(_currentRuntimeIndex, Constants.MapThreadsAndBlocksGraphFilePostfix);
+                bw = new BinaryWriter(File.Open(path, FileMode.Create));
+                bw.Write(cycles.Length);
+                for (int i = 0, icnt = cycles.Length; i < icnt; ++i)
+                {
+                    bw.Write(cycles[i]);
+                }
+                bw.Write(thrMap.Length);
+                for (int i = 0, icnt = thrMap.Length; i < icnt; ++i)
+                {
+                    bw.Write(thrMap[i]);
+                }
+                bw.Write(blkMap.Length);
+                for (int i = 0, icnt = blkMap.Length; i < icnt; ++i)
+                {
+                    bw.Write(blkMap[i]);
+                }
+                graph.Dump(bw, out error);
+                bw.Close();
+                bw = null;
+                if (error != null)
+                    AddError(_currentRuntimeIndex, "Exception in GetThreadsInfos." + Environment.NewLine + error);
+
+                // get frames info
+                //
+                var frames = new StringIdDct();
+                var stObjCmp = new Utils.KVIntUlongCmpAsc();
+                var stackObject = new SortedDictionary<KeyValuePair<int, ulong>, int>(stObjCmp);
+                var stackTraceLst = new List<ClrStackFrame>();
+                var rootEqCmp = new ClrRootEqualityComparer();
+                var frameIds = new List<int>();
+                var frameStackPtrs = new List<ulong>();
+                var aliveIds = new List<int>();
+                var deadIds = new List<int>();
+
+                // save threads and blocks, generate stack info
+                //
+                path = _fileMoniker.GetFilePath(_currentRuntimeIndex, Constants.MapThreadsAndBlocksFilePostfix);
+                bw = new BinaryWriter(File.Open(path, FileMode.Create));
+                bw.Write(threads.Length);
+                for (int i = 0, icnt = threads.Length; i < icnt; ++i)
+                {
+                    var thread = threads[i];
+                    stackTraceLst.Clear();
+                    foreach (var st in thread.EnumerateStackTrace())
+                    {
+                        stackTraceLst.Add(st);
+                        if (stackTraceLst.Count > 100) break;
+                    }
+
+                    var threadLocalAliveVars = thread.EnumerateStackObjects(false).ToArray();
+                    var all = thread.EnumerateStackObjects(true).ToArray();
+                    var threadLocalDeadVars = all.Except(threadLocalAliveVars, rootEqCmp).ToArray();
+                    var threadFrames = stackTraceLst.ToArray();
+
+                    aliveIds.Clear();
+                    for (int j = 0, jcnt = threadLocalAliveVars.Length; j < jcnt; ++j)
+                    {
+                        ClrRoot root = threadLocalAliveVars[j];
+                        ClrType clrType = heap.GetObjectType(root.Object);
+                        var typeName = clrType == null ? Constants.NullTypeName : clrType.Name;
+                        var typeId = Array.BinarySearch(typeNames, typeName, StringComparer.Ordinal);
+                        if (typeId < 0) typeId = Constants.InvalidIndex;
+                        int stackId;
+                        if (!stackObject.TryGetValue(new KeyValuePair<int, ulong>(typeId, root.Object), out stackId))
+                        {
+                            stackId = stackObject.Count;
+                            stackObject.Add(new KeyValuePair<int, ulong>(typeId, root.Object), stackId);
+                        }
+                        aliveIds.Add(stackId);
+                    }
+
+                    deadIds.Clear();
+                    for (int j = 0, jcnt = threadLocalDeadVars.Length; j < jcnt; ++j)
+                    {
+                        ClrRoot root = threadLocalDeadVars[j];
+                        ClrType clrType = heap.GetObjectType(root.Object);
+                        var typeName = clrType == null ? Constants.NullTypeName : clrType.Name;
+                        var typeId = Array.BinarySearch(typeNames, typeName, StringComparer.Ordinal);
+                        if (typeId < 0) typeId = Constants.InvalidIndex;
+                        int stackId;
+                        if (!stackObject.TryGetValue(new KeyValuePair<int, ulong>(typeId, root.Object), out stackId))
+                        {
+                            stackId = stackObject.Count;
+                            stackObject.Add(new KeyValuePair<int, ulong>(typeId, root.Object), stackId);
+                        }
+                        deadIds.Add(stackId);
+                    }
+
+                    frameIds.Clear();
+                    frameStackPtrs.Clear();
+                    for (int j = 0, jcnt = threadFrames.Length; j < jcnt; ++j)
+                    {
+                        ClrStackFrame fr = threadFrames[j];
+                        frameStackPtrs.Add(fr.StackPointer);
+                        if (fr.Method != null)
+                        {
+                            string fullSig = fr.Method.GetFullSignature();
+                            if (fullSig == null)
+                                fullSig = fr.Method.Name;
+                            if (fullSig == null) fullSig = "UKNOWN METHOD";
+                            var frameStr = Utils.RealAddressStringHeader(fr.InstructionPointer) + fullSig;
+                            var frId = frames.JustGetId(frameStr);
+                            frameIds.Add(frId);
+                        }
+                        else
+                        {
+                            string sig = string.IsNullOrEmpty(fr.DisplayString) ? "UKNOWN METHOD" : fr.DisplayString;
+                            var frameStr = Utils.RealAddressStringHeader(fr.InstructionPointer) + sig;
+                            var frId = frames.JustGetId(frameStr);
+                            frameIds.Add(frId);
+                        }
+                    }
+
+                    var clrtThread = new ClrtThread(thread, blocks, blkCmp, frameIds.ToArray(), frameStackPtrs.ToArray(), aliveIds.ToArray(), deadIds.ToArray());
+                    Debug.Assert(clrtThread != null);
+                    clrtThread.Dump(bw);
+                }
+
+                bw.Write(blocks.Length);
+                for (int i = 0, icnt = blocks.Length; i < icnt; ++i)
+                {
+                    var blk = blocks[i];
+                    var ndx = Array.BinarySearch(blkBlockAry, blk, blkCmp);
+                    var typeId = GetTypeId(blk.Object, instances, typeIds);
+                    var clrtBlock = new ClrtBlkObject(blk, ndx, typeId);
+                    Debug.Assert(clrtBlock != null);
+                    clrtBlock.Dump(bw);
+                }
+                Utils.CloseStream(ref bw);
+
+                path = _fileMoniker.GetFilePath(_currentRuntimeIndex, Constants.MapThreadFramesFilePostfix);
+                bw = new BinaryWriter(File.Open(path, FileMode.Create));
+                var ary = stackObject.ToArray();
+                Array.Sort(ary, (a, b) => a.Value < b.Value ? -1 : (a.Value > b.Value ? 1 : 0));
+                bw.Write(ary.Length);
+                for (int i = 0, icnt = ary.Length; i < icnt; ++i)
+                {
+                    bw.Write(ary[i].Key.Key);
+                    bw.Write(ary[i].Key.Value);
+                }
+                Utils.CloseStream(ref bw);
+                path = _fileMoniker.GetFilePath(_currentRuntimeIndex, Constants.TxtThreadFrameDescriptionFilePostfix);
+                frames.DumpInIdOrder(path, out error);
+            }
+            catch (Exception ex)
+            {
+                AddError(_currentRuntimeIndex,
+                    "Exception in GetThreadsInfos." + Environment.NewLine + Utils.GetExceptionErrorString(ex));
+            }
+            finally
+            {
+                bw?.Close();
+                sw?.Close();
+            }
+        }
+
+
         private void GetThreadsInfos2(object param)
         {
             var parameters = param as Tuple<ClrtDump, ulong[], int[], string[]>;
@@ -1454,6 +1906,7 @@ namespace ClrMDRIndex
                     txtWriter.WriteLine("Module info, image base: " + $"0x{clrinfo?.ModuleInfo?.ImageBase:x14}");
                     txtWriter.WriteLine("Module info, file size: " + $"{clrinfo?.ModuleInfo?.FileSize:#,###}");
                     txtWriter.WriteLine("Heap count: " + runtime.HeapCount);
+                    txtWriter.WriteLine("Can walk heap: " + runtime.Heap.CanWalkHeap.ToString());
                     txtWriter.WriteLine("Pointer size: " + runtime.PointerSize);
                     txtWriter.WriteLine("Is server GC : " + runtime.ServerGC);
                     if (runtime.AppDomains != null)

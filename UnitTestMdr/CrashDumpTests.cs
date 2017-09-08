@@ -2380,6 +2380,44 @@ namespace UnitTestMdr
             }
         }
 
+        [TestMethod]
+        public void TestGetAddressesAndTypes()
+        {
+            string error = null;
+            using (var clrDump = OpenDump(@"D:\Jerzy\WinDbgStuff\Dumps\Analytics\Highline\analyticsdump111.dlk.dmp"))
+            {
+                try
+                {
+                    var runtime = clrDump.Runtimes[0];
+                    var heap = runtime.Heap;
+                    ClrtSegment[] segments;
+                    SortedDictionary<string, List<ClrType>> typeDct;
+                    var instances = DumpIndexer.GetHeapAddresses(heap, out segments, out typeDct);
+                    int multCnt = 0;
+                    int multMax = 0;
+                    foreach(var kv in typeDct)
+                    {
+                        int cnt = kv.Value.Count;
+                        if (cnt > 1)
+                        {
+                            ++multCnt;
+                            if (cnt > multMax)
+                            {
+                                multMax = cnt;
+                            }
+                        }
+                    }
+
+
+                }
+                catch (Exception ex)
+                {
+                    error = Utils.GetExceptionErrorString(ex);
+                    Assert.IsTrue(false, error);
+                }
+            }
+        }
+
         private ulong TryFindNextValidAddress(ClrHeap heap, ulong addr, ulong end, ulong pointerSize, List<ulong> deltas)
         {
             var clrType = heap.GetObjectType(addr);
