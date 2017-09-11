@@ -29,6 +29,7 @@
     <DefineConstants>TRACE</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|x64'">
     <DebugSymbols>true</DebugSymbols>
@@ -64,7 +65,7 @@
     <LangVersion>latest</LangVersion>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|x86'">
-    <OutputPath>..\..\..\..\..\WinDbgStuff\MDRDesk\32\</OutputPath>
+    <OutputPath>..\..\..\..\..\WinDbgStuff\MDRDesk\</OutputPath>
     <DefineConstants>TRACE;X86PLATFORM</DefineConstants>
     <Optimize>true</Optimize>
     <DebugType>pdbonly</DebugType>

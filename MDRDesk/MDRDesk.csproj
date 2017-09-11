@@ -76,6 +76,7 @@
     <ApplicationIcon>appbar.list.gear.ico</ApplicationIcon>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|x86'">
+    <AssemblyName>MDRDesk32</AssemblyName>
     <DebugSymbols>true</DebugSymbols>
     <OutputPath>bin\x86\Debug\</OutputPath>
     <DefineConstants>DEBUG;TRACE</DefineConstants>
@@ -87,7 +88,8 @@
     <LangVersion>latest</LangVersion>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|x86'">
-    <OutputPath>..\..\..\..\..\WinDbgStuff\MDRDesk\32\</OutputPath>
+    <AssemblyName>MDRDesk32</AssemblyName>
+    <OutputPath>..\..\..\..\..\WinDbgStuff\MDRDesk\</OutputPath>
     <DefineConstants>TRACE</DefineConstants>
     <Optimize>true</Optimize>
     <DebugType>pdbonly</DebugType>
@@ -499,7 +501,7 @@
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <PropertyGroup>
-    <PostBuildEvent>"C:\Program Files (x86)\Microsoft Visual Studio\2017\Professional\VC\Tools\MSVC\14.11.25503\bin\HostX86\x86\editbin.exe"  /LARGEADDRESSAWARE MDRDesk.exe
+    <PostBuildEvent>"C:\Program Files (x86)\Microsoft Visual Studio\2017\Professional\VC\Tools\MSVC\14.11.25503\bin\HostX86\x86\editbin.exe"  /LARGEADDRESSAWARE MDRDesk32.exe
 mkdir "$(TargetDir)Documentation"
 xcopy "$(SolutionDir)README.md" "$(TargetDir)" /Y /D /R
 xcopy "$(SolutionDir)Documentation\*.*" "$(TargetDir)Documentation" /Y /D /R  /E
