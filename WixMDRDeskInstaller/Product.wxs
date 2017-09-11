@@ -22,7 +22,7 @@
     <WixVariable Id="WixUILicenseRtf" Value="License.rtf"/>
     <Property Id="ApplicationFolderName" Value="MDRDesk" />
     <Property Id="WixAppFolder" Value="WixPerMachineFolder" />
-    <WixVariable Id="WixUI_InstallDir" Value="INSTALLFOLDER"/>
+    <!--<WixVariable Id="WIXUI_INSTALLDIR" Value="TARGETDIR"/>-->
     <Icon Id="WixUIInfoIco" SourceFile=".\appbar.list.gear.png"/>
     <Icon Id="icon.ico" SourceFile=".\appbar.list.gear.png"/>
     <Property Id="ARPPRODUCTICON" Value="icon.ico" />
@@ -44,14 +44,13 @@
       <RegistrySearch Key="SOFTWARE\$(var.Manufacturer)\$(var.SkuName)" Root="HKLM" Type="raw" Id="APPLICATIONFOLDER_REGSEARCH" Name="Path" />
     </Property>
 		<Directory Id="TARGETDIR" Name="SourceDir">
-        <Directory Id="INSTALLFOLDER" Name="MDRDesk">
+        <Directory Id="APPLICATIONFOLDER" Name="MDRDesk">
           <Directory Id="MDRDeskDir" Name="MDRDesk"></Directory>
           <Directory Id="DumpsDir" Name="Dumps"></Directory>
           <Directory Id="DacsDir" Name="mscordacwks"></Directory>
         </Directory>
 		</Directory>
-    <!--<Property Id="WIXUI_INSTALLDIR" Value="INSTALLFOLDER" />-->
-
+ 
     <DirectoryRef Id="DumpsDir">
       <Component Id="CMP_DumpsDir"
       Guid="838F0013-7439-4D2E-8A57-F75A2DD04954"
@@ -61,9 +60,9 @@
     </DirectoryRef>
 
 
-    <DirectoryRef Id ="INSTALLFOLDER">
+    <DirectoryRef Id ="APPLICATIONFOLDER">
       <Component Id="CleanupMainApplicationFolder" Guid="*">
-        <RegistryValue Root="HKLM" Key="SOFTWARE\$(var.Manufacturer)\$(var.SkuName)" Name="Path" Type="string" Value="[INSTALLFOLDER]" KeyPath="yes" />
+        <RegistryValue Root="HKLM" Key="SOFTWARE\$(var.Manufacturer)\$(var.SkuName)" Name="Path" Type="string" Value="[APPLICATIONFOLDER]" KeyPath="yes" />
         <!-- We need to use APPLICATIONFOLDER variable here or RemoveFolderEx
                  will not remove on "install". -->
         <util:RemoveFolderEx On="uninstall" Property="APPLICATIONFOLDER" />

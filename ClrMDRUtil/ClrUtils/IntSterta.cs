@@ -146,5 +146,12 @@ namespace ClrMDRIndex
                 i = p;
             }
         }
+
+        private void MakeBigger()
+        {
+            ValueTuple<ulong, int, int>[] b = new ValueTuple<ulong, int, int>[B.Length * 2];
+            Buffer.BlockCopy(B, 0, b, 0, B.Length * (sizeof(ulong) + sizeof(int) + sizeof(int)));
+            B = b;
+        }
     }
 }

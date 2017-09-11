@@ -6,9 +6,10 @@ using System.Threading.Tasks;
 
 namespace ClrMDRIndex
 {
+
     public class UlongStore<T>
     {
-        const int _MAX = 1024 * 1024 * 10;
+         const int _MAX = 2147482000/8;
         private int _max;
         private ulong[][] _store;
         private int _count;

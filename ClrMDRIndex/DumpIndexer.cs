@@ -20,6 +20,9 @@ namespace ClrMDRIndex
             JustInstanceRefs = 1,
         }
 
+        /// <summary>
+        /// Files and directories helper.
+        /// </summary>
         private DumpFileMoniker _fileMoniker;
         public string AdhocFolder => _fileMoniker.OutputFolder;
         public string OutputFolder => AdhocFolder;
@@ -42,7 +45,9 @@ namespace ClrMDRIndex
         /// </summary>
         private int _currentRuntimeIndex;
 
-
+        /// <summary>
+        /// The only ctor, it needs path to a crash dump.
+        /// </summary>
         public DumpIndexer(string dmpPath)
         {
             _fileMoniker = new DumpFileMoniker(dmpPath);
@@ -122,7 +127,7 @@ namespace ClrMDRIndex
                         //threadInfoWorker.Start(new Tuple<string, ulong[], int[], string[]>(DumpPath, addresses, typeIds, typeNames));
                         //GetThreadsInfos(new Tuple<string, ulong[], int[], string[]>(DumpPath, addresses, typeIds, typeNames));
 
-                        GetThreadsInfos(clrtDump.Runtime, addresses, typeIds, typeNames);
+                        GetThreadsInfos(clrtDump.Runtime, addresses, typeIds, typeNames, progress);
 
                         // setting root information
                         //
@@ -1117,18 +1122,22 @@ namespace ClrMDRIndex
         }
 
 
-        private void GetThreadsInfos(ClrRuntime runtm, ulong[] instances, int[] typeIds, string[] typeNames)
+        private void GetThreadsInfos(ClrRuntime runtm, ulong[] instances, int[] typeIds, string[] typeNames, IProgress<string> progress = null)
         {
             string error;
             BinaryWriter bw = null;
             StreamWriter sw = null;
+            string progressHeader = Constants.HeavyCheckMarkHeader + "[Threads] ";
             try
             {
                 var heap = runtm.Heap;
+                progress?.Report(progressHeader + "Getting thread list...");
                 var threads = DumpIndexer.GetThreads(runtm);
+                progress?.Report(progressHeader + "Getting blocking object list...");
                 var blocks = DumpIndexer.GetBlockingObjects(heap);
 
 
+                progress?.Report(progressHeader + "Generating thread and blocking object references...");
                 var threadSet = new HashSet<ClrThread>(new ClrThreadEqualityCmp());
                 var blkGraph = new List<Tuple<BlockingObject, ClrThread[], ClrThread[]>>();
                 var allBlkList = new List<BlockingObject>();
@@ -1206,6 +1215,7 @@ namespace ClrMDRIndex
                 var threadBlocksAry = blkGraph.ToArray();
                 Array.Sort(threadBlocksAry, blkInfoCmp);
 
+                progress?.Report(progressHeader + "Building thread and blocking object graph...");
                 // create maps
                 //
                 int[] blkMap = new int[blkBlockAry.Length];
@@ -1242,11 +1252,15 @@ namespace ClrMDRIndex
                     }
                 }
 
+                progress?.Report(progressHeader + "Searching for thread and blocking object cycles...");
                 var cycle = new DirectedCycle(graph);
                 var cycles = cycle.GetCycle();
+                if (cycles != null && cycles.Length > 0)
+                    progress?.Report(progressHeader + "Found cycle(s), possible deadlock...");
 
                 // save graph
                 //
+                progress?.Report(progressHeader + "Saving thread and blocking object graph...");
                 var path = _fileMoniker.GetFilePath(_currentRuntimeIndex, Constants.MapThreadsAndBlocksGraphFilePostfix);
                 bw = new BinaryWriter(File.Open(path, FileMode.Create));
                 bw.Write(cycles.Length);
@@ -1287,6 +1301,7 @@ namespace ClrMDRIndex
                 path = _fileMoniker.GetFilePath(_currentRuntimeIndex, Constants.MapThreadsAndBlocksFilePostfix);
                 bw = new BinaryWriter(File.Open(path, FileMode.Create));
                 bw.Write(threads.Length);
+                progress?.Report(progressHeader + "Getting frames information...");
                 for (int i = 0, icnt = threads.Length; i < icnt; ++i)
                 {
                     var thread = threads[i];
@@ -1366,6 +1381,7 @@ namespace ClrMDRIndex
                     clrtThread.Dump(bw);
                 }
 
+                progress?.Report(progressHeader + "Saving data...");
                 bw.Write(blocks.Length);
                 for (int i = 0, icnt = blocks.Length; i < icnt; ++i)
                 {
@@ -1391,6 +1407,7 @@ namespace ClrMDRIndex
                 Utils.CloseStream(ref bw);
                 path = _fileMoniker.GetFilePath(_currentRuntimeIndex, Constants.TxtThreadFrameDescriptionFilePostfix);
                 frames.DumpInIdOrder(path, out error);
+                progress?.Report(progressHeader + "Thread processing done...");
             }
             catch (Exception ex)
             {

@@ -29,6 +29,7 @@ namespace ClrMDRIndex
 		public string DumpPath => _dumpPath;
 		public string DumpFileName => Path.GetFileName(_dumpPath);
 		public string DumpFileNameNoExt => Path.GetFileNameWithoutExtension(_dumpPath);
+        public string DumpFolder => Path.GetDirectoryName(_dumpPath);
 		public ClrRuntime[] Runtimes => _runtimes;
 		public string[] DacPaths => _dacPaths;
 		public ClrInfo[] ClrInfos => _clrInfos;

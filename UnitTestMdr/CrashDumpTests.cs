@@ -2384,10 +2384,14 @@ namespace UnitTestMdr
         public void TestGetAddressesAndTypes()
         {
             string error = null;
-            using (var clrDump = OpenDump(@"D:\Jerzy\WinDbgStuff\Dumps\Analytics\Highline\analyticsdump111.dlk.dmp"))
+            StreamWriter sw = null;
+            StringBuilder sb = StringBuilderCache.Acquire(StringBuilderCache.MaxCapacity);
+
+            using (var clrDump = OpenDump(@"C:\WinDbgStuff\Dumps\Analytics\Highline\analyticsdump111.dlk.dmp"))
             {
                 try
                 {
+                    sw = new StreamWriter(clrDump.DumpFolder + Path.DirectorySeparatorChar + clrDump.DumpFileNameNoExt + ".TypeTest.txt");
                     var runtime = clrDump.Runtimes[0];
                     var heap = runtime.Heap;
                     ClrtSegment[] segments;
@@ -2395,8 +2399,12 @@ namespace UnitTestMdr
                     var instances = DumpIndexer.GetHeapAddresses(heap, out segments, out typeDct);
                     int multCnt = 0;
                     int multMax = 0;
-                    foreach(var kv in typeDct)
+                    List<string> runTimeTypes = new List<string>();
+                   foreach(var kv in typeDct)
                     {
+                        var tp0 = kv.Value[0];
+                        if (tp0.IsRuntimeType)
+                            runTimeTypes.Add(tp0.Name);
                         int cnt = kv.Value.Count;
                         if (cnt > 1)
                         {
@@ -2404,6 +2412,23 @@ namespace UnitTestMdr
                             if (cnt > multMax)
                             {
                                 multMax = cnt;
+                            }
+                            var lst = kv.Value;
+                            sw.WriteLine("### " + kv.Key);
+                            for (int i = 0, icnt = lst.Count; i < icnt; ++i)
+                            {
+                                var tp = lst[i];
+                                if (tp0 == tp)
+                                {
+                                    int a = 0;
+                                }
+                                sb.Append(tp.IsRuntimeType).Append(" ")
+                                    .Append(tp.MethodTable).Append(" ")
+                                    .Append(tp.MetadataToken).Append(" [")
+                                    .Append(tp.Fields.Count).Append("] ")
+                                    ;
+                                sw.WriteLine(sb.ToString());
+                                sb.Clear();
                             }
                         }
                     }
@@ -2414,6 +2439,11 @@ namespace UnitTestMdr
                 {
                     error = Utils.GetExceptionErrorString(ex);
                     Assert.IsTrue(false, error);
+                }
+                finally
+                {
+                    StringBuilderCache.Release(sb);
+                    sw?.Close();
                 }
             }
         }
