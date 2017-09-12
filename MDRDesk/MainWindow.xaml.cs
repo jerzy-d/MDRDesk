@@ -907,7 +907,16 @@ namespace MDRDesk
                 ? "Collecting sizes of: " + CurrentIndex.DumpFileName + " done."
                 : "Collecting sizes of: " + CurrentIndex.DumpFileName + " failed.");
 
-            DisplayListViewBottomGrid(taskResult, Constants.BlackDiamond, ReportNameSizeDiffs, ReportTitleSizeDiffs);
+
+            SWC.MenuItem mi = new SWC.MenuItem { Header = "Copy List Row" };
+            SWC.MenuItem mi1 = new SWC.MenuItem { Header = "Totals of Selected Rows" };
+            var menuItems = new SWC.MenuItem[]
+            {
+                    mi,
+                    mi1
+            };
+
+            DisplayListViewBottomGrid(taskResult, Constants.BlackDiamond, ReportNameSizeDiffs, ReportTitleSizeDiffs,menuItems);
         }
 
         private async void IndexCompareStringInformationClicked(object sender, RoutedEventArgs e)
@@ -1196,6 +1205,19 @@ namespace MDRDesk
                         row = GetListingRow(entries[ndx]);
                         Clipboard.SetText(row);
                         MessageBox.Show(row, "Copied to clipboard.", MessageBoxButton.OK, MessageBoxImage.Information);
+                        break;
+                    case "TOTALS OF SELECTED ROWS":
+                        var ndxs = lstView.SelectedItems;
+                        if (ndxs == null || ndxs.Count < 2) return;
+                        long sizeDiff = 0L;
+                        foreach(var it in ndxs)
+                        {
+                            var val = (listing <string>)it;
+                            long i1 = Int64.Parse(val.Forth, NumberStyles.AllowThousands);
+                            long i2 = Int64.Parse(val.Fifth, NumberStyles.AllowThousands);
+                            sizeDiff += i2 - i1;
+                        }
+                        MessageBox.Show(Utils.SizeString(sizeDiff), "Total size difference.", MessageBoxButton.OK, MessageBoxImage.Information);
                         break;
                     case "GC GENERATION DISTRIBUTION":
                         var str = entries[ndx].GetItem(entries[ndx].Count - 1);

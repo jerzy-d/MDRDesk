@@ -62,7 +62,7 @@
 0029 06/01/17
 	Add context menu to value windows (all), say... Copy Value, Get Instance Value, Get Parent references, etc...
 0030 06/07/17
-	Fix total sizes of instances and types.
+	Fix total sizes of instances and types. 
 0031 06/08/17
 	Double fields showing - D:\Jerzy\WinDbgStuff\dumps\Analytics\Ellerston\LouBug\Eze.Analytics.Svc_170607_214916.dmp.map
 *** 0032 06/09/17 Make sure that DumpIndex does not acces _references when they not present.
@@ -81,3 +81,6 @@
 	Crash Dump: Cowen.Analytics.Svc_170717_165238.dmp
 0041 08/23/17 Eze.FXWorkspace.Modeling.Adaptor.FXTradeList [0x00000035c35330] D:\Jerzy\WinDbgStuff\dumps\OMS\local\EzeOMS.exe_170823_091755.dmp.map
 	tradeToFxAggregationMap field {unknown value} ???
+0042 09/12/17 case "TOTALS OF SELECTED ROWS" - for size differences (when comparing with other dump) we need neat way to be able to calculate various totals.
+0043 09/12/17 new feature -- how much memory is referenced by an instance, or a type, or selected set of instances.
+0044 09/12/17 generate cvs files from listings

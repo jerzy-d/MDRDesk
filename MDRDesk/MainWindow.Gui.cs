@@ -1496,7 +1496,7 @@ namespace MDRDesk
 
             if (menuItems == null)
             {
-                SWC.MenuItem mi = new SWC.MenuItem { Header = "Copy List Row", Tag = listView };
+                SWC.MenuItem mi = new SWC.MenuItem { Header = "Copy List Row" };
                 menuItems = new SWC.MenuItem[]
                 {
                     mi

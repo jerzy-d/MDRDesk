@@ -21,6 +21,7 @@
     <IntermediateOutputPath>obj\$(Configuration)\</IntermediateOutputPath>
     <SuppressValidation>False</SuppressValidation>
     <SuppressIces>ICE80</SuppressIces>
+    <DefineConstants>FilesPath=D:\Jerzy\WinDbgStuff\MDRDesk\</DefineConstants>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|x64' ">
     <DefineConstants>Debug</DefineConstants>
@@ -58,38 +59,6 @@
     </WixExtension>
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\ClrMDRIndex\ClrMDRIndex.csproj">
-      <Name>ClrMDRIndex</Name>
-      <Project>{99d75b6d-9ba0-48ff-9c2e-9ec8f0415901}</Project>
-      <Private>True</Private>
-      <DoNotHarvest>True</DoNotHarvest>
-      <RefProjectOutputGroups>Binaries;Content;Satellites</RefProjectOutputGroups>
-      <RefTargetDir>INSTALLFOLDER</RefTargetDir>
-    </ProjectReference>
-    <ProjectReference Include="..\ClrMDRUtil\ClrMDRUtil.csproj">
-      <Name>ClrMDRUtil</Name>
-      <Project>{7b01ccc0-8c10-4aa1-8154-4b55160e322b}</Project>
-      <Private>True</Private>
-      <DoNotHarvest>True</DoNotHarvest>
-      <RefProjectOutputGroups>Binaries;Content;Satellites</RefProjectOutputGroups>
-      <RefTargetDir>INSTALLFOLDER</RefTargetDir>
-    </ProjectReference>
-    <ProjectReference Include="..\DmpNdxQueries\DmpNdxQueries.fsproj">
-      <Name>DmpNdxQueries</Name>
-      <Project>{edc2770a-abb6-482e-a78f-a8d5d5c40d86}</Project>
-      <Private>True</Private>
-      <DoNotHarvest>True</DoNotHarvest>
-      <RefProjectOutputGroups>Binaries;Content;Satellites</RefProjectOutputGroups>
-      <RefTargetDir>INSTALLFOLDER</RefTargetDir>
-    </ProjectReference>
-    <ProjectReference Include="..\MDRDesk\MDRDesk.csproj">
-      <Name>MDRDesk</Name>
-      <Project>{4bb5b249-e4f1-490f-8f40-214bcc05ce64}</Project>
-      <Private>True</Private>
-      <DoNotHarvest>True</DoNotHarvest>
-      <RefProjectOutputGroups>Binaries;Content;Satellites</RefProjectOutputGroups>
-      <RefTargetDir>INSTALLFOLDER</RefTargetDir>
-    </ProjectReference>
     <ProjectReference Include="..\WixCustomActions\WixCustomActions.csproj">
       <Name>WixCustomActions</Name>
       <Project>{e635b178-c0b3-4804-8c6b-4f6a0b016a9c}</Project>
