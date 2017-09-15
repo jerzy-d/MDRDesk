@@ -175,8 +175,8 @@ namespace MDRDesk
                     MessageBoxImage.Exclamation);
                 return;
             }
-            DisplayListViewBottomGrid(result, Constants.AdhocQuerySymbol, "ReportFile",
-                (string.IsNullOrWhiteSpace(title) ? "Report" : title), null, path);
+            //DisplayListViewBottomGrid(result, Constants.AdhocQuerySymbol, "ReportFile", (string.IsNullOrWhiteSpace(title) ? "Report" : title), null, path);
+            DisplayListingGrid(result, Constants.AdhocQuerySymbolHeader, "ReportFile", (string.IsNullOrWhiteSpace(title) ? "Report" : title), null, path);
         }
 
         private void ExitClicked(object sender, RoutedEventArgs e)
@@ -652,8 +652,8 @@ namespace MDRDesk
                     MessageBoxImage.Exclamation);
                 return;
             }
-            DisplayListViewBottomGrid(result, Constants.BlackDiamond, "Modules",
-                (string.IsNullOrWhiteSpace(title) ? "Modules" : title), null, path);
+            //DisplayListViewBottomGrid(result, Constants.BlackDiamond, "Modules", (string.IsNullOrWhiteSpace(title) ? "Modules" : title), null, path);
+            DisplayListingGrid(result, Constants.BlackDiamondHeader, "Modules", (string.IsNullOrWhiteSpace(title) ? "Modules" : title), null, path);
         }
 
         private async void IndexShowFinalizerQueueClicked(object sender, RoutedEventArgs e)
@@ -771,9 +771,8 @@ namespace MDRDesk
                 return;
             }
 
-            DisplayListViewBottomGrid(result, Constants.BlackDiamond,
-                baseSize ? ReportNameBaseSizeInfo : ReportNameSizeInfo,
-                baseSize ? ReportTitleBaseSizeInfo : ReportTitleSizeInfo);
+            //DisplayListViewBottomGrid(result, Constants.BlackDiamond, baseSize ? ReportNameBaseSizeInfo : ReportNameSizeInfo, baseSize ? ReportTitleBaseSizeInfo : ReportTitleSizeInfo);
+            DisplayListingGrid(result, Constants.BlackDiamondHeader, baseSize ? ReportNameBaseSizeInfo : ReportNameSizeInfo, baseSize ? ReportTitleBaseSizeInfo : ReportTitleSizeInfo);
         }
 
         private long _minStringUsage = 1;
@@ -820,8 +819,8 @@ namespace MDRDesk
                 new SWC.MenuItem {Header = "Get References of String Prefix"},
                 new SWC.MenuItem {Header = "Get Size of Strings with Prefix"}
             };
-            DisplayListViewBottomGrid(taskResult, Constants.BlackDiamond, ReportNameStringUsage, ReportTitleStringUsage,
-                menuItems);
+            //DisplayListViewBottomGrid(taskResult, Constants.BlackDiamond, ReportNameStringUsage, ReportTitleStringUsage, menuItems);
+            DisplayListingGrid(taskResult, Constants.BlackDiamondHeader, ReportNameStringUsage, ReportTitleStringUsage, menuItems);
         }
 
         #region InstanceInfo
@@ -916,7 +915,8 @@ namespace MDRDesk
                     mi1
             };
 
-            DisplayListViewBottomGrid(taskResult, Constants.BlackDiamond, ReportNameSizeDiffs, ReportTitleSizeDiffs,menuItems);
+            //DisplayListViewBottomGrid(taskResult, Constants.BlackDiamond, ReportNameSizeDiffs, ReportTitleSizeDiffs, menuItems);
+            DisplayListingGrid(taskResult, Constants.BlackDiamondHeader, ReportNameSizeDiffs, ReportTitleSizeDiffs, menuItems);
         }
 
         private async void IndexCompareStringInformationClicked(object sender, RoutedEventArgs e)
@@ -941,7 +941,8 @@ namespace MDRDesk
                 return;
             }
 
-            DisplayListViewBottomGrid(taskResult, Constants.BlackDiamond, ReportNameSizeDiffs, ReportTitleSizeDiffs);
+            //DisplayListViewBottomGrid(taskResult, Constants.BlackDiamond, ReportNameSizeDiffs, ReportTitleSizeDiffs);
+            DisplayListingGrid(taskResult, Constants.BlackDiamondHeader, ReportNameSizeDiffs, ReportTitleSizeDiffs);
         }
 
         private void IndexViewCopyIndexPathClicked(object sender, RoutedEventArgs e)
@@ -1064,8 +1065,8 @@ namespace MDRDesk
                 new SWC.MenuItem {Header = "Get References"},
                 new SWC.MenuItem {Header = "Get References of String Prefix"}
             };
-            DisplayListViewBottomGrid(taskResult, Constants.BlackDiamond, ReportNameStringUsage, ReportTitleStringUsage,
-                menuItems);
+            //DisplayListViewBottomGrid(taskResult, Constants.BlackDiamond, ReportNameStringUsage, ReportTitleStringUsage, menuItems);
+            DisplayListingGrid(taskResult, Constants.BlackDiamondHeader, ReportNameStringUsage, ReportTitleStringUsage, menuItems);
             RecentAdhocList.Add(dumpFilePath);
         }
 
@@ -1174,10 +1175,10 @@ namespace MDRDesk
 
 
         /// <summary>
-        /// Handle the context menu of ListViewBottomGrid 
+        /// Handle the context menu of the ListingGrid&apos;s ListView.  
         /// </summary>
-        /// <param name="sender"></param>
-        /// <param name="e"></param>
+        /// <param name="sender">That should be a menu item of the ListView context menu.</param>
+        /// <param name="e">Mostly ignored.</param>
         private void ListViewBottomGridClick(object sender, RoutedEventArgs e)
         {
             try
@@ -1281,7 +1282,8 @@ namespace MDRDesk
                                     //MessageBox.Show(report.Error, "Action Aborted", MessageBoxButton.OK, MessageBoxImage.Exclamation);
                                     return;
                                 }
-                                DisplayListViewBottomGrid(report, Constants.BlackDiamond, ReportNameInstRef, ReportTitleInstRef);
+                                //DisplayListViewBottomGrid(report, Constants.BlackDiamond, ReportNameInstRef, ReportTitleInstRef);
+                                DisplayListingGrid(report, Constants.BlackDiamondHeader, ReportNameInstRef, ReportTitleInstRef);
                                 break;
                         }
                         break;
@@ -1304,7 +1306,7 @@ namespace MDRDesk
             catch (Exception ex)
             {
                 var error = Utils.GetExceptionErrorString(ex);
-                MessageBox.Show(error, "ListViewBottomGridClick", MessageBoxButton.OK, MessageBoxImage.Error);
+                MessageBox.Show(error, "ListingGridClick", MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }
 
@@ -1322,7 +1324,7 @@ namespace MDRDesk
             return StringBuilderCache.GetStringAndRelease(sb);
         }
 
-        private void ListViewBottomGridHeaderClick(object sender, RoutedEventArgs e)
+        private void ListingGridHeaderClick(object sender, RoutedEventArgs e)
         {
             GridViewColumnHeader column = e.OriginalSource as GridViewColumnHeader;
             if (column == null) return;
@@ -1490,17 +1492,49 @@ namespace MDRDesk
 
         private async void FileReportClicked(object sender, RoutedEventArgs e)
         {
-            Grid grid = GetReportGrid(true);
-            if (grid == null) return;
+            string error;
+            (Grid grid, ListView listView) = GetReportGrid(true);
+            if (grid == null || listView == null) return;
             DumpFileMoniker dmpInfo;
-            ListView listView;
             string gridName = Utils.GetNameWithoutId(grid.Name);
+            Tuple<ListingInfo, string> listData = listView.Tag as Tuple<ListingInfo, string>;
+            if (listData != null)
+            {
+                Debug.Assert(listData.Item2 != null && listData.Item2.Length > 0);
+                string fileName = DumpFileMoniker.GetValidFileName(listData.Item2, true);
+                string lstPath = DumpFileMoniker.GetFileDistinctPath(CurrentIndex.AdhocFolder, fileName + ".txt");
+
+                // get selection if any
+                //
+                int selectedIndex = 0;
+                int selectedCount = Int32.MaxValue;
+                if (listView.SelectedIndex >= 0 && listView.SelectedItem != null)
+                {
+                    int cnt = listView.SelectedItems.Count;
+                    if (cnt > 1) // if one we dump all
+                    {
+                        selectedIndex = listView.SelectedIndex;
+                        selectedCount = cnt;
+                    }
+                }
+
+                ListingInfo.DumpListing(lstPath, listData.Item1, listData.Item2, out error, selectedIndex, selectedCount);
+
+                if (error != null)
+                {
+                    GuiUtils.ShowError(error, this);
+                    return;
+                }
+                Clipboard.SetText(lstPath);
+                GuiUtils.ShowInformation("Report","Report text file: ",lstPath + Environment.NewLine + "...the path is copied to the clippboard...",null, this);
+                return;
+            }
+
             switch (gridName)
             {
                 case "IndexSizesInfo":
                     dmpInfo = (grid.Tag as Tuple<DumpFileMoniker, ulong>).Item1;
                     Debug.Assert(dmpInfo != null);
-                    listView = (ListView)LogicalTreeHelper.FindLogicalNode(grid, "TopListView");
                     Debug.Assert(listView != null);
                     var dataAry = listView.ItemsSource as sextuple<int, ulong, ulong, ulong, ulong, string>[];
                     Debug.Assert(dataAry != null);
@@ -1517,7 +1551,6 @@ namespace MDRDesk
                     var datAry = listView.ItemsSource as StringStatsDispEntry[];
                     Debug.Assert(datAry != null);
                     var repPath = dmpInfo.OutputFolder + System.IO.Path.DirectorySeparatorChar + "ALLSTRINGUSAGE.txt";
-                    string error;
                     StringStatsDispEntry.WriteShortReport(datAry, repPath, "String usage in: " + CurrentIndex.DumpFileName,
                         datAry.Length,
                         new string[] { "Count" }, null, out error);
@@ -1560,7 +1593,6 @@ namespace MDRDesk
             //});
             var taskResult = await Task.Factory.StartNew(() =>
             {
-                string error;
                 var ok = ReportFile.WriteReport(outpath, gridName, gridInfo.Item1, colSortInfo.Item1.ColInfos, descrLines, data,
                     out error);
                 return new Tuple<string, string>(error, outpath);
@@ -1588,11 +1620,10 @@ namespace MDRDesk
 
         private void FileReportShortClicked(object sender, RoutedEventArgs e)
         {
-            Grid grid = GetReportGrid(false);
-            if (grid == null) return;
+            (Grid grid, ListView listView) = GetReportGrid(false);
+            if (grid == null || listView == null) return;
             string error;
             DumpFileMoniker filePathInfo;
-            ListView listView;
             string repPath;
             string gridName = Utils.GetNameWithoutId(grid.Name);
             switch (gridName)
@@ -1600,7 +1631,6 @@ namespace MDRDesk
                 case "IndexSizesInfo":
                     var info = grid.Tag as Tuple<DumpFileMoniker, ulong>;
                     Debug.Assert(info != null);
-                    listView = (ListView)LogicalTreeHelper.FindLogicalNode(grid, "TopListView");
                     Debug.Assert(listView != null);
                     var dataAry = listView.ItemsSource as sextuple<int, ulong, ulong, ulong, ulong, string>[];
                     Debug.Assert(dataAry != null);
@@ -1659,13 +1689,13 @@ namespace MDRDesk
                     var listingInfo = listView.Tag as Tuple<ListingInfo, string>;
                     Debug.Assert(listingInfo != null);
                     var outPath = pathInfo.Item2.GetPathAppendingToFileName(".ShortReport.txt");
-                    ListingInfo.DumpListing(outPath, listingInfo.Item1, pathInfo.Item1, out error, 100);
+                    ListingInfo.DumpListing(outPath, listingInfo.Item1, pathInfo.Item1, out error, 0, 100);
                     break;
                 case ListingGrid:
                     listView = (ListView)LogicalTreeHelper.FindLogicalNode(grid, ListingGridView);
                     Tuple<ListingInfo, string> pair = listView.Tag as Tuple<ListingInfo, string>;
                     string lstPath = DumpFileMoniker.GetFileDistinctPath(CurrentIndex.AdhocFolder, pair.Item2 + ".txt");
-                    ListingInfo.DumpListing(lstPath, pair.Item1, pair.Item2, out error, 100);
+                    ListingInfo.DumpListing(lstPath, pair.Item1, pair.Item2, out error, 0, 100);
                     MainStatusShowMessage(error == null ? "Report written: " + lstPath : "Report writing failed: " + Utils.GetShorterStringRemoveNewlines(error, 40));
                     if (error != null) ShowError(error);
                     break;
@@ -1675,14 +1705,29 @@ namespace MDRDesk
             }
         }
 
-        private Grid GetReportGrid(bool detailedReport)
+        private ValueTuple<Grid,ListView> GetReportGrid(bool reportFormat)
         {
             var grid = GetCurrentTabGrid();
             if (grid == null)
             {
                 MainStatusShowMessage("Cannot write report, no data grid is available.");
             }
-            return grid;
+
+            // ListingGrid
+            //
+            var listView = (ListView)LogicalTreeHelper.FindLogicalNode(grid, "ListingView");
+            if (listView != null)
+            {
+                var data = listView.Tag as Tuple<ListingInfo, string>;
+                if (data != null || data.Item2 != null)
+                {
+                    return (grid, listView);
+                }
+            }
+            // TODO JRD -- handle other grids
+
+            MainStatusShowMessage("Cannot write report, an appropriate list view not found.");
+            return (null,null);
         }
 
 

@@ -94,9 +94,10 @@ namespace ClrMDRIndex
 
 		public const char BlackTriangle = '\u25BC'; // ▼  black down-pointing triangle
 		public const char ShadowedWhiteSquare = '\u274F'; // ❏ LOWER RIGHT DROP-SHADOWED WHITE SQUARE
-		public const char AdhocQuerySymbol = '\u274F'; // ❏ LOWER RIGHT DROP-SHADOWED WHITE SQUARE
+        public const char AdhocQuerySymbol = '\u274F'; // ❏ LOWER RIGHT DROP-SHADOWED WHITE SQUARE
+        public const string AdhocQuerySymbolHeader = "\u274F "; // ❏ LOWER RIGHT DROP-SHADOWED WHITE SQUARE
 
-		public const string NewLineDisp = "\u2B92 "; // NEWLINE LEFT
+        public const string NewLineDisp = "\u2B92 "; // NEWLINE LEFT
 		public const string ReturnDisp = "\u27a7 "; // ➧ SQUAT BLACK RIGHTWARDS ARROW
 		public const char NewLineDispChar = '\u2B92'; // NEWLINE LEFT
 		public const char RightSquatArrow = '\u27a7'; // ➧ SQUAT BLACK RIGHTWARDS ARROW
@@ -152,6 +153,8 @@ namespace ClrMDRIndex
         public const char CircledEightChar = '\u277D'; // ❽ DINGBAT NEGATIVE CIRCLED DIGIT EIGHT
         public const char CircledNineChar = '\u277E'; // ❾ DINGBAT NEGATIVE CIRCLED DIGIT NINE
         public const char CircledTenChar = '\u277F'; // ❿ DINGBAT NEGATIVE CIRCLED NUMBER TEN
+        public const char Semicolon = '\uFF1B'; // ； FULLWIDTH SEMICOLON &#65307; &#xff1b; How to type in Microsoft Windows    Alt +FF1B
+
 
         public static string LockStr = char.ConvertFromUtf32(0x1F512);
         public static string UnlockStr = char.ConvertFromUtf32(0x1F513);
@@ -162,7 +165,7 @@ namespace ClrMDRIndex
 
         public char[] SubDigits = new[]
 		{
-			'\u2080', // ₀ SUBSCRIPT ZERO
+			'\u2080', // ₀ SUBSCRIPT ZERO 
 		};
 
 

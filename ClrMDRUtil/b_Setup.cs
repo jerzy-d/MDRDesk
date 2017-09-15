@@ -34,6 +34,8 @@ namespace ClrMDRIndex
         public static int ShortReportLineCount { get; private set; }
         public static bool SkipReferences { get; private set; }
 
+        public static bool UseCsvReportFormat { get; private set; }
+
         public static void SetDacFolder(string folder)
         {
             DacFolder = folder;
@@ -81,6 +83,10 @@ namespace ClrMDRIndex
         public static void SetSkipIndexingRefs(bool skip)
         {
             SkipReferences = skip;
+        }
+        public static void SetUseCsvReportFormat(bool csv)
+        {
+            UseCsvReportFormat = csv;
         }
 
         public static void AddRecentFileList(string path, RecentFiles files)
@@ -203,6 +209,17 @@ namespace ClrMDRIndex
                                     SkipReferences = true;
                             }
                         }
+                        else if (Utils.SameStrings(ky, "usecsvreportformat"))
+                        {
+                            var intStr = appSettings.Settings[key].Value.Trim();
+                            if (!string.IsNullOrWhiteSpace(intStr))
+                            {
+                                if (string.Compare(intStr, "true", StringComparison.OrdinalIgnoreCase) == 0)
+                                    UseCsvReportFormat = true;
+                            }
+                        }
+
+                        
                     }
                 }
                 else
@@ -254,6 +271,11 @@ namespace ClrMDRIndex
                     settings.Add("skipreferences", skip);
                 else
                     settings["skipreferences"].Value = skip;
+                var csv = UseCsvReportFormat ? "true" : "false";
+                if (settings["usecsvreportformat"] == null)
+                    settings.Add("usecsvreportformat", skip);
+                else
+                    settings["usecsvreportformat"].Value = skip;
                 config.Save(ConfigurationSaveMode.Modified);
                 return true;
             }

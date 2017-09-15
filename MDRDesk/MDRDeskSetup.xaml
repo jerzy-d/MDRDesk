@@ -7,7 +7,7 @@
         mc:Ignorable="d"
         WindowStartupLocation="CenterOwner"
         WindowStyle="ToolWindow"
-        Title="MDRDesk Setup" Height="300" Width="609.278">
+        Title="MDRDesk Setup" Height="450" Width="609.278">
     <Grid Margin="0,0,2,0">
         <Grid.ColumnDefinitions>
             <ColumnDefinition Width="20*" />
@@ -20,17 +20,20 @@
             <RowDefinition Height="16*" />
             <RowDefinition Height="16*" />
             <RowDefinition Height="16*" />
+            <RowDefinition Height="16*" />
             <RowDefinition Height="20*" />
         </Grid.RowDefinitions>
-        <Button x:Name="ButtonDacFolder" Content="Dac Folder..." Grid.Row="0" Grid.Column="0" HorizontalAlignment="Left" Margin="4,2,2,2" VerticalAlignment="Center" Width="90" Height="28" FontSize="10" Click="ButtonDacFolder_OnClick"/>
+        <Button x:Name="ButtonDacFolder" Content="Dac Folder..." Grid.Row="0" Grid.Column="0" HorizontalAlignment="Left" Margin="4,2,2,2" VerticalAlignment="Center" Width="90" Height="28" FontSize="10" Click="ButtonDacFolder_OnClick" Background="Linen"/>
         <TextBox x:Name="TxtBoxDacFolder" Grid.Row="0" Grid.Column="1" HorizontalAlignment="Stretch"  Height="23" Margin="4,2,4,2" Text="..." VerticalAlignment="Center" />
-        <Button x:Name="ButtonDumpFolder" Content="Dumps Folder..." Grid.Row="1" Grid.Column="0" HorizontalAlignment="Left" Margin="4,2,2,2" VerticalAlignment="Center" Width="90" Height="28" FontSize="10" Click="ButtonDumpFolder_OnClick"/>
+        <Button x:Name="ButtonDumpFolder" Content="Dumps Folder..." Grid.Row="1" Grid.Column="0" HorizontalAlignment="Left" Margin="4,2,2,2" VerticalAlignment="Center" Width="90" Height="28" FontSize="10" Click="ButtonDumpFolder_OnClick"  Background="Linen"/>
         <TextBox x:Name="TxtBoxDumpFolder" Grid.Row="1" Grid.Column="1" HorizontalAlignment="Stretch"  Height="23" Margin="4,2,4,2" Text="..." VerticalAlignment="Center" />
-        <Button x:Name="ButtonProcdump" Content="Procdump Path..." Grid.Row="2" Grid.Column="0" HorizontalAlignment="Left" Margin="4,2,2,2" VerticalAlignment="Center"  Width="90" Height="28" FontSize="10" Click="ButtonProcdump_OnClick"/>
+        <Button x:Name="ButtonProcdump" Content="Procdump Path..." Grid.Row="2" Grid.Column="0" HorizontalAlignment="Left" Margin="4,2,2,2" VerticalAlignment="Center"  Width="90" Height="28" FontSize="10" Click="ButtonProcdump_OnClick"  Background="Linen"/>
         <TextBox x:Name="TxtBoxProcdumpPath" Grid.Row="2" Grid.Column="1" HorizontalAlignment="Stretch"  Height="23" Margin="4,2,4,2" Text="..." VerticalAlignment="Center" />
-
-        <Label Content="Type Display Mode" Grid.Row="3" Grid.Column="0" HorizontalAlignment="Left" Margin="4,2,2,2" VerticalAlignment="Center"  Width="Auto" Height="23" FontSize="10"/>
-        <Grid Grid.Row="3" Grid.Column="1" Height="23">
+        <TextBlock x:Name="LabelProcdumpPathDescr" Grid.Row="3" Grid.Column="1" Margin="4,4,4,4" TextWrapping="WrapWithOverflow" FontStyle="Italic" Foreground="DarkGray">
+            We need to know the directory of procdump.exe from Sysinternals. If this app is available, it will used to generate crash dumps of local processes.
+        </TextBlock>
+        <Label Content="Type Display Mode" Grid.Row="4" Grid.Column="0" HorizontalAlignment="Left" Margin="4,2,2,2" VerticalAlignment="Center"  Width="Auto" Height="23" FontSize="10"/>
+        <Grid Grid.Row="4" Grid.Column="1" Height="23">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="33*" />
                 <ColumnDefinition Width="33*" />
@@ -40,10 +43,11 @@
             <RadioButton x:Name="TypeDisplayClass" Grid.Column="1" GroupName="TypeDisplayMode" Content="Type Name" HorizontalAlignment="Left" Margin="2,2,2,2" VerticalAlignment="Center"/>
             <RadioButton x:Name="TypeDisplayNamespace" Grid.Column="2" GroupName="TypeDisplayMode" Content="Namespace" HorizontalAlignment="Left" Margin="2,2,2,2" VerticalAlignment="Center"/>
         </Grid>
-        <Label Content="Short Report Ln Count" Grid.Row="4" Grid.Column="0" HorizontalAlignment="Left" Margin="4,2,2,2" VerticalAlignment="Center"  Width="Auto" Height="23" FontSize="10"/>
-        <TextBox x:Name="TxtBoxReportLineCount" Grid.Row="4" Grid.Column="1" HorizontalAlignment="Stretch"  Height="23" Margin="4,2,4,2" Text="..." VerticalAlignment="Center" />
-        <Label Content="Skip indexing references." Grid.Row="5" Grid.Column="0" HorizontalAlignment="Left" Margin="4,2,2,2" VerticalAlignment="Center"  Width="Auto" Height="23" FontSize="10"/>
-        <Grid Grid.Row="5" Grid.Column="1" Height="23">
+        <Label Content="Short Report Ln Count" Grid.Row="5" Grid.Column="0" HorizontalAlignment="Left" Margin="4,2,2,2" VerticalAlignment="Center"  Width="Auto" Height="23" FontSize="10"/>
+        <TextBox x:Name="TxtBoxReportLineCount" Grid.Row="5" Grid.Column="1" HorizontalAlignment="Left" Width="80"  Height="23" Margin="4,2,4,2" Text="..." VerticalAlignment="Center" />
+        <CheckBox x:Name="ChckBoxUseCsv" Grid.Row="5" Grid.Column="1" HorizontalAlignment="Center" VerticalAlignment="Center" Content="Use csv as report format"/>
+        <Label Content="Skip indexing references." Grid.Row="6" Grid.Column="0" HorizontalAlignment="Left" Margin="4,2,2,2" VerticalAlignment="Center"  Width="Auto" Height="23" FontSize="10"/>
+        <Grid Grid.Row="6" Grid.Column="1" Height="23">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="50*" />
                 <ColumnDefinition Width="50*" />
@@ -51,7 +55,11 @@
             <RadioButton x:Name="IndexingRefsNo" Grid.Column="0" GroupName="IndexingRefs" Content="No" HorizontalAlignment="Left" Margin="2,2,2,2" VerticalAlignment="Center"/>
             <RadioButton x:Name="IndexingRefsYes" Grid.Column="1" GroupName="IndexingRefs" Content="Yes" HorizontalAlignment="Left" Margin="2,2,2,2" VerticalAlignment="Center"/>
         </Grid>
-        <Button x:Name="ButtonSaveSetup" Grid.Row="6" Grid.Column="0" Content="Save" HorizontalAlignment="Left" Margin="4,2,2,2" VerticalAlignment="Center" Width="90" Height="28" Background="DarkOliveGreen" Click="ButtonSaveSetup_OnClick"/>
-        <Button x:Name="ButtonCloseSetup" Grid.Row ="6" Grid.Column="1" Content="Close" HorizontalAlignment="Right" Margin="4,2,2,2" VerticalAlignment="Center" Width="75" Height="28" Click="ButtonCloseSetup_OnClick"/>
+        <Button x:Name="ButtonSaveSetup" Grid.Row="7" Grid.Column="0" Content="Save" HorizontalAlignment="Left" Margin="4,2,2,2" VerticalAlignment="Center" Width="90" Height="28" Background="DarkOliveGreen" Click="ButtonSaveSetup_OnClick"/>
+        <Button x:Name="ButtonHelp" Grid.Row ="7" Grid.Column="1" HorizontalAlignment="Center" Margin="2,2,2,2" VerticalAlignment="Center" Width="28" Height="28" Click="ButtonHelpClicked" Background="Transparent" BorderThickness="0">
+            <Button.ToolTip>Usage help.</Button.ToolTip>
+            <Image Source=".\Images\Help.png" Width="16" Height="16" Margin="0,0,0,0" VerticalAlignment="Center" HorizontalAlignment="Center"/>
+        </Button>
+        <Button x:Name="ButtonCloseSetup" Grid.Row ="7" Grid.Column="1" Content="Close" HorizontalAlignment="Right" Margin="4,2,2,2" VerticalAlignment="Center" Width="75" Height="28" Click="ButtonCloseSetup_OnClick"/>
     </Grid>
 </Window>

@@ -1270,7 +1270,8 @@ namespace MDRDesk
                     return;
                 }
                 SetEndTaskMainWindowState("Getting parent references for: '" + Utils.BaseTypeName(typeName) + "', done.");
-                DisplayListViewBottomGrid(report, Constants.BlackDiamond, ReportNameInstRef, ReportTitleInstRef);
+                //DisplayListViewBottomGrid(report, Constants.BlackDiamond, ReportNameInstRef, ReportTitleInstRef);
+                DisplayListingGrid(report, Constants.BlackDiamondHeader, ReportNameInstRef, ReportTitleInstRef);
             }
             if (dispMode == ReferenceSearchSetup.DispMode.Tree)
             {
@@ -1352,7 +1353,9 @@ namespace MDRDesk
                     return;
                 }
                 SetEndTaskMainWindowState(msg + "done.");
-                DisplayListViewBottomGrid(report, Constants.BlackDiamond, ReportNameInstRef, ReportTitleInstRef);
+                //DisplayListViewBottomGrid(report, Constants.BlackDiamond, ReportNameInstRef, ReportTitleInstRef);
+                DisplayListingGrid(report, Constants.BlackDiamondHeader, ReportNameInstRef, ReportTitleInstRef);
+
             }
             if (dispMode == ReferenceSearchSetup.DispMode.Tree)
             {
@@ -1451,68 +1454,82 @@ namespace MDRDesk
 
         #endregion Finalizer Queue
 
-        private void DisplayListViewBottomGrid(ListingInfo info, char prefix, string name, string reportTitle, SWC.MenuItem[] menuItems = null, string filePath = null)
-        {
-            var grid = this.TryFindResource("ListViewBottomGrid") as Grid;
-            grid.Name = name + "__" + Utils.GetNewID();
-            Debug.Assert(grid != null);
-            string path;
-            if (filePath == null)
-                path = CurrentIndex != null ? CurrentIndex.DumpPath : CurrentAdhocDump?.DumpPath;
-            else
-                path = filePath;
-            grid.Tag = new Tuple<string, DumpFileMoniker>(reportTitle, new DumpFileMoniker(path));
-            var listView = (ListView)LogicalTreeHelper.FindLogicalNode(grid, "TopListView");
-            GridView gridView = (GridView)listView.View;
+        //private void DisplayListViewBottomGrid(ListingInfo info, char prefix, string name, string reportTitle, SWC.MenuItem[] menuItems = null, string filePath = null)
+        //{
+        //    var grid = this.TryFindResource("ListViewBottomGrid") as Grid;
+        //    grid.Name = name + "__" + Utils.GetNewID();
+        //    Debug.Assert(grid != null);
+        //    string path;
+        //    if (filePath == null)
+        //        path = CurrentIndex != null ? CurrentIndex.DumpPath : CurrentAdhocDump?.DumpPath;
+        //    else
+        //        path = filePath;
+        //    grid.Tag = new Tuple<string, DumpFileMoniker>(reportTitle, new DumpFileMoniker(path));
+        //    var listView = (ListView)LogicalTreeHelper.FindLogicalNode(grid, "TopListView");
+        //    GridView gridView = (GridView)listView.View;
 
-            // save data and listing name in listView
-            //
-            listView.Tag = new Tuple<ListingInfo, string>(info, reportTitle);
+        //    // save data and listing name in listView
+        //    //
+        //    listView.Tag = new Tuple<ListingInfo, string>(info, reportTitle);
 
-            for (int i = 0, icnt = info.ColInfos.Length; i < icnt; ++i)
-            {
-                var gridColumn = new GridViewColumn
-                {
-                    Header = info.ColInfos[i].Name,
-                    DisplayMemberBinding = new Binding(listing<string>.PropertyNames[i]),
-                    Width = info.ColInfos[i].Width,
-                };
-                gridView.Columns.Add(gridColumn);
-            }
+        //    for (int i = 0, icnt = info.ColInfos.Length; i < icnt; ++i)
+        //    {
+        //        var gridColumn = new GridViewColumn
+        //        {
+        //            Header = info.ColInfos[i].Name,
+        //            DisplayMemberBinding = new Binding(listing<string>.PropertyNames[i]),
+        //            Width = info.ColInfos[i].Width,
+        //        };
+        //        gridView.Columns.Add(gridColumn);
+        //    }
 
-            listView.Items.Clear();
-            listView.ItemsSource = info.Items;
-            var bottomGrid = (Panel)LogicalTreeHelper.FindLogicalNode(grid, "BottomGrid");
-            Debug.Assert(bottomGrid != null);
-            TextBox txtBox = new TextBox
-            {
-                HorizontalAlignment = HorizontalAlignment.Stretch,
-                VerticalAlignment = SW.VerticalAlignment.Stretch,
-                Foreground = Brushes.DarkGreen,
-                Text = info.Notes,
-                FontWeight = FontWeights.Bold
-            };
-            bottomGrid.Children.Add(txtBox);
+        //    listView.Items.Clear();
+        //    listView.ItemsSource = info.Items;
+        //    var bottomGrid = (Panel)LogicalTreeHelper.FindLogicalNode(grid, "BottomGrid");
+        //    Debug.Assert(bottomGrid != null);
+        //    TextBox txtBox = new TextBox
+        //    {
+        //        HorizontalAlignment = HorizontalAlignment.Stretch,
+        //        VerticalAlignment = SW.VerticalAlignment.Stretch,
+        //        Foreground = Brushes.DarkGreen,
+        //        Text = info.Notes,
+        //        FontWeight = FontWeights.Bold
+        //    };
+        //    bottomGrid.Children.Add(txtBox);
 
-            if (menuItems == null)
-            {
-                SWC.MenuItem mi = new SWC.MenuItem { Header = "Copy List Row" };
-                menuItems = new SWC.MenuItem[]
-                {
-                    mi
-                };
-            }
-            foreach (var menu in menuItems)
-            {
-                menu.Tag = listView;
-                menu.Click += ListViewBottomGridClick;
-            }
-            listView.ContextMenu = new SWC.ContextMenu();
-            listView.ContextMenu.ItemsSource = menuItems;
-            DisplayTab(prefix, reportTitle, grid, name);
-        }
+        //    if (menuItems == null)
+        //    {
+        //        SWC.MenuItem mi = new SWC.MenuItem { Header = "Copy List Row" };
+        //        menuItems = new SWC.MenuItem[]
+        //        {
+        //            mi
+        //        };
+        //    }
+        //    foreach (var menu in menuItems)
+        //    {
+        //        menu.Tag = listView;
+        //        menu.Click += ListViewBottomGridClick;
+        //    }
+        //    listView.ContextMenu = new SWC.ContextMenu();
+        //    listView.ContextMenu.ItemsSource = menuItems;
+        //    DisplayTab(prefix, reportTitle, grid, name);
+        //}
 
-        private void DisplayListingGrid(ListingInfo info, string prefix, string name, string reportTitle, SWC.MenuItem[] menuItems = null, string filePath = null)
+        /// <summary>
+        /// Display listing of things, a poor man data grid.
+        /// </summary>
+        /// <param name="info">Data to be displayed.</param>
+        /// <param name="prefix">Symbol (special char) to be put on the tab label.</param>
+        /// <param name="name">The grid name, ListingGrid in this case.</param>
+        /// <param name="reportTitle">Title to display on the tab label.</param>
+        /// <param name="menuItems">Context menu to be attached to ListView control.</param>
+        /// <param name="filePath">Some file path, if relevant to listed data.</param>
+        private void DisplayListingGrid(ListingInfo info, 
+                                        string prefix,
+                                        string name,
+                                        string reportTitle,
+                                        SWC.MenuItem[] menuItems = null,
+                                        string filePath = null)
         {
             var grid = TryFindResource(ListingGrid) as Grid;
             grid.Name = name + "__" + Utils.GetNewID();

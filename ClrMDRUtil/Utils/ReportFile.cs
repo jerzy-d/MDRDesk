@@ -440,11 +440,10 @@ namespace ClrMDRIndex
 					StringBuilderCache.Release(sb);
 				sr?.Close();
 			}
-		}
+        }
+    }
 
-	}
-
-	public class ColumnInfo
+    public class ColumnInfo
 	{
 		private string _name;
 		private ReportFile.ColumnType _type;
@@ -535,13 +534,14 @@ namespace ClrMDRIndex
 			_data = null;
 		}
 
-		public static bool DumpListing(string path, ListingInfo listingInfo, string title, out string error, int count = Int32.MaxValue)
+		public static bool DumpListing(string path, ListingInfo listingInfo, string title, out string error, int start = 0, int count = Int32.MaxValue)
 		{
 			error = null;
 			StreamWriter sw = null;
 			try
 			{
 				int writeCnt = Math.Min(listingInfo.Items.Length, count);
+                int startIndex = start >= writeCnt ? 0 : start;
 				sw = new StreamWriter(path);
 				var cols = listingInfo.ColInfos;
 				sw.WriteLine("### MDRDESK REPORT: ");
@@ -572,7 +572,7 @@ namespace ClrMDRIndex
                 var items = listingInfo.Items;
 				sw.WriteLine();
 				int itemCount = items[0].Count;
-				for (int i = 0, icnt = writeCnt; i < icnt; ++i)
+				for (int i = startIndex, icnt = writeCnt; i < icnt; ++i)
 				{
 					sw.Write(items[i].GetItem(0));
 					for (int j = 1, jcnt = itemCount; j < jcnt; ++j)

@@ -2,6 +2,8 @@
 using System.Windows;
 using System.Windows.Controls;
 using ClrMDRIndex;
+using System.Windows.Input;
+using System;
 
 // ReSharper disable InconsistentNaming
 namespace MDRDesk
@@ -18,7 +20,9 @@ namespace MDRDesk
 		public MDRDeskSetup()
 		{
 			InitializeComponent();
-			TxtBoxDumpFolder.Text = Setup.DumpsFolder;
+            AddHotKeys();
+
+            TxtBoxDumpFolder.Text = Setup.DumpsFolder;
 			TxtBoxDacFolder.Text = Setup.DacFolder;
 			TxtBoxProcdumpPath.Text = Setup.ProcDumpFolder;
 			switch (Setup.TypesDisplayMode.ToLower())
@@ -81,7 +85,14 @@ namespace MDRDesk
 			return false;
 		}
 
-		private void ButtonSaveSetup_OnClick(object sender, RoutedEventArgs e)
+        private bool IsTrue(CheckBox btn)
+        {
+            if (btn.IsChecked != null)
+                return (bool)btn.IsChecked;
+            return false;
+        }
+
+        private void ButtonSaveSetup_OnClick(object sender, RoutedEventArgs e)
 		{
 			if (IsTrue(TypeDisplayNamespaceClass))
 				Setup.SetTypesDisplayMode("namespaces");
@@ -94,6 +105,7 @@ namespace MDRDesk
 			string shortRepCount = TxtBoxReportLineCount.Text.Trim();
 			Setup.SetShortReportLineCount(shortRepCount);
 			Setup.SetSkipIndexingRefs(IsTrue(IndexingRefsYes));
+            Setup.SetUseCsvReportFormat(IsTrue(ChckBoxUseCsv));
 			string error;
 			Setup.SaveConfigSettings(out error);
 			DialogResult = true;
@@ -105,6 +117,25 @@ namespace MDRDesk
 			DialogResult = true;
 			Close();
 		}
-	}
+
+        private void ButtonHelpClicked(object sender, RoutedEventArgs e)
+        {
+            ValueWindows.ShowHelpWindow(Setup.HelpFolder + Path.DirectorySeparatorChar + @"\Documentation\Configuration.md");
+        }
+
+        private void AddHotKeys()
+        {
+            try
+            {
+                RoutedCommand firstSettings = new RoutedCommand();
+                firstSettings.InputGestures.Add(new KeyGesture(Key.F1));
+                CommandBindings.Add(new CommandBinding(firstSettings, ButtonHelpClicked));
+            }
+            catch (Exception err)
+            {
+                //handle exception error
+            }
+        }
+    }
 }
 // ReSharper restore InconsistentNaming

@@ -797,7 +797,6 @@ namespace ClrMDRIndex
 			}
 		}
 
-
 		public static bool WriteAddressAsStringArray(string path, IList<ulong> lst, out string error)
 		{
 			error = null;

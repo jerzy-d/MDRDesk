@@ -256,12 +256,17 @@ namespace ClrMDRIndex
 
         public static HashSet<char> InvalidPathChars = new HashSet<char>(InvalidPathCharsAry);
 
-        public static string GetValidFileName(string name)
+        public static string GetValidFileName(string name, bool removeSpaces = false)
         {
             bool found = false;
             for (int i = 0, icnt = name.Length; i < icnt; ++i)
             {
                 if (InvalidPathChars.Contains(name[i]))
+                {
+                    found = true;
+                    break;
+                }
+                if (removeSpaces && char.IsWhiteSpace(name[i]))
                 {
                     found = true;
                     break;
@@ -273,6 +278,10 @@ namespace ClrMDRIndex
             for (int i = 0, icnt = name.Length; i < icnt; ++i)
             {
                 if (InvalidPathChars.Contains(name[i]))
+                {
+                    sb[i] = '_';
+                }
+                if (removeSpaces && char.IsWhiteSpace(name[i]))
                 {
                     sb[i] = '_';
                 }
