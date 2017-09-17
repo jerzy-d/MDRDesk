@@ -31,12 +31,9 @@ namespace ClrMDRIndex
         public static int GraphPort { get; private set; }
 
         public static string TypesDisplayMode { get; private set; }
-        public static int ShortReportLineCount { get; private set; }
-        public static bool SkipReferences { get; private set; }
+         public static bool SkipReferences { get; private set; }
 
-        public static bool UseCsvReportFormat { get; private set; }
-
-        public static void SetDacFolder(string folder)
+         public static void SetDacFolder(string folder)
         {
             DacFolder = folder;
         }
@@ -70,23 +67,9 @@ namespace ClrMDRIndex
             TypesDisplayMode = mode;
         }
 
-        public static void SetShortReportLineCount(string count)
-        {
-            if (!string.IsNullOrWhiteSpace(count))
-            {
-                int cnt;
-                if (Int32.TryParse(count, out cnt))
-                    ShortReportLineCount = cnt;
-            }
-        }
-
         public static void SetSkipIndexingRefs(bool skip)
         {
             SkipReferences = skip;
-        }
-        public static void SetUseCsvReportFormat(bool csv)
-        {
-            UseCsvReportFormat = csv;
         }
 
         public static void AddRecentFileList(string path, RecentFiles files)
@@ -189,17 +172,6 @@ namespace ClrMDRIndex
                         {
                             TypesDisplayMode = appSettings.Settings[key].Value.Trim();
                         }
-                        else if (Utils.SameStrings(ky, "shortreportcount"))
-                        {
-                            int count = 100;
-                            var intStr = appSettings.Settings[key].Value.Trim();
-                            if (!string.IsNullOrWhiteSpace(intStr))
-                            {
-                                if (!Int32.TryParse(intStr, out count))
-                                    count = 100;
-                            }
-                            ShortReportLineCount = count;
-                        }
                         else if (Utils.SameStrings(ky, "skipreferences"))
                         {
                             var intStr = appSettings.Settings[key].Value.Trim();
@@ -209,17 +181,6 @@ namespace ClrMDRIndex
                                     SkipReferences = true;
                             }
                         }
-                        else if (Utils.SameStrings(ky, "usecsvreportformat"))
-                        {
-                            var intStr = appSettings.Settings[key].Value.Trim();
-                            if (!string.IsNullOrWhiteSpace(intStr))
-                            {
-                                if (string.Compare(intStr, "true", StringComparison.OrdinalIgnoreCase) == 0)
-                                    UseCsvReportFormat = true;
-                            }
-                        }
-
-                        
                     }
                 }
                 else
@@ -259,7 +220,6 @@ namespace ClrMDRIndex
                 var config = ConfigurationManager.OpenExeConfiguration(ConfigurationUserLevel.None);
                 var settings = config.AppSettings.Settings;
                 settings["typedisplaymode"].Value = TypesDisplayMode;
-                settings["shortreportcount"].Value = ShortReportLineCount.ToString();
                 settings["recentindices"].Value = JoinSemicolonDelimitedList(RecentIndexList);
                 settings["recentadhocs"].Value = JoinSemicolonDelimitedList(RecentAdhocList);
                 settings["dacfolder"].Value = DacFolder;
@@ -271,11 +231,6 @@ namespace ClrMDRIndex
                     settings.Add("skipreferences", skip);
                 else
                     settings["skipreferences"].Value = skip;
-                var csv = UseCsvReportFormat ? "true" : "false";
-                if (settings["usecsvreportformat"] == null)
-                    settings.Add("usecsvreportformat", skip);
-                else
-                    settings["usecsvreportformat"].Value = skip;
                 config.Save(ConfigurationSaveMode.Modified);
                 return true;
             }

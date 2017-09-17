@@ -221,14 +221,14 @@ namespace ClrMDRIndex
 					colInfos[i] = new ColumnInfo(columns[i].First, columns[i].Second, columns[i].Third, i + 1, true);
 				}
 
-				if (IsColumnTypeString(colInfos[0].ColumnType))
-				{
-					Array.Sort(itemAry, new ListingStrCmpAsc(0));
-				}
-				else
-				{
-					Array.Sort(itemAry, new ListingNumCmpAsc(0));
-				}
+				//if (IsColumnTypeString(colInfos[0].ColumnType))
+				//{
+				//	Array.Sort(itemAry, new ListingStrCmpAsc(0));
+				//}
+				//else
+				//{
+				//	Array.Sort(itemAry, new ListingNumCmpAsc(0));
+				//}
 
 				var result = new ListingInfo(null, itemAry, colInfos, sbDescr.ToString(), title);
 				return result;
@@ -534,7 +534,7 @@ namespace ClrMDRIndex
 			_data = null;
 		}
 
-		public static bool DumpListing(string path, ListingInfo listingInfo, string title, out string error, int start = 0, int count = Int32.MaxValue)
+ 		public static bool DumpListing(string path, ListingInfo listingInfo, string title, out string error, int start = 0, int count = Int32.MaxValue)
 		{
 			error = null;
 			StreamWriter sw = null;
@@ -595,9 +595,46 @@ namespace ClrMDRIndex
 				sw?.Close();
 			}
 		}
-	}
 
-	public class ListingStrCmpAsc : IComparer<listing<string>>
+        public static bool DumpListingAsCsv(string path, ListingInfo listingInfo, string title, out string error, int start = 0, int count = Int32.MaxValue)
+        {
+            error = null;
+            StreamWriter sw = null;
+            try
+            {
+                int writeCnt = Math.Min(listingInfo.Items.Length, count);
+                int startIndex = start >= writeCnt ? 0 : start;
+                sw = new StreamWriter(path);
+                var items = listingInfo.Items;
+                sw.WriteLine();
+                int itemCount = items[0].Count;
+                for (int i = startIndex, icnt = writeCnt; i < icnt; ++i)
+                {
+                    sw.Write(items[i].GetItem(0));
+                    for (int j = 1, jcnt = itemCount; j < jcnt; ++j)
+                    {
+                        sw.Write(Constants.Semicolon);
+                        sw.Write(items[i].GetItem(j).Trim());
+                    }
+                    sw.WriteLine();
+                }
+
+                return true;
+            }
+            catch (Exception ex)
+            {
+                error = Utils.GetExceptionErrorString(ex);
+                return false;
+            }
+            finally
+            {
+                sw?.Close();
+            }
+        }
+
+    }
+
+    public class ListingStrCmpAsc : IComparer<listing<string>>
 	{
 		private int _ndx;
 

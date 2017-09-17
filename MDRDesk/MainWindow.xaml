@@ -464,7 +464,7 @@
                 <ColumnDefinition Width="5"/>
                 <ColumnDefinition Width="15*"/>
             </Grid.ColumnDefinitions>
-            <ListView x:Name="FinalizerQueueListView" Grid.Row="0" v4:Grid.Column="0" SelectionMode="Single" ItemsSource="{Binding}" SelectionChanged="FinalizerQueueSelectionChanged" GridViewColumnHeader.Click="FinalizerQueueViewHeaderClick">
+            <ListView x:Name="FinalizerQueueListView" Grid.Row="0" v4:Grid.Column="0" SelectionMode="Extended" ItemsSource="{Binding}" SelectionChanged="FinalizerQueueSelectionChanged" GridViewColumnHeader.Click="FinalizerQueueViewHeaderClick">
                 <ListView.View>
                     <GridView>
                         <GridViewColumn DisplayMemberBinding="{Binding Path=TotalCount}" Header="Total Count" Width="150"/>
@@ -827,7 +827,7 @@
                             <Image Source="./Images/WriteToHistory_32x.png" ToolTip="Write report file, from a current tab." ToolTipService.HasDropShadow="True" Height="24" Width="24" HorizontalAlignment="Center" VerticalAlignment="Center" Margin="16,0,0,0"></Image>
                         </MenuItem.Icon>
                     </MenuItem>
-                    <MenuItem x:Name="FileReportShort" Background="LightBlue" HorizontalContentAlignment="Center" HorizontalAlignment="Center" Click="FileReportShortClicked">
+                    <MenuItem x:Name="FileReportShort" Background="LightBlue" HorizontalContentAlignment="Center" HorizontalAlignment="Center" Click="FileReportClicked">
                         <MenuItem.Icon>
                             <Image Source="./Images/SequenceFile_32x.png" ToolTip="Write csv file, from a current tab." ToolTipService.HasDropShadow="True" Height="24" Width="24" HorizontalAlignment="Center" VerticalAlignment="Center" Margin="16,0,0,0"></Image>
                         </MenuItem.Icon>

@@ -364,7 +364,7 @@ namespace ClrMDRIndex
 					new ColumnInfo("Gen 2", ReportFile.ColumnType.Int64, 100,6,true),
 					new ColumnInfo("LOH", ReportFile.ColumnType.Int64, 100,7,true),
 
-					new ColumnInfo("String Content", ReportFile.ColumnType.String, 600,8,true),
+					new ColumnInfo("String Content", ReportFile.ColumnType.String, 1500,8,true),
 				};
 				return new ListingInfo(null, itemAry, columns, StringBuilderCache.GetStringAndRelease(sb));
 			}

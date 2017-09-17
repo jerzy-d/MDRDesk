@@ -77,7 +77,7 @@ namespace ClrMDRIndex
 			Addresses = addresses;
 		}
 
-		public static DisplayableFinalizerQueue GetDisplayableFinalizerQueue(ClrtRoot[] data, ulong[] instances, string[] typeNames, DumpFileMoniker fileMoniker)
+		public static DisplayableFinalizerQueue GetDisplayableFinalizerQueue(ulong[] heapInstances, ClrtRoot[] data, ulong[] instances, string[] typeNames, DumpFileMoniker fileMoniker)
 		{
 			if (data == null || data.Length < 1) return new DisplayableFinalizerQueue(); // empty
 
@@ -104,7 +104,9 @@ namespace ClrMDRIndex
 				}
 				int instNdx = Utils.AddressSearch(instances, data[i].Object);
 				ulong addr = instNdx < 0 ? data[i].Object : instances[instNdx];
-				typeAddresses.Add(addr);
+                int heapIndx = Utils.AddressSearch(heapInstances, addr);
+                if (heapIndx >= 0) addr = heapInstances[heapIndx];
+                typeAddresses.Add(addr);
 				++typeCount;
 				++totalCount;
 				if (!Utils.IsRooted(addr))

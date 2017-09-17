@@ -1994,7 +1994,7 @@ namespace ClrMDRIndex
             string error = null;
             try
             {
-                var dispFinlQue = FinalizerQueueDisplayableItem.GetDisplayableFinalizerQueue(_roots.GetFinalizerItems(), _roots.FinalizerAddresses, _typeNames,
+                var dispFinlQue = FinalizerQueueDisplayableItem.GetDisplayableFinalizerQueue(_instances, _roots.GetFinalizerItems(), _roots.FinalizerAddresses, _typeNames,
                     _fileMoniker);
                 return new Tuple<string, DisplayableFinalizerQueue>(error, dispFinlQue);
             }

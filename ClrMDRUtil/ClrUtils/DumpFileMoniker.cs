@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Runtime.CompilerServices;
 using System.Text;
@@ -182,13 +183,15 @@ namespace ClrMDRIndex
             string path = folderPath;
             if (folderPath[folderPath.Length - 1] != System.IO.Path.DirectorySeparatorChar) path = path + System.IO.Path.DirectorySeparatorChar;
             path = path + fileName;
+            var orgPath = string.Copy(path);
+            var dotPos = path.LastIndexOf('.');
+            Debug.Assert(dotPos > 0); // we should use kind of standard file names
             int ndx = 1;
             while (File.Exists(path))
             {
                 string num = "(" + ndx + ")";
                 ++ndx;
-                int pos = path.LastIndexOf('.');
-                path = path.Insert(pos - 1, num);
+                path = orgPath.Insert(dotPos, num);
             }
             return path;
         }

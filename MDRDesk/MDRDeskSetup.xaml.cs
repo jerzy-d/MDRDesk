@@ -40,7 +40,6 @@ namespace MDRDesk
 					TypeDisplayNamespace.IsChecked = true;
 					break;
 			}
-			TxtBoxReportLineCount.Text = Setup.ShortReportLineCount.ToString();
 			if (Setup.SkipReferences) IndexingRefsYes.IsChecked = true;
 			else IndexingRefsNo.IsChecked = true;
 		}
@@ -102,10 +101,7 @@ namespace MDRDesk
 				Setup.SetTypesDisplayMode("fulltypenames");
 			else
 				Setup.SetTypesDisplayMode("namespaces");
-			string shortRepCount = TxtBoxReportLineCount.Text.Trim();
-			Setup.SetShortReportLineCount(shortRepCount);
 			Setup.SetSkipIndexingRefs(IsTrue(IndexingRefsYes));
-            Setup.SetUseCsvReportFormat(IsTrue(ChckBoxUseCsv));
 			string error;
 			Setup.SaveConfigSettings(out error);
 			DialogResult = true;

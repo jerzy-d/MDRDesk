@@ -1011,25 +1011,6 @@ namespace MDRDesk
 
             SetStartTaskMainWindowState("Getting string usage. Please wait...");
 
-            //var taskResult = await Task.Run(() =>
-            //{
-            //    var dmp = ClrtDump.OpenDump(dumpFilePath, out error);
-            //    if (dmp == null)
-            //    {
-            //        return new ListingInfo(error);
-            //    }
-            //    using (dmp)
-            //    {
-            //        var heap = dmp.Runtime.Heap;
-            //        var addresses = ClrtDump.GetTypeAddresses(heap, "System.String", out error);
-            //        if (error != null)
-            //        {
-            //            return new ListingInfo(error);
-            //        }
-            //        var strStats = ClrtDump.GetStringStats(heap, addresses, dumpFilePath, out error);
-            //        return strStats.GetGridData((int)_minStringUsage, out error);
-            //    }
-            //});
             var taskResult = await Task.Factory.StartNew(() =>
             {
                 var dmp = ClrtDump.OpenDump(dumpFilePath, out error);
@@ -1065,7 +1046,6 @@ namespace MDRDesk
                 new SWC.MenuItem {Header = "Get References"},
                 new SWC.MenuItem {Header = "Get References of String Prefix"}
             };
-            //DisplayListViewBottomGrid(taskResult, Constants.BlackDiamond, ReportNameStringUsage, ReportTitleStringUsage, menuItems);
             DisplayListingGrid(taskResult, Constants.BlackDiamondHeader, ReportNameStringUsage, ReportTitleStringUsage, menuItems);
             RecentAdhocList.Add(dumpFilePath);
         }
@@ -1080,20 +1060,7 @@ namespace MDRDesk
             string typeName;
             if (!GetDlgString("Get Type Count", "EnterTypeName", " ", out typeName)) return;
             SetStartTaskMainWindowState("Getting type count. Please wait...");
-            //var taskResult = await Task.Run(() =>
-            //{
-            //    var dmp = ClrtDump.OpenDump(dumpFilePath, out error);
-            //    if (dmp == null)
-            //    {
-            //        return new KeyValuePair<string, int>(error, -1);
-            //    }
-            //    using (dmp)
-            //    {
-            //        var heap = dmp.Runtime.Heap;
-            //        var count = ClrtDump.GetTypeCount(heap, typeName, out error);
-            //        return new KeyValuePair<string, int>(error, count);
-            //    }
-            //});
+
             var taskResult = await Task.Factory.StartNew(() =>
             {
                 var dmp = ClrtDump.OpenDump(dumpFilePath, out error);
@@ -1335,9 +1302,10 @@ namespace MDRDesk
 
             if (mapListView.Tag != null && mapListView.Tag is Tuple<ListingInfo, string>)
             {
-                var aryToSort = mapListView.ItemsSource as listing<string>[];
+                //var aryToSort = mapListView.ItemsSource as listing<string>[];
                 string header = column.Column.Header.ToString();
                 var info = mapListView.Tag as Tuple<ListingInfo, string>;
+                var aryToSort = info.Item1.Items;
                 int foundNdx = -1;
                 for (int i = 0, icnt = info.Item1.ColInfos.Length; i < icnt; ++i)
                 {
@@ -1490,8 +1458,17 @@ namespace MDRDesk
 
         #region File Reports
 
+        bool IsCsv(object sender)
+        {
+            string name = GuiUtils.GetMenuItemName(sender);
+            if (name == null) throw new ApplicationException("[MainWindow.isCsv] Excpected menu item");
+            Debug.Assert(name == "FileReportShort" || name == "FileReport");
+            return Utils.SameStrings("FileReport", name) ? false : true;
+        }
+
         private async void FileReportClicked(object sender, RoutedEventArgs e)
         {
+            bool isCsv = IsCsv(sender);
             string error;
             (Grid grid, ListView listView) = GetReportGrid(true);
             if (grid == null || listView == null) return;
@@ -1502,7 +1479,8 @@ namespace MDRDesk
             {
                 Debug.Assert(listData.Item2 != null && listData.Item2.Length > 0);
                 string fileName = DumpFileMoniker.GetValidFileName(listData.Item2, true);
-                string lstPath = DumpFileMoniker.GetFileDistinctPath(CurrentIndex.AdhocFolder, fileName + ".txt");
+
+                string lstPath = DumpFileMoniker.GetFileDistinctPath(CurrentIndex.AdhocFolder, fileName + (isCsv ? ".csv" : ".txt"));
 
                 // get selection if any
                 //
@@ -1518,7 +1496,10 @@ namespace MDRDesk
                     }
                 }
 
-                ListingInfo.DumpListing(lstPath, listData.Item1, listData.Item2, out error, selectedIndex, selectedCount);
+                if (isCsv)
+                    ListingInfo.DumpListingAsCsv(lstPath, listData.Item1, listData.Item2, out error, selectedIndex, selectedCount);
+                else
+                    ListingInfo.DumpListing(lstPath, listData.Item1, listData.Item2, out error, selectedIndex, selectedCount);
 
                 if (error != null)
                 {
@@ -1526,7 +1507,7 @@ namespace MDRDesk
                     return;
                 }
                 Clipboard.SetText(lstPath);
-                GuiUtils.ShowInformation("Report","Report text file: ",lstPath + Environment.NewLine + "...the path is copied to the clippboard...",null, this);
+                GuiUtils.ShowInformation("Report","Report file " + (isCsv ? "(csv)" : "(text)"),lstPath + Environment.NewLine + "...the path is copied to the clippboard...",null, this);
                 return;
             }
 
@@ -1618,7 +1599,7 @@ namespace MDRDesk
 
         }
 
-        private void FileReportShortClicked(object sender, RoutedEventArgs e)
+        private void FileReportCsvClicked(object sender, RoutedEventArgs e)
         {
             (Grid grid, ListView listView) = GetReportGrid(false);
             if (grid == null || listView == null) return;
@@ -1719,12 +1700,21 @@ namespace MDRDesk
             if (listView != null)
             {
                 var data = listView.Tag as Tuple<ListingInfo, string>;
-                if (data != null || data.Item2 != null)
+                if (data != null && data.Item2 != null)
                 {
                     return (grid, listView);
                 }
             }
             // TODO JRD -- handle other grids
+            listView = (ListView)LogicalTreeHelper.FindLogicalNode(grid, "FinalizerQueueListView");
+            if (listView != null)
+            {
+                var data = listView.Tag as Tuple<ListingInfo, string>;
+                if (data != null && data.Item2 != null)
+                {
+                    return (grid, listView);
+                }
+            }
 
             MainStatusShowMessage("Cannot write report, an appropriate list view not found.");
             return (null,null);

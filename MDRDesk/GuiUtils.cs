@@ -18,7 +18,6 @@ namespace MDRDesk
 
         public static MainWindow MainWindowInstance => (MainWindow)(((App)Application.Current).MainWindow);
 
-
         public static string SelectCrashDumpFile()
 		{
 			return SelectFile(string.Format("*.{0}", Constants.CrashDumpFileExt),
@@ -315,7 +314,6 @@ namespace MDRDesk
 		}
 
 
-
 		public static void ShowError(string errStr, Window wnd)
 		{
 			string[] parts = errStr.Split(new[] { Constants.HeavyGreekCrossPadded }, StringSplitOptions.None);
@@ -411,6 +409,12 @@ namespace MDRDesk
                 }
             }
             return Constants.InvalidAddress;
+        }
+
+        public static string GetMenuItemName(object obj)
+        {
+            MenuItem menuItem = obj as MenuItem;
+            return (menuItem == null) ? null : menuItem.Name;
         }
     }
 }
