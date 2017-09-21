@@ -2760,119 +2760,119 @@ namespace MDRDesk
 
         #region Map Queries
 
-        private async void ExecuteGenerationQuery(string statusMessage, ulong[] addresses, Grid grid)
-        {
-            SetStartTaskMainWindowState(statusMessage + ", please wait...");
+        //private async void ExecuteGenerationQuery(string statusMessage, ulong[] addresses, Grid grid)
+        //{
+        //    SetStartTaskMainWindowState(statusMessage + ", please wait...");
 
-            //var result = await Task.Run(() =>
-            //{
-            //    return CurrentIndex.GetGenerationHistogram(addresses);
-            //});
-            var result = await Task.Factory.StartNew(() =>
-            {
-                return CurrentIndex.GetGenerationHistogram(addresses);
-            }, DumpSTAScheduler);
+        //    //var result = await Task.Run(() =>
+        //    //{
+        //    //    return CurrentIndex.GetGenerationHistogram(addresses);
+        //    //});
+        //    var result = await Task.Factory.StartNew(() =>
+        //    {
+        //        return CurrentIndex.GetGenerationHistogram(addresses);
+        //    }, DumpSTAScheduler);
 
 
-            Expander expander = null;
-            if (grid.Name.StartsWith("HeapIndexTypeView__"))
-                expander = (Expander)LogicalTreeHelper.FindLogicalNode(grid, @"TypeViewDataExpander");
-            else
-                expander = (Expander)LogicalTreeHelper.FindLogicalNode(grid, @"ExtraDataExpander");
+        //    Expander expander = null;
+        //    if (grid.Name.StartsWith("HeapIndexTypeView__"))
+        //        expander = (Expander)LogicalTreeHelper.FindLogicalNode(grid, @"TypeViewDataExpander");
+        //    else
+        //        expander = (Expander)LogicalTreeHelper.FindLogicalNode(grid, @"ExtraDataExpander");
 
-            if (expander == null)
-            {
-                var genStr = ClrtSegment.GetGenerationHistogramSimpleString(result);
-                SetEndTaskMainWindowState("Object generation at address(s): " + genStr);
-                return;
-            }
+        //    if (expander == null)
+        //    {
+        //        var genStr = ClrtSegment.GetGenerationHistogramSimpleString(result);
+        //        SetEndTaskMainWindowState("Object generation at address(s): " + genStr);
+        //        return;
+        //    }
 
-            System.Windows.Forms.Integration.WindowsFormsHost host = new System.Windows.Forms.Integration.WindowsFormsHost();
+        //    System.Windows.Forms.Integration.WindowsFormsHost host = new System.Windows.Forms.Integration.WindowsFormsHost();
 
-            host.Child = DmpNdxQueries.Auxiliaries.getColumnChart(ClrtSegment.GetGenerationHistogramTuples(result));
+        //    host.Child = DmpNdxQueries.Auxiliaries.getColumnChart(ClrtSegment.GetGenerationHistogramTuples(result));
 
-            if (addresses.Length == 1)
-                expander.Header = "Generation histogram for instance at: " + Utils.AddressString(addresses[0]) + " " + ClrtSegment.GetGenerationHistogramSimpleString(result);
-            else
-                expander.Header = "Generation histogram: " + ClrtSegment.GetGenerationHistogramSimpleString(result);
-            host.HorizontalAlignment = HorizontalAlignment.Stretch;
-            host.VerticalAlignment = SW.VerticalAlignment.Stretch;
-            var expanderGrid = new Grid { Height = 100 };
-            expanderGrid.Children.Add(host);
-            host.HorizontalAlignment = HorizontalAlignment.Stretch;
-            expander.Content = expanderGrid;
-            expander.IsExpanded = true;
+        //    if (addresses.Length == 1)
+        //        expander.Header = "Generation histogram for instance at: " + Utils.AddressString(addresses[0]) + " " + ClrtSegment.GetGenerationHistogramSimpleString(result);
+        //    else
+        //        expander.Header = "Generation histogram: " + ClrtSegment.GetGenerationHistogramSimpleString(result);
+        //    host.HorizontalAlignment = HorizontalAlignment.Stretch;
+        //    host.VerticalAlignment = SW.VerticalAlignment.Stretch;
+        //    var expanderGrid = new Grid { Height = 100 };
+        //    expanderGrid.Children.Add(host);
+        //    host.HorizontalAlignment = HorizontalAlignment.Stretch;
+        //    expander.Content = expanderGrid;
+        //    expander.IsExpanded = true;
 
-            SetEndTaskMainWindowState(statusMessage + ", DONE.");
-        }
+        //    SetEndTaskMainWindowState(statusMessage + ", DONE.");
+        //}
 
-        private async void ExecuteGenerationQuery(string statusMessage, string reportTitle, string str, Grid grid)
-        {
-            MainStatusShowMessage(statusMessage + ", please wait...");
-            MainToolbarTray.IsEnabled = false;
+        //private async void ExecuteGenerationQuery(string statusMessage, string reportTitle, string str, Grid grid)
+        //{
+        //    MainStatusShowMessage(statusMessage + ", please wait...");
+        //    MainToolbarTray.IsEnabled = false;
 
-            Mouse.OverrideCursor = Cursors.Wait;
-            //var result = await Task.Run(() =>
-            //{
-            //    string error;
-            //    int[] genHistogram = null;
-            //    switch (reportTitle)
-            //    {
-            //        case ReportTitleStringUsage:
-            //            genHistogram = CurrentIndex.GetStringGcGenerationHistogram(str, out error);
-            //            break;
-            //        default:
-            //            genHistogram = CurrentIndex.GetTypeGcGenerationHistogram(str, out error);
-            //            break;
-            //    }
-            //    return new Tuple<string, int[]>(error, genHistogram);
-            //});
-            var result = await Task.Factory.StartNew(() =>
-            {
-                string error;
-                int[] genHistogram = null;
-                switch (reportTitle)
-                {
-                    case ReportTitleStringUsage:
-                        genHistogram = CurrentIndex.GetStringGcGenerationHistogram(str, out error);
-                        break;
-                    default:
-                        genHistogram = CurrentIndex.GetTypeGcGenerationHistogram(str, out error);
-                        break;
-                }
-                return new Tuple<string, int[]>(error, genHistogram);
-            }, DumpSTAScheduler);
+        //    Mouse.OverrideCursor = Cursors.Wait;
+        //    //var result = await Task.Run(() =>
+        //    //{
+        //    //    string error;
+        //    //    int[] genHistogram = null;
+        //    //    switch (reportTitle)
+        //    //    {
+        //    //        case ReportTitleStringUsage:
+        //    //            genHistogram = CurrentIndex.GetStringGcGenerationHistogram(str, out error);
+        //    //            break;
+        //    //        default:
+        //    //            genHistogram = CurrentIndex.GetTypeGcGenerationHistogram(str, out error);
+        //    //            break;
+        //    //    }
+        //    //    return new Tuple<string, int[]>(error, genHistogram);
+        //    //});
+        //    var result = await Task.Factory.StartNew(() =>
+        //    {
+        //        string error;
+        //        int[] genHistogram = null;
+        //        switch (reportTitle)
+        //        {
+        //            case ReportTitleStringUsage:
+        //                genHistogram = CurrentIndex.GetStringGcGenerationHistogram(str, out error);
+        //                break;
+        //            default:
+        //                genHistogram = CurrentIndex.GetTypeGcGenerationHistogram(str, out error);
+        //                break;
+        //        }
+        //        return new Tuple<string, int[]>(error, genHistogram);
+        //    }, DumpSTAScheduler);
 
-            Mouse.OverrideCursor = null;
-            MainToolbarTray.IsEnabled = true;
-            if (result.Item1 != null)
-            {
-                MainStatusShowMessage(statusMessage + ": FAILED");
-                MessageBox.Show(result.Item1, "Generation Lookup Failed", MessageBoxButton.OK, MessageBoxImage.Error);
-                return;
-            }
-            else
-                MainStatusShowMessage(statusMessage + ": DONE");
+        //    Mouse.OverrideCursor = null;
+        //    MainToolbarTray.IsEnabled = true;
+        //    if (result.Item1 != null)
+        //    {
+        //        MainStatusShowMessage(statusMessage + ": FAILED");
+        //        MessageBox.Show(result.Item1, "Generation Lookup Failed", MessageBoxButton.OK, MessageBoxImage.Error);
+        //        return;
+        //    }
+        //    else
+        //        MainStatusShowMessage(statusMessage + ": DONE");
 
-            Expander expander = null;
-            if (grid.Name.StartsWith("HeapIndexTypeView__"))
-                expander = (Expander)LogicalTreeHelper.FindLogicalNode(grid, @"TypeViewDataExpander");
-            else
-                expander = (Expander)LogicalTreeHelper.FindLogicalNode(grid, @"ExtraDataExpander");
+        //    Expander expander = null;
+        //    if (grid.Name.StartsWith("HeapIndexTypeView__"))
+        //        expander = (Expander)LogicalTreeHelper.FindLogicalNode(grid, @"TypeViewDataExpander");
+        //    else
+        //        expander = (Expander)LogicalTreeHelper.FindLogicalNode(grid, @"ExtraDataExpander");
 
-            System.Windows.Forms.Integration.WindowsFormsHost host = new System.Windows.Forms.Integration.WindowsFormsHost();
+        //    System.Windows.Forms.Integration.WindowsFormsHost host = new System.Windows.Forms.Integration.WindowsFormsHost();
 
-            host.Child = DmpNdxQueries.Auxiliaries.getColumnChart(ClrtSegment.GetGenerationHistogramTuples(result.Item2));
+        //    host.Child = DmpNdxQueries.Auxiliaries.getColumnChart(ClrtSegment.GetGenerationHistogramTuples(result.Item2));
 
-            expander.Header = "Generation histogram for " + str + " " + ClrtSegment.GetGenerationHistogramSimpleString(result.Item2);
-            host.HorizontalAlignment = HorizontalAlignment.Stretch;
-            host.VerticalAlignment = SW.VerticalAlignment.Stretch;
-            var expanderGrid = new Grid { Height = 100 };
-            expanderGrid.Children.Add(host);
-            host.HorizontalAlignment = HorizontalAlignment.Stretch;
-            expander.Content = expanderGrid;
-            expander.IsExpanded = true;
-        }
+        //    expander.Header = "Generation histogram for " + str + " " + ClrtSegment.GetGenerationHistogramSimpleString(result.Item2);
+        //    host.HorizontalAlignment = HorizontalAlignment.Stretch;
+        //    host.VerticalAlignment = SW.VerticalAlignment.Stretch;
+        //    var expanderGrid = new Grid { Height = 100 };
+        //    expanderGrid.Children.Add(host);
+        //    host.HorizontalAlignment = HorizontalAlignment.Stretch;
+        //    expander.Content = expanderGrid;
+        //    expander.IsExpanded = true;
+        //}
 
 
         #endregion Map Queries

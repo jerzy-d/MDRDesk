@@ -450,6 +450,57 @@ namespace ClrMDRIndex
             return DumpFileName + (Is64Bit ? " (x64)" : " (x86)");
         }
 
+        private static void WriteStringDct(StreamWriter sw, IDictionary<string, List<string>> dct)
+        {
+            sw.WriteLine(dct.Count);
+            foreach (var kv in dct)
+            {
+                sw.Write(kv.Key);
+                kv.Value.Sort(StringComparer.Ordinal);
+                foreach (var s in kv.Value)
+                {
+                    sw.Write(Constants.HeavyGreekCross);
+                    sw.Write(s);
+                }
+                sw.WriteLine();
+            }
+        }
+
+        public static bool SaveStringDictionaries(string path, IDictionary<string,List<string>> dct1, IDictionary<string, List<string>> dct2, List<KeyValuePair<string,string>> lst, out string error)
+        {
+            error = null;
+            StreamWriter sw = null;
+            try
+            {
+                sw = new StreamWriter(path);
+                WriteStringDct(sw, dct1);
+                WriteStringDct(sw, dct2);
+                if (lst != null && lst.Count > 0)
+                {
+                    lst.Sort(new Utils.KVStrStrCmp());
+                    sw.WriteLine(lst.Count);
+                    foreach (var kv in lst)
+                    {
+                        sw.WriteLine(kv.Key + Constants.HeavyGreekCross + kv.Value);
+                    }
+                }
+                else
+                {
+                    sw.WriteLine(0);
+                }
+                return true;
+            }
+            catch(Exception ex)
+            {
+                error = Utils.GetExceptionErrorString(ex);
+                return false;
+            }
+            finally
+            {
+                sw?.Close();
+            }
+        }
+
         #endregion utils
 
         #region queries

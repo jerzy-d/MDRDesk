@@ -84,3 +84,9 @@
 0042 09/12/17 case "TOTALS OF SELECTED ROWS" - for size differences (when comparing with other dump) we need neat way to be able to calculate various totals.
 0043 09/12/17 new feature -- how much memory is referenced by an instance, or a type, or selected set of instances.
 0044 09/12/17 generate cvs files from listings
+0045 09/19/17 Test instance value for DevExpress.Data.Linq.Helpers.GetQueryableNotHandledMessenger
+	D:\Jerzy\WinDbgStuff\dumps\Compliance\Carlson32\EzeCompliance_170825_193107.32.dmp.map
+0046 09/21/17 test instance value for 
+	ECS.Common.HierarchyCache.Structure.Benchmarks at 0x00000080234748
+	then field at 0x000000802349c8 (benchmarksById)
+	in D:\Jerzy\WinDbgStuff\dumps\Analytics\Local\Eze.Analytics.Svc.exe_170920_144059.dmp.map

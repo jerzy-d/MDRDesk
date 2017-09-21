@@ -6,8 +6,6 @@ module Types =
     open System.IO
     open System.Collections.Generic
     open System.Diagnostics
-    open FSharp.Charting
-    open FSharp.Charting.ChartTypes
     open Microsoft.Diagnostics.Runtime
     open ClrMDRIndex
 

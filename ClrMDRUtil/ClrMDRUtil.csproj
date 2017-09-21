@@ -116,6 +116,7 @@
     <Compile Include="ClrUtils\IntSterta.cs" />
     <Compile Include="ClrUtils\References.cs" />
     <Compile Include="ClrUtils\StringStats.cs" />
+    <Compile Include="ClrUtils\TypeInterfaces.cs" />
     <Compile Include="Graph\DepthFirstOrder.cs" />
     <Compile Include="Graph\Digraph.cs" />
     <Compile Include="Graph\DirectedCycle.cs" />
@@ -133,6 +134,7 @@
     <Compile Include="Utils\Arena.cs" />
     <Compile Include="Utils\FileReader.cs" />
     <Compile Include="Utils\FileWriter.cs" />
+    <Compile Include="Utils\GetDotNetVersion.cs" />
     <Compile Include="Utils\IdReferences.cs" />
     <Compile Include="Utils\IntArrayStore.cs" />
     <Compile Include="Utils\BinaryHeap.cs" />

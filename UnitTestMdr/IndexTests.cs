@@ -1086,6 +1086,88 @@ namespace UnitTestMdr
 			Assert.IsNull(error, error);
 		}
 
+        [TestMethod]
+        public void TestGetInterfaceImplementors()
+        {
+            string indexPath = @"D:\Jerzy\WinDbgStuff\dumps\Analytics\Highline\analyticsdump111.dlk.dmp";
+            string error = null;
+            Stopwatch stopWatch = new Stopwatch();
+            stopWatch.Start();
+            var index = OpenIndex(indexPath);
+            TestContext.WriteLine(index.DumpFileName + " INDEX OPEN DURATION: " + Utils.StopAndGetDurationString(stopWatch));
+
+            var dctTypeInterfaces = new SortedDictionary<string, List<string>>();
+            var dctInterfaceTypes = new SortedDictionary<string, List<string>>();
+            HashSet<int> done = new HashSet<int>();
+            List<KeyValuePair<string,string>> notFoundList = new List<KeyValuePair<string, string>>(32);
+
+            using (index)
+            {
+                ClrHeap heap = index.Dump.Runtime.GetHeap();
+                var segs = heap.Segments;
+                string[] typeNames = index.TypeNames;
+                for (int i = 0, icnt = segs.Count; i < icnt; ++i)
+                {
+                    var seg = segs[i];
+                    ulong addr = seg.FirstObject;
+                    while (addr != 0ul)
+                    {
+                        ClrType clrType = heap.GetObjectType(addr);
+                        if (clrType == null)
+                        {
+                            goto NEXT_OBJECT;
+                        }
+
+                        var interfaces = clrType.Interfaces;
+                        if (interfaces != null && interfaces.Count > 0)
+                        {
+                            string clrTypeName = clrType.Name;
+                            var typeNameNdx = Array.BinarySearch(typeNames, clrTypeName, StringComparer.Ordinal);
+                            Assert.IsTrue(typeNameNdx >= 0);
+                            if (done.Add(typeNameNdx))
+                            {
+                                var interfaceNames = new List<string>(interfaces.Count);
+                                for (int j = 0, jcnt = interfaces.Count; j < jcnt; ++j)
+                                {
+                                    string interfaceName = interfaces[j].Name;
+                                    interfaceNames.Add(interfaceName);
+                                    var interfaceNameNdx = Array.BinarySearch(typeNames,interfaceName);
+                                    if (interfaceNameNdx < 0)
+                                    {
+                                        notFoundList.Add(new KeyValuePair<string, string>(clrTypeName,interfaceName));
+                                    }
+                                    List<string> lst;
+                                    if (dctInterfaceTypes.TryGetValue(interfaceName,out lst))
+                                    {
+                                        lst.Add(clrTypeName);
+                                    }
+                                    else
+                                    {
+                                        dctInterfaceTypes.Add(interfaceName, new List<string>() { clrTypeName });
+                                    }
+
+                                }
+                                dctTypeInterfaces.Add(clrTypeName, interfaceNames);
+                            }
+                        }
+                        NEXT_OBJECT:
+                        addr = seg.NextObject(addr);
+                    }
+
+                }
+
+                string path = index.GetFilePath(index.CurrentRuntimeIndex, Constants.TxtTypeInterfacesFilePostfix);
+                var result = DumpIndex.SaveStringDictionaries(path, dctTypeInterfaces, dctInterfaceTypes, notFoundList, out error);
+                Assert.IsTrue(result);
+                TypeInterfaces tpIntr = TypeInterfaces.Load(path, out error);
+                Assert.IsNotNull(tpIntr);
+                Assert.IsNull(error);
+            }
+
+            Assert.IsNull(error, error);
+        }
+
+
         #region type sizes and distribution
 
         [TestMethod]
@@ -2240,6 +2322,14 @@ namespace UnitTestMdr
 
                 Assert.IsNull(error, error);
             }
+        }
+
+        [TestMethod]
+        public void TestFrameworkVersion()
+        {
+            string error;
+            var ver = GetDotNetVersion.Get45PlusFromRegistry(out error);
+            Assert.IsNull(error, error);
         }
 
         [TestMethod]

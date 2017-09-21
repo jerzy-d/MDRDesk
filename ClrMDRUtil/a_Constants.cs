@@ -201,6 +201,7 @@ namespace ClrMDRIndex
         public const string MapKindsFilePostfix = ".`KINDS[0].bin"; // our special type kind to ease digging up values 
         public const string MapTypeFieldTypesPostfix = ".`TYPEFIELDTYPES0].bin"; // type ids of field types for each type 
         public const string MapFieldTypeParentTypesPostfix = ".`FIELDTYPEPARENTTYPES0].bin"; // reversed references of the above (MapTypeFieldTypesPostfix)
+        public const string TxtTypeInterfacesFilePostfix = ".`TYPEINTERFACES[0].txt"; // list type implemented interfaces, and interface type implementors
 
         // segmnents, generation info
         //

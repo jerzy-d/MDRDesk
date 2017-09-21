@@ -6,8 +6,6 @@ module Auxiliaries =
     open System.IO
     open System.Collections.Generic
     open System.Diagnostics
-    open FSharp.Charting
-    open FSharp.Charting.ChartTypes
     open Microsoft.Diagnostics.Runtime
     open ClrMDRIndex
 
@@ -387,7 +385,7 @@ module Auxiliaries =
 
     (*
         Charts
-    *)
+
 
     let getColumnChart (data:(string*int64) array) =
         let chart = Chart.Column data
@@ -420,3 +418,4 @@ module Auxiliaries =
     let getSizeGenerationsChart2 (sizes:uint64 array) =
         let titleAry = [|"oG0";"oG1";"oG2";"oLO";"uG0";"uG1";"uG2";"uLO";"fG0";"fG1";"fG2";"fLO"|]
         getLongColumnChartWithTitle (Array.zip titleAry sizes) "object, unrooted, free sizes"
+    *)

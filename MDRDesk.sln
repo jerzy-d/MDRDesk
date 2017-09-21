@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 15
-VisualStudioVersion = 15.0.26730.12
+VisualStudioVersion = 15.0.26730.15
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MDRDesk", "MDRDesk\MDRDesk.csproj", "{4BB5B249-E4F1-490F-8F40-214BCC05CE64}"
 	ProjectSection(ProjectDependencies) = postProject
@@ -38,6 +38,8 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Documentation", "Documentat
 	EndProjectSection
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "WixCustomActions", "WixCustomActions\WixCustomActions.csproj", "{E635B178-C0B3-4804-8C6B-4F6A0B016A9C}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MDRInstaller", "MDRInstaller\MDRInstaller.csproj", "{EE5C90DC-4729-473C-BF8D-9F76DCCD9148}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -137,6 +139,18 @@ Global
 		{E635B178-C0B3-4804-8C6B-4F6A0B016A9C}.Release|x64.ActiveCfg = Release|x86
 		{E635B178-C0B3-4804-8C6B-4F6A0B016A9C}.Release|x86.ActiveCfg = Release|x86
 		{E635B178-C0B3-4804-8C6B-4F6A0B016A9C}.Release|x86.Build.0 = Release|x86
+		{EE5C90DC-4729-473C-BF8D-9F76DCCD9148}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{EE5C90DC-4729-473C-BF8D-9F76DCCD9148}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{EE5C90DC-4729-473C-BF8D-9F76DCCD9148}.Debug|x64.ActiveCfg = Debug|x64
+		{EE5C90DC-4729-473C-BF8D-9F76DCCD9148}.Debug|x64.Build.0 = Debug|x64
+		{EE5C90DC-4729-473C-BF8D-9F76DCCD9148}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{EE5C90DC-4729-473C-BF8D-9F76DCCD9148}.Debug|x86.Build.0 = Debug|Any CPU
+		{EE5C90DC-4729-473C-BF8D-9F76DCCD9148}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{EE5C90DC-4729-473C-BF8D-9F76DCCD9148}.Release|Any CPU.Build.0 = Release|Any CPU
+		{EE5C90DC-4729-473C-BF8D-9F76DCCD9148}.Release|x64.ActiveCfg = Release|Any CPU
+		{EE5C90DC-4729-473C-BF8D-9F76DCCD9148}.Release|x64.Build.0 = Release|Any CPU
+		{EE5C90DC-4729-473C-BF8D-9F76DCCD9148}.Release|x86.ActiveCfg = Release|Any CPU
+		{EE5C90DC-4729-473C-BF8D-9F76DCCD9148}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

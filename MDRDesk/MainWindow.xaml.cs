@@ -1191,8 +1191,8 @@ namespace MDRDesk
                         var str = entries[ndx].GetItem(entries[ndx].Count - 1);
                         str = ReportFile.RecoverReportLineString(str);
                         var grid = GetCurrentTabGrid();
-                        Dispatcher.CurrentDispatcher.InvokeAsync(
-                            () => ExecuteGenerationQuery("Getting generation distribution", reportTitle, str, grid));
+                        //Dispatcher.CurrentDispatcher.InvokeAsync(
+                        //    () => ExecuteGenerationQuery("Getting generation distribution", reportTitle, str, grid));
                         break;
                     case "GET REFERENCES OF STRING PREFIX":
                     case "GET REFERENCES":
