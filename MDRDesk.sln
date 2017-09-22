@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 15
-VisualStudioVersion = 15.0.26730.15
+VisualStudioVersion = 15.0.26730.16
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MDRDesk", "MDRDesk\MDRDesk.csproj", "{4BB5B249-E4F1-490F-8F40-214BCC05CE64}"
 	ProjectSection(ProjectDependencies) = postProject
@@ -126,19 +126,17 @@ Global
 		{0730657F-33F2-429D-8336-33D310A38718}.Debug|Any CPU.ActiveCfg = Debug|x86
 		{0730657F-33F2-429D-8336-33D310A38718}.Debug|x64.ActiveCfg = Debug|x86
 		{0730657F-33F2-429D-8336-33D310A38718}.Debug|x86.ActiveCfg = Release|x86
-		{0730657F-33F2-429D-8336-33D310A38718}.Debug|x86.Build.0 = Release|x86
 		{0730657F-33F2-429D-8336-33D310A38718}.Release|Any CPU.ActiveCfg = Release|x86
-		{0730657F-33F2-429D-8336-33D310A38718}.Release|x64.ActiveCfg = Release|x86
+		{0730657F-33F2-429D-8336-33D310A38718}.Release|x64.ActiveCfg = Release|x64
+		{0730657F-33F2-429D-8336-33D310A38718}.Release|x64.Build.0 = Release|x64
 		{0730657F-33F2-429D-8336-33D310A38718}.Release|x86.ActiveCfg = Release|x86
-		{0730657F-33F2-429D-8336-33D310A38718}.Release|x86.Build.0 = Release|x86
 		{E635B178-C0B3-4804-8C6B-4F6A0B016A9C}.Debug|Any CPU.ActiveCfg = Debug|x86
 		{E635B178-C0B3-4804-8C6B-4F6A0B016A9C}.Debug|x64.ActiveCfg = Debug|x86
 		{E635B178-C0B3-4804-8C6B-4F6A0B016A9C}.Debug|x86.ActiveCfg = Debug|x86
-		{E635B178-C0B3-4804-8C6B-4F6A0B016A9C}.Debug|x86.Build.0 = Debug|x86
 		{E635B178-C0B3-4804-8C6B-4F6A0B016A9C}.Release|Any CPU.ActiveCfg = Release|x86
-		{E635B178-C0B3-4804-8C6B-4F6A0B016A9C}.Release|x64.ActiveCfg = Release|x86
+		{E635B178-C0B3-4804-8C6B-4F6A0B016A9C}.Release|x64.ActiveCfg = Release|x64
+		{E635B178-C0B3-4804-8C6B-4F6A0B016A9C}.Release|x64.Build.0 = Release|x64
 		{E635B178-C0B3-4804-8C6B-4F6A0B016A9C}.Release|x86.ActiveCfg = Release|x86
-		{E635B178-C0B3-4804-8C6B-4F6A0B016A9C}.Release|x86.Build.0 = Release|x86
 		{EE5C90DC-4729-473C-BF8D-9F76DCCD9148}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{EE5C90DC-4729-473C-BF8D-9F76DCCD9148}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{EE5C90DC-4729-473C-BF8D-9F76DCCD9148}.Debug|x64.ActiveCfg = Debug|x64
