@@ -122,7 +122,7 @@ namespace MDRDesk
                 sb.AppendLine((Owner as MainWindow).Title);
             }
 
-            Clipboard.SetText(StringBuilderCache.GetStringAndRelease(sb));
+            GuiUtils.CopyToClipboard(StringBuilderCache.GetStringAndRelease(sb));
         }
 
         public void SetButtonsPredefined(EnumPredefinedButtons buttons)

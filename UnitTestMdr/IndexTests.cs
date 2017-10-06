@@ -2461,6 +2461,13 @@ namespace UnitTestMdr
 
         }
 
+        [TestMethod]
+        public void Misc()
+        {
+            char[] cary = new char[DumpFileMoniker.InvalidPathCharsAry.Length];
+            Array.Copy(DumpFileMoniker.InvalidPathCharsAry, cary, cary.Length);
+            //Array.Sort(cary,char)
+        }
 
         [TestMethod]
 		public void TestMapping()

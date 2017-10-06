@@ -9,6 +9,7 @@ using ClrMDRIndex;
 using System.Collections.Generic;
 using System.Text;
 using System.Linq;
+using System.Windows.Threading;
 
 namespace MDRDesk
 {
@@ -415,6 +416,22 @@ namespace MDRDesk
         {
             MenuItem menuItem = obj as MenuItem;
             return (menuItem == null) ? null : menuItem.Name;
+        }
+
+        public static void CopyToClipboard(string text)
+        {
+            try
+            {
+                Clipboard.SetDataObject(text);
+            }
+            catch
+            {
+                Dispatcher.CurrentDispatcher.InvokeAsync(() => ShowError("Clipboard Issue."
+                                                                            + Constants.HeavyGreekCrossPadded + "Cannot copy to clipboard."
+                                                                            + Constants.HeavyGreekCrossPadded + "I think this is the fault of the Win32 API." + Environment.NewLine + "See details for data."
+                                                                            + Constants.HeavyGreekCrossPadded + text
+                                                                            , MainWindowInstance));
+            }
         }
     }
 }

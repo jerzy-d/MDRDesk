@@ -1249,9 +1249,7 @@ namespace ClrMDRIndex
 			return nary;
 		}
 
-
-
-		public static string ReplaceNewlines(string str)
+        public static string ReplaceNewlines(string str)
 		{
 			if (string.IsNullOrEmpty(str)) return str;
 			for (int i = 0, icnt = str.Length; i < icnt; ++i)
@@ -1309,8 +1307,6 @@ namespace ClrMDRIndex
 			return str;
 		}
 
-        
-
         public static string GetFancyIntStr(int val, int width)
         {
             char[] digits = new char[width];
@@ -1354,7 +1350,6 @@ namespace ClrMDRIndex
 			for (; pos < str.Length && !Char.IsWhiteSpace(str[pos]); ++pos) ;
 			return pos;
 		}
-
  
 		private static bool IsBracket(char c)
 		{
@@ -3198,7 +3193,6 @@ namespace ClrMDRIndex
             GCSettings.LargeObjectHeapCompactionMode = GCLargeObjectHeapCompactionMode.CompactOnce;
             GC.Collect();
 		}
-
 
 		public const int SizeDistributionLenght = 33;
 

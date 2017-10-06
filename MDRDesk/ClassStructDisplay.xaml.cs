@@ -139,7 +139,6 @@ namespace MDRDesk
                     return index.GetInstanceValueFields(selInstValue.Address, selInstValue.Parent);
                 }, _mainWindow.DumpSTAScheduler);
 
-
                 if (Utils.IsInformation(error))
                     StatusText.Text = error;
                 else
@@ -160,27 +159,27 @@ namespace MDRDesk
                     return;
                 }
 
-                TypeExtractor.KnownTypes knownType = TypeExtractor.IsKnownCollection(fields[0].TypeName);
-                if (knownType != TypeExtractor.KnownTypes.Unknown)
-                {
-                    var inst = fields[0];
-                    switch(knownType)
-                    {
-                        case TypeExtractor.KnownTypes.StringBuilder:
-                            ValueWindows.ShowContentWindow(inst.GetDescription(), inst, ValueWindows.WndType.Content);
-                            return;
-                        case TypeExtractor.KnownTypes.HashSet:
-                        case TypeExtractor.KnownTypes.List:
-                            ValueWindows.ShowContentWindow(inst.GetDescription(), inst, ValueWindows.WndType.List);
-                            return;
+                //TypeExtractor.KnownTypes knownType = TypeExtractor.IsKnownCollection(fields[0].TypeName);
+                //if (knownType != TypeExtractor.KnownTypes.Unknown)
+                //{
+                //    var inst = fields[0];
+                //    switch(knownType)
+                //    {
+                //        case TypeExtractor.KnownTypes.StringBuilder:
+                //            ValueWindows.ShowContentWindow(inst.GetDescription(), inst, ValueWindows.WndType.Content);
+                //            return;
+                //        case TypeExtractor.KnownTypes.HashSet:
+                //        case TypeExtractor.KnownTypes.List:
+                //            ValueWindows.ShowContentWindow(inst.GetDescription(), inst, ValueWindows.WndType.List);
+                //            return;
 
-                        case TypeExtractor.KnownTypes.Dictionary:
-                        case TypeExtractor.KnownTypes.SortedDictionary:
-                        case TypeExtractor.KnownTypes.SortedList:
-                            ValueWindows.ShowContentWindow(inst.GetDescription(), inst, ValueWindows.WndType.KeyValues);
-                            return;
-                    }
-                }
+                //        case TypeExtractor.KnownTypes.Dictionary:
+                //        case TypeExtractor.KnownTypes.SortedDictionary:
+                //        case TypeExtractor.KnownTypes.SortedList:
+                //            ValueWindows.ShowContentWindow(inst.GetDescription(), inst, ValueWindows.WndType.KeyValues);
+                //            return;
+                //    }
+                //}
 
                 if (fields.Length > 0)
                 {
@@ -231,7 +230,7 @@ namespace MDRDesk
             InstanceValue selInstValue;
             if (!GetSelectedItem(out selTreeItem, out selInstValue)) return;
             var val = selInstValue.Value.FullContent;
-            Clipboard.SetText(val);
+            GuiUtils.CopyToClipboard(val);
             StatusText.Text = "The value was copied to the clipboard";
         }
 

@@ -232,7 +232,7 @@ namespace MDRDesk
                 SW.MessageBox.Show(error, "Get Required Dac Failed", MessageBoxButton.OK, MessageBoxImage.Error);
                 return;
             }
-            SW.Clipboard.SetText(dacFiles[dacFiles.Length - 1]);
+            GuiUtils.CopyToClipboard(dacFiles[dacFiles.Length - 1]);
             string lst = string.Join("\n", dacFiles);
             if (dacFiles.Length > 1)
                 ShowInformation("Required Dac Files", lst, "Last dac file name (shown above) is copied to Clipboard.", string.Empty);
@@ -949,7 +949,7 @@ namespace MDRDesk
         {
             if (!IsIndexAvailable("Copy the index path.")) return;
             string path = CurrentIndex.IndexFolder;
-            Clipboard.SetText(path);
+            GuiUtils.CopyToClipboard(path);
             MainStatusShowMessage("Copied to clipboard: " + path);
         }
 
@@ -1171,7 +1171,7 @@ namespace MDRDesk
                 {
                     case "COPY LIST ROW":
                         row = GetListingRow(entries[ndx]);
-                        Clipboard.SetText(row);
+                        GuiUtils.CopyToClipboard(row);
                         MessageBox.Show(row, "Copied to clipboard.", MessageBoxButton.OK, MessageBoxImage.Information);
                         break;
                     case "TOTALS OF SELECTED ROWS":
@@ -1410,7 +1410,7 @@ namespace MDRDesk
                 if (!GetDlgString("Get IPv4 Address Value", "Enter IPv4 address (ex.: 192.154.1.4)", "", out value)) return;
                 value = value.Trim();
                 var result = Utils.GetIpAddressValue(value);
-                Clipboard.SetText(result.ToString());
+                GuiUtils.CopyToClipboard(result.ToString());
                 MainStatusShowMessage("IPv4 address: " + value + ", long value is: " + result + ". The value is copied to the clipboard.");
             }
             catch (Exception ex)
@@ -1429,7 +1429,7 @@ namespace MDRDesk
                 value = value.Trim();
                 long val = Int64.Parse(value);
                 var result = Utils.GetIpAddress(val);
-                Clipboard.SetText(result);
+                GuiUtils.CopyToClipboard(result);
                 MainStatusShowMessage("IPv4 address of '" + value + "' is: " + result + ". The address is copied to the clipboard.");
             }
             catch (Exception ex)
@@ -1506,7 +1506,7 @@ namespace MDRDesk
                     GuiUtils.ShowError(error, this);
                     return;
                 }
-                Clipboard.SetText(lstPath);
+                GuiUtils.CopyToClipboard(lstPath);
                 GuiUtils.ShowInformation("Report","Report file " + (isCsv ? "(csv)" : "(text)"),lstPath + Environment.NewLine + "...the path is copied to the clippboard...",null, this);
                 return;
             }
@@ -1922,7 +1922,7 @@ namespace MDRDesk
             string str = StringBuilderCache.GetStringAndRelease(sb);
             if (cnt == 1)
                 str = str.Trim();
-            Clipboard.SetText(str);
+            GuiUtils.CopyToClipboard(str);
             if (cnt == 1)
             {
                 MainStatusShowMessage("Address: " + str + " is copied to Clipboard.");
@@ -1958,7 +1958,7 @@ namespace MDRDesk
 
             if (maxLen == 1)
                 str = str.Trim();
-            Clipboard.SetText(str);
+            GuiUtils.CopyToClipboard(str);
             if (maxLen == 1)
             {
                 MainStatusShowMessage("Address: " + str + " is copied to Clipboard.");
@@ -2088,7 +2088,7 @@ namespace MDRDesk
             string result = StringBuilderCache.GetStringAndRelease(sb);
             if (selections.Count == 1) result = result.Trim();
 
-            Clipboard.SetText(result);
+            GuiUtils.CopyToClipboard(result);
             if (selections.Count == 1)
             {
                 MainStatusShowMessage("Address: " + result + " is copied to Clipboard.");
@@ -2119,7 +2119,7 @@ namespace MDRDesk
             string result = StringBuilderCache.GetStringAndRelease(sb);
             if (lv.Items.Count == 1) result = result.Trim();
 
-            Clipboard.SetText(result);
+            GuiUtils.CopyToClipboard(result);
             if (lv.Items.Count == 1)
             {
                 MainStatusShowMessage("Address: " + result + " is copied to Clipboard.");
@@ -2227,7 +2227,7 @@ namespace MDRDesk
             var row = GetypeValuesReportRow();
             if (row.IsEmpty) return;
             var rowStr = GetListingRow(row);
-            Clipboard.SetText(rowStr);
+            GuiUtils.CopyToClipboard(rowStr);
             MessageBox.Show(rowStr, "Copied to clipboard.", MessageBoxButton.OK, MessageBoxImage.Information);
         }
 
@@ -2237,7 +2237,7 @@ namespace MDRDesk
             if (row.IsEmpty) return;
             ulong addr = Utils.GetAddressValue(row.GetItem(0));
             string addrStr = Utils.RealAddressString(addr);
-            Clipboard.SetText(addrStr);
+            GuiUtils.CopyToClipboard(addrStr);
             MessageBox.Show(addrStr, "Copied to clipboard.", MessageBoxButton.OK, MessageBoxImage.Information);
         }
 

@@ -1109,7 +1109,7 @@ namespace MDRDesk
             int typeId;
             if (!GetTypeNameInfo(sender, out typeName, out typeId)) return;
             typeName = CurrentIndex.GetTypeName(typeId);
-            Clipboard.SetText(typeName);
+            GuiUtils.CopyToClipboard(typeName);
             MainStatusShowMessage("Copied to Clipboard: " + typeName);
         }
 
@@ -2017,7 +2017,7 @@ namespace MDRDesk
             AncestorNode node = GetAncestorTreeViewSelectedNode();
             if (node != null)
             {
-                Clipboard.SetText(node.TypeName);
+                GuiUtils.CopyToClipboard(node.TypeName);
                 MainStatusShowMessage("Copied to Clipboard: " + node.TypeName);
             }
             else

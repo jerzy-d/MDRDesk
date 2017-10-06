@@ -128,14 +128,14 @@ namespace MDRDesk
         {
             string value = GetSelectionString(true); // true for key
             if (value == null) return;
-            Clipboard.SetText(value);
+            GuiUtils.CopyToClipboard(value);
         }
 
         private void CopyValueClicked(object sender, RoutedEventArgs e)
         {
             string value = GetSelectionString(false); // for value
             if (value == null) return;
-            Clipboard.SetText(value);
+            GuiUtils.CopyToClipboard(value);
         }
 
         private void KeyGetParentRefsClicked(object sender, RoutedEventArgs e)
@@ -229,7 +229,7 @@ namespace MDRDesk
                     sb.Append(kv.Key.FullContent).Append(Constants.HeavyGreekCrossPadded).Append(kv.Value.FullContent);
                     sb.AppendLine();
                 }
-                Clipboard.SetText(sb.ToString());
+                GuiUtils.CopyToClipboard(sb.ToString());
                 MessageBox.Show("Collection content copied to clipboard.", string.Empty, MessageBoxButton.OK, MessageBoxImage.Information);
             }
 

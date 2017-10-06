@@ -87,7 +87,7 @@ namespace MDRDesk
             if (CollectionValues.SelectedIndex < 0) return;
             DisplayableString item = (DisplayableString)CollectionValues.SelectedItem;
             string value = item.FullContent;
-            Clipboard.SetText(value);
+            GuiUtils.CopyToClipboard(value);
         }
 
         private void CopyItemAllClicked(object sender, RoutedEventArgs e)
@@ -101,7 +101,7 @@ namespace MDRDesk
                 sb.AppendLine(data[i].FullContent);
             }
             string str = StringBuilderCache.GetStringAndRelease(sb);
-            Clipboard.SetText(str);
+            GuiUtils.CopyToClipboard(str);
         }
 
         private void ItemLstGetParentRefsClicked(object sender, RoutedEventArgs e)

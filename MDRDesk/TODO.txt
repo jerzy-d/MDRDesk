@@ -86,7 +86,7 @@
 0044 09/12/17 generate cvs files from listings
 0045 09/19/17 Test instance value for DevExpress.Data.Linq.Helpers.GetQueryableNotHandledMessenger
 	D:\Jerzy\WinDbgStuff\dumps\Compliance\Carlson32\EzeCompliance_170825_193107.32.dmp.map
-0046 09/21/17 test instance value for 
+*** 0046 09/21/17 test instance value for
 	ECS.Common.HierarchyCache.Structure.Benchmarks at 0x00000080234748
 	then field at 0x000000802349c8 (benchmarksById)
 	in D:\Jerzy\WinDbgStuff\dumps\Analytics\Local\Eze.Analytics.Svc.exe_170920_144059.dmp.map
