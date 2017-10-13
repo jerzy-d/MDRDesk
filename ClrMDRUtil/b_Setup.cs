@@ -115,6 +115,12 @@ namespace ClrMDRIndex
 
             try
             {
+#if DEBUG
+                string myfolder = @"D:\Jerzy\WinDbgStuff\MDRDesk\";
+#else
+                string myfolder = DumpFileMoniker.MyFolder;
+#endif
+                string installFolder = DumpFileMoniker.GetParentFolder(myfolder);
                 var config = ConfigurationManager.OpenExeConfiguration(ConfigurationUserLevel.None);
                 var appSettings = (AppSettingsSection)config.GetSection("appSettings");
                 if (appSettings.Settings.Count != 0)
@@ -132,7 +138,19 @@ namespace ClrMDRIndex
                         {
                             var folder = appSettings.Settings[key].Value.Trim();
                             if (Directory.Exists(folder)) DumpsFolder = folder;
-                            else errors.AppendLine("Dumps folder does not exist: " + folder);
+                            else
+                            {
+                                // if dumps folder exists, add it to config
+                                string path = installFolder + @"dumps";
+                                if (Directory.Exists(path))
+                                {
+                                    DumpsFolder = folder;
+                                }
+                                else
+                                {
+                                    errors.AppendLine("Dumps folder does not exist: " + folder);
+                                }
+                            }
                         }
                         else if (Utils.SameStrings(ky, "procdumpfolder"))
                         {

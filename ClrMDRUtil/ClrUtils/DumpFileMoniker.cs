@@ -28,7 +28,20 @@ namespace ClrMDRIndex
 		                           + System.IO.Path.DirectorySeparatorChar
 		                           + System.IO.Path.GetFileName(_path) + ".map";
 
-		public DumpFileMoniker(string path)
+        public static string MyFolder => AppDomain.CurrentDomain.BaseDirectory;
+
+        public static string GetParentFolder(string path)
+        {
+            if (string.IsNullOrWhiteSpace(path)) return null;
+            if (path.EndsWith("\\"))
+                path = path.TrimEnd('\\');
+            DirectoryInfo di = Directory.GetParent(path);
+            string pth = di.FullName;
+            if (pth.EndsWith("\\")) return pth;
+            return pth + "\\";
+        }
+
+        public DumpFileMoniker(string path)
 		{
 			_path = path;
 		}
