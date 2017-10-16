@@ -206,5 +206,16 @@ namespace MDRDesk
                 //handle exception error
             }
         }
+
+        public static bool CannotFindProcdumpExe()
+        {
+            if (Setup.ProcDumpFolder == "") return true;
+            if (Directory.Exists(Setup.ProcDumpFolder))
+            {
+                string path = Setup.ProcDumpFolder + Path.DirectorySeparatorChar + "procdump.exe";
+                if (File.Exists(path)) return false;
+            }
+            return true;
+        }
     }
 }

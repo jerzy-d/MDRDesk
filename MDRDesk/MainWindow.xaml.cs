@@ -369,7 +369,16 @@ namespace MDRDesk
             string[] dacFiles = null;
             try
             {
-                CreateCrashDump dlg = new CreateCrashDump() { Owner = Window.GetWindow(this) };
+                if (MDRDesk.CreateCrashDump.CannotFindProcdumpExe())
+                {
+                    GuiUtils.ShowInformation("Cannot Create Crash Dump", "Cannot find procdump.exe",
+                        "Please run setup, and set directory in [Procdump Folder]."
+                        + Environment.NewLine + "If don't have procdump.exe, it can be aquired from: "
+                        + Environment.NewLine + "https://docs.microsoft.com/en-us/sysinternals/downloads/procdump"
+                        , null, Window.GetWindow(this));
+                    return;
+                }
+                MDRDesk.CreateCrashDump dlg = new MDRDesk.CreateCrashDump() { Owner = Window.GetWindow(this) };
                 var dlgResult = dlg.ShowDialog();
                 if (dlgResult == true && dlg.IndexDump && System.IO.File.Exists(dlg.DumpPath))
                 {
@@ -382,7 +391,6 @@ namespace MDRDesk
                         Dispatcher.CurrentDispatcher.InvokeAsync(() => DoCreateDumpIndex(dlg.DumpPath));
                     }
                 }
-
             }
             catch (Exception ex)
             {

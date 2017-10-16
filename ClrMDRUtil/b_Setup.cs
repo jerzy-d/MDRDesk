@@ -116,7 +116,7 @@ namespace ClrMDRIndex
             try
             {
 #if DEBUG
-                string myfolder = @"D:\Jerzy\WinDbgStuff\MDRDesk\";
+                string myfolder = @"C:\WinDbgStuff\MDRDesk\";
 #else
                 string myfolder = DumpFileMoniker.MyFolder;
 #endif
@@ -132,7 +132,15 @@ namespace ClrMDRIndex
                         {
                             var folder = appSettings.Settings[key].Value.Trim();
                             if (Directory.Exists(folder)) DacFolder = folder;
-                            else errors.AppendLine("Dac folder does not exist: " + folder);
+                            string path = installFolder + @"mscordacwks";
+                            if (Directory.Exists(path))
+                            {
+                                DacFolder = path;
+                            }
+                            else
+                            {
+                                errors.AppendLine("Dac folder does not exist: " + folder);
+                            }
                         }
                         else if (Utils.SameStrings(ky, "mapfolder"))
                         {
@@ -144,7 +152,7 @@ namespace ClrMDRIndex
                                 string path = installFolder + @"dumps";
                                 if (Directory.Exists(path))
                                 {
-                                    DumpsFolder = folder;
+                                    DumpsFolder = path;
                                 }
                                 else
                                 {
@@ -156,13 +164,26 @@ namespace ClrMDRIndex
                         {
                             var folder = appSettings.Settings[key].Value.Trim();
                             if (Directory.Exists(folder)) ProcDumpFolder = folder;
-                            else errors.AppendLine("procdum.exe folder does not exist: " + folder);
+                            else ProcDumpFolder="";
+//                            else errors.AppendLine("procdum.exe folder does not exist: " + folder);
+
                         }
                         else if (Utils.SameStrings(ky, "helpfolder"))
                         {
                             var folder = appSettings.Settings[key].Value.Trim();
                             if (Directory.Exists(folder)) HelpFolder = folder;
-                            else errors.AppendLine("help folder does not exist: " + folder);
+                            else
+                            {
+                                string path = myfolder + @"Documentation";
+                                if (Directory.Exists(path))
+                                {
+                                    HelpFolder = myfolder;
+                                }
+                                else
+                                {
+                                    errors.AppendLine("Documentation folder does not exist: " + folder);
+                                }
+                            }
                         }
                         else if (Utils.SameStrings(ky, "wnddbgfolder"))
                         {

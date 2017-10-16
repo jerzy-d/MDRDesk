@@ -21,8 +21,6 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ClrMDRUtil", "ClrMDRUtil\Cl
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TestApp", "TestApp\TestApp.csproj", "{030465FE-0687-4DE5-800C-55FAC9A8BFD2}"
 EndProject
-Project("{930C7802-8A8C-48F9-8165-68863BCCD9DD}") = "WixMDRDeskInstaller", "WixMDRDeskInstaller\WixMDRDeskInstaller.wixproj", "{0730657F-33F2-429D-8336-33D310A38718}"
-EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{D6F8CC5E-8A6D-4D52-A079-86E90F057621}"
 	ProjectSection(SolutionItems) = preProject
 		README.md = README.md
@@ -36,10 +34,6 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Documentation", "Documentat
 		Documentation\GettingStarted.md = Documentation\GettingStarted.md
 		Documentation\MainMenu.md = Documentation\MainMenu.md
 	EndProjectSection
-EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "WixCustomActions", "WixCustomActions\WixCustomActions.csproj", "{E635B178-C0B3-4804-8C6B-4F6A0B016A9C}"
-EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MDRInstaller", "MDRInstaller\MDRInstaller.csproj", "{EE5C90DC-4729-473C-BF8D-9F76DCCD9148}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -123,32 +117,6 @@ Global
 		{030465FE-0687-4DE5-800C-55FAC9A8BFD2}.Release|x64.Build.0 = Release|x64
 		{030465FE-0687-4DE5-800C-55FAC9A8BFD2}.Release|x86.ActiveCfg = Release|x86
 		{030465FE-0687-4DE5-800C-55FAC9A8BFD2}.Release|x86.Build.0 = Release|x86
-		{0730657F-33F2-429D-8336-33D310A38718}.Debug|Any CPU.ActiveCfg = Debug|x86
-		{0730657F-33F2-429D-8336-33D310A38718}.Debug|x64.ActiveCfg = Debug|x86
-		{0730657F-33F2-429D-8336-33D310A38718}.Debug|x86.ActiveCfg = Release|x86
-		{0730657F-33F2-429D-8336-33D310A38718}.Release|Any CPU.ActiveCfg = Release|x86
-		{0730657F-33F2-429D-8336-33D310A38718}.Release|x64.ActiveCfg = Release|x64
-		{0730657F-33F2-429D-8336-33D310A38718}.Release|x64.Build.0 = Release|x64
-		{0730657F-33F2-429D-8336-33D310A38718}.Release|x86.ActiveCfg = Release|x86
-		{E635B178-C0B3-4804-8C6B-4F6A0B016A9C}.Debug|Any CPU.ActiveCfg = Debug|x86
-		{E635B178-C0B3-4804-8C6B-4F6A0B016A9C}.Debug|x64.ActiveCfg = Debug|x86
-		{E635B178-C0B3-4804-8C6B-4F6A0B016A9C}.Debug|x86.ActiveCfg = Debug|x86
-		{E635B178-C0B3-4804-8C6B-4F6A0B016A9C}.Release|Any CPU.ActiveCfg = Release|x86
-		{E635B178-C0B3-4804-8C6B-4F6A0B016A9C}.Release|x64.ActiveCfg = Release|x64
-		{E635B178-C0B3-4804-8C6B-4F6A0B016A9C}.Release|x64.Build.0 = Release|x64
-		{E635B178-C0B3-4804-8C6B-4F6A0B016A9C}.Release|x86.ActiveCfg = Release|x86
-		{EE5C90DC-4729-473C-BF8D-9F76DCCD9148}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{EE5C90DC-4729-473C-BF8D-9F76DCCD9148}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{EE5C90DC-4729-473C-BF8D-9F76DCCD9148}.Debug|x64.ActiveCfg = Debug|x64
-		{EE5C90DC-4729-473C-BF8D-9F76DCCD9148}.Debug|x64.Build.0 = Debug|x64
-		{EE5C90DC-4729-473C-BF8D-9F76DCCD9148}.Debug|x86.ActiveCfg = Debug|Any CPU
-		{EE5C90DC-4729-473C-BF8D-9F76DCCD9148}.Debug|x86.Build.0 = Debug|Any CPU
-		{EE5C90DC-4729-473C-BF8D-9F76DCCD9148}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{EE5C90DC-4729-473C-BF8D-9F76DCCD9148}.Release|Any CPU.Build.0 = Release|Any CPU
-		{EE5C90DC-4729-473C-BF8D-9F76DCCD9148}.Release|x64.ActiveCfg = Release|Any CPU
-		{EE5C90DC-4729-473C-BF8D-9F76DCCD9148}.Release|x64.Build.0 = Release|Any CPU
-		{EE5C90DC-4729-473C-BF8D-9F76DCCD9148}.Release|x86.ActiveCfg = Release|Any CPU
-		{EE5C90DC-4729-473C-BF8D-9F76DCCD9148}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
