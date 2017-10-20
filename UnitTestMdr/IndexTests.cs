@@ -8,7 +8,7 @@ using Microsoft.VisualStudio.TestTools.UnitTesting;
 using ClrMDRIndex;
 using ClrMDRUtil.Utils;
 using Microsoft.Diagnostics.Runtime;
-
+using System.Globalization;
 
 namespace UnitTestMdr
 {
@@ -2464,9 +2464,34 @@ namespace UnitTestMdr
         [TestMethod]
         public void Misc()
         {
+#if FALSE
             char[] cary = new char[DumpFileMoniker.InvalidPathCharsAry.Length];
             Array.Copy(DumpFileMoniker.InvalidPathCharsAry, cary, cary.Length);
             //Array.Sort(cary,char)
+#endif
+#if FALSE
+            BGL.TestCycles();
+#endif
+            var str0 = String.Format(CultureInfo.InvariantCulture, "{0:000000000.00}", 0m);
+            var str1 = String.Format(CultureInfo.InvariantCulture, "{0:000000000.00}", 11.126m);
+            var str2 = String.Format(CultureInfo.InvariantCulture, "{0:000000000.00}", -11.126m);
+
+            var str1a = String.Format(CultureInfo.InvariantCulture, "{0,12:#.##}", 0m);
+            var str1b = String.Format(CultureInfo.InvariantCulture, "{0,12:#.##}", 11.126m);
+            var str1c = String.Format(CultureInfo.InvariantCulture, "{0,12:#.##}", -11.126m);
+
+            var str2a = "         0.00";
+            var str2b = String.Format(CultureInfo.InvariantCulture, "{0,12:#.##}", 11.126m);
+            var str2c = String.Format(CultureInfo.InvariantCulture, "{0,11:#.##}", -11.126m);
+            var str2d = String.Format(CultureInfo.InvariantCulture, "{0,12:#.##}", 111m);
+            var str2e = String.Format(CultureInfo.InvariantCulture, "{0,11:#.##}", -111m);
+
+            var str3b = String.Format(CultureInfo.InvariantCulture, "{0,12:#.00}", 11.126m);
+            var str3c = String.Format(CultureInfo.InvariantCulture, "{0,11:#.00}", -11.126m);
+            var str3d = String.Format(CultureInfo.InvariantCulture, "{0,12:#.00}", 111m);
+            var str3e = String.Format(CultureInfo.InvariantCulture, "{0,11:#.00}", -111m);
+
+
         }
 
         [TestMethod]

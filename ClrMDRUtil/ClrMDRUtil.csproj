@@ -21,6 +21,7 @@
     <DefineConstants>DEBUG;TRACE</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
     <DebugType>pdbonly</DebugType>
@@ -117,6 +118,7 @@
     <Compile Include="ClrUtils\References.cs" />
     <Compile Include="ClrUtils\StringStats.cs" />
     <Compile Include="ClrUtils\TypeInterfaces.cs" />
+    <Compile Include="Graph\BGL.cs" />
     <Compile Include="Graph\DepthFirstOrder.cs" />
     <Compile Include="Graph\Digraph.cs" />
     <Compile Include="Graph\DirectedCycle.cs" />
@@ -167,6 +169,12 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\CppUtils\CppUtils.vcxproj">
+      <Project>{49104d43-04b8-4529-b3c8-dd10cf5cd28d}</Project>
+      <Name>CppUtils</Name>
+    </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 

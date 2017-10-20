@@ -116,7 +116,7 @@ namespace ClrMDRIndex
             try
             {
 #if DEBUG
-                string myfolder = @"C:\WinDbgStuff\MDRDesk\";
+                string myfolder = @"D:\Jerzy\WinDbgStuff\MDRDesk\";
 #else
                 string myfolder = DumpFileMoniker.MyFolder;
 #endif

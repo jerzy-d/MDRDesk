@@ -1252,6 +1252,8 @@ namespace ClrMDRIndex
                     }
                 }
 
+                var newCycles = BGL.GetCycles(graph.AdjacencyLists, out error);
+
                 progress?.Report(progressHeader + "Searching for thread and blocking object cycles...");
                 var cycle = new DirectedCycle(graph);
                 var cycles = cycle.GetCycle();
