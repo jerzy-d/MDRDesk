@@ -189,6 +189,15 @@ namespace MDRDesk
                 return;
             }
             curDispItem.ToggleGetValue();
+            if (curDispItem.GetValue)
+            {
+                int currentCount = _selection.Count(s => s.GetValue);
+                if (listing<string>.MaxListingCount - 1 <= currentCount) // maximum report columns
+                {
+                    GuiUtils.ShowInformation("Type Value Report", "Cannot select this item.", "We must not have more than " + (listing<string>.MaxListingCount - 1) + " items selected.", null, this);
+                    return;
+                }
+            }
             GuiUtils.UpdateTypeValueSetupTreeViewItem(_currentTreeViewItem, curDispItem);
             UpdateSelection(curDispItem);
         }
@@ -286,12 +295,7 @@ namespace MDRDesk
             {
                 if (dispType.GetValue)
                 {
-                    int currentCount = _selection.Count(s => s.GetValue);
-                    if (listing<string>.MaxListingCount <= currentCount)
-                    {
-                        GuiUtils.ShowInformation("Type Value Report","Cannot select this item.","We must not have more than " + listing<string>.MaxListingCount + " items selected.", null, this);
-                        return;
-                    }
+   
                 }
 
                 _selection.Add(dispType);
