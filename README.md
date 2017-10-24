@@ -1,6 +1,8 @@
 # MDRDesk
 ## Microsoft.Diagnostics.Runtime Gui Interface
 
+_MDRDesk_ _and_ _its_ _installer_ _is_ _not_ _ready_ _yet_ _for_ _release_, _I'm_ _planning_ _to_ _get_ _it_ _ready_ _by_ _the_ _end_ _of_ _November_.
+
 1. [Credits](./Documentation/Credits.md)
 
 2. [Getting Started](./Documentation/GettingStarted.md) - A brief introduction

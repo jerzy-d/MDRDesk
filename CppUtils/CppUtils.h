@@ -13,9 +13,13 @@ namespace CppUtils {
 
 	public:
 		array<array<int>^>^ Cycles;
+		GraphHelper() {
+			Cycles = nullptr;
+			_pgraph = nullptr;
+		}
 
 	private:
-		bldutl::graph*_pgraph;
+		bldutl::graph* _pgraph;
 
 	public:
 		
@@ -64,7 +68,7 @@ namespace CppUtils {
 		}
 
 		!GraphHelper() {
-			free(_pgraph);
+			if (_pgraph != nullptr) free(_pgraph);
 		}
 		// TODO: Add your methods for this class here.
 	};

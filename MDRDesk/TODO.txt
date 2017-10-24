@@ -90,3 +90,10 @@
 	ECS.Common.HierarchyCache.Structure.Benchmarks at 0x00000080234748
 	then field at 0x000000802349c8 (benchmarksById)
 	in D:\Jerzy\WinDbgStuff\dumps\Analytics\Local\Eze.Analytics.Svc.exe_170920_144059.dmp.map
+0046 10/10/17 Get thread names:
+	I am missing analogy of Thread.Name in ClrThread.
+	I don't think there's an easy way to get this. The DAC requests don't provide access to clr!THREAD::m_ExposedObject,
+	which would allow you to actually fetch the matching System.Threading.Thread object for the thread (from which you could read the m_name field).
+	Solution:
+	You can enumerate the System.Threading.Thread objects and match the ClrThread with the managed thread id with m_ManagedThreadId.
+

@@ -8,11 +8,15 @@ using System.Runtime;
 using System.Threading;
 using ClrMDRUtil.Utils;
 using Microsoft.Diagnostics.Runtime;
+using System.Runtime.InteropServices;
 
 namespace ClrMDRIndex
 {
     public sealed class DumpIndexer
     {
+        [DllImport("CppUtils.dll", CharSet = CharSet.Unicode)]
+        public static extern void GraphHelper();
+
         [Flags]
         public enum IndexingArguments
         {
@@ -1252,7 +1256,9 @@ namespace ClrMDRIndex
                     }
                 }
 
-                var newCycles = BGL.GetCycles(graph.AdjacencyLists, out error);
+                CppUtils.GraphHelper graphHelper = new CppUtils.GraphHelper();
+                graphHelper.Init(graph.AdjacencyLists.Length, graph.AdjacencyLists);
+                var newCycles = graphHelper.GetCycles();
 
                 progress?.Report(progressHeader + "Searching for thread and blocking object cycles...");
                 var cycle = new DirectedCycle(graph);
@@ -1304,6 +1310,12 @@ namespace ClrMDRIndex
                 bw = new BinaryWriter(File.Open(path, FileMode.Create));
                 bw.Write(threads.Length);
                 progress?.Report(progressHeader + "Getting frames information...");
+                List<KeyValuePair<int,ulong>> stackZeros = new List<KeyValuePair<int, ulong>>();
+                for (int i = 0, icnt = threads.Length; i < icnt; ++i)
+                {
+                    if (threads[i].StackBase == 0) stackZeros.Add(new KeyValuePair<int, ulong>(i,threads[i].StackLimit));
+                }
+
                 for (int i = 0, icnt = threads.Length; i < icnt; ++i)
                 {
                     var thread = threads[i];
@@ -1315,7 +1327,13 @@ namespace ClrMDRIndex
                     }
 
                     var threadLocalAliveVars = thread.EnumerateStackObjects(false).ToArray();
-                    var all = thread.EnumerateStackObjects(true).ToArray();
+                    ClrRoot[] all;
+                    if (thread.StackBase!=0 && (thread.StackLimit - thread.StackBase < 10*1024*1024)) {
+                        all = thread.EnumerateStackObjects(true).ToArray();
+                    } else
+                    {
+                        all = Utils.EmptyArray<ClrRoot>.Value;
+                    }
                     var threadLocalDeadVars = all.Except(threadLocalAliveVars, rootEqCmp).ToArray();
                     var threadFrames = stackTraceLst.ToArray();
 

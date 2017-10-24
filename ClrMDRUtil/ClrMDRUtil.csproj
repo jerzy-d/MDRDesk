@@ -170,12 +170,6 @@
   <ItemGroup>
     <None Include="packages.config" />
   </ItemGroup>
-  <ItemGroup>
-    <ProjectReference Include="..\CppUtils\CppUtils.vcxproj">
-      <Project>{49104d43-04b8-4529-b3c8-dd10cf5cd28d}</Project>
-      <Name>CppUtils</Name>
-    </ProjectReference>
-  </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.

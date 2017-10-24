@@ -2053,6 +2053,26 @@ namespace UnitTestMdr
 
         #region threads
 
+
+        [TestMethod]
+        public void TestThreadStackBase()
+        {
+            var dmp = OpenDump(@"C:\WinDbgStuff\Dumps\Analytics\Highline\analyticsdump111.dlk.dmp");
+            List<ValueTuple<ulong, ulong, ulong, ClrType>> lst = new List<(ulong, ulong, ulong, ClrType)>(128);
+            using (dmp)
+            {
+                var heap = dmp.GetRuntime(0).Heap;
+                ClrThread thread;
+                var threads = DumpIndexer.GetThreads(dmp.Runtime);
+                for (int i = 0, icnt = threads.Length; i < icnt; ++i)
+                {
+                    var th = threads[i];
+                    var obj = heap.GetObjectType(th.Address);
+                    lst.Add((th.StackBase,th.StackLimit,th.StackBase- th.StackLimit,obj));
+                }
+            }
+        }
+
         [TestMethod]
         public void TestBlocking()
         {
