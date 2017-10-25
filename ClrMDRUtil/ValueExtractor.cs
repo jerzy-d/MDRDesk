@@ -1545,23 +1545,58 @@ namespace ClrMDRIndex
 
         #region System.Collections.Generic.List<T>
 
-        public static Tuple<string, ClrType, ClrType, ClrElementKind, ulong, int> ListInfo(ClrHeap heap, ulong addr)
+        public static ValueTuple<ClrType, ClrType, ClrElementKind, ulong, int, int, int> ListInfo(ClrHeap heap, ulong addr, out string error)
         {
+            error = null;
             var clrType = heap.GetObjectType(addr);
             if (clrType == null)
-                return new Tuple<string, ClrType, ClrType, ClrElementKind, ulong, int>("Cannot get type at address: " + Utils.RealAddressString(addr), null, null, ClrElementKind.Unknown, 0Ul, 0);
+            {
+                error = "Cannot get type at address: " + Utils.RealAddressString(addr);
+                return (null, null, ClrElementKind.Unknown, 0Ul, 0, 0, 0);
+            }
             if (!clrType.Name.StartsWith("System.Collections.Generic.List<"))
-                return new Tuple<string, ClrType, ClrType, ClrElementKind, ulong, int>("The type at address: " + Utils.RealAddressString(addr) + " is not List<T>.", null, null, ClrElementKind.Unknown, 0UL, 0);
+            {
+                error = "The type at address: " + Utils.RealAddressString(addr) + " is not List<T>.";
+                return (null, null, ClrElementKind.Unknown, 0UL, 0, 0, 0);
+            }
             var itemsFld = clrType.GetFieldByName("_items");
             var sizeFld = clrType.GetFieldByName("_size");
+            var versionFld = clrType.GetFieldByName("_version");
 
             var itemsobj = itemsFld.GetValue(addr, false, false);
             ulong itemsAddr = itemsobj == null ? 0UL : (ulong)itemsobj;
             var len = (int)sizeFld.GetValue(addr, false, false);
+            var version = (int)versionFld.GetValue(addr, false, false);
             var itemsClrType = heap.GetObjectType(itemsAddr);
             var kind = TypeExtractor.GetElementKind(itemsClrType.ComponentType);
+            int aryLen = itemsClrType.GetArrayLength(itemsAddr);
+            return (clrType, itemsClrType, kind, itemsAddr, len,aryLen,version);
+        }
 
-            return new Tuple<string, ClrType, ClrType, ClrElementKind, ulong, int>(null, clrType, itemsClrType, kind, itemsAddr, len);
+
+        public static ValueTuple<string, KeyValuePair<string, string>[], string[]> GetListContent(ClrHeap heap, ulong addr)
+        {
+            try
+            {
+                string error;
+                (ClrType lstType, ClrType itemsType, ClrElementKind itemKind, ulong itemAryAddr, int lstSize, int aryLen, int version) = 
+                    ListInfo(heap, addr, out error);
+                if (error != null) return (error, null, null);
+                List<string> types = new List<string>();
+                string[] items = GetAryItems(heap, itemAryAddr, itemsType, itemsType.ComponentType, itemKind, lstSize, types);
+                
+                KeyValuePair<string, string>[] fldDescription = new KeyValuePair<string, string>[]
+                {
+                    new KeyValuePair<string, string>("size", Utils.CountString(lstSize)),
+                    new KeyValuePair<string, string>("array count", Utils.CountString(aryLen)),
+                    new KeyValuePair<string, string>("version", version.ToString())
+                };
+                return (null, fldDescription, items);
+            }
+            catch(Exception ex)
+            {
+                return (Utils.GetExceptionErrorString(ex), null, null);
+            }
         }
 
         #endregion System.Collections.Generic.List<T> content

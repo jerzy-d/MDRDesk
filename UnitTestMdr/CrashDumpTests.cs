@@ -1512,18 +1512,11 @@ namespace UnitTestMdr
 
                 for (int k = 0, kcnt = addrs.Length; k < kcnt; ++k)
                 {
-                    var result = ValueExtractor.ListInfo(heap, addrs[k]);
+                    string error;
+                    (ClrType lstType, ClrType itemsType, ClrElementKind itemKind, ulong itemAryAddr, int lstSize, int aryLen, int version) = 
+                        ValueExtractor.ListInfo(heap, addrs[k],out error);
 
-
-                    int aryLen = result.Item6;
-                    ClrType clrType = result.Item3;
-                    ulong aryAddr = result.Item5;
-
-                    int len = clrType.GetArrayLength(aryAddr);
-
-                    //int[] values = new int[aryLen];
-
-                    int[] values = ValueExtractor.ReadIntAryAtAddress(aryAddr + 16, aryLen, heap);
+                    int[] values = ValueExtractor.ReadIntAryAtAddress(itemAryAddr + 16, aryLen, heap);
 
 
 
@@ -2786,6 +2779,72 @@ namespace UnitTestMdr
                 }
             }
         }
+
+        [TestMethod]
+        public void TestGetDelegateTypes()
+        {
+            string[] fldNames = new string[] { "_target", "_methodPtr", "_methodPtrAux", "_invocationList", "_invocationCount" };
+            string error = null;
+            HashSet<string> done = new HashSet<string>(StringComparer.Ordinal);
+            List<string> delegateTypes = new List<string>(256);
+            List<ClrMethod> delegateMethods = new List<ClrMethod>(256);
+            using (var clrDump = OpenDump(@"D:\Jerzy\WinDbgStuff\dumps\Analytics\Highline\analyticsdump111.dlk.dmp"))
+            {
+                try
+                {
+                    var runtime = clrDump.Runtimes[0];
+                    var heap = runtime.Heap;
+                    var segs = heap.Segments;
+                    for (int i = 0, icnt = segs.Count; i < icnt; ++i)
+                    {
+                        var seg = segs[i];
+                        ulong addr = seg.FirstObject;
+                        while (addr != 0ul)
+                        {
+                            var clrType = heap.GetObjectType(addr);
+                            if (clrType == null || clrType.Fields == null || clrType.Fields.Count < 5) goto NEXT_OBJECT;
+                            if (done.Add(clrType.Name))
+                            {
+                                int foundFlds = 0;
+                                int _methodPtrNdx;
+                                for (int j = 0, jcnt = clrType.Fields.Count; j < jcnt; ++j)
+                                {
+                                    if (fldNames.Contains(clrType.Fields[j].Name)) ++foundFlds;
+                                    if (Utils.SameStrings(clrType.Fields[j].Name, "_methodPtr"))
+                                    {
+                                        _methodPtrNdx = j;
+                                    }
+                                }
+                                if (foundFlds == 5)
+                                {
+                                    delegateTypes.Add(clrType.Name);
+                                    var fld = clrType.GetFieldByName("_methodPtr");
+                                    if (fld != null)
+                                    {
+                                        long mthdPtr = (long)fld.GetValue(addr);
+                                        ClrMethod mthd = ClrtDump.GetDelegateMethod((ulong)mthdPtr, runtime, heap);
+                                        delegateMethods.Add(mthd);
+                                    }
+                                    else
+                                    {
+                                        delegateMethods.Add(null);
+                                    }
+                                }
+                            }
+
+                            NEXT_OBJECT:
+                            addr = seg.NextObject(addr);
+                        }
+                    }
+                }
+                catch (Exception ex)
+                {
+                    error = Utils.GetExceptionErrorString(ex);
+                    Assert.IsTrue(false, error);
+                }
+            }
+        }
+
         #endregion types
 
         #region type references

@@ -12,7 +12,8 @@
         <ContextMenu x:Key="InstanceValueContextMenu" x:Shared="False">
             <MenuItem x:Name="InstanceValueCopyAddress" Header="Copy Address (clipboard)" Click="InstanceValueCopyAddressClicked" ></MenuItem>
             <MenuItem x:Name="InstanceValueCopyValue" Header="Copy Value (clipboard)" Click="InstanceValueCopyValueClicked"></MenuItem>
-            <MenuItem x:Name="InstanceValueGetValue" Header="Copy Value (clipboard)" Click="InstanceValueGetValueClicked"></MenuItem>
+            <MenuItem x:Name="InstanceValueGetValue" Header="Get Value" Click="InstanceValueGetValueClicked"></MenuItem>
+            <MenuItem x:Name="InstanceValueGetRawValue" Header="Get Value (raw)" Click="InstanceValueGetValueRawClicked"></MenuItem>
             <Separator></Separator>
             <MenuItem x:Name="InstanceValueViewMemory" Header="View Memory" Click="InstanceValueViewMemoryClicked"/>
         </ContextMenu>
@@ -64,9 +65,10 @@
                 <TextBlock x:Name="StatusText" FontStyle="Italic" Foreground="Blue"/>
             </StatusBarItem>
             <StatusBarItem Grid.Column="2" Margin="2,0,2,0" HorizontalAlignment="Right" VerticalAlignment="Center">
-                <CheckBox x:Name="StatusRawMode" Content="Raw Mode" IsChecked="False">
-                    <CheckBox.ToolTip>Do not expand known collections.</CheckBox.ToolTip>
-                </CheckBox>
+                <Button x:Name="ButtonHelp" Grid.Row ="6" Grid.Column="1" HorizontalAlignment="Center" Margin="2,2,2,2" VerticalAlignment="Center" Width="28" Height="28" Click="ButtonHelpClicked" Background="Transparent" BorderThickness="0">
+                    <Button.ToolTip>Usage help.</Button.ToolTip>
+                    <Image Source=".\Images\Help.png" Width="16" Height="16" Margin="0,0,0,0" VerticalAlignment="Center" HorizontalAlignment="Center"/>
+                </Button>
             </StatusBarItem>
             <StatusBarItem x:Name="LockBtnBarItem" Grid.Column="3" Margin="2,0,2,0" HorizontalAlignment="Right" >
                 <Button x:Name="LockBtn" Click="LockBtnClicked">

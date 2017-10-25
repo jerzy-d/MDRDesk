@@ -2325,6 +2325,23 @@ namespace UnitTestMdr
         }
 
         [TestMethod]
+        public void TestListContent()
+        {
+            Stopwatch stopWatch = new Stopwatch();
+            stopWatch.Start();
+            var index = OpenIndex(@"D:\Jerzy\WinDbgStuff\dumps\Analytics\Highline\analyticsdump111.dlk.dmp.map");
+            TestContext.WriteLine(index.DumpFileName + " INDEX OPEN DURATION: " + Utils.StopAndGetDurationString(stopWatch));
+            ulong addr = 0x00000080447368; //;
+            using (index)
+            {
+                var heap = index.GetHeap();
+                var (error, descr, values) = ValueExtractor.GetListContent(heap, addr);
+
+                Assert.IsNull(error, error);
+            }
+        }
+
+        [TestMethod]
         public void TestFrameworkVersion()
         {
             string error;

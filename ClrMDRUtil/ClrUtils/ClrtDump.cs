@@ -1065,11 +1065,39 @@ namespace ClrMDRIndex
 			que.Enqueue(new KeyValuePair<ClrType, ulong>(clrType, addr));
 		}
 
-		#endregion Memory Sizes
+        #endregion Memory Sizes
 
-		#region Strings
+        #region delegates
 
-		public static StringStats GetStringStats(ClrHeap heap, ulong[] addresses, string dumpPath, out string error,
+        // Thanks to TODO JRD -- add to credits
+        // https://github.com/fremag/MemoScope.Net
+        // which is based on
+        // https://github.com/Microsoft/clrmd/issues/35
+        public static ClrMethod GetDelegateMethod(ulong methodPtr, ClrRuntime rtm, ClrHeap clrDump)
+        {
+            ulong magicPtr = methodPtr + 5;
+            ulong magicValue1;
+            clrDump.ReadPointer(magicPtr + 1, out magicValue1);
+            ulong magicValue2;
+            clrDump.ReadPointer(magicPtr + 2, out magicValue2);
+
+            ulong mysticPtr = magicPtr + 8 * (magicValue2 & 0xFF) + 3;
+            ulong mysticOffset = 8 * (magicValue1 & 0xFF);
+
+            ulong mysticValue;
+            rtm.ReadPointer(mysticPtr,out mysticValue);
+            ulong methodDescriptorPtr = mysticValue + mysticOffset;
+
+            ClrMethod method = rtm.GetMethodByHandle(methodDescriptorPtr);
+            return method;
+        }
+
+        #endregion delegates
+
+
+        #region Strings
+
+        public static StringStats GetStringStats(ClrHeap heap, ulong[] addresses, string dumpPath, out string error,
 			int runtimeIndex = 0)
 		{
 			error = null;

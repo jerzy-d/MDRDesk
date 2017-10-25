@@ -2170,7 +2170,7 @@ namespace MDRDesk
                     return;
                 }
 
-                if (knownType == TypeExtractor.KnownTypes.HashSet)
+                if (knownType == TypeExtractor.KnownTypes.HashSet || knownType == TypeExtractor.KnownTypes.List)
                 {
                     ValueWindows.ShowContentWindow(inst.GetDescription(), inst, ValueWindows.WndType.List);
                     return;

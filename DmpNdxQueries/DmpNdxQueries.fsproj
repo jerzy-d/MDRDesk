@@ -9,7 +9,7 @@
     <OutputType>Library</OutputType>
     <RootNamespace>DmpNdxQueries</RootNamespace>
     <AssemblyName>DmpNdxQueries</AssemblyName>
-    <TargetFrameworkVersion>v4.6.2</TargetFrameworkVersion>
+    <TargetFrameworkVersion>v4.7.1</TargetFrameworkVersion>
     <TargetFSharpCoreVersion>4.4.1.0</TargetFSharpCoreVersion>
     <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
     <Name>DmpNdxQueries</Name>
@@ -116,6 +116,7 @@
     <Reference Include="System.Core" />
     <Reference Include="System.Drawing" />
     <Reference Include="System.Numerics" />
+    <Reference Include="System.Runtime" />
     <Reference Include="System.ValueTuple">
       <HintPath>..\..\CalcsDpnds\packages\System.ValueTuple.4.3.0\lib\netstandard1.0\System.ValueTuple.dll</HintPath>
     </Reference>

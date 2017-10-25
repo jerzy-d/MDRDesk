@@ -1382,7 +1382,8 @@ namespace ClrMDRIndex
                             return GetSortedListContent(addr, typeId, typeName);
                         case TypeExtractor.KnownTypes.HashSet:
                             return GetHashSetContent(addr, typeId, typeName);
-                        // TODO JRD -- generic list add
+                        case TypeExtractor.KnownTypes.List:
+                            return GetListContent(addr, typeId, typeName);
                     }
                 }
 
@@ -1428,6 +1429,17 @@ namespace ClrMDRIndex
             inst.AddExtraData(description);
             inst.AddKeyValuePairs(values);
             return (null, inst, TypeExtractor.KnownTypes.SortedList);
+        }
+
+        public ValueTuple<string, InstanceValue, TypeExtractor.KnownTypes> GetListContent(ulong addr, int typeId, string typeName)
+        {
+            Debug.Assert(TypeExtractor.IsKnownCollection(typeName) != TypeExtractor.KnownTypes.Unknown);
+            var (error, description, values) = ValueExtractor.GetListContent(Heap, addr);
+            if (error != null) return (error, null, TypeExtractor.KnownTypes.Unknown);
+            var inst = new InstanceValue(typeId, ClrElementKind.Object, addr, typeName, null, null);
+            inst.AddExtraData(description);
+            inst.AddArrayValues(values);
+            return (null, inst, TypeExtractor.KnownTypes.List);
         }
 
         public ValueTuple<string, InstanceValue, TypeExtractor.KnownTypes> GetHashSetContent(ulong addr, int typeId, string typeName)

@@ -2,6 +2,7 @@
 [<AutoOpen>]
 module Auxiliaries =
     open System
+    open System.Runtime
     open System.Text
     open System.IO
     open System.Collections.Generic

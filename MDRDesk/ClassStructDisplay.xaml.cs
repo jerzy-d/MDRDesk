@@ -1,5 +1,5 @@
 ﻿using System;
-using System.Collections.Concurrent;
+using System.IO;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Threading.Tasks;
@@ -88,24 +88,18 @@ namespace MDRDesk
 			e.Handled = true;
 		}
 
-        private bool GetSelectedItem(out TreeViewItem selTreeItem, out InstanceValue inst)
+        private ValueTuple<bool, TreeViewItem, InstanceValue>  GetSelectedItem()
         {
-            inst = null;
-            selTreeItem = InstanceValueTreeview.SelectedItem as TreeViewItem;
-            if (selTreeItem == null) return false;
+            TreeViewItem selTreeItem = InstanceValueTreeview.SelectedItem as TreeViewItem;
+            if (selTreeItem == null) return (false,null,null);
             var selInstValue = selTreeItem.Tag as InstanceValue;
             Debug.Assert(selInstValue != null);
-            inst = selInstValue;
-            return true;
+            if (selInstValue.Parent == null) return (false, null, null);
+            return (true, selTreeItem, selInstValue);
         }
 
-        private async void InstanceValueTreeview_OnMouseDoubleClick(object sender, MouseButtonEventArgs e)
+        private async void GetInstanceValue(TreeViewItem selTreeItem, InstanceValue selInstValue, bool rawValue=false)
 		{
-            TreeViewItem selTreeItem;
-            InstanceValue selInstValue;
-            if (!GetSelectedItem(out selTreeItem, out selInstValue)) return;
-            if (selInstValue == null || selInstValue.Parent == null) return;
-
             if (TypeExtractor.IsString(selInstValue.Kind))
             {
                 if (selInstValue.Value.IsLong())
@@ -120,7 +114,7 @@ namespace MDRDesk
             ulong addr = _mainWindow.GetAddressFromEntry(selInstValue.Value.FullContent);
             if (selInstValue.Address != Constants.InvalidAddress && addr != Constants.InvalidAddress && addr == selInstValue.Address)
             {
-                if (StatusRawMode.IsChecked.Value == false) // if known collection show it in a collection window
+                if (!rawValue) // if known collection show it in a collection window
                 {
                     if (TypeExtractor.IsKnownType(selInstValue.TypeName))
                     {
@@ -209,11 +203,18 @@ namespace MDRDesk
             var wndtask = Task.Factory.StartNew(() => ValueWindows.RemoveWindow(_id, _wndType));
 		}
 
+        private void InstanceValueTreeview_OnMouseDoubleClick(object sender, MouseButtonEventArgs e)
+        {
+            (bool ok, TreeViewItem selTreeItem, InstanceValue selInstValue) = GetSelectedItem();
+            if (!ok) return;
+            GetInstanceValue(selTreeItem, selInstValue);
+        }
+
+
         private void InstanceValueCopyAddressClicked(object sender, RoutedEventArgs e)
         {
-            TreeViewItem selTreeItem;
-            InstanceValue selInstValue;
-            if (!GetSelectedItem(out selTreeItem, out selInstValue)) return;
+            (bool ok, TreeViewItem selTreeItem, InstanceValue selInstValue) = GetSelectedItem();
+            if (!ok) return;
             if (selInstValue.Address == Constants.InvalidAddress)
             {
                 StatusText.Text = "The value's address is invalid.";
@@ -226,9 +227,8 @@ namespace MDRDesk
 
         private void InstanceValueCopyValueClicked(object sender, RoutedEventArgs e)
         {
-            TreeViewItem selTreeItem;
-            InstanceValue selInstValue;
-            if (!GetSelectedItem(out selTreeItem, out selInstValue)) return;
+            (bool ok, TreeViewItem selTreeItem, InstanceValue selInstValue) = GetSelectedItem();
+            if (!ok) return;
             var val = selInstValue.Value.FullContent;
             GuiUtils.CopyToClipboard(val);
             StatusText.Text = "The value was copied to the clipboard";
@@ -236,9 +236,8 @@ namespace MDRDesk
 
         private void InstanceValueViewMemoryClicked(object sender, RoutedEventArgs e)
         {
-            TreeViewItem selTreeItem;
-            InstanceValue selInstValue;
-            if (!GetSelectedItem(out selTreeItem, out selInstValue)) return;
+            (bool ok, TreeViewItem selTreeItem, InstanceValue selInstValue) = GetSelectedItem();
+            if (!ok) return;
             if (selInstValue.Address == Constants.InvalidAddress)
             {
                 StatusText.Text = "The value's address is invalid.";
@@ -250,22 +249,35 @@ namespace MDRDesk
 
         private void InstanceValueGetValueClicked(object sender, RoutedEventArgs e)
         {
-            TreeViewItem selTreeItem;
-            InstanceValue selInstValue;
-            if (!GetSelectedItem(out selTreeItem, out selInstValue)) return;
-            if (selInstValue.Address == Constants.InvalidAddress)
-            {
-                StatusText.Text = "The value's address is invalid.";
-                return;
-            }
+            (bool ok, TreeViewItem selTreeItem, InstanceValue selInstValue) = GetSelectedItem();
+            if (!ok) return;
+            GetInstanceValue(selTreeItem, selInstValue);
+        }
 
-            // TODO JRD -- ContentDisplay, get this back
-            //if (selInstValue.Value.IsLong())
-            //{
-            //    var wnd = new ContentDisplay(Utils.GetNewID(), _wndDct, selInstValue.GetDescription(), selInstValue) { Owner = _mainWindow };
-            //    wnd.Show();
-            //    return;
-            //}
+        private void InstanceValueGetValueRawClicked(object sender, RoutedEventArgs e)
+        {
+            (bool ok, TreeViewItem selTreeItem, InstanceValue selInstValue) = GetSelectedItem();
+            if (!ok) return;
+            GetInstanceValue(selTreeItem, selInstValue,true);
+        }
+
+        private void ButtonHelpClicked(object sender, RoutedEventArgs e)
+        {
+            ValueWindows.ShowHelpWindow(Setup.HelpFolder + Path.DirectorySeparatorChar + @"\Documentation\Configuration.md");
+        }
+
+        private void AddHotKeys()
+        {
+            try
+            {
+                RoutedCommand firstSettings = new RoutedCommand();
+                firstSettings.InputGestures.Add(new KeyGesture(Key.F1));
+                CommandBindings.Add(new CommandBinding(firstSettings, ButtonHelpClicked));
+            }
+            catch (Exception err)
+            {
+                //handle exception error
+            }
         }
 
         private void LockBtnClicked(object sender, RoutedEventArgs e)
