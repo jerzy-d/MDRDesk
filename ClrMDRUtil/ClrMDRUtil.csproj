@@ -116,6 +116,7 @@
     <Compile Include="ClrUtils\StringStats.cs" />
     <Compile Include="ClrUtils\TypeInterfaces.cs" />
     <Compile Include="Graph\BGL.cs" />
+    <Compile Include="Graph\Circuits.cs" />
     <Compile Include="Graph\DepthFirstOrder.cs" />
     <Compile Include="Graph\Digraph.cs" />
     <Compile Include="Graph\DirectedCycle.cs" />

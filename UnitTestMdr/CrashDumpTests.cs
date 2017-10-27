@@ -157,6 +157,51 @@ namespace UnitTestMdr
         }
 
         [TestMethod]
+        public void TestCycles()
+        {
+            int[][] graph = new int[][] {
+                new [] { 1 },                   // 0
+                new [] { 2 },                   // 1
+                new [] { 3 },                   // 2
+                new [] { 4, 5 },                // 3
+                new [] { 2, 6 },                // 4
+                Utils.EmptyArray<int>.Value,    // 5
+                new [] { 7, 9 },                // 6
+                new [] { 9 },                   // 7
+                new [] { 7 },                   // 8
+                new [] { 2, 8 },                // 9
+                new [] { 11 },                  // 10
+                new [] { 10, 12 },              // 11
+                new [] { 13 },                  // 12
+                new [] { 12 },                  // 13
+            };
+
+            var result = Circuits.GetCycles(graph);
+            if (result.Length > 0)
+            {
+                StringBuilder sb = StringBuilderCache.Acquire(StringBuilderCache.MaxCapacity);
+                TestContext.WriteLine("Cycles:");
+                for (int i= 0, icnt = result.Length; i < icnt; ++i)
+                {
+                    sb.Clear();
+                    var cycle = result[i];
+                    sb.Append("[ " + cycle[0]);
+                    for (int j=1, jcnt = cycle.Length; j < jcnt; ++j)
+                    {
+                        sb.Append(", " + cycle[j]);
+                    }
+                    sb.Append(" ]");
+                    TestContext.WriteLine(sb.ToString());
+                }
+                StringBuilderCache.Release(sb);
+            }
+            else
+            {
+                TestContext.WriteLine("no cycles found.");
+            }
+        }
+
+        [TestMethod]
         public void GetWinDbgObjects()
         {
             //string path = @"D:\Jerzy\WinDbgStuff\dumps\Compliance\Meka\Eze.Compliance.Svc_170503_131515.HEA2E7F.tmp";

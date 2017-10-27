@@ -74,10 +74,6 @@
     <LangVersion>latest</LangVersion>
   </PropertyGroup>
   <ItemGroup>
-    <Reference Include="CppUtils, Version=1.0.6505.16809, Culture=neutral, processorArchitecture=AMD64">
-      <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\x64\Release\CppUtils.dll</HintPath>
-    </Reference>
     <Reference Include="Microsoft.Diagnostics.Runtime">
       <HintPath>..\ClrMd\Microsoft.Diagnostics.Runtime.dll</HintPath>
     </Reference>
@@ -97,10 +93,6 @@
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>
-    <Content Include="..\x64\Release\CppUtils.dll">
-      <Link>CppUtils.dll</Link>
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
     <Content Include="TODO.txt" />
   </ItemGroup>
   <ItemGroup>

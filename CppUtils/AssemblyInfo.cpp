@@ -11,12 +11,12 @@ using namespace System::Security::Permissions;
 // set of attributes. Change these attribute values to modify the information
 // associated with an assembly.
 //
-[assembly:AssemblyTitleAttribute(L"CppUtils")];
+[assembly:AssemblyTitleAttribute(L"CppUtils32")];
 [assembly:AssemblyDescriptionAttribute(L"")];
 [assembly:AssemblyConfigurationAttribute(L"")];
-[assembly:AssemblyCompanyAttribute(L"Eze Castle Software")];
-[assembly:AssemblyProductAttribute(L"CppUtils")];
-[assembly:AssemblyCopyrightAttribute(L"Copyright (c) Eze Castle Software 2017")];
+[assembly:AssemblyCompanyAttribute(L"JRD")];
+[assembly:AssemblyProductAttribute(L"CppUtils32")];
+[assembly:AssemblyCopyrightAttribute(L"MIT")];
 [assembly:AssemblyTrademarkAttribute(L"")];
 [assembly:AssemblyCultureAttribute(L"")];
 
@@ -31,8 +31,8 @@ using namespace System::Security::Permissions;
 // You can specify all the value or you can default the Revision and Build Numbers
 // by using the '*' as shown below:
 
-[assembly:AssemblyVersionAttribute("1.0.*")];
-
+[assembly:AssemblyVersionAttribute("0.6.1.13")];
+[assembly:AssemblyFileVersionAttribute("0.6.1.13")];
 [assembly:ComVisible(false)];
 
 [assembly:CLSCompliantAttribute(true)];

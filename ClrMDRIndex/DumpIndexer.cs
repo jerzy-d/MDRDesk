@@ -8,15 +8,11 @@ using System.Runtime;
 using System.Threading;
 using ClrMDRUtil.Utils;
 using Microsoft.Diagnostics.Runtime;
-using System.Runtime.InteropServices;
 
 namespace ClrMDRIndex
 {
     public sealed class DumpIndexer
     {
-        [DllImport("CppUtils.dll", CharSet = CharSet.Unicode)]
-        public static extern void GraphHelper();
-
         [Flags]
         public enum IndexingArguments
         {
@@ -1256,9 +1252,10 @@ namespace ClrMDRIndex
                     }
                 }
 
-                CppUtils.GraphHelper graphHelper = new CppUtils.GraphHelper();
-                graphHelper.Init(graph.AdjacencyLists.Length, graph.AdjacencyLists);
-                var newCycles = graphHelper.GetCycles();
+                // TODO JRD -- We need Hawick here
+                //CppUtils.GraphHelper graphHelper = new CppUtils.GraphHelper();
+                //graphHelper.Init(graph.AdjacencyLists.Length, graph.AdjacencyLists);
+                //var newCycles = graphHelper.GetCycles();
 
                 progress?.Report(progressHeader + "Searching for thread and blocking object cycles...");
                 var cycle = new DirectedCycle(graph);
