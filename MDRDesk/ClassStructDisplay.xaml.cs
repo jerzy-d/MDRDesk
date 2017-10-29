@@ -263,7 +263,7 @@ namespace MDRDesk
 
         private void ButtonHelpClicked(object sender, RoutedEventArgs e)
         {
-            ValueWindows.ShowHelpWindow(Setup.HelpFolder + Path.DirectorySeparatorChar + @"\Documentation\Configuration.md");
+            ValueWindows.ShowHelpWindow(Setup.HelpFolder + Path.DirectorySeparatorChar + @"\Documentation\ValueWindows.md");
         }
 
         private void AddHotKeys()

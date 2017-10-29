@@ -37,6 +37,21 @@ namespace ClrMDRIndex
             _start = 0;
         }
 
+        public Circuits(IList<int>[] adjLsts)
+        {
+            _graph = new int[adjLsts.Length][];
+            for(int i = 0, icnt = adjLsts.Length; i < icnt; ++i)
+            {
+                var adjLst = adjLsts[i];
+                _graph[i] = adjLst == null ? Utils.EmptyArray<int>.Value : adjLst.ToArray();
+            }
+            _blocked = new bool[adjLsts.Length];
+            _B = new List<int>[adjLsts.Length];
+            _cycles = new List<int[]>();
+            _stack = new Stack<int>();
+            _start = 0;
+        }
+
         bool NotInList(IList<int> lst, int val)
         {
             return lst==null || !lst.Contains(val);

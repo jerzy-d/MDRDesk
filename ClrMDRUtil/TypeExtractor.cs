@@ -472,7 +472,8 @@ namespace ClrMDRIndex
             "System.Collections.Generic.HashSet<",
             "System.Collections.Generic.SortedDictionary<",
             "System.Collections.Generic.SortedList<",
-            "System.Collections.Generic.List<"
+            "System.Collections.Generic.List<",
+            "System.Collections.Generic.Queue<"
         };
 
         public enum KnownTypes
@@ -483,6 +484,7 @@ namespace ClrMDRIndex
             SortedDictionary,
             SortedList,
             List,
+            Queue,
             Unknown,
         }
 
@@ -508,6 +510,8 @@ namespace ClrMDRIndex
                     return "SortedList<TKey,TValue>";
                 case KnownTypes.List:
                     return "List<T>";
+                case KnownTypes.Queue:
+                    return "Queue<T>";
                 default:
                     return "Unknown Type";
             }

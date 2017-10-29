@@ -1521,6 +1521,16 @@ namespace ClrMDRIndex
             return 0; // TODO JRD ???
         }
 
+        public static ValueTuple<ClrType,ClrElementKind> GetFieldType(ClrHeap heap, ulong parentAddr, ClrInstanceField fld)
+        {
+            ClrElementKind kind = TypeExtractor.GetElementKind(fld.Type);
+            if (kind == ClrElementKind.Unknown) // fld.Type == null
+            {
+                return (null, ClrElementKind.Unknown); // TODO JRD
+            }
+            return (fld.Type, kind);
+        }
+
         #endregion utils
 
         #region known collections
@@ -1541,6 +1551,29 @@ namespace ClrMDRIndex
             if (obj == null) return 0;
             Debug.Assert(obj is Int32);
             return (int)obj;
+        }
+
+        public static ValueTuple<string, ValueTuple<ClrType, ClrInstanceField, ClrElementKind, object>[]>
+        GetCollectionInfo(ClrHeap heap, ulong addr, ClrType clrType, string[] flds)
+        {
+            try
+            {
+                var result = new ValueTuple<ClrType, ClrInstanceField, ClrElementKind, object>[flds.Length];
+                for (int i = 0, icnt = flds.Length; i < icnt; ++i)
+                {
+                    ClrInstanceField fld = clrType.GetFieldByName(flds[i]);
+                    (ClrType fldType,ClrElementKind fldKind) = GetFieldType(heap, addr, fld);
+                    object obj = fld.GetValue(addr);
+                    result[i] = (fldType, fld, fldKind, obj);
+                }
+
+                return (null, result);
+            }
+            catch (Exception ex)
+            {
+                var error = Utils.GetExceptionErrorString(ex);
+                return (error, null);
+            }
         }
 
         #region System.Collections.Generic.List<T>
@@ -1602,7 +1635,7 @@ namespace ClrMDRIndex
         #endregion System.Collections.Generic.List<T> content
 
         #region System.Collections.Generic.SortedList<TKey, TValue>
-
+ 
         public static ValueTuple<string, KeyValuePair<string, string>[], KeyValuePair<string, string>[]> GetSortedListContent(ClrHeap heap, ulong addr)
         {
             string error = null;
@@ -1721,6 +1754,8 @@ namespace ClrMDRIndex
 
         #endregion System.Collections.Generic.Dictionary<TKey, TValue>
 
+        #region System.Collections.Generic.SortedDictionary<TKey, TValue>
+
         public static ValueTuple<string, KeyValuePair<string, string>[], KeyValuePair<string, string>[]> GetSortedDictionaryContent(ClrHeap heap, ulong addr)
         {
             try
@@ -1741,7 +1776,7 @@ namespace ClrMDRIndex
 
                 var keyFld = itemNodeFld.Type.GetFieldByName("key");
                 var valFld = itemNodeFld.Type.GetFieldByName("value");
-                var itemAddr = itemNodeFld.GetAddress(rootFldAddr,false);
+                var itemAddr = itemNodeFld.GetAddress(rootFldAddr, false);
                 (ClrType keyFldType, ClrElementKind keyFldKind, ulong keyFldAddr) =
                         TypeExtractor.GetRealType(heap, itemAddr, keyFld, true);
                 (ClrType valFldType, ClrElementKind valFldKind, ulong valFldAddr) =
@@ -1795,11 +1830,7 @@ namespace ClrMDRIndex
             }
         }
 
-
-        #region System.Collections.SortedGeneric.Dictionary<TKey, TValue>
-
-
-        #endregion System.Collections.SortedGeneric.Dictionary<TKey, TValue>
+        #endregion System.Collections.Generic.SortedDictionary<TKey, TValue>
 
         #region System.Collections.Generic.HashSet<T>
 
@@ -1873,7 +1904,27 @@ namespace ClrMDRIndex
 
         #region System.Collections.Generic.Queue<T>
 
+        public static ValueTuple<string, KeyValuePair<string, string>[], string[]> GetQueueContent(ClrHeap heap, ulong addr)
+        {
+            try
+            {
+                addr = Utils.RealAddress(addr);
+                ClrType clrType = heap.GetObjectType(addr);
+                if (!TypeExtractor.Is(TypeExtractor.KnownTypes.Queue, clrType.Name))
+                    return ("Instance at: " + Utils.RealAddressString(addr) + " is not " + TypeExtractor.GetKnowTypeName(TypeExtractor.KnownTypes.Queue), null, null);
+                string[] fldNames = new[] { "_array", "_head", "_tail", "_size", "_version" };
+                string error;
+                ValueTuple<ClrType, ClrInstanceField, ClrElementKind, object>[] info;
+                (error, info) = GetCollectionInfo(heap, addr, clrType, fldNames);
 
+                return (null, null, null);
+            }
+            catch(Exception ex)
+            {
+                var error = Utils.GetExceptionErrorString(ex);
+                return (error, null, null);
+            }
+        }
 
 
         #endregion System.Collections.Generic.Queue<T>

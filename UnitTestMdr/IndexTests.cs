@@ -2366,9 +2366,26 @@ namespace UnitTestMdr
 
         }
 
-#endregion instance value
+        [TestMethod]
+        public void TestQueueContent()
+        {
+            Stopwatch stopWatch = new Stopwatch();
+            stopWatch.Start();
+            var index = OpenIndex(@"C:\WinDbgStuff\Dumps\Analytics\Highline\analyticsdump111.dlk.dmp.map");
+            TestContext.WriteLine(index.DumpFileName + " INDEX OPEN DURATION: " + Utils.StopAndGetDurationString(stopWatch));
+            ulong addr = 0x000001808d4d48; // 0x00000081fe9a48;
+            using (index)
+            {
+                var heap = index.GetHeap();
+                var (error, description, values) = ValueExtractor.GetQueueContent(heap, addr);
+                Assert.IsNull(error, error);
+            }
 
-#region type values report
+        }
+
+        #endregion instance value
+
+        #region type values report
 
         //[TestMethod]
         //public void TestSavedTypeValuesReport()

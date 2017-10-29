@@ -7,7 +7,7 @@
         mc:Ignorable="d"
         WindowStartupLocation="CenterOwner"
         Closing="Window_Closing"
-        Title="Collection Content" Height="500" Width="300">
+        Title="Collection Content" Height="500" Width="400">
     <Window.Resources>
         <ContextMenu x:Key="ItemListContextMenu" x:Shared="False">
             <MenuItem x:Name="ItemLstCopy" Header="Copy (clipboard)" Click="CopyItemSelectionClicked" ></MenuItem>
@@ -37,22 +37,47 @@
         <ListBox x:Name="CollectionValues" Grid.Row="2" Margin="2,2,2,2" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" FontFamily="Consolas" FontSize="11" ContextMenu="{StaticResource ItemListContextMenu}"  MouseDoubleClick="ItemListDoubleClicked">
             <ListBox.BorderBrush>BlanchedAlmond</ListBox.BorderBrush>
         </ListBox>
-        <Grid Grid.Row="3" Margin="2,2,2,2">
-            <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="30"/>
-                <ColumnDefinition Width="70*"/>
-                <ColumnDefinition Width="15*"/>
-                <ColumnDefinition Width="15*"/>
-            </Grid.ColumnDefinitions>
-            <TextBlock Grid.Column="0" VerticalAlignment="Center" HorizontalAlignment="Center" FontFamily="Times New Roman" FontWeight="Bold" FontSize="16">&#x2778;</TextBlock>
-            <Button  x:Name="ShowArrayIndices" Grid.Column="2" Width="28" Height="28" HorizontalAlignment="Right" VerticalAlignment="Center" BorderThickness="0" Click="ShowArrayIndicesClicked"
+        <StatusBar x:Name="InstanceValueStatusBar" Grid.Row="3" HorizontalAlignment="Stretch" VerticalAlignment="Center" Margin="2,0,2,0" VerticalContentAlignment="Center">
+            <StatusBar.ItemsPanel>
+                <ItemsPanelTemplate>
+                    <Grid>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="*"/>
+                        </Grid.RowDefinitions>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="30"/>
+                            <ColumnDefinition Width="77*"/>
+                            <ColumnDefinition Width="8*"/>
+                            <ColumnDefinition Width="8*"/>
+                            <ColumnDefinition Width="8*"/>
+                        </Grid.ColumnDefinitions>
+                    </Grid>
+                </ItemsPanelTemplate>
+            </StatusBar.ItemsPanel>
+            <StatusBarItem Grid.Column="0" Margin="2,0,0,0" HorizontalAlignment="Left">
+                <TextBlock VerticalAlignment="Center" HorizontalAlignment="Left" FontFamily="Times New Roman" FontWeight="Bold" FontSize="16">&#x2778;</TextBlock>
+            </StatusBarItem>
+            <StatusBarItem Grid.Column="1" Margin="2,0,0,0" HorizontalAlignment="Left">
+                <TextBlock x:Name="StatusText" FontStyle="Italic" Foreground="Blue"/>
+            </StatusBarItem>
+            <StatusBarItem Grid.Column="2" Margin="2,0,2,0" HorizontalAlignment="Right" VerticalAlignment="Center">
+                <Button x:Name="ButtonHelp" Grid.Row ="6" Grid.Column="1" HorizontalAlignment="Center" Margin="2,2,2,2" VerticalAlignment="Center" Width="28" Height="28" Click="ButtonHelpClicked" Background="Transparent" BorderThickness="0">
+                    <Button.ToolTip>Usage help.</Button.ToolTip>
+                    <Image Source=".\Images\Help.png" Width="16" Height="16" Margin="0,0,0,0" VerticalAlignment="Center" HorizontalAlignment="Center"/>
+                </Button>
+            </StatusBarItem>
+            <StatusBarItem x:Name="ShowArrayIndicesItem" Grid.Column="3" Margin="2,0,2,0" HorizontalAlignment="Right" >
+                <Button  x:Name="ShowArrayIndices" Grid.Column="2" Width="28" Height="28" HorizontalAlignment="Right" VerticalAlignment="Center" BorderThickness="0" Click="ShowArrayIndicesClicked"
                          Background="AliceBlue">
-                <Button.ToolTip>Show/hide array indices.</Button.ToolTip>
+                    <Button.ToolTip>Show/hide array indices.</Button.ToolTip>
                     <Image Source=".\Images\ListView_16x.png" Width="16" Height="16" Margin="0,0,0,0" VerticalAlignment="Center" HorizontalAlignment="Center"/>
-            </Button>
-            <Button x:Name="LockBtn"  Grid.Column="3" Click="LockBtnClicked" Width="28" Height="28" VerticalAlignment="Center" HorizontalAlignment="Right">
-                <Button.ToolTip>Lock/unlock content of this window.</Button.ToolTip>
-            </Button>
-        </Grid>
+                </Button>
+            </StatusBarItem>
+            <StatusBarItem x:Name="LockBtnBarItem" Grid.Column="4" Margin="2,0,2,0" HorizontalAlignment="Right" >
+                <Button x:Name="LockBtn" Click="LockBtnClicked">
+                    <Button.ToolTip>Lock/unlock content of this window.</Button.ToolTip>
+                </Button>
+            </StatusBarItem>
+        </StatusBar>
     </Grid>
 </Window>

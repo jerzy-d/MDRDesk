@@ -2,7 +2,7 @@
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.ComponentModel;
-using System.Linq;
+using System.IO;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows;
@@ -73,6 +73,24 @@ namespace MDRDesk
 		public void Window_Closing(object sender, CancelEventArgs e)
 		{
             var wndtask = Task.Factory.StartNew(() => ValueWindows.RemoveWindow(_id, _wndType));
+        }
+        private void ButtonHelpClicked(object sender, RoutedEventArgs e)
+        {
+            ValueWindows.ShowHelpWindow(Setup.HelpFolder + System.IO.Path.DirectorySeparatorChar + @"\Documentation\ValueWindows.md");
+        }
+
+        private void AddHotKeys()
+        {
+            try
+            {
+                RoutedCommand firstSettings = new RoutedCommand();
+                firstSettings.InputGestures.Add(new KeyGesture(Key.F1));
+                CommandBindings.Add(new CommandBinding(firstSettings, ButtonHelpClicked));
+            }
+            catch (Exception err)
+            {
+                //handle exception error
+            }
         }
 
         private void LockBtnClicked(object sender, RoutedEventArgs e)

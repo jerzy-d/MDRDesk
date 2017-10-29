@@ -169,6 +169,24 @@ namespace MDRDesk
             }
 
         }
+        private void ButtonHelpClicked(object sender, RoutedEventArgs e)
+        {
+            ValueWindows.ShowHelpWindow(Setup.HelpFolder + System.IO.Path.DirectorySeparatorChar + @"\Documentation\ValueWindows.md");
+        }
+
+        private void AddHotKeys()
+        {
+            try
+            {
+                RoutedCommand firstSettings = new RoutedCommand();
+                firstSettings.InputGestures.Add(new KeyGesture(Key.F1));
+                CommandBindings.Add(new CommandBinding(firstSettings, ButtonHelpClicked));
+            }
+            catch (Exception err)
+            {
+                //handle exception error
+            }
+        }
 
         private void LockBtnClicked(object sender, RoutedEventArgs e)
         {
