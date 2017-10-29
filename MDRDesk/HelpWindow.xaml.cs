@@ -82,7 +82,7 @@ namespace MDRDesk
             var separatorStyle = this.TryFindResource("SeparatorStyle") as Style;
             _markdown.SeparatorStyle = separatorStyle;
 
-            _markdown.AssetPathRoot = ClrMDRIndex.Setup.HelpFolder + System.IO.Path.DirectorySeparatorChar + "Documentation";
+            _markdown.AssetPathRoot = ClrMDRIndex.Setup.HelpFolder + System.IO.Path.DirectorySeparatorChar + "Documentation" + System.IO.Path.DirectorySeparatorChar;
 
         }
 
