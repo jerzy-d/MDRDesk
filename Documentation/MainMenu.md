@@ -2,7 +2,7 @@
 [Up](../README.md)
 ## Main Menu
 
-![Main Menu](MainMenu.PNG?raw=true)
+![Main Menu](MainMenu.PNG)
 
 #### File
 **Open Report File...**  
@@ -35,19 +35,19 @@ Exits application.
 
 #### Help
 
-![Write report file](WriteToHistory_32x.PNG?raw=true)
+![Write report file](WriteToHistory_32x.PNG)
 *Write report file, from a current tab.*
 
-![Write csv file](SequenceFile_32x.PNG?raw=true)
+![Write csv file](SequenceFile_32x.PNG)
 *Write csv file, from a current tab.*
 
-![Write csv file](Settings_32x.PNG?raw=true)
+![Write csv file](Settings_32x.PNG)
 *MDRDesk settings/configuration.*
 
-![Force GC](ClearWindowContent_16x.PNG?raw=true)
+![Force GC](ClearWindowContent_16x.PNG)
 *Force GC*
 
-![Type Display](TypeDisplay.PNG?raw=true)
+![Type Display](TypeDisplay.PNG)
 *How to display type list.*
 
 
