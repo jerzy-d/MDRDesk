@@ -1,4 +1,5 @@
 ﻿using GraphX.PCL.Common.Models;
+using System.Collections.Generic;
 
 namespace MDRDesk
 {
@@ -39,4 +40,22 @@ namespace MDRDesk
             Text = text;
         }
     }
+
+    public class DataVertexEqCmp : IEqualityComparer<DataVertex>
+    {
+        public bool Equals(DataVertex dv1, DataVertex dv2)
+        {
+            if (dv2 == null && dv1 == null)
+                return true;
+            else if (dv1 == null | dv2 == null)
+                return false;
+            return dv1.ID == dv2.ID;
+        }
+
+        public int GetHashCode(DataVertex dv)
+        {
+            return dv.ID.GetHashCode();
+        }
+    }
+
 }

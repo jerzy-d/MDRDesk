@@ -121,9 +121,14 @@ namespace ClrMDRIndex
 
         void SaveCycle()
         {
-            int[] cycle = _stack.ToArray();
-            Array.Reverse(cycle);
-            _cycles.Add(cycle);
+            int[] cycle = new int[_stack.Count+1];
+            int ndx = _stack.Count-1;
+            foreach (var v in _stack)
+            {
+                cycle[ndx--] = v;
+            }
+            cycle[_stack.Count] = _stack.Last();  // add closing vertex
+           _cycles.Add(cycle);
         }
 
         void Reset()

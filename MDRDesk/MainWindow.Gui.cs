@@ -36,6 +36,7 @@ using SubgraphDictionary =
             System.Collections.Generic.List<System.Collections.Generic.KeyValuePair<System.Collections.Generic.List<int>, int>>,
             int>>;
 using System.Collections.Concurrent;
+using Microsoft.Diagnostics.Runtime;
 
 namespace MDRDesk
 {
@@ -95,6 +96,9 @@ namespace MDRDesk
         private const string ListingGridView = "ListingView";
         private const string ListingGridInformation = "ListingInformation";
 
+        private const string RootsGrid = "RootsGrid";
+        private const string RootsGrid_RootTypeList = "RootTypeList";
+
 
 
         private string GetReportTitle(ListView lst)
@@ -123,7 +127,7 @@ namespace MDRDesk
 
         #region deadlock
 
-        public bool DisplayDeadlock(int[] deadlock, out string error)
+        public bool DisplayDeadlock(int[][] deadlocks, out string error)
         {
             error = null;
             try
@@ -139,7 +143,7 @@ namespace MDRDesk
                 ZoomControl.SetViewFinderVisibility(zoomctrl, Visibility.Visible);
                 //zoomctrl.ZoomToFill();
                 //Set Fill zooming strategy so whole graph will be always visible
-                DlkGraphAreaSetup(deadlock, area);
+                DlkGraphAreaSetup(deadlocks, area);
 
                 area.GenerateGraph(true, true);
 
@@ -187,7 +191,7 @@ namespace MDRDesk
             }
         }
 
-        private void DlkGraphAreaSetup(int[] deadlock, DlkGraphArea area)
+        private void DlkGraphAreaSetup(int[][] deadlock, DlkGraphArea area)
         {
             //Lets create logic core and filled data graph with edges and vertices
             var logicCore = new DlkGXLogicCore() { Graph = DlkGraphSetup(deadlock) };
@@ -222,7 +226,7 @@ namespace MDRDesk
             area.LogicCore = logicCore;
         }
 
-        private DlkGraph DlkGraphSetup(int[] deadlock)
+        private DlkGraph DlkGraphSetup(int[][] deadlocks)
         {
             //Lets make new data graph instance
             var dataGraph = new DlkGraph();
@@ -230,30 +234,32 @@ namespace MDRDesk
             //This edges and vertices will represent graph structure and connections
             //Lets make some vertices
 
-            DataVertex[] vertices = new DataVertex[deadlock.Length];
+            var vertices = new Dictionary<int,DataVertex>();
+            var vertexSet = new HashSet<int>();
 
-            HashSet<int> set = new HashSet<int>();
-
-            for (int i = 0, icnt = deadlock.Length; i < icnt; ++i)
+            for (int i = 0, icnt = deadlocks.Length; i < icnt; ++i)
             {
-                var id = deadlock[i];
-                if (!set.Add(id))
+                for(int j = 0, jcnt = deadlocks[i].Length; j < jcnt; ++j)
                 {
-                    vertices[i] = Array.Find(vertices, v => v.ID == (long)id);
-                    continue;
+                    var id = deadlocks[i][j];
+                    if (!vertexSet.Add(id)) continue;
+                    bool isThread;
+                    var label = CurrentIndex.GetThreadOrBlkLabel(id, out isThread);
+                    label = (isThread ? Constants.HeavyRightArrowHeader : Constants.BlackFourPointedStarHeader) + label;
+                    var node = new DataVertex(label);
+                    node.ID = id;
+                    vertices[id] = node;
+                    dataGraph.AddVertex(node);
                 }
-                bool isThread;
-                var label = CurrentIndex.GetThreadOrBlkLabel(id, out isThread);
-                label = (isThread ? Constants.HeavyRightArrowHeader : Constants.BlackFourPointedStarHeader) + label;
-                var node = new DataVertex(label);
-                node.ID = id;
-                vertices[i] = node;
-                dataGraph.AddVertex(node);
+
             }
-            for (int i = 1, icnt = deadlock.Length; i < icnt; ++i)
+            for (int i = 0, icnt = deadlocks.Length; i < icnt; ++i)
             {
-                var dataEdge = new DataEdge(vertices[i - 1], vertices[i]);
-                dataGraph.AddEdge(dataEdge);
+                for (int j = 1, jcnt = deadlocks[i].Length; j < jcnt; ++j)
+                {
+                    var dataEdge = new DataEdge(vertices[deadlocks[i][j-1]], vertices[deadlocks[i][j]]);
+                    dataGraph.AddEdge(dataEdge);
+                }
             }
 
             return dataGraph;
@@ -1380,6 +1386,91 @@ namespace MDRDesk
 
         #endregion types main displays
 
+        #region roots
+
+        private void DisplayRoots(ClrtRoot[][] roots, ListingInfo[] listings)
+        {
+            Debug.Assert(CurrentIndex != null);
+            var grid = this.TryFindResource(RootsGrid) as Grid;
+            grid.Name = RootsGrid + "__" + Utils.GetNewID();
+            Debug.Assert(grid != null);
+            var rootKindList = (ListBox)LogicalTreeHelper.FindLogicalNode(grid, RootsGrid_RootTypeList);
+            Debug.Assert(rootKindList != null);
+
+            for (int i = 0, icnt = roots.Length; i < icnt; ++i)
+            {
+                var rts = roots[i];
+                var cnt = rts == null ? 0 : rts.Length;
+                TextBlock txtBlk = GetRoootKindText((GCRootKind)i, cnt);
+                var lstItem = new ListBoxItem();
+                lstItem.Content = txtBlk;
+                lstItem.Background = (i & 1) != 0 ? Brushes.WhiteSmoke : Brushes.White;
+                //lstItem.BorderThickness = new Thickness(1.0);
+                //lstItem.BorderBrush = Brushes.Gray;
+                rootKindList.Items.Add(lstItem);
+            }
+
+            (Grid lstGrid, ListView lstView) = GetListingGrid("LstRoots", null, listings[0].ColInfos, new RoutedEventHandler(RootListingListViewClick));
+            PopulateListingGrid(lstGrid, lstView, listings[0], "xxx", null);
+            var rgrid = (Grid)LogicalTreeHelper.FindLogicalNode(grid, "RootListing");
+            rgrid.Children.Add(lstGrid);
+            DisplayTab(Constants.BlackDiamondHeader, "Roots", grid, "RootsTab");
+        }
+
+        private void RootListingListViewClick(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                Debug.Assert(sender is SWC.MenuItem);
+                SWC.MenuItem menuItem = sender as SWC.MenuItem;
+                var lstView = menuItem.Tag as SWC.ListView;
+                Debug.Assert(lstView != null);
+            }
+            catch(Exception ex)
+            {
+                // TODO JRD
+            }
+        }
+
+        private static TextBlock GetRoootKindText(GCRootKind kind, int count)
+        {
+            var txtBlk = new TextBlock();
+
+            switch (kind)
+            {
+                case GCRootKind.StaticVar:
+                    txtBlk.Inlines.Add(new Bold(new Run("Static\nVariables")));
+                    break;
+                case GCRootKind.ThreadStaticVar:
+                    txtBlk.Inlines.Add(new Bold(new Run("Thread\nStatic\nVariables")));
+                    break;
+                case GCRootKind.LocalVar:
+                    txtBlk.Inlines.Add(new Bold(new Run("Local\nVariables")));
+                    break;
+                case GCRootKind.Strong:
+                    txtBlk.Inlines.Add(new Bold(new Run("Strong\nHandles")));
+                    break;
+                case GCRootKind.Weak:
+                    txtBlk.Inlines.Add(new Bold(new Run("Weak\nHandles")));
+                    break;
+                case GCRootKind.Pinning:
+                    txtBlk.Inlines.Add(new Bold(new Run("Strong\nPinning")));
+                    break;
+                case GCRootKind.Finalizer:
+                    txtBlk.Inlines.Add(new Bold(new Run("Finalizer\nQueue")));
+                    break;
+                case GCRootKind.AsyncPinning:
+                    txtBlk.Inlines.Add(new Bold(new Run("Asynch\nPinning")));
+                    break;
+            }
+
+            txtBlk.Inlines.Add("\n[" + Utils.CountString(count) + "]\n");
+
+            return txtBlk;
+        }
+
+        #endregion roots
+
         #region Finalizer Queue
 
         private void DisplayFinalizerQueue(DisplayableFinalizerQueue finlQue)
@@ -1514,6 +1605,63 @@ namespace MDRDesk
         //    listView.ContextMenu.ItemsSource = menuItems;
         //    DisplayTab(prefix, reportTitle, grid, name);
         //}
+
+
+        private void PopulateListingGrid(Grid grid, ListView listView, ListingInfo info, string reportTitle, string filePath)
+        {
+            listView.Tag = new Tuple<ListingInfo, string>(info, reportTitle);
+            string path;
+            if (filePath == null)
+                path = CurrentIndex != null ? CurrentIndex.DumpPath : CurrentAdhocDump?.DumpPath;
+            else
+                path = filePath;
+            grid.Tag = new Tuple<string, DumpFileMoniker>(reportTitle, new DumpFileMoniker(path));
+            GridView gridView = (GridView)listView.View;
+
+            // save data and listing name in listView
+            //
+            listView.Tag = new Tuple<ListingInfo, string>(info, reportTitle);
+            listView.Items.Clear();
+            listView.ItemsSource = info.Items;
+        }
+
+        private ValueTuple<Grid,ListView> GetListingGrid(string name, SWC.MenuItem[] menuItems, ColumnInfo[] colInfos, RoutedEventHandler contextMenuCallback)        {
+            var grid = TryFindResource(ListingGrid) as Grid;
+            grid.Name = name + "__" + Utils.GetNewID();
+            Debug.Assert(grid != null);
+            var listView = (ListView)LogicalTreeHelper.FindLogicalNode(grid, ListingGridView);
+            GridView gridView = (GridView)listView.View;
+
+            for (int i = 0, icnt = colInfos.Length; i < icnt; ++i)
+            {
+                var gridColumn = new GridViewColumn
+                {
+                    Header = colInfos[i].Name,
+                    DisplayMemberBinding = new Binding(listing<string>.PropertyNames[i]),
+                    Width = colInfos[i].Width,
+                };
+                gridView.Columns.Add(gridColumn);
+            }
+
+            if (menuItems == null)
+            {
+                SWC.MenuItem mi = new SWC.MenuItem { Header = "Copy List Row", Tag = listView };
+                menuItems = new SWC.MenuItem[]
+                {
+                    mi
+                };
+            }
+            foreach (var menu in menuItems)
+            {
+                menu.Tag = listView;
+                menu.Click += contextMenuCallback;
+            }
+
+            listView.ContextMenu = new SWC.ContextMenu();
+            listView.ContextMenu.ItemsSource = menuItems;
+            return (grid, listView);
+        }
+
 
         /// <summary>
         /// Display listing of things, a poor man data grid.

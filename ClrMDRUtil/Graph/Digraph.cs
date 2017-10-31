@@ -29,6 +29,16 @@ namespace ClrMDRIndex
 			}
 		}
 
+        public int[][] GetJaggedArrayGraph()
+        {
+            int[][] g = new int[_adjacencyLists.Length][];
+            for(int i = 0, icnt=_adjacencyLists.Length; i < icnt; ++i)
+            {
+                g[i] = _adjacencyLists[i].ToArray();
+            }
+            return g;
+        }
+
 		private List<int> CreateEmptyAdjList(int v, int size)
 		{
 			_adjacencyLists[v] = new List<int>(size);

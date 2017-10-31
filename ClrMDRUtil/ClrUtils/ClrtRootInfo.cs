@@ -13,6 +13,7 @@ namespace ClrMDRIndex
         private object _lock;
         public ClrtRoot[] StaticVariables => _roots[(int)GCRootKind.StaticVar];
         private readonly ClrtRoot[][] _roots; // rooots by Kind
+        public ClrtRoot[][] Roots => _roots;
         private int[] _staticVarTypeIds;
         private int[] _staticVarTypeIdMap;
 
@@ -522,7 +523,25 @@ namespace ClrMDRIndex
 			Max = 1 << 11,
 		}
 
-		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static bool IsInterior(Kinds kind)
+        {
+            return (kind & Kinds.Interior) != 0;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static bool IsPinned(Kinds kind)
+        {
+            return (kind & Kinds.Pinned) != 0;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static bool MaybeNotRoot(Kinds kind)
+        {
+            return (kind & Kinds.PossibleFalsePositive) != 0;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
 		public static Kinds Convert(GCRootKind kind)
 		{
 			return (Kinds)(1 << (4 + (int)kind));

@@ -564,29 +564,43 @@
             </TextBox>
         </Grid>
 
-
+        <Grid x:Key="GraphGrid" x:Shared="False">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="75*"/>
+                <RowDefinition Height="5"/>
+                <RowDefinition Height="20*"/>
+            </Grid.RowDefinitions>
+            <DockPanel Name="GraphPanel" Grid.Row="0" VerticalAlignment="Stretch" HorizontalAlignment="Stretch" Margin="2,2,2,2">
+            </DockPanel>
+            <GridSplitter Grid.Row="1" VerticalAlignment="Center" HorizontalAlignment="Stretch" Height="5" ShowsPreview="False" Background="DarkGray"></GridSplitter>
+            <TextBox Name="GraphInformation" v4:Grid.Row="2" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" Margin="2,2,2,2">
+            </TextBox>
+        </Grid>
+        <!-- ### Show roots. TODO JRD -->
+        <Grid x:Key="RootsGrid" x:Shared="False">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="100"/>
+                <ColumnDefinition Width="90*"/>
+            </Grid.ColumnDefinitions>
+            <ListBox Name="RootTypeList" Grid.Column="0">
+                    
+            </ListBox>
+            <Grid Name="RootListing" Grid.Column="1"></Grid>
+        </Grid>
+        <!-- ### Show indexing progress. TODO JRD -->
         <Grid x:Key="IndexingGrid" x:Shared="False">
             <Grid.RowDefinitions>
                 <RowDefinition Height="80*"/>
-                <!--<RowDefinition Height="5"/>
-                <RowDefinition Height="20*"/>
-                <RowDefinition Height="5"/>
-                <RowDefinition Height="20*"/>-->
                 <RowDefinition Height="5"/>
                 <RowDefinition Height="15*"/>
             </Grid.RowDefinitions>
             <TextBox  Name="IndexingList" Grid.Row="0" VerticalAlignment="Stretch" HorizontalAlignment="Stretch" VerticalScrollBarVisibility="Auto" Margin="2,2,2,2" FontFamily="Consolas" FontSize="11">
             </TextBox>
-            <!--<GridSplitter Grid.Row="1" VerticalAlignment="Center" HorizontalAlignment="Stretch" Height="5" ShowsPreview="False" Background="DarkGray"></GridSplitter>
-            <TextBox  Name="IndexingThreadList" Grid.Row="2" VerticalAlignment="Stretch" HorizontalAlignment="Stretch" VerticalScrollBarVisibility="Auto" Margin="2,2,2,2" FontFamily="Consolas" FontSize="11">
-            </TextBox>
-            <GridSplitter Grid.Row="3" VerticalAlignment="Center" HorizontalAlignment="Stretch" Height="5" ShowsPreview="False" Background="DarkGray"></GridSplitter>
-            <TextBox  Name="IndexingRefsList" Grid.Row="4" VerticalAlignment="Stretch" HorizontalAlignment="Stretch" VerticalScrollBarVisibility="Auto" Margin="2,2,2,2" FontFamily="Consolas" FontSize="11">
-            </TextBox>-->
             <GridSplitter Grid.Row="1" VerticalAlignment="Center" HorizontalAlignment="Stretch" Height="5" ShowsPreview="False" Background="DarkGray"></GridSplitter>
             <TextBox Name="IndexingInformation" v4:Grid.Row="2" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" Margin="2,2,2,2" FontFamily="Consolas" FontSize="12" Background="LightGray" IsReadOnly="True">
             </TextBox>
         </Grid>
+        <!-- ### Show weak references. TODO JRD -->
         <Grid x:Key="WeakReferenceViewGrid" x:Shared="False">
             <Grid.RowDefinitions>
                 <RowDefinition Height="50*"/>

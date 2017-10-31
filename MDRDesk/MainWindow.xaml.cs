@@ -28,6 +28,8 @@ using SWC = System.Windows.Controls;
 
 namespace MDRDesk
 {
+    delegate void ListingListViewClick(object sender, RoutedEventArgs e);
+
     /// <summary>
     /// Interaction logic for MainWindow.xaml
     /// </summary>
@@ -687,10 +689,32 @@ namespace MDRDesk
             DisplayFinalizerQueue(finalizerInfo.Item2);
         }
 
-        private void IndexShowRootsClicked(object sender, RoutedEventArgs e)
+        private async void IndexShowRootsClicked(object sender, RoutedEventArgs e)
         {
             if (!IsIndexAvailable("Show Roots")) return;
 
+
+            SetStartTaskMainWindowState("Getting WeakReference information, please wait...");
+
+            (string error, ClrtRoot[][] roots, ListingInfo[] listings) = await Task.Factory.StartNew(() =>
+            {
+                string error_;
+                ClrtRoot[][] roots_;
+                ListingInfo[] listings_ = CurrentIndex.GetRootListing(out roots_, out error_);
+                return (error_, roots_, listings_);
+            }, DumpSTAScheduler);
+
+            SetEndTaskMainWindowState(error == null
+                ? "Getting WeakReference information done."
+                : "Getting WeakReference information failed.");
+
+            if (error != null)
+            {
+                ShowError(error);
+                return;
+            }
+
+            DisplayRoots(roots,listings);
         }
 
         private async void IndexShowWeakReferencesClicked(object sender, RoutedEventArgs e)

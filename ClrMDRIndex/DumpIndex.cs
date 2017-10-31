@@ -105,8 +105,8 @@ namespace ClrMDRIndex
         private IndexProxy _indexProxy;
         public IndexProxy IndexProxy => _indexProxy;
 
-        private int[] _deadlock;
-        public int[] Deadlock => _deadlock;
+        private int[][] _deadlock;
+        public int[][] Deadlock => _deadlock;
         private int[] _threadBlockingMap;
         private int[] _blockBlockingMap;
         private Digraph _threadBlockgraph;
@@ -244,9 +244,16 @@ namespace ClrMDRIndex
                 var path = _fileMoniker.GetFilePath(_currentRuntimeIndex, Constants.MapThreadsAndBlocksGraphFilePostfix);
                 br = new BinaryReader(File.Open(path, FileMode.Open));
                 int cycleCount = br.ReadInt32();
-                _deadlock = cycleCount > 0 ? new int[cycleCount] : Utils.EmptyArray<int>.Value;
+                _deadlock = cycleCount > 0 ? new int[cycleCount][] : Utils.EmptyArray<int[]>.Value;
                 for (int i = 0; i < cycleCount; ++i)
-                    _deadlock[i] = br.ReadInt32();
+                {
+                    int ccnt = br.ReadInt32();
+                    _deadlock[i] = new int[ccnt];
+                    for (int j = 0; j < ccnt; ++j)
+                    {
+                        _deadlock[i][j] = br.ReadInt32();
+                    }
+                }
                 int count = br.ReadInt32();
                 _threadBlockingMap = count > 0 ? new int[count] : Utils.EmptyArray<int>.Value;
                 for (int i = 0; i < count; ++i)
@@ -2079,6 +2086,79 @@ namespace ClrMDRIndex
             {
                 error = Utils.GetExceptionErrorString(ex);
                 return (null, null);
+            }
+        }
+
+        public ListingInfo[] GetRootListing(out ClrtRoot[][] roots, out string error)
+        {
+            error = null;
+            roots = null;
+            StringBuilder sb = StringBuilderCache.Acquire(StringBuilderCache.MaxCapacity);
+            try
+            {
+                StringCache strCache = new StringCache(StringComparer.Ordinal);
+                ClrtRootInfo ri = GetRoots(out error);
+                if (error != null) return null;
+                roots = ri.Roots;
+                ColumnInfo[] colInfos = new[]
+                {
+                   new ColumnInfo("Traits", ReportFile.ColumnType.String,150,1,true),
+                   new ColumnInfo("Address", ReportFile.ColumnType.UInt64,150,2,true),
+                   new ColumnInfo("Object", ReportFile.ColumnType.UInt64,150,3,true),
+                   new ColumnInfo("Object Type", ReportFile.ColumnType.String,300,4,true),
+                   new ColumnInfo("Root Name", ReportFile.ColumnType.String,200,5,true),
+                };
+
+                ListingInfo[] listingInfos = new ListingInfo[roots.Length];
+ 
+                for (int i = 0, icnt = roots.Length; i < icnt; ++i)
+                {
+                    var rt = roots[i];
+                    if (rt == null || rt.Length < 1)
+                    {
+                        listingInfos[i] = new ListingInfo(null, Utils.EmptyArray<listing<string>>.Value, colInfos, "");
+                        continue;
+                    }
+                    string[] data = new string[rt.Length * 5];
+                    var lstInfo = new listing<string>[rt.Length];
+                    int ndx = 0, off = 0;
+                    for (int j = 0, jcnt=rt.Length; j < jcnt; ++j)
+                    {
+                        var r = rt[j];
+                        sb.Clear();
+                        if (ClrtRoot.IsInterior(r.RootKind)) sb.Append('I');
+                        if (ClrtRoot.IsPinned(r.RootKind)) sb.Append('P');
+                        if (ClrtRoot.MaybeNotRoot(r.RootKind)) sb.Append('?');
+                        sb.Append(" [").Append(r.OsThreadId).Append(']');
+
+                        var trait = sb.ToString();
+                        var addr = Utils.RealAddressString(r.Address);
+                        var obj = Utils.RealAddressString(r.Object);
+                        var objType = GetTypeName(r.TypeId);
+                        var rname = r.NameId.ToString();
+
+                        lstInfo[ndx] = new listing<string>(data, off, 5);
+                        data[off++] = trait;
+                        data[off++] = addr;
+                        data[off++] = obj;
+                        data[off++] = objType;
+                        data[off++] = rname;
+                        ++ndx;
+                    }
+                    listingInfos[i] = new ListingInfo(null, lstInfo, colInfos, "");
+                }
+
+
+                return listingInfos;
+            }
+            catch(Exception ex)
+            {
+                error = Utils.GetExceptionErrorString(ex);
+                return null;
+            }
+            finally
+            {
+                StringBuilderCache.Release(sb);
             }
         }
 

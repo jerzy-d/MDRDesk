@@ -1260,18 +1260,33 @@ namespace ClrMDRIndex
                 progress?.Report(progressHeader + "Searching for thread and blocking object cycles...");
                 var cycle = new DirectedCycle(graph);
                 var cycles = cycle.GetCycle();
+                int[][] allCycles = null;
                 if (cycles != null && cycles.Length > 0)
-                    progress?.Report(progressHeader + "Found cycle(s), possible deadlock...");
-
+                {
+                    progress?.Report(progressHeader + "Found one cycle, searching for more, possible deadlock(s)...");
+                    var g = graph.GetJaggedArrayGraph();
+                    allCycles = Circuits.GetCycles(g);
+                }
                 // save graph
                 //
                 progress?.Report(progressHeader + "Saving thread and blocking object graph...");
                 var path = _fileMoniker.GetFilePath(_currentRuntimeIndex, Constants.MapThreadsAndBlocksGraphFilePostfix);
                 bw = new BinaryWriter(File.Open(path, FileMode.Create));
-                bw.Write(cycles.Length);
-                for (int i = 0, icnt = cycles.Length; i < icnt; ++i)
+                if (allCycles != null)
                 {
-                    bw.Write(cycles[i]);
+                    bw.Write(allCycles.Length);
+                    for (int i = 0, icnt = allCycles.Length; i < icnt; ++i)
+                    {
+                        bw.Write(allCycles[i].Length);
+                        for(int j = 0, jcnt=allCycles[i].Length; j < jcnt; ++j)
+                        {
+                            bw.Write(allCycles[i][j]);
+                        }
+                    }
+                }
+                else
+                {
+                    bw.Write((int)0);
                 }
                 bw.Write(thrMap.Length);
                 for (int i = 0, icnt = thrMap.Length; i < icnt; ++i)

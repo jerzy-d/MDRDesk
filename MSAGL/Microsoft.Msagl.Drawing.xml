@@ -3787,17 +3787,5 @@
             returns true if the was a change in the bounding box of the graph
             </summary>
         </member>
-        <member name="M:Microsoft.Msagl.Drawing.VerticalConstraintsForLayeredLayout.UnpinNodeFromMaxLayer(Microsoft.Msagl.Drawing.Node)">
-            <summary>
-            unpins a node from max layer
-            </summary>
-            <param name="node"></param>
-        </member>
-        <member name="M:Microsoft.Msagl.Drawing.VerticalConstraintsForLayeredLayout.UnpinNodeFromMinLayer(Microsoft.Msagl.Drawing.Node)">
-            <summary>
-            unpins a node from min layer
-            </summary>
-            <param name="node"></param>
-        </member>
     </members>
 </doc>
