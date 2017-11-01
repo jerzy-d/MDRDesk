@@ -2089,6 +2089,56 @@ namespace ClrMDRIndex
             }
         }
 
+
+        string rootTraitExplanation =
+                    "Traits explanation: "
+                    + Environment.NewLine
+                    + Constants.CapitalISymbolHeader + " is interior,   "
+                    + Constants.CapitaslPSymbolHeader + " is pinned." + Environment.NewLine
+                    + Constants.QuestionSymbolHeader + "A heuristic was used to find the value, and it might not actually be considered a root by the GC."
+                    + Environment.NewLine
+                    + "If the root has a thread associated with it, the thread's OS id is displayed.";
+
+        private string GetRootListingNote(int i, int count,  StringBuilder sb)
+        {
+            sb.Clear();
+            switch (((GCRootKind)i))
+            {
+                case GCRootKind.AsyncPinning:
+                    sb.AppendLine("Async IO (strong) pinning handles.");
+                    break;
+                case GCRootKind.Finalizer:
+                    sb.AppendLine("Roots from the finalizer queue.");
+                    break;
+                case GCRootKind.LocalVar:
+                    sb.AppendLine("Local variables, or compiler generated temporary variables.");
+                    break;
+                case GCRootKind.Pinning:
+                    sb.AppendLine("Strong pinning handles.");
+                    break;
+                case GCRootKind.StaticVar:
+                    sb.AppendLine("Static variables.");
+                    break;
+                case GCRootKind.Strong:
+                    sb.AppendLine("Strong handles");
+                    break;
+                case GCRootKind.ThreadStaticVar:
+                    sb.AppendLine("Thread static variables.");
+                    break;
+                case GCRootKind.Weak:
+                    sb.AppendLine("Weak handles.");
+                    break;
+            }
+            sb.AppendLine("Count: " + Utils.CountString(count));
+            sb.AppendLine(rootTraitExplanation);
+            //sb.AppendLine("Traits explanation: ");
+            //sb.Append(Constants.CapitalISymbolHeader + " is interior.");
+            //sb.AppendLine(Constants.CapitaslPSymbolHeader + " is pinned.");
+            //sb.AppendLine(Constants.QuestionSymbolHeader + "A heuristic was used to find the value, and it might not actually be considered a root by the GC.");
+            //sb.AppendLine("If the root has a thread associated with it, the thread's OS id is displayed.");
+            return sb.ToString();
+        }
+
         public ListingInfo[] GetRootListing(out ClrtRoot[][] roots, out string error)
         {
             error = null;
@@ -2110,13 +2160,17 @@ namespace ClrMDRIndex
                 };
 
                 ListingInfo[] listingInfos = new ListingInfo[roots.Length];
- 
+
+                string[] names = GetStringsByIds();
+
+
                 for (int i = 0, icnt = roots.Length; i < icnt; ++i)
                 {
                     var rt = roots[i];
                     if (rt == null || rt.Length < 1)
                     {
-                        listingInfos[i] = new ListingInfo(null, Utils.EmptyArray<listing<string>>.Value, colInfos, "");
+                        string note = GetRootListingNote(i, 0, sb);
+                        listingInfos[i] = new ListingInfo(null, Utils.EmptyArray<listing<string>>.Value, colInfos, note);
                         continue;
                     }
                     string[] data = new string[rt.Length * 5];
@@ -2126,16 +2180,21 @@ namespace ClrMDRIndex
                     {
                         var r = rt[j];
                         sb.Clear();
-                        if (ClrtRoot.IsInterior(r.RootKind)) sb.Append('I');
-                        if (ClrtRoot.IsPinned(r.RootKind)) sb.Append('P');
-                        if (ClrtRoot.MaybeNotRoot(r.RootKind)) sb.Append('?');
-                        sb.Append(" [").Append(r.OsThreadId).Append(']');
+                        if (ClrtRoot.IsInterior(r.RootKind)) sb.Append(Constants.CapitalISymbolHeader);
+                        if (ClrtRoot.IsPinned(r.RootKind)) sb.Append(Constants.CapitaslPSymbolHeader);
+                        if (ClrtRoot.MaybeNotRoot(r.RootKind)) sb.Append(Constants.QuestionSymbolHeader);
+                        if (r.OsThreadId != uint.MaxValue)
+                        {
+                            sb.Append(r.OsThreadId);
+                        }
+                        if (sb.Length < 1)
+                            sb.Append("none");
 
                         var trait = sb.ToString();
                         var addr = Utils.RealAddressString(r.Address);
                         var obj = Utils.RealAddressString(r.Object);
                         var objType = GetTypeName(r.TypeId);
-                        var rname = r.NameId.ToString();
+                        var rname = r.NameId >=0 && r.NameId < names.Length ? names[r.NameId] : r.NameId.ToString();
 
                         lstInfo[ndx] = new listing<string>(data, off, 5);
                         data[off++] = trait;
@@ -2145,7 +2204,9 @@ namespace ClrMDRIndex
                         data[off++] = rname;
                         ++ndx;
                     }
-                    listingInfos[i] = new ListingInfo(null, lstInfo, colInfos, "");
+
+
+                    listingInfos[i] = new ListingInfo(null, lstInfo, colInfos, GetRootListingNote(i, rt.Length, sb));
                 }
 
 

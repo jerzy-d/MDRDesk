@@ -1394,6 +1394,7 @@ namespace MDRDesk
             var grid = this.TryFindResource(RootsGrid) as Grid;
             grid.Name = RootsGrid + "__" + Utils.GetNewID();
             Debug.Assert(grid != null);
+            grid.Tag = new Tuple<ClrtRoot[][], ListingInfo[]>(roots, listings);
             var rootKindList = (ListBox)LogicalTreeHelper.FindLogicalNode(grid, RootsGrid_RootTypeList);
             Debug.Assert(rootKindList != null);
 
@@ -1404,17 +1405,46 @@ namespace MDRDesk
                 TextBlock txtBlk = GetRoootKindText((GCRootKind)i, cnt);
                 var lstItem = new ListBoxItem();
                 lstItem.Content = txtBlk;
-                lstItem.Background = (i & 1) != 0 ? Brushes.WhiteSmoke : Brushes.White;
-                //lstItem.BorderThickness = new Thickness(1.0);
-                //lstItem.BorderBrush = Brushes.Gray;
+                lstItem.BorderThickness = new Thickness(1.0);
+                lstItem.BorderBrush = Brushes.Gray;
                 rootKindList.Items.Add(lstItem);
             }
 
             (Grid lstGrid, ListView lstView) = GetListingGrid("LstRoots", null, listings[0].ColInfos, new RoutedEventHandler(RootListingListViewClick));
-            PopulateListingGrid(lstGrid, lstView, listings[0], "xxx", null);
-            var rgrid = (Grid)LogicalTreeHelper.FindLogicalNode(grid, "RootListing");
-            rgrid.Children.Add(lstGrid);
+            lstGrid.SetValue(Grid.ColumnProperty, 1);
+            grid.Children.Add(lstGrid);
             DisplayTab(Constants.BlackDiamondHeader, "Roots", grid, "RootsTab");
+            rootKindList.SelectedIndex = 0;
+        }
+
+        private void RootTypeListSelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            ListBox lb = sender as ListBox;
+            Debug.Assert(lb != null);
+            int selNdx = lb.SelectedIndex;
+            if (selNdx < 0) return;
+            // we need listing grid and its list view
+            Debug.Assert(lb.Parent != null && lb.Parent is Grid);
+            Grid grid = lb.Parent as Grid;
+            Tuple<ClrtRoot[][], ListingInfo[]> data = grid.Tag as Tuple<ClrtRoot[][], ListingInfo[]>; 
+            Grid lstGrid=null;
+            ListView lstView=null;
+            TextBox txtBox = null;
+            foreach(var child in grid.Children)
+            {
+                if (child is Grid) { lstGrid = (Grid)child; break; }
+            }
+            Debug.Assert(lstGrid != null);
+            foreach (var child in lstGrid.Children)
+            {
+                if (child is ListView) lstView = (ListView)child;
+                else if (child is TextBox) txtBox = (TextBox)child;
+            }
+            Debug.Assert(lstView != null);
+
+            string reportTitle = "Roots." + ((GCRootKind)selNdx).ToString();
+
+            PopulateListingGrid(lstGrid, lstView, txtBox, data.Item2[selNdx], reportTitle, null);
         }
 
         private void RootListingListViewClick(object sender, RoutedEventArgs e)
@@ -1607,7 +1637,7 @@ namespace MDRDesk
         //}
 
 
-        private void PopulateListingGrid(Grid grid, ListView listView, ListingInfo info, string reportTitle, string filePath)
+        private void PopulateListingGrid(Grid grid, ListView listView, TextBox txtBox, ListingInfo info, string reportTitle, string filePath)
         {
             listView.Tag = new Tuple<ListingInfo, string>(info, reportTitle);
             string path;
@@ -1621,8 +1651,9 @@ namespace MDRDesk
             // save data and listing name in listView
             //
             listView.Tag = new Tuple<ListingInfo, string>(info, reportTitle);
-            listView.Items.Clear();
+ //           listView.Items.Clear();
             listView.ItemsSource = info.Items;
+            txtBox.Text = info.Notes;
         }
 
         private ValueTuple<Grid,ListView> GetListingGrid(string name, SWC.MenuItem[] menuItems, ColumnInfo[] colInfos, RoutedEventHandler contextMenuCallback)        {

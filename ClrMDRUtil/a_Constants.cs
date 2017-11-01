@@ -68,10 +68,14 @@ namespace ClrMDRIndex
 		public const string NonValue = "\u2734"; // 2734 ✴ EIGHT POINTED BLACK STAR
 												 //public const string FieldSymbolPadded = " \u1D4D5 "; // 𝓕 MATHEMATICAL BOLD SCRIPT CAPITAL F
 		public const string FieldSymbolPadded = " \u2131 "; // ℱ SCRIPT CAPITAL F
-															//public const string InformationSymbolPadded = " \u2111 "; // ℑ BLACK-LETTER CAPITAL I
-															// 2139 ℹ INFORMATION SOURCE
-		public const string InformationSymbolHeader = "\u2110 "; // ℐ SCRIPT CAPITAL I
-		public const char InformationSymbol = '\u2110'; // ℐ SCRIPT CAPITAL I
+                                                            //public const string InformationSymbolPadded = " \u2111 "; // ℑ BLACK-LETTER CAPITAL I
+                                                            // 2139 ℹ INFORMATION SOURCE
+        public const string InformationSymbolHeader = "\u2110 "; // ℐ SCRIPT CAPITAL I
+        public const string QuestionSymbolHeader = "\u2753 "; // ❓ BLACK QUESTION MARK ORNAMENT
+        public const string CapitalISymbolHeader = "\u2111 "; // ℑ BLACK-LETTER CAPITAL I
+        public const string CapitaslPSymbolHeader = "\u2119 "; // ℙ DOUBLE-STRUCK CAPITAL P
+
+        public const char InformationSymbol = '\u2110'; // ℐ SCRIPT CAPITAL I
 		public const char HeavyRightArrow = '\u279C'; // ➜ HEAVY ROUND-TIPPED RIGHTWARDS ARROW
 		public const string HeavyRightArrowPadded = " \u279C "; // ➜ HEAVY ROUND-TIPPED RIGHTWARDS ARROW
 		public const string HeavyRightArrowHeader = "\u279C "; // ➜ HEAVY ROUND-TIPPED RIGHTWARDS ARROW

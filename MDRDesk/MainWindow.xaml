@@ -582,10 +582,10 @@
                 <ColumnDefinition Width="100"/>
                 <ColumnDefinition Width="90*"/>
             </Grid.ColumnDefinitions>
-            <ListBox Name="RootTypeList" Grid.Column="0">
+            <ListBox Name="RootTypeList" Grid.Column="0" SelectionChanged="RootTypeListSelectionChanged" SelectionMode="Single">
                     
             </ListBox>
-            <Grid Name="RootListing" Grid.Column="1"></Grid>
+            <!--<Grid Name="RootListing" Grid.Column="1"></Grid>-->
         </Grid>
         <!-- ### Show indexing progress. TODO JRD -->
         <Grid x:Key="IndexingGrid" x:Shared="False">
