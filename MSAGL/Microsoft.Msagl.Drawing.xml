@@ -155,6 +155,12 @@
             <summary>
             </summary>
         </member>
+        <member name="M:Microsoft.Msagl.Drawing.Subgraph.ToString">
+            <summary>
+            to string
+            </summary>
+            <returns></returns>
+        </member>
         <member name="P:Microsoft.Msagl.Drawing.Subgraph.Nodes">
             <summary>
             </summary>
@@ -1664,6 +1670,11 @@
             <summary>
             </summary>
         </member>
+        <member name="P:Microsoft.Msagl.Drawing.Graph.DataBase">
+            <summary>
+            debug only
+            </summary>
+        </member>
         <member name="P:Microsoft.Msagl.Drawing.Graph.Label">
             <summary>
             the label of the object
@@ -1727,6 +1738,11 @@
         <member name="P:Microsoft.Msagl.Drawing.Graph.Right">
             <summary>
             right of the graph
+            </summary>
+        </member>
+        <member name="P:Microsoft.Msagl.Drawing.Graph.History">
+            <summary>
+            debug only visible
             </summary>
         </member>
         <member name="M:Microsoft.Msagl.Drawing.Graph.AddNode(System.String)">
@@ -1823,6 +1839,12 @@
             the map of the ids to their subgraphs
             </summary>
         </member>
+        <member name="M:Microsoft.Msagl.Drawing.Graph.InitNodeMap(System.Collections.Hashtable)">
+            <summary>
+            visible only in debug
+            </summary>
+            <param name="nodeM"></param>
+        </member>
         <member name="P:Microsoft.Msagl.Drawing.Graph.Edges">
             <summary>
             The enumeration of edges. One need to be careful with calling Edges.Count() since it enumerates the whole collection
@@ -1867,9 +1889,42 @@
             </summary>
             <returns>The created layout settings.</returns>
         </member>
+        <member name="P:Microsoft.Msagl.Drawing.Graph.DebugColors">
+            <summary>
+            debug only
+            </summary>
+        </member>
+        <member name="P:Microsoft.Msagl.Drawing.Graph.ColorDictionary">
+            <summary>
+            debug only
+            </summary>
+        </member>
+        <member name="F:Microsoft.Msagl.Drawing.Graph.debugICurves">
+            <summary>
+            for debug only
+            </summary>
+        </member>
+        <member name="F:Microsoft.Msagl.Drawing.Graph.showControlPoints">
+            <summary>
+             field used for debug purposes only 
+            </summary>
+        </member>
+        <member name="P:Microsoft.Msagl.Drawing.Graph.ShowControlPoints">
+            <summary>
+            debug only
+            </summary>
+        </member>
         <member name="P:Microsoft.Msagl.Drawing.Graph.GeometryObject">
             <summary>
             the geometry graph
+            </summary>
+        </member>
+        <member name="P:Microsoft.Msagl.Drawing.Graph.DebugICurves">
+            <summary>
+            </summary>
+        </member>
+        <member name="P:Microsoft.Msagl.Drawing.Graph.DebugCurves">
+            <summary>
             </summary>
         </member>
         <member name="P:Microsoft.Msagl.Drawing.Graph.LayerConstraints">
@@ -3706,6 +3761,11 @@
         <member name="F:Microsoft.Msagl.Drawing.Shape.DrawFromGeometry">
             <summary>
             the curve is given by the geometry node
+            </summary>
+        </member>
+        <member name="F:Microsoft.Msagl.Drawing.Shape.TestShape">
+            <summary>
+            testing only, don't use
             </summary>
         </member>
         <member name="F:Microsoft.Msagl.Drawing.Shape.Hexagon">

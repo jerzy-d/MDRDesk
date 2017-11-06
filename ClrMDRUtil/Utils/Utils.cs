@@ -2430,7 +2430,7 @@ namespace ClrMDRIndex
 
 		public static string GetNameWithoutId(string name)
 		{
-			if (string.IsNullOrWhiteSpace(name)) return name;
+			if (string.IsNullOrWhiteSpace(name)) return string.Empty;
 			int pos = name.IndexOf("__");
 			if (pos <= 0) return name;
 			return name.Substring(0, pos);

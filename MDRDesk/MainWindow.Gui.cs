@@ -84,8 +84,6 @@ namespace MDRDesk
         private const string FinalizerQueAddrListBox = "FinalizerQueAddresses";
         private const string FinalizerQueTextBox = "FinalizerQueTextBox";
 
-
-
         private const string TypeValuesReportGrid = "TypeValuesGrid";
         private const string TypeValuesReportView = "TypeValuesView";
         private const string TypeValuesReportInfo = "TypeValuesInformation";
@@ -98,6 +96,9 @@ namespace MDRDesk
 
         private const string RootsGrid = "RootsGrid";
         private const string RootsGrid_RootTypeList = "RootTypeList";
+
+        private const string GraphGrid = "GraphGrid";
+
 
 
 
@@ -293,6 +294,45 @@ namespace MDRDesk
                 MainTab.Items.Add(tab);
                 MainTab.SelectedItem = tab;
                 MainTab.UpdateLayout();
+                return true;
+            }
+            catch (Exception ex)
+            {
+                error = Utils.GetExceptionErrorString(ex);
+                return false;
+            }
+        }
+
+        public bool DisplayThreadBlockMap2(Digraph digraph, out string error)
+        {
+            error = null;
+            try
+            {
+                var grid = this.TryFindResource("ThreadBlockingGraphXGrid") as Grid;
+                Debug.Assert(grid != null);
+                grid.Name = GraphGrid + "__" + Utils.GetNewID();
+                var graphGrid = (Grid)LogicalTreeHelper.FindLogicalNode(grid, GraphGrid);
+
+
+
+                grid.Tag = new Tuple<Digraph, List<int>, SubgraphDictionary, bool>(digraph, new List<int>(), new SubgraphDictionary(), true);
+                var txtBlk = (TextBlock)LogicalTreeHelper.FindLogicalNode(grid, "ThreadBlockingGraphXHelp");
+                Debug.Assert(txtBlk != null);
+                SetGraphHelpTextBlock(txtBlk);
+
+                UpdateThreadBlockMap(grid);
+
+                var tab = new CloseableTabItem()
+                {
+                    Header = Constants.BlackDiamond + " Threads/Blocks",
+                    Content = grid,
+                    Name = grid.Name + "TAB"
+                };
+                MainTab.Items.Add(tab);
+                MainTab.SelectedItem = tab;
+                MainTab.UpdateLayout();
+
+
                 return true;
             }
             catch (Exception ex)
@@ -1711,8 +1751,8 @@ namespace MDRDesk
                                         string filePath = null)
         {
             var grid = TryFindResource(ListingGrid) as Grid;
-            grid.Name = name + "__" + Utils.GetNewID();
             Debug.Assert(grid != null);
+            grid.Name = name + "__" + Utils.GetNewID();
             string path;
             if (filePath == null)
                 path = CurrentIndex != null ? CurrentIndex.DumpPath : CurrentAdhocDump?.DumpPath;
@@ -2821,7 +2861,7 @@ namespace MDRDesk
 
         #endregion Instance Hierarchy Traversing
 
-        #region masgl graph
+        #region msagl graph
 
         private void DisplayGraph(Digraph digraph)
         {
@@ -2831,7 +2871,7 @@ namespace MDRDesk
             GraphViewer graphViewer = new GraphViewer();
         }
 
-        #endregion masgl graph
+        #endregion msagl graph
 
         #endregion Display Grids
 
@@ -3099,6 +3139,14 @@ namespace MDRDesk
         #region Utils
 
         private static long _lastEnteredValue = 0;
+
+        public Grid FindResourceGrid(string gridName)
+        {
+            var grid = TryFindResource(gridName) as Grid;
+            Debug.Assert(grid != null);
+            grid.Name = gridName + "__" + Utils.GetNewID();
+            return grid;
+        }
 
         private bool GetUserEnteredNumber(string title, string descr, out long value)
         {

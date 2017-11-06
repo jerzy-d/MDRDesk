@@ -31,7 +31,7 @@ namespace MDRDesk
 		public CreateCrashDump()
 		{
 			InitializeComponent();
-            AddHotKeys();
+
 
             Process[] processlist = Process.GetProcesses();
 			KeyValuePair<int, string>[] entries = new KeyValuePair<int, string>[processlist.Length];

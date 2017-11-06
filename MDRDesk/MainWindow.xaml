@@ -12,6 +12,7 @@
         xmlns:generic="clr-namespace:System.Collections.Generic;assembly=mscorlib"
         xmlns:mdr="clr-namespace:ClrMDRIndex;assembly=ClrMDRIndex"
         xmlns:gx="clr-namespace:GraphX.Controls;assembly=GraphX.WPF.Controls"
+        xmlns:wpfgraphcontrol="clr-namespace:Microsoft.Msagl.WpfGraphControl;assembly=Microsoft.Msagl.WpfGraphControl"
         mc:Ignorable="d"
         Title="MainWindow" Height="750" Width="1200"  Background="#FF43626C"
         Icon="Images/appbar.list.gear.ico"
@@ -564,16 +565,19 @@
             </TextBox>
         </Grid>
 
-        <Grid x:Key="GraphGrid" x:Shared="False">
+        <Grid x:Key="GraphGrid" x:Shared="False" VerticalAlignment="Stretch" HorizontalAlignment="Stretch" ClipToBounds="True">
             <Grid.RowDefinitions>
                 <RowDefinition Height="75*"/>
                 <RowDefinition Height="5"/>
                 <RowDefinition Height="20*"/>
             </Grid.RowDefinitions>
-            <DockPanel Name="GraphPanel" Grid.Row="0" VerticalAlignment="Stretch" HorizontalAlignment="Stretch" Margin="2,2,2,2">
-            </DockPanel>
+            <Grid Name="GraphGrid" Grid.Row="0" VerticalAlignment="Stretch" HorizontalAlignment="Stretch" ClipToBounds="True">
+                
+            </Grid>
+            <!--<StackPanel Name="GraphPanel" Grid.Row="0" VerticalAlignment="Stretch" HorizontalAlignment="Stretch" Margin="2,2,2,2" Visibility="Visible" Orientation="Horizontal">
+            </StackPanel>-->
             <GridSplitter Grid.Row="1" VerticalAlignment="Center" HorizontalAlignment="Stretch" Height="5" ShowsPreview="False" Background="DarkGray"></GridSplitter>
-            <TextBox Name="GraphInformation" v4:Grid.Row="2" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" Margin="2,2,2,2">
+            <TextBox Name="GraphInformation" Grid.Row="2" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" Margin="2,2,2,2">
             </TextBox>
         </Grid>
         <!-- ### Show roots. TODO JRD -->
@@ -831,7 +835,7 @@
                         <MenuItem x:Name="ExtrasGetIpAddressValue" Header="Get IP Address Int64 Value..."  Click="ExtrasGetIpAddressValueClicked"/>
                         <MenuItem x:Name="ExtrasGetIpValueAddress" Header="Get IP Int64 Value Address..."  Click="ExtrasGetIpValueAddressClicked"/>
                         <Separator></Separator>
-                        <MenuItem x:Name="ExtrasTestInstanceValues" Header="Test Instance Values..."  Click="ExtrasTestInstanceValuesClicked"/>
+                        <MenuItem x:Name="ExtrasTestInstanceValues" Header="Test"  Click="ExtrasTestClicked"/>
                     </MenuItem>
                     <MenuItem x:Name="Help" Header="Help" Background="LightBlue" VerticalAlignment="Center">
                         <MenuItem x:Name="HelpViewHelp" Header="View Help"  Click="HelpViewHelpClicked"/>
@@ -903,8 +907,9 @@
                             <RowDefinition Height="*"/>
                         </Grid.RowDefinitions>
                         <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="10*"/>
-                            <ColumnDefinition Width="1*"/>
+                            <ColumnDefinition Width="90*"/>
+                            <ColumnDefinition Width="5*"/>
+                            <ColumnDefinition Width="5*"/>
                         </Grid.ColumnDefinitions>
                     </Grid>
                 </ItemsPanelTemplate>
@@ -912,8 +917,14 @@
             <StatusBarItem Grid.Column="0" HorizontalAlignment="Stretch">
                 <Label x:Name="MainStatusLabel" Content="..." HorizontalAlignment="Stretch" FontSize="12" FontWeight="Bold" Foreground="#FF2B0D0D"/>
             </StatusBarItem>
-            <StatusBarItem Grid.Column="1" HorizontalAlignment="Right">
-                <ProgressBar x:Name="MainStatusProgressBar" Height="26" Width="40" HorizontalAlignment="Right" Foreground="#FF083C12" VerticalAlignment="Center" IsIndeterminate="True" Visibility="Hidden">
+            <StatusBarItem Grid.Column="1" Margin="2,0,2,0" HorizontalAlignment="Right" VerticalAlignment="Center">
+                <Button x:Name="ButtonHelp" Grid.Row ="6" Grid.Column="1" HorizontalAlignment="Center" Margin="2,2,2,2" VerticalAlignment="Center" Width="28" Height="28" Click="ButtonHelpClicked" Background="Transparent" BorderThickness="0">
+                    <Button.ToolTip>Usage help.</Button.ToolTip>
+                    <Image Source=".\Images\Help.png" Width="16" Height="16" Margin="0,0,0,0" VerticalAlignment="Center" HorizontalAlignment="Center"/>
+                </Button>
+            </StatusBarItem>
+            <StatusBarItem Grid.Column="2" HorizontalAlignment="Right">
+                <ProgressBar x:Name="MainStatusProgressBar" Height="26" Width="40" HorizontalAlignment="Right" Foreground="#FF083C12" VerticalAlignment="Center" IsIndeterminate="True" Visibility="Collapsed">
                     <ProgressBar.Background>
                         <LinearGradientBrush EndPoint="1,0" StartPoint="0,0">
                             <GradientStop Color="#FFBABABA" Offset="0"/>

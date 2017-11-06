@@ -25,6 +25,8 @@ using TextBox = System.Windows.Controls.TextBox;
 using TreeView = System.Windows.Controls.TreeView;
 using SW = System.Windows;
 using SWC = System.Windows.Controls;
+using Microsoft.Msagl.WpfGraphControl;
+using Microsoft.Msagl.Drawing;
 
 namespace MDRDesk
 {
@@ -59,6 +61,7 @@ namespace MDRDesk
         {
             InitializeComponent();
             Dispatcher.CurrentDispatcher.InvokeAsync(() => MdrInit());
+            AddHotKeys();
         }
 
         private void MdrInit()
@@ -1470,25 +1473,98 @@ namespace MDRDesk
             }
         }
 
-        private async void ExtrasTestInstanceValuesClicked(object sender, RoutedEventArgs e)
+        private async void ExtrasTestClicked(object sender, RoutedEventArgs e)
         {
-            if (!IsIndexAvailable("Test Instance Values")) return;
-            SetStartTaskMainWindowState("Testing instance values, probably will take very long time. Please wait.");
+            //if (!IsIndexAvailable("Test Instance Values")) return;
+            SetStartTaskMainWindowState("Test, might take very long time. Please wait.");
             string error=null;
-
+#if false
             var result = await Task.Factory.StartNew(() =>
             {
                 return CurrentIndex.TestInstanceValues(out error);
             }, _dumpSTAScheduler);
+#endif
+
+            var grid = FindResourceGrid("GraphGrid");
+            var graphGrid = (Grid)LogicalTreeHelper.FindLogicalNode(grid, "GraphGrid");
+
+            //var dockPanel = new StackPanel();
+
+
+            //dockPanel.Children.Add(graphViewer.GraphCanvas);
+            //dockPanel.UpdateLayout();
+            //graphViewer.BindToPanel(dockPanel);
+            //dockPanel.UpdateLayout();
+
+
+            GraphViewer graphViewer = new GraphViewer();
+            graphViewer.GraphCanvas.HorizontalAlignment = HorizontalAlignment.Stretch;
+            graphViewer.GraphCanvas.VerticalAlignment = VerticalAlignment.Stretch;
+            graphGrid.Children.Add(graphViewer.GraphCanvas);
+            graphGrid.UpdateLayout();
+            DisplayTab(Constants.BlackDiamondHeader, "Test Graph", grid, grid.Name + "TAB");
+            //foreach (UIElement child in grid.Children)
+            //{
+            //    child.ClipToBounds = true;
+
+            //}
+            //graphViewer.GraphCanvas.ContextMenu 
+
+            Graph graph = new Graph();
+            graph.AddEdge("47", "58");
+            graph.AddEdge("70", "71");
+            List<Node> nodes = new List<Node>(2000);
+
+            for(int i = 100; i < 2000; ++i)
+            {
+                Node node = graph.AddNode(i.ToString());
+                if ((i%5)==0) node.Attr.FillColor = Color.Yellow;
+                nodes.Add(node);
+
+            }
+
+            for (int i = 101; i < 150; ++i)
+            {
+                Edge edge = 
+                    (Edge)graph.AddEdge(nodes[i-1].Id, nodes[i].Id);
+                if ((i & 1) == 0)
+                {
+                    edge.Attr.AddStyle(Microsoft.Msagl.Drawing.Style.Dashed);
+                    edge.Attr.AddStyle(Microsoft.Msagl.Drawing.Style.Bold);
+                    edge.Attr.Color = Color.Red;
+                }
+                //else
+                //    edge.Attr.AddStyle(Microsoft.Msagl.Drawing.Style.Solid);
+            }
+            graph.AddEdge(nodes[149].Id, nodes[101].Id);
+
+            var subgraph = new Subgraph("subgraph1");
+            graph.RootSubgraph.AddSubgraph(subgraph);
+            subgraph.AddNode(graph.FindNode("47"));
+            subgraph.AddNode(graph.FindNode("58"));
+
+            var subgraph2 = new Subgraph("subgraph2");
+            subgraph2.Attr.Color = Color.Black;
+            subgraph2.Attr.FillColor = Color.Yellow;
+            subgraph2.AddNode(graph.FindNode("70"));
+            subgraph2.AddNode(graph.FindNode("71"));
+            subgraph.AddSubgraph(subgraph2);
+            Edge gedge = (Edge)graph.AddEdge("58", subgraph2.Id);
+            gedge.Attr.AddStyle(Microsoft.Msagl.Drawing.Style.Dashed);
+            graph.Attr.LayerDirection = LayerDirection.LR;
+            graphViewer.Graph = graph;
+
+
+            //graphViewer.GraphCanvas.ClipToBounds = true;
 
             SetEndTaskMainWindowState(error == null
-                ? "Testing instance values done."
-                : "Testing instance values failed.");
+                ? "Test done."
+                : "Test failed.");
         }
 
-        #endregion Extras
+#endregion Extras
 
-        #region File Reports
+#region File Reports
 
         bool IsCsv(object sender)
         {
@@ -1753,9 +1829,9 @@ namespace MDRDesk
         }
 
 
-        #endregion File Reports
+#endregion File Reports
 
-        #region Settings
+#region Settings
 
         private void SettingsClicked(object sender, RoutedEventArgs e)
         {
@@ -1786,9 +1862,9 @@ namespace MDRDesk
             }
         }
 
-        #endregion Settings
+#endregion Settings
 
-        #region Force GC
+#region Force GC
         private void ForceGCClicked(object sender, RoutedEventArgs e)
         {
             long totMem = GC.GetTotalMemory(false);
@@ -1798,11 +1874,11 @@ namespace MDRDesk
             SetEndTaskMainWindowState("GC collection done, total memory: " + Utils.SizeString(totMemAfter) + ", before/after diff: " + Utils.SizeString(totMem - totMemAfter));
         }
 
-        #endregion Force GC
+#endregion Force GC
 
-        #endregion Menu
+#endregion Menu
 
-        #region GUI Helpers
+#region GUI Helpers
 
         private static Stopwatch _taskDurationStopwatch = new Stopwatch();
         private void SetStartTaskMainWindowState(string message)
@@ -1819,7 +1895,7 @@ namespace MDRDesk
             MainStatusShowMessage(message + "        tm:" + Utils.StopAndGetDurationString(_taskDurationStopwatch));
             MainToolbarTray.IsEnabled = true;
             Mouse.OverrideCursor = null;
-            MainStatusProgressBar.Visibility = Visibility.Hidden;
+            MainStatusProgressBar.Visibility = Visibility.Collapsed;
         }
 
         private void MainStatusShowMessage(string msg)
@@ -1877,9 +1953,9 @@ namespace MDRDesk
             }
         }
 
-        #endregion GUI Helpers
+#endregion GUI Helpers
 
-        #region Dialogs
+#region Dialogs
 
         private bool GetDlgString(string title, string descr, string defValue, out string str)
         {
@@ -1924,9 +2000,9 @@ namespace MDRDesk
             return true;
         }
 
-        #endregion Dialogs
+#endregion Dialogs
 
-        #region context menus
+#region context menus
 
         private void CopyAddressSelectionClicked(object sender, RoutedEventArgs e)
         {
@@ -2226,7 +2302,7 @@ namespace MDRDesk
             return (contextMenu.Tag is ListView) ? contextMenu.Tag as ListView : null;
         }
 
-        #region TypeValuesReportContextMenu
+#region TypeValuesReportContextMenu
 
 
         private listing<string> GetypeValuesReportRow()
@@ -2314,9 +2390,9 @@ namespace MDRDesk
             ShowMemoryViewWindow(addr);
         }
 
-        #endregion TypeValuesReportContextMenu
+#endregion TypeValuesReportContextMenu
 
-        #endregion context menus
+#endregion context menus
 
         //private void RecentDumpSelectionClicked(object sender, RoutedEventArgs e)
         //{
@@ -2648,10 +2724,48 @@ namespace MDRDesk
 
         }
 
+#region help
+
         private void HelpViewHelpClicked(object sender, RoutedEventArgs e)
         {
             ValueWindows.ShowHelpWindow(Setup.HelpFolder + Path.DirectorySeparatorChar + "README.md");
         }
+
+        private void ButtonHelpClicked(object sender, RoutedEventArgs e)
+        {
+            Grid grid = GetCurrentTabGrid();
+            if (grid == null)
+            {
+                HelpViewHelpClicked(sender, e);
+                return;
+            }
+            string gridName = Utils.GetNameWithoutId(grid.Name);
+            switch (gridName)
+            {
+                case RootsGrid:
+                    break;
+                
+            }
+
+            
+        }
+
+        private void AddHotKeys()
+        {
+            try
+            {
+                RoutedCommand firstSettings = new RoutedCommand();
+                firstSettings.InputGestures.Add(new KeyGesture(Key.F1));
+                CommandBindings.Add(new CommandBinding(firstSettings, ButtonHelpClicked));
+            }
+            catch (Exception err)
+            {
+                //handle exception error
+            }
+        }
+
+#endregion help
+
     }
 
     public static class MenuCommands
@@ -2663,7 +2777,7 @@ namespace MDRDesk
             typeof(MenuCommands),
             new InputGestureCollection()
             {
-                new KeyGesture(Key.V, ModifierKeys.Alt)
+                new KeyGesture(Key.V, System.Windows.Input.ModifierKeys.Alt)
             }
         );
         public static readonly RoutedUICommand InstanceReferencesCmd = new RoutedUICommand
@@ -2673,7 +2787,7 @@ namespace MDRDesk
             typeof(MenuCommands),
             new InputGestureCollection()
             {
-                new KeyGesture(Key.R, ModifierKeys.Alt)
+                new KeyGesture(Key.R, System.Windows.Input.ModifierKeys.Alt)
             }
         );
         public static readonly RoutedUICommand InstanceHierarchyCmd = new RoutedUICommand
@@ -2683,7 +2797,7 @@ namespace MDRDesk
             typeof(MenuCommands),
             new InputGestureCollection()
             {
-                new KeyGesture(Key.H, ModifierKeys.Alt)
+                new KeyGesture(Key.H, System.Windows.Input.ModifierKeys.Alt)
             }
         );
         //Define more commands here, just like the one above

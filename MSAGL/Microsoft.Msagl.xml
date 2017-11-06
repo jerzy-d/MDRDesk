@@ -179,6 +179,16 @@
             it is a mapping from queue elements and their correspondent HeapElements
             </summary>
         </member>
+        <member name="M:Microsoft.Msagl.Core.DataStructures.GenericBinaryHeapPriorityQueueWithTimestamp`1.Peek">
+            <summary>
+            Gets the next element to be dequeued, without dequeueing it.
+            </summary>
+        </member>
+        <member name="M:Microsoft.Msagl.Core.DataStructures.GenericBinaryHeapPriorityQueueWithTimestamp`1.PeekTimestamp">
+            <summary>
+            Gets the timestamp of the next element to be dequeued, without dequeueing it.
+            </summary>
+        </member>
         <member name="M:Microsoft.Msagl.Core.DataStructures.GenericBinaryHeapPriorityQueueWithTimestamp`1.DecreasePriority(`0,System.Double)">
             <summary>
             sets the object priority to c
@@ -191,6 +201,12 @@
         <member name="M:Microsoft.Msagl.Core.DataStructures.GenericBinaryHeapPriorityQueueWithTimestamp`1.GetEnumerator">
             <summary>
             enumerator
+            </summary>
+            <returns></returns>
+        </member>
+        <member name="M:Microsoft.Msagl.Core.DataStructures.GenericBinaryHeapPriorityQueueWithTimestamp`1.ToString">
+            <summary>
+            
             </summary>
             <returns></returns>
         </member>
@@ -342,6 +358,12 @@
             <param name="priority"></param>
             <returns></returns>
         </member>
+        <member name="M:Microsoft.Msagl.Core.DataStructures.GenericBinaryHeapPriorityQueue`1.ToString">
+            <summary>
+            
+            </summary>
+            <returns></returns>
+        </member>
         <member name="M:Microsoft.Msagl.Core.DataStructures.RBNode`1.ToString">
             <summary>
             </summary>
@@ -374,6 +396,12 @@
             <summary>
             
             </summary>
+        </member>
+        <member name="M:Microsoft.Msagl.Core.DataStructures.RealNumberSpan.ToString">
+            <summary>
+            
+            </summary>
+            <returns></returns>
         </member>
         <member name="T:Microsoft.Msagl.Core.DataStructures.Set`1">
             <summary>
@@ -1897,6 +1925,11 @@
             A class representing an ellipse.
             </summary>
         </member>
+        <member name="M:Microsoft.Msagl.Core.Geometry.Curves.Ellipse.ToString">
+            <summary>
+            </summary>
+            <returns></returns>
+        </member>
         <member name="M:Microsoft.Msagl.Core.Geometry.Curves.Ellipse.OffsetCurve(System.Double,Microsoft.Msagl.Core.Geometry.Point)">
             <summary>
             offsets the curve in the given direction
@@ -3135,6 +3168,12 @@
             
             </summary>
         </member>
+        <member name="M:Microsoft.Msagl.Core.Geometry.Curves.Polyline.ToString">
+            <summary>
+            
+            </summary>
+            <returns></returns>
+        </member>
         <member name="P:Microsoft.Msagl.Core.Geometry.Curves.Polyline.StartPoint">
             <summary>
             
@@ -3732,6 +3771,12 @@
             Represents a node containing a box and some user data.
             Is used in curve intersections routines.
             </summary>
+        </member>
+        <member name="M:Microsoft.Msagl.Core.Geometry.IntervalNode`1.ToString">
+            <summary>
+            
+            </summary>
+            <returns></returns>
         </member>
         <member name="P:Microsoft.Msagl.Core.Geometry.IntervalNode`1.Count">
             <summary>
@@ -4939,6 +4984,12 @@
             the last site of the polyline
             </summary>
         </member>
+        <member name="M:Microsoft.Msagl.Core.Geometry.SmoothedPolyline.GetSegments">
+            <summary>
+            
+            </summary>
+            <returns></returns>
+        </member>
         <member name="M:Microsoft.Msagl.Core.Geometry.SmoothedPolyline.CreateCurve">
             <summary>
             Creates a curve by using the underlying polyline
@@ -5642,6 +5693,12 @@
             Represents a node containing a box and some user data.
             Is used in curve intersections routines.
             </summary>
+        </member>
+        <member name="M:Microsoft.Msagl.Core.Geometry.RectangleNode`1.ToString">
+            <summary>
+            
+            </summary>
+            <returns></returns>
         </member>
         <member name="P:Microsoft.Msagl.Core.Geometry.RectangleNode`1.Count">
             <summary>
@@ -7513,6 +7570,16 @@
             <param name="b"></param>
             <returns></returns>
         </member>
+        <member name="M:Microsoft.Msagl.Core.Layout.ProximityOverlapRemoval.MinimumSpanningTree.GTreeOverlapRemoval.ShowAndMoveBoxesRemoveLater(System.Collections.Generic.List{System.Tuple{System.Int32,System.Int32,System.Double,System.Double,System.Double}},System.Collections.Generic.List{System.Tuple{System.Int32,System.Int32,System.Double,System.Double,System.Double}},Microsoft.Msagl.Core.DataStructures.Size[],Microsoft.Msagl.Core.Geometry.Point[],System.Int32)">
+            <summary>
+            Shows the current state of the algorithm for debug purposes.
+            </summary>
+            <param name="treeEdges"></param>
+            <param name="proximityEdges"></param>
+            <param name="nodeSizes"></param>
+            <param name="nodePos"></param>
+            <param name="rootId"></param>
+        </member>
         <member name="M:Microsoft.Msagl.Core.Layout.ProximityOverlapRemoval.MinimumSpanningTree.GTreeOverlapRemoval.MoveNodePositions(System.Collections.Generic.List{System.Tuple{System.Int32,System.Int32,System.Double,System.Double,System.Double}},Microsoft.Msagl.Core.Geometry.Point[],System.Int32)">
             <summary>
             Lets the tree grow according to the ideal distances.
@@ -7606,6 +7673,16 @@
         <member name="T:Microsoft.Msagl.Core.Layout.ProximityOverlapRemoval.ProximityOverlapRemoval">
             <summary>
              Proximity Stress Model as suggested by Gansner et. al, Fast Node Overlap Removal.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Msagl.Core.Layout.ProximityOverlapRemoval.ProximityOverlapRemoval.DebugMode">
+            <summary>
+            
+            </summary>
+        </member>
+        <member name="F:Microsoft.Msagl.Core.Layout.ProximityOverlapRemoval.ProximityOverlapRemoval.crossingsOverTime">
+            <summary>
+            
             </summary>
         </member>
         <member name="P:Microsoft.Msagl.Core.Layout.ProximityOverlapRemoval.ProximityOverlapRemoval.Settings">
@@ -7969,6 +8046,11 @@
         <member name="M:Microsoft.Msagl.Core.Layout.ProximityOverlapRemoval.StressEnergy.StressMajorization.ClearVotings">
             <summary>
                 Clears the Votings of the nodes.
+            </summary>
+        </member>
+        <member name="M:Microsoft.Msagl.Core.Layout.ProximityOverlapRemoval.StressEnergy.StressMajorization.TestMajorizationSmall">
+            <summary>
+                Only for internal testing purposes. Three nodes a-b-c, after the process the distances should be 10 between them.
             </summary>
         </member>
         <member name="M:Microsoft.Msagl.Core.Layout.ProximityOverlapRemoval.StressEnergy.StressMajorization.StressValue(System.Collections.Generic.List{Microsoft.Msagl.Core.Geometry.Point})">
@@ -8452,6 +8534,11 @@
             Bounding box of the graph
             </summary>
         </member>
+        <member name="F:Microsoft.Msagl.Core.Layout.GeometryGraph.DebugCurves">
+            <summary>
+            curves to show debug stuff
+            </summary>
+        </member>
         <member name="P:Microsoft.Msagl.Core.Layout.GeometryGraph.Margins">
             <summary>
             margins width are equal from the left and from the right; they are given in percents
@@ -8563,6 +8650,10 @@
             Finds the first node with the corresponding user data.
             </summary>
             <returns>The first node with the given user data. Null if no such node exists.</returns>
+        </member>
+        <member name="M:Microsoft.Msagl.Core.Layout.GeometryGraph.SetDebugIds">
+            <summary>
+            </summary>
         </member>
         <member name="P:Microsoft.Msagl.Core.Layout.GeometryGraph.LgData">
             <summary>
@@ -9082,6 +9173,30 @@
             Controls the reporting facility.
             </summary>
         </member>
+        <member name="P:Microsoft.Msagl.Core.Layout.LayoutAlgorithmSettings.Show">
+            <summary>
+            Used for debugging purposes to display all kind of intermediate curves.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Msagl.Core.Layout.LayoutAlgorithmSettings.ShowDebugCurves">
+            <summary>
+            Used for debugging purposes to display all kind of intermediate curves with widht and color
+            </summary>
+        </member>
+        <member name="P:Microsoft.Msagl.Core.Layout.LayoutAlgorithmSettings.ShowDebugCurvesEnumeration">
+            <summary>
+            Used for debugging purposes to display all kind of intermediate curves with width and color
+            </summary>
+        </member>
+        <member name="P:Microsoft.Msagl.Core.Layout.LayoutAlgorithmSettings.ShowDatabase">
+            <summary>
+            used for debugging purposes to display anchors and paths that are kept in the DataBase
+            </summary>
+        </member>
+        <member name="P:Microsoft.Msagl.Core.Layout.LayoutAlgorithmSettings.ShowGraph">
+            <summary>
+            </summary>
+        </member>
         <member name="P:Microsoft.Msagl.Core.Layout.LayoutAlgorithmSettings.PackingAspectRatio">
             <summary>
             Controls the ideal aspect ratio for packing disconnected components
@@ -9111,6 +9226,11 @@
         <member name="T:Microsoft.Msagl.Core.Layout.Node">
             <summary>
             Node of the graph
+            </summary>
+        </member>
+        <member name="P:Microsoft.Msagl.Core.Layout.Node.DebugId">
+            <summary>
+             used for debugging purposes
             </summary>
         </member>
         <member name="P:Microsoft.Msagl.Core.Layout.Node.Padding">
@@ -10305,11 +10425,6 @@
             throws is the layout has been cancelled
             </summary>
         </member>
-        <member name="P:Microsoft.Msagl.Core.CancelToken.CancellationToken">
-            <summary>
-            Pass this cancelation token for use in cancellable parallel for-each operations
-            </summary>
-        </member>
         <member name="T:Microsoft.Msagl.Core.ValidateArg">
             <summary>
             Helper class for validating parameter arguments.
@@ -10581,6 +10696,232 @@
             <summary>
             
             </summary>
+        </member>
+        <member name="T:Microsoft.Msagl.DebugHelpers.DebugCurve">
+            <summary>
+            </summary>
+        </member>
+        <member name="P:Microsoft.Msagl.DebugHelpers.DebugCurve.Transparency">
+            <summary>
+            color transparency
+            </summary>
+        </member>
+        <member name="P:Microsoft.Msagl.DebugHelpers.DebugCurve.Curve">
+            <summary>
+            </summary>
+        </member>
+        <member name="P:Microsoft.Msagl.DebugHelpers.DebugCurve.Width">
+            <summary>
+            </summary>
+        </member>
+        <member name="M:Microsoft.Msagl.DebugHelpers.DebugCurve.#ctor(System.Byte,System.Double,System.String,Microsoft.Msagl.Core.Geometry.Curves.ICurve,System.Object)">
+            <summary>
+            </summary>
+            <param name="transparency"></param>
+            <param name="width"></param>
+            <param name="curve"></param>
+            <param name="color"></param>
+            <param name="id"></param>
+        </member>
+        <member name="M:Microsoft.Msagl.DebugHelpers.DebugCurve.#ctor(System.Byte,System.Double,System.String,Microsoft.Msagl.Core.Geometry.Curves.ICurve,System.Double[])">
+            <summary>
+            </summary>
+            <param name="transparency"></param>
+            <param name="width"></param>
+            <param name="curve"></param>
+            <param name="color"></param>
+            <param name="dashArray"></param>
+        </member>
+        <member name="M:Microsoft.Msagl.DebugHelpers.DebugCurve.#ctor(System.Byte,System.Double,System.String,Microsoft.Msagl.Core.Geometry.Curves.ICurve)">
+            <summary>
+            </summary>
+            <param name="transparency"></param>
+            <param name="width"></param>
+            <param name="curve"></param>
+            <param name="color"></param>
+        </member>
+        <member name="M:Microsoft.Msagl.DebugHelpers.DebugCurve.#ctor(System.Byte,System.Double,System.String,System.String,Microsoft.Msagl.Core.Geometry.Curves.ICurve)">
+            <summary>
+            </summary>
+            <param name="transparency"></param>
+            <param name="width"></param>
+            <param name="color"></param>
+            <param name="fillColor"></param>
+            <param name="curve"></param>
+        </member>
+        <member name="M:Microsoft.Msagl.DebugHelpers.DebugCurve.#ctor(System.Double,System.String,Microsoft.Msagl.Core.Geometry.Curves.ICurve)">
+            <summary>
+            </summary>
+            <param name="width"></param>
+            <param name="color"></param>
+            <param name="curve"></param>
+        </member>
+        <member name="M:Microsoft.Msagl.DebugHelpers.DebugCurve.#ctor(System.Double,System.String,Microsoft.Msagl.Core.Geometry.Curves.ICurve,System.Object)">
+            <summary>
+            </summary>
+            <param name="width"></param>
+            <param name="color"></param>
+            <param name="curve"></param>
+            <param name="id"></param>
+        </member>
+        <member name="M:Microsoft.Msagl.DebugHelpers.DebugCurve.#ctor(System.Double,System.String,System.String,Microsoft.Msagl.Core.Geometry.Curves.ICurve,System.Object)">
+            <summary>
+            </summary>
+            <param name="width"></param>
+            <param name="color"></param>
+            <param name="fillColor"></param>
+            <param name="curve"></param>
+            <param name="id"></param>
+        </member>
+        <member name="P:Microsoft.Msagl.DebugHelpers.DebugCurve.Label">
+            <summary>
+            </summary>
+        </member>
+        <member name="M:Microsoft.Msagl.DebugHelpers.DebugCurve.#ctor(System.String,Microsoft.Msagl.Core.Geometry.Curves.ICurve)">
+            <summary>
+            </summary>
+            <param name="curve"></param>
+            <param name="color"></param>
+        </member>
+        <member name="M:Microsoft.Msagl.DebugHelpers.DebugCurve.#ctor(System.Double,Microsoft.Msagl.Core.Geometry.Curves.ICurve)">
+            <summary>
+            </summary>
+            <param name="curve"></param>
+            <param name="pen"></param>
+        </member>
+        <member name="M:Microsoft.Msagl.DebugHelpers.DebugCurve.#ctor(Microsoft.Msagl.Core.Geometry.Curves.ICurve,System.Object)">
+            <summary>
+            </summary>
+            <param name="curve"></param>
+            <param name="id"></param>
+        </member>
+        <member name="M:Microsoft.Msagl.DebugHelpers.DebugCurve.#ctor(System.String,Microsoft.Msagl.Core.Geometry.Curves.ICurve,System.Object)">
+            <summary>
+            </summary>
+            <param name="color"></param>
+            <param name="curve"></param>
+            <param name="id"></param>
+        </member>
+        <member name="M:Microsoft.Msagl.DebugHelpers.DebugCurve.#ctor(Microsoft.Msagl.Core.Geometry.Curves.ICurve)">
+            <summary>
+            </summary>
+            <param name="curve"></param>
+        </member>
+        <member name="F:Microsoft.Msagl.DebugHelpers.DebugCurve.Colors">
+            <summary>
+            color strings for debugging
+            </summary>
+        </member>
+        <member name="F:Microsoft.Msagl.DebugHelpers.DebugCurve.DashArray">
+            <summary>
+             the pattern of dashes
+            </summary>
+        </member>
+        <member name="T:Microsoft.Msagl.DebugHelpers.DebugCurveCollection">
+            <summary>
+            
+            </summary>
+        </member>
+        <member name="M:Microsoft.Msagl.DebugHelpers.DebugCurveCollection.#ctor(System.Collections.Generic.IEnumerable{Microsoft.Msagl.DebugHelpers.DebugCurve})">
+            <summary>
+            
+            </summary>
+            <param name="debugCurves"></param>
+        </member>
+        <member name="F:Microsoft.Msagl.DebugHelpers.DebugCurveCollection.DebugCurvesArray">
+            <summary>
+            
+            </summary>
+        </member>
+        <member name="M:Microsoft.Msagl.DebugHelpers.DebugCurveCollection.WriteToFile(System.Collections.Generic.IEnumerable{Microsoft.Msagl.DebugHelpers.DebugCurve},System.String)">
+            <summary>
+            </summary>
+            <param name="debugCurves"></param>
+            <param name="fileName"></param>
+        </member>
+        <member name="M:Microsoft.Msagl.DebugHelpers.DebugCurveCollection.ReadFromFile(System.String)">
+            <summary>
+            </summary>
+            <param name="fileName"></param>
+        </member>
+        <member name="T:Microsoft.Msagl.DebugHelpers.IDebugGraphics">
+            <summary>
+            </summary>
+        </member>
+        <member name="P:Microsoft.Msagl.DebugHelpers.IDebugGraphics.Shapes">
+            <summary>
+            
+            </summary>
+        </member>
+        <member name="M:Microsoft.Msagl.DebugHelpers.IDebugGraphics.Clear">
+            <summary>
+            
+            </summary>
+        </member>
+        <member name="T:Microsoft.Msagl.DebugHelpers.DebugRectangle">
+            <summary>
+            </summary>
+        </member>
+        <member name="P:Microsoft.Msagl.DebugHelpers.DebugRectangle.Rectangle">
+            <summary>
+            
+            </summary>
+        </member>
+        <member name="T:Microsoft.Msagl.DebugHelpers.DebugShape">
+            <summary>
+            </summary>
+        </member>
+        <member name="P:Microsoft.Msagl.DebugHelpers.DebugShape.Pen">
+            <summary>
+            </summary>
+        </member>
+        <member name="P:Microsoft.Msagl.DebugHelpers.DebugShape.Color">
+            <summary>
+            </summary>
+        </member>
+        <member name="P:Microsoft.Msagl.DebugHelpers.DebugShape.FillColor">
+            <summary>
+            Filling Color of the Shape.
+            </summary>
+        </member>
+        <member name="T:Microsoft.Msagl.DebugHelpers.DebugEllipse">
+            <summary>
+            </summary>
+        </member>
+        <member name="P:Microsoft.Msagl.DebugHelpers.DebugEllipse.Ellipse">
+            <summary>
+            
+            </summary>
+        </member>
+        <member name="T:Microsoft.Msagl.DebugHelpers.Show">
+            <summary>
+            shows curves
+            </summary>
+            <param name="curves"></param>
+        </member>
+        <member name="T:Microsoft.Msagl.DebugHelpers.ShowGraph">
+            <summary>
+            </summary>
+            <param name="graph"></param>
+        </member>
+        <member name="T:Microsoft.Msagl.DebugHelpers.ShowDatabase">
+            <summary>
+            
+            </summary>
+            <param name="db"></param>
+            <param name="curves"></param>
+        </member>
+        <member name="T:Microsoft.Msagl.DebugHelpers.ShowDebugCurves">
+            <summary>
+             shows shapes 
+            </summary>
+            <param name="shapes"></param>
+        </member>
+        <member name="T:Microsoft.Msagl.DebugHelpers.ShowDebugCurvesEnumeration">
+            <summary>
+             shows shapes 
+            </summary>
+            <param name="shapes"></param>
         </member>
         <member name="T:Microsoft.Msagl.DebugHelpers.ClusterWithChildLists">
             <summary>
@@ -11272,6 +11613,12 @@
             The actual layout process
             </summary>
         </member>
+        <member name="M:Microsoft.Msagl.Layout.Initial.InitialLayoutByCluster.ValidateLayout(Microsoft.Msagl.Core.Layout.Cluster)">
+            <summary>
+            Ensures that containment is preserved
+            </summary>
+            <param name="cluster">check is applied to specified cluster and below</param>
+        </member>
         <member name="M:Microsoft.Msagl.Layout.Initial.InitialLayoutByCluster.LayoutCluster(Microsoft.Msagl.Core.Layout.Cluster)">
             <summary>
             Apply the appropriate layout to the specified cluster and its children (bottom up)
@@ -11423,6 +11770,12 @@
             <summary>
             
             </summary>
+        </member>
+        <member name="M:Microsoft.Msagl.Layout.LargeGraphLayout.LgEdgeInfo.ToString">
+            <summary>
+            to string for debugging
+            </summary>
+            <returns></returns>
         </member>
         <member name="M:Microsoft.Msagl.Layout.LargeGraphLayout.LgEdgeInfo.#ctor(Microsoft.Msagl.Core.Layout.Edge)">
             <summary>
@@ -11657,6 +12010,21 @@
             <summary>
             the corresponding LgEdgeInfo
             </summary>
+        </member>
+        <member name="M:Microsoft.Msagl.Layout.LargeGraphLayout.Rail.GetId">
+            <summary>
+            returning id for debugging
+            </summary>
+            <returns></returns>
+        </member>
+        <member name="M:Microsoft.Msagl.Layout.LargeGraphLayout.Rail.ToString">
+            <summary>
+            Returns a string that represents the current object.
+            </summary>
+            <returns>
+            A string that represents the current object.
+            </returns>
+            <filterpriority>2</filterpriority>
         </member>
         <member name="P:Microsoft.Msagl.Layout.LargeGraphLayout.Rail.IsHighlighted">
             <summary>
@@ -12664,6 +13032,16 @@
             maps middles of multiple strings to their buckets
             </summary>
         </member>
+        <member name="F:Microsoft.Msagl.Layout.Layered.Database.nodesToShow">
+            <summary>
+            The layer to visualize. Is set to zero after each display
+            </summary>
+        </member>
+        <member name="P:Microsoft.Msagl.Layout.Layered.Database.MultipleMiddles">
+            <summary>
+            
+            </summary>
+        </member>
         <member name="F:Microsoft.Msagl.Layout.Layered.Database.multiedges">
             <summary>
             This table keeps multi edges
@@ -12672,6 +13050,11 @@
         <member name="P:Microsoft.Msagl.Layout.Layered.Database.Anchors">
             <summary>
             Anchors of the nodes
+            </summary>
+        </member>
+        <member name="P:Microsoft.Msagl.Layout.Layered.Database.Multiedges">
+            <summary>
+            
             </summary>
         </member>
         <member name="T:Microsoft.Msagl.Layout.Layered.IntEdge">
@@ -13165,6 +13548,11 @@
         <member name="P:Microsoft.Msagl.Layout.Layered.Anchor.Padding">
             <summary>
             node padding
+            </summary>
+        </member>
+        <member name="P:Microsoft.Msagl.Layout.Layered.Anchor.UserData">
+            <summary>
+            UserData
             </summary>
         </member>
         <member name="T:Microsoft.Msagl.Layout.Layered.LayerEdge">
@@ -15684,6 +16072,15 @@
             <param name="c"></param>
             <param name="createEdgeDelegate"></param>
         </member>
+        <member name="M:Microsoft.Msagl.Routing.ConstrainedDelaunayTriangulation.CdtTriangle.ToString">
+            <summary>
+            Returns a <see cref="T:System.String"/> that represents the current <see cref="T:System.Object"/>.
+            </summary>
+            <returns>
+            A <see cref="T:System.String"/> that represents the current <see cref="T:System.Object"/>.
+            </returns>
+            <filterpriority>2</filterpriority>
+        </member>
         <member name="F:Microsoft.Msagl.Routing.ConstrainedDelaunayTriangulation.EdgeTracer.a">
             <summary>
             the upper site of the edge
@@ -15754,6 +16151,15 @@
             </summary>
             <param name="isolatedSite"></param>
         </member>
+        <member name="M:Microsoft.Msagl.Routing.CdtSite.ToString">
+            <summary>
+            Returns a <see cref="T:System.String"/> that represents the current <see cref="T:System.Object"/>.
+            </summary>
+            <returns>
+            A <see cref="T:System.String"/> that represents the current <see cref="T:System.Object"/>.
+            </returns>
+            <filterpriority>2</filterpriority>
+        </member>
         <member name="P:Microsoft.Msagl.Routing.CdtSite.Triangles">
             <summary>
             enumerates over all site triangles
@@ -15775,6 +16181,11 @@
             <summary>
             This is the list of obstacles in the clump.
             </summary>
+        </member>
+        <member name="M:Microsoft.Msagl.Routing.Rectilinear.Clump.ToString">
+            <summary>
+            </summary>
+            <returns></returns>
         </member>
         <member name="T:Microsoft.Msagl.Routing.Rectilinear.EnumeratorWrapper`1">
             <summary>
@@ -17650,6 +18061,19 @@
             NOTE: polyline points should be oriented clockwise
             </summary>
         </member>
+        <member name="M:Microsoft.Msagl.Routing.Spline.Bundling.Intersections.HubPositionsAreOK">
+            <summary>
+            check the validness of the drawing:
+            1. hubs are not inside loose obstacles
+            2. bundles do not cross loose obstacles
+            </summary>
+        </member>
+        <member name="M:Microsoft.Msagl.Routing.Spline.Bundling.Intersections.EdgeIsLegal(Microsoft.Msagl.Routing.Spline.Bundling.Station,Microsoft.Msagl.Routing.Spline.Bundling.Station,Microsoft.Msagl.Core.Geometry.Point,Microsoft.Msagl.Core.Geometry.Point)">
+            <summary>
+            edge doesn't cross obstacles
+            NOTE: use method in CdtIntersection insetad!
+            </summary>
+        </member>
         <member name="T:Microsoft.Msagl.Routing.Spline.Bundling.LinearMetroMapOrdering">
             <summary>
             Linear algorithm as described in our paper
@@ -18920,6 +19344,12 @@
             
             </summary>
             <param name="shape"></param>
+        </member>
+        <member name="M:Microsoft.Msagl.Routing.Shape.ToString">
+            <summary>
+            
+            </summary>
+            <returns></returns>
         </member>
         <member name="T:Microsoft.Msagl.Routing.SplineRouter">
             <summary>
