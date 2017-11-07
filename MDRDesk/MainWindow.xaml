@@ -250,6 +250,67 @@
                 </ListView>
             </Grid>
         </Grid>
+        <!-- Display threads and blocking objects graph using MSAGL -->
+        <Grid x:Key="ThreadBlockingObjectsGraphGrid" x:Shared="False">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="60*"/>
+                <ColumnDefinition Width="5"/>
+                <ColumnDefinition Width="35*"/>
+            </Grid.ColumnDefinitions>
+            <Grid x:Name="ThreadsGrid" v4:Grid.Column="0">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="75*"/>
+                    <RowDefinition Height="5"/>
+                    <RowDefinition Height="20*"/>
+                </Grid.RowDefinitions>
+                <Grid Name="ThreadsGraphGrid" Grid.Row="0" VerticalAlignment="Stretch" HorizontalAlignment="Stretch" ClipToBounds="True">
+                </Grid>
+                <GridSplitter Grid.Row="1" VerticalAlignment="Center" HorizontalAlignment="Stretch" Height="5" ShowsPreview="False" Background="DarkGray"></GridSplitter>
+                <ListBox Name="ThreadFrames" v4:Grid.Row="2" Grid.Column="0" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" Margin="2,2,2,2" FontFamily="Consolas">
+                </ListBox>
+            </Grid>
+            <GridSplitter Grid.Column="1" VerticalAlignment="Stretch" HorizontalAlignment="Center" Width="5" ShowsPreview="False" Background="DarkGray"></GridSplitter>
+            <Grid v4:Grid.Column="2">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="75*"/>
+                    <RowDefinition Height="5"/>
+                    <RowDefinition Height="20*"/>
+                </Grid.RowDefinitions>
+                <ListView Name="ThreadAliveStackObjects" Grid.Row="0" VerticalAlignment="Stretch" HorizontalAlignment="Stretch" Margin="2,2,2,2" ContextMenu="{StaticResource StackObjectListContextMenu}" MouseDoubleClick="StackObjectDoubleClicked">
+                    <ListView.ItemContainerStyle>
+                        <Style TargetType="ListViewItem">
+                            <Setter Property="HorizontalContentAlignment" Value="Left" />
+                        </Style>
+                    </ListView.ItemContainerStyle>
+                    <ListView.View>
+                        <GridView>
+                            <GridViewColumn Width="400">
+                                <GridViewColumn.Header>
+                                    <GridViewColumnHeader Content="Alive Stack Objects" HorizontalContentAlignment="Left" FontStyle="Italic" FontWeight="Bold"/>
+                                </GridViewColumn.Header>
+                            </GridViewColumn>
+                        </GridView>
+                    </ListView.View>
+                </ListView>
+                <GridSplitter Grid.Row="1" VerticalAlignment="Center" HorizontalAlignment="Stretch" Height="5" ShowsPreview="False" Background="DarkGray"></GridSplitter>
+                <ListView Name="ThreadDeadStackObjects" Grid.Row="2" VerticalAlignment="Stretch" HorizontalAlignment="Stretch" Margin="2,2,2,2" ContextMenu="{StaticResource StackObjectListContextMenu}"  MouseDoubleClick="StackObjectDoubleClicked">
+                    <ListView.ItemContainerStyle>
+                        <Style TargetType="ListViewItem">
+                            <Setter Property="HorizontalContentAlignment" Value="Left" />
+                        </Style>
+                    </ListView.ItemContainerStyle>
+                    <ListView.View>
+                        <GridView>
+                            <GridViewColumn Width="400">
+                                <GridViewColumn.Header>
+                                    <GridViewColumnHeader Content="Dead Stack Objects" HorizontalContentAlignment="Left" FontStyle="Italic" FontWeight="Bold"/>
+                                </GridViewColumn.Header>
+                            </GridViewColumn>
+                        </GridView>
+                    </ListView.View>
+                </ListView>
+            </Grid>
+        </Grid>
         <!-- ############ -->
         <!-- thread grids -->
         

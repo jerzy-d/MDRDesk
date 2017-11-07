@@ -28,6 +28,7 @@ using TreeView = System.Windows.Controls.TreeView;
 using SW = System.Windows;
 using SWC = System.Windows.Controls;
 using Microsoft.Msagl.WpfGraphControl;
+using Microsoft.Msagl.Drawing;
 using SubgraphDictionary =
     System.Collections.Generic.SortedDictionary
     <int,
@@ -42,7 +43,7 @@ namespace MDRDesk
 {
     public partial class MainWindow
     {
-        #region reports
+        #region report names
 
         private const string ReportTitleStringUsage = "String Usage";
         private const string ReportNameStringUsage = "StringUsage";
@@ -59,21 +60,22 @@ namespace MDRDesk
         private const string ReportTitleSizeDiffs = "Count;/Size Comp";
         private const string ReportNameSizeDiffs = "SizesDiff";
 
-        #endregion reports
+        #endregion report names
 
-        #region grids
+        #region grid names
 
         // type display grids
         //
         private const string GridKeyNamespaceTypeView = "NamespaceTypeView";
         private const string GridKeyNameTypeView = "NameTypeView";
 
-        private const string GridNameNamespaceTypeView = "NamespaceTypeView";
+        private const string NameNamespaceTypeNameGrid = "NamespaceTypeView";
         private const string GridNameTypeView = "NameTypeView";
         private const string GridReversedNameTypeView = "ReversedNameTypeView";
 
         private const string DeadlockGraphGrid = "DeadlockGraphGrid";
         private const string ThreadBlockingGraphGrid = "ThreadBlockingGraphGrid";
+        private const string ThreadBlockingObjectGraphGrid = "ThreadBlockingObjectsGraphGrid";  // using MSAGL
 
         private const string ThreadViewGrid = "ThreadViewGrid";
         private const string AncestorTreeViewGrid = "AncestorTreeViewGrid";
@@ -100,8 +102,6 @@ namespace MDRDesk
         private const string GraphGrid = "GraphGrid";
 
 
-
-
         private string GetReportTitle(ListView lst)
         {
             if (lst.Tag is Tuple<ListingInfo, string>)
@@ -122,7 +122,7 @@ namespace MDRDesk
             return false;
         }
 
-        #endregion grids
+        #endregion grid names
 
         #region graphs
 
@@ -303,36 +303,80 @@ namespace MDRDesk
             }
         }
 
+        /// <summary>
+        /// TODO JRD -- use ThreadBlockingObjectsGraphGrid to display MSAGL graph.
+        /// </summary>
+        /// <param name="digraph"></param>
+        /// <param name="error"></param>
+        /// <returns></returns>
         public bool DisplayThreadBlockMap2(Digraph digraph, out string error)
         {
             error = null;
             try
             {
-                var grid = this.TryFindResource("ThreadBlockingGraphXGrid") as Grid;
+                var grid = this.TryFindResource(ThreadBlockingObjectGraphGrid) as Grid;
                 Debug.Assert(grid != null);
+                var graphGrid = (Grid)LogicalTreeHelper.FindLogicalNode(grid, "ThreadsGraphGrid");
+                Debug.Assert(graphGrid != null);
                 grid.Name = GraphGrid + "__" + Utils.GetNewID();
-                var graphGrid = (Grid)LogicalTreeHelper.FindLogicalNode(grid, GraphGrid);
+                /*
+                 ThreadBlockingObjectsGraphGrid
+                    ThreadsGrid (0,0)
+                        ThreadsGraphGrid (0,0)
+                        splitter (1,0)
+                        ThreadFrames (2,0)
+                    no name grid (0,1)
+                        ThreadAliveStackObjects (0,0)
+                        splitter (1,0)
+                        ThreadDeadStackObjects (2,0)
+                 * */
+                GraphViewer graphViewer = new GraphViewer();
+                graphViewer.GraphCanvas.HorizontalAlignment = HorizontalAlignment.Stretch;
+                graphViewer.GraphCanvas.VerticalAlignment = VerticalAlignment.Stretch;
+                graphGrid.Children.Add(graphViewer.GraphCanvas);
+                graphGrid.UpdateLayout();
+                DisplayTab(Constants.BlackDiamondHeader, "Threads/Blocks", grid, ThreadBlockingObjectGraphGrid + "TAB");
 
+                Graph graph = new Graph();
 
+                Microsoft.Msagl.Layout.MDS.MdsLayoutSettings layoutAlgorithmSettings = new Microsoft.Msagl.Layout.MDS.MdsLayoutSettings();
+                //Microsoft.Msagl.Layout.Layered.SugiyamaLayoutSettings layoutAlgorithmSettings = new Microsoft.Msagl.Layout.Layered.SugiyamaLayoutSettings();
+                layoutAlgorithmSettings.NodeSeparation = 40.0;
+                layoutAlgorithmSettings.ClusterMargin = 20;
 
-                grid.Tag = new Tuple<Digraph, List<int>, SubgraphDictionary, bool>(digraph, new List<int>(), new SubgraphDictionary(), true);
-                var txtBlk = (TextBlock)LogicalTreeHelper.FindLogicalNode(grid, "ThreadBlockingGraphXHelp");
-                Debug.Assert(txtBlk != null);
-                SetGraphHelpTextBlock(txtBlk);
-
-                UpdateThreadBlockMap(grid);
-
-                var tab = new CloseableTabItem()
+                graph.LayoutAlgorithmSettings = layoutAlgorithmSettings;
+                
+                var adjLst = digraph.AdjacencyLists;
+                string[] nodeNames = new string[adjLst.Length];
+                Bitset threadFlags = new Bitset(adjLst.Length);
+                for (int i = 0, icnt = adjLst.Length; i < icnt; ++i)
                 {
-                    Header = Constants.BlackDiamond + " Threads/Blocks",
-                    Content = grid,
-                    Name = grid.Name + "TAB"
-                };
-                MainTab.Items.Add(tab);
-                MainTab.SelectedItem = tab;
-                MainTab.UpdateLayout();
-
-
+                    bool isThread;
+                    string nodeLabel = CurrentIndex.GetThreadOrBlkUniqueLabel(i, out isThread);
+                    Node node = graph.AddNode(nodeLabel);
+                    node.Attr.LabelMargin = 10;
+                    node.Attr.Padding = 20;
+                    if (isThread)
+                    {
+                        node.Attr.FillColor = Color.Chocolate;
+                        threadFlags.Set(i);
+                    }
+                    nodeNames[i] = nodeLabel;
+                }
+                for (int i = 0, icnt = adjLst.Length; i < icnt; ++i)
+                {
+                    if (adjLst[i] == null) continue;
+                    for (int j = 0, jcnt = adjLst[i].Count; j < jcnt; ++j)
+                    {
+                        int targetNdx = adjLst[i][j];
+                        Edge edge = (Edge)graph.AddEdge(nodeNames[i], nodeNames[targetNdx]);
+                        if (threadFlags.IsSet(i))
+                        {
+                            edge.Attr.AddStyle(Microsoft.Msagl.Drawing.Style.Dashed);
+                        }
+                    }
+                }
+                graphViewer.Graph = graph;
                 return true;
             }
             catch (Exception ex)
@@ -991,9 +1035,9 @@ namespace MDRDesk
 
         private void DisplayNamespaceGrid(KeyValuePair<string, KeyValuePair<string, int>[]>[] namespaces)
         {
-            var grid = this.TryFindResource(GridKeyNamespaceTypeView) as Grid;
+            var grid = this.TryFindResource(NameNamespaceTypeNameGrid) as Grid;
             Debug.Assert(grid != null);
-            grid.Name = GridNameNamespaceTypeView + "__" + Utils.GetNewID();
+            grid.Name = NameNamespaceTypeNameGrid + "__" + Utils.GetNewID();
             grid.Tag = namespaces;
             var lb = (ListBox)LogicalTreeHelper.FindLogicalNode(grid, "lbTpNamespaces");
             Debug.Assert(lb != null);
@@ -1104,7 +1148,7 @@ namespace MDRDesk
         private ListBox GetTypeNamesListBox(object sender)
         {
             var grid = GetCurrentTabGrid();
-            string listName = grid.Name.StartsWith(GridNameNamespaceTypeView, StringComparison.Ordinal) ? "lbNamespaceViewTypeNames" : "lbTypeViewTypeNames";
+            string listName = grid.Name.StartsWith(NameNamespaceTypeNameGrid, StringComparison.Ordinal) ? "lbNamespaceViewTypeNames" : "lbTypeViewTypeNames";
             var lbNames = (ListBox)LogicalTreeHelper.FindLogicalNode(grid, listName);
             Debug.Assert(lbNames != null);
             return lbNames;
@@ -1563,10 +1607,13 @@ namespace MDRDesk
             Debug.Assert(lstBoxObjs != null);
             lstBoxObjs.ContextMenu.Tag = lstBoxObjs;
 
-            var tab = new CloseableTabItem() { Header = Constants.BlackDiamondPadded + "Finalization", Content = grid, Name = grid.Name + "_tab" };
-            MainTab.Items.Add(tab);
-            MainTab.SelectedItem = tab;
-            MainTab.UpdateLayout();
+            //var tab = new CloseableTabItem() { Header = Constants.BlackDiamondPadded + "Finalization", Content = grid, Name = grid.Name + "_tab" };
+            //MainTab.Items.Add(tab);
+            //MainTab.SelectedItem = tab;
+            //MainTab.UpdateLayout();
+
+            DisplayTab(Constants.BlackDiamondPadded, "Finalization", grid, GridFinalizerQueue + "TAB");
+
             listView.SelectedItem = 0;
         }
 
@@ -2665,7 +2712,7 @@ namespace MDRDesk
         private ListBox UpdateInstanceHierarchyGrid(InstanceValueAndAncestors instanceInfo, Grid mainGrid, out TreeView treeView, out TreeViewItem tvRoot)
         {
             InstanceValue instVal = instanceInfo.Instance;
-            var stackPanel = new StackPanel() { Orientation = Orientation.Horizontal };
+            var stackPanel = new StackPanel() { Orientation = System.Windows.Controls.Orientation.Horizontal };
             var textBlk = new TextBlock();
             textBlk.Inlines.Add(instVal.ToString());
             stackPanel.Children.Add(textBlk);

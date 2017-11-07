@@ -33,6 +33,8 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Documentation", "Documentat
 		Documentation\DumpLocalProcess.md = Documentation\DumpLocalProcess.md
 		Documentation\GettingStarted.md = Documentation\GettingStarted.md
 		Documentation\MainMenu.md = Documentation\MainMenu.md
+		Documentation\NotWrittenYet.md = Documentation\NotWrittenYet.md
+		Documentation\RootsDisplay.md = Documentation\RootsDisplay.md
 		Documentation\ValueWindows.md = Documentation\ValueWindows.md
 	EndProjectSection
 EndProject

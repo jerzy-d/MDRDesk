@@ -1294,6 +1294,48 @@ namespace UnitTestMdr
             Assert.IsNull(error, error);
         }
 
+        [TestMethod]
+        public void TestAllIndicesGetTypeCounts()
+        {
+            string error = null;
+            Stopwatch stopWatch = new Stopwatch();
+            stopWatch.Start();
+            var version = Assembly.GetExecutingAssembly().GetName().Version;
+
+            string folder = @"D:\Jerzy\WinDbgStuff\dumps\Analytics";
+            string[] ndxDirs = Directory.GetDirectories(folder, "*.map", SearchOption.AllDirectories);
+            List<string> lstGood = new List<string>();
+            List<string> lstBad = new List<string>();
+
+            for (int i = 0, icnt=ndxDirs.Length; i < icnt; ++i)
+            {
+                var index = DumpIndex.OpenIndexInstanceReferences(version, ndxDirs[i], 0, out error);
+                if (index != null)
+                {
+                    lstGood.Add(ndxDirs[i]);
+                }
+                else
+                {
+                    lstBad.Add(ndxDirs[i]);
+                }
+                index?.Dispose();
+            }
+
+            //try
+            //{
+
+            //}
+
+            //var index = OpenIndex();
+            //TestContext.WriteLine(index.DumpFileName + " INDEX OPEN DURATION: " + Utils.StopAndGetDurationString(stopWatch));
+
+            //using (index)
+            //{
+
+            //}
+
+            //Assert.IsNull(error, error);
+        }
 
         #endregion type sizes and distribution
 

@@ -3517,6 +3517,24 @@ namespace ClrMDRIndex
             return Utils.BaseTypeName(GetTypeName(blk.TypeId));
         }
 
+        public string GetThreadOrBlkUniqueLabel(int id, out bool isThread)
+        {
+            isThread = false;
+            if (_threads == null) return Constants.Unknown;
+            isThread = IsThreadId(id);
+            if (isThread)
+            {
+                int threadId = _threadBlockingMap[id];
+                ClrtThread thread = _threads[threadId];
+                return "[" + threadId + "] " + thread.OSThreadId + "/" + thread.ManagedThreadId;
+            }
+            int blockId = GetIdFromGraph(id);
+            ClrtBlkObject blk = _blocks[blockId];
+            if (blk.BlkReason != BlockingReason.None)
+                return "[" + blockId + "] " + Utils.BaseTypeName(GetTypeName(blk.TypeId)) + "/" + blk.BlkReason;
+            return "[" + blockId + "] " + Utils.BaseTypeName(GetTypeName(blk.TypeId));
+        }
+
         public Tuple<ClrtThread[], string[], KeyValuePair<int, ulong>[]> GetThreads(out string error)
         {
             error = null;

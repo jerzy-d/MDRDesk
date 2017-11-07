@@ -761,8 +761,8 @@ namespace MDRDesk
                 ShowError(error);
                 return;
             }
-
-            if (!DisplayThreadBlockMap(CurrentIndex.ThreadBlockgraph, out error))
+            // TODO JRD -- switch to DisplayThreadBlockMap2(Digraph digraph, out string error)
+            if (!DisplayThreadBlockMap2(CurrentIndex.ThreadBlockgraph, out error))
             {
                 ShowError(error);
             }
@@ -1527,7 +1527,7 @@ namespace MDRDesk
             {
                 Edge edge = 
                     (Edge)graph.AddEdge(nodes[i-1].Id, nodes[i].Id);
-                if ((i & 1) == 0)
+                if ((i % 2) == 0)
                 {
                     edge.Attr.AddStyle(Microsoft.Msagl.Drawing.Style.Dashed);
                     edge.Attr.AddStyle(Microsoft.Msagl.Drawing.Style.Bold);
@@ -2132,7 +2132,7 @@ namespace MDRDesk
                 case GridReversedNameTypeView:
                     listName = "lbTypeNameAddresses";
                     break;
-                case GridNameNamespaceTypeView:
+                case NameNamespaceTypeNameGrid:
                     listName = "lbTypeNamespaceAddresses";
                     break;
                 case WeakReferenceViewGrid:
@@ -2159,7 +2159,7 @@ namespace MDRDesk
                 case GridReversedNameTypeView:
                     listName = "lbTypeViewTypeNames";
                     break;
-                case GridNameNamespaceTypeView:
+                case NameNamespaceTypeNameGrid:
                     listName = "lbNamespaceViewTypeNames";
                     break;
             }
@@ -2724,7 +2724,7 @@ namespace MDRDesk
 
         }
 
-#region help
+        #region help
 
         private void HelpViewHelpClicked(object sender, RoutedEventArgs e)
         {
@@ -2743,11 +2743,24 @@ namespace MDRDesk
             switch (gridName)
             {
                 case RootsGrid:
+                    ValueWindows.ShowHelpWindow(Setup.HelpFolder + Path.DirectorySeparatorChar + @"\Documentation\RootsDisplay.md");
                     break;
-                
+                case GridFinalizerQueue:
+                    ValueWindows.ShowHelpWindow(Setup.HelpFolder + Path.DirectorySeparatorChar + @"\Documentation\NotWrittenYet.md");
+                    break;
+                case DeadlockGraphGrid:
+                    ValueWindows.ShowHelpWindow(Setup.HelpFolder + Path.DirectorySeparatorChar + @"\Documentation\NotWrittenYet.md");
+                    break;
+                case NameNamespaceTypeNameGrid:
+                    ValueWindows.ShowHelpWindow(Setup.HelpFolder + Path.DirectorySeparatorChar + @"\Documentation\NotWrittenYet.md");
+                    break;
+                case ThreadBlockingObjectGraphGrid:
+                    ValueWindows.ShowHelpWindow(Setup.HelpFolder + Path.DirectorySeparatorChar + @"\Documentation\NotWrittenYet.md");
+                    break;
+                default:
+                    GuiUtils.ShowInformation("HELP FRAMEWORK", gridName,"Cannot find help for this tab.",null,this);
+                    break;
             }
-
-            
         }
 
         private void AddHotKeys()
@@ -2764,7 +2777,7 @@ namespace MDRDesk
             }
         }
 
-#endregion help
+        #endregion help
 
     }
 
