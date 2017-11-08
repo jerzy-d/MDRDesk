@@ -302,7 +302,7 @@ namespace MDRDesk
                 return false;
             }
         }
-
+        
         /// <summary>
         /// TODO JRD -- use ThreadBlockingObjectsGraphGrid to display MSAGL graph.
         /// </summary>
@@ -334,7 +334,9 @@ namespace MDRDesk
                 graphViewer.GraphCanvas.HorizontalAlignment = HorizontalAlignment.Stretch;
                 graphViewer.GraphCanvas.VerticalAlignment = VerticalAlignment.Stretch;
                 graphGrid.Children.Add(graphViewer.GraphCanvas);
+
                 graphGrid.UpdateLayout();
+                grid.Tag = graphViewer;
                 DisplayTab(Constants.BlackDiamondHeader, "Threads/Blocks", grid, ThreadBlockingObjectGraphGrid + "TAB");
 
                 Graph graph = new Graph();
@@ -376,7 +378,10 @@ namespace MDRDesk
                         }
                     }
                 }
+
                 graphViewer.Graph = graph;
+                //graphViewer.GraphCanvas.MouseLeftButtonUp += GraphCanvas_MouseUp;
+                graphViewer.MouseUp += GraphViewer_MouseUp; ;
                 return true;
             }
             catch (Exception ex)
@@ -384,6 +389,22 @@ namespace MDRDesk
                 error = Utils.GetExceptionErrorString(ex);
                 return false;
             }
+        }
+
+        private void GraphViewer_MouseUp(object sender, MsaglMouseEventArgs e)
+        {
+            var grid = GetCurrentTabGrid();
+            if (grid == null) return;
+            GraphViewer graphViewer = grid.Tag as GraphViewer;
+            if (graphViewer != null && graphViewer.ObjectUnderMouseCursor != null)
+            {
+                int a = 1;
+            }
+        }
+
+        private void GraphCanvas_MouseUp(object sender, MouseButtonEventArgs e)
+        {
+            int a = 1;
         }
 
         public void UpdateThreadBlockMap(Grid grid)
