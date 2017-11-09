@@ -309,11 +309,29 @@ namespace MDRDesk
         /// <param name="digraph"></param>
         /// <param name="error"></param>
         /// <returns></returns>
-        public bool DisplayThreadBlockMap2(Digraph digraph, out string error)
+        public async void DisplayThreadBlockMap2()
         {
-            error = null;
+            string error = null;
+            CloseableTabItem graphTab = null;
+            SetStartTaskMainWindowState("Setting up threads and blocking objects graph, please wait...");
             try
             {
+                var result = await Task.Factory.StartNew(() =>
+                {
+                    string err = null;
+                    var info = CurrentIndex.GetThreads(out err);
+                    return new Tuple<string, ClrtThread[], string[], KeyValuePair<int, ulong>[]>(error, info.Item1, info.Item2, info.Item3);
+                }, DumpSTAScheduler);
+
+                if (result.Item1 != null) // error
+                {
+                    ShowError(result.Item1);
+                    return;
+                }
+
+
+                Digraph digraph = CurrentIndex.ThreadBlockgraph;
+
                 var grid = this.TryFindResource(ThreadBlockingObjectGraphGrid) as Grid;
                 Debug.Assert(grid != null);
                 var graphGrid = (Grid)LogicalTreeHelper.FindLogicalNode(grid, "ThreadsGraphGrid");
@@ -336,9 +354,9 @@ namespace MDRDesk
                 graphGrid.Children.Add(graphViewer.GraphCanvas);
 
                 graphGrid.UpdateLayout();
-                grid.Tag = graphViewer;
-                DisplayTab(Constants.BlackDiamondHeader, "Threads/Blocks", grid, ThreadBlockingObjectGraphGrid + "TAB");
+                grid.Tag = new Tuple<GraphViewer, ClrtThread[], string[], KeyValuePair<int, ulong>[]>(graphViewer,result.Item2,result.Item3,result.Item4);
 
+                graphTab = DisplayTab(Constants.BlackDiamondHeader, "Threads/Blocks", grid, ThreadBlockingObjectGraphGrid + "TAB");
                 Graph graph = new Graph();
 
                 Microsoft.Msagl.Layout.MDS.MdsLayoutSettings layoutAlgorithmSettings = new Microsoft.Msagl.Layout.MDS.MdsLayoutSettings();
@@ -382,12 +400,17 @@ namespace MDRDesk
                 graphViewer.Graph = graph;
                 //graphViewer.GraphCanvas.MouseLeftButtonUp += GraphCanvas_MouseUp;
                 graphViewer.MouseUp += GraphViewer_MouseUp; ;
-                return true;
             }
             catch (Exception ex)
             {
                 error = Utils.GetExceptionErrorString(ex);
-                return false;
+                graphTab?.Close();
+                ShowError(error);
+            }
+            finally
+            {
+                string msg = error != null ? "Setting up threads and blocking objects graph failed." : "Setting up threads and blocking objects graph succeeded.";
+                SetEndTaskMainWindowState(msg);
             }
         }
 
@@ -395,10 +418,26 @@ namespace MDRDesk
         {
             var grid = GetCurrentTabGrid();
             if (grid == null) return;
-            GraphViewer graphViewer = grid.Tag as GraphViewer;
+            var info = grid.Tag as Tuple<GraphViewer, ClrtThread[], string[], KeyValuePair<int, ulong>[]>;
+            GraphViewer graphViewer = info.Item1;
             if (graphViewer != null && graphViewer.ObjectUnderMouseCursor != null)
             {
-                int a = 1;
+                // TODO JRD -- use this to change graph layout
+                //var graph = graphViewer.Graph;
+                ////Microsoft.Msagl.Layout.MDS.MdsLayoutSettings layoutAlgorithmSettings = new Microsoft.Msagl.Layout.MDS.MdsLayoutSettings();
+                //Microsoft.Msagl.Layout.Layered.SugiyamaLayoutSettings layoutAlgorithmSettings = new Microsoft.Msagl.Layout.Layered.SugiyamaLayoutSettings();
+                //layoutAlgorithmSettings.NodeSeparation = 40.0;
+                //layoutAlgorithmSettings.ClusterMargin = 20;
+                //graph.LayoutAlgorithmSettings = layoutAlgorithmSettings;
+                //graphViewer.Graph = graph;
+                //graphViewer.Invalidate();
+
+                VNode node = graphViewer.ObjectUnderMouseCursor as VNode;
+                if (node != null)
+                {
+                    MainStatusShowMessage(node.Node.Label.Text);
+                    return;
+                }
             }
         }
 

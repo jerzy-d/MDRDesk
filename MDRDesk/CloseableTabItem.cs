@@ -54,8 +54,14 @@ namespace MDRDesk
 		{
 			var grid = this.Content as Grid;
 			((MainWindow)Application.Current.MainWindow).ClearTabItem(grid);
-
 			this.RaiseEvent(new RoutedEventArgs(CloseTabEvent, this));
 		}
-	}
+
+        public void Close()
+        {
+            var grid = this.Content as Grid;
+            ((MainWindow)Application.Current.MainWindow).ClearTabItem(grid);
+            this.RaiseEvent(new RoutedEventArgs(CloseTabEvent, this));
+        }
+    }
 }

@@ -761,12 +761,7 @@ namespace MDRDesk
                 ShowError(error);
                 return;
             }
-            // TODO JRD -- switch to DisplayThreadBlockMap2(Digraph digraph, out string error)
-            if (!DisplayThreadBlockMap2(CurrentIndex.ThreadBlockgraph, out error))
-            {
-                ShowError(error);
-            }
-            return;
+            Dispatcher.CurrentDispatcher.InvokeAsync(DisplayThreadBlockMap2);
         }
 
         private void IndexShowThreadsClicked(object sender, RoutedEventArgs e)
