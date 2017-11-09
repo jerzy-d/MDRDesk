@@ -336,7 +336,7 @@ namespace MDRDesk
                 Debug.Assert(grid != null);
                 var graphGrid = (Grid)LogicalTreeHelper.FindLogicalNode(grid, "ThreadsGraphGrid");
                 Debug.Assert(graphGrid != null);
-                grid.Name = GraphGrid + "__" + Utils.GetNewID();
+                grid.Name = ThreadBlockingObjectGraphGrid + "__" + Utils.GetNewID();
                 /*
                  ThreadBlockingObjectsGraphGrid
                     ThreadsGrid (0,0)
@@ -422,16 +422,6 @@ namespace MDRDesk
             GraphViewer graphViewer = info.Item1;
             if (graphViewer != null && graphViewer.ObjectUnderMouseCursor != null)
             {
-                // TODO JRD -- use this to change graph layout
-                //var graph = graphViewer.Graph;
-                ////Microsoft.Msagl.Layout.MDS.MdsLayoutSettings layoutAlgorithmSettings = new Microsoft.Msagl.Layout.MDS.MdsLayoutSettings();
-                //Microsoft.Msagl.Layout.Layered.SugiyamaLayoutSettings layoutAlgorithmSettings = new Microsoft.Msagl.Layout.Layered.SugiyamaLayoutSettings();
-                //layoutAlgorithmSettings.NodeSeparation = 40.0;
-                //layoutAlgorithmSettings.ClusterMargin = 20;
-                //graph.LayoutAlgorithmSettings = layoutAlgorithmSettings;
-                //graphViewer.Graph = graph;
-                //graphViewer.Invalidate();
-
                 VNode node = graphViewer.ObjectUnderMouseCursor as VNode;
                 if (node != null)
                 {
@@ -441,9 +431,47 @@ namespace MDRDesk
             }
         }
 
-        private void GraphCanvas_MouseUp(object sender, MouseButtonEventArgs e)
+        private void ChangeGraphLayout(Microsoft.Msagl.Core.Layout.LayoutAlgorithmSettings settings)
         {
-            int a = 1;
+            var grid = GetCurrentTabGrid();
+            if (grid == null) return;
+            var info = grid.Tag as Tuple<GraphViewer, ClrtThread[], string[], KeyValuePair<int, ulong>[]>;
+            GraphViewer graphViewer = info.Item1;
+            if (graphViewer != null)
+            {
+                SetStartTaskMainWindowState("Changing layout of threads and blocking objects graph...");
+                try
+                {
+                    var graph = graphViewer.Graph;
+                    graph.LayoutAlgorithmSettings = settings;
+                    graphViewer.Graph = graph;
+                    graphViewer.Invalidate();
+                }
+                catch(Exception ex)
+                {
+                    ShowError(Utils.GetExceptionErrorString(ex));
+                }
+                finally
+                {
+                    SetEndTaskMainWindowState("Changing layout of threads and blocking objects graph done");
+                }
+            }
+        }
+
+        private void LayoutSugiyama_Click(object sender, RoutedEventArgs e)
+        {
+            Microsoft.Msagl.Layout.Layered.SugiyamaLayoutSettings layoutAlgorithmSettings = new Microsoft.Msagl.Layout.Layered.SugiyamaLayoutSettings();
+            layoutAlgorithmSettings.NodeSeparation = 40.0;
+            layoutAlgorithmSettings.ClusterMargin = 20;
+            ChangeGraphLayout(layoutAlgorithmSettings);
+        }
+
+        private void LayoutMDS_Click(object sender, RoutedEventArgs e)
+        {
+            Microsoft.Msagl.Layout.MDS.MdsLayoutSettings layoutAlgorithmSettings = new Microsoft.Msagl.Layout.MDS.MdsLayoutSettings();
+            layoutAlgorithmSettings.NodeSeparation = 40.0;
+            layoutAlgorithmSettings.ClusterMargin = 20;
+            ChangeGraphLayout(layoutAlgorithmSettings);
         }
 
         public void UpdateThreadBlockMap(Grid grid)

@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 15
-VisualStudioVersion = 15.0.27004.2005
+VisualStudioVersion = 15.0.27004.2006
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MDRDesk", "MDRDesk\MDRDesk.csproj", "{4BB5B249-E4F1-490F-8F40-214BCC05CE64}"
 	ProjectSection(ProjectDependencies) = postProject
@@ -35,6 +35,7 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Documentation", "Documentat
 		Documentation\MainMenu.md = Documentation\MainMenu.md
 		Documentation\NotWrittenYet.md = Documentation\NotWrittenYet.md
 		Documentation\RootsDisplay.md = Documentation\RootsDisplay.md
+		Documentation\ThreadsBlocksGraph.md = Documentation\ThreadsBlocksGraph.md
 		Documentation\ValueWindows.md = Documentation\ValueWindows.md
 	EndProjectSection
 EndProject

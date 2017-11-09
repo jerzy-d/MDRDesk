@@ -2750,7 +2750,7 @@ namespace MDRDesk
                     ValueWindows.ShowHelpWindow(Setup.HelpFolder + Path.DirectorySeparatorChar + @"\Documentation\NotWrittenYet.md");
                     break;
                 case ThreadBlockingObjectGraphGrid:
-                    ValueWindows.ShowHelpWindow(Setup.HelpFolder + Path.DirectorySeparatorChar + @"\Documentation\NotWrittenYet.md");
+                    ValueWindows.ShowHelpWindow(Setup.HelpFolder + Path.DirectorySeparatorChar + @"\Documentation\ThreadsBlocksGraph.md");
                     break;
                 default:
                     GuiUtils.ShowInformation("HELP FRAMEWORK", gridName,"Cannot find help for this tab.",null,this);
@@ -2773,6 +2773,7 @@ namespace MDRDesk
         }
 
         #endregion help
+
 
     }
 
