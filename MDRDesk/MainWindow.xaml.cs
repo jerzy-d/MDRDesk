@@ -753,7 +753,7 @@ namespace MDRDesk
 
         private void IndexShowBlockingThreadsClicked(object sender, RoutedEventArgs e)
         {
-            if (!IsIndexAvailable("Show Blocks and Threads Graph")) return;
+            if (!IsIndexAvailable("Threads and Blocks Graph")) return;
 
             string error;
             if (!CurrentIndex.LoadThreadBlockInfo(out error))
@@ -766,8 +766,23 @@ namespace MDRDesk
 
         private void IndexShowThreadsClicked(object sender, RoutedEventArgs e)
         {
-            if (!IsIndexAvailable("Cannot view threads, an index is not opened.")) return;
+            if (!IsIndexAvailable("Threads View")) return;
             Dispatcher.CurrentDispatcher.InvokeAsync(ExecuteGetThreadinfos);
+        }
+
+        private void IndexShowDeadlocksClicked(object sender, RoutedEventArgs e)
+        {
+            if (!IsIndexAvailable("Deadlock View")) return;
+            if (CurrentIndex.DeadlockFound)
+            {
+                string error;
+                if (!DisplayDeadlock(CurrentIndex.Deadlock, out error))
+                {
+                    ShowError(error);
+                }
+                return;
+            }
+            ShowInformation("Deadlock View", "No deadlock detected.", CurrentIndex.DumpFileName,null);
         }
 
         private void IndexGetSizeInformationClicked(object sender, RoutedEventArgs e)
@@ -1911,12 +1926,7 @@ namespace MDRDesk
             MainTab.SelectedItem = tab;
         }
 
-        private Grid GetCurrentTabGrid()
-        {
-            return (MainTab.SelectedItem as CloseableTabItem)?.Content as Grid;
-        }
-
-        private void ListingInfoListViewHeaderClick(object sender, RoutedEventArgs e)
+         private void ListingInfoListViewHeaderClick(object sender, RoutedEventArgs e)
         {
             GridViewColumnHeader column = e.OriginalSource as GridViewColumnHeader;
             if (column == null) return;
@@ -2772,9 +2782,8 @@ namespace MDRDesk
             }
         }
 
+
         #endregion help
-
-
     }
 
     public static class MenuCommands

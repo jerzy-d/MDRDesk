@@ -265,8 +265,10 @@
                     <RowDefinition Height="20*"/>
                 </Grid.RowDefinitions>
                 <ToolBar Grid.Row="0" Grid.Column="0" FontSize="11" FontWeight="Bold" FontStyle="Italic">
-                    <RadioButton Name="LayoutSugiyama" GroupName="GraphLayout" Content="Sugiyama" Click="LayoutSugiyama_Click"/>
-                    <RadioButton Name="LayoutMDS" GroupName="GraphLayout" Content="MDS" Click="LayoutMDS_Click" IsChecked="True" />
+                    <RadioButton Name="LayoutSugiyama" GroupName="GraphLayout" Content="[Sugiyama]" Click="LayoutSugiyama_Click"/>
+                    <RadioButton Name="LayoutMDS" GroupName="GraphLayout" Content="[MDS]" Click="LayoutMDS_Click" IsChecked="True" />
+                    <RadioButton Name="LayoutIncremental" GroupName="GraphLayout" Content="[Incremental]" Click="LayoutIncremental_Click" />
+                    <RadioButton Name="LayoutRanking" GroupName="GraphLayout" Content="[Ranking]" Click="LayoutRanking_Click" />
                 </ToolBar>
                 <Grid Name="ThreadsGraphGrid" Grid.Row="1" VerticalAlignment="Stretch" HorizontalAlignment="Stretch" ClipToBounds="True">
                 </Grid>
@@ -840,8 +842,11 @@
                         <MenuItem x:Name="IndexShowFinalizerQueue" Header="Show Finalizer Queue" Click="IndexShowFinalizerQueueClicked"/>
                         <MenuItem x:Name="IndexShowRoots" Header="Show Roots" Click="IndexShowRootsClicked"/>
                         <MenuItem x:Name="IndexShowWeakReferences" Header="Show WeakReference _instances" Click="IndexShowWeakReferencesClicked"/>
-                        <MenuItem x:Name="IndexShowBlockingThreads" Header="Show Blocks and Threads Graph" Click="IndexShowBlockingThreadsClicked"/>
-                        <MenuItem x:Name="IndexShowThreads" Header="Show Threads" Click="IndexShowThreadsClicked"/>
+                        <MenuItem x:Name="IndexThreads" Header="Threads">
+                            <MenuItem x:Name="IndexShowBlockingThreads" Header="Threads and Blocking Objects Graph" Click="IndexShowBlockingThreadsClicked"/>
+                            <MenuItem x:Name="IndexShowThreads" Header="Thread Listing" Click="IndexShowThreadsClicked"/>
+                            <MenuItem x:Name="IndexShowDeadlocks" Header="Deadlock(s)" Click="IndexShowDeadlocksClicked"/>
+                        </MenuItem>
                         <MenuItem x:Name="IndexGetSizeInformation" Header="Type Sizes Information" Click="IndexGetSizeInformationClicked"/>
                         <MenuItem x:Name="IndexGetBaseSizeInformation" Header="Type Base Sizes Information" Click="IndexGetBaseSizeInformationClicked"/>
                         <MenuItem x:Name="IndexStringUsage" Header="String Usage" Click="IndexStringUsageClicked"/>

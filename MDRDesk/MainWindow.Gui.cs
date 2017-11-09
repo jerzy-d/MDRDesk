@@ -460,7 +460,7 @@ namespace MDRDesk
 
         private void LayoutSugiyama_Click(object sender, RoutedEventArgs e)
         {
-            Microsoft.Msagl.Layout.Layered.SugiyamaLayoutSettings layoutAlgorithmSettings = new Microsoft.Msagl.Layout.Layered.SugiyamaLayoutSettings();
+            var layoutAlgorithmSettings = new Microsoft.Msagl.Layout.Layered.SugiyamaLayoutSettings();
             layoutAlgorithmSettings.NodeSeparation = 40.0;
             layoutAlgorithmSettings.ClusterMargin = 20;
             ChangeGraphLayout(layoutAlgorithmSettings);
@@ -468,11 +468,29 @@ namespace MDRDesk
 
         private void LayoutMDS_Click(object sender, RoutedEventArgs e)
         {
-            Microsoft.Msagl.Layout.MDS.MdsLayoutSettings layoutAlgorithmSettings = new Microsoft.Msagl.Layout.MDS.MdsLayoutSettings();
+            var layoutAlgorithmSettings = new Microsoft.Msagl.Layout.MDS.MdsLayoutSettings();
             layoutAlgorithmSettings.NodeSeparation = 40.0;
             layoutAlgorithmSettings.ClusterMargin = 20;
             ChangeGraphLayout(layoutAlgorithmSettings);
         }
+
+
+        private void LayoutIncremental_Click(object sender, RoutedEventArgs e)
+        {
+            var layoutAlgorithmSettings = new Microsoft.Msagl.Prototype.Ranking.RankingLayoutSettings();
+            layoutAlgorithmSettings.NodeSeparation = 40.0;
+            layoutAlgorithmSettings.ClusterMargin = 20;
+            ChangeGraphLayout(layoutAlgorithmSettings);
+        }
+
+        private void LayoutRanking_Click(object sender, RoutedEventArgs e)
+        {
+            var layoutAlgorithmSettings = new Microsoft.Msagl.Layout.Incremental.FastIncrementalLayoutSettings();
+            layoutAlgorithmSettings.NodeSeparation = 40.0;
+            layoutAlgorithmSettings.ClusterMargin = 20;
+            ChangeGraphLayout(layoutAlgorithmSettings);
+        }
+
 
         public void UpdateThreadBlockMap(Grid grid)
         {
@@ -3272,6 +3290,19 @@ namespace MDRDesk
         #endregion TabItem Cleanup
 
         #region Utils
+
+        private Grid GetCurrentTabGrid()
+        {
+            return (MainTab.SelectedItem as CloseableTabItem)?.Content as Grid;
+        }
+
+        private bool IsGridDisplayed(string gridBaseName)
+        {
+            foreach(var tab in MainTab.Items)
+            {
+
+            }
+        }
 
         private static long _lastEnteredValue = 0;
 
