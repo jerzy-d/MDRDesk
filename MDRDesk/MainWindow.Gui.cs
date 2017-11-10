@@ -3291,17 +3291,31 @@ namespace MDRDesk
 
         #region Utils
 
+        /// <summary>
+        /// Returns grid of currently selected tab on main display (MainTab).
+        /// </summary>
         private Grid GetCurrentTabGrid()
         {
             return (MainTab.SelectedItem as CloseableTabItem)?.Content as Grid;
         }
 
+        /// <summary>
+        /// Check if a grid of given grig type prefix is already displayed.
+        /// </summary>
+        /// <param name="gridBaseName">Grids of the same type have name starting with common prefix.</param>
         private bool IsGridDisplayed(string gridBaseName)
         {
-            foreach(var tab in MainTab.Items)
+            foreach(var item in MainTab.Items)
             {
-
+                CloseableTabItem tab = item as CloseableTabItem;
+                if (tab != null)
+                {
+                    var grid = tab.Content as Grid;
+                    if (grid != null && grid.Name.StartsWith(gridBaseName, StringComparison.Ordinal))
+                        return true;
+                }
             }
+            return false;
         }
 
         private static long _lastEnteredValue = 0;

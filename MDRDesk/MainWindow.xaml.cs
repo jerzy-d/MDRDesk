@@ -672,6 +672,11 @@ namespace MDRDesk
         private async void IndexShowFinalizerQueueClicked(object sender, RoutedEventArgs e)
         {
             if (!IsIndexAvailable("Show Finalizer Queue")) return;
+            if (IsGridDisplayed(GridFinalizerQueue))
+            {
+                MainStatusShowMessage("Tab with " + GridFinalizerQueue + " already exists.");
+                return;
+            }
 
             SetStartTaskMainWindowState("Getting finalizer queue info, please wait...");
 
@@ -695,7 +700,11 @@ namespace MDRDesk
         private async void IndexShowRootsClicked(object sender, RoutedEventArgs e)
         {
             if (!IsIndexAvailable("Show Roots")) return;
-
+            if (IsGridDisplayed(GridFinalizerQueue))
+            {
+                MainStatusShowMessage("Tab with " + RootsGrid + " already exists.");
+                return;
+            }
 
             SetStartTaskMainWindowState("Getting WeakReference information, please wait...");
 

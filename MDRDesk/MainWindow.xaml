@@ -837,20 +837,26 @@
                         <MenuItem x:Name="OpenDumpIndex" Header="Open Dump Index..." Click="OpenDumpIndexClicked"/>
                         <MenuItem x:Name="CloseDumpIndex" Header="Close Current Index..." Click="CloseDumpIndexClicked"/>
                         <Separator></Separator>
-                        <MenuItem x:Name="IndexShowIndexingInfo" Header="Show Indexing Info" Click="IndexShowIndexingInfoClicked"/>
-                        <MenuItem x:Name="IndexShowModuleInfos" Header="Show Loaded Modules Infos" Click="IndexShowModuleInfosClicked"/>
+                        <MenuItem x:Name="IndexShowIndexingInfo" Header="Show Indexing Report" Click="IndexShowIndexingInfoClicked"/>
+                        <MenuItem x:Name="IndexShowModuleInfos" Header="Show Loaded Modules" Click="IndexShowModuleInfosClicked"/>
                         <MenuItem x:Name="IndexShowFinalizerQueue" Header="Show Finalizer Queue" Click="IndexShowFinalizerQueueClicked"/>
                         <MenuItem x:Name="IndexShowRoots" Header="Show Roots" Click="IndexShowRootsClicked"/>
-                        <MenuItem x:Name="IndexShowWeakReferences" Header="Show WeakReference _instances" Click="IndexShowWeakReferencesClicked"/>
+                        <MenuItem x:Name="IndexShowWeakReferences" Header="Show WeakReferences" Click="IndexShowWeakReferencesClicked"/>
                         <MenuItem x:Name="IndexThreads" Header="Threads">
                             <MenuItem x:Name="IndexShowBlockingThreads" Header="Threads and Blocking Objects Graph" Click="IndexShowBlockingThreadsClicked"/>
                             <MenuItem x:Name="IndexShowThreads" Header="Thread Listing" Click="IndexShowThreadsClicked"/>
                             <MenuItem x:Name="IndexShowDeadlocks" Header="Deadlock(s)" Click="IndexShowDeadlocksClicked"/>
                         </MenuItem>
-                        <MenuItem x:Name="IndexGetSizeInformation" Header="Type Sizes Information" Click="IndexGetSizeInformationClicked"/>
-                        <MenuItem x:Name="IndexGetBaseSizeInformation" Header="Type Base Sizes Information" Click="IndexGetBaseSizeInformationClicked"/>
-                        <MenuItem x:Name="IndexStringUsage" Header="String Usage" Click="IndexStringUsageClicked"/>
-                        <MenuItem x:Name="IndexStringUsageGen" Header="String Usage with GC Generations" Click="IndexStringUsageClicked"/>
+                        <MenuItem x:Name="Sizes" Header="Type Sizes">
+                            <MenuItem x:Name="IndexGetSizeInformation" Header="Types' Size Listing" Click="IndexGetSizeInformationClicked"/>
+                            <MenuItem x:Name="IndexGetBaseSizeInformation" Header="Types' Base Size Listing" Click="IndexGetBaseSizeInformationClicked"/>
+                            <MenuItem x:Name="IndexCompareSizeInformation" Header="Type Sizes Comparison (with other dump)..." Click="IndexCompareSizeInformationClicked"/>
+                        </MenuItem>
+                        <MenuItem x:Name="Strings" Header="Strings Usage">
+                            <MenuItem x:Name="IndexStringUsage" Header="String Usage" Click="IndexStringUsageClicked"/>
+                            <MenuItem x:Name="IndexStringUsageGen" Header="String Usage with GC Generations" Click="IndexStringUsageClicked"/>
+                            <MenuItem x:Name="IndexCompareStringInformation" Header="Strings Comparison (with other dump)..." Click="IndexCompareStringInformationClicked"/>
+                        </MenuItem>
                         <Separator></Separator>
                         <MenuItem x:Name="InstanceInfo" Header="Instance Information">
                             <MenuItem x:Name="InstReferences" Header="References" Command="local:MenuCommands.InstanceReferencesCmd"/>
@@ -862,8 +868,6 @@
                             <MenuItem x:Name="TypeWithInterface" Header="List Types Implementing Interface" Click="TypesImplementingInterfaceClicked"/>
                         </MenuItem>
                         <Separator></Separator>
-                        <MenuItem x:Name="IndexCompareSizeInformation" Header="Type Sizes Comparison (with other dump)..." Click="IndexCompareSizeInformationClicked"/>
-                        <MenuItem x:Name="IndexCompareStringInformation" Header="Strings Comparison (with other dump)..." Click="IndexCompareStringInformationClicked"/>
                         <Separator></Separator>
                         <MenuItem x:Name="IndexViewMemory" Header="View Memory..." Click="IndexViewMemoryClicked"/>
                         <Separator></Separator>
