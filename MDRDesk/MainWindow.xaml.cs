@@ -631,6 +631,10 @@ namespace MDRDesk
 
         }
 
+        /// <summary>
+        /// Updated application title with a crash dump name. When indexing or opening an existing index.
+        /// </summary>
+        /// <param name="dmpName">A crash dump file name, not a full path.</param>
         public void SetTitle(string dmpName)
         {
             Title = BaseTitle + Constants.BlackDiamondPadded + dmpName;
@@ -644,6 +648,7 @@ namespace MDRDesk
         private void IndexShowIndexingInfoClicked(object sender, RoutedEventArgs e)
         {
             if (!IsIndexAvailable("Show Indexing Info")) return;
+            if (AlreadyDisplayed("IndexingGrid")) return;
             var path = CurrentIndex.GetFilePath(-1, Constants.TxtIndexingInfoFilePostfix);
             string error;
             if (!IndexingProgress.ShowIndexingInfo(this, path, out error))
@@ -672,12 +677,7 @@ namespace MDRDesk
         private async void IndexShowFinalizerQueueClicked(object sender, RoutedEventArgs e)
         {
             if (!IsIndexAvailable("Show Finalizer Queue")) return;
-            if (IsGridDisplayed(GridFinalizerQueue))
-            {
-                MainStatusShowMessage("Tab with " + GridFinalizerQueue + " already exists.");
-                return;
-            }
-
+            if (AlreadyDisplayed(GridFinalizerQueue)) return;
             SetStartTaskMainWindowState("Getting finalizer queue info, please wait...");
 
             // var finalizerInfo = await Task.Run(() => CurrentIndex.GetDisplayableFinalizationQueue());
@@ -700,12 +700,7 @@ namespace MDRDesk
         private async void IndexShowRootsClicked(object sender, RoutedEventArgs e)
         {
             if (!IsIndexAvailable("Show Roots")) return;
-            if (IsGridDisplayed(GridFinalizerQueue))
-            {
-                MainStatusShowMessage("Tab with " + RootsGrid + " already exists.");
-                return;
-            }
-
+            if (AlreadyDisplayed(RootsGrid)) return;
             SetStartTaskMainWindowState("Getting WeakReference information, please wait...");
 
             (string error, ClrtRoot[][] roots, ListingInfo[] listings) = await Task.Factory.StartNew(() =>
@@ -732,7 +727,7 @@ namespace MDRDesk
         private async void IndexShowWeakReferencesClicked(object sender, RoutedEventArgs e)
         {
             if (!IsIndexAvailable("Show Weak References")) return;
-
+            if (AlreadyDisplayed(WeakReferenceViewGrid)) return;
             SetStartTaskMainWindowState("Getting WeakReference information, please wait...");
 
             var result = await Task.Factory.StartNew(() =>
@@ -2408,11 +2403,6 @@ namespace MDRDesk
 
 #endregion context menus
 
-        //private void RecentDumpSelectionClicked(object sender, RoutedEventArgs e)
-        //{
-        //	int a = 0;
-        //}
-
         private async void GenerateSizeDetailsReport(object sender, RoutedEventArgs e) // TODO JRD -- display as ListView (listing)
         {
             var lbTypeNames = GetTypeNameListBox(sender);
@@ -2560,6 +2550,17 @@ namespace MDRDesk
             }
             return true;
         }
+
+        private bool AlreadyDisplayed(string gridNamePrefix, bool showMessage = true)
+        {
+            if (IsGridDisplayed(GridFinalizerQueue))
+            {
+                if (showMessage) MainStatusShowMessage("Tab with " + gridNamePrefix + " already exists.");
+                return true;
+            }
+            return false;
+        }
+
 
         private bool AreReferencesAvailable(string caption = null)
         {

@@ -337,6 +337,12 @@ namespace MDRDesk
                 var graphGrid = (Grid)LogicalTreeHelper.FindLogicalNode(grid, "ThreadsGraphGrid");
                 Debug.Assert(graphGrid != null);
                 grid.Name = ThreadBlockingObjectGraphGrid + "__" + Utils.GetNewID();
+
+                var threadAliveStackObjects = (ListView)LogicalTreeHelper.FindLogicalNode(grid, "ThreadAliveStackObjects");
+                threadAliveStackObjects.ContextMenu.Tag = threadAliveStackObjects;
+                var threadDeadStackObjects = (ListView)LogicalTreeHelper.FindLogicalNode(grid, "ThreadDeadStackObjects");
+                threadDeadStackObjects.ContextMenu.Tag = threadDeadStackObjects;
+
                 /*
                  ThreadBlockingObjectsGraphGrid
                     ThreadsGrid (0,0)
@@ -398,6 +404,7 @@ namespace MDRDesk
                 }
 
                 graphViewer.Graph = graph;
+
                 //graphViewer.GraphCanvas.MouseLeftButtonUp += GraphCanvas_MouseUp;
                 graphViewer.MouseUp += GraphViewer_MouseUp; ;
             }
@@ -425,7 +432,26 @@ namespace MDRDesk
                 VNode node = graphViewer.ObjectUnderMouseCursor as VNode;
                 if (node != null)
                 {
-                    MainStatusShowMessage(node.Node.Label.Text);
+                    string nodeName = node.Node.LabelText;
+                    string indexStr = nodeName.Substring(1, nodeName.IndexOf(']') - 1);
+                    int nodeIndex = Int32.Parse(indexStr);
+                    if (nodeName[0]==Constants.HeavyAsterisk) // blocking obj
+                    {
+
+                    }
+                    else
+                    {
+                        var threadFrames = (ListBox)LogicalTreeHelper.FindLogicalNode(grid, "ThreadFrames");
+                        var threadAliveStackObjects = (ListView)LogicalTreeHelper.FindLogicalNode(grid, "ThreadAliveStackObjects");
+                        var threadDeadStackObjects = (ListView)LogicalTreeHelper.FindLogicalNode(grid, "ThreadDeadStackObjects");
+                        ClrtThread thrd = info.Item2[nodeIndex];
+                        KeyValuePair<string[], string[]> stackobjs = CurrentIndex.GetThreadStackVarsStrings(thrd.LiveStackObjects, thrd.DeadStackObjects, info.Item4);
+                        ((GridViewColumnHeader)((GridView)threadAliveStackObjects.View).Columns[0].Header).Content = nodeName + " Dead Stack Objects [" + stackobjs.Key.Length + ']';
+                        threadAliveStackObjects.ItemsSource = stackobjs.Key;
+                        ((GridViewColumnHeader)((GridView)threadDeadStackObjects.View).Columns[0].Header).Content = nodeName + " Dead Stack Objects [" + stackobjs.Value.Length + ']';
+                        threadDeadStackObjects.ItemsSource = stackobjs.Value;
+                    }
+
                     return;
                 }
             }
@@ -1963,7 +1989,7 @@ namespace MDRDesk
 
         private void DisplayWeakReferenceGrid(ListingInfo info, char prefix, string name, string reportTitle, SWC.MenuItem[] menuItems = null, string filePath = null)
         {
-            var mainGrid = this.TryFindResource("WeakReferenceViewGrid") as Grid;
+            var mainGrid = this.TryFindResource(WeakReferenceViewGrid) as Grid;
             Debug.Assert(mainGrid != null);
             mainGrid.Name = name + "__" + Utils.GetNewID();
             string path;

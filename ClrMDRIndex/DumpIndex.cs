@@ -3531,8 +3531,8 @@ namespace ClrMDRIndex
             int blockId = GetIdFromGraph(id);
             ClrtBlkObject blk = _blocks[blockId];
             if (blk.BlkReason != BlockingReason.None)
-                return "[" + blockId + "] " + Utils.BaseTypeName(GetTypeName(blk.TypeId)) + "/" + blk.BlkReason;
-            return "[" + blockId + "] " + Utils.BaseTypeName(GetTypeName(blk.TypeId));
+                return Constants.HeavyAsterisk + blockId + "] " + Utils.BaseTypeName(GetTypeName(blk.TypeId)) + "/" + blk.BlkReason;
+            return Constants.HeavyAsterisk + blockId + "] " + Utils.BaseTypeName(GetTypeName(blk.TypeId));
         }
 
         public Tuple<ClrtThread[], string[], KeyValuePair<int, ulong>[]> GetThreads(out string error)

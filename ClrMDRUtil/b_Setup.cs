@@ -31,9 +31,10 @@ namespace ClrMDRIndex
         public static int GraphPort { get; private set; }
 
         public static string TypesDisplayMode { get; private set; }
-         public static bool SkipReferences { get; private set; }
+        public static bool SkipReferences { get; private set; }
+        public static bool SkipDeadStackObjects { get; private set; }
 
-         public static void SetDacFolder(string folder)
+        public static void SetDacFolder(string folder)
         {
             DacFolder = folder;
         }
@@ -70,6 +71,10 @@ namespace ClrMDRIndex
         public static void SetSkipIndexingRefs(bool skip)
         {
             SkipReferences = skip;
+        }
+        public static void SetSkipDeadStackObjects(bool skip)
+        {
+            SkipDeadStackObjects = skip;
         }
 
         public static void AddRecentFileList(string path, RecentFiles files)
@@ -111,13 +116,15 @@ namespace ClrMDRIndex
             ProcDumpFolder = string.Empty;
             RecentIndexList = new List<string>();
             RecentAdhocList = new List<string>();
+            SkipReferences = false;
+            SkipDeadStackObjects = true;
             StringBuilder errors = StringBuilderCache.Acquire(256);
 
             try
             {
 #if DEBUG
-                string myfolder = @"D:\Jerzy\WinDbgStuff\MDRDesk\";
-                //string myfolder = @"C:\WinDbgStuff\MDRDesk\";
+                //string myfolder = @"D:\Jerzy\WinDbgStuff\MDRDesk\";
+                string myfolder = @"C:\WinDbgStuff\MDRDesk\";
 #else
                 string myfolder = DumpFileMoniker.MyFolder;
 #endif
@@ -212,13 +219,22 @@ namespace ClrMDRIndex
                         {
                             TypesDisplayMode = appSettings.Settings[key].Value.Trim();
                         }
-                        else if (Utils.SameStrings(ky, "skipreferences"))
+                        else if (Utils.SameStrings(ky, "skipinstancereferences"))
                         {
                             var intStr = appSettings.Settings[key].Value.Trim();
                             if (!string.IsNullOrWhiteSpace(intStr))
                             {
                                 if (string.Compare(intStr, "true", StringComparison.OrdinalIgnoreCase) == 0)
                                     SkipReferences = true;
+                            }
+                        }
+                        else if (Utils.SameStrings(ky, "skipdeadstackobjects"))
+                        {
+                            var intStr = appSettings.Settings[key].Value.Trim();
+                            if (!string.IsNullOrWhiteSpace(intStr))
+                            {
+                                if (string.Compare(intStr, "false", StringComparison.OrdinalIgnoreCase) == 0)
+                                    SkipDeadStackObjects = false;
                             }
                         }
                     }
@@ -266,11 +282,19 @@ namespace ClrMDRIndex
                 settings["mapfolder"].Value = DumpsFolder;
                 settings["procdumpfolder"].Value = ProcDumpFolder;
                 settings["helpfolder"].Value = HelpFolder;
+
                 var skip = SkipReferences ? "true" : "false";
-                if (settings["skipreferences"] == null)
-                    settings.Add("skipreferences", skip);
+                if (settings["skipinstancereferences"] == null)
+                    settings.Add("skipinstancereferences", skip);
                 else
-                    settings["skipreferences"].Value = skip;
+                    settings["skipinstancereferences"].Value = skip;
+
+                skip = SkipDeadStackObjects ? "true" : "false";
+                if (settings["skipdeadstackobjects"] == null)
+                    settings.Add("skipdeadstackobjects", skip);
+                else
+                    settings["skipdeadstackobjects"].Value = skip;
+
                 config.Save(ConfigurationSaveMode.Modified);
                 return true;
             }

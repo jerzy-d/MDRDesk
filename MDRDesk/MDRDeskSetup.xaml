@@ -42,14 +42,14 @@
             <RadioButton x:Name="TypeDisplayClass" Grid.Column="1" GroupName="TypeDisplayMode" Content="Type Name" HorizontalAlignment="Left" Margin="2,2,2,2" VerticalAlignment="Center"/>
             <RadioButton x:Name="TypeDisplayNamespace" Grid.Column="2" GroupName="TypeDisplayMode" Content="Namespace" HorizontalAlignment="Left" Margin="2,2,2,2" VerticalAlignment="Center"/>
         </Grid>
-        <Label Content="Skip indexing references." Grid.Row="5" Grid.Column="0" HorizontalAlignment="Left" Margin="4,2,2,2" VerticalAlignment="Center"  Width="Auto" Height="23" FontSize="10"/>
+        <Label Content="Skip indexing of:" Grid.Row="5" Grid.Column="0" HorizontalAlignment="Left" Margin="4,2,2,2" VerticalAlignment="Center"  Width="Auto" Height="23" FontSize="10"/>
         <Grid Grid.Row="5" Grid.Column="1" Height="23">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="50*" />
                 <ColumnDefinition Width="50*" />
             </Grid.ColumnDefinitions>
-            <RadioButton x:Name="IndexingRefsNo" Grid.Column="0" GroupName="IndexingRefs" Content="No" HorizontalAlignment="Left" Margin="2,2,2,2" VerticalAlignment="Center"/>
-            <RadioButton x:Name="IndexingRefsYes" Grid.Column="1" GroupName="IndexingRefs" Content="Yes" HorizontalAlignment="Left" Margin="2,2,2,2" VerticalAlignment="Center"/>
+            <CheckBox x:Name="IndexInstanceReferences" Grid.Column="0" Content="Instance References" HorizontalAlignment="Left" Margin="2,2,2,2" VerticalAlignment="Center"/>
+            <CheckBox x:Name="IndexDeadStackObjects" Grid.Column="1" Content="Dead Stack Objects" HorizontalAlignment="Left" Margin="2,2,2,2" VerticalAlignment="Center"/>
         </Grid>
         <Button x:Name="ButtonSaveSetup" Grid.Row="6" Grid.Column="0" Content="Save" HorizontalAlignment="Left" Margin="4,2,2,2" VerticalAlignment="Center" Width="90" Height="28" Background="DarkOliveGreen" Click="ButtonSaveSetup_OnClick"/>
         <Button x:Name="ButtonHelp" Grid.Row ="6" Grid.Column="1" HorizontalAlignment="Center" Margin="2,2,2,2" VerticalAlignment="Center" Width="28" Height="28" Click="ButtonHelpClicked" Background="Transparent" BorderThickness="0">

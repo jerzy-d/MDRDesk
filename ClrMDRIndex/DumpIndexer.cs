@@ -189,7 +189,6 @@ namespace ClrMDRIndex
                                                                     progress,
                                                                     _fileMoniker.GetFilePath(r, Constants.MapInstancesFilePostfix)
                                                                     );
-                            //addressesCopy = null;
                             builder.CreateForwardReferences(heap, out error);
                             if (error == null)
                             {
@@ -197,8 +196,6 @@ namespace ClrMDRIndex
                                 {
                                     AddError(r, "CreateBackwardReferences failed." + Environment.NewLine + builder.Error);
                                 }
-                                //referenceBuilderWorker = new Thread(builder.BuildReveresedReferences);
-                                //referenceBuilderWorker.Start();
                             }
                             else
                             {
@@ -244,15 +241,9 @@ namespace ClrMDRIndex
                             AddError(_currentRuntimeIndex, "StringIdDct.DumpInIdOrder failed." + Environment.NewLine + error);
                         }
 
-                        //progress?.Report("Waiting for thread info worker...");
-                        //threadInfoWorker.Join();
-                        //progress?.Report("Waiting for instance refrerences builder...");
-                        //referenceBuilderWorker.Join();
                         error = builder?.Error;
                         if (error != null) AddError(_currentRuntimeIndex, "InstanceReferences building failed." + Environment.NewLine + error);
-                        //                  path = _fileMoniker.GetFilePath(r, Constants.MapInstancesFilePostfix);
-                        //Utils.WriteUlongArray(path, addresses, out error);
-
+ 
                         runtime.Flush();
                         heap = null;
                         progress?.Report(runtimeIndexHeader + "Runtime indexing done...");
@@ -1339,14 +1330,24 @@ namespace ClrMDRIndex
                     }
 
                     var threadLocalAliveVars = thread.EnumerateStackObjects(false).ToArray();
-                    ClrRoot[] all;
-                    if (thread.StackBase!=0 && (thread.StackLimit - thread.StackBase < 10*1024*1024)) {
-                        all = thread.EnumerateStackObjects(true).ToArray();
-                    } else
+                    ClrRoot[] threadLocalDeadVars;
+                    if (!Setup.SkipDeadStackObjects)
                     {
-                        all = Utils.EmptyArray<ClrRoot>.Value;
+                        ClrRoot[] all;
+                        if (thread.StackBase != 0 && (thread.StackLimit - thread.StackBase < 10 * 1024 * 1024))
+                        {
+                            all = thread.EnumerateStackObjects(true).ToArray();
+                        }
+                        else
+                        {
+                            all = Utils.EmptyArray<ClrRoot>.Value;
+                        }
+                        threadLocalDeadVars = all.Except(threadLocalAliveVars, rootEqCmp).ToArray();
                     }
-                    var threadLocalDeadVars = all.Except(threadLocalAliveVars, rootEqCmp).ToArray();
+                    else
+                    {
+                        threadLocalDeadVars = Utils.EmptyArray<ClrRoot>.Value;
+                    }
                     var threadFrames = stackTraceLst.ToArray();
 
                     aliveIds.Clear();
