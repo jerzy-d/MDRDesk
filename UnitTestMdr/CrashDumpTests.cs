@@ -2095,18 +2095,95 @@ namespace UnitTestMdr
         [TestMethod]
         public void TestThreadStackBase()
         {
-            var dmp = OpenDump(@"C:\WinDbgStuff\Dumps\Analytics\Highline\analyticsdump111.dlk.dmp");
-            List<ValueTuple<ulong, ulong, ulong, ClrType>> lst = new List<(ulong, ulong, ulong, ClrType)>(128);
+            var dmp = OpenDump(@"D:\Jerzy\WinDbgStuff\Dumps\Analytics\Highline\analyticsdump111.dlk.dmp");
             using (dmp)
             {
-                var heap = dmp.GetRuntime(0).Heap;
-                ClrThread thread;
-                var threads = DumpIndexer.GetThreads(dmp.Runtime);
-                for (int i = 0, icnt = threads.Length; i < icnt; ++i)
+                StreamWriter sw = null;
+                try
                 {
-                    var th = threads[i];
-                    var obj = heap.GetObjectType(th.Address);
-                    lst.Add((th.StackBase,th.StackLimit,th.StackBase- th.StackLimit,obj));
+                    var aliveList = new List<ClrRoot>();
+                    var allList = new List<ClrRoot>();
+                    var csharpThreadClrTypes = new List<ValueTuple<ClrType,string,ulong,int>>();
+                    string path = dmp.DumpFolder + @"\ThreadInfoTest.txt";
+                    sw = new StreamWriter(path);
+                    var heap = dmp.GetRuntime(0).Heap;
+                    int invalidMngId = 0;
+                    var segs = heap.Segments;
+                    for (int i = 0, icnt = segs.Count; i < icnt; ++i)
+                    {
+                        var seg = segs[i];
+                        ulong addr = seg.FirstObject;
+                        while (addr != 0ul)
+                        {
+                            var clrType = heap.GetObjectType(addr);
+                            if (clrType == null) goto NEXT_OBJECT;
+                            if (Utils.SameStrings("System.Threading.Thread", clrType.Name))
+                            {
+                                ClrInstanceField idFld = clrType.GetFieldByName("m_ManagedThreadId");
+                                int mngThreadId = (int)idFld.GetValue(addr);
+                                if (mngThreadId == 0) mngThreadId = --invalidMngId;
+                                ClrInstanceField nameFld = clrType.GetFieldByName("m_Name");
+                                string name = (string)nameFld.GetValue(addr, false, true);
+                                csharpThreadClrTypes.Add(new ValueTuple<ClrType, string,ulong,int>(clrType,name,addr,mngThreadId));
+                            }
+                            NEXT_OBJECT:
+                            addr = seg.NextObject(addr);
+                        }
+                    }
+
+                    csharpThreadClrTypes.Sort((a, b) => a.Item4 < b.Item4 ? -1 : (a.Item4 > b.Item4 ? 1 : 0));
+
+
+                    var threads = DumpIndexer.GetThreads(dmp.Runtime);
+                    for (int i = 0, icnt = threads.Length; i < icnt; ++i)
+                    {
+                        var th = threads[i];
+                        aliveList.Clear();
+                        allList.Clear();
+                        var aliveStackObjs = th.EnumerateStackObjects(false);
+                        foreach(var r in aliveStackObjs)
+                        {
+                            aliveList.Add(r);
+                        }
+                        var allStackObjs = th.EnumerateStackObjects(true);
+                        foreach (var r in allStackObjs)
+                        {
+                            allList.Add(r);
+                        }
+
+                        ClrType obj = heap.GetObjectType(th.Address);
+                        sw.Write(Utils.RealAddressStringHeader(th.Address));
+                        sw.Write(Utils.RealAddressStringHeader(th.StackBase));
+                        sw.Write(Utils.RealAddressStringHeader(th.StackLimit));
+                        long stackSz = (th.StackLimit > th.StackBase) ? (long)(th.StackLimit - th.StackBase) : (long)(th.StackBase - th.StackLimit);
+                        sw.Write(Utils.SizeStringHeader(stackSz));
+                        sw.Write(Utils.SizeStringHeader(aliveList.Count));
+                        sw.Write(Utils.SizeStringHeader(allList.Count));
+
+                        int ndx 
+
+                        if (csharpThreadClrTypes.ContainsKey(th.ManagedThreadId))
+                        {
+                            (ClrType clrType, string thName, ulong addr) = csharpThreadClrTypes[th.ManagedThreadId];
+                            sw.Write(Utils.RealAddressStringHeader(addr));
+                            sw.Write(thName??"no name" + "  " );
+                        }
+                        else
+                        {
+                            sw.Write(Utils.RealAddressStringHeader(0));
+                            sw.Write("not found ");
+                        }
+                        if (obj != null) sw.Write(obj.Name);
+                        sw.WriteLine();
+                    }
+                }
+                catch(Exception ex)
+                {
+                    Assert.IsTrue(false, ex.ToString());
+                }
+                finally
+                {
+                    sw?.Close();
                 }
             }
         }

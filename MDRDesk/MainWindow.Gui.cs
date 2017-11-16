@@ -367,8 +367,8 @@ namespace MDRDesk
 
                 Microsoft.Msagl.Layout.MDS.MdsLayoutSettings layoutAlgorithmSettings = new Microsoft.Msagl.Layout.MDS.MdsLayoutSettings();
                 //Microsoft.Msagl.Layout.Layered.SugiyamaLayoutSettings layoutAlgorithmSettings = new Microsoft.Msagl.Layout.Layered.SugiyamaLayoutSettings();
-                layoutAlgorithmSettings.NodeSeparation = 40.0;
-                layoutAlgorithmSettings.ClusterMargin = 20;
+                layoutAlgorithmSettings.NodeSeparation = 20.0;
+                //layoutAlgorithmSettings.ClusterMargin = 20;
 
                 graph.LayoutAlgorithmSettings = layoutAlgorithmSettings;
                 
@@ -381,7 +381,7 @@ namespace MDRDesk
                     string nodeLabel = CurrentIndex.GetThreadOrBlkUniqueLabel(i, out isThread);
                     Node node = graph.AddNode(nodeLabel);
                     node.Attr.LabelMargin = 10;
-                    node.Attr.Padding = 20;
+                    node.Attr.Padding = 5;
                     if (isThread)
                     {
                         node.Attr.FillColor = Color.Chocolate;
@@ -450,6 +450,14 @@ namespace MDRDesk
                         threadAliveStackObjects.ItemsSource = stackobjs.Key;
                         ((GridViewColumnHeader)((GridView)threadDeadStackObjects.View).Columns[0].Header).Content = nodeName + " Dead Stack Objects [" + stackobjs.Value.Length + ']';
                         threadDeadStackObjects.ItemsSource = stackobjs.Value;
+
+                        threadFrames.Items.Clear();
+                        string[] allFrames = info.Item3;
+                        int frameCount = thrd.Frames.Length;
+                        for (int i = 0; i < frameCount; ++i)
+                        {
+                            threadFrames.Items.Add(allFrames[thrd.Frames[i]]);
+                        }
                     }
 
                     return;
@@ -2601,12 +2609,6 @@ namespace MDRDesk
         {
             SetStartTaskMainWindowState("Getting thread infos, please wait...");
 
-            //var result = await Task.Run(() =>
-            //{
-            //    string error = null;
-            //    var info = CurrentIndex.GetThreads(out error);
-            //    return new Tuple<string, ClrtThread[], string[], KeyValuePair<int, ulong>[]>(error, info.Item1, info.Item2, info.Item3);
-            //});
             var result = await Task.Factory.StartNew(() =>
             {
                 string error = null;

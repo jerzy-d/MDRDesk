@@ -812,305 +812,305 @@ namespace ClrMDRIndex
             return Utils.DurationString(curDiff) + "/" + Utils.DurationString(newPrevTimespan);
         }
 
-        private void GetThreadsInfos(object param)
-        {
-            string error;
-            var parameters = param as Tuple<string, ulong[], int[], string[]>;
-            Debug.Assert(parameters != null);
-            var clrtDump = new ClrtDump(parameters.Item1);
-            if (!clrtDump.Init(out error))
-            {
-                _errors[_currentRuntimeIndex].Add("GetThreadsInfos failed." + Environment.NewLine + error);
-                return;
-            }
-            var instances = parameters.Item2;
-            var typeIds = parameters.Item3;
-            var typeNames = parameters.Item4;
+        //private void GetThreadsInfos(object param)
+        //{
+        //    string error;
+        //    var parameters = param as Tuple<string, ulong[], int[], string[]>;
+        //    Debug.Assert(parameters != null);
+        //    var clrtDump = new ClrtDump(parameters.Item1);
+        //    if (!clrtDump.Init(out error))
+        //    {
+        //        _errors[_currentRuntimeIndex].Add("GetThreadsInfos failed." + Environment.NewLine + error);
+        //        return;
+        //    }
+        //    var instances = parameters.Item2;
+        //    var typeIds = parameters.Item3;
+        //    var typeNames = parameters.Item4;
 
-            BinaryWriter bw = null;
-            StreamWriter sw = null;
-            try
-            {
-                var heap = clrtDump.Runtimes[_currentRuntimeIndex].Heap;
-                var threads = DumpIndexer.GetThreads(clrtDump.Runtimes[_currentRuntimeIndex]);
-                var blocks = DumpIndexer.GetBlockingObjects(heap);
+        //    BinaryWriter bw = null;
+        //    StreamWriter sw = null;
+        //    try
+        //    {
+        //        var heap = clrtDump.Runtimes[_currentRuntimeIndex].Heap;
+        //        var threads = DumpIndexer.GetThreads(clrtDump.Runtimes[_currentRuntimeIndex]);
+        //        var blocks = DumpIndexer.GetBlockingObjects(heap);
 
 
-                var threadSet = new HashSet<ClrThread>(new ClrThreadEqualityCmp());
-                var blkGraph = new List<Tuple<BlockingObject, ClrThread[], ClrThread[]>>();
-                var allBlkList = new List<BlockingObject>();
-                var owners = new List<ClrThread>();
-                var waiters = new List<ClrThread>();
+        //        var threadSet = new HashSet<ClrThread>(new ClrThreadEqualityCmp());
+        //        var blkGraph = new List<Tuple<BlockingObject, ClrThread[], ClrThread[]>>();
+        //        var allBlkList = new List<BlockingObject>();
+        //        var owners = new List<ClrThread>();
+        //        var waiters = new List<ClrThread>();
 
-                for (int i = 0, icnt = blocks.Length; i < icnt; ++i)
-                {
-                    var blk = blocks[i];
-                    owners.Clear();
-                    waiters.Clear();
-                    ClrThread owner = null;
-                    if (blk.Taken && blk.HasSingleOwner)
-                    {
-                        owner = blk.Owner;
-                        if (owner != null)
-                        {
-                            threadSet.Add(owner);
-                            owners.Add(owner);
-                        }
-                    }
+        //        for (int i = 0, icnt = blocks.Length; i < icnt; ++i)
+        //        {
+        //            var blk = blocks[i];
+        //            owners.Clear();
+        //            waiters.Clear();
+        //            ClrThread owner = null;
+        //            if (blk.Taken && blk.HasSingleOwner)
+        //            {
+        //                owner = blk.Owner;
+        //                if (owner != null)
+        //                {
+        //                    threadSet.Add(owner);
+        //                    owners.Add(owner);
+        //                }
+        //            }
 
-                    if (blk.Owners != null && blk.Owners.Count > 0)
-                    {
-                        for (int j = 0, jcnt = blk.Owners.Count; j < jcnt; ++j)
-                        {
-                            var th = blk.Owners[j];
-                            if (th != null)
-                            {
-                                threadSet.Add(th);
-                                if (owner == null || owner.Address != th.Address)
-                                    owners.Add(th);
-                            }
-                        }
-                    }
+        //            if (blk.Owners != null && blk.Owners.Count > 0)
+        //            {
+        //                for (int j = 0, jcnt = blk.Owners.Count; j < jcnt; ++j)
+        //                {
+        //                    var th = blk.Owners[j];
+        //                    if (th != null)
+        //                    {
+        //                        threadSet.Add(th);
+        //                        if (owner == null || owner.Address != th.Address)
+        //                            owners.Add(th);
+        //                    }
+        //                }
+        //            }
 
-                    if (blk.Waiters != null && blk.Waiters.Count > 0)
-                    {
-                        for (int j = 0, jcnt = blk.Waiters.Count; j < jcnt; ++j)
-                        {
-                            var th = blk.Waiters[j];
-                            if (th != null)
-                            {
-                                threadSet.Add(th);
-                                waiters.Add(th);
-                            }
-                        }
-                    }
+        //            if (blk.Waiters != null && blk.Waiters.Count > 0)
+        //            {
+        //                for (int j = 0, jcnt = blk.Waiters.Count; j < jcnt; ++j)
+        //                {
+        //                    var th = blk.Waiters[j];
+        //                    if (th != null)
+        //                    {
+        //                        threadSet.Add(th);
+        //                        waiters.Add(th);
+        //                    }
+        //                }
+        //            }
 
-                    if (owners.Count > 0)
-                    {
-                        var ownerAry = owners.ToArray();
-                        var waiterAry = waiters.ToArray();
-                        blkGraph.Add(new Tuple<BlockingObject, ClrThread[], ClrThread[]>(blk, ownerAry, waiterAry));
-                        allBlkList.Add(blk);
-                    }
-                    else if (waiters.Count > 0)
-                    {
-                        blkGraph.Add(new Tuple<BlockingObject, ClrThread[], ClrThread[]>(blk, Utils.EmptyArray<ClrThread>.Value,
-                            waiters.ToArray()));
-                        allBlkList.Add(blk);
-                    }
-                }
+        //            if (owners.Count > 0)
+        //            {
+        //                var ownerAry = owners.ToArray();
+        //                var waiterAry = waiters.ToArray();
+        //                blkGraph.Add(new Tuple<BlockingObject, ClrThread[], ClrThread[]>(blk, ownerAry, waiterAry));
+        //                allBlkList.Add(blk);
+        //            }
+        //            else if (waiters.Count > 0)
+        //            {
+        //                blkGraph.Add(new Tuple<BlockingObject, ClrThread[], ClrThread[]>(blk, Utils.EmptyArray<ClrThread>.Value,
+        //                    waiters.ToArray()));
+        //                allBlkList.Add(blk);
+        //            }
+        //        }
 
-                var thrCmp = new ClrThreadCmp();
-                var blkCmp = new BlockingObjectCmp();
-                var blkInfoCmp = new BlkObjInfoCmp();
+        //        var thrCmp = new ClrThreadCmp();
+        //        var blkCmp = new BlockingObjectCmp();
+        //        var blkInfoCmp = new BlkObjInfoCmp();
 
-                // blocks and threads found in blocking objects
-                //
-                var blkThreadAry = threadSet.ToArray();
-                Array.Sort(blkThreadAry, thrCmp);
-                var blkBlockAry = allBlkList.ToArray();
-                Array.Sort(blkBlockAry, blkCmp);
-                var threadBlocksAry = blkGraph.ToArray();
-                Array.Sort(threadBlocksAry, blkInfoCmp);
+        //        // blocks and threads found in blocking objects
+        //        //
+        //        var blkThreadAry = threadSet.ToArray();
+        //        Array.Sort(blkThreadAry, thrCmp);
+        //        var blkBlockAry = allBlkList.ToArray();
+        //        Array.Sort(blkBlockAry, blkCmp);
+        //        var threadBlocksAry = blkGraph.ToArray();
+        //        Array.Sort(threadBlocksAry, blkInfoCmp);
 
-                // create maps
-                //
-                int[] blkMap = new int[blkBlockAry.Length];
-                int[] thrMap = new int[blkThreadAry.Length];
-                for (int i = 0, icnt = blkMap.Length; i < icnt; ++i)
-                {
-                    blkMap[i] = Array.BinarySearch(blocks, blkBlockAry[i], blkCmp);
-                    Debug.Assert(blkMap[i] >= 0);
-                }
+        //        // create maps
+        //        //
+        //        int[] blkMap = new int[blkBlockAry.Length];
+        //        int[] thrMap = new int[blkThreadAry.Length];
+        //        for (int i = 0, icnt = blkMap.Length; i < icnt; ++i)
+        //        {
+        //            blkMap[i] = Array.BinarySearch(blocks, blkBlockAry[i], blkCmp);
+        //            Debug.Assert(blkMap[i] >= 0);
+        //        }
 
-                for (int i = 0, icnt = thrMap.Length; i < icnt; ++i)
-                {
-                    thrMap[i] = Array.BinarySearch(threads, blkThreadAry[i], thrCmp);
-                    Debug.Assert(thrMap[i] >= 0);
-                }
+        //        for (int i = 0, icnt = thrMap.Length; i < icnt; ++i)
+        //        {
+        //            thrMap[i] = Array.BinarySearch(threads, blkThreadAry[i], thrCmp);
+        //            Debug.Assert(thrMap[i] >= 0);
+        //        }
 
-                int blkThreadCount = blkThreadAry.Length;
-                Digraph graph = new Digraph(blkThreadCount + blkBlockAry.Length);
+        //        int blkThreadCount = blkThreadAry.Length;
+        //        Digraph graph = new Digraph(blkThreadCount + blkBlockAry.Length);
 
-                for (int i = 0, cnt = threadBlocksAry.Length; i < cnt; ++i)
-                {
-                    var blkInfo = threadBlocksAry[i];
-                    for (int j = 0, tcnt = blkInfo.Item2.Length; j < tcnt; ++j)
-                    {
-                        var ndx = Array.BinarySearch(blkThreadAry, blkInfo.Item2[j], thrCmp);
-                        Debug.Assert(ndx >= 0);
-                        graph.AddDistinctEdge(blkThreadCount + i, ndx);
-                    }
-                    for (int j = 0, tcnt = blkInfo.Item3.Length; j < tcnt; ++j)
-                    {
-                        var ndx = Array.BinarySearch(blkThreadAry, blkInfo.Item3[j], thrCmp);
-                        Debug.Assert(ndx >= 0);
-                        graph.AddDistinctEdge(ndx, blkThreadCount + i);
-                    }
-                }
+        //        for (int i = 0, cnt = threadBlocksAry.Length; i < cnt; ++i)
+        //        {
+        //            var blkInfo = threadBlocksAry[i];
+        //            for (int j = 0, tcnt = blkInfo.Item2.Length; j < tcnt; ++j)
+        //            {
+        //                var ndx = Array.BinarySearch(blkThreadAry, blkInfo.Item2[j], thrCmp);
+        //                Debug.Assert(ndx >= 0);
+        //                graph.AddDistinctEdge(blkThreadCount + i, ndx);
+        //            }
+        //            for (int j = 0, tcnt = blkInfo.Item3.Length; j < tcnt; ++j)
+        //            {
+        //                var ndx = Array.BinarySearch(blkThreadAry, blkInfo.Item3[j], thrCmp);
+        //                Debug.Assert(ndx >= 0);
+        //                graph.AddDistinctEdge(ndx, blkThreadCount + i);
+        //            }
+        //        }
 
-                var cycle = new DirectedCycle(graph);
-                var cycles = cycle.GetCycle();
+        //        var cycle = new DirectedCycle(graph);
+        //        var cycles = cycle.GetCycle();
 
-                // save graph
-                //
-                var path = _fileMoniker.GetFilePath(_currentRuntimeIndex, Constants.MapThreadsAndBlocksGraphFilePostfix);
-                bw = new BinaryWriter(File.Open(path, FileMode.Create));
-                bw.Write(cycles.Length);
-                for (int i = 0, icnt = cycles.Length; i < icnt; ++i)
-                {
-                    bw.Write(cycles[i]);
-                }
-                bw.Write(thrMap.Length);
-                for (int i = 0, icnt = thrMap.Length; i < icnt; ++i)
-                {
-                    bw.Write(thrMap[i]);
-                }
-                bw.Write(blkMap.Length);
-                for (int i = 0, icnt = blkMap.Length; i < icnt; ++i)
-                {
-                    bw.Write(blkMap[i]);
-                }
-                graph.Dump(bw, out error);
-                bw.Close();
-                bw = null;
-                if (error != null)
-                    AddError(_currentRuntimeIndex, "Exception in GetThreadsInfos." + Environment.NewLine + error);
+        //        // save graph
+        //        //
+        //        var path = _fileMoniker.GetFilePath(_currentRuntimeIndex, Constants.MapThreadsAndBlocksGraphFilePostfix);
+        //        bw = new BinaryWriter(File.Open(path, FileMode.Create));
+        //        bw.Write(cycles.Length);
+        //        for (int i = 0, icnt = cycles.Length; i < icnt; ++i)
+        //        {
+        //            bw.Write(cycles[i]);
+        //        }
+        //        bw.Write(thrMap.Length);
+        //        for (int i = 0, icnt = thrMap.Length; i < icnt; ++i)
+        //        {
+        //            bw.Write(thrMap[i]);
+        //        }
+        //        bw.Write(blkMap.Length);
+        //        for (int i = 0, icnt = blkMap.Length; i < icnt; ++i)
+        //        {
+        //            bw.Write(blkMap[i]);
+        //        }
+        //        graph.Dump(bw, out error);
+        //        bw.Close();
+        //        bw = null;
+        //        if (error != null)
+        //            AddError(_currentRuntimeIndex, "Exception in GetThreadsInfos." + Environment.NewLine + error);
 
-                // get frames info
-                //
-                var frames = new StringIdDct();
-                var stObjCmp = new Utils.KVIntUlongCmpAsc();
-                var stackObject = new SortedDictionary<KeyValuePair<int, ulong>, int>(stObjCmp);
-                var stackTraceLst = new List<ClrStackFrame>();
-                var rootEqCmp = new ClrRootEqualityComparer();
-                var frameIds = new List<int>();
-                var frameStackPtrs = new List<ulong>();
-                var aliveIds = new List<int>();
-                var deadIds = new List<int>();
+        //        // get frames info
+        //        //
+        //        var frames = new StringIdDct();
+        //        var stObjCmp = new Utils.KVIntUlongCmpAsc();
+        //        var stackObject = new SortedDictionary<KeyValuePair<int, ulong>, int>(stObjCmp);
+        //        var stackTraceLst = new List<ClrStackFrame>();
+        //        var rootEqCmp = new ClrRootEqualityComparer();
+        //        var frameIds = new List<int>();
+        //        var frameStackPtrs = new List<ulong>();
+        //        var aliveIds = new List<int>();
+        //        var deadIds = new List<int>();
 
-                // save threads and blocks, generate stack info
-                //
-                path = _fileMoniker.GetFilePath(_currentRuntimeIndex, Constants.MapThreadsAndBlocksFilePostfix);
-                bw = new BinaryWriter(File.Open(path, FileMode.Create));
-                bw.Write(threads.Length);
-                for (int i = 0, icnt = threads.Length; i < icnt; ++i)
-                {
-                    var thread = threads[i];
-                    stackTraceLst.Clear();
-                    foreach (var st in thread.EnumerateStackTrace())
-                    {
-                        stackTraceLst.Add(st);
-                        if (stackTraceLst.Count > 100) break;
-                    }
+        //        // save threads and blocks, generate stack info
+        //        //
+        //        path = _fileMoniker.GetFilePath(_currentRuntimeIndex, Constants.MapThreadsAndBlocksFilePostfix);
+        //        bw = new BinaryWriter(File.Open(path, FileMode.Create));
+        //        bw.Write(threads.Length);
+        //        for (int i = 0, icnt = threads.Length; i < icnt; ++i)
+        //        {
+        //            var thread = threads[i];
+        //            stackTraceLst.Clear();
+        //            foreach (var st in thread.EnumerateStackTrace())
+        //            {
+        //                stackTraceLst.Add(st);
+        //                if (stackTraceLst.Count > 100) break;
+        //            }
 
-                    var threadLocalAliveVars = thread.EnumerateStackObjects(false).ToArray();
-                    var all = thread.EnumerateStackObjects(true).ToArray();
-                    var threadLocalDeadVars = all.Except(threadLocalAliveVars, rootEqCmp).ToArray();
-                    var threadFrames = stackTraceLst.ToArray();
+        //            var threadLocalAliveVars = thread.EnumerateStackObjects(false).ToArray();
+        //            var all = thread.EnumerateStackObjects(true).ToArray();
+        //            var threadLocalDeadVars = all.Except(threadLocalAliveVars, rootEqCmp).ToArray();
+        //            var threadFrames = stackTraceLst.ToArray();
 
-                    aliveIds.Clear();
-                    for (int j = 0, jcnt = threadLocalAliveVars.Length; j < jcnt; ++j)
-                    {
-                        ClrRoot root = threadLocalAliveVars[j];
-                        ClrType clrType = heap.GetObjectType(root.Object);
-                        var typeName = clrType == null ? Constants.NullTypeName : clrType.Name;
-                        var typeId = Array.BinarySearch(typeNames, typeName, StringComparer.Ordinal);
-                        if (typeId < 0) typeId = Constants.InvalidIndex;
-                        int stackId;
-                        if (!stackObject.TryGetValue(new KeyValuePair<int, ulong>(typeId, root.Object), out stackId))
-                        {
-                            stackId = stackObject.Count;
-                            stackObject.Add(new KeyValuePair<int, ulong>(typeId, root.Object), stackId);
-                        }
-                        aliveIds.Add(stackId);
-                    }
+        //            aliveIds.Clear();
+        //            for (int j = 0, jcnt = threadLocalAliveVars.Length; j < jcnt; ++j)
+        //            {
+        //                ClrRoot root = threadLocalAliveVars[j];
+        //                ClrType clrType = heap.GetObjectType(root.Object);
+        //                var typeName = clrType == null ? Constants.NullTypeName : clrType.Name;
+        //                var typeId = Array.BinarySearch(typeNames, typeName, StringComparer.Ordinal);
+        //                if (typeId < 0) typeId = Constants.InvalidIndex;
+        //                int stackId;
+        //                if (!stackObject.TryGetValue(new KeyValuePair<int, ulong>(typeId, root.Object), out stackId))
+        //                {
+        //                    stackId = stackObject.Count;
+        //                    stackObject.Add(new KeyValuePair<int, ulong>(typeId, root.Object), stackId);
+        //                }
+        //                aliveIds.Add(stackId);
+        //            }
 
-                    deadIds.Clear();
-                    for (int j = 0, jcnt = threadLocalDeadVars.Length; j < jcnt; ++j)
-                    {
-                        ClrRoot root = threadLocalDeadVars[j];
-                        ClrType clrType = heap.GetObjectType(root.Object);
-                        var typeName = clrType == null ? Constants.NullTypeName : clrType.Name;
-                        var typeId = Array.BinarySearch(typeNames, typeName, StringComparer.Ordinal);
-                        if (typeId < 0) typeId = Constants.InvalidIndex;
-                        int stackId;
-                        if (!stackObject.TryGetValue(new KeyValuePair<int, ulong>(typeId, root.Object), out stackId))
-                        {
-                            stackId = stackObject.Count;
-                            stackObject.Add(new KeyValuePair<int, ulong>(typeId, root.Object), stackId);
-                        }
-                        deadIds.Add(stackId);
-                    }
+        //            deadIds.Clear();
+        //            for (int j = 0, jcnt = threadLocalDeadVars.Length; j < jcnt; ++j)
+        //            {
+        //                ClrRoot root = threadLocalDeadVars[j];
+        //                ClrType clrType = heap.GetObjectType(root.Object);
+        //                var typeName = clrType == null ? Constants.NullTypeName : clrType.Name;
+        //                var typeId = Array.BinarySearch(typeNames, typeName, StringComparer.Ordinal);
+        //                if (typeId < 0) typeId = Constants.InvalidIndex;
+        //                int stackId;
+        //                if (!stackObject.TryGetValue(new KeyValuePair<int, ulong>(typeId, root.Object), out stackId))
+        //                {
+        //                    stackId = stackObject.Count;
+        //                    stackObject.Add(new KeyValuePair<int, ulong>(typeId, root.Object), stackId);
+        //                }
+        //                deadIds.Add(stackId);
+        //            }
 
-                    frameIds.Clear();
-                    frameStackPtrs.Clear();
-                    for (int j = 0, jcnt = threadFrames.Length; j < jcnt; ++j)
-                    {
-                        ClrStackFrame fr = threadFrames[j];
-                        frameStackPtrs.Add(fr.StackPointer);
-                        if (fr.Method != null)
-                        {
-                            string fullSig = fr.Method.GetFullSignature();
-                            if (fullSig == null)
-                                fullSig = fr.Method.Name;
-                            if (fullSig == null) fullSig = "UKNOWN METHOD";
-                            var frameStr = Utils.RealAddressStringHeader(fr.InstructionPointer) + fullSig;
-                            var frId = frames.JustGetId(frameStr);
-                            frameIds.Add(frId);
-                        }
-                        else
-                        {
-                            string sig = string.IsNullOrEmpty(fr.DisplayString) ? "UKNOWN METHOD" : fr.DisplayString;
-                            var frameStr = Utils.RealAddressStringHeader(fr.InstructionPointer) + sig;
-                            var frId = frames.JustGetId(frameStr);
-                            frameIds.Add(frId);
-                        }
-                    }
+        //            frameIds.Clear();
+        //            frameStackPtrs.Clear();
+        //            for (int j = 0, jcnt = threadFrames.Length; j < jcnt; ++j)
+        //            {
+        //                ClrStackFrame fr = threadFrames[j];
+        //                frameStackPtrs.Add(fr.StackPointer);
+        //                if (fr.Method != null)
+        //                {
+        //                    string fullSig = fr.Method.GetFullSignature();
+        //                    if (fullSig == null)
+        //                        fullSig = fr.Method.Name;
+        //                    if (fullSig == null) fullSig = "UKNOWN METHOD";
+        //                    var frameStr = Utils.RealAddressStringHeader(fr.InstructionPointer) + fullSig;
+        //                    var frId = frames.JustGetId(frameStr);
+        //                    frameIds.Add(frId);
+        //                }
+        //                else
+        //                {
+        //                    string sig = string.IsNullOrEmpty(fr.DisplayString) ? "UKNOWN METHOD" : fr.DisplayString;
+        //                    var frameStr = Utils.RealAddressStringHeader(fr.InstructionPointer) + sig;
+        //                    var frId = frames.JustGetId(frameStr);
+        //                    frameIds.Add(frId);
+        //                }
+        //            }
 
-                    var clrtThread = new ClrtThread(thread, blocks, blkCmp, frameIds.ToArray(), frameStackPtrs.ToArray(), aliveIds.ToArray(), deadIds.ToArray());
-                    Debug.Assert(clrtThread != null);
-                    clrtThread.Dump(bw);
-                }
+        //            var clrtThread = new ClrtThread(thread, blocks, blkCmp, frameIds.ToArray(), frameStackPtrs.ToArray(), aliveIds.ToArray(), deadIds.ToArray());
+        //            Debug.Assert(clrtThread != null);
+        //            clrtThread.Dump(bw);
+        //        }
 
-                bw.Write(blocks.Length);
-                for (int i = 0, icnt = blocks.Length; i < icnt; ++i)
-                {
-                    var blk = blocks[i];
-                    var ndx = Array.BinarySearch(blkBlockAry, blk, blkCmp);
-                    var typeId = GetTypeId(blk.Object, instances, typeIds);
-                    var clrtBlock = new ClrtBlkObject(blk, ndx, typeId);
-                    Debug.Assert(clrtBlock != null);
-                    clrtBlock.Dump(bw);
-                }
-                Utils.CloseStream(ref bw);
+        //        bw.Write(blocks.Length);
+        //        for (int i = 0, icnt = blocks.Length; i < icnt; ++i)
+        //        {
+        //            var blk = blocks[i];
+        //            var ndx = Array.BinarySearch(blkBlockAry, blk, blkCmp);
+        //            var typeId = GetTypeId(blk.Object, instances, typeIds);
+        //            var clrtBlock = new ClrtBlkObject(blk, ndx, typeId);
+        //            Debug.Assert(clrtBlock != null);
+        //            clrtBlock.Dump(bw);
+        //        }
+        //        Utils.CloseStream(ref bw);
 
-                path = _fileMoniker.GetFilePath(_currentRuntimeIndex, Constants.MapThreadFramesFilePostfix);
-                bw = new BinaryWriter(File.Open(path, FileMode.Create));
-                var ary = stackObject.ToArray();
-                Array.Sort(ary, (a, b) => a.Value < b.Value ? -1 : (a.Value > b.Value ? 1 : 0));
-                bw.Write(ary.Length);
-                for (int i = 0, icnt = ary.Length; i < icnt; ++i)
-                {
-                    bw.Write(ary[i].Key.Key);
-                    bw.Write(ary[i].Key.Value);
-                }
-                Utils.CloseStream(ref bw);
-                path = _fileMoniker.GetFilePath(_currentRuntimeIndex, Constants.TxtThreadFrameDescriptionFilePostfix);
-                frames.DumpInIdOrder(path, out error);
-            }
-            catch (Exception ex)
-            {
-                AddError(_currentRuntimeIndex,
-                    "Exception in GetThreadsInfos." + Environment.NewLine + Utils.GetExceptionErrorString(ex));
-            }
-            finally
-            {
-                bw?.Close();
-                sw?.Close();
-                clrtDump?.Dispose();
-            }
-        }
+        //        path = _fileMoniker.GetFilePath(_currentRuntimeIndex, Constants.MapThreadFramesFilePostfix);
+        //        bw = new BinaryWriter(File.Open(path, FileMode.Create));
+        //        var ary = stackObject.ToArray();
+        //        Array.Sort(ary, (a, b) => a.Value < b.Value ? -1 : (a.Value > b.Value ? 1 : 0));
+        //        bw.Write(ary.Length);
+        //        for (int i = 0, icnt = ary.Length; i < icnt; ++i)
+        //        {
+        //            bw.Write(ary[i].Key.Key);
+        //            bw.Write(ary[i].Key.Value);
+        //        }
+        //        Utils.CloseStream(ref bw);
+        //        path = _fileMoniker.GetFilePath(_currentRuntimeIndex, Constants.TxtThreadFrameDescriptionFilePostfix);
+        //        frames.DumpInIdOrder(path, out error);
+        //    }
+        //    catch (Exception ex)
+        //    {
+        //        AddError(_currentRuntimeIndex,
+        //            "Exception in GetThreadsInfos." + Environment.NewLine + Utils.GetExceptionErrorString(ex));
+        //    }
+        //    finally
+        //    {
+        //        bw?.Close();
+        //        sw?.Close();
+        //        clrtDump?.Dispose();
+        //    }
+        //}
 
 
         private void GetThreadsInfos(ClrRuntime runtm, ulong[] instances, int[] typeIds, string[] typeNames, IProgress<string> progress = null)
@@ -1329,14 +1329,15 @@ namespace ClrMDRIndex
                         if (stackTraceLst.Count > 100) break;
                     }
 
-                    var threadLocalAliveVars = thread.EnumerateStackObjects(false).ToArray();
+                    ClrRoot[] threadLocalAliveVars = Utils.GetArray<ClrRoot>(thread.EnumerateStackObjects(false));
                     ClrRoot[] threadLocalDeadVars;
                     if (!Setup.SkipDeadStackObjects)
                     {
                         ClrRoot[] all;
-                        if (thread.StackBase != 0 && (thread.StackLimit - thread.StackBase < 10 * 1024 * 1024))
+                        long stackSz = (thread.StackLimit > thread.StackBase) ? (long)(thread.StackLimit - thread.StackBase) : (long)(thread.StackBase - thread.StackLimit);
+                        if (thread.StackBase != 0 && (stackSz < 10 * 1024 * 1024))
                         {
-                            all = thread.EnumerateStackObjects(true).ToArray();
+                            all = Utils.GetArray<ClrRoot>(thread.EnumerateStackObjects(true));
                         }
                         else
                         {
@@ -1455,300 +1456,300 @@ namespace ClrMDRIndex
         }
 
 
-        private void GetThreadsInfos2(object param)
-        {
-            var parameters = param as Tuple<ClrtDump, ulong[], int[], string[]>;
-            Debug.Assert(parameters != null);
-            var clrtDump = parameters.Item1;
-            var instances = parameters.Item2;
-            var typeIds = parameters.Item3;
-            var typeNames = parameters.Item4;
+        //private void GetThreadsInfos2(object param)
+        //{
+        //    var parameters = param as Tuple<ClrtDump, ulong[], int[], string[]>;
+        //    Debug.Assert(parameters != null);
+        //    var clrtDump = parameters.Item1;
+        //    var instances = parameters.Item2;
+        //    var typeIds = parameters.Item3;
+        //    var typeNames = parameters.Item4;
 
-            BinaryWriter bw = null;
-            StreamWriter sw = null;
-            try
-            {
-                var heap = clrtDump.Runtimes[_currentRuntimeIndex].Heap;
-                var threads = DumpIndexer.GetThreads(clrtDump.Runtimes[_currentRuntimeIndex]);
-                var blocks = DumpIndexer.GetBlockingObjects(heap);
+        //    BinaryWriter bw = null;
+        //    StreamWriter sw = null;
+        //    try
+        //    {
+        //        var heap = clrtDump.Runtimes[_currentRuntimeIndex].Heap;
+        //        var threads = DumpIndexer.GetThreads(clrtDump.Runtimes[_currentRuntimeIndex]);
+        //        var blocks = DumpIndexer.GetBlockingObjects(heap);
 
 
-                var threadSet = new HashSet<ClrThread>(new ClrThreadEqualityCmp());
-                var blkGraph = new List<Tuple<BlockingObject, ClrThread[], ClrThread[]>>();
-                var allBlkList = new List<BlockingObject>();
-                var owners = new List<ClrThread>();
-                var waiters = new List<ClrThread>();
+        //        var threadSet = new HashSet<ClrThread>(new ClrThreadEqualityCmp());
+        //        var blkGraph = new List<Tuple<BlockingObject, ClrThread[], ClrThread[]>>();
+        //        var allBlkList = new List<BlockingObject>();
+        //        var owners = new List<ClrThread>();
+        //        var waiters = new List<ClrThread>();
 
-                for (int i = 0, icnt = blocks.Length; i < icnt; ++i)
-                {
-                    var blk = blocks[i];
-                    owners.Clear();
-                    waiters.Clear();
-                    ClrThread owner = null;
-                    if (blk.Taken && blk.HasSingleOwner)
-                    {
-                        owner = blk.Owner;
-                        if (owner != null)
-                        {
-                            threadSet.Add(owner);
-                            owners.Add(owner);
-                        }
-                    }
+        //        for (int i = 0, icnt = blocks.Length; i < icnt; ++i)
+        //        {
+        //            var blk = blocks[i];
+        //            owners.Clear();
+        //            waiters.Clear();
+        //            ClrThread owner = null;
+        //            if (blk.Taken && blk.HasSingleOwner)
+        //            {
+        //                owner = blk.Owner;
+        //                if (owner != null)
+        //                {
+        //                    threadSet.Add(owner);
+        //                    owners.Add(owner);
+        //                }
+        //            }
 
-                    if (blk.Owners != null && blk.Owners.Count > 0)
-                    {
-                        for (int j = 0, jcnt = blk.Owners.Count; j < jcnt; ++j)
-                        {
-                            var th = blk.Owners[j];
-                            if (th != null)
-                            {
-                                threadSet.Add(th);
-                                if (owner == null || owner.Address != th.Address)
-                                    owners.Add(th);
-                            }
-                        }
-                    }
+        //            if (blk.Owners != null && blk.Owners.Count > 0)
+        //            {
+        //                for (int j = 0, jcnt = blk.Owners.Count; j < jcnt; ++j)
+        //                {
+        //                    var th = blk.Owners[j];
+        //                    if (th != null)
+        //                    {
+        //                        threadSet.Add(th);
+        //                        if (owner == null || owner.Address != th.Address)
+        //                            owners.Add(th);
+        //                    }
+        //                }
+        //            }
 
-                    if (blk.Waiters != null && blk.Waiters.Count > 0)
-                    {
-                        for (int j = 0, jcnt = blk.Waiters.Count; j < jcnt; ++j)
-                        {
-                            var th = blk.Waiters[j];
-                            if (th != null)
-                            {
-                                threadSet.Add(th);
-                                waiters.Add(th);
-                            }
-                        }
-                    }
+        //            if (blk.Waiters != null && blk.Waiters.Count > 0)
+        //            {
+        //                for (int j = 0, jcnt = blk.Waiters.Count; j < jcnt; ++j)
+        //                {
+        //                    var th = blk.Waiters[j];
+        //                    if (th != null)
+        //                    {
+        //                        threadSet.Add(th);
+        //                        waiters.Add(th);
+        //                    }
+        //                }
+        //            }
 
-                    if (owners.Count > 0)
-                    {
-                        var ownerAry = owners.ToArray();
-                        var waiterAry = waiters.ToArray();
-                        blkGraph.Add(new Tuple<BlockingObject, ClrThread[], ClrThread[]>(blk, ownerAry, waiterAry));
-                        allBlkList.Add(blk);
-                    }
-                    else if (waiters.Count > 0)
-                    {
-                        blkGraph.Add(new Tuple<BlockingObject, ClrThread[], ClrThread[]>(blk, Utils.EmptyArray<ClrThread>.Value,
-                            waiters.ToArray()));
-                        allBlkList.Add(blk);
-                    }
-                }
+        //            if (owners.Count > 0)
+        //            {
+        //                var ownerAry = owners.ToArray();
+        //                var waiterAry = waiters.ToArray();
+        //                blkGraph.Add(new Tuple<BlockingObject, ClrThread[], ClrThread[]>(blk, ownerAry, waiterAry));
+        //                allBlkList.Add(blk);
+        //            }
+        //            else if (waiters.Count > 0)
+        //            {
+        //                blkGraph.Add(new Tuple<BlockingObject, ClrThread[], ClrThread[]>(blk, Utils.EmptyArray<ClrThread>.Value,
+        //                    waiters.ToArray()));
+        //                allBlkList.Add(blk);
+        //            }
+        //        }
 
-                var thrCmp = new ClrThreadCmp();
-                var blkCmp = new BlockingObjectCmp();
-                var blkInfoCmp = new BlkObjInfoCmp();
+        //        var thrCmp = new ClrThreadCmp();
+        //        var blkCmp = new BlockingObjectCmp();
+        //        var blkInfoCmp = new BlkObjInfoCmp();
 
-                // blocks and threads found in blocking objects
-                //
-                var blkThreadAry = threadSet.ToArray();
-                Array.Sort(blkThreadAry, thrCmp);
-                var blkBlockAry = allBlkList.ToArray();
-                Array.Sort(blkBlockAry, blkCmp);
-                var threadBlocksAry = blkGraph.ToArray();
-                Array.Sort(threadBlocksAry, blkInfoCmp);
+        //        // blocks and threads found in blocking objects
+        //        //
+        //        var blkThreadAry = threadSet.ToArray();
+        //        Array.Sort(blkThreadAry, thrCmp);
+        //        var blkBlockAry = allBlkList.ToArray();
+        //        Array.Sort(blkBlockAry, blkCmp);
+        //        var threadBlocksAry = blkGraph.ToArray();
+        //        Array.Sort(threadBlocksAry, blkInfoCmp);
 
-                // create maps
-                //
-                int[] blkMap = new int[blkBlockAry.Length];
-                int[] thrMap = new int[blkThreadAry.Length];
-                for (int i = 0, icnt = blkMap.Length; i < icnt; ++i)
-                {
-                    blkMap[i] = Array.BinarySearch(blocks, blkBlockAry[i], blkCmp);
-                    Debug.Assert(blkMap[i] >= 0);
-                }
+        //        // create maps
+        //        //
+        //        int[] blkMap = new int[blkBlockAry.Length];
+        //        int[] thrMap = new int[blkThreadAry.Length];
+        //        for (int i = 0, icnt = blkMap.Length; i < icnt; ++i)
+        //        {
+        //            blkMap[i] = Array.BinarySearch(blocks, blkBlockAry[i], blkCmp);
+        //            Debug.Assert(blkMap[i] >= 0);
+        //        }
 
-                for (int i = 0, icnt = thrMap.Length; i < icnt; ++i)
-                {
-                    thrMap[i] = Array.BinarySearch(threads, blkThreadAry[i], thrCmp);
-                    Debug.Assert(thrMap[i] >= 0);
-                }
+        //        for (int i = 0, icnt = thrMap.Length; i < icnt; ++i)
+        //        {
+        //            thrMap[i] = Array.BinarySearch(threads, blkThreadAry[i], thrCmp);
+        //            Debug.Assert(thrMap[i] >= 0);
+        //        }
 
-                int blkThreadCount = blkThreadAry.Length;
-                Digraph graph = new Digraph(blkThreadCount + blkBlockAry.Length);
+        //        int blkThreadCount = blkThreadAry.Length;
+        //        Digraph graph = new Digraph(blkThreadCount + blkBlockAry.Length);
 
-                for (int i = 0, cnt = threadBlocksAry.Length; i < cnt; ++i)
-                {
-                    var blkInfo = threadBlocksAry[i];
-                    for (int j = 0, tcnt = blkInfo.Item2.Length; j < tcnt; ++j)
-                    {
-                        var ndx = Array.BinarySearch(blkThreadAry, blkInfo.Item2[j], thrCmp);
-                        Debug.Assert(ndx >= 0);
-                        graph.AddDistinctEdge(blkThreadCount + i, ndx);
-                    }
-                    for (int j = 0, tcnt = blkInfo.Item3.Length; j < tcnt; ++j)
-                    {
-                        var ndx = Array.BinarySearch(blkThreadAry, blkInfo.Item3[j], thrCmp);
-                        Debug.Assert(ndx >= 0);
-                        graph.AddDistinctEdge(ndx, blkThreadCount + i);
-                    }
-                }
+        //        for (int i = 0, cnt = threadBlocksAry.Length; i < cnt; ++i)
+        //        {
+        //            var blkInfo = threadBlocksAry[i];
+        //            for (int j = 0, tcnt = blkInfo.Item2.Length; j < tcnt; ++j)
+        //            {
+        //                var ndx = Array.BinarySearch(blkThreadAry, blkInfo.Item2[j], thrCmp);
+        //                Debug.Assert(ndx >= 0);
+        //                graph.AddDistinctEdge(blkThreadCount + i, ndx);
+        //            }
+        //            for (int j = 0, tcnt = blkInfo.Item3.Length; j < tcnt; ++j)
+        //            {
+        //                var ndx = Array.BinarySearch(blkThreadAry, blkInfo.Item3[j], thrCmp);
+        //                Debug.Assert(ndx >= 0);
+        //                graph.AddDistinctEdge(ndx, blkThreadCount + i);
+        //            }
+        //        }
 
-                var cycle = new DirectedCycle(graph);
-                var cycles = cycle.GetCycle();
+        //        var cycle = new DirectedCycle(graph);
+        //        var cycles = cycle.GetCycle();
 
-                // save graph
-                //
-                var path = _fileMoniker.GetFilePath(_currentRuntimeIndex, Constants.MapThreadsAndBlocksGraphFilePostfix);
-                bw = new BinaryWriter(File.Open(path, FileMode.Create));
-                bw.Write(cycles.Length);
-                for (int i = 0, icnt = cycles.Length; i < icnt; ++i)
-                {
-                    bw.Write(cycles[i]);
-                }
-                bw.Write(thrMap.Length);
-                for (int i = 0, icnt = thrMap.Length; i < icnt; ++i)
-                {
-                    bw.Write(thrMap[i]);
-                }
-                bw.Write(blkMap.Length);
-                for (int i = 0, icnt = blkMap.Length; i < icnt; ++i)
-                {
-                    bw.Write(blkMap[i]);
-                }
-                string error;
-                graph.Dump(bw, out error);
-                bw.Close();
-                bw = null;
-                if (error != null)
-                    AddError(_currentRuntimeIndex, "Exception in GetThreadsInfos." + Environment.NewLine + error);
+        //        // save graph
+        //        //
+        //        var path = _fileMoniker.GetFilePath(_currentRuntimeIndex, Constants.MapThreadsAndBlocksGraphFilePostfix);
+        //        bw = new BinaryWriter(File.Open(path, FileMode.Create));
+        //        bw.Write(cycles.Length);
+        //        for (int i = 0, icnt = cycles.Length; i < icnt; ++i)
+        //        {
+        //            bw.Write(cycles[i]);
+        //        }
+        //        bw.Write(thrMap.Length);
+        //        for (int i = 0, icnt = thrMap.Length; i < icnt; ++i)
+        //        {
+        //            bw.Write(thrMap[i]);
+        //        }
+        //        bw.Write(blkMap.Length);
+        //        for (int i = 0, icnt = blkMap.Length; i < icnt; ++i)
+        //        {
+        //            bw.Write(blkMap[i]);
+        //        }
+        //        string error;
+        //        graph.Dump(bw, out error);
+        //        bw.Close();
+        //        bw = null;
+        //        if (error != null)
+        //            AddError(_currentRuntimeIndex, "Exception in GetThreadsInfos." + Environment.NewLine + error);
 
-                // get frames info
-                //
-                var frames = new StringIdDct();
-                var stObjCmp = new Utils.KVIntUlongCmpAsc();
-                var stackObject = new SortedDictionary<KeyValuePair<int, ulong>, int>(stObjCmp);
-                var stackTraceLst = new List<ClrStackFrame>();
-                var rootEqCmp = new ClrRootEqualityComparer();
-                var frameIds = new List<int>();
-                var frameStackPtrs = new List<ulong>();
-                var aliveIds = new List<int>();
-                var deadIds = new List<int>();
+        //        // get frames info
+        //        //
+        //        var frames = new StringIdDct();
+        //        var stObjCmp = new Utils.KVIntUlongCmpAsc();
+        //        var stackObject = new SortedDictionary<KeyValuePair<int, ulong>, int>(stObjCmp);
+        //        var stackTraceLst = new List<ClrStackFrame>();
+        //        var rootEqCmp = new ClrRootEqualityComparer();
+        //        var frameIds = new List<int>();
+        //        var frameStackPtrs = new List<ulong>();
+        //        var aliveIds = new List<int>();
+        //        var deadIds = new List<int>();
 
-                // save threads and blocks, generate stack info
-                //
-                path = _fileMoniker.GetFilePath(_currentRuntimeIndex, Constants.MapThreadsAndBlocksFilePostfix);
-                bw = new BinaryWriter(File.Open(path, FileMode.Create));
-                bw.Write(threads.Length);
-                for (int i = 0, icnt = threads.Length; i < icnt; ++i)
-                {
-                    var thread = threads[i];
-                    stackTraceLst.Clear();
-                    foreach (var st in thread.EnumerateStackTrace())
-                    {
-                        stackTraceLst.Add(st);
-                        if (stackTraceLst.Count > 100) break;
-                    }
+        //        // save threads and blocks, generate stack info
+        //        //
+        //        path = _fileMoniker.GetFilePath(_currentRuntimeIndex, Constants.MapThreadsAndBlocksFilePostfix);
+        //        bw = new BinaryWriter(File.Open(path, FileMode.Create));
+        //        bw.Write(threads.Length);
+        //        for (int i = 0, icnt = threads.Length; i < icnt; ++i)
+        //        {
+        //            var thread = threads[i];
+        //            stackTraceLst.Clear();
+        //            foreach (var st in thread.EnumerateStackTrace())
+        //            {
+        //                stackTraceLst.Add(st);
+        //                if (stackTraceLst.Count > 100) break;
+        //            }
 
-                    var threadLocalAliveVars = thread.EnumerateStackObjects(false).ToArray();
-                    var all = thread.EnumerateStackObjects(true).ToArray();
-                    var threadLocalDeadVars = all.Except(threadLocalAliveVars, rootEqCmp).ToArray();
-                    var threadFrames = stackTraceLst.ToArray();
+        //            var threadLocalAliveVars = thread.EnumerateStackObjects(false).ToArray();
+        //            var all = thread.EnumerateStackObjects(true).ToArray();
+        //            var threadLocalDeadVars = all.Except(threadLocalAliveVars, rootEqCmp).ToArray();
+        //            var threadFrames = stackTraceLst.ToArray();
 
-                    aliveIds.Clear();
-                    for (int j = 0, jcnt = threadLocalAliveVars.Length; j < jcnt; ++j)
-                    {
-                        ClrRoot root = threadLocalAliveVars[j];
-                        ClrType clrType = heap.GetObjectType(root.Object);
-                        var typeName = clrType == null ? Constants.NullTypeName : clrType.Name;
-                        var typeId = Array.BinarySearch(typeNames, typeName, StringComparer.Ordinal);
-                        if (typeId < 0) typeId = Constants.InvalidIndex;
-                        int stackId;
-                        if (!stackObject.TryGetValue(new KeyValuePair<int, ulong>(typeId, root.Object), out stackId))
-                        {
-                            stackId = stackObject.Count;
-                            stackObject.Add(new KeyValuePair<int, ulong>(typeId, root.Object), stackId);
-                        }
-                        aliveIds.Add(stackId);
-                    }
+        //            aliveIds.Clear();
+        //            for (int j = 0, jcnt = threadLocalAliveVars.Length; j < jcnt; ++j)
+        //            {
+        //                ClrRoot root = threadLocalAliveVars[j];
+        //                ClrType clrType = heap.GetObjectType(root.Object);
+        //                var typeName = clrType == null ? Constants.NullTypeName : clrType.Name;
+        //                var typeId = Array.BinarySearch(typeNames, typeName, StringComparer.Ordinal);
+        //                if (typeId < 0) typeId = Constants.InvalidIndex;
+        //                int stackId;
+        //                if (!stackObject.TryGetValue(new KeyValuePair<int, ulong>(typeId, root.Object), out stackId))
+        //                {
+        //                    stackId = stackObject.Count;
+        //                    stackObject.Add(new KeyValuePair<int, ulong>(typeId, root.Object), stackId);
+        //                }
+        //                aliveIds.Add(stackId);
+        //            }
 
-                    deadIds.Clear();
-                    for (int j = 0, jcnt = threadLocalDeadVars.Length; j < jcnt; ++j)
-                    {
-                        ClrRoot root = threadLocalDeadVars[j];
-                        ClrType clrType = heap.GetObjectType(root.Object);
-                        var typeName = clrType == null ? Constants.NullTypeName : clrType.Name;
-                        var typeId = Array.BinarySearch(typeNames, typeName, StringComparer.Ordinal);
-                        if (typeId < 0) typeId = Constants.InvalidIndex;
-                        int stackId;
-                        if (!stackObject.TryGetValue(new KeyValuePair<int, ulong>(typeId, root.Object), out stackId))
-                        {
-                            stackId = stackObject.Count;
-                            stackObject.Add(new KeyValuePair<int, ulong>(typeId, root.Object), stackId);
-                        }
-                        deadIds.Add(stackId);
-                    }
+        //            deadIds.Clear();
+        //            for (int j = 0, jcnt = threadLocalDeadVars.Length; j < jcnt; ++j)
+        //            {
+        //                ClrRoot root = threadLocalDeadVars[j];
+        //                ClrType clrType = heap.GetObjectType(root.Object);
+        //                var typeName = clrType == null ? Constants.NullTypeName : clrType.Name;
+        //                var typeId = Array.BinarySearch(typeNames, typeName, StringComparer.Ordinal);
+        //                if (typeId < 0) typeId = Constants.InvalidIndex;
+        //                int stackId;
+        //                if (!stackObject.TryGetValue(new KeyValuePair<int, ulong>(typeId, root.Object), out stackId))
+        //                {
+        //                    stackId = stackObject.Count;
+        //                    stackObject.Add(new KeyValuePair<int, ulong>(typeId, root.Object), stackId);
+        //                }
+        //                deadIds.Add(stackId);
+        //            }
 
-                    frameIds.Clear();
-                    frameStackPtrs.Clear();
-                    for (int j = 0, jcnt = threadFrames.Length; j < jcnt; ++j)
-                    {
-                        ClrStackFrame fr = threadFrames[j];
-                        frameStackPtrs.Add(fr.StackPointer);
-                        if (fr.Method != null)
-                        {
-                            string fullSig = fr.Method.GetFullSignature();
-                            if (fullSig == null)
-                                fullSig = fr.Method.Name;
-                            if (fullSig == null) fullSig = "UKNOWN METHOD";
-                            var frameStr = Utils.RealAddressStringHeader(fr.InstructionPointer) + fullSig;
-                            var frId = frames.JustGetId(frameStr);
-                            frameIds.Add(frId);
-                        }
-                        else
-                        {
-                            string sig = string.IsNullOrEmpty(fr.DisplayString) ? "UKNOWN METHOD" : fr.DisplayString;
-                            var frameStr = Utils.RealAddressStringHeader(fr.InstructionPointer) + sig;
-                            var frId = frames.JustGetId(frameStr);
-                            frameIds.Add(frId);
-                        }
-                    }
+        //            frameIds.Clear();
+        //            frameStackPtrs.Clear();
+        //            for (int j = 0, jcnt = threadFrames.Length; j < jcnt; ++j)
+        //            {
+        //                ClrStackFrame fr = threadFrames[j];
+        //                frameStackPtrs.Add(fr.StackPointer);
+        //                if (fr.Method != null)
+        //                {
+        //                    string fullSig = fr.Method.GetFullSignature();
+        //                    if (fullSig == null)
+        //                        fullSig = fr.Method.Name;
+        //                    if (fullSig == null) fullSig = "UKNOWN METHOD";
+        //                    var frameStr = Utils.RealAddressStringHeader(fr.InstructionPointer) + fullSig;
+        //                    var frId = frames.JustGetId(frameStr);
+        //                    frameIds.Add(frId);
+        //                }
+        //                else
+        //                {
+        //                    string sig = string.IsNullOrEmpty(fr.DisplayString) ? "UKNOWN METHOD" : fr.DisplayString;
+        //                    var frameStr = Utils.RealAddressStringHeader(fr.InstructionPointer) + sig;
+        //                    var frId = frames.JustGetId(frameStr);
+        //                    frameIds.Add(frId);
+        //                }
+        //            }
 
-                    var clrtThread = new ClrtThread(thread, blocks, blkCmp, frameIds.ToArray(), frameStackPtrs.ToArray(), aliveIds.ToArray(), deadIds.ToArray());
-                    Debug.Assert(clrtThread != null);
-                    clrtThread.Dump(bw);
-                }
+        //            var clrtThread = new ClrtThread(thread, blocks, blkCmp, frameIds.ToArray(), frameStackPtrs.ToArray(), aliveIds.ToArray(), deadIds.ToArray());
+        //            Debug.Assert(clrtThread != null);
+        //            clrtThread.Dump(bw);
+        //        }
 
-                bw.Write(blocks.Length);
-                for (int i = 0, icnt = blocks.Length; i < icnt; ++i)
-                {
-                    var blk = blocks[i];
-                    var ndx = Array.BinarySearch(blkBlockAry, blk, blkCmp);
-                    var typeId = GetTypeId(blk.Object, instances, typeIds);
-                    var clrtBlock = new ClrtBlkObject(blk, ndx, typeId);
-                    Debug.Assert(clrtBlock != null);
-                    clrtBlock.Dump(bw);
-                }
-                Utils.CloseStream(ref bw);
+        //        bw.Write(blocks.Length);
+        //        for (int i = 0, icnt = blocks.Length; i < icnt; ++i)
+        //        {
+        //            var blk = blocks[i];
+        //            var ndx = Array.BinarySearch(blkBlockAry, blk, blkCmp);
+        //            var typeId = GetTypeId(blk.Object, instances, typeIds);
+        //            var clrtBlock = new ClrtBlkObject(blk, ndx, typeId);
+        //            Debug.Assert(clrtBlock != null);
+        //            clrtBlock.Dump(bw);
+        //        }
+        //        Utils.CloseStream(ref bw);
 
-                path = _fileMoniker.GetFilePath(_currentRuntimeIndex, Constants.MapThreadFramesFilePostfix);
-                bw = new BinaryWriter(File.Open(path, FileMode.Create));
-                var ary = stackObject.ToArray();
-                Array.Sort(ary, (a, b) => a.Value < b.Value ? -1 : (a.Value > b.Value ? 1 : 0));
-                bw.Write(ary.Length);
-                for (int i = 0, icnt = ary.Length; i < icnt; ++i)
-                {
-                    bw.Write(ary[i].Key.Key);
-                    bw.Write(ary[i].Key.Value);
-                }
-                Utils.CloseStream(ref bw);
-                path = _fileMoniker.GetFilePath(_currentRuntimeIndex, Constants.TxtThreadFrameDescriptionFilePostfix);
-                frames.DumpInIdOrder(path, out error);
-            }
-            catch (Exception ex)
-            {
-                AddError(_currentRuntimeIndex,
-                    "Exception in GetThreadsInfos." + Environment.NewLine + Utils.GetExceptionErrorString(ex));
-            }
-            finally
-            {
-                bw?.Close();
-                sw?.Close();
-                clrtDump?.Dispose();
-            }
-        }
+        //        path = _fileMoniker.GetFilePath(_currentRuntimeIndex, Constants.MapThreadFramesFilePostfix);
+        //        bw = new BinaryWriter(File.Open(path, FileMode.Create));
+        //        var ary = stackObject.ToArray();
+        //        Array.Sort(ary, (a, b) => a.Value < b.Value ? -1 : (a.Value > b.Value ? 1 : 0));
+        //        bw.Write(ary.Length);
+        //        for (int i = 0, icnt = ary.Length; i < icnt; ++i)
+        //        {
+        //            bw.Write(ary[i].Key.Key);
+        //            bw.Write(ary[i].Key.Value);
+        //        }
+        //        Utils.CloseStream(ref bw);
+        //        path = _fileMoniker.GetFilePath(_currentRuntimeIndex, Constants.TxtThreadFrameDescriptionFilePostfix);
+        //        frames.DumpInIdOrder(path, out error);
+        //    }
+        //    catch (Exception ex)
+        //    {
+        //        AddError(_currentRuntimeIndex,
+        //            "Exception in GetThreadsInfos." + Environment.NewLine + Utils.GetExceptionErrorString(ex));
+        //    }
+        //    finally
+        //    {
+        //        bw?.Close();
+        //        sw?.Close();
+        //        clrtDump?.Dispose();
+        //    }
+        //}
 
 
 
