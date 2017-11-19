@@ -59,7 +59,8 @@ namespace ClrMDRIndex
         public const char HeavyGreekCross = '\u271A'; // ✚ HEAVY GREEK CROSS		
 		public const string HeavyGreekCrossPadded = " \u271A "; // ✚ HEAVY GREEK CROSS		
 		public const string ReportSeparator = " \u271A "; // ✚ HEAVY GREEK CROSS		
-		public const char HeavyAsterisk = '\u2731'; // ✱ heavy asterisk		
+        public const string HeavyAsteriskStr = "\u2731"; // ✱ heavy asterisk		
+        public const char HeavyAsterisk = '\u2731'; // ✱ heavy asterisk		
         public const string HeavyAsteriskPadded = " \u2731 "; // ✱  heavy asterisk		
         public const string HeavyAsteriskHeader = "\u2731 "; // ✱  heavy asterisk		
         public const string NamespaceSepPadded = " \u2731 "; // ✱  heavy asterisk		

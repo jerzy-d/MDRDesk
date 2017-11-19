@@ -298,6 +298,7 @@ namespace ClrMDRIndex
                 for (i = 0; i < threadCnt; ++i)
                 {
                     _threads[i] = ClrtThread.Load(br);
+                    _threads[i].SetIndex(i);
                 }
                 int blockCnt = br.ReadInt32();
                 _blocks = new ClrtBlkObject[blockCnt];
@@ -3531,8 +3532,37 @@ namespace ClrMDRIndex
             int blockId = GetIdFromGraph(id);
             ClrtBlkObject blk = _blocks[blockId];
             if (blk.BlkReason != BlockingReason.None)
-                return Constants.HeavyAsterisk + blockId + "] " + Utils.BaseTypeName(GetTypeName(blk.TypeId)) + "/" + blk.BlkReason;
-            return Constants.HeavyAsterisk + blockId + "] " + Utils.BaseTypeName(GetTypeName(blk.TypeId));
+                return Constants.HeavyAsteriskStr + blockId + "] " + Utils.BaseTypeName(GetTypeName(blk.TypeId)) + "/" + blk.BlkReason;
+            return Constants.HeavyAsteriskStr + blockId + "] " + Utils.BaseTypeName(GetTypeName(blk.TypeId));
+        }
+
+        //public string GetThreadOrBlkUniqueLabelFromId(int id, out bool isThread)
+        //{
+        //    isThread = false;
+        //    if (_threads == null) return Constants.Unknown;
+        //    isThread = IsThreadId(id);
+        //    if (isThread)
+        //    {
+        //        int threadId = _threadBlockingMap[id];
+        //        ClrtThread thread = _threads[threadId];
+        //        return "[" + threadId + "] " + thread.OSThreadId + "/" + thread.ManagedThreadId;
+        //    }
+        //    int blockId = GetIdFromGraph(id);
+        //    ClrtBlkObject blk = _blocks[blockId];
+        //    if (blk.BlkReason != BlockingReason.None)
+        //        return Constants.HeavyAsteriskStr + blockId + "] " + Utils.BaseTypeName(GetTypeName(blk.TypeId)) + "/" + blk.BlkReason;
+        //    return Constants.HeavyAsteriskStr + blockId + "] " + Utils.BaseTypeName(GetTypeName(blk.TypeId));
+        //}
+
+        /// <summary>
+        /// Gets blocking object info from Threds/Blocks grapk.
+        /// </summary>
+        /// <param name="id">Blocking object graph id.</param>
+        public ClrtBlkObject GetGraphBlkObject(int id)
+        {
+            if (_threads == null) return ClrtBlkObject.Invalid;
+            int blockId = GetIdFromGraph(id);
+            return blockId >= 0 && blockId < _blocks.Length ? _blocks[blockId] : ClrtBlkObject.Invalid;
         }
 
         public Tuple<ClrtThread[], string[], KeyValuePair<int, ulong>[]> GetThreads(out string error)

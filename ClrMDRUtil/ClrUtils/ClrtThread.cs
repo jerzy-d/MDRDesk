@@ -38,6 +38,7 @@ namespace ClrMDRIndex
             END = 1 << 21
         }
 
+        private int _index;
         private ulong _address;
         private int _traits;
         private uint _osId;
@@ -52,6 +53,7 @@ namespace ClrMDRIndex
         private ulong _stackLimit;
         private ulong _exception;
 
+        public int Index => _index;
         public int[] LiveStackObjects => _liveStackObjects;
         private int[] _deadStackObjects;
         public int[] DeadStackObjects => _deadStackObjects;
@@ -132,6 +134,11 @@ namespace ClrMDRIndex
             _frameStackPtrs = stackPtrs;
             _liveStackObjects = aliveStackObjects;
             _deadStackObjects = deadStackObjects;
+        }
+
+        public void SetIndex(int i)
+        {
+            _index = i;
         }
 
         private int[] GetBlockingObjects(IList<BlockingObject> lst, BlockingObject[] blkObjects, BlockingObjectCmp blkCmp)

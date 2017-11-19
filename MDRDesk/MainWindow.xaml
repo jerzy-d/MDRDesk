@@ -71,11 +71,22 @@
         <ContextMenu x:Key="StackObjectListContextMenu" x:Shared="False">
             <MenuItem x:Name="StackObjectCopyAddress" Header="Copy Address (clipboard)" Click="StackObjectCopyAddressClicked" ></MenuItem>
             <MenuItem x:Name="StackObjectCopyAddressAll" Header="Copy All Addresses (clipboard)" Click="StackObjectCopyAddressAllClicked"></MenuItem>
+            <MenuItem x:Name="StackObjectInstanceRefs" Header="Get Instance References" Click="StackObjectInstanceRefsClicked"/>
             <MenuItem x:Name="StackObjectGetInstSizes" Header="Get Instance Sizes" Click="StackObjectGetInstSizesClicked"/>
             <MenuItem x:Name="StackObjectGetInstValue" Header="Get Instance Value" Click="StackObjectInstValueClicked"/>
             <MenuItem x:Name="StackObjectGetInstHierarchy" Header="Get Instance Hierarchy" Click="StackObjectGetInstHierarchyClicked"/>
             <Separator></Separator>
-            <MenuItem x:Name="StackObjectViewMemory" Header="View Memory" Click="AddrLstViewMemoryClicked"/>
+            <MenuItem x:Name="StackObjectViewMemory" Header="View Memory" Click="StackObjectViewMemoryClicked"/>
+        </ContextMenu>
+        <!-- Blocking object instance context menu. In thread display grid. -->
+        <ContextMenu x:Key="BlockingObjectContextMenu" x:Shared="False">
+            <MenuItem x:Name="BlockingObjectCopyAddress" Header="Copy Address (clipboard)" Click="BlockingObjectCopyAddressClicked" ></MenuItem>
+            <MenuItem x:Name="BlockingObjectInstanceRefs" Header="Get Instance References" Click="BlockingObjectInstanceRefsClicked"/>
+            <MenuItem x:Name="BlockingObjectGetInstSizes" Header="Get Instance Sizes" Click="BlockingObjectGetInstSizesClicked"/>
+            <MenuItem x:Name="BlockingObjectGetInstValue" Header="Get Instance Value" Click="BlockingObjectInstValueClicked"/>
+            <MenuItem x:Name="BlockingObjectGetInstHierarchy" Header="Get Instance Hierarchy" Click="BlockingObjectGetInstHierarchyClicked"/>
+            <Separator></Separator>
+            <MenuItem x:Name="BlockingObjectViewMemory" Header="View Memory" Click="BlockingObjectViewMemoryClicked"/>
         </ContextMenu>
         <!-- Type list context menu. -->
         <ContextMenu x:Key="TypeListContextMenu" x:Shared="False">
@@ -260,10 +271,10 @@
             <Grid x:Name="ThreadsGrid" v4:Grid.Column="0">
                 <Grid.RowDefinitions>
                     <RowDefinition Height="30"/>
-                    <RowDefinition Height="75*"/>
+                    <RowDefinition Height="65*"/>
                     <RowDefinition Height="5"/>
-                    <RowDefinition Height="20*"/>
-                </Grid.RowDefinitions>
+                    <RowDefinition Height="15*"/>
+                 </Grid.RowDefinitions>
                 <ToolBar Grid.Row="0" Grid.Column="0" FontSize="11" FontWeight="Bold" FontStyle="Italic">
                     <RadioButton Name="LayoutSugiyama" GroupName="GraphLayout" Content="[Sugiyama]" Click="LayoutSugiyama_Click"/>
                     <RadioButton Name="LayoutMDS" GroupName="GraphLayout" Content="[MDS]" Click="LayoutMDS_Click" IsChecked="True" />
@@ -279,9 +290,11 @@
             <GridSplitter Grid.Column="1" VerticalAlignment="Stretch" HorizontalAlignment="Center" Width="5" ShowsPreview="False" Background="DarkGray"></GridSplitter>
             <Grid v4:Grid.Column="2">
                 <Grid.RowDefinitions>
-                    <RowDefinition Height="75*"/>
+                    <RowDefinition Height="60*"/>
                     <RowDefinition Height="5"/>
-                    <RowDefinition Height="20*"/>
+                    <RowDefinition Height="30*"/>
+                    <RowDefinition Height="5"/>
+                    <RowDefinition Height="30*"/>
                 </Grid.RowDefinitions>
                 <ListView Name="ThreadAliveStackObjects" Grid.Row="0" VerticalAlignment="Stretch" HorizontalAlignment="Stretch" Margin="2,2,2,2" ContextMenu="{StaticResource StackObjectListContextMenu}" MouseDoubleClick="StackObjectDoubleClicked">
                     <ListView.ItemContainerStyle>
@@ -311,6 +324,23 @@
                             <GridViewColumn Width="400">
                                 <GridViewColumn.Header>
                                     <GridViewColumnHeader Content="Dead Stack Objects" HorizontalContentAlignment="Left" FontStyle="Italic" FontWeight="Bold"/>
+                                </GridViewColumn.Header>
+                            </GridViewColumn>
+                        </GridView>
+                    </ListView.View>
+                </ListView>
+                <GridSplitter Grid.Row="3" VerticalAlignment="Center" HorizontalAlignment="Stretch" Height="5" ShowsPreview="False" Background="DarkGray"></GridSplitter>
+                <ListView Name="ThreadBlockingkObject" Grid.Row="4" VerticalAlignment="Stretch" HorizontalAlignment="Stretch" Margin="2,2,2,2" ContextMenu="{StaticResource BlockingObjectContextMenu}" MouseDoubleClick="BlockingObjectDoubleClicked">
+                    <ListView.ItemContainerStyle>
+                        <Style TargetType="ListViewItem">
+                            <Setter Property="HorizontalContentAlignment" Value="Left" />
+                        </Style>
+                    </ListView.ItemContainerStyle>
+                    <ListView.View>
+                        <GridView>
+                            <GridViewColumn Width="400">
+                                <GridViewColumn.Header>
+                                    <GridViewColumnHeader Content="Blocking Object" HorizontalContentAlignment="Left" FontStyle="Italic" FontWeight="Bold"/>
                                 </GridViewColumn.Header>
                             </GridViewColumn>
                         </GridView>

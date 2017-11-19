@@ -2095,7 +2095,7 @@ namespace UnitTestMdr
         [TestMethod]
         public void TestThreadStackBase()
         {
-            var dmp = OpenDump(@"D:\Jerzy\WinDbgStuff\Dumps\Analytics\Highline\analyticsdump111.dlk.dmp");
+            var dmp = OpenDump(@"C:\WinDbgStuff\Dumps\Analytics\Highline\analyticsdump111.dlk.dmp");
             using (dmp)
             {
                 StreamWriter sw = null;
@@ -2131,8 +2131,16 @@ namespace UnitTestMdr
                         }
                     }
 
-                    csharpThreadClrTypes.Sort((a, b) => a.Item4 < b.Item4 ? -1 : (a.Item4 > b.Item4 ? 1 : 0));
-
+                    var thrdIds = new int[csharpThreadClrTypes.Count];
+                    var thrdData = new ValueTuple<ClrType, string, ulong>[csharpThreadClrTypes.Count];
+                    for (int i =0,icnt = csharpThreadClrTypes.Count; i < icnt; ++i)
+                    {
+                        (ClrType tp, string name, ulong addr, int id) = csharpThreadClrTypes[i];
+                        thrdIds[i] = id;
+                        thrdData[i] = (tp,name,addr);
+                    }
+                    Array.Sort(thrdIds, thrdData);
+                    int idCount = thrdIds.Length;
 
                     var threads = DumpIndexer.GetThreads(dmp.Runtime);
                     for (int i = 0, icnt = threads.Length; i < icnt; ++i)
@@ -2160,13 +2168,21 @@ namespace UnitTestMdr
                         sw.Write(Utils.SizeStringHeader(aliveList.Count));
                         sw.Write(Utils.SizeStringHeader(allList.Count));
 
-                        int ndx 
-
-                        if (csharpThreadClrTypes.ContainsKey(th.ManagedThreadId))
+                        int id = th.ManagedThreadId;
+                        sw.Write(Utils.SizeStringHeader(id));
+                        int ndx = Array.BinarySearch(thrdIds, id);
+                        if (ndx >= 0)
                         {
-                            (ClrType clrType, string thName, ulong addr) = csharpThreadClrTypes[th.ManagedThreadId];
-                            sw.Write(Utils.RealAddressStringHeader(addr));
-                            sw.Write(thName??"no name" + "  " );
+                            while (ndx > 0)
+                                if (thrdIds[ndx - 1] == id) --ndx;
+                                else break;
+                            while (ndx < idCount && thrdIds[ndx] == id)
+                            {
+                                (ClrType tp, string name, ulong addr) = thrdData[ndx];
+                                sw.Write(Utils.RealAddressStringHeader(addr));
+                                sw.Write((name ?? "no name") + "  ");
+                                ++ndx;
+                            }
                         }
                         else
                         {

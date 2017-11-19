@@ -302,14 +302,48 @@ namespace MDRDesk
                 return false;
             }
         }
-        
+
+        public void DisplayThreadBlockMap2()
+        {
+            string error = null;
+            try
+            {
+                DisplayThreadBlockGraph(CurrentIndex.ThreadBlockgraph.AdjacencyLists, false);
+            }
+            catch(Exception ex)
+            {
+                ShowError(Utils.GetExceptionErrorString(ex));
+            }
+
+        }
+    
+
+        public void DisplayDeadlockMap()
+        {
+            try
+            {
+                // we need to convert graph type
+                int[][] dlk = CurrentIndex.Deadlock;
+                List<int>[] adjList = new List<int>[dlk.Length];
+                for (int i = 0, icnt = dlk.Length; i < icnt; ++i)
+                {
+                    adjList[i] = dlk[i].ToList();
+                }
+                DisplayThreadBlockGraph(adjList, true);
+            }
+            catch(Exception ex)
+            {
+                ShowError(Utils.GetExceptionErrorString(ex));
+            }
+        }
+
         /// <summary>
         /// TODO JRD -- use ThreadBlockingObjectsGraphGrid to display MSAGL graph.
         /// </summary>
         /// <param name="digraph"></param>
         /// <param name="error"></param>
         /// <returns></returns>
-        public async void DisplayThreadBlockMap2()
+        public async void DisplayThreadBlockGraph(List<int>[] adjLst, bool deadlocks)
         {
             string error = null;
             CloseableTabItem graphTab = null;
@@ -329,19 +363,18 @@ namespace MDRDesk
                     return;
                 }
 
-
-                Digraph digraph = CurrentIndex.ThreadBlockgraph;
-
                 var grid = this.TryFindResource(ThreadBlockingObjectGraphGrid) as Grid;
                 Debug.Assert(grid != null);
                 var graphGrid = (Grid)LogicalTreeHelper.FindLogicalNode(grid, "ThreadsGraphGrid");
                 Debug.Assert(graphGrid != null);
-                grid.Name = ThreadBlockingObjectGraphGrid + "__" + Utils.GetNewID();
+                grid.Name = (deadlocks ? "D" : string.Empty) + ThreadBlockingObjectGraphGrid + "__" + Utils.GetNewID();
 
                 var threadAliveStackObjects = (ListView)LogicalTreeHelper.FindLogicalNode(grid, "ThreadAliveStackObjects");
                 threadAliveStackObjects.ContextMenu.Tag = threadAliveStackObjects;
                 var threadDeadStackObjects = (ListView)LogicalTreeHelper.FindLogicalNode(grid, "ThreadDeadStackObjects");
                 threadDeadStackObjects.ContextMenu.Tag = threadDeadStackObjects;
+                var threadBlockingkObject = (ListView)LogicalTreeHelper.FindLogicalNode(grid, "ThreadBlockingkObject");
+                threadBlockingkObject.ContextMenu.Tag = threadBlockingkObject;
 
                 /*
                  ThreadBlockingObjectsGraphGrid
@@ -362,7 +395,8 @@ namespace MDRDesk
                 graphGrid.UpdateLayout();
                 grid.Tag = new Tuple<GraphViewer, ClrtThread[], string[], KeyValuePair<int, ulong>[]>(graphViewer,result.Item2,result.Item3,result.Item4);
 
-                graphTab = DisplayTab(Constants.BlackDiamondHeader, "Threads/Blocks", grid, ThreadBlockingObjectGraphGrid + "TAB");
+                string title = deadlocks ? "Deadlock(s)" : "Threads/Blocks";
+                graphTab = DisplayTab(Constants.BlackDiamondHeader, title, grid, ThreadBlockingObjectGraphGrid + "TAB");
                 Graph graph = new Graph();
 
                 Microsoft.Msagl.Layout.MDS.MdsLayoutSettings layoutAlgorithmSettings = new Microsoft.Msagl.Layout.MDS.MdsLayoutSettings();
@@ -371,41 +405,98 @@ namespace MDRDesk
                 //layoutAlgorithmSettings.ClusterMargin = 20;
 
                 graph.LayoutAlgorithmSettings = layoutAlgorithmSettings;
-                
-                var adjLst = digraph.AdjacencyLists;
-                string[] nodeNames = new string[adjLst.Length];
-                Bitset threadFlags = new Bitset(adjLst.Length);
-                for (int i = 0, icnt = adjLst.Length; i < icnt; ++i)
+
+                if (deadlocks)
                 {
-                    bool isThread;
-                    string nodeLabel = CurrentIndex.GetThreadOrBlkUniqueLabel(i, out isThread);
-                    Node node = graph.AddNode(nodeLabel);
-                    node.Attr.LabelMargin = 10;
-                    node.Attr.Padding = 5;
-                    if (isThread)
+                    int nodeCnt = 0;
+                    for (int i = 0, icnt = adjLst.Length; i < icnt; ++i)
                     {
-                        node.Attr.FillColor = Color.Chocolate;
-                        threadFlags.Set(i);
-                    }
-                    nodeNames[i] = nodeLabel;
-                }
-                for (int i = 0, icnt = adjLst.Length; i < icnt; ++i)
-                {
-                    if (adjLst[i] == null) continue;
-                    for (int j = 0, jcnt = adjLst[i].Count; j < jcnt; ++j)
-                    {
-                        int targetNdx = adjLst[i][j];
-                        Edge edge = (Edge)graph.AddEdge(nodeNames[i], nodeNames[targetNdx]);
-                        if (threadFlags.IsSet(i))
+                        for (int j = 0, jcnt = adjLst[i].Count; j < jcnt; ++j)
                         {
-                            edge.Attr.AddStyle(Microsoft.Msagl.Drawing.Style.Dashed);
+                            ++nodeCnt;
+                        }
+                    }
+                    string[][] nodeNames = new string[adjLst.Length][];
+                    HashSet<int> done = new HashSet<int>();
+                    for (int i = 0, icnt = adjLst.Length; i < icnt; ++i)
+                    {
+                        nodeNames[i] = new string[adjLst[i].Count];
+
+                        for (int j = 0, jcnt = adjLst[i].Count; j < jcnt; ++j)
+                        {
+                            int ndx = adjLst[i][j];
+                            bool isThread;
+                            string nodeLabel = CurrentIndex.GetThreadOrBlkUniqueLabel(ndx, out isThread);
+                            if (done.Add(ndx))
+                            {
+                                Node node = graph.AddNode(nodeLabel);
+                                node.Attr.LabelMargin = 10;
+                                node.Attr.Padding = 5;
+                                if (isThread)
+                                {
+                                    node.Attr.FillColor = Color.Chocolate;
+                                }
+                                else
+                                {
+                                    node.Attr.FillColor = Color.LightGray;
+                                }
+                            }
+                            nodeNames[i][j] = nodeLabel;
+                        }
+                    }
+                    for (int i = 0, icnt = adjLst.Length; i < icnt; ++i)
+                    {
+                        for (int j = 1, jcnt = adjLst[i].Count; j < jcnt; ++j)
+                        {
+                            string sourceLabel = nodeNames[i][j - 1];
+                            string targetLabel = nodeNames[i][j];
+                            Edge edge = (Edge)graph.AddEdge(sourceLabel, targetLabel);
+                            if (sourceLabel[0]=='[')
+                            {
+                                edge.Attr.AddStyle(Microsoft.Msagl.Drawing.Style.Dashed);
+                            }
+                        }
+                    }
+                }
+                else
+                {
+                    string[] nodeNames = new string[adjLst.Length];
+                    Bitset threadFlags = new Bitset(adjLst.Length);
+                    for (int i = 0, icnt = adjLst.Length; i < icnt; ++i)
+                    {
+                        bool isThread;
+                        string nodeLabel = CurrentIndex.GetThreadOrBlkUniqueLabel(i, out isThread);
+                        Node node = graph.AddNode(nodeLabel);
+                        node.Attr.LabelMargin = 10;
+                        node.Attr.Padding = 5;
+                        if (isThread)
+                        {
+                            node.Attr.FillColor = Color.Chocolate;
+                            threadFlags.Set(i);
+                        }
+                        else
+                        {
+                            node.Attr.FillColor = Color.LightGray;
+                        }
+                        nodeNames[i] = nodeLabel;
+                    }
+                    for (int i = 0, icnt = adjLst.Length; i < icnt; ++i)
+                    {
+                        if (adjLst[i] == null) continue;
+                        for (int j = 0, jcnt = adjLst[i].Count; j < jcnt; ++j)
+                        {
+                            int targetNdx = adjLst[i][j];
+                            Edge edge = (Edge)graph.AddEdge(nodeNames[i], nodeNames[targetNdx]);
+                            if (threadFlags.IsSet(i))
+                            {
+                                edge.Attr.AddStyle(Microsoft.Msagl.Drawing.Style.Dashed);
+                            }
                         }
                     }
                 }
 
                 graphViewer.Graph = graph;
 
-                //graphViewer.GraphCanvas.MouseLeftButtonUp += GraphCanvas_MouseUp;
                 graphViewer.MouseUp += GraphViewer_MouseUp; ;
             }
             catch (Exception ex)
@@ -437,7 +528,10 @@ namespace MDRDesk
                     int nodeIndex = Int32.Parse(indexStr);
                     if (nodeName[0]==Constants.HeavyAsterisk) // blocking obj
                     {
-
+                        ClrtBlkObject blk = CurrentIndex.GetGraphBlkObject(nodeIndex);
+                        var blkObjectView = (ListView)LogicalTreeHelper.FindLogicalNode(grid, "ThreadBlockingkObject");
+                        ((GridViewColumnHeader)((GridView)blkObjectView.View).Columns[0].Header).Content = nodeName + " Blocking Object";
+                        blkObjectView.ItemsSource = blk.DataDescriptions(CurrentIndex.TypeNames);
                     }
                     else
                     {
@@ -465,6 +559,10 @@ namespace MDRDesk
             }
         }
 
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="settings"></param>
         private void ChangeGraphLayout(Microsoft.Msagl.Core.Layout.LayoutAlgorithmSettings settings)
         {
             var grid = GetCurrentTabGrid();
@@ -525,7 +623,217 @@ namespace MDRDesk
             ChangeGraphLayout(layoutAlgorithmSettings);
         }
 
+        private void StackObjectCopyAddressClicked(object sender, RoutedEventArgs e)
+        {
+            ListView lv = GetContextMenuListView(sender);
+            Debug.Assert(lv != null);
+            var selections = lv.SelectedItems;
+            if (selections == null || selections.Count < 1)
+            {
+                MainStatusShowMessage("No address is copied to Clipboard. No item(s) are selected.");
+                return;
+            }
+            var sb = StringBuilderCache.Acquire(StringBuilderCache.MaxCapacity);
 
+            foreach (var selection in selections)
+            {
+                string s = selection.ToString();
+                sb.Append("0x00"); // clean byte first
+                int pos = 4;
+                while (!Char.IsWhiteSpace(s[pos]))
+                {
+                    sb.Append(s[pos]);
+                    ++pos;
+                }
+                sb.AppendLine();
+            }
+            string result = StringBuilderCache.GetStringAndRelease(sb);
+            if (selections.Count == 1) result = result.Trim();
+
+            GuiUtils.CopyToClipboard(result);
+            if (selections.Count == 1)
+            {
+                MainStatusShowMessage("Address: " + result + " is copied to Clipboard.");
+                return;
+            }
+            MainStatusShowMessage(selections.Count + " addresses are copied to Clipboard.");
+
+        }
+
+        private void StackObjectCopyAddressAllClicked(object sender, RoutedEventArgs e)
+        {
+            ListView lv = GetContextMenuListView(sender);
+            Debug.Assert(lv != null);
+            var sb = StringBuilderCache.Acquire(StringBuilderCache.MaxCapacity);
+
+            foreach (var item in lv.Items)
+            {
+                string s = item.ToString();
+                sb.Append("0x00"); // clean byte first
+                int pos = 4;
+                while (!Char.IsWhiteSpace(s[pos]))
+                {
+                    sb.Append(s[pos]);
+                    ++pos;
+                }
+                sb.AppendLine();
+            }
+            string result = StringBuilderCache.GetStringAndRelease(sb);
+            if (lv.Items.Count == 1) result = result.Trim();
+
+            GuiUtils.CopyToClipboard(result);
+            if (lv.Items.Count == 1)
+            {
+                MainStatusShowMessage("Address: " + result + " is copied to Clipboard.");
+                return;
+            }
+            MainStatusShowMessage(lv.Items.Count + " addresses are copied to Clipboard.");
+
+        }
+
+        private void StackObjectGetInstSizesClicked(object sender, RoutedEventArgs e)
+        {
+            ulong addr = GetStackObjectAddress(sender);
+            if (addr == Constants.InvalidAddress) return;
+            GetInstSizes(addr);
+        }
+
+        private void StackObjectInstValueClicked(object sender, RoutedEventArgs e)
+        {
+            ulong addr = GetStackObjectAddress(sender);
+            if (addr == Constants.InvalidAddress) return;
+            System.Windows.Threading.Dispatcher.CurrentDispatcher.InvokeAsync(() => ExecuteInstanceValueQuery("Getting stack object value: " + Utils.AddressString(addr), addr));
+        }
+
+        private void StackObjectDoubleClicked(object sender, MouseButtonEventArgs e)
+        {
+            StackObjectInstValueClicked(sender, null);
+        }
+
+        private void StackObjectGetInstHierarchyClicked(object sender, RoutedEventArgs e)
+        {
+            ulong addr = GetStackObjectAddress(sender);
+            if (addr == Constants.InvalidAddress) return;
+            System.Windows.Threading.Dispatcher.CurrentDispatcher.InvokeAsync(() => ExecuteInstanceHierarchyQuery("Getting stack object hierarchy: " + Utils.AddressString(addr), addr, Constants.InvalidIndex));
+        }
+
+        private ulong GetStackObjectAddress(object sender)
+        {
+            ListView lv = GetContextMenuListView(sender);
+            Debug.Assert(lv != null);
+            var selections = lv.SelectedItems;
+            if (selections == null || selections.Count < 1)
+            {
+                MainStatusShowMessage("No address is copied to Clipboard. No item(s) are selected.");
+                return Constants.InvalidAddress;
+            }
+            var sb = StringBuilderCache.Acquire(StringBuilderCache.MaxCapacity);
+            string s = selections[0].ToString();
+            sb.Append("0x00"); // clean byte first
+            int pos = 4;
+            while (!Char.IsWhiteSpace(s[pos]))
+            {
+                sb.Append(s[pos]);
+                ++pos;
+            }
+            string result = StringBuilderCache.GetStringAndRelease(sb);
+            ulong addr = Convert.ToUInt64(result, 16);
+            return addr;
+        }
+
+        private void StackObjectInstanceRefsClicked(object sender, RoutedEventArgs e)
+        {
+            ulong addr = GetStackObjectAddress(sender);
+            if (addr == Constants.InvalidAddress) return;
+            DisplayInstanceParentReferences(addr);
+        }
+
+        private void StackObjectViewMemoryClicked(object sender, RoutedEventArgs e)
+        {
+            ulong addr = GetStackObjectAddress(sender);
+            if (addr == Constants.InvalidAddress) return;
+            ShowMemoryViewWindow(addr);
+        }
+
+        private void BlockingObjectCopyAddressClicked(object sender, RoutedEventArgs e)
+        {
+            var addr = GetBlockingObjectAddress(sender);
+            string addrStr = Utils.RealAddressString(addr);
+            GuiUtils.CopyToClipboard(addrStr);
+            if (addr == Constants.InvalidAddress)
+                MainStatusShowMessage("Address: " + addrStr + " copied to Clipboard is invalid.");
+            else
+                MainStatusShowMessage("Address: " + addrStr + " is copied to Clipboard.");
+        }
+
+        private void BlockingObjectGetInstSizesClicked(object sender, RoutedEventArgs e)
+        {
+            var addr = GetBlockingObjectAddress(sender);
+            if (addr == Constants.InvalidAddress) return;
+            GetInstSizes(addr);
+        }
+
+        private void BlockingObjectInstValueClicked(object sender, RoutedEventArgs e)
+        {
+            var addr = GetBlockingObjectAddress(sender);
+            if (addr == Constants.InvalidAddress) return;
+            System.Windows.Threading.Dispatcher.CurrentDispatcher.InvokeAsync(() => ExecuteInstanceValueQuery("Getting blocking object value: " + Utils.AddressString(addr), addr));
+        }
+
+        private void BlockingObjectGetInstHierarchyClicked(object sender, RoutedEventArgs e)
+        {
+            var addr = GetBlockingObjectAddress(sender);
+            if (addr == Constants.InvalidAddress) return;
+            System.Windows.Threading.Dispatcher.CurrentDispatcher.InvokeAsync(() => ExecuteInstanceHierarchyQuery("Getting stack object hierarchy: " + Utils.AddressString(addr), addr, Constants.InvalidIndex));
+        }
+
+        private void BlockingObjectViewMemoryClicked(object sender, RoutedEventArgs e)
+        {
+            ulong addr = GetBlockingObjectAddress(sender);
+            if (addr == Constants.InvalidAddress) return;
+            ShowMemoryViewWindow(addr);
+        }
+
+        private void BlockingObjectInstanceRefsClicked(object sender, RoutedEventArgs e)
+        {
+            var addr = GetBlockingObjectAddress(sender);
+            if (addr == Constants.InvalidAddress) return;
+            DisplayInstanceParentReferences(addr);
+        }
+
+        private void BlockingObjectDoubleClicked(object sender, MouseButtonEventArgs e)
+        {
+            ListView lv = sender as ListView;
+            ulong addr = GetBlockingObjectAddress(lv);
+            if (addr == Constants.InvalidAddress) return;
+            System.Windows.Threading.Dispatcher.CurrentDispatcher.InvokeAsync(() => ExecuteInstanceValueQuery("Getting blocking object value: " + Utils.AddressString(addr), addr));
+        }
+
+        private ulong GetBlockingObjectAddress(ListView lv)
+        {
+            try
+            {
+                string item = lv.Items[0] as string;
+                ulong addr = Convert.ToUInt64(item.Substring("Address:  ".Length), 16);
+                return addr;
+            }
+            catch(Exception ex)
+            {
+                ShowError(Utils.GetExceptionErrorString(ex));
+                return Constants.InvalidAddress;
+            }
+        }
+
+        private ulong GetBlockingObjectAddress(object sender)
+        {
+            ListView lv = GetContextMenuListView(sender);
+            return GetBlockingObjectAddress(lv);
+        }
+
+        /// <summary>
+        /// TODO JRD -- remove after switching to masagl
+        /// </summary>
+        /// <param name="grid"></param>
         public void UpdateThreadBlockMap(Grid grid)
         {
             try
@@ -3331,8 +3639,9 @@ namespace MDRDesk
         /// Check if a grid of given grig type prefix is already displayed.
         /// </summary>
         /// <param name="gridBaseName">Grids of the same type have name starting with common prefix.</param>
-        private bool IsGridDisplayed(string gridBaseName)
+        private bool IsGridDisplayed(string gridBaseName, out string title)
         {
+            title = null;
             foreach(var item in MainTab.Items)
             {
                 CloseableTabItem tab = item as CloseableTabItem;
@@ -3340,7 +3649,10 @@ namespace MDRDesk
                 {
                     var grid = tab.Content as Grid;
                     if (grid != null && grid.Name.StartsWith(gridBaseName, StringComparison.Ordinal))
+                    {
+                        title = tab.Header.ToString();
                         return true;
+                    }
                 }
             }
             return false;

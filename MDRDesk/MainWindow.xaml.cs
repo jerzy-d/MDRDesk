@@ -613,11 +613,12 @@ namespace MDRDesk
 
                 if (CurrentIndex.DeadlockFound)
                 {
-                    string error;
-                    if (!DisplayDeadlock(CurrentIndex.Deadlock, out error))
-                    {
-                        ShowError(error);
-                    }
+                    DisplayDeadlockMap();
+                    //string error;
+                    //if (!DisplayDeadlock(CurrentIndex.Deadlock, out error))
+                    //{
+                    //    ShowError(error);
+                    //}
                 }
                 Title = BaseTitle + Constants.BlackDiamondPadded + CurrentIndex.DumpFileName;
                 RecentIndexList.Add(CurrentIndex.IndexFolder);
@@ -758,6 +759,7 @@ namespace MDRDesk
         private void IndexShowBlockingThreadsClicked(object sender, RoutedEventArgs e)
         {
             if (!IsIndexAvailable("Threads and Blocks Graph")) return;
+            if (AlreadyDisplayed(ThreadBlockingObjectGraphGrid)) return;
 
             string error;
             if (!CurrentIndex.LoadThreadBlockInfo(out error))
@@ -777,16 +779,8 @@ namespace MDRDesk
         private void IndexShowDeadlocksClicked(object sender, RoutedEventArgs e)
         {
             if (!IsIndexAvailable("Deadlock View")) return;
-            if (CurrentIndex.DeadlockFound)
-            {
-                string error;
-                if (!DisplayDeadlock(CurrentIndex.Deadlock, out error))
-                {
-                    ShowError(error);
-                }
-                return;
-            }
-            ShowInformation("Deadlock View", "No deadlock detected.", CurrentIndex.DumpFileName,null);
+            if (AlreadyDisplayed("D" + ThreadBlockingObjectGraphGrid)) return;
+            DisplayDeadlockMap();
         }
 
         private void IndexGetSizeInformationClicked(object sender, RoutedEventArgs e)
@@ -2178,123 +2172,6 @@ namespace MDRDesk
             return lbTypeNames;
         }
 
-        private void StackObjectCopyAddressClicked(object sender, RoutedEventArgs e)
-        {
-            ListView lv = GetContextMenuListView(sender);
-            Debug.Assert(lv != null);
-            var selections = lv.SelectedItems;
-            if (selections == null || selections.Count < 1)
-            {
-                MainStatusShowMessage("No address is copied to Clipboard. No item(s) are selected.");
-                return;
-            }
-            var sb = StringBuilderCache.Acquire(StringBuilderCache.MaxCapacity);
-
-            foreach (var selection in selections)
-            {
-                string s = selection.ToString();
-                sb.Append("0x00"); // clean byte first
-                int pos = 4;
-                while (!Char.IsWhiteSpace(s[pos]))
-                {
-                    sb.Append(s[pos]);
-                    ++pos;
-                }
-                sb.AppendLine();
-            }
-            string result = StringBuilderCache.GetStringAndRelease(sb);
-            if (selections.Count == 1) result = result.Trim();
-
-            GuiUtils.CopyToClipboard(result);
-            if (selections.Count == 1)
-            {
-                MainStatusShowMessage("Address: " + result + " is copied to Clipboard.");
-                return;
-            }
-            MainStatusShowMessage(selections.Count + " addresses are copied to Clipboard.");
-
-        }
-
-        private void StackObjectCopyAddressAllClicked(object sender, RoutedEventArgs e)
-        {
-            ListView lv = GetContextMenuListView(sender);
-            Debug.Assert(lv != null);
-            var sb = StringBuilderCache.Acquire(StringBuilderCache.MaxCapacity);
-
-            foreach (var item in lv.Items)
-            {
-                string s = item.ToString();
-                sb.Append("0x00"); // clean byte first
-                int pos = 4;
-                while (!Char.IsWhiteSpace(s[pos]))
-                {
-                    sb.Append(s[pos]);
-                    ++pos;
-                }
-                sb.AppendLine();
-            }
-            string result = StringBuilderCache.GetStringAndRelease(sb);
-            if (lv.Items.Count == 1) result = result.Trim();
-
-            GuiUtils.CopyToClipboard(result);
-            if (lv.Items.Count == 1)
-            {
-                MainStatusShowMessage("Address: " + result + " is copied to Clipboard.");
-                return;
-            }
-            MainStatusShowMessage(lv.Items.Count + " addresses are copied to Clipboard.");
-
-        }
-
-        private void StackObjectGetInstSizesClicked(object sender, RoutedEventArgs e)
-        {
-            ulong addr = GetStackObjectAddress(sender);
-            if (addr == Constants.InvalidAddress) return;
-            GetInstSizes(addr);
-        }
-
-        private void StackObjectInstValueClicked(object sender, RoutedEventArgs e)
-        {
-            ulong addr = GetStackObjectAddress(sender);
-            if (addr == Constants.InvalidAddress) return;
-            Dispatcher.CurrentDispatcher.InvokeAsync(() => ExecuteInstanceValueQuery("Getting stack object value: " + Utils.AddressString(addr), addr));
-        }
-
-        private void StackObjectDoubleClicked(object sender, MouseButtonEventArgs e)
-        {
-            StackObjectInstValueClicked(sender, null);
-        }
-
-        private void StackObjectGetInstHierarchyClicked(object sender, RoutedEventArgs e)
-        {
-            ulong addr = GetStackObjectAddress(sender);
-            if (addr == Constants.InvalidAddress) return;
-            Dispatcher.CurrentDispatcher.InvokeAsync(() => ExecuteInstanceHierarchyQuery("Getting stack object hierarchy: " + Utils.AddressString(addr), addr, Constants.InvalidIndex));
-        }
-
-        private ulong GetStackObjectAddress(object sender)
-        {
-            ListView lv = GetContextMenuListView(sender);
-            Debug.Assert(lv != null);
-            var selections = lv.SelectedItems;
-            if (selections == null || selections.Count < 1)
-            {
-                MainStatusShowMessage("No address is copied to Clipboard. No item(s) are selected.");
-                return Constants.InvalidAddress;
-            }
-            var sb = StringBuilderCache.Acquire(StringBuilderCache.MaxCapacity);
-            string s = selections[0].ToString();
-            sb.Append("0x00"); // clean byte first
-            int pos = 4;
-            while (!Char.IsWhiteSpace(s[pos]))
-            {
-                sb.Append(s[pos]);
-                ++pos;
-            }
-            string result = StringBuilderCache.GetStringAndRelease(sb);
-            ulong addr = Convert.ToUInt64(result, 16);
-            return addr;
-        }
 
         private ListView GetContextMenuListView(object sender)
         {
@@ -2553,9 +2430,10 @@ namespace MDRDesk
 
         private bool AlreadyDisplayed(string gridNamePrefix, bool showMessage = true)
         {
-            if (IsGridDisplayed(GridFinalizerQueue))
+            string title;
+            if (IsGridDisplayed(gridNamePrefix,out title))
             {
-                if (showMessage) MainStatusShowMessage("Tab with " + gridNamePrefix + " already exists.");
+                if (showMessage) MainStatusShowMessage("Tab already displayed: '" + title + "'.");
                 return true;
             }
             return false;
@@ -2794,6 +2672,8 @@ namespace MDRDesk
 
 
         #endregion help
+
+
     }
 
     public static class MenuCommands
