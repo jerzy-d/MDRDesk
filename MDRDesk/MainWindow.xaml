@@ -11,8 +11,7 @@
         xmlns:objectModel="clr-namespace:System.Collections.ObjectModel;assembly=mscorlib"
         xmlns:generic="clr-namespace:System.Collections.Generic;assembly=mscorlib"
         xmlns:mdr="clr-namespace:ClrMDRIndex;assembly=ClrMDRIndex"
-        xmlns:gx="clr-namespace:GraphX.Controls;assembly=GraphX.WPF.Controls"
-        xmlns:wpfgraphcontrol="clr-namespace:Microsoft.Msagl.WpfGraphControl;assembly=Microsoft.Msagl.WpfGraphControl"
+         xmlns:wpfgraphcontrol="clr-namespace:Microsoft.Msagl.WpfGraphControl;assembly=Microsoft.Msagl.WpfGraphControl"
         mc:Ignorable="d"
         Title="MainWindow" Height="750" Width="1200"  Background="#FF43626C"
         Icon="Images/appbar.list.gear.ico"
@@ -150,7 +149,7 @@
         </-->
     <!-- thread grids -->
         <!-- ############ -->
-        <Grid x:Key="DeadlockGraphXGrid" x:Shared="False">
+        <!--<Grid x:Key="DeadlockGraphXGrid" x:Shared="False">
             <DockPanel>
                 <gx:ZoomControl x:Name="DlkZoomCtrl" Visibility="Visible">
                     <local:DlkGraphArea x:Name="DlkGraphArea"/>
@@ -173,7 +172,7 @@
                     <Button.ToolTip>Redo</Button.ToolTip>
                     <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
                         <Image Source=".\Images\Backward_16x.png" Width="16" Height="16" Margin="0,0,10,0" VerticalAlignment="Center" HorizontalAlignment="Center"/>
-                        <!--<TextBlock FontWeight="Bold" FontSize="12">Redo</TextBlock>-->
+                        --><!--<TextBlock FontWeight="Bold" FontSize="12">Redo</TextBlock>--><!--
                     </StackPanel>
                 </Button>
                 <Button x:Name="ThreadBlockingGraphXForward" Margin="2,0,2,0" Width="24" Height="24" HorizontalAlignment="Right" VerticalAlignment="Center" BorderThickness="0" Click="ThreadBlockingGraphXForwardClicked"
@@ -181,7 +180,7 @@
                     <Button.ToolTip>Undo</Button.ToolTip>
                     <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
                         <Image Source=".\Images\Forward_16x.png" Width="16" Height="16" Margin="0,0,10,0" VerticalAlignment="Center" HorizontalAlignment="Center"/>
-                        <!--<TextBlock FontWeight="Bold" FontSize="12">Undo</TextBlock>-->
+                        --><!--<TextBlock FontWeight="Bold" FontSize="12">Undo</TextBlock>--><!--
                     </StackPanel>
                 </Button>
                 <TextBlock Name="ThreadBlockingGraphXHelp" Margin="32,0,2,0" HorizontalAlignment="Right" VerticalAlignment="Center" FontFamily="Trebuchet MS"  FontSize="12" FontStyle="Italic"></TextBlock>
@@ -214,8 +213,8 @@
                     </ListView.View>
                 </ListView>
                 <GridSplitter Grid.Row="1" VerticalAlignment="Center" HorizontalAlignment="Stretch" Height="5" ShowsPreview="False" Background="DarkGray"></GridSplitter>
-                <!--<TextBox Name="ThreadListingInformation" v4:Grid.Row="2" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" Margin="2,2,2,2">
-                </TextBox>-->
+                --><!--<TextBox Name="ThreadListingInformation" v4:Grid.Row="2" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" Margin="2,2,2,2">
+                </TextBox>--><!--
                 <ListBox Name="ThreadListingFrames" v4:Grid.Row="2" Grid.Column="0" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" Margin="2,2,2,2" FontFamily="Consolas">
                 </ListBox>
             </Grid>
@@ -260,7 +259,7 @@
                     </ListView.View>
                 </ListView>
             </Grid>
-        </Grid>
+        </Grid>-->
         <!-- Display threads and blocking objects graph using MSAGL -->
         <Grid x:Key="ThreadBlockingObjectsGraphGrid" x:Shared="False">
             <Grid.ColumnDefinitions>

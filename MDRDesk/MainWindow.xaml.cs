@@ -2647,6 +2647,7 @@ namespace MDRDesk
                 case NameNamespaceTypeNameGrid:
                     ValueWindows.ShowHelpWindow(Setup.HelpFolder + Path.DirectorySeparatorChar + @"\Documentation\NotWrittenYet.md");
                     break;
+                case "D" + ThreadBlockingObjectGraphGrid:
                 case ThreadBlockingObjectGraphGrid:
                     ValueWindows.ShowHelpWindow(Setup.HelpFolder + Path.DirectorySeparatorChar + @"\Documentation\ThreadsBlocksGraph.md");
                     break;

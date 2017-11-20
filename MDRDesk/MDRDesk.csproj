@@ -105,15 +105,6 @@
       <HintPath>..\packages\FSharp.Charting.0.90.14\lib\net40\FSharp.Charting.dll</HintPath>
     </Reference>
     <Reference Include="FSharp.Core, Version=4.4.1.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL" />
-    <Reference Include="GraphX.PCL.Common">
-      <HintPath>..\GraphX\GraphX.PCL.Common.dll</HintPath>
-    </Reference>
-    <Reference Include="GraphX.PCL.Logic">
-      <HintPath>..\GraphX\GraphX.PCL.Logic.dll</HintPath>
-    </Reference>
-    <Reference Include="GraphX.WPF.Controls">
-      <HintPath>..\GraphX\GraphX.WPF.Controls.dll</HintPath>
-    </Reference>
     <Reference Include="Markdown.Xaml, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
       <HintPath>..\Markdown.XAML\Markdown.Xaml.dll</HintPath>
@@ -132,18 +123,6 @@
     <Reference Include="Microsoft.Msagl.WpfGraphControl, Version=3.0.0.0, Culture=neutral, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
       <HintPath>..\MSAGL\Microsoft.Msagl.WpfGraphControl.dll</HintPath>
-    </Reference>
-    <Reference Include="QuickGraph">
-      <HintPath>..\GraphX\QuickGraph.dll</HintPath>
-    </Reference>
-    <Reference Include="QuickGraph.Data">
-      <HintPath>..\GraphX\QuickGraph.Data.dll</HintPath>
-    </Reference>
-    <Reference Include="QuickGraph.Graphviz">
-      <HintPath>..\GraphX\QuickGraph.Graphviz.dll</HintPath>
-    </Reference>
-    <Reference Include="QuickGraph.Serialization">
-      <HintPath>..\GraphX\QuickGraph.Serialization.dll</HintPath>
     </Reference>
     <Reference Include="System" />
     <Reference Include="System.Configuration" />
@@ -185,11 +164,6 @@
       <DependentUpon>CreateCrashDump.xaml</DependentUpon>
     </Compile>
     <Compile Include="DisplayableGeneration.cs" />
-    <Compile Include="Graphs\DataEdge.cs" />
-    <Compile Include="Graphs\DataVertex.cs" />
-    <Compile Include="Graphs\DlkGraphArea.cs" />
-    <Compile Include="Graphs\DlkGraph.cs" />
-    <Compile Include="Graphs\DlkGXLogicCore.cs" />
     <Compile Include="GuiUtils.cs" />
     <Compile Include="HelpWindow.xaml.cs">
       <DependentUpon>HelpWindow.xaml</DependentUpon>
