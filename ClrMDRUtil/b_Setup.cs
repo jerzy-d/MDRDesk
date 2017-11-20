@@ -123,8 +123,8 @@ namespace ClrMDRIndex
             try
             {
 #if DEBUG
-                //string myfolder = @"D:\Jerzy\WinDbgStuff\MDRDesk\";
-                string myfolder = @"C:\WinDbgStuff\MDRDesk\";
+                string myfolder = @"D:\Jerzy\WinDbgStuff\MDRDesk\";
+                //string myfolder = @"C:\WinDbgStuff\MDRDesk\";
 #else
                 string myfolder = DumpFileMoniker.MyFolder;
 #endif

@@ -188,7 +188,7 @@
             <gx:ZoomControl x:Name="TBZoomCtrl" Visibility="Visible" v4:Grid.Row="1" v4:Grid.Column="0" v4:Grid.ColumnSpan="3">
                 <local:DlkGraphArea x:Name="TBGraphArea" Margin="2,2,2,2"/>
             </gx:ZoomControl>
-        </Grid>
+        </Grid>-->
         <Grid x:Key="ThreadViewGrid" x:Shared="False">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="60*"/>
@@ -213,8 +213,8 @@
                     </ListView.View>
                 </ListView>
                 <GridSplitter Grid.Row="1" VerticalAlignment="Center" HorizontalAlignment="Stretch" Height="5" ShowsPreview="False" Background="DarkGray"></GridSplitter>
-                --><!--<TextBox Name="ThreadListingInformation" v4:Grid.Row="2" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" Margin="2,2,2,2">
-                </TextBox>--><!--
+                <TextBox Name="ThreadListingInformation" v4:Grid.Row="2" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" Margin="2,2,2,2">
+                </TextBox>
                 <ListBox Name="ThreadListingFrames" v4:Grid.Row="2" Grid.Column="0" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" Margin="2,2,2,2" FontFamily="Consolas">
                 </ListBox>
             </Grid>
@@ -259,7 +259,7 @@
                     </ListView.View>
                 </ListView>
             </Grid>
-        </Grid>-->
+        </Grid>
         <!-- Display threads and blocking objects graph using MSAGL -->
         <Grid x:Key="ThreadBlockingObjectsGraphGrid" x:Shared="False">
             <Grid.ColumnDefinitions>
