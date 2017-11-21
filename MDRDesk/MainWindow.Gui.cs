@@ -12,8 +12,6 @@ using System.Windows.Data;
 using System.Windows.Documents;
 using System.Windows.Input;
 using ClrMDRIndex;
-//using GraphX.Controls;
-//using GraphX.PCL.Common.Enums;
 using Binding = System.Windows.Data.Binding;
 using Brushes = System.Windows.Media.Brushes;
 using Cursors = System.Windows.Input.Cursors;
@@ -29,13 +27,6 @@ using SW = System.Windows;
 using SWC = System.Windows.Controls;
 using Microsoft.Msagl.WpfGraphControl;
 using Microsoft.Msagl.Drawing;
-using SubgraphDictionary =
-    System.Collections.Generic.SortedDictionary
-    <int,
-        ClrMDRIndex.triple
-        <System.Collections.Generic.List<System.Collections.Generic.List<int>>,
-            System.Collections.Generic.List<System.Collections.Generic.KeyValuePair<System.Collections.Generic.List<int>, int>>,
-            int>>;
 using System.Collections.Concurrent;
 using Microsoft.Diagnostics.Runtime;
 
@@ -74,7 +65,7 @@ namespace MDRDesk
         private const string GridReversedNameTypeView = "ReversedNameTypeView";
 
         private const string DeadlockGraphGrid = "DeadlockGraphGrid";
-        private const string ThreadBlockingGraphGrid = "ThreadBlockingGraphGrid";
+        //private const string ThreadBlockingGraphGrid = "ThreadBlockingGraphGrid";
         private const string ThreadBlockingObjectGraphGrid = "ThreadBlockingObjectsGraphGrid";  // using MSAGL
 
         private const string ThreadViewGrid = "ThreadViewGrid";
@@ -135,7 +126,7 @@ namespace MDRDesk
             {
                 DisplayThreadBlockGraph(CurrentIndex.ThreadBlockgraph.AdjacencyLists, false);
             }
-            catch(Exception ex)
+            catch (Exception ex)
             {
                 ShowError(Utils.GetExceptionErrorString(ex));
             }
@@ -154,7 +145,7 @@ namespace MDRDesk
                 }
                 DisplayThreadBlockGraph(adjList, true);
             }
-            catch(Exception ex)
+            catch (Exception ex)
             {
                 ShowError(Utils.GetExceptionErrorString(ex));
             }
@@ -216,7 +207,7 @@ namespace MDRDesk
                 graphGrid.Children.Add(graphViewer.GraphCanvas);
 
                 graphGrid.UpdateLayout();
-                grid.Tag = new Tuple<GraphViewer, ClrtThread[], string[], KeyValuePair<int, ulong>[]>(graphViewer,result.Item2,result.Item3,result.Item4);
+                grid.Tag = new Tuple<GraphViewer, ClrtThread[], string[], KeyValuePair<int, ulong>[]>(graphViewer, result.Item2, result.Item3, result.Item4);
 
                 string title = deadlocks ? "Deadlock(s)" : "Threads/Blocks";
                 graphTab = DisplayTab(Constants.BlackDiamondHeader, title, grid, ThreadBlockingObjectGraphGrid + "TAB");
@@ -274,7 +265,7 @@ namespace MDRDesk
                             string sourceLabel = nodeNames[i][j - 1];
                             string targetLabel = nodeNames[i][j];
                             Edge edge = (Edge)graph.AddEdge(sourceLabel, targetLabel);
-                            if (sourceLabel[0]=='[')
+                            if (sourceLabel[0] == Constants.HeavyRightArrow)
                             {
                                 edge.Attr.AddStyle(Microsoft.Msagl.Drawing.Style.Dashed);
                             }
@@ -349,7 +340,7 @@ namespace MDRDesk
                     string nodeName = node.Node.LabelText;
                     string indexStr = nodeName.Substring(1, nodeName.IndexOf(']') - 1);
                     int nodeIndex = Int32.Parse(indexStr);
-                    if (nodeName[0]==Constants.HeavyAsterisk) // blocking obj
+                    if (nodeName[0] == Constants.HeavyAsterisk) // blocking obj
                     {
                         ClrtBlkObject blk = CurrentIndex.GetGraphBlkObject(nodeIndex);
                         var blkObjectView = (ListView)LogicalTreeHelper.FindLogicalNode(grid, "ThreadBlockingkObject");
@@ -402,7 +393,7 @@ namespace MDRDesk
                     graphViewer.Graph = graph;
                     graphViewer.Invalidate();
                 }
-                catch(Exception ex)
+                catch (Exception ex)
                 {
                     ShowError(Utils.GetExceptionErrorString(ex));
                 }
@@ -640,7 +631,7 @@ namespace MDRDesk
                 ulong addr = Convert.ToUInt64(item.Substring("Address:  ".Length), 16);
                 return addr;
             }
-            catch(Exception ex)
+            catch (Exception ex)
             {
                 ShowError(Utils.GetExceptionErrorString(ex));
                 return Constants.InvalidAddress;
@@ -657,20 +648,20 @@ namespace MDRDesk
 
         #region common
 
-        private void SetGraphHelpTextBlock(TextBlock txtBlk)
-        {
-            txtBlk.Inlines.Add(new Run(" thread ") { Background = Brushes.Chocolate });
-            //txtBlk.Inlines.Add(new Bold(new Run("-->")) { FontSize = 18 });
-            txtBlk.Inlines.Add(new Run(Constants.RightDashedArrowPadded) { FontSize = 18 });
-            txtBlk.Inlines.Add(new Run(" blocking obj ") { Background = Brushes.LightGray });
-            txtBlk.Inlines.Add(new Run(" thread waits for blocking obj    "));
+        //private void SetGraphHelpTextBlock(TextBlock txtBlk)
+        //{
+        //    txtBlk.Inlines.Add(new Run(" thread ") { Background = Brushes.Chocolate });
+        //    //txtBlk.Inlines.Add(new Bold(new Run("-->")) { FontSize = 18 });
+        //    txtBlk.Inlines.Add(new Run(Constants.RightDashedArrowPadded) { FontSize = 18 });
+        //    txtBlk.Inlines.Add(new Run(" blocking obj ") { Background = Brushes.LightGray });
+        //    txtBlk.Inlines.Add(new Run(" thread waits for blocking obj    "));
 
-            txtBlk.Inlines.Add(new Run(" blocking obj ") { Background = Brushes.LightGray });
-            //txtBlk.Inlines.Add(new Bold(new Run(Constants.RightSolidArrowPadded)) { FontSize = 16 });
-            txtBlk.Inlines.Add(new Run(Constants.RightSolidArrowPadded) { FontSize = 18 });
-            txtBlk.Inlines.Add(new Run(" os/mngd ids ") { Background = Brushes.Chocolate });
-            txtBlk.Inlines.Add(new Run(" thread owns blocking obj  "));
-        }
+        //    txtBlk.Inlines.Add(new Run(" blocking obj ") { Background = Brushes.LightGray });
+        //    //txtBlk.Inlines.Add(new Bold(new Run(Constants.RightSolidArrowPadded)) { FontSize = 16 });
+        //    txtBlk.Inlines.Add(new Run(Constants.RightSolidArrowPadded) { FontSize = 18 });
+        //    txtBlk.Inlines.Add(new Run(" os/mngd ids ") { Background = Brushes.Chocolate });
+        //    txtBlk.Inlines.Add(new Run(" thread owns blocking obj  "));
+        //}
 
         #endregion common
 
@@ -799,17 +790,17 @@ namespace MDRDesk
             MainTab.UpdateLayout();
         }
 
-        private void DisplayGenerationLine(TextBlock txtBlock, string[] titles, ulong[] values)
-        {
-            Debug.Assert(titles.Length == values.Length);
-            ulong total = 0UL;
-            for (int i = 0, icnt = titles.Length; i < icnt; ++i)
-            {
-                total += values[i];
-                txtBlock.Inlines.Add(new Run("  " + titles[i] + ": [" + Utils.LargeNumberString(values[i]) + "]"));
-            }
-            txtBlock.Inlines.Add(new Run("    Total Size: " + Utils.LargeNumberString(total)));
-        }
+        //private void DisplayGenerationLine(TextBlock txtBlock, string[] titles, ulong[] values)
+        //{
+        //    Debug.Assert(titles.Length == values.Length);
+        //    ulong total = 0UL;
+        //    for (int i = 0, icnt = titles.Length; i < icnt; ++i)
+        //    {
+        //        total += values[i];
+        //        txtBlock.Inlines.Add(new Run("  " + titles[i] + ": [" + Utils.LargeNumberString(values[i]) + "]"));
+        //    }
+        //    txtBlock.Inlines.Add(new Run("    Total Size: " + Utils.LargeNumberString(total)));
+        //}
 
         #region types main displays
 
@@ -1290,11 +1281,11 @@ namespace MDRDesk
             // we need listing grid and its list view
             Debug.Assert(lb.Parent != null && lb.Parent is Grid);
             Grid grid = lb.Parent as Grid;
-            Tuple<ClrtRoot[][], ListingInfo[]> data = grid.Tag as Tuple<ClrtRoot[][], ListingInfo[]>; 
-            Grid lstGrid=null;
-            ListView lstView=null;
+            Tuple<ClrtRoot[][], ListingInfo[]> data = grid.Tag as Tuple<ClrtRoot[][], ListingInfo[]>;
+            Grid lstGrid = null;
+            ListView lstView = null;
             TextBox txtBox = null;
-            foreach(var child in grid.Children)
+            foreach (var child in grid.Children)
             {
                 if (child is Grid) { lstGrid = (Grid)child; break; }
             }
@@ -1320,7 +1311,7 @@ namespace MDRDesk
                 var lstView = menuItem.Tag as SWC.ListView;
                 Debug.Assert(lstView != null);
             }
-            catch(Exception ex)
+            catch (Exception ex)
             {
                 // TODO JRD
             }
@@ -1442,68 +1433,6 @@ namespace MDRDesk
 
         #endregion Finalizer Queue
 
-        //private void DisplayListViewBottomGrid(ListingInfo info, char prefix, string name, string reportTitle, SWC.MenuItem[] menuItems = null, string filePath = null)
-        //{
-        //    var grid = this.TryFindResource("ListViewBottomGrid") as Grid;
-        //    grid.Name = name + "__" + Utils.GetNewID();
-        //    Debug.Assert(grid != null);
-        //    string path;
-        //    if (filePath == null)
-        //        path = CurrentIndex != null ? CurrentIndex.DumpPath : CurrentAdhocDump?.DumpPath;
-        //    else
-        //        path = filePath;
-        //    grid.Tag = new Tuple<string, DumpFileMoniker>(reportTitle, new DumpFileMoniker(path));
-        //    var listView = (ListView)LogicalTreeHelper.FindLogicalNode(grid, "TopListView");
-        //    GridView gridView = (GridView)listView.View;
-
-        //    // save data and listing name in listView
-        //    //
-        //    listView.Tag = new Tuple<ListingInfo, string>(info, reportTitle);
-
-        //    for (int i = 0, icnt = info.ColInfos.Length; i < icnt; ++i)
-        //    {
-        //        var gridColumn = new GridViewColumn
-        //        {
-        //            Header = info.ColInfos[i].Name,
-        //            DisplayMemberBinding = new Binding(listing<string>.PropertyNames[i]),
-        //            Width = info.ColInfos[i].Width,
-        //        };
-        //        gridView.Columns.Add(gridColumn);
-        //    }
-
-        //    listView.Items.Clear();
-        //    listView.ItemsSource = info.Items;
-        //    var bottomGrid = (Panel)LogicalTreeHelper.FindLogicalNode(grid, "BottomGrid");
-        //    Debug.Assert(bottomGrid != null);
-        //    TextBox txtBox = new TextBox
-        //    {
-        //        HorizontalAlignment = HorizontalAlignment.Stretch,
-        //        VerticalAlignment = SW.VerticalAlignment.Stretch,
-        //        Foreground = Brushes.DarkGreen,
-        //        Text = info.Notes,
-        //        FontWeight = FontWeights.Bold
-        //    };
-        //    bottomGrid.Children.Add(txtBox);
-
-        //    if (menuItems == null)
-        //    {
-        //        SWC.MenuItem mi = new SWC.MenuItem { Header = "Copy List Row" };
-        //        menuItems = new SWC.MenuItem[]
-        //        {
-        //            mi
-        //        };
-        //    }
-        //    foreach (var menu in menuItems)
-        //    {
-        //        menu.Tag = listView;
-        //        menu.Click += ListViewBottomGridClick;
-        //    }
-        //    listView.ContextMenu = new SWC.ContextMenu();
-        //    listView.ContextMenu.ItemsSource = menuItems;
-        //    DisplayTab(prefix, reportTitle, grid, name);
-        //}
-
-
         private void PopulateListingGrid(Grid grid, ListView listView, TextBox txtBox, ListingInfo info, string reportTitle, string filePath)
         {
             listView.Tag = new Tuple<ListingInfo, string>(info, reportTitle);
@@ -1518,12 +1447,13 @@ namespace MDRDesk
             // save data and listing name in listView
             //
             listView.Tag = new Tuple<ListingInfo, string>(info, reportTitle);
- //           listView.Items.Clear();
+            //           listView.Items.Clear();
             listView.ItemsSource = info.Items;
             txtBox.Text = info.Notes;
         }
 
-        private ValueTuple<Grid,ListView> GetListingGrid(string name, SWC.MenuItem[] menuItems, ColumnInfo[] colInfos, RoutedEventHandler contextMenuCallback)        {
+        private ValueTuple<Grid, ListView> GetListingGrid(string name, SWC.MenuItem[] menuItems, ColumnInfo[] colInfos, RoutedEventHandler contextMenuCallback)
+        {
             var grid = TryFindResource(ListingGrid) as Grid;
             grid.Name = name + "__" + Utils.GetNewID();
             Debug.Assert(grid != null);
@@ -1570,7 +1500,7 @@ namespace MDRDesk
         /// <param name="reportTitle">Title to display on the tab label.</param>
         /// <param name="menuItems">Context menu to be attached to ListView control.</param>
         /// <param name="filePath">Some file path, if relevant to listed data.</param>
-        private void DisplayListingGrid(ListingInfo info, 
+        private void DisplayListingGrid(ListingInfo info,
                                         string prefix,
                                         string name,
                                         string reportTitle,
@@ -1787,7 +1717,7 @@ namespace MDRDesk
                 = CurrentIndex.GetTypeInfo(typeName, out error);
             if (error != null)
             {
-                GuiUtils.ShowError(error,this);
+                GuiUtils.ShowError(error, this);
                 return;
             }
             if (fieldTypeName == null && fieldName == null) // let user select a field
@@ -1871,44 +1801,44 @@ namespace MDRDesk
             DisplayTab(prefix, reportTitle, grid, name);
         }
 
-        private void DisplayDependencyNodeGrid(DependencyNode root)
-        {
-            TreeViewItem tvRoot = new TreeViewItem();
-            tvRoot.Header = root.ToString();
-            tvRoot.Tag = root;
-            Queue<KeyValuePair<DependencyNode, TreeViewItem>> que = new Queue<KeyValuePair<DependencyNode, TreeViewItem>>();
-            que.Enqueue(new KeyValuePair<DependencyNode, TreeViewItem>(root, tvRoot));
-            while (que.Count > 0)
-            {
-                var info = que.Dequeue();
-                DependencyNode parentNode = info.Key;
-                TreeViewItem tvParentNode = info.Value;
-                DependencyNode[] descendants = parentNode.Descendants;
-                for (int i = 0, icount = descendants.Length; i < icount; ++i)
-                {
-                    var descNode = descendants[i];
-                    TreeViewItem tvNode = new TreeViewItem();
-                    tvNode.Header = descNode.ToString();
-                    tvNode.Tag = descNode;
-                    tvParentNode.Items.Add(tvNode);
-                    que.Enqueue(new KeyValuePair<DependencyNode, TreeViewItem>(descNode, tvNode));
-                }
-            }
+        //private void DisplayDependencyNodeGrid(DependencyNode root)
+        //{
+        //    TreeViewItem tvRoot = new TreeViewItem();
+        //    tvRoot.Header = root.ToString();
+        //    tvRoot.Tag = root;
+        //    Queue<KeyValuePair<DependencyNode, TreeViewItem>> que = new Queue<KeyValuePair<DependencyNode, TreeViewItem>>();
+        //    que.Enqueue(new KeyValuePair<DependencyNode, TreeViewItem>(root, tvRoot));
+        //    while (que.Count > 0)
+        //    {
+        //        var info = que.Dequeue();
+        //        DependencyNode parentNode = info.Key;
+        //        TreeViewItem tvParentNode = info.Value;
+        //        DependencyNode[] descendants = parentNode.Descendants;
+        //        for (int i = 0, icount = descendants.Length; i < icount; ++i)
+        //        {
+        //            var descNode = descendants[i];
+        //            TreeViewItem tvNode = new TreeViewItem();
+        //            tvNode.Header = descNode.ToString();
+        //            tvNode.Tag = descNode;
+        //            tvParentNode.Items.Add(tvNode);
+        //            que.Enqueue(new KeyValuePair<DependencyNode, TreeViewItem>(descNode, tvNode));
+        //        }
+        //    }
 
-            var grid = this.TryFindResource("TreeViewGrid") as Grid;
-            Debug.Assert(grid != null);
-            grid.Name = "DependencyNodeTreeView__" + Utils.GetNewID();
-            var treeView = (TreeView)LogicalTreeHelper.FindLogicalNode(grid, "treeView");
-            Debug.Assert(treeView != null);
-            treeView.Tag = root;
-            Debug.Assert(treeView != null);
-            treeView.Items.Add(tvRoot);
+        //    var grid = this.TryFindResource("TreeViewGrid") as Grid;
+        //    Debug.Assert(grid != null);
+        //    grid.Name = "DependencyNodeTreeView__" + Utils.GetNewID();
+        //    var treeView = (TreeView)LogicalTreeHelper.FindLogicalNode(grid, "treeView");
+        //    Debug.Assert(treeView != null);
+        //    treeView.Tag = root;
+        //    Debug.Assert(treeView != null);
+        //    treeView.Items.Add(tvRoot);
 
-            var tab = new CloseableTabItem() { Header = Constants.BlackDiamond + " Type References", Content = grid, Name = "HeapIndexTypeViewTab" };
-            MainTab.Items.Add(tab);
-            MainTab.SelectedItem = tab;
-            MainTab.UpdateLayout();
-        }
+        //    var tab = new CloseableTabItem() { Header = Constants.BlackDiamond + " Type References", Content = grid, Name = "HeapIndexTypeViewTab" };
+        //    MainTab.Items.Add(tab);
+        //    MainTab.SelectedItem = tab;
+        //    MainTab.UpdateLayout();
+        //}
 
         private void DisplayTypeAncestorsGrid(AncestorNode root)
         {
@@ -2161,7 +2091,7 @@ namespace MDRDesk
             for (int i = 0, icnt = listing.Count; i < icnt; ++i)
             {
                 string lstVal = listing.GetItem(i);
-                if (Utils.SameStrings(item,lstVal))
+                if (Utils.SameStrings(item, lstVal))
                 {
                     ndx = i;
                     break;
@@ -2210,7 +2140,7 @@ namespace MDRDesk
                 {
                     ValueWindows.ShowContentWindow(inst.GetDescription(), inst, ValueWindows.WndType.Content);
                 }
-                if ((inst.KeyValuePairs == null || inst.KeyValuePairs.Length < 1) && (inst.ArrayValues==null || inst.ArrayValues.Length < 1))
+                if ((inst.KeyValuePairs == null || inst.KeyValuePairs.Length < 1) && (inst.ArrayValues == null || inst.ArrayValues.Length < 1))
                 {
                     ShowInformation("Empty Collection", TypeExtractor.GetKnowTypeName(knownType), "The collection at address " + Utils.RealAddressString(addr) + " is empty.", inst.TypeName);
                     return;
@@ -2240,7 +2170,7 @@ namespace MDRDesk
                 ValueWindows.ShowContentWindow(inst.GetDescription(), inst, ValueWindows.WndType.Tree);
             }
         }
-         
+
         #endregion instance value
 
         #region threads
@@ -2360,18 +2290,6 @@ namespace MDRDesk
             Debug.Assert(grid != null);
             var listView = (ListView)LogicalTreeHelper.FindLogicalNode(grid, "ThreadListingView");
             Debug.Assert(listView != null);
-
-            //GuiUtils.AddListViewColumn(grid, "AliveStackObjects", "Alive Stack Objects", 400);
-            //GuiUtils.AddListViewColumn(grid, "DeadStackObjects", "Dead Stack Objects", 400);
-
-            //var alistView = (ListView)LogicalTreeHelper.FindLogicalNode(grid, "AliveStackObjects");
-            //GridView agridView = (GridView)alistView.View;
-            //var agridColumn = new GridViewColumn
-            //{
-            //	Header = "Alive Stack Objects",
-            //};
-            //agridView.Columns.Add(agridColumn);
-
 
             listView.Tag = new Tuple<ListingInfo, string>(listing, "Thread View");
             GridView gridView = (GridView)listView.View;
@@ -2684,13 +2602,13 @@ namespace MDRDesk
 
         #region msagl graph
 
-        private void DisplayGraph(Digraph digraph)
-        {
-            Grid mainGrid = new Grid();
-            DockPanel graphViewerPanel = new DockPanel();
-            ToolBar toolBar = new ToolBar();
-            GraphViewer graphViewer = new GraphViewer();
-        }
+        //private void DisplayGraph(Digraph digraph)
+        //{
+        //    Grid mainGrid = new Grid();
+        //    DockPanel graphViewerPanel = new DockPanel();
+        //    ToolBar toolBar = new ToolBar();
+        //    GraphViewer graphViewer = new GraphViewer();
+        //}
 
         #endregion msagl graph
 
@@ -2779,141 +2697,26 @@ namespace MDRDesk
                 MessageBoxImage.Error);
         }
 
-        private MdrMessageBox GetErrorMsgBox(string errStr)
-        {
-            string[] parts = errStr.Split(new[] { Constants.HeavyGreekCrossPadded }, StringSplitOptions.None);
-            Debug.Assert(parts.Length > 2);
-            var dialog = new MdrMessageBox()
-            {
-                Owner = this,
-                Caption = parts[0],
-                InstructionHeading = parts[1],
-                InstructionText = parts[2],
-                DeatilsText = parts.Length > 3 ? parts[3] : string.Empty
-            };
-            dialog.SetButtonsPredefined(EnumPredefinedButtons.Ok);
-            dialog.DetailsExpander.Visibility = string.IsNullOrWhiteSpace(dialog.DeatilsText) ? Visibility.Collapsed : Visibility.Visible;
-            return dialog;
-        }
+        //private MdrMessageBox GetErrorMsgBox(string errStr)
+        //{
+        //    string[] parts = errStr.Split(new[] { Constants.HeavyGreekCrossPadded }, StringSplitOptions.None);
+        //    Debug.Assert(parts.Length > 2);
+        //    var dialog = new MdrMessageBox()
+        //    {
+        //        Owner = this,
+        //        Caption = parts[0],
+        //        InstructionHeading = parts[1],
+        //        InstructionText = parts[2],
+        //        DeatilsText = parts.Length > 3 ? parts[3] : string.Empty
+        //    };
+        //    dialog.SetButtonsPredefined(EnumPredefinedButtons.Ok);
+        //    dialog.DetailsExpander.Visibility = string.IsNullOrWhiteSpace(dialog.DeatilsText) ? Visibility.Collapsed : Visibility.Visible;
+        //    return dialog;
+        //}
 
         #endregion MessageBox
 
         #region Map Queries
-
-        //private async void ExecuteGenerationQuery(string statusMessage, ulong[] addresses, Grid grid)
-        //{
-        //    SetStartTaskMainWindowState(statusMessage + ", please wait...");
-
-        //    //var result = await Task.Run(() =>
-        //    //{
-        //    //    return CurrentIndex.GetGenerationHistogram(addresses);
-        //    //});
-        //    var result = await Task.Factory.StartNew(() =>
-        //    {
-        //        return CurrentIndex.GetGenerationHistogram(addresses);
-        //    }, DumpSTAScheduler);
-
-
-        //    Expander expander = null;
-        //    if (grid.Name.StartsWith("HeapIndexTypeView__"))
-        //        expander = (Expander)LogicalTreeHelper.FindLogicalNode(grid, @"TypeViewDataExpander");
-        //    else
-        //        expander = (Expander)LogicalTreeHelper.FindLogicalNode(grid, @"ExtraDataExpander");
-
-        //    if (expander == null)
-        //    {
-        //        var genStr = ClrtSegment.GetGenerationHistogramSimpleString(result);
-        //        SetEndTaskMainWindowState("Object generation at address(s): " + genStr);
-        //        return;
-        //    }
-
-        //    System.Windows.Forms.Integration.WindowsFormsHost host = new System.Windows.Forms.Integration.WindowsFormsHost();
-
-        //    host.Child = DmpNdxQueries.Auxiliaries.getColumnChart(ClrtSegment.GetGenerationHistogramTuples(result));
-
-        //    if (addresses.Length == 1)
-        //        expander.Header = "Generation histogram for instance at: " + Utils.AddressString(addresses[0]) + " " + ClrtSegment.GetGenerationHistogramSimpleString(result);
-        //    else
-        //        expander.Header = "Generation histogram: " + ClrtSegment.GetGenerationHistogramSimpleString(result);
-        //    host.HorizontalAlignment = HorizontalAlignment.Stretch;
-        //    host.VerticalAlignment = SW.VerticalAlignment.Stretch;
-        //    var expanderGrid = new Grid { Height = 100 };
-        //    expanderGrid.Children.Add(host);
-        //    host.HorizontalAlignment = HorizontalAlignment.Stretch;
-        //    expander.Content = expanderGrid;
-        //    expander.IsExpanded = true;
-
-        //    SetEndTaskMainWindowState(statusMessage + ", DONE.");
-        //}
-
-        //private async void ExecuteGenerationQuery(string statusMessage, string reportTitle, string str, Grid grid)
-        //{
-        //    MainStatusShowMessage(statusMessage + ", please wait...");
-        //    MainToolbarTray.IsEnabled = false;
-
-        //    Mouse.OverrideCursor = Cursors.Wait;
-        //    //var result = await Task.Run(() =>
-        //    //{
-        //    //    string error;
-        //    //    int[] genHistogram = null;
-        //    //    switch (reportTitle)
-        //    //    {
-        //    //        case ReportTitleStringUsage:
-        //    //            genHistogram = CurrentIndex.GetStringGcGenerationHistogram(str, out error);
-        //    //            break;
-        //    //        default:
-        //    //            genHistogram = CurrentIndex.GetTypeGcGenerationHistogram(str, out error);
-        //    //            break;
-        //    //    }
-        //    //    return new Tuple<string, int[]>(error, genHistogram);
-        //    //});
-        //    var result = await Task.Factory.StartNew(() =>
-        //    {
-        //        string error;
-        //        int[] genHistogram = null;
-        //        switch (reportTitle)
-        //        {
-        //            case ReportTitleStringUsage:
-        //                genHistogram = CurrentIndex.GetStringGcGenerationHistogram(str, out error);
-        //                break;
-        //            default:
-        //                genHistogram = CurrentIndex.GetTypeGcGenerationHistogram(str, out error);
-        //                break;
-        //        }
-        //        return new Tuple<string, int[]>(error, genHistogram);
-        //    }, DumpSTAScheduler);
-
-        //    Mouse.OverrideCursor = null;
-        //    MainToolbarTray.IsEnabled = true;
-        //    if (result.Item1 != null)
-        //    {
-        //        MainStatusShowMessage(statusMessage + ": FAILED");
-        //        MessageBox.Show(result.Item1, "Generation Lookup Failed", MessageBoxButton.OK, MessageBoxImage.Error);
-        //        return;
-        //    }
-        //    else
-        //        MainStatusShowMessage(statusMessage + ": DONE");
-
-        //    Expander expander = null;
-        //    if (grid.Name.StartsWith("HeapIndexTypeView__"))
-        //        expander = (Expander)LogicalTreeHelper.FindLogicalNode(grid, @"TypeViewDataExpander");
-        //    else
-        //        expander = (Expander)LogicalTreeHelper.FindLogicalNode(grid, @"ExtraDataExpander");
-
-        //    System.Windows.Forms.Integration.WindowsFormsHost host = new System.Windows.Forms.Integration.WindowsFormsHost();
-
-        //    host.Child = DmpNdxQueries.Auxiliaries.getColumnChart(ClrtSegment.GetGenerationHistogramTuples(result.Item2));
-
-        //    expander.Header = "Generation histogram for " + str + " " + ClrtSegment.GetGenerationHistogramSimpleString(result.Item2);
-        //    host.HorizontalAlignment = HorizontalAlignment.Stretch;
-        //    host.VerticalAlignment = SW.VerticalAlignment.Stretch;
-        //    var expanderGrid = new Grid { Height = 100 };
-        //    expanderGrid.Children.Add(host);
-        //    host.HorizontalAlignment = HorizontalAlignment.Stretch;
-        //    expander.Content = expanderGrid;
-        //    expander.IsExpanded = true;
-        //}
-
 
         #endregion Map Queries
 
@@ -2940,7 +2743,6 @@ namespace MDRDesk
             }
             MainStatusShowMessage("Current index is no more.");
         }
-
 
         public void ClearTabItem(Grid grid)
         {
@@ -2974,7 +2776,7 @@ namespace MDRDesk
         private bool IsGridDisplayed(string gridBaseName, out string title)
         {
             title = null;
-            foreach(var item in MainTab.Items)
+            foreach (var item in MainTab.Items)
             {
                 CloseableTabItem tab = item as CloseableTabItem;
                 if (tab != null)
@@ -3048,14 +2850,12 @@ namespace MDRDesk
             return true;
         }
 
-
         private string ShortenString(string str, int len)
         {
             if (str.Length > len)
                 return str.Substring(0, len - 1) + Constants.HorizontalEllipsisChar;
             return str;
         }
-
 
         public ListView GetCurrentListView(string name)
         {
@@ -3076,76 +2876,6 @@ namespace MDRDesk
             return Constants.InvalidAddress;
         }
 
-        //public static void SetSelectedItem(TreeView control, object item)
-        //{
-        //	try
-        //	{
-        //		var dObject = control.ItemContainerGenerator.ContainerFromItem(item);
-
-        //		//uncomment the following line if UI updates are unnecessary
-        //		((TreeViewItem)dObject).IsSelected = true;
-
-        //		MethodInfo selectMethod = typeof(TreeViewItem).GetMethod("Select",
-        //			BindingFlags.NonPublic | BindingFlags.Instance);
-
-        //		selectMethod.Invoke(dObject, new object[] { true });
-        //	}
-        //	catch { }
-        //}
-
-        //private StackPanel GetClrtDisplayableTypeStackPanel(ClrtDisplayableType dispType)
-        //{
-        //	var stackPanel = new StackPanel() { Orientation = Orientation.Horizontal };
-        //	var kind = dispType.Kind;
-        //	SWC.Image image = new SWC.Image();
-
-        //	switch (TypeKinds.GetMainTypeKind(kind))
-        //	{
-        //		case TypeKind.StringKind:
-        //			image.Source = ((SWC.Image)Application.Current.FindResource("PrimitivePng")).Source;
-        //			break;
-        //		case TypeKind.InterfaceKind:
-        //			image.Source = ((SWC.Image)Application.Current.FindResource("InterfacePng")).Source;
-        //			break;
-        //		case TypeKind.ArrayKind:
-        //			image.Source = ((SWC.Image)Application.Current.FindResource("ArrayPng")).Source;
-        //			break;
-        //		case TypeKind.StructKind:
-        //			switch (TypeKinds.GetParticularTypeKind(kind))
-        //			{
-        //				case TypeKind.DateTime:
-        //				case TypeKind.Decimal:
-        //				case TypeKind.Guid:
-        //				case TypeKind.TimeSpan:
-        //					image.Source = ((SWC.Image)Application.Current.FindResource("PrimitivePng")).Source;
-        //					break;
-        //				default:
-        //					image.Source = ((SWC.Image)Application.Current.FindResource("StructPng")).Source;
-        //					break;
-        //			}
-        //			break;
-        //		case TypeKind.ReferenceKind:
-        //			image.Source = ((SWC.Image)Application.Current.FindResource("ClassPng")).Source;
-        //			break;
-        //		case TypeKind.EnumKind:
-        //			image.Source = ((SWC.Image)Application.Current.FindResource("EnumPng")).Source;
-        //			break;
-        //		case TypeKind.PrimitiveKind:
-        //			image.Source = ((SWC.Image)Application.Current.FindResource("PrimitivePng")).Source;
-        //			break;
-        //		default:
-        //			image.Source = ((SWC.Image)Application.Current.FindResource("QuestionPng")).Source;
-        //			break;
-        //	}
-
-        //	stackPanel.Children.Add(image);
-        //	stackPanel.Children.Add(GuiUtils.GetClrtDisplayableTypeTextBlock(dispType));
-        //	return stackPanel;
-        //}
-
-
         #endregion Utils
     }
-
-
 }

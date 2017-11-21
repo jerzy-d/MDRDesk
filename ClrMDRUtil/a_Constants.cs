@@ -77,8 +77,9 @@ namespace ClrMDRIndex
         public const string CapitaslPSymbolHeader = "\u2119 "; // ℙ DOUBLE-STRUCK CAPITAL P
 
         public const char InformationSymbol = '\u2110'; // ℐ SCRIPT CAPITAL I
-		public const char HeavyRightArrow = '\u279C'; // ➜ HEAVY ROUND-TIPPED RIGHTWARDS ARROW
-		public const string HeavyRightArrowPadded = " \u279C "; // ➜ HEAVY ROUND-TIPPED RIGHTWARDS ARROW
+        public const char HeavyRightArrow = '\u279C'; // ➜ HEAVY ROUND-TIPPED RIGHTWARDS ARROW
+        public const string HeavyRightArrowStr = "\u279C"; // ➜ HEAVY ROUND-TIPPED RIGHTWARDS ARROW
+        public const string HeavyRightArrowPadded = " \u279C "; // ➜ HEAVY ROUND-TIPPED RIGHTWARDS ARROW
 		public const string HeavyRightArrowHeader = "\u279C "; // ➜ HEAVY ROUND-TIPPED RIGHTWARDS ARROW
 		public const string FailureSymbolHeader = "\u2132 "; // Ⅎ TURNED CAPITAL F
 		public const string WindowsNewLine = " \u27A5 "; // ➥ HEAVY BLACK CURVED DOWNWARDS AND RIGHTWARDS ARROW

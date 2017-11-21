@@ -140,6 +140,7 @@ namespace ClrMDRIndex
             {
                 var index = new DumpIndex(dumpPath, runtimeNdx, IndexType.InstanceRefrences);
                 index._dumpInfo = index.LoadDumpInfo(out error);
+                if (error != null) return null;
                 if (!Utils.IsIndexVersionCompatible(version, index.DumpInfo))
                 {
                     error = Utils.GetErrorString("Failed to Open Index", index._fileMoniker.MapFolder,
@@ -423,7 +424,7 @@ namespace ClrMDRIndex
             }
             catch (Exception ex)
             {
-                error = Utils.GetExceptionErrorString(ex);
+                error = Utils.GetExceptionErrorString(ex, "IS THIS INDEX FOLDER? ");
                 return null;
             }
             finally
@@ -3488,35 +3489,35 @@ namespace ClrMDRIndex
             return IsThreadId(id) ? id : id - _threadBlockingMap.Length;
         }
 
-        public int GetBlockingId(int id)
-        {
-            if (_threads == null) return Constants.InvalidIndex;
-            Debug.Assert(id >= _threads.Length);
-            return _threads.Length - id;
-        }
+        //public int GetBlockingId(int id)
+        //{
+        //    if (_threads == null) return Constants.InvalidIndex;
+        //    Debug.Assert(id >= _threads.Length);
+        //    return _threads.Length - id;
+        //}
 
-        public string GetThreadLabel(int id)
-        {
-            if (_threads == null) return Constants.Unknown;
-            ClrtThread thread = _threads[_threadBlockingMap[id]];
-            return thread.OSThreadId + "/" + thread.ManagedThreadId;
-        }
+        //public string GetThreadLabel(int id)
+        //{
+        //    if (_threads == null) return Constants.Unknown;
+        //    ClrtThread thread = _threads[_threadBlockingMap[id]];
+        //    return thread.OSThreadId + "/" + thread.ManagedThreadId;
+        //}
 
-        public string GetThreadOrBlkLabel(int id, out bool isThread)
-        {
-            isThread = false;
-            if (_threads == null) return Constants.Unknown;
-            isThread = IsThreadId(id);
-            if (isThread)
-            {
-                ClrtThread thread = _threads[_threadBlockingMap[id]];
-                return thread.OSThreadId + "/" + thread.ManagedThreadId;
-            }
-            ClrtBlkObject blk = _blocks[GetIdFromGraph(id)];
-            if (blk.BlkReason != BlockingReason.None)
-                return Utils.BaseTypeName(GetTypeName(blk.TypeId)) + "/" + blk.BlkReason;
-            return Utils.BaseTypeName(GetTypeName(blk.TypeId));
-        }
+        //public string GetThreadOrBlkLabel(int id, out bool isThread)
+        //{
+        //    isThread = false;
+        //    if (_threads == null) return Constants.Unknown;
+        //    isThread = IsThreadId(id);
+        //    if (isThread)
+        //    {
+        //        ClrtThread thread = _threads[_threadBlockingMap[id]];
+        //        return thread.OSThreadId + "/" + thread.ManagedThreadId;
+        //    }
+        //    ClrtBlkObject blk = _blocks[GetIdFromGraph(id)];
+        //    if (blk.BlkReason != BlockingReason.None)
+        //        return Utils.BaseTypeName(GetTypeName(blk.TypeId)) + "/" + blk.BlkReason;
+        //    return Utils.BaseTypeName(GetTypeName(blk.TypeId));
+        //}
 
         public string GetThreadOrBlkUniqueLabel(int id, out bool isThread)
         {
@@ -3527,12 +3528,12 @@ namespace ClrMDRIndex
             {
                 int threadId = _threadBlockingMap[id];
                 ClrtThread thread = _threads[threadId];
-                return "[" + threadId + "] " + thread.OSThreadId + "/" + thread.ManagedThreadId;
+                return Constants.HeavyRightArrowStr + threadId + "] " + thread.OSThreadId + "/" + thread.ManagedThreadId;
             }
             int blockId = GetIdFromGraph(id);
             ClrtBlkObject blk = _blocks[blockId];
-            if (blk.BlkReason != BlockingReason.None)
-                return Constants.HeavyAsteriskStr + blockId + "] " + Utils.BaseTypeName(GetTypeName(blk.TypeId)) + "/" + blk.BlkReason;
+            //if (blk.BlkReason != BlockingReason.None)
+            //    return Constants.HeavyAsteriskStr + blockId + "] " + Utils.BaseTypeName(GetTypeName(blk.TypeId)) + "/" + blk.BlkReason;
             return Constants.HeavyAsteriskStr + blockId + "] " + Utils.BaseTypeName(GetTypeName(blk.TypeId));
         }
 

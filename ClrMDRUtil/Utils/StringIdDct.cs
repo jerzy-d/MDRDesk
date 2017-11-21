@@ -2,13 +2,11 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using ClrMDRIndex;
 
 namespace ClrMDRUtil.Utils
 {
-	public class StringIdDct
+    public class StringIdDct
 	{
 		private readonly SortedDictionary<string, int> _dct;
 

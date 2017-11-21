@@ -11,7 +11,7 @@
         xmlns:objectModel="clr-namespace:System.Collections.ObjectModel;assembly=mscorlib"
         xmlns:generic="clr-namespace:System.Collections.Generic;assembly=mscorlib"
         xmlns:mdr="clr-namespace:ClrMDRIndex;assembly=ClrMDRIndex"
-         xmlns:wpfgraphcontrol="clr-namespace:Microsoft.Msagl.WpfGraphControl;assembly=Microsoft.Msagl.WpfGraphControl"
+        xmlns:wpfgraphcontrol="clr-namespace:Microsoft.Msagl.WpfGraphControl;assembly=Microsoft.Msagl.WpfGraphControl"
         mc:Ignorable="d"
         Title="MainWindow" Height="750" Width="1200"  Background="#FF43626C"
         Icon="Images/appbar.list.gear.ico"
@@ -100,7 +100,7 @@
             <!--<MenuItem x:Name="TypeListGetBaseHeapSizeReport" Header="Get Type Heap Base Size Report" Click="GetHeapBaseSizeReportClicked"></MenuItem>-->
             <Separator></Separator>
             <MenuItem x:Name="TypeListGetStringUsage" Header="Get String Usage" Click="GetTypeStringUsage"></MenuItem>
-            
+
             <MenuItem x:Name="TypeListGetParentReferences" Header="Get Parent References" Click="GetParentReferences"></MenuItem>
             <MenuItem x:Name="TypeListGenerateSizeDetailsReport" Header="Generate Size Details Report" Click="GenerateSizeDetailsReport"></MenuItem>
             <MenuItem x:Name="TypeListGetTypeValuesReport" Header="Type Values Report" Click="GetTypeValuesReportClicked"></MenuItem>
@@ -147,7 +147,7 @@
             <TextBox Name="ListingInformation" v4:Grid.Row="2" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" Margin="2,2,2,2">
             </TextBox>
         </-->
-    <!-- thread grids -->
+        <!-- thread grids -->
         <!-- ############ -->
         <!--<Grid x:Key="DeadlockGraphXGrid" x:Shared="False">
             <DockPanel>
@@ -172,7 +172,9 @@
                     <Button.ToolTip>Redo</Button.ToolTip>
                     <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
                         <Image Source=".\Images\Backward_16x.png" Width="16" Height="16" Margin="0,0,10,0" VerticalAlignment="Center" HorizontalAlignment="Center"/>
-                        --><!--<TextBlock FontWeight="Bold" FontSize="12">Redo</TextBlock>--><!--
+                        -->
+        <!--<TextBlock FontWeight="Bold" FontSize="12">Redo</TextBlock>-->
+        <!--
                     </StackPanel>
                 </Button>
                 <Button x:Name="ThreadBlockingGraphXForward" Margin="2,0,2,0" Width="24" Height="24" HorizontalAlignment="Right" VerticalAlignment="Center" BorderThickness="0" Click="ThreadBlockingGraphXForwardClicked"
@@ -180,7 +182,9 @@
                     <Button.ToolTip>Undo</Button.ToolTip>
                     <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
                         <Image Source=".\Images\Forward_16x.png" Width="16" Height="16" Margin="0,0,10,0" VerticalAlignment="Center" HorizontalAlignment="Center"/>
-                        --><!--<TextBlock FontWeight="Bold" FontSize="12">Undo</TextBlock>--><!--
+                        -->
+        <!--<TextBlock FontWeight="Bold" FontSize="12">Undo</TextBlock>-->
+        <!--
                     </StackPanel>
                 </Button>
                 <TextBlock Name="ThreadBlockingGraphXHelp" Margin="32,0,2,0" HorizontalAlignment="Right" VerticalAlignment="Center" FontFamily="Trebuchet MS"  FontSize="12" FontStyle="Italic"></TextBlock>
@@ -273,7 +277,7 @@
                     <RowDefinition Height="65*"/>
                     <RowDefinition Height="5"/>
                     <RowDefinition Height="15*"/>
-                 </Grid.RowDefinitions>
+                </Grid.RowDefinitions>
                 <ToolBar Grid.Row="0" Grid.Column="0" FontSize="11" FontWeight="Bold" FontStyle="Italic">
                     <RadioButton Name="LayoutSugiyama" GroupName="GraphLayout" Content="[Sugiyama]" Click="LayoutSugiyama_Click"/>
                     <RadioButton Name="LayoutMDS" GroupName="GraphLayout" Content="[MDS]" Click="LayoutMDS_Click" IsChecked="True" />
@@ -349,7 +353,7 @@
         </Grid>
         <!-- ############ -->
         <!-- thread grids -->
-        
+
         <!-- change ulong value to hex string-->
         <local:LongHexConverter x:Key="LongHexConverter" />
 
@@ -378,7 +382,7 @@
                 <RowDefinition Height="15*"/>
             </Grid.RowDefinitions>
             <ScrollViewer Grid.Row="0" BorderBrush="Black" BorderThickness="2" Background="LightGray">
-            <TextBlock Name="GeneralInfoText" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" FontFamily="Consolas" Margin="8,8,2,2"></TextBlock>
+                <TextBlock Name="GeneralInfoText" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" FontFamily="Consolas" Margin="8,8,2,2"></TextBlock>
             </ScrollViewer>
             <DataGrid Name="GeneralInfoGenerations" v4:Grid.Row="1" Grid.RowSpan="2"  AlternatingRowBackground="LightGray" Width="700" HorizontalAlignment="Stretch" VerticalAlignment="Center" IsReadOnly="True" AutoGenerateColumns="False" FontFamily="Consolas">
                 <DataGrid.Columns>
@@ -521,7 +525,7 @@
                             <Image Source=".\Images\Collapse_16x.png" Width="16" Height="16" Margin="0,0,0,0" VerticalAlignment="Center" HorizontalAlignment="Center"/>
                         </StackPanel>
                     </Button>
-                </ToolBar>    
+                </ToolBar>
             </ToolBarTray>
         </Grid>
         <!-- display tree view -->
@@ -617,7 +621,7 @@
             <Grid Name="BottomGrid" Row="4" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" Margin="2,2,2,2">
             </Grid>
         </Grid>
-        
+
         <Grid x:Key="ListingGrid" x:Shared="False">
             <Grid.RowDefinitions>
                 <RowDefinition Height="75*"/>
@@ -639,7 +643,7 @@
             <TextBox Name="ListingInformation" v4:Grid.Row="2" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" Margin="2,2,2,2">
             </TextBox>
         </Grid>
-        
+
         <Grid x:Key="TypeValuesGrid" x:Shared="False">
             <Grid.RowDefinitions>
                 <RowDefinition Height="75*"/>
@@ -669,7 +673,7 @@
                 <RowDefinition Height="20*"/>
             </Grid.RowDefinitions>
             <Grid Name="GraphGrid" Grid.Row="0" VerticalAlignment="Stretch" HorizontalAlignment="Stretch" ClipToBounds="True">
-                
+
             </Grid>
             <!--<StackPanel Name="GraphPanel" Grid.Row="0" VerticalAlignment="Stretch" HorizontalAlignment="Stretch" Margin="2,2,2,2" Visibility="Visible" Orientation="Horizontal">
             </StackPanel>-->
@@ -684,7 +688,7 @@
                 <ColumnDefinition Width="90*"/>
             </Grid.ColumnDefinitions>
             <ListBox Name="RootTypeList" Grid.Column="0" SelectionChanged="RootTypeListSelectionChanged" SelectionMode="Single">
-                    
+
             </ListBox>
             <!--<Grid Name="RootListing" Grid.Column="1"></Grid>-->
         </Grid>
@@ -992,7 +996,7 @@
                     </Label.ToolTip>
                 </Label>
             </ToolBar>
- 
+
         </ToolBarTray>
         <!--<ToolBarTray x:Name="SuplementalToolbarTray" Grid.Row="1" Margin="1,0,1,0">
             <ToolBar x:Name="SuplementalToolbar">
