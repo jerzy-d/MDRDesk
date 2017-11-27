@@ -64,11 +64,13 @@ namespace MDRDesk
         private const string GridNameTypeView = "NameTypeView";
         private const string GridReversedNameTypeView = "ReversedNameTypeView";
 
+        // threads
         private const string DeadlockGraphGrid = "DeadlockGraphGrid";
-        //private const string ThreadBlockingGraphGrid = "ThreadBlockingGraphGrid";
         private const string ThreadBlockingObjectGraphGrid = "ThreadBlockingObjectsGraphGrid";  // using MSAGL
-
         private const string ThreadViewGrid = "ThreadViewGrid";
+
+
+
         private const string AncestorTreeViewGrid = "AncestorTreeViewGrid";
 
         private const string GridFinalizerQueue = "FinalizerQueueGrid";
@@ -124,7 +126,7 @@ namespace MDRDesk
             string error = null;
             try
             {
-                DisplayThreadBlockGraph(CurrentIndex.ThreadBlockgraph.AdjacencyLists, false);
+                DisplayThreadBlockGraph(CurrentIndex.ThreadBlockgraph.Graph, false);
             }
             catch (Exception ex)
             {
@@ -136,14 +138,7 @@ namespace MDRDesk
         {
             try
             {
-                // we need to convert graph type
-                int[][] dlk = CurrentIndex.Deadlock;
-                List<int>[] adjList = new List<int>[dlk.Length];
-                for (int i = 0, icnt = dlk.Length; i < icnt; ++i)
-                {
-                    adjList[i] = dlk[i].ToList();
-                }
-                DisplayThreadBlockGraph(adjList, true);
+                DisplayThreadBlockGraph(CurrentIndex.Deadlock, true);
             }
             catch (Exception ex)
             {
@@ -157,7 +152,7 @@ namespace MDRDesk
         /// <param name="digraph"></param>
         /// <param name="error"></param>
         /// <returns></returns>
-        public async void DisplayThreadBlockGraph(List<int>[] adjLst, bool deadlocks)
+        public async void DisplayThreadBlockGraph(int[][] dgraph, bool deadlocks)
         {
             string error = null;
             CloseableTabItem graphTab = null;
@@ -187,20 +182,8 @@ namespace MDRDesk
                 threadAliveStackObjects.ContextMenu.Tag = threadAliveStackObjects;
                 var threadDeadStackObjects = (ListView)LogicalTreeHelper.FindLogicalNode(grid, "ThreadDeadStackObjects");
                 threadDeadStackObjects.ContextMenu.Tag = threadDeadStackObjects;
-                var threadBlockingkObject = (ListView)LogicalTreeHelper.FindLogicalNode(grid, "ThreadBlockingkObject");
+                ListView threadBlockingkObject = (ListView)LogicalTreeHelper.FindLogicalNode(grid, "ThreadBlockingkObject");
                 threadBlockingkObject.ContextMenu.Tag = threadBlockingkObject;
-
-                /*
-                 ThreadBlockingObjectsGraphGrid
-                    ThreadsGrid (0,0)
-                        ThreadsGraphGrid (0,0)
-                        splitter (1,0)
-                        ThreadFrames (2,0)
-                    no name grid (0,1)
-                        ThreadAliveStackObjects (0,0)
-                        splitter (1,0)
-                        ThreadDeadStackObjects (2,0)
-                 * */
                 GraphViewer graphViewer = new GraphViewer();
                 graphViewer.GraphCanvas.HorizontalAlignment = HorizontalAlignment.Stretch;
                 graphViewer.GraphCanvas.VerticalAlignment = VerticalAlignment.Stretch;
@@ -214,31 +197,29 @@ namespace MDRDesk
                 Graph graph = new Graph();
 
                 Microsoft.Msagl.Layout.MDS.MdsLayoutSettings layoutAlgorithmSettings = new Microsoft.Msagl.Layout.MDS.MdsLayoutSettings();
-                //Microsoft.Msagl.Layout.Layered.SugiyamaLayoutSettings layoutAlgorithmSettings = new Microsoft.Msagl.Layout.Layered.SugiyamaLayoutSettings();
                 layoutAlgorithmSettings.NodeSeparation = 20.0;
-                //layoutAlgorithmSettings.ClusterMargin = 20;
 
                 graph.LayoutAlgorithmSettings = layoutAlgorithmSettings;
 
                 if (deadlocks)
                 {
                     int nodeCnt = 0;
-                    for (int i = 0, icnt = adjLst.Length; i < icnt; ++i)
+                    for (int i = 0, icnt = dgraph.Length; i < icnt; ++i)
                     {
-                        for (int j = 0, jcnt = adjLst[i].Count; j < jcnt; ++j)
+                        for (int j = 0, jcnt = dgraph[i].Length; j < jcnt; ++j)
                         {
                             ++nodeCnt;
                         }
                     }
-                    string[][] nodeNames = new string[adjLst.Length][];
+                    string[][] nodeNames = new string[dgraph.Length][];
                     HashSet<int> done = new HashSet<int>();
-                    for (int i = 0, icnt = adjLst.Length; i < icnt; ++i)
+                    for (int i = 0, icnt = dgraph.Length; i < icnt; ++i)
                     {
-                        nodeNames[i] = new string[adjLst[i].Count];
+                        nodeNames[i] = new string[dgraph[i].Length];
 
-                        for (int j = 0, jcnt = adjLst[i].Count; j < jcnt; ++j)
+                        for (int j = 0, jcnt = dgraph[i].Length; j < jcnt; ++j)
                         {
-                            int ndx = adjLst[i][j];
+                            int ndx = dgraph[i][j];
                             bool isThread;
                             string nodeLabel = CurrentIndex.GetThreadOrBlkUniqueLabel(ndx, out isThread);
                             if (done.Add(ndx))
@@ -258,9 +239,9 @@ namespace MDRDesk
                             nodeNames[i][j] = nodeLabel;
                         }
                     }
-                    for (int i = 0, icnt = adjLst.Length; i < icnt; ++i)
+                    for (int i = 0, icnt = dgraph.Length; i < icnt; ++i)
                     {
-                        for (int j = 1, jcnt = adjLst[i].Count; j < jcnt; ++j)
+                        for (int j = 1, jcnt = dgraph[i].Length; j < jcnt; ++j)
                         {
                             string sourceLabel = nodeNames[i][j - 1];
                             string targetLabel = nodeNames[i][j];
@@ -274,9 +255,9 @@ namespace MDRDesk
                 }
                 else
                 {
-                    string[] nodeNames = new string[adjLst.Length];
-                    Bitset threadFlags = new Bitset(adjLst.Length);
-                    for (int i = 0, icnt = adjLst.Length; i < icnt; ++i)
+                    string[] nodeNames = new string[dgraph.Length];
+                    Bitset threadFlags = new Bitset(dgraph.Length);
+                    for (int i = 0, icnt = dgraph.Length; i < icnt; ++i)
                     {
                         bool isThread;
                         string nodeLabel = CurrentIndex.GetThreadOrBlkUniqueLabel(i, out isThread);
@@ -294,12 +275,12 @@ namespace MDRDesk
                         }
                         nodeNames[i] = nodeLabel;
                     }
-                    for (int i = 0, icnt = adjLst.Length; i < icnt; ++i)
+                    for (int i = 0, icnt = dgraph.Length; i < icnt; ++i)
                     {
-                        if (adjLst[i] == null) continue;
-                        for (int j = 0, jcnt = adjLst[i].Count; j < jcnt; ++j)
+                        Debug.Assert(dgraph[i] != null);
+                        for (int j = 0, jcnt = dgraph[i].Length; j < jcnt; ++j)
                         {
-                            int targetNdx = adjLst[i][j];
+                            int targetNdx = dgraph[i][j];
                             Edge edge = (Edge)graph.AddEdge(nodeNames[i], nodeNames[targetNdx]);
                             if (threadFlags.IsSet(i))
                             {
@@ -308,10 +289,11 @@ namespace MDRDesk
                         }
                     }
                 }
-
                 graphViewer.Graph = graph;
-
-                graphViewer.MouseUp += GraphViewer_MouseUp; ;
+                graphViewer.MouseUp += GraphViewer_MouseUp;
+                GuiUtils.AddAdorner(threadBlockingkObject, "Click a blocking object node.");
+                GuiUtils.AddAdorner(threadAliveStackObjects, "Click a thread node.");
+                GuiUtils.AddAdorner(threadDeadStackObjects, "Click a thread node.");
             }
             catch (Exception ex)
             {
@@ -344,21 +326,24 @@ namespace MDRDesk
                     {
                         ClrtBlkObject blk = CurrentIndex.GetGraphBlkObject(nodeIndex);
                         var blkObjectView = (ListView)LogicalTreeHelper.FindLogicalNode(grid, "ThreadBlockingkObject");
-                        ((GridViewColumnHeader)((GridView)blkObjectView.View).Columns[0].Header).Content = nodeName + " Blocking Object";
+                        GuiUtils.RemoveAdorner(blkObjectView);
+                        ((GridViewColumnHeader)((GridView)blkObjectView.View).Columns[0].Header).Content = GuiUtils.GetTextBlock(nodeName, "Blocking Object Properties", 0);
                         blkObjectView.ItemsSource = blk.DataDescriptions(CurrentIndex.TypeNames);
                     }
                     else
                     {
-                        var threadFrames = (ListBox)LogicalTreeHelper.FindLogicalNode(grid, "ThreadFrames");
+                        var threadFrames = (ListView)LogicalTreeHelper.FindLogicalNode(grid, "ThreadFrames");
                         var threadAliveStackObjects = (ListView)LogicalTreeHelper.FindLogicalNode(grid, "ThreadAliveStackObjects");
+                        GuiUtils.RemoveAdorner(threadAliveStackObjects);
                         var threadDeadStackObjects = (ListView)LogicalTreeHelper.FindLogicalNode(grid, "ThreadDeadStackObjects");
+                        GuiUtils.RemoveAdorner(threadDeadStackObjects);
                         ClrtThread thrd = info.Item2[nodeIndex];
                         KeyValuePair<string[], string[]> stackobjs = CurrentIndex.GetThreadStackVarsStrings(thrd.LiveStackObjects, thrd.DeadStackObjects, info.Item4);
-                        ((GridViewColumnHeader)((GridView)threadAliveStackObjects.View).Columns[0].Header).Content = nodeName + " Dead Stack Objects [" + stackobjs.Key.Length + ']';
+                        ((GridViewColumnHeader)((GridView)threadAliveStackObjects.View).Columns[0].Header).Content = GuiUtils.GetTextBlock(nodeName, "Alive Stack Objects", stackobjs.Key.Length);
                         threadAliveStackObjects.ItemsSource = stackobjs.Key;
-                        ((GridViewColumnHeader)((GridView)threadDeadStackObjects.View).Columns[0].Header).Content = nodeName + " Dead Stack Objects [" + stackobjs.Value.Length + ']';
+                        ((GridViewColumnHeader)((GridView)threadDeadStackObjects.View).Columns[0].Header).Content = GuiUtils.GetTextBlock(nodeName, "Dead Stack Objects", stackobjs.Value.Length);
                         threadDeadStackObjects.ItemsSource = stackobjs.Value;
-
+                        ((GridViewColumnHeader)((GridView)threadFrames.View).Columns[0].Header).Content = GuiUtils.GetTextBlock(nodeName, "Thread Frames", thrd.Frames.Length, "  FRAMES ID: " + thrd.FrameGroupId);
                         threadFrames.Items.Clear();
                         string[] allFrames = info.Item3;
                         int frameCount = thrd.Frames.Length;
@@ -367,16 +352,14 @@ namespace MDRDesk
                             threadFrames.Items.Add(allFrames[thrd.Frames[i]]);
                         }
                     }
-
                     return;
                 }
             }
         }
 
         /// <summary>
-        /// 
+        /// For a user, if she does not like current graph layout.
         /// </summary>
-        /// <param name="settings"></param>
         private void ChangeGraphLayout(Microsoft.Msagl.Core.Layout.LayoutAlgorithmSettings settings)
         {
             var grid = GetCurrentTabGrid();
@@ -419,7 +402,6 @@ namespace MDRDesk
             layoutAlgorithmSettings.ClusterMargin = 20;
             ChangeGraphLayout(layoutAlgorithmSettings);
         }
-
 
         private void LayoutIncremental_Click(object sender, RoutedEventArgs e)
         {
@@ -471,7 +453,6 @@ namespace MDRDesk
                 return;
             }
             MainStatusShowMessage(selections.Count + " addresses are copied to Clipboard.");
-
         }
 
         private void StackObjectCopyAddressAllClicked(object sender, RoutedEventArgs e)
@@ -502,7 +483,6 @@ namespace MDRDesk
                 return;
             }
             MainStatusShowMessage(lv.Items.Count + " addresses are copied to Clipboard.");
-
         }
 
         private void StackObjectGetInstSizesClicked(object sender, RoutedEventArgs e)
@@ -789,19 +769,7 @@ namespace MDRDesk
             MainTab.SelectedItem = tab;
             MainTab.UpdateLayout();
         }
-
-        //private void DisplayGenerationLine(TextBlock txtBlock, string[] titles, ulong[] values)
-        //{
-        //    Debug.Assert(titles.Length == values.Length);
-        //    ulong total = 0UL;
-        //    for (int i = 0, icnt = titles.Length; i < icnt; ++i)
-        //    {
-        //        total += values[i];
-        //        txtBlock.Inlines.Add(new Run("  " + titles[i] + ": [" + Utils.LargeNumberString(values[i]) + "]"));
-        //    }
-        //    txtBlock.Inlines.Add(new Run("    Total Size: " + Utils.LargeNumberString(total)));
-        //}
-
+ 
         #region types main displays
 
         private void DisplayNamespaceGrid(KeyValuePair<string, KeyValuePair<string, int>[]>[] namespaces)
@@ -1161,7 +1129,7 @@ namespace MDRDesk
         /// </summary>
         /// <param name="sender">Delegate invoker.</param>
         /// <param name="e">Delegate argument, not used.</param>
-        private async void LbInstanceParentsClicked(object sender, RoutedEventArgs e)
+        private void LbInstanceParentsClicked(object sender, RoutedEventArgs e)
         {
             if (!IsIndexAvailable("No index is loaded")) return;
 
@@ -1313,7 +1281,7 @@ namespace MDRDesk
             }
             catch (Exception ex)
             {
-                // TODO JRD
+                GuiUtils.ShowError(Utils.GetExceptionErrorString(ex),this);
             }
         }
 
@@ -2196,49 +2164,7 @@ namespace MDRDesk
 
             var threads = result.Item2;
             var framesMethods = result.Item3;
-
-            int[][] frames = new int[threads.Length][];
-            for (int i = 0, icnt = threads.Length; i < icnt; ++i)
-                frames[i] = threads[i].Frames;
-
-            var frmCmp = new Utils.IntArrayHeadCmp();
-            int[] frMap = Utils.Iota(threads.Length);
-            Array.Sort(frames, frMap, frmCmp);
-            int cnt, frmId = 0;
-            KeyValuePair<int, int>[] frmCounts = new KeyValuePair<int, int>[frames.Length];
-            frmCounts[0] = new KeyValuePair<int, int>(frmId, 1);
-            for (int i = 1; i < frames.Length; ++i)
-            {
-                if (frmCmp.Compare(frames[i - 1], frames[i]) == 0)
-                {
-                    cnt = frmCounts[i - 1].Value;
-                    frmCounts[i] = new KeyValuePair<int, int>(frmId, cnt + 1);
-                    continue;
-                }
-                ++frmId;
-                frmCounts[i] = new KeyValuePair<int, int>(frmId, 1);
-            }
-
-            int digitCount = Utils.NumberOfDigits(frmId);
-            char[] buf = new char[digitCount];
-
-            cnt = frmCounts[frmCounts.Length - 1].Value;
-            frmId = frmCounts[frmCounts.Length - 1].Key;
-            for (int i = frmCounts.Length - 2; i >= 0; --i)
-            {
-                if (frmCounts[i].Key == frmId)
-                {
-                    frmCounts[i] = new KeyValuePair<int, int>(frmId, cnt);
-                    continue;
-                }
-                cnt = frmCounts[i].Value;
-                frmId = frmCounts[i].Key;
-            }
-
-            int[] frMap2 = Utils.Iota(threads.Length);
-            Array.Sort(frMap, frMap2);
-            frMap = null;
-
+            var frmGrpCounts = CurrentIndex.FrameGroupIdCounts;
             const int ColumnCount = 5;
             string[] data = new string[threads.Length * ColumnCount];
             listing<string>[] items = new listing<string>[threads.Length];
@@ -2249,34 +2175,24 @@ namespace MDRDesk
             for (int i = 0, icnt = threads.Length; i < icnt; ++i)
             {
                 var thrd = threads[i];
-                var osIdStr = thrd.OSThreadId.ToString();
-                var osIdStrx = thrd.OSThreadId.ToString("x");
-                var mngIdStr = thrd.ManagedThreadId.ToString();
 
                 sb.Clear();
-                var traits = thrd.GetTraitsString(sb);
 
                 items[itemNdx++] = new listing<string>(data, dataNdx, ColumnCount);
-                data[dataNdx++] = osIdStr;
-                data[dataNdx++] = osIdStrx;
-                data[dataNdx++] = mngIdStr;
-                data[dataNdx++] = traits;
-
-                KeyValuePair<int, int> kv = frmCounts[frMap2[i]];
-                sb.Clear();
-                var id = Utils.GetSubscriptIntStr(kv.Key, digitCount); // Utils.GetDigitsString(kv.Key, digitCount, buf); // Utils.GetFancyIntStr(kv.Key,digitCount); // 
-                sb.Append(id).Append("/").Append(kv.Value).Append(" thread(s), trace count ").Append(threads[i].Frames.Length);
-
-                data[dataNdx++] = sb.ToString();
+                data[dataNdx++] = thrd.OSThreadId.ToString() + " / " + thrd.OSThreadId.ToString("x");
+                data[dataNdx++] = thrd.ManagedThreadId.ToString(); ;
+                data[dataNdx++] = thrd.FrameGroupId.ToString();
+                data[dataNdx++] = frmGrpCounts[thrd.FrameGroupId].ToString();
+                data[dataNdx++] = thrd.GetTraitsString(sb);
             }
 
             ColumnInfo[] colInfos = new[]
             {
                 new ColumnInfo("OS Id", ReportFile.ColumnType.Int32, 100, 1, true),
-                new ColumnInfo("OS Id x", ReportFile.ColumnType.String, 100, 2, true),
-                new ColumnInfo("Mng Id", ReportFile.ColumnType.Int32, 100, 3, true),
-                new ColumnInfo("Properties", ReportFile.ColumnType.String, 300, 4, true),
-                new ColumnInfo("Frame Id/Thread and Trace Counts", ReportFile.ColumnType.String, 400, 5, true),
+                new ColumnInfo("Mng Id", ReportFile.ColumnType.Int32, 100, 2, true),
+                new ColumnInfo("Frame Id", ReportFile.ColumnType.Int32, 100, 3, true),
+                new ColumnInfo("Thread Count", ReportFile.ColumnType.Int32, 100, 4, true),
+                new ColumnInfo("Properties", ReportFile.ColumnType.String, 300, 5, true),
             };
 
             sb.Clear();
@@ -2333,9 +2249,12 @@ namespace MDRDesk
             Debug.Assert(data != null);
             int dataNdx = selected.Offset / selected.Count;
             ClrtThread thread = data.Item1[dataNdx];
+            var thrdName = thread.OSThreadId.ToString() + " / " + thread.OSThreadId.ToString("x");
             var grid = GetCurrentTabGrid();
             Debug.Assert(grid != null);
-            var lstBox = (ListBox)LogicalTreeHelper.FindLogicalNode(grid, "ThreadListingFrames");
+            var lstBox = (ListView)LogicalTreeHelper.FindLogicalNode(grid, "ThreadListingFrames");
+            ((GridViewColumnHeader)((GridView)lstBox.View).Columns[0].Header).Content = GuiUtils.GetTextBlock(thrdName, "Thread Frames", thread.Frames.Length, "  FRAMES ID: " + thread.FrameGroupId);
+
             Debug.Assert(lstBox != null);
             lstBox.Items.Clear();
             string[] allFrames = data.Item2;
@@ -2346,17 +2265,19 @@ namespace MDRDesk
             }
             var stackVars = CurrentIndex.GetThreadStackVarsStrings(thread.LiveStackObjects, thread.DeadStackObjects, data.Item3);
             var alistView = (ListView)LogicalTreeHelper.FindLogicalNode(grid, "AliveStackObjects");
+            ((GridViewColumnHeader)((GridView)alistView.View).Columns[0].Header).Content = GuiUtils.GetTextBlock(thrdName, "Alive Stack Objects", thread.LiveStackObjects.Length);
             Debug.Assert(alistView != null);
             alistView.ItemsSource = stackVars.Key;
             alistView = (ListView)LogicalTreeHelper.FindLogicalNode(grid, "DeadStackObjects");
+            ((GridViewColumnHeader)((GridView)alistView.View).Columns[0].Header).Content = GuiUtils.GetTextBlock(thrdName, "Dead Stack Objects", thread.DeadStackObjects.Length);
             Debug.Assert(alistView != null);
             alistView.ItemsSource = stackVars.Value;
 
         }
 
-        #endregion threads
+#endregion threads
 
-        #region Instance Hierarchy Traversing
+#region Instance Hierarchy Traversing
 
         private async void ExecuteInstanceHierarchyQuery(string statusMessage, ulong addr, int fldNdx)
         {
@@ -2598,9 +2519,9 @@ namespace MDRDesk
             }
         }
 
-        #endregion Instance Hierarchy Traversing
+#endregion Instance Hierarchy Traversing
 
-        #region msagl graph
+#region msagl graph
 
         //private void DisplayGraph(Digraph digraph)
         //{
@@ -2610,11 +2531,11 @@ namespace MDRDesk
         //    GraphViewer graphViewer = new GraphViewer();
         //}
 
-        #endregion msagl graph
+#endregion msagl graph
 
-        #endregion Display Grids
+#endregion Display Grids
 
-        #region MessageBox
+#region MessageBox
 
         private void ShowInformation(string caption, string header, string text, string details)
         {
@@ -2714,13 +2635,13 @@ namespace MDRDesk
         //    return dialog;
         //}
 
-        #endregion MessageBox
+#endregion MessageBox
 
-        #region Map Queries
+#region Map Queries
 
-        #endregion Map Queries
+#endregion Map Queries
 
-        #region TabItem Cleanup
+#region TabItem Cleanup
 
         private async void CloseCurrentIndex()
         {
@@ -2757,9 +2678,9 @@ namespace MDRDesk
             }
         }
 
-        #endregion TabItem Cleanup
+#endregion TabItem Cleanup
 
-        #region Utils
+#region Utils
 
         /// <summary>
         /// Returns grid of currently selected tab on main display (MainTab).
@@ -2876,6 +2797,6 @@ namespace MDRDesk
             return Constants.InvalidAddress;
         }
 
-        #endregion Utils
+#endregion Utils
     }
 }

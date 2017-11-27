@@ -30,6 +30,11 @@ namespace ClrMDRIndex
         public string DumpPath => _fileMoniker.Path;
         public string DumpFileName => _fileMoniker.FileName;
 
+        private int[] _instanceCount;
+        private int[] _typeCount;
+        private int[] _finalizerCount;
+        private int[] _rootCount;
+
         /// <summary>
         /// Indexing errors, they all are written to the error file in the index folder.
         /// </summary>
@@ -60,7 +65,7 @@ namespace ClrMDRIndex
             var clrtDump = new ClrtDump(DumpPath);
             if (!clrtDump.Init(out error)) return false;
             _errors = new ConcurrentBag<string>[clrtDump.RuntimeCount];
-            Thread threadInfoWorker = null, referenceBuilderWorker = null;
+            //Thread threadInfoWorker = null, referenceBuilderWorker = null;
             DateTime indexingStart = DateTime.UtcNow;
             InstanceReferences builder = null;
 
@@ -75,6 +80,11 @@ namespace ClrMDRIndex
                     //
                     if (!GetPrerequisites(clrtDump, progress, out _stringIdDcts, out error)) return false;
                     if (!GetTargetModuleInfos(clrtDump, progress, out error)) return false;
+
+                    _instanceCount = new int[clrtDump.RuntimeCount];
+                    _typeCount = new int[clrtDump.RuntimeCount];
+                    _finalizerCount = new int[clrtDump.RuntimeCount];
+                    _rootCount = new int[clrtDump.RuntimeCount];
 
                     for (int r = 0, rcnt = clrtDump.RuntimeCount; r < rcnt; ++r)
                     {
@@ -96,18 +106,24 @@ namespace ClrMDRIndex
                         progress?.Report(runtimeIndexHeader + "Getting instance count...");
                         var addrCount = DumpIndexer.GetHeapAddressCount(heap);
                         progress?.Report(runtimeIndexHeader + "Instance count: " + Utils.CountString(addrCount));
+                        _instanceCount[r] = addrCount; // for general info dump
 
                         // get type names
                         //
                         progress?.Report(runtimeIndexHeader + "Getting type names...");
                         typeNames = DumpIndexer.GetTypeNames(heap, out error);
                         Debug.Assert(error == null);
+                        _typeCount[r] = typeNames.Length; // for general info dump
+
 
                         // get roots
                         //
                         progress?.Report(runtimeIndexHeader + "Getting roots...");
                         (ulong[] rootObjectAddrs, ulong[] finalizerAddrs) = ClrtRootInfo.SetupRootAddresses(r, runtime, heap, typeNames, strIds, _fileMoniker, out error);
                         Debug.Assert(error == null);
+                        // for general info dump
+                        _finalizerCount[r] = finalizerAddrs.Length;
+                        _rootCount[r] = rootObjectAddrs.Length;
 
                         // get addresses and types
                         //
@@ -119,14 +135,10 @@ namespace ClrMDRIndex
                             return false;
                         }
                         Debug.Assert(Utils.AreAddressesSorted(addresses));
+
                         // threads and blocking objects
                         //
                         progress?.Report(runtimeIndexHeader + "Getting threads, blocking objecks information...");
-                        //var addressesCopy = Utils.CopyArray(addresses);
-                        //threadInfoWorker = new Thread(GetThreadsInfos);
-                        //threadInfoWorker.Start(new Tuple<string, ulong[], int[], string[]>(DumpPath, addresses, typeIds, typeNames));
-                        //GetThreadsInfos(new Tuple<string, ulong[], int[], string[]>(DumpPath, addresses, typeIds, typeNames));
-
                         GetThreadsInfos(clrtDump.Runtime, addresses, typeIds, typeNames, progress);
 
                         // setting root information
@@ -1224,6 +1236,8 @@ namespace ClrMDRIndex
                 }
 
                 int blkThreadCount = blkThreadAry.Length;
+
+#if FALSE
                 Digraph graph = new Digraph(blkThreadCount + blkBlockAry.Length);
 
                 for (int i = 0, cnt = threadBlocksAry.Length; i < cnt; ++i)
@@ -1242,6 +1256,25 @@ namespace ClrMDRIndex
                         graph.AddDistinctEdge(ndx, blkThreadCount + i);
                     }
                 }
+#endif
+                List<int>[] adjLists = new List<int>[blkThreadCount + blkBlockAry.Length];
+                int edgeCount = 0;
+                for (int i = 0, cnt = threadBlocksAry.Length; i < cnt; ++i)
+                {
+                    var blkInfo = threadBlocksAry[i];
+                    for (int j = 0, tcnt = blkInfo.Item2.Length; j < tcnt; ++j)
+                    {
+                        var ndx = Array.BinarySearch(blkThreadAry, blkInfo.Item2[j], thrCmp);
+                        Debug.Assert(ndx >= 0);
+                        DGraph.AddDistinctEdge(adjLists, blkThreadCount + i, ndx,ref edgeCount);
+                    }
+                    for (int j = 0, tcnt = blkInfo.Item3.Length; j < tcnt; ++j)
+                    {
+                        var ndx = Array.BinarySearch(blkThreadAry, blkInfo.Item3[j], thrCmp);
+                        Debug.Assert(ndx >= 0);
+                        DGraph.AddDistinctEdge(adjLists, ndx, blkThreadCount + i, ref edgeCount);
+                    }
+                }
 
                 // TODO JRD -- We need Hawick here
                 //CppUtils.GraphHelper graphHelper = new CppUtils.GraphHelper();
@@ -1249,6 +1282,15 @@ namespace ClrMDRIndex
                 //var newCycles = graphHelper.GetCycles();
 
                 progress?.Report(progressHeader + "Searching for thread and blocking object cycles...");
+
+                int[][] allCycles = null;
+                DGraph dgraph = new DGraph(adjLists, edgeCount);
+                if (DGraph.HasCycle(dgraph.Graph))
+                {
+                    progress?.Report(progressHeader + "Found one cycle, searching for more, possible deadlock(s)...");
+                    allCycles = Circuits.GetCycles(dgraph.Graph);
+                }
+#if FALSE
                 var cycle = new DirectedCycle(graph);
                 var cycles = cycle.GetCycle();
                 int[][] allCycles = null;
@@ -1258,6 +1300,8 @@ namespace ClrMDRIndex
                     var g = graph.GetJaggedArrayGraph();
                     allCycles = Circuits.GetCycles(g);
                 }
+#endif
+
                 // save graph
                 //
                 progress?.Report(progressHeader + "Saving thread and blocking object graph...");
@@ -1289,7 +1333,12 @@ namespace ClrMDRIndex
                 {
                     bw.Write(blkMap[i]);
                 }
+
+#if FALSE
                 graph.Dump(bw, out error);
+#endif
+                DGraph.Dump(bw, dgraph, out error);
+
                 bw.Close();
                 bw = null;
                 if (error != null)
@@ -1917,12 +1966,12 @@ namespace ClrMDRIndex
             }
         }
 
-        #region references
+#region references
 
 
-        #endregion references
+#endregion references
 
-        #region data dumping
+#region data dumping
 
         private void DumpIndexInfo(Version version, ClrtDump dump, string indexingDuration = null)
         {
@@ -1937,6 +1986,8 @@ namespace ClrMDRIndex
                                     + version
                                     + "], this is this application version.");
                 txtWriter.WriteLine("Dump Path: " + _fileMoniker.Path);
+                txtWriter.WriteLine("Dump Size: " + Utils.GetFileSizeString(_fileMoniker.Path));
+
                 if (!string.IsNullOrWhiteSpace(indexingDuration))
                 {
                     txtWriter.WriteLine("Indexing Duration: " + indexingDuration);
@@ -1978,12 +2029,10 @@ namespace ClrMDRIndex
                                             runtime.SharedDomain.Id + ", module cnt: " +
                                             runtime.SharedDomain.Modules.Count);
 
-                    // TODO JRD -- add this
-                    //txtWriter.WriteLine("Instance Count: " + Utils.LargeNumberString(_instances[i].Length));
-                    //txtWriter.WriteLine("Type Count: " + Utils.LargeNumberString(_types[i].Count));
-                    //txtWriter.WriteLine("Finalizer Queue Count: " +
-                    //					Utils.LargeNumberString(_clrtRoots[i].FinalizerQueueCount));
-                    //txtWriter.WriteLine("Roots Count: " + Utils.LargeNumberString(_clrtRoots[i].RootsCount));
+                    txtWriter.WriteLine("Instance Count: " + Utils.LargeNumberString(_instanceCount[i]));
+                    txtWriter.WriteLine("Type Count: " + Utils.LargeNumberString(_typeCount[i]));
+                    txtWriter.WriteLine("Finalizer Queue Count: " + Utils.LargeNumberString(_finalizerCount[i]));
+                    txtWriter.WriteLine("Roots Count: " + Utils.LargeNumberString(_rootCount[i]));
                     string error;
                     var heapBalance = dump.GetHeapBalance(i, out error);
                     if (error != null)
@@ -2021,9 +2070,9 @@ namespace ClrMDRIndex
             }
         }
 
-        #endregion data dumping
+#endregion data dumping
 
-        #region indexing helpers
+#region indexing helpers
 
         public static void MarkAsRootedOld(ulong addr, int addrNdx, ulong[] instances, int[][] references)
         {
@@ -2175,7 +2224,7 @@ namespace ClrMDRIndex
             return ary;
         }
 
-        #endregion indexing helpers
+#endregion indexing helpers
     }
 
     public class BlkObjInfoCmp : IComparer<Tuple<BlockingObject, ClrThread[], ClrThread[]>>

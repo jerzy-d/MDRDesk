@@ -101,7 +101,6 @@
     <Compile Include="ClrUtils\ClrtRootInfo.cs" />
     <Compile Include="ClrUtils\ClrtRoots.cs" />
     <Compile Include="ClrUtils\ClrtSegment.cs" />
-    <Compile Include="ClrUtils\ClrTypeSidekick.cs" />
     <Compile Include="ClrUtils\ClrtThread.cs" />
     <Compile Include="ClrUtils\ClrtTypes.cs" />
     <Compile Include="ClrUtils\DisplayableFinalizerQueue.cs" />
@@ -115,12 +114,9 @@
     <Compile Include="ClrUtils\References.cs" />
     <Compile Include="ClrUtils\StringStats.cs" />
     <Compile Include="ClrUtils\TypeInterfaces.cs" />
-    <Compile Include="Graph\BGL.cs" />
     <Compile Include="Graph\Circuits.cs" />
-    <Compile Include="Graph\DepthFirstOrder.cs" />
-    <Compile Include="Graph\Digraph.cs" />
-    <Compile Include="Graph\DirectedCycle.cs" />
-    <Compile Include="Graph\TopologicalSort.cs" />
+    <Compile Include="Graph\Cycle.cs" />
+    <Compile Include="Graph\DGraph.cs" />
     <Compile Include="MdrException.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="QueriesAndReports\DumpComparison.cs" />

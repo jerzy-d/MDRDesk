@@ -217,10 +217,26 @@
                     </ListView.View>
                 </ListView>
                 <GridSplitter Grid.Row="1" VerticalAlignment="Center" HorizontalAlignment="Stretch" Height="5" ShowsPreview="False" Background="DarkGray"></GridSplitter>
-                <TextBox Name="ThreadListingInformation" v4:Grid.Row="2" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" Margin="2,2,2,2">
-                </TextBox>
-                <ListBox Name="ThreadListingFrames" v4:Grid.Row="2" Grid.Column="0" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" Margin="2,2,2,2" FontFamily="Consolas">
-                </ListBox>
+                <!--<TextBox Name="ThreadListingInformation" v4:Grid.Row="2" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" Margin="2,2,2,2">
+                </TextBox>-->
+                <!--<ListBox Name="ThreadListingFrames" v4:Grid.Row="2" Grid.Column="0" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" Margin="2,2,2,2" FontFamily="Consolas">
+                </ListBox>-->
+                <ListView Name="ThreadListingFrames" Grid.Row="2" VerticalAlignment="Stretch" HorizontalAlignment="Stretch" Margin="2,2,2,2" FontFamily="Consolas">
+                    <ListView.ItemContainerStyle>
+                        <Style TargetType="ListViewItem">
+                            <Setter Property="HorizontalContentAlignment" Value="Left" />
+                        </Style>
+                    </ListView.ItemContainerStyle>
+                    <ListView.View>
+                        <GridView>
+                            <GridViewColumn Width="1200">
+                                <GridViewColumn.Header>
+                                    <GridViewColumnHeader Content="Thread Frames" HorizontalContentAlignment="Left" FontStyle="Italic" FontWeight="Bold"/>
+                                </GridViewColumn.Header>
+                            </GridViewColumn>
+                        </GridView>
+                    </ListView.View>
+                </ListView>
             </Grid>
             <GridSplitter Grid.Column="1" VerticalAlignment="Stretch" HorizontalAlignment="Center" Width="5" ShowsPreview="False" Background="DarkGray"></GridSplitter>
             <Grid v4:Grid.Column="2">
@@ -287,8 +303,22 @@
                 <Grid Name="ThreadsGraphGrid" Grid.Row="1" VerticalAlignment="Stretch" HorizontalAlignment="Stretch" ClipToBounds="True">
                 </Grid>
                 <GridSplitter Grid.Row="2" VerticalAlignment="Center" HorizontalAlignment="Stretch" Height="5" ShowsPreview="False" Background="DarkGray"></GridSplitter>
-                <ListBox Name="ThreadFrames" v4:Grid.Row="3" Grid.Column="0" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" Margin="2,2,2,2" FontFamily="Consolas">
-                </ListBox>
+                <ListView Name="ThreadFrames" Grid.Row="3"  Grid.Column="0" VerticalAlignment="Stretch" HorizontalAlignment="Stretch" Margin="2,2,2,2" FontFamily="Consolas">
+                    <ListView.ItemContainerStyle>
+                        <Style TargetType="ListViewItem">
+                            <Setter Property="HorizontalContentAlignment" Value="Left" />
+                        </Style>
+                    </ListView.ItemContainerStyle>
+                    <ListView.View>
+                        <GridView>
+                            <GridViewColumn Width="800">
+                                <GridViewColumn.Header>
+                                    <GridViewColumnHeader Content="Thread Frames" HorizontalContentAlignment="Left" FontStyle="Italic" FontWeight="Bold"/>
+                                </GridViewColumn.Header>
+                            </GridViewColumn>
+                        </GridView>
+                    </ListView.View>
+                </ListView>
             </Grid>
             <GridSplitter Grid.Column="1" VerticalAlignment="Stretch" HorizontalAlignment="Center" Width="5" ShowsPreview="False" Background="DarkGray"></GridSplitter>
             <Grid v4:Grid.Column="2">
@@ -309,7 +339,7 @@
                         <GridView>
                             <GridViewColumn Width="400">
                                 <GridViewColumn.Header>
-                                    <GridViewColumnHeader Content="Alive Stack Objects" HorizontalContentAlignment="Left" FontStyle="Italic" FontWeight="Bold"/>
+                                    <GridViewColumnHeader Content="Alive Stack Object List" HorizontalContentAlignment="Left" FontStyle="Italic" FontWeight="Bold"/>
                                 </GridViewColumn.Header>
                             </GridViewColumn>
                         </GridView>
@@ -326,7 +356,7 @@
                         <GridView>
                             <GridViewColumn Width="400">
                                 <GridViewColumn.Header>
-                                    <GridViewColumnHeader Content="Dead Stack Objects" HorizontalContentAlignment="Left" FontStyle="Italic" FontWeight="Bold"/>
+                                    <GridViewColumnHeader Content="Dead Stack Object List" HorizontalContentAlignment="Left" FontStyle="Italic" FontWeight="Bold"/>
                                 </GridViewColumn.Header>
                             </GridViewColumn>
                         </GridView>
@@ -343,7 +373,7 @@
                         <GridView>
                             <GridViewColumn Width="400">
                                 <GridViewColumn.Header>
-                                    <GridViewColumnHeader Content="Blocking Object" HorizontalContentAlignment="Left" FontStyle="Italic" FontWeight="Bold"/>
+                                    <GridViewColumnHeader Content="Blocking Object Properties" HorizontalContentAlignment="Left" FontStyle="Italic" FontWeight="Bold"/>
                                 </GridViewColumn.Header>
                             </GridViewColumn>
                         </GridView>
@@ -681,7 +711,7 @@
             <TextBox Name="GraphInformation" Grid.Row="2" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" Margin="2,2,2,2">
             </TextBox>
         </Grid>
-        <!-- ### Show roots. TODO JRD -->
+        <!-- ### Show roots. -->
         <Grid x:Key="RootsGrid" x:Shared="False">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="100"/>

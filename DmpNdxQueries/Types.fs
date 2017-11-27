@@ -217,32 +217,32 @@ module Types =
         | _ ->
             Constants.NullValue
 
-    let getObjectType (heap:ClrHeap) (addr:address) = 
-        let clrType = heap.GetObjectType(addr)
-        let kind = typeKind clrType
-        match TypeKinds.GetMainTypeKind(kind) with
-        | TypeKind.Unknown ->
-            EmptyClrTypeSidekick.Value
-        | TypeKind.ReferenceKind ->
-            match TypeKinds.GetParticularTypeKind(kind) with
-            | TypeKind.Str 
-            | TypeKind.Exception
-            | TypeKind.Ary ->
-                new ClrTypeSidekick(clrType,kind,null)
-            | TypeKind.SystemObject ->
-                new ClrTypeSidekick(clrType,kind,null)
-            | TypeKind.System__Canon ->
-                new ClrTypeSidekick(clrType,kind,null)
-            | _ ->
-                getReferenceFields heap addr (new ClrTypeSidekick(clrType,kind,null))
-        | TypeKind.Struct ->
-            match TypeKinds.GetParticularTypeKind(kind) with
-            | TypeKind.DateTime | TypeKind.Guid | TypeKind.TimeSpan | TypeKind.Decimal ->
-                new ClrTypeSidekick(clrType,kind,null)
-            | _ -> 
-                getStructgFields heap addr (new ClrTypeSidekick(clrType,kind,null))
-        | _ ->
-            EmptyClrTypeSidekick.Value
+    //let getObjectType (heap:ClrHeap) (addr:address) = 
+    //    let clrType = heap.GetObjectType(addr)
+    //    let kind = typeKind clrType
+    //    match TypeKinds.GetMainTypeKind(kind) with
+    //    | TypeKind.Unknown ->
+    //        EmptyClrTypeSidekick.Value
+    //    | TypeKind.ReferenceKind ->
+    //        match TypeKinds.GetParticularTypeKind(kind) with
+    //        | TypeKind.Str 
+    //        | TypeKind.Exception
+    //        | TypeKind.Ary ->
+    //            new ClrTypeSidekick(clrType,kind,null)
+    //        | TypeKind.SystemObject ->
+    //            new ClrTypeSidekick(clrType,kind,null)
+    //        | TypeKind.System__Canon ->
+    //            new ClrTypeSidekick(clrType,kind,null)
+    //        | _ ->
+    //            getReferenceFields heap addr (new ClrTypeSidekick(clrType,kind,null))
+    //    | TypeKind.Struct ->
+    //        match TypeKinds.GetParticularTypeKind(kind) with
+    //        | TypeKind.DateTime | TypeKind.Guid | TypeKind.TimeSpan | TypeKind.Decimal ->
+    //            new ClrTypeSidekick(clrType,kind,null)
+    //        | _ -> 
+    //            getStructgFields heap addr (new ClrTypeSidekick(clrType,kind,null))
+    //    | _ ->
+    //        EmptyClrTypeSidekick.Value
 
 
 

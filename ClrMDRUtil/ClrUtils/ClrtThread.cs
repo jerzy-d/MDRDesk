@@ -47,11 +47,13 @@ namespace ClrMDRIndex
         private ulong _teb;
         private int[] _blkObjects;
         private int[] _frames;
+        private int _frameGroupId;
         private ulong[] _frameStackPtrs;
         private int[] _liveStackObjects;
         private ulong _stackBase;
         private ulong _stackLimit;
         private ulong _exception;
+
 
         public int Index => _index;
         public int[] LiveStackObjects => _liveStackObjects;
@@ -64,6 +66,7 @@ namespace ClrMDRIndex
         public uint LockCount => _lockCount;
         public int[] BlockingObjects => _blkObjects;
         public int[] Frames => Frames1;
+        public int FrameGroupId => _frameGroupId;
 
         public bool IsAlive => (_traits & (int)Traits.Alive) != 0;
         public bool IsGC => (_traits & (int)Traits.GC) != 0;
@@ -74,6 +77,7 @@ namespace ClrMDRIndex
 
         public ClrtThread(ClrThread thrd, BlockingObject[] blkObjects, BlockingObjectCmp blkCmp)
         {
+            _frameGroupId = Constants.InvalidIndexLarge;
             _address = thrd.Address;
             _traits = GetTraits(thrd);
             _osId = thrd.OSThreadId;
@@ -92,6 +96,7 @@ namespace ClrMDRIndex
 
         public ClrtThread(ClrThread thrd, BlockingObject[] blkObjects, BlockingObjectCmp blkCmp, int[] frames, ulong[] stackPtrs, int[] aliveStackObjects, int[] deadStackObjects)
         {
+            _frameGroupId = Constants.InvalidIndexLarge;
             _address = thrd.Address;
             _traits = GetTraits(thrd);
             _osId = thrd.OSThreadId;
@@ -123,6 +128,7 @@ namespace ClrMDRIndex
                             ulong _stackLimit,
                             ulong _exception)
         {
+            _frameGroupId = Constants.InvalidIndexLarge;
             _address = address;
             _traits = traits;
             _osId = osId;
@@ -139,6 +145,11 @@ namespace ClrMDRIndex
         public void SetIndex(int i)
         {
             _index = i;
+        }
+
+        public void SetFrameGoupId(int id)
+        {
+            _frameGroupId = id;
         }
 
         private int[] GetBlockingObjects(IList<BlockingObject> lst, BlockingObject[] blkObjects, BlockingObjectCmp blkCmp)
@@ -319,6 +330,19 @@ namespace ClrMDRIndex
         public int GetHashCode(ClrThread t)
         {
             return t.Address.GetHashCode();
+        }
+    }
+
+    public class ClrThreadByFrameGroupCmp : IComparer<ClrtThread>
+    {
+        public int Compare(ClrtThread a, ClrtThread b)
+        {
+            int cmp = a.FrameGroupId < b.FrameGroupId ? -1 : (a.FrameGroupId > b.FrameGroupId ? 1 : 0);
+            if (cmp == 0)
+            {
+                cmp = a.OSThreadId < b.OSThreadId ? -1 : (a.OSThreadId > b.OSThreadId ? 1 : 0);
+            }
+            return cmp;
         }
     }
 }

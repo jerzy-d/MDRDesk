@@ -105,15 +105,24 @@ namespace ClrMDRIndex
         private IndexProxy _indexProxy;
         public IndexProxy IndexProxy => _indexProxy;
 
+        // threads and blocking objects
         private int[][] _deadlock;
         public int[][] Deadlock => _deadlock;
-        private int[] _threadBlockingMap;
-        private int[] _blockBlockingMap;
+        public bool DeadlockFound => _deadlock.Length > 0;
+#if FALSE
         private Digraph _threadBlockgraph;
         public Digraph ThreadBlockgraph => _threadBlockgraph;
-        public bool DeadlockFound => _deadlock.Length > 0;
+#endif
+        private DGraph _threadBlockgraph;
+        public DGraph ThreadBlockgraph => _threadBlockgraph;
         private ClrtThread[] _threads;
         private ClrtBlkObject[] _blocks;
+        private int[] _threadBlockingMap;
+        private int[] _blockBlockingMap;
+        private WeakReference<string[]> _frames; // just address and methods name
+        private WeakReference<KeyValuePair<int,ulong>[]> _stackVars; // just address and methods name
+        private int[] _frameGroupIdCounts;
+        public int[] FrameGroupIdCounts => _frameGroupIdCounts;
 
         #endregion fields/properties
 
@@ -264,13 +273,11 @@ namespace ClrMDRIndex
                 _blockBlockingMap = count > 0 ? new int[count] : Utils.EmptyArray<int>.Value;
                 for (int i = 0; i < count; ++i)
                     _blockBlockingMap[i] = br.ReadInt32();
-
+#if FALSE
                 _threadBlockgraph = Digraph.Load(br, out error);
-
-                //if (DeadlockFound)
-                {
-                    LoadThreadsAndBlocks(out error);
-                }
+#endif
+                _threadBlockgraph = DGraph.Load(br, out error);
+                LoadThreadsAndBlocks(out error);
                 return error == null;
             }
             catch (Exception ex)
@@ -433,9 +440,9 @@ namespace ClrMDRIndex
             }
         }
 
-        #endregion ctors/initialization
+#endregion ctors/initialization
 
-        #region utils
+#region utils
 
         public int GetInstanceIndex(ulong address)
         {
@@ -510,11 +517,11 @@ namespace ClrMDRIndex
             }
         }
 
-        #endregion utils
+#endregion utils
 
-        #region queries
+#region queries
 
-        #region io
+#region io
 
         /// <summary>
         /// Get full path of one of the index files.
@@ -532,9 +539,9 @@ namespace ClrMDRIndex
             return _fileMoniker.OutputFolder + Path.DirectorySeparatorChar + fileName;
         }
 
-        #endregion io
+#endregion io
 
-        #region heap
+#region heap
 
         public ClrHeap GetFreshHeap()
         {
@@ -554,9 +561,9 @@ namespace ClrMDRIndex
             return addresses;
         }
 
-        #endregion heap
+#endregion heap
 
-        #region types
+#region types
 
         public string GetTypeName(ulong address)
         {
@@ -1034,9 +1041,9 @@ namespace ClrMDRIndex
             return _clrtDump.GetTypesImplementingInterface(interfaceList, out error);
         }
 
-        #endregion types
+#endregion types
 
-        #region instance references
+#region instance references
 
         public ValueTuple<string, AncestorNode> GetParentTree(ulong address, int levelMax)
         {
@@ -1359,9 +1366,9 @@ namespace ClrMDRIndex
             return new ListingInfo(null, items, colInfos, sb.ToString());
         }
 
-        #endregion instance references
+#endregion instance references
 
-        #region instance value
+#region instance value
 
         public ValueTuple<string, InstanceValue, TypeExtractor.KnownTypes> GetInstanceValue(ulong addr, InstanceValue parent)
         {
@@ -1478,9 +1485,9 @@ namespace ClrMDRIndex
             }
         }
 
-        #endregion instance value
+#endregion instance value
 
-        #region instance hierarchy 
+#region instance hierarchy 
 
         /// <summary>
         /// TODO JRD -- refactor this, it's using old code!!!
@@ -1549,9 +1556,9 @@ namespace ClrMDRIndex
             return ary;
         }
 
-        #endregion instance hierarchy 
+#endregion instance hierarchy 
 
-        #region type values report
+#region type values report
 
         public ValueTuple<string, ClrtDisplayableType, ulong[]> GetTypeDisplayableRecord(int typeId)
         {
@@ -1952,9 +1959,9 @@ namespace ClrMDRIndex
             return colInfos.ToArray();
         }
 
-        #endregion type values report
+#endregion type values report
 
-        #region disassemble
+#region disassemble
 
         private Tuple<ClrMethod, MethodCompilationType, ulong, ulong> GetMethodInfo(ClrType clrType, string methodName,
             out string error)
@@ -2017,9 +2024,9 @@ namespace ClrMDRIndex
             return methods;
         }
 
-        #endregion disassemble
+#endregion disassemble
 
-        #region ah-hoc queries
+#region ah-hoc queries
 
         public ClrHeap GetHeap()
         {
@@ -2036,11 +2043,11 @@ namespace ClrMDRIndex
             return heap.GetObjectType(addr);
         }
 
-        #endregion ah-hoc queries
+#endregion ah-hoc queries
 
-        #endregion queries
+#endregion queries
 
-        #region roots
+#region roots
 
         public ClrtRootInfo GetRoots(out string error)
         {
@@ -2225,9 +2232,9 @@ namespace ClrMDRIndex
             }
         }
 
-        #endregion roots
+#endregion roots
 
-        #region weakreferences
+#region weakreferences
 
         public ListingInfo GetWeakReferenceInfo(out string error)
         {
@@ -2354,9 +2361,9 @@ namespace ClrMDRIndex
             return GetTypeAddresses(ids, out totalCount, out unrootedCount);
         }
 
-        #endregion weakreferences
+#endregion weakreferences
 
-        #region strings
+#region strings
 
         public bool AreStringDataFilesAvailable()
         {
@@ -2729,9 +2736,9 @@ namespace ClrMDRIndex
             }
         }
 
-        #endregion strings
+#endregion strings
 
-        #region segments/generations/sizes
+#region segments/generations/sizes
 
         public KeyValuePair<uint[], uint[]> GetSizeArrays(out string error)
         {
@@ -3026,6 +3033,61 @@ namespace ClrMDRIndex
             }
         }
 
+        public string[] GetFrames(out string error)
+        {
+            error = null;
+            try
+            {
+                string[] strings = null;
+                if (_frames == null || !_frames.TryGetTarget(out strings))
+                {
+                     strings = Utils.GetStringListFromFile(_fileMoniker.GetFilePath(_currentRuntimeIndex, Constants.TxtThreadFrameDescriptionFilePostfix), out error);
+                    if (strings == null)
+                    {
+                        if (!string.IsNullOrWhiteSpace(error)) _errors.Add(error);
+                        return null;
+                    }
+                    if (_frames == null)
+                        _frames = new WeakReference<string[]>(strings);
+                    else
+                        _frames.SetTarget(strings);
+                }
+                return strings;
+            }
+            catch (Exception ex)
+            {
+                error = Utils.GetExceptionErrorString(ex);
+                return null;
+            }
+        }
+
+        public KeyValuePair<int, ulong>[] GetStackVars(out string error)
+        {
+            error = null;
+            try
+            {
+                KeyValuePair<int,ulong>[] vars = null;
+                if (_stackVars == null || !_stackVars.TryGetTarget(out vars))
+                {
+                    vars = Utils.ReadKvIntUInt64Array(_fileMoniker.GetFilePath(_currentRuntimeIndex, Constants.MapThreadFramesFilePostfix), out error);
+                    if (vars == null)
+                    {
+                        if (!string.IsNullOrWhiteSpace(error)) _errors.Add(error);
+                        return null;
+                    }
+                    if (_stackVars == null)
+                        _stackVars = new WeakReference<KeyValuePair<int, ulong>[]>(vars);
+                    else
+                        _stackVars.SetTarget(vars);
+                }
+                return vars;
+            }
+            catch (Exception ex)
+            {
+                error = Utils.GetExceptionErrorString(ex);
+                return null;
+            }
+        }
         private Tuple<int[], int[]> GetArrayLenghts()
         {
             string error;
@@ -3467,9 +3529,9 @@ namespace ClrMDRIndex
             }
         }
 
-        #endregion segments/generations/sizes
+#endregion segments/generations/sizes
 
-        #region threads/blocking objects
+#region threads/blocking objects
 
         public bool LoadThreadBlockInfo(out string error)
         {
@@ -3571,12 +3633,11 @@ namespace ClrMDRIndex
             error = null;
             try
             {
-                var path = _fileMoniker.GetFilePath(_currentRuntimeIndex, Constants.TxtThreadFrameDescriptionFilePostfix);
-                var frameDescrs = Utils.GetStringListFromFile(path, out error);
+                var frameDescrs = GetFrames(out error);
                 if (error != null) return null;
-                path = _fileMoniker.GetFilePath(_currentRuntimeIndex, Constants.MapThreadFramesFilePostfix);
-                var stackVars = Utils.ReadKvIntUInt64Array(path, out error);
-
+                var stackVars = GetStackVars(out error);
+                if (error != null) return null;
+                MapFrameGroupsToThreads(_threads, frameDescrs);
                 return new Tuple<ClrtThread[], string[], KeyValuePair<int, ulong>[]>(_threads, frameDescrs, stackVars);
             }
             catch (Exception ex)
@@ -3584,6 +3645,48 @@ namespace ClrMDRIndex
                 error = Utils.GetExceptionErrorString(ex);
                 return null;
             }
+        }
+
+        public void MapFrameGroupsToThreads(ClrtThread[] threads, string[] framesMethods)
+        {
+            if (threads == null || threads.Length < 1) return;
+            if (threads[0].FrameGroupId != Constants.InvalidIndexLarge) return; // already done
+
+            int[][] frames = new int[threads.Length][];
+            for (int i = 0, icnt = threads.Length; i < icnt; ++i)
+                frames[i] = threads[i].Frames;
+
+            var frmCmp = new Utils.IntArrayHeadCmp();
+            int[] frMap = Utils.Iota(threads.Length);
+            Array.Sort(frames, frMap, frmCmp);
+            int cnt=1, frmId = 0;
+            int[] frmGroupIds = new int[frames.Length];
+            List<int> frmGrpCounts = new List<int>(frames.Length / 3);
+            frmGroupIds[0] = frmId;
+            for (int i = 1; i < frames.Length; ++i)
+            {
+                if (frmCmp.Compare(frames[i - 1], frames[i]) == 0)
+                {
+                    ++cnt;
+                    frmGroupIds[i] = frmId;
+                    continue;
+                }
+                frmGrpCounts.Add(cnt);
+                cnt = 1;
+                ++frmId;
+                frmGroupIds[i] = frmId;
+            }
+            frmGrpCounts.Add(cnt);
+
+            int[] frMap2 = Utils.Iota(threads.Length);
+            Array.Sort(frMap, frMap2);
+
+            for (int i = 0, icnt = threads.Length; i < icnt; ++i)
+            {
+                var thrd = threads[i];
+                thrd.SetFrameGoupId(frmGroupIds[frMap2[i]]);
+            }
+            _frameGroupIdCounts = frmGrpCounts.ToArray();
         }
 
         public KeyValuePair<string[], string[]> GetThreadStackVarsStrings(int[] alive, int[] dead, KeyValuePair<int, ulong>[] stackVars)
@@ -3607,9 +3710,9 @@ namespace ClrMDRIndex
             return new KeyValuePair<string[], string[]>(aliveStrs, deadStrs);
         }
 
-        #endregion threads/blocking objects
+#endregion threads/blocking objects
 
-        #region dump
+#region dump
 
         private bool InitDump(out string error, IProgress<string> progress, ulong[] instances=null)
         {
@@ -3631,9 +3734,9 @@ namespace ClrMDRIndex
             }
         }
 
-        #endregion dump
+#endregion dump
 
-        #region testing
+#region testing
 
         public bool TestInstanceValues(out string error)
         {
@@ -3674,9 +3777,9 @@ namespace ClrMDRIndex
             }
         }
 
-        #endregion testing
+#endregion testing
 
-        #region dispose
+#region dispose
 
         volatile
         bool _disposed = false;
@@ -3709,7 +3812,7 @@ namespace ClrMDRIndex
             Dispose(false);
         }
 
-        #endregion dispose
+#endregion dispose
 
     }
 

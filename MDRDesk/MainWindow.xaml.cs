@@ -481,7 +481,7 @@ namespace MDRDesk
             // setup progress
             var indexingProgress = new IndexingProgress();
 
-            indexingProgress.Init(this, GetFileInfo(path));
+            indexingProgress.Init(this, Utils.GetFileInfo(path));
 
             SetStartTaskMainWindowState("Indexing: " + dmpFileName + ", please wait.");
             SetTitle(dmpFileName);
@@ -511,17 +511,7 @@ namespace MDRDesk
             Dispatcher.CurrentDispatcher.InvokeAsync(() => DoOpenDumpIndex(0, result.Item3));
         }
 
-        private string GetFileInfo(string path)
-        {
-            Debug.Assert(System.IO.File.Exists(path));
-            System.IO.FileInfo fi = new System.IO.FileInfo(path);
-            var sb = StringBuilderCache.Acquire(StringBuilderCache.MaxCapacity);
-            sb.Append(path).AppendLine();
-            sb.Append("File size: ").AppendLine(Utils.SizeString(fi.Length));
-            var dt = fi.LastWriteTime.ToUniversalTime();
-            sb.Append("Last write time (UTC): ").Append(dt.ToLongDateString()).Append(" ").AppendLine(dt.ToLongTimeString());
-            return StringBuilderCache.GetStringAndRelease(sb);
-        }
+
 
         private void OpenDumpIndexClicked(object sender, RoutedEventArgs e)
         {

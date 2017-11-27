@@ -188,6 +188,7 @@
     <Compile Include="ReferenceSearchSetup.xaml.cs">
       <DependentUpon>ReferenceSearchSetup.xaml</DependentUpon>
     </Compile>
+    <Compile Include="TextBlockAdorner.cs" />
     <Compile Include="Threading\SingleThreadTaskScheduler.cs" />
     <Compile Include="Threading\TaskFactoryExtensions.cs" />
     <Compile Include="Threading\TaskLazy.cs" />

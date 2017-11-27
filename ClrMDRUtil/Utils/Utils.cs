@@ -321,6 +321,30 @@ namespace ClrMDRIndex
 
         public static char[] DirSeps = new char[] { Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar };
 
+        public static  string GetFileInfo(string path)
+        {
+            Debug.Assert(System.IO.File.Exists(path));
+            System.IO.FileInfo fi = new System.IO.FileInfo(path);
+            var sb = StringBuilderCache.Acquire(StringBuilderCache.MaxCapacity);
+            sb.Append(path).AppendLine();
+            sb.Append("File size: ").AppendLine(Utils.SizeString(fi.Length));
+            var dt = fi.LastWriteTime.ToUniversalTime();
+            sb.Append("Last write time (UTC): ").Append(dt.ToLongDateString()).Append(" ").AppendLine(dt.ToLongTimeString());
+            return StringBuilderCache.GetStringAndRelease(sb);
+        }
+
+        public static string GetFileSizeString(string path)
+        {
+            return Utils.SizeString(GetFileSize(path));
+        }
+
+        public static long GetFileSize(string path)
+        {
+            if (!System.IO.File.Exists(path)) return 0;
+            System.IO.FileInfo fi = new System.IO.FileInfo(path);
+            return fi.Length;
+        }
+
         public static string GetPathLastFolder(string path)
         {
             if (string.IsNullOrWhiteSpace(path) || path.Length < 1) return string.Empty;
