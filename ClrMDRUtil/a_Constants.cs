@@ -119,9 +119,10 @@ namespace ClrMDRIndex
 														// 2474  ⑴  Parenthesized Digit One
 		public const string HeavyLeftAngleBracketPadded = " \u2770 "; // ❰ HEAVY LEFT-POINTING ANGLE BRACKET
 		public const string HeavyRightAngleBracketPadded = " \u2771 "; // ❱ HEAVY RIGHT-POINTING ANGLE BRACKET
-		public const string HeavyBallotX = " \u2718 "; // ✘ HEAVY BALLOT X
+		public const string HeavyBallotXPadded = " \u2718 "; // ✘ HEAVY BALLOT X
+        public const string HeavyBallotXStr = "\u2718"; // ✘ HEAVY BALLOT X
 
-		public const char LeftwardsDoubleArrow = '\u2906'; // ⤆ LEFTWARDS DOUBLE ARROW FROM BAR
+        public const char LeftwardsDoubleArrow = '\u2906'; // ⤆ LEFTWARDS DOUBLE ARROW FROM BAR
 		public const char RightwardsDoubleArrow = '\u2907'; // ⤇ RIGHTWARDS DOUBLE ARROW FROM BAR
 
 
@@ -181,8 +182,9 @@ namespace ClrMDRIndex
 
 		public const int InvalidIndex = -1;
 		public const uint InvalidHalfIndexMSB = 0xFFFF0000;
+        public const int InvalidIndexLarge = Int32.MinValue;
 
-		public const uint InvalidThreadId = uint.MaxValue;
+        public const uint InvalidThreadId = uint.MaxValue;
 
 		public const ulong InvalidAddress = 0ul;
         public const int AddressStringLength = 16;

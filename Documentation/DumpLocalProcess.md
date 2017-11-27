@@ -12,7 +12,7 @@ It will display a path to a dump after one is created,
 this will be visible when "index after creating" is not checked.
 ##### "Output Folder..." button.
 The folder where the procdump.exe output should go (crash dump file).
-The text box on the same line shows MDRDesk's dumps folder path.
+The text box on the same line shows MDRDesk's **Dumps** folder path.
 By clicking on the button you can select one of its subfolders, or any folder of your choosing.
 ##### "Procdump Path..." button.
 The path to procdump.exe has to be known, it is an item in MDRDesk's application config file,

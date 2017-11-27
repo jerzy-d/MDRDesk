@@ -353,51 +353,51 @@ module CollectionContent =
                     ValueExtractor.GetGuidValue( elemAddr, elemType)
                 | _ -> "Don't know how to get value of " + elemType.Name
 
-    let getArrayValues (heap:ClrHeap) (addr:address) (ary:ClrTypeSidekick) : string * int32 * string array =
-        let mutable ndx:int32 = 0
-        let aryClrType = ary.ClrType
-        let count = aryClrType.GetArrayLength(addr)
-        let elemInfo = ary.GetField(0); // for arrays first field is element type info
-        let mutable value:string = null
-        let values = new ResizeArray<string>(count)
-        let elemType = elemInfo.ClrType
-        let elemKind = elemInfo.Kind
-        while ndx < count do
-            match TypeKinds.GetMainTypeKind(elemKind) with
-            | TypeKind.ReferenceKind ->
-                match TypeKinds.GetParticularTypeKind(elemKind) with
-                | TypeKind.Str ->
-                    value <- getArrayStringElem heap addr aryClrType ndx
-                | TypeKind.Exception ->
-                    value <- getArrayExceptionElem heap addr aryClrType elemType ndx
-                | _ ->
-                    value <- getArrayReferenceElem heap addr aryClrType elemType ndx
-            | TypeKind.StructKind ->
-                match TypeKinds.GetParticularTypeKind(elemKind) with
-                | TypeKind.DateTime | TypeKind.TimeSpan | TypeKind.Decimal | TypeKind.Guid ->
-                    value <- getArrayKnownStructElem heap addr aryClrType elemType elemKind ndx
-                | _ ->
-                    if elemType.Name.StartsWith("System.Collections.Generic.Dictionary+Entry") then
-                        let elemAddr = aryClrType.GetArrayElementAddress(addr,ndx)
-                        let raddr = ValueExtractor.ReadUlongAtAddress(elemAddr,heap)
-                        let sval = ValueExtractor.GetStringAtAddress(raddr,heap)
+    //let getArrayValues (heap:ClrHeap) (addr:address) (ary:ClrTypeSidekick) : string * int32 * string array =
+    //    let mutable ndx:int32 = 0
+    //    let aryClrType = ary.ClrType
+    //    let count = aryClrType.GetArrayLength(addr)
+    //    let elemInfo = ary.GetField(0); // for arrays first field is element type info
+    //    let mutable value:string = null
+    //    let values = new ResizeArray<string>(count)
+    //    let elemType = elemInfo.ClrType
+    //    let elemKind = elemInfo.Kind
+    //    while ndx < count do
+    //        match TypeKinds.GetMainTypeKind(elemKind) with
+    //        | TypeKind.ReferenceKind ->
+    //            match TypeKinds.GetParticularTypeKind(elemKind) with
+    //            | TypeKind.Str ->
+    //                value <- getArrayStringElem heap addr aryClrType ndx
+    //            | TypeKind.Exception ->
+    //                value <- getArrayExceptionElem heap addr aryClrType elemType ndx
+    //            | _ ->
+    //                value <- getArrayReferenceElem heap addr aryClrType elemType ndx
+    //        | TypeKind.StructKind ->
+    //            match TypeKinds.GetParticularTypeKind(elemKind) with
+    //            | TypeKind.DateTime | TypeKind.TimeSpan | TypeKind.Decimal | TypeKind.Guid ->
+    //                value <- getArrayKnownStructElem heap addr aryClrType elemType elemKind ndx
+    //            | _ ->
+    //                if elemType.Name.StartsWith("System.Collections.Generic.Dictionary+Entry") then
+    //                    let elemAddr = aryClrType.GetArrayElementAddress(addr,ndx)
+    //                    let raddr = ValueExtractor.ReadUlongAtAddress(elemAddr,heap)
+    //                    let sval = ValueExtractor.GetStringAtAddress(raddr,heap)
 
-                        let elemFld2Addr = elemAddr + (uint64)elemType.Fields.[1].Offset;
-                        let raddr2 = ValueExtractor.ReadUlongAtAddress(elemFld2Addr,heap)
-                        let tp = heap.GetObjectType(raddr2)
-                        let name = if (isNull tp) then Constants.NullTypeName else tp.Name
-                        if (not (isNull tp)) && tp.IsString then
-                            let vstr = ValueExtractor.GetStringAtAddress(raddr2,heap)
-                            value <- sval.ToString() + Constants.HeavyGreekCrossPadded + name + Constants.HeavyGreekCrossPadded + vstr
-                        else
-                            value <- sval.ToString() + Constants.HeavyGreekCrossPadded + name
+    //                    let elemFld2Addr = elemAddr + (uint64)elemType.Fields.[1].Offset;
+    //                    let raddr2 = ValueExtractor.ReadUlongAtAddress(elemFld2Addr,heap)
+    //                    let tp = heap.GetObjectType(raddr2)
+    //                    let name = if (isNull tp) then Constants.NullTypeName else tp.Name
+    //                    if (not (isNull tp)) && tp.IsString then
+    //                        let vstr = ValueExtractor.GetStringAtAddress(raddr2,heap)
+    //                        value <- sval.ToString() + Constants.HeavyGreekCrossPadded + name + Constants.HeavyGreekCrossPadded + vstr
+    //                    else
+    //                        value <- sval.ToString() + Constants.HeavyGreekCrossPadded + name
                 
-            | _ ->
-                let elemObj = aryClrType.GetArrayElementValue(addr, ndx)
-                value <- ValueExtractor.GetPrimitiveValue(elemObj,elemType.ElementType)
-            values.Add(value)
-            ndx <- ndx + 1
-        (elemType.Name, count, values.ToArray())
+    //        | _ ->
+    //            let elemObj = aryClrType.GetArrayElementValue(addr, ndx)
+    //            value <- ValueExtractor.GetPrimitiveValue(elemObj,elemType.ElementType)
+    //        values.Add(value)
+    //        ndx <- ndx + 1
+    //    (elemType.Name, count, values.ToArray())
 
         (*
         System.Collections.Generic.HashSet<T>

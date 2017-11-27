@@ -1903,7 +1903,12 @@ namespace ClrMDRIndex
         #endregion System.Collections.Generic.HashSet<T>
 
         #region System.Collections.Generic.Queue<T>
-
+        /// <summary>
+        /// TODO JRD
+        /// </summary>
+        /// <param name="heap"></param>
+        /// <param name="addr"></param>
+        /// <returns></returns>
         public static ValueTuple<string, KeyValuePair<string, string>[], string[]> GetQueueContent(ClrHeap heap, ulong addr)
         {
             try
@@ -1916,6 +1921,43 @@ namespace ClrMDRIndex
                 string error;
                 ValueTuple<ClrType, ClrInstanceField, ClrElementKind, object>[] info;
                 (error, info) = GetCollectionInfo(heap, addr, clrType, fldNames);
+                if (error != null) return (error, null, null);
+                ulong aryAddr = (ulong)(info[0].Item4);
+                int _head = (int)(info[1].Item4);
+                int _tail = (int)(info[2].Item4);
+                int _size = (int)(info[3].Item4);
+                ClrType aryClrType;
+                ClrType aryComponentType;
+                ClrElementKind aryKind;
+                int aryLen;
+                (error, aryClrType, aryComponentType, aryKind, aryLen) = ArrayInfo(heap, aryAddr);
+                if (_size == 0)
+                {
+                    return (null, null, null);
+                }
+
+                string[] aryValues = new string[aryLen];
+                KeyValuePair<string, string[]> aryData = GetAryValues(heap, aryClrType, aryAddr);
+                var aryVals = aryData.Value;
+
+                if (_head < _tail)
+                {
+                    for (int i = 0; i < _size; ++i)
+                        aryValues[i] = aryVals[i];
+                    for (int i = _size; i < aryLen; ++i)
+                        aryValues[i] = Constants.HeavyBallotXStr + aryVals[i];
+                }
+                else
+                {
+                    int hlen = aryLen - _head;
+                    for (int i = _size; i < aryLen; ++i)
+                    {
+                        if ((i >= _head && i < hlen) || (i>=hlen && i < _tail))
+                            aryValues[i] = aryVals[i];
+                        else
+                            aryValues[i] = Constants.HeavyBallotXStr + aryVals[i];
+                    }
+                }
 
                 return (null, null, null);
             }
@@ -1930,6 +1972,19 @@ namespace ClrMDRIndex
         #endregion System.Collections.Generic.Queue<T>
 
         #region array values
+
+        public static KeyValuePair<string,string[]> GetAryValues(ClrHeap heap, ClrType aryClrType, ulong aryAddr)
+        {
+            try
+            {
+                return new KeyValuePair<string, string[]>(null, Utils.EmptyArray<string>.Value);
+            }
+            catch(Exception ex)
+            {
+                return new KeyValuePair<string, string[]>(Utils.GetExceptionErrorString(ex), null);
+            }
+            
+        }
 
         public static ValueTuple<string, InstanceValue> ArrayContent(IndexProxy ndxProxy, ClrHeap heap, ulong decoratedAddr, InstanceValue parent)
         {

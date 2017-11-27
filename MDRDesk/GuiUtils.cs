@@ -10,6 +10,7 @@ using System.Collections.Generic;
 using System.Text;
 using System.Linq;
 using System.Windows.Threading;
+using System.Globalization;
 
 namespace MDRDesk
 {
@@ -128,7 +129,19 @@ namespace MDRDesk
             return txtBlk;
 		}
 
-		public static StackPanel GetInstanceValueStackPanel(InstanceValue val)
+        public static TextBlock GetTextBlock(string mainItem, string descr, int count, string extra=null)
+        {
+            var txtBlk = new TextBlock();
+            txtBlk.Inlines.Add(new Run(mainItem + "  ") { FontWeight = FontWeights.Bold, FontStyle = FontStyles.Normal, Foreground = Brushes.Black });
+            txtBlk.Inlines.Add(new Run(descr) { FontWeight = FontWeights.Medium, FontStyle = FontStyles.Italic, Foreground = Brushes.Gray });
+            if (count > 0)
+                txtBlk.Inlines.Add(new Run(" [" + count + "]") { FontWeight = FontWeights.Bold, FontStyle = FontStyles.Normal, Foreground = Brushes.Blue });
+            if (extra != null)
+                txtBlk.Inlines.Add(new Run(extra) { FontWeight = FontWeights.Bold, FontStyle = FontStyles.Normal, Foreground = Brushes.DarkRed });
+            return txtBlk;
+        }
+
+        public static StackPanel GetInstanceValueStackPanel(InstanceValue val)
 		{
 			var stackPanel = new StackPanel() { Orientation = Orientation.Horizontal };
 			stackPanel.Children.Add(GetInstanceValueTextBlock(val));
@@ -431,6 +444,33 @@ namespace MDRDesk
                                                                             + Constants.HeavyGreekCrossPadded + "I think this is the fault of the Win32 API." + Environment.NewLine + "See details for data."
                                                                             + Constants.HeavyGreekCrossPadded + text
                                                                             , MainWindowInstance));
+            }
+        }
+
+
+        public static void AddAdorner(UIElement cntrl, string text)
+        {
+            if (cntrl == null) return;
+            AdornerLayer adornerLayer = AdornerLayer.GetAdornerLayer(cntrl);
+            TextBlock txtBlock = new TextBlock();
+            txtBlock.Text = "Click blocking object.";
+            adornerLayer.Add(new TextBlockAdorner(cntrl, txtBlock));
+        }
+
+        /// <summary>
+        /// Remove first adorner in the list.
+        /// </summary>
+        public static void RemoveAdorner(UIElement cntrl)
+        {
+            if (cntrl == null) return;
+            AdornerLayer adornerLayer = AdornerLayer.GetAdornerLayer(cntrl);
+            if (adornerLayer != null)
+            {
+                Adorner[] toRemoveArray = adornerLayer.GetAdorners(cntrl);
+                if (toRemoveArray != null && toRemoveArray.Length > 0)
+                {
+                    adornerLayer.Remove(toRemoveArray[0]);
+                }
             }
         }
     }

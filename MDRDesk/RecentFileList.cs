@@ -100,12 +100,6 @@ namespace MDRDesk
 				if (string.Compare(fileInfo.FilePath, path, StringComparison.OrdinalIgnoreCase) == 0) return false;
 			}
 			return true;
-
-			//for (int i = 0, icnt = _list.Count; i < icnt; ++i)
-	  //      {
-	  //          if (string.Compare(_list[i].FilePath, path, StringComparison.OrdinalIgnoreCase) == 0) return false;
-	  //      }
-	        return true;
 	    }
 	}
 

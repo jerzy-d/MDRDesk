@@ -373,13 +373,13 @@ module Auxiliaries =
 
 
 
-    let getStructgFields (heap:ClrHeap) (addr:address) (clrs:ClrTypeSidekick) : ClrTypeSidekick =
+    //let getStructgFields (heap:ClrHeap) (addr:address) (clrs:ClrTypeSidekick) : ClrTypeSidekick =
         
-        clrs
+    //    clrs
 
-    let getReferenceFields (heap:ClrHeap) (addr:address) (clrs:ClrTypeSidekick) : ClrTypeSidekick =
+    //let getReferenceFields (heap:ClrHeap) (addr:address) (clrs:ClrTypeSidekick) : ClrTypeSidekick =
         
-        clrs
+    //    clrs
 
 
             

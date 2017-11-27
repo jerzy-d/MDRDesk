@@ -107,6 +107,7 @@ namespace UnitTestMdr
 
         #region misc
 
+
         [TestMethod]
         public void TestMisc()
         {
@@ -173,6 +174,9 @@ namespace UnitTestMdr
                 new [] { 13 },                  // 12
                 new [] { 12 },                  // 13
             };
+
+            bool hasCycle = DGraph.HasCycle(graph);
+
 
             var result = Circuits.GetCycles(graph);
             if (result.Length > 0)
@@ -2924,7 +2928,9 @@ namespace UnitTestMdr
             HashSet<string> done = new HashSet<string>(StringComparer.Ordinal);
             List<string> delegateTypes = new List<string>(256);
             List<ClrMethod> delegateMethods = new List<ClrMethod>(256);
-            using (var clrDump = OpenDump(@"D:\Jerzy\WinDbgStuff\dumps\Analytics\Highline\analyticsdump111.dlk.dmp"))
+            List<ClrType> delegates = new List<ClrType>(256);
+            var dct = new SortedDictionary<string, Tuple<List<ulong>, ClrType, List<KeyValuePair<ulong,ClrMethod>>>>(StringComparer.Ordinal);
+            using (var clrDump = OpenDump(@"c:\WinDbgStuff\dumps\Analytics\Highline\analyticsdump111.dlk.dmp"))
             {
                 try
                 {
@@ -2939,37 +2945,78 @@ namespace UnitTestMdr
                         {
                             var clrType = heap.GetObjectType(addr);
                             if (clrType == null || clrType.Fields == null || clrType.Fields.Count < 5) goto NEXT_OBJECT;
-                            if (done.Add(clrType.Name))
+                            Tuple<List<ulong>, ClrType, List<KeyValuePair<ulong, ClrMethod>>> val;
+                            if (dct.TryGetValue(clrType.Name,out val))
+                            {
+                                ClrMethod mthd = null;
+                                ulong mthdAddr = 0;
+                                var fld = clrType.GetFieldByName("_methodPtr");
+                                if (fld != null)
+                                {
+                                    long mthdPtr = (long)fld.GetValue(addr);
+                                    mthdAddr = (ulong)mthdPtr;
+                                    mthd = ClrtDump.GetDelegateMethod(mthdAddr, runtime, heap);
+                                }
+                                val.Item1.Add(addr);
+                                if (mthdAddr != 0)
+                                {
+                                    int nx = 0;
+                                    int nxcnt = val.Item3.Count;
+                                    for (; nx < nxcnt; ++nx)
+                                    {
+                                        var lkv = val.Item3[nx];
+                                        if (lkv.Key == mthdAddr) break;
+                                    }
+                                    if (nx == nxcnt) val.Item3.Add(new KeyValuePair<ulong, ClrMethod>(mthdAddr,mthd));
+                                }
+                            }
+                            else
                             {
                                 int foundFlds = 0;
-                                int _methodPtrNdx;
                                 for (int j = 0, jcnt = clrType.Fields.Count; j < jcnt; ++j)
                                 {
                                     if (fldNames.Contains(clrType.Fields[j].Name)) ++foundFlds;
-                                    if (Utils.SameStrings(clrType.Fields[j].Name, "_methodPtr"))
-                                    {
-                                        _methodPtrNdx = j;
-                                    }
                                 }
                                 if (foundFlds == 5)
                                 {
-                                    delegateTypes.Add(clrType.Name);
+                                    ClrMethod mthd = null;
                                     var fld = clrType.GetFieldByName("_methodPtr");
                                     if (fld != null)
                                     {
                                         long mthdPtr = (long)fld.GetValue(addr);
-                                        ClrMethod mthd = ClrtDump.GetDelegateMethod((ulong)mthdPtr, runtime, heap);
-                                        delegateMethods.Add(mthd);
+                                        mthd = ClrtDump.GetDelegateMethod((ulong)mthdPtr, runtime, heap);
+                                        if (mthdPtr != 0)
+                                        {
+                                            dct.Add(clrType.Name, new Tuple<List<ulong>, ClrType, List<KeyValuePair<ulong, ClrMethod>>>(
+                                                new List<ulong>() { addr },
+                                                clrType,
+                                                new List<KeyValuePair<ulong, ClrMethod>>() { new KeyValuePair<ulong, ClrMethod>((ulong)mthdPtr, mthd) }
+                                                ));
+                                        }
                                     }
-                                    else
-                                    {
-                                        delegateMethods.Add(null);
-                                    }
+
                                 }
                             }
-
                             NEXT_OBJECT:
                             addr = seg.NextObject(addr);
+                        }
+                        StreamWriter sw = null;
+                        try
+                        {
+                            string path = clrDump.DumpFolder + Path.DirectorySeparatorChar + "delegates.txt";
+                            sw = new StreamWriter(path);
+                            foreach(var kv in dct)
+                            {
+                                sw.Write(Utils.CountStringHeader(kv.Value.Item1.Count));
+                                sw.Write(kv.Key + "  ");
+                                sw.Write(Utils.CountStringHeader(kv.Value.Item3.Count));
+                                sw.WriteLine();
+                            }
+    
+                        }
+                        finally
+                        {
+                            sw?.Close();
                         }
                     }
                 }
