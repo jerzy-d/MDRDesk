@@ -156,6 +156,15 @@ namespace UnitTestMdr
         }
 
         [TestMethod]
+        public void TestTreeMap()
+        {
+            double area = 24.0;
+            double[] items = new double[] { 6, 6, 4, 3, 2, 2, 1 };
+            Stack<List<double[]>> stack = new Stack<List<double[]>>();
+            Treemap.Squarify(items, 0, new List<double>(), new Container(0.0, 0.0, 0.0, 0.0), stack);
+        }
+
+        [TestMethod]
         public void TestCycles()
         {
             int[][] graph = new int[][] {

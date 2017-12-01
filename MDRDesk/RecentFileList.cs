@@ -13,13 +13,11 @@ namespace MDRDesk
 	{
 	    private int _maxItems;
 	    private MenuItem _menuItem;
-//	    private List<FileInfo> _list;
 	    private object _lock;
         public RecentFileList(MenuItem menuItem, int maxItems = 7)
 		{
 		    _maxItems = maxItems;
 		    _menuItem = menuItem;
-            //_list = new List<FileInfo>(_maxItems);
             _lock = new object();
 		}
 
@@ -35,11 +33,6 @@ namespace MDRDesk
 			        FileInfo fileInfo = menuItem.Header as FileInfo;
 			        lst[ndx++] = fileInfo.FilePath;
 		        }
-                //string[] lst = new string[_list.Count];
-                //for (int i = 0, icnt = lst.Length; i < icnt; ++i)
-                //{
-                //    lst[i] = _list[i].FilePath;
-                //}
 	            return lst;
 	        }
         }
@@ -49,13 +42,6 @@ namespace MDRDesk
 	        lock (_lock)
 	        {
                 AddImpl(path);
-
-	   //         _menuItem.ItemsSource = _list;
-				//foreach (var item in _menuItem.Items)
-				//{
-				//	var menuItem = item as MenuItem;
-				//	menuItem.Click += ((MainWindow)Application.Current.MainWindow).RecentIndicesClicked;
-				//}
 			}
 	    }
 
@@ -87,7 +73,6 @@ namespace MDRDesk
 		    menu.Header = fInfo;
 			menu.Click += ((MainWindow)Application.Current.MainWindow).RecentIndicesClicked;
 			_menuItem.Items.Insert(0,menu);
-			//_list.Insert(0, new FileInfo(path));
         }
 
 	    private bool CanAdd(string path)

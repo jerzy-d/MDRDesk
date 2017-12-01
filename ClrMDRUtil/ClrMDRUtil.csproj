@@ -117,6 +117,7 @@
     <Compile Include="Graph\Circuits.cs" />
     <Compile Include="Graph\Cycle.cs" />
     <Compile Include="Graph\DGraph.cs" />
+    <Compile Include="Graph\Treemap.cs" />
     <Compile Include="MdrException.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="QueriesAndReports\DumpComparison.cs" />
