@@ -1275,12 +1275,7 @@ namespace ClrMDRIndex
                         DGraph.AddDistinctEdge(adjLists, ndx, blkThreadCount + i, ref edgeCount);
                     }
                 }
-
-                // TODO JRD -- We need Hawick here
-                //CppUtils.GraphHelper graphHelper = new CppUtils.GraphHelper();
-                //graphHelper.Init(graph.AdjacencyLists.Length, graph.AdjacencyLists);
-                //var newCycles = graphHelper.GetCycles();
-
+ 
                 progress?.Report(progressHeader + "Searching for thread and blocking object cycles...");
 
                 int[][] allCycles = null;

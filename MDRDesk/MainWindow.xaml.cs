@@ -511,8 +511,6 @@ namespace MDRDesk
             Dispatcher.CurrentDispatcher.InvokeAsync(() => DoOpenDumpIndex(0, result.Item3));
         }
 
-
-
         private void OpenDumpIndexClicked(object sender, RoutedEventArgs e)
         {
             if (IsIndexAvailable(null)) CloseCurrentIndex();
@@ -763,7 +761,13 @@ namespace MDRDesk
         private void IndexShowThreadsClicked(object sender, RoutedEventArgs e)
         {
             if (!IsIndexAvailable("Threads View")) return;
-            Dispatcher.CurrentDispatcher.InvokeAsync(ExecuteGetThreadinfos);
+            Dispatcher.CurrentDispatcher.InvokeAsync(ExecuteGetThreadInfos);
+        }
+
+        private void IndexShowBlockingObjectsClicked(object sender, RoutedEventArgs e)
+        {
+            if (!IsIndexAvailable("Blocking Objects View")) return;
+            Dispatcher.CurrentDispatcher.InvokeAsync(ExecuteGetBlkObjectInfos);
         }
 
         private void IndexShowDeadlocksClicked(object sender, RoutedEventArgs e)
@@ -2662,9 +2666,8 @@ namespace MDRDesk
         }
 
 
+
         #endregion help
-
-
     }
 
     public static class MenuCommands

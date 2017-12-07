@@ -658,6 +658,11 @@
                 <RowDefinition Height="5"/>
                 <RowDefinition Height="20*"/>
             </Grid.RowDefinitions>
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="80*"/>
+                <ColumnDefinition Width="5"/>
+                <ColumnDefinition Width="15*"/>
+            </Grid.ColumnDefinitions>
             <ListView  Name="ListingView" Grid.Row="0" VerticalAlignment="Stretch" HorizontalAlignment="Stretch" Margin="2,2,2,2" GridViewColumnHeader.Click="ListingGridHeaderClick">
                 <ListView.ItemContainerStyle>
                     <Style TargetType="ListViewItem">
@@ -669,9 +674,23 @@
                     </GridView>
                 </ListView.View>
             </ListView>
-            <GridSplitter Grid.Row="1" VerticalAlignment="Center" HorizontalAlignment="Stretch" Height="5" ShowsPreview="False" Background="DarkGray"></GridSplitter>
+            <GridSplitter Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="2" VerticalAlignment="Center" HorizontalAlignment="Stretch" Height="5" ShowsPreview="False" Background="DarkGray"></GridSplitter>
             <TextBox Name="ListingInformation" v4:Grid.Row="2" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" Margin="2,2,2,2">
             </TextBox>
+            <Grid HorizontalAlignment="Stretch" VerticalAlignment="Stretch" v4:Grid.Row="0" v4:Grid.Column="2">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="90*"/>
+                    <RowDefinition Height="30"/>
+                </Grid.RowDefinitions>
+                <ListBox Grid.Row="0" Grid.Column="0" Margin="4,4,4,4" Name="ListingAddresses" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" SelectionMode="Single" ContextMenu="{StaticResource AddresListContextMenu}"  FontFamily="Consolas" FontSize="12">
+                    <ListBox.ItemTemplate>
+                        <DataTemplate>
+                            <TextBlock Text="{Binding Converter={StaticResource LongHexConverter}}"/>
+                        </DataTemplate>
+                    </ListBox.ItemTemplate>
+                </ListBox>
+                <Label Grid.Row="1" v4:Grid.Column="0" Name="ListingAddressesInfo" IsEnabled="True" VerticalAlignment="Stretch" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center"  FontFamily="Consolas" FontSize="10" FontStyle="Italic" FontWeight="Heavy"></Label>
+            </Grid>
         </Grid>
 
         <Grid x:Key="TypeValuesGrid" x:Shared="False">
@@ -908,6 +927,7 @@
                         <MenuItem x:Name="IndexThreads" Header="Threads">
                             <MenuItem x:Name="IndexShowBlockingThreads" Header="Threads and Blocking Objects Graph" Click="IndexShowBlockingThreadsClicked"/>
                             <MenuItem x:Name="IndexShowThreads" Header="Thread Listing" Click="IndexShowThreadsClicked"/>
+                            <MenuItem x:Name="IndexShowBlockingObjects" Header="Blocking Object Listing" Click="IndexShowBlockingObjectsClicked"/>
                             <MenuItem x:Name="IndexShowDeadlocks" Header="Deadlock(s)" Click="IndexShowDeadlocksClicked"/>
                         </MenuItem>
                         <MenuItem x:Name="Sizes" Header="Type Sizes">

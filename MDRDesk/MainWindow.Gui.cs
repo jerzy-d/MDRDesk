@@ -2143,7 +2143,7 @@ namespace MDRDesk
 
         #region threads
 
-        private async void ExecuteGetThreadinfos()
+        private async void ExecuteGetThreadInfos()
         {
             SetStartTaskMainWindowState("Getting thread infos, please wait...");
 
@@ -2275,11 +2275,38 @@ namespace MDRDesk
 
         }
 
-#endregion threads
+        private async void ExecuteGetBlkObjectInfos()
+        {
+            SetStartTaskMainWindowState("Getting thread infos, please wait...");
 
-#region Instance Hierarchy Traversing
+            var result = await Task.Factory.StartNew(() =>
+            {
+                string error = null;
+                var info = CurrentIndex.GetBlockingObjects();
+                return (error, info);
+            }, DumpSTAScheduler);
 
-        private async void ExecuteInstanceHierarchyQuery(string statusMessage, ulong addr, int fldNdx)
+            string msg = result.Item1 != null ? "Getting blocking object infos failed." : "Getting blocking object infos succeeded.";
+            SetEndTaskMainWindowState(msg);
+            if (result.Item1 != null)
+            {
+                GuiUtils.ShowError(result.Item1, this);
+                return;
+            }
+
+            var blks = result.Item2;
+            string[] types = new string[blks.Length];
+            for(int i = 0, icnt = blks.Length; i < icnt; ++i)
+            {
+                types[i] = CurrentIndex.GetTypeName(blks[i].TypeId);
+            }
+        }
+
+        #endregion threads
+
+        #region Instance Hierarchy Traversing
+
+            private async void ExecuteInstanceHierarchyQuery(string statusMessage, ulong addr, int fldNdx)
         {
             SetStartTaskMainWindowState(statusMessage + ", please wait...");
             var result = await Task.Factory.StartNew(() =>
@@ -2521,21 +2548,9 @@ namespace MDRDesk
 
 #endregion Instance Hierarchy Traversing
 
-#region msagl graph
+        #endregion Display Grids
 
-        //private void DisplayGraph(Digraph digraph)
-        //{
-        //    Grid mainGrid = new Grid();
-        //    DockPanel graphViewerPanel = new DockPanel();
-        //    ToolBar toolBar = new ToolBar();
-        //    GraphViewer graphViewer = new GraphViewer();
-        //}
-
-#endregion msagl graph
-
-#endregion Display Grids
-
-#region MessageBox
+        #region MessageBox
 
         private void ShowInformation(string caption, string header, string text, string details)
         {
@@ -2637,11 +2652,11 @@ namespace MDRDesk
 
 #endregion MessageBox
 
-#region Map Queries
+        #region Map Queries
 
 #endregion Map Queries
 
-#region TabItem Cleanup
+        #region TabItem Cleanup
 
         private async void CloseCurrentIndex()
         {
@@ -2678,9 +2693,9 @@ namespace MDRDesk
             }
         }
 
-#endregion TabItem Cleanup
+        #endregion TabItem Cleanup
 
-#region Utils
+        #region Utils
 
         /// <summary>
         /// Returns grid of currently selected tab on main display (MainTab).
@@ -2797,6 +2812,6 @@ namespace MDRDesk
             return Constants.InvalidAddress;
         }
 
-#endregion Utils
+        #endregion Utils
     }
 }

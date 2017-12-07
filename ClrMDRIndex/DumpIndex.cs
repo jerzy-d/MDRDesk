@@ -3531,7 +3531,7 @@ namespace ClrMDRIndex
 
 #endregion segments/generations/sizes
 
-#region threads/blocking objects
+        #region threads/blocking objects
 
         public bool LoadThreadBlockInfo(out string error)
         {
@@ -3543,12 +3543,12 @@ namespace ClrMDRIndex
 
         public bool IsThreadId(int id)
         {
-            return id < _threadBlockingMap.Length;
+            return id < _threads.Length; // TODO JRD
         }
 
         public int GetIdFromGraph(int id)
         {
-            return IsThreadId(id) ? id : id - _threadBlockingMap.Length;
+            return IsThreadId(id) ? id : id - _threads.Length; // TODO JRD
         }
 
         //public int GetBlockingId(int id)
@@ -3647,6 +3647,11 @@ namespace ClrMDRIndex
             }
         }
 
+        public ClrtBlkObject[] GetBlockingObjects()
+        {
+            return _blocks;
+        }
+
         public void MapFrameGroupsToThreads(ClrtThread[] threads, string[] framesMethods)
         {
             if (threads == null || threads.Length < 1) return;
@@ -3710,7 +3715,10 @@ namespace ClrMDRIndex
             return new KeyValuePair<string[], string[]>(aliveStrs, deadStrs);
         }
 
-#endregion threads/blocking objects
+
+
+
+        #endregion threads/blocking objects
 
 #region dump
 
