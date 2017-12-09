@@ -89,6 +89,26 @@ namespace ClrMDRIndex
             return Dump(wr, graph.Graph, graph.EdgeCount, out error);
         }
 
+        /// <summary>
+        /// Just for testing.
+        /// </summary>
+        public static void Dump(StreamWriter sw, DGraph graph)
+        {
+            for (int i = 0, icnt = graph._graph.Length; i < icnt; ++i)
+            {
+                var lst = graph._graph[i];
+                sw.Write(Utils.CountStringHeader(i));
+                if (lst != null)
+                {
+                    for (int j = 0, jcnt = lst.Length; j < jcnt; ++j)
+                    {
+                        sw.Write(lst[j] + " ");
+                    }
+                }
+                sw.WriteLine();
+            }
+        }
+
         public static bool Dump(BinaryWriter wr, int[][] graph, int edgeCount, out string error)
         {
             error = null;

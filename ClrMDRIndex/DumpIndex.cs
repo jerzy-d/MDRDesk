@@ -21,7 +21,7 @@ namespace ClrMDRIndex
             All = 0xFFFFFFF,
         }
 
-        #region fields/properties
+    #region fields/properties
 
         private ConcurrentBag<string> _errors;
 
@@ -126,7 +126,7 @@ namespace ClrMDRIndex
 
         #endregion fields/properties
 
-        #region ctors/initialization
+    #region ctors/initialization
 
         private DumpIndex(string dumpOrIndexPath, int runtimeIndex, IndexType type = IndexType.All)
         {
@@ -442,7 +442,7 @@ namespace ClrMDRIndex
 
 #endregion ctors/initialization
 
-#region utils
+    #region utils
 
         public int GetInstanceIndex(ulong address)
         {
@@ -519,7 +519,7 @@ namespace ClrMDRIndex
 
 #endregion utils
 
-#region queries
+    #region queries
 
 #region io
 
@@ -2047,7 +2047,7 @@ namespace ClrMDRIndex
 
 #endregion queries
 
-#region roots
+    #region roots
 
         public ClrtRootInfo GetRoots(out string error)
         {
@@ -2234,7 +2234,7 @@ namespace ClrMDRIndex
 
 #endregion roots
 
-#region weakreferences
+    #region weakreferences
 
         public ListingInfo GetWeakReferenceInfo(out string error)
         {
@@ -2363,7 +2363,7 @@ namespace ClrMDRIndex
 
 #endregion weakreferences
 
-#region strings
+    #region strings
 
         public bool AreStringDataFilesAvailable()
         {
@@ -2738,7 +2738,7 @@ namespace ClrMDRIndex
 
 #endregion strings
 
-#region segments/generations/sizes
+    #region segments/generations/sizes
 
         public KeyValuePair<uint[], uint[]> GetSizeArrays(out string error)
         {
@@ -3531,7 +3531,7 @@ namespace ClrMDRIndex
 
 #endregion segments/generations/sizes
 
-        #region threads/blocking objects
+    #region threads/blocking objects
 
         public bool LoadThreadBlockInfo(out string error)
         {
@@ -3543,12 +3543,12 @@ namespace ClrMDRIndex
 
         public bool IsThreadId(int id)
         {
-            return id < _threads.Length; // TODO JRD
+            return id < _threadBlockingMap.Length; // TODO JRD
         }
 
         public int GetIdFromGraph(int id)
         {
-            return IsThreadId(id) ? id : id - _threads.Length; // TODO JRD
+            return IsThreadId(id) ? id : _blockBlockingMap[id- _blockBlockingMap.Length]; // TODO JRD
         }
 
         //public int GetBlockingId(int id)
@@ -3720,7 +3720,7 @@ namespace ClrMDRIndex
 
         #endregion threads/blocking objects
 
-#region dump
+    #region dump
 
         private bool InitDump(out string error, IProgress<string> progress, ulong[] instances=null)
         {
@@ -3744,7 +3744,7 @@ namespace ClrMDRIndex
 
 #endregion dump
 
-#region testing
+    #region testing
 
         public bool TestInstanceValues(out string error)
         {
@@ -3787,7 +3787,7 @@ namespace ClrMDRIndex
 
 #endregion testing
 
-#region dispose
+    #region dispose
 
         volatile
         bool _disposed = false;

@@ -22,6 +22,7 @@
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <LangVersion>latest</LangVersion>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
     <DebugType>pdbonly</DebugType>
@@ -117,6 +118,7 @@
     <Compile Include="Graph\Circuits.cs" />
     <Compile Include="Graph\Cycle.cs" />
     <Compile Include="Graph\DGraph.cs" />
+    <Compile Include="Graph\ThreadBlockGraph.cs" />
     <Compile Include="Graph\Treemap.cs" />
     <Compile Include="MdrException.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />

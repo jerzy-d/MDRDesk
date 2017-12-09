@@ -2216,6 +2216,129 @@ namespace UnitTestMdr
         }
 
         [TestMethod]
+        public void TestThreadAndBlockingOjectMap()
+        {
+            string error;
+            var dmpPath = @"C:\WinDbgStuff\Dumps\Analytics\Viking\VikingDlkAnalytics1_12_06_17.dmp";
+            var dmp = OpenDump(dmpPath);
+            using (dmp)
+            {
+                var heap = dmp.Heap;
+                var threads = DumpIndexer.GetThreads(dmp.Runtime);
+                BlockingObject[] freeBlks;
+                var blocks = DumpIndexer.GetBlockingObjectsEx(heap, out freeBlks);
+                ThreadBlockGraph tbgraph = null;
+                StreamWriter sw = null;
+                try
+                {
+                    var path = DumpFileMoniker.GetAndCreateOutFolder(dmpPath, out error) + Path.DirectorySeparatorChar + "ThreadList.txt";
+                    sw = new StreamWriter(path);
+                    WriteThreadInfo(sw, threads[0]);
+                    for (int i = 1, icnt = threads.Length; i < icnt; ++i)
+                    {
+                        var prevth = threads[i-1];
+                        var th = threads[i];
+                        WriteThreadInfo(sw, th);
+                        Assert.IsTrue(prevth.Address != th.Address);
+                    }
+                    sw.Close();
+                    path = DumpFileMoniker.GetAndCreateOutFolder(dmpPath, out error) + Path.DirectorySeparatorChar + "BlockList.txt";
+                    sw = new StreamWriter(path);
+                    WriteBlockInfo(sw, blocks[0]);
+                    for (int i = 1, icnt = blocks.Length; i < icnt; ++i)
+                    {
+                        var prevblk = blocks[i - 1];
+                        var blk = blocks[i];
+                        WriteBlockInfo(sw, blk);
+                        Assert.IsTrue(prevblk.Object != blk.Object);
+                    }
+                    sw.Close();
+
+                    tbgraph = ThreadBlockGraph.BuildThreadBlockGraph(threads, blocks, out error);
+                    Assert.IsNull(error, error);
+                    Assert.IsNotNull(tbgraph);
+                    sw = new StreamWriter(DumpFileMoniker.GetAndCreateOutFolder(dmpPath, out error) + Path.DirectorySeparatorChar + "ThreadBlockGraph.txt");
+                    Assert.IsNull(error, error);
+                    ThreadBlockGraph.Dump(sw, tbgraph);
+                    sw.Close();
+                    sw = null;
+                    var allCycles = tbgraph.Deadlock;
+                    var tbcs = new int[allCycles.Length][];
+                    for (int i = 0, icnt = allCycles.Length; i < icnt; ++i)
+                    {
+                        var cs = allCycles[i];
+                        tbcs[i] = new int[cs.Length];
+                        for (int j = 0, jcnt = cs.Length; j < jcnt; ++j)
+                        {
+                            var gnx = cs[j];
+                            tbcs[i][j] = tbgraph.GetIndex(cs[j]);
+                        }
+                    }
+
+
+                }
+                catch (Exception ex)
+                {
+                    Assert.IsTrue(false, ex.ToString());
+                }
+                finally
+                {
+                    sw?.Close();
+                }
+            }
+        }
+
+        private void WriteThreadInfo(StreamWriter sw, ClrThread th)
+        {
+            sw.Write(Utils.RealAddressString(th.Address));
+            sw.Write(Utils.CountStringPadded((int)th.LockCount));
+            foreach(BlockingObject blk in th.BlockingObjects)
+            {
+                sw.Write(Utils.RealAddressString(blk.Object) + " ");
+                if (blk.Taken && blk.HasSingleOwner && blk.Owner != null)
+                {
+                    sw.Write("{ " + Utils.RealAddressString(blk.Owner.Address) + " } ");
+                }
+            }
+            sw.WriteLine();
+        }
+
+        private void WriteBlockInfo(StreamWriter sw, BlockingObject blk)
+        {
+            sw.Write(Utils.RealAddressString(blk.Object) + " ");
+            if (blk.Taken && blk.HasSingleOwner && blk.Owner != null)
+            {
+                sw.Write("{ " + Utils.RealAddressString(blk.Owner.Address) + " } ");
+            }
+            if (blk.Owners != null && blk.Owners.Count > 0)
+            {
+                sw.Write("[ ");
+                foreach (ClrThread th in blk.Owners)
+                {
+                    if (th != null)
+                        sw.Write(Utils.RealAddressString(th.Address) + " ");
+                    else
+                        sw.Write(Utils.RealAddressString(Constants.InvalidAddress) + " ");
+                }
+                sw.Write("] ");
+            }
+            if (blk.Waiters != null && blk.Waiters.Count > 0)
+            {
+                sw.Write("< ");
+                foreach (ClrThread th in blk.Waiters)
+                {
+                    if (th != null)
+                        sw.Write(Utils.RealAddressString(th.Address) + " ");
+                    else
+                        sw.Write(Utils.RealAddressString(Constants.InvalidAddress) + " ");
+                }
+                sw.Write(">");
+            }
+
+            sw.WriteLine();
+        }
+
+        [TestMethod]
         public void TestBlocking()
         {
             var dmp = OpenDump(@"C:\WinDbgStuff\Dumps\Analytics\AnalyticsMemory\A2_noDF.dmp");

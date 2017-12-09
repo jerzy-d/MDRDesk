@@ -1490,6 +1490,12 @@ namespace ClrMDRIndex
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static string CountStringPadded(int sz)
+        {
+            return sz == 0 ? " [       0] " : string.Format(" [{0,8:#,###,###}] ", sz);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static string SizeStringHeader(long sz)
         {
             return sz == 0 ? "[           0] " : string.Format("[{0,12:#,###,###}] ", sz);
@@ -1764,11 +1770,11 @@ namespace ClrMDRIndex
                 ary[i] = i;
         }
 
-        public static int[] Iota(int cnt)
+        public static int[] Iota(int cnt, int init=0)
         {
             var ary = new int[cnt];
             for (int i = 0, icnt = cnt; i < icnt; ++i)
-                ary[i] = i;
+                ary[i] = init++;
             return ary;
         }
 
