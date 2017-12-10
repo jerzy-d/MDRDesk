@@ -770,6 +770,12 @@ namespace ClrMDRIndex
 
         #region String Utils
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static string ReplaceUriSpaces(string str)
+        {
+            return str.Replace("%20", " ");
+        }
+
         public static string[] ReverseTypeNames(string[] names)
         {
             if (names == null || names.Length < 1) return EmptyArray<string>.Value;

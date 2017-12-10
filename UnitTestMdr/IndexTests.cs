@@ -630,8 +630,8 @@ namespace UnitTestMdr
             using (index)
             {
                 var digraph = index.ThreadBlockgraph;
-                var haveCycle = DGraph.HasCycle(digraph.Graph);
-                var result = Circuits.GetCycles(digraph.Graph);
+                var haveCycle = DGraph.HasCycle(digraph.Graph.Graph);
+                var result = Circuits.GetCycles(digraph.Graph.Graph);
                 Assert.IsTrue(haveCycle);
             }
 

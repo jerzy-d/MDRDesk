@@ -126,7 +126,7 @@ namespace MDRDesk
             string error = null;
             try
             {
-                DisplayThreadBlockGraph(CurrentIndex.ThreadBlockgraph.Graph, false);
+                DisplayThreadBlockGraph(CurrentIndex.ThreadBlockgraph.Graph.Graph, false);
             }
             catch (Exception ex)
             {
@@ -324,7 +324,7 @@ namespace MDRDesk
                     int nodeIndex = Int32.Parse(indexStr);
                     if (nodeName[0] == Constants.HeavyAsterisk) // blocking obj
                     {
-                        ClrtBlkObject blk = CurrentIndex.GetGraphBlkObject(nodeIndex);
+                        ClrtBlkObject blk = CurrentIndex.GetBlkObject(nodeIndex);
                         var blkObjectView = (ListView)LogicalTreeHelper.FindLogicalNode(grid, "ThreadBlockingkObject");
                         GuiUtils.RemoveAdorner(blkObjectView);
                         ((GridViewColumnHeader)((GridView)blkObjectView.View).Columns[0].Header).Content = GuiUtils.GetTextBlock(nodeName, "Blocking Object Properties", 0);
@@ -694,7 +694,13 @@ namespace MDRDesk
             for (int i = 0, icnt = lines.Length; i < icnt; ++i)
             {
                 var ln = lines[i];
-                if (ln.StartsWith("RUNTIME"))
+                if (ln.StartsWith("## "))
+                {
+                    txtBlock.Inlines.Add(ln.Substring(3));
+                    txtBlock.Inlines.Add(Environment.NewLine);
+                    continue;
+                }
+                else if (ln.StartsWith("RUNTIME"))
                 {
                     txtBlock.Inlines.Add(Environment.NewLine);
                     txtBlock.Inlines.Add(new Run(ln) { FontWeight = FontWeights.Bold, FontSize = 16, });

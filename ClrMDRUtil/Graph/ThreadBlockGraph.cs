@@ -25,6 +25,14 @@ namespace ClrMDRIndex
             _deadlock = deadlock;
         }
 
+        public ThreadBlockGraph(DGraph graph, int threadCnt, int[] map, int[][] deadlock)
+        {
+            _graph = graph;
+            _graphThreadCount = threadCnt;
+            _graphMap = map;
+            _deadlock = deadlock;
+        }
+
         public bool HasDeadlock()
         {
             return _deadlock != null && _deadlock.Length > 0;
@@ -253,6 +261,55 @@ namespace ClrMDRIndex
             }
         }
 
+        static public ThreadBlockGraph Load(string path, out string error)
+        {
+            error = null;
+            BinaryReader bw = null;
+            try
+            {
+                bw = new BinaryReader(File.Open(path, FileMode.Open,FileAccess.Read));
+
+                DGraph dgraph = DGraph.Load(bw, out error);
+                int graphThreadCount = bw.ReadInt32();
+                int mapCnt = bw.ReadInt32();
+                int[] map = null;
+                if (mapCnt > 0)
+                {
+                    map = new int[mapCnt];
+                    for (int i = 0, icnt = map.Length; i < icnt; ++i)
+                    {
+                        map [i] = bw.ReadInt32();
+                    }
+                }
+                int[][] deadlock = null;
+                int deadlockCnt = bw.ReadInt32();
+                if (deadlockCnt > 0)
+                {
+                    deadlock = new int[deadlockCnt][];
+                    for (int i = 0; i < deadlockCnt; ++i)
+                    {
+                        int cycleLen = bw.ReadInt32();
+                        int[] cycle = new int[cycleLen];
+                        for (int j = 0; j < cycleLen; ++j)
+                        {
+                            cycle[j] = bw.ReadInt32();
+                        }
+                        deadlock[i] = cycle;
+                    }
+                }
+
+                return new ThreadBlockGraph(dgraph, graphThreadCount, map, deadlock);
+            }
+            catch (Exception ex)
+            {
+                error = Utils.GetExceptionErrorString(ex);
+                return null;
+            }
+            finally
+            {
+                bw?.Close();
+            }
+        }
 
         /// <summary>
         /// Just for testing.

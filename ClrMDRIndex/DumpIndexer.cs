@@ -65,7 +65,6 @@ namespace ClrMDRIndex
             var clrtDump = new ClrtDump(DumpPath);
             if (!clrtDump.Init(out error)) return false;
             _errors = new ConcurrentBag<string>[clrtDump.RuntimeCount];
-            //Thread threadInfoWorker = null, referenceBuilderWorker = null;
             DateTime indexingStart = DateTime.UtcNow;
             InstanceReferences builder = null;
 
@@ -115,7 +114,6 @@ namespace ClrMDRIndex
                         Debug.Assert(error == null);
                         _typeCount[r] = typeNames.Length; // for general info dump
 
-
                         // get roots
                         //
                         progress?.Report(runtimeIndexHeader + "Getting roots...");
@@ -139,7 +137,7 @@ namespace ClrMDRIndex
                         // threads and blocking objects
                         //
                         progress?.Report(runtimeIndexHeader + "Getting threads, blocking objecks information...");
-                        GetThreadsInfos(clrtDump.Runtime, addresses, typeIds, typeNames, progress);
+                        GetThreadsInfos2(clrtDump.Runtime, addresses, typeIds, typeNames, progress);
 
                         // setting root information
                         //
@@ -221,7 +219,6 @@ namespace ClrMDRIndex
                             InstanceReferences.DeleteInstanceReferenceFiles(r, _fileMoniker, out error);
                             progress?.Report(runtimeIndexHeader + "Savings instances addresses...");
                             Utils.WriteUlongArray(_fileMoniker.GetFilePath(r, Constants.MapInstancesFilePostfix), addresses, out error);
-                            //addressesCopy = null;
                         }
 
                         progress?.Report(runtimeIndexHeader + "Building type instance map...");
@@ -1511,182 +1508,52 @@ namespace ClrMDRIndex
                 progress?.Report(progressHeader + "Getting blocking object list...");
                 var blocks = DumpIndexer.GetBlockingObjects(heap);
 
-                progress?.Report(progressHeader + "Generating thread and blocking object references...");
-                var threadSet = new HashSet<ClrThread>(new ClrThreadEqualityCmp());
-                var blkGraph = new List<Tuple<BlockingObject, ClrThread[], ClrThread[]>>();
-                var allBlkList = new List<BlockingObject>();
-                var owners = new List<ClrThread>();
-                var waiters = new List<ClrThread>();
-
-                for (int i = 0, icnt = blocks.Length; i < icnt; ++i)
-                {
-                    var blk = blocks[i];
-                    owners.Clear();
-                    waiters.Clear();
-                    ClrThread owner = null;
-                    if (blk.Taken && blk.HasSingleOwner)
-                    {
-                        owner = blk.Owner;
-                        if (owner != null)
-                        {
-                            threadSet.Add(owner);
-                            owners.Add(owner);
-                        }
-                    }
-
-                    if (blk.Owners != null && blk.Owners.Count > 0)
-                    {
-                        for (int j = 0, jcnt = blk.Owners.Count; j < jcnt; ++j)
-                        {
-                            var th = blk.Owners[j];
-                            if (th != null)
-                            {
-                                threadSet.Add(th);
-                                if (owner == null || owner.Address != th.Address)
-                                    owners.Add(th);
-                            }
-                        }
-                    }
-
-                    if (blk.Waiters != null && blk.Waiters.Count > 0)
-                    {
-                        for (int j = 0, jcnt = blk.Waiters.Count; j < jcnt; ++j)
-                        {
-                            var th = blk.Waiters[j];
-                            if (th != null)
-                            {
-                                threadSet.Add(th);
-                                waiters.Add(th);
-                            }
-                        }
-                    }
-
-                    if (owners.Count > 0)
-                    {
-                        var ownerAry = owners.ToArray();
-                        var waiterAry = waiters.ToArray();
-                        blkGraph.Add(new Tuple<BlockingObject, ClrThread[], ClrThread[]>(blk, ownerAry, waiterAry));
-                        allBlkList.Add(blk);
-                    }
-                    else if (waiters.Count > 0)
-                    {
-                        blkGraph.Add(new Tuple<BlockingObject, ClrThread[], ClrThread[]>(blk, Utils.EmptyArray<ClrThread>.Value,
-                            waiters.ToArray()));
-                        allBlkList.Add(blk);
-                    }
-                }
-
-                var thrCmp = new ClrThreadCmp();
-                var blkCmp = new BlockingObjectCmp();
-                var blkInfoCmp = new BlkObjInfoCmp();
-
-                // blocks and threads found in blocking objects
+                // build thread - block graph
                 //
-                var blkThreadAry = threadSet.ToArray();
-                Array.Sort(blkThreadAry, thrCmp);
-                var blkBlockAry = allBlkList.ToArray();
-                Array.Sort(blkBlockAry, blkCmp);
-                var threadBlocksAry = blkGraph.ToArray();
-                Array.Sort(threadBlocksAry, blkInfoCmp);
-
                 progress?.Report(progressHeader + "Building thread and blocking object graph...");
-                // create maps
-                //
-                int[] blkMap = new int[blkBlockAry.Length];
-                int[] thrMap = new int[blkThreadAry.Length];
-                for (int i = 0, icnt = blkMap.Length; i < icnt; ++i)
-                {
-                    blkMap[i] = Array.BinarySearch(blocks, blkBlockAry[i], blkCmp);
-                    Debug.Assert(blkMap[i] >= 0);
-                }
-
-                for (int i = 0, icnt = thrMap.Length; i < icnt; ++i)
-                {
-                    thrMap[i] = Array.BinarySearch(threads, blkThreadAry[i], thrCmp);
-                    Debug.Assert(thrMap[i] >= 0);
-                }
-
-                int blkThreadCount = blkThreadAry.Length;
-
-                List<int>[] adjLists = new List<int>[blkThreadCount + blkBlockAry.Length];
-                int edgeCount = 0;
-                for (int i = 0, cnt = threadBlocksAry.Length; i < cnt; ++i)
-                {
-                    var blkInfo = threadBlocksAry[i];
-                    for (int j = 0, tcnt = blkInfo.Item2.Length; j < tcnt; ++j)
-                    {
-                        var ndx = Array.BinarySearch(blkThreadAry, blkInfo.Item2[j], thrCmp);
-                        Debug.Assert(ndx >= 0);
-                        DGraph.AddDistinctEdge(adjLists, blkThreadCount + i, ndx, ref edgeCount);
-                    }
-                    for (int j = 0, tcnt = blkInfo.Item3.Length; j < tcnt; ++j)
-                    {
-                        var ndx = Array.BinarySearch(blkThreadAry, blkInfo.Item3[j], thrCmp);
-                        Debug.Assert(ndx >= 0);
-                        DGraph.AddDistinctEdge(adjLists, ndx, blkThreadCount + i, ref edgeCount);
-                    }
-                }
-
-                progress?.Report(progressHeader + "Searching for thread and blocking object cycles...");
-
-                int[][] allCycles = null;
-                DGraph dgraph = new DGraph(adjLists, edgeCount);
-                if (DGraph.HasCycle(dgraph.Graph))
-                {
-                    progress?.Report(progressHeader + "Found one cycle, searching for more, possible deadlock(s)...");
-                    allCycles = Circuits.GetCycles(dgraph.Graph);
-                }
-#if FALSE
-                var cycle = new DirectedCycle(graph);
-                var cycles = cycle.GetCycle();
-                int[][] allCycles = null;
-                if (cycles != null && cycles.Length > 0)
-                {
-                    progress?.Report(progressHeader + "Found one cycle, searching for more, possible deadlock(s)...");
-                    var g = graph.GetJaggedArrayGraph();
-                    allCycles = Circuits.GetCycles(g);
-                }
-#endif
-
+                var tbgraph = ThreadBlockGraph.BuildThreadBlockGraph(threads, blocks, out error);
+                if (error != null)
+                    AddError(_currentRuntimeIndex, "Exception in GetThreadsInfos." + Environment.NewLine + error);
                 // save graph
                 //
                 progress?.Report(progressHeader + "Saving thread and blocking object graph...");
                 var path = _fileMoniker.GetFilePath(_currentRuntimeIndex, Constants.MapThreadsAndBlocksGraphFilePostfix);
-                bw = new BinaryWriter(File.Open(path, FileMode.Create));
-                if (allCycles != null)
-                {
-                    bw.Write(allCycles.Length);
-                    for (int i = 0, icnt = allCycles.Length; i < icnt; ++i)
-                    {
-                        bw.Write(allCycles[i].Length);
-                        for (int j = 0, jcnt = allCycles[i].Length; j < jcnt; ++j)
-                        {
-                            bw.Write(allCycles[i][j]);
-                        }
-                    }
-                }
-                else
-                {
-                    bw.Write((int)0);
-                }
-                bw.Write(thrMap.Length);
-                for (int i = 0, icnt = thrMap.Length; i < icnt; ++i)
-                {
-                    bw.Write(thrMap[i]);
-                }
-                bw.Write(blkMap.Length);
-                for (int i = 0, icnt = blkMap.Length; i < icnt; ++i)
-                {
-                    bw.Write(blkMap[i]);
-                }
+                ThreadBlockGraph.Dump(path, tbgraph, out error);
+//                bw = new BinaryWriter(File.Open(path, FileMode.Create));
+//                if (allCycles != null)
+//                {
+//                    bw.Write(allCycles.Length);
+//                    for (int i = 0, icnt = allCycles.Length; i < icnt; ++i)
+//                    {
+//                        bw.Write(allCycles[i].Length);
+//                        for (int j = 0, jcnt = allCycles[i].Length; j < jcnt; ++j)
+//                        {
+//                            bw.Write(allCycles[i][j]);
+//                        }
+//                    }
+//                }
+//                else
+//                {
+//                    bw.Write((int)0);
+//                }
+//                bw.Write(thrMap.Length);
+//                for (int i = 0, icnt = thrMap.Length; i < icnt; ++i)
+//                {
+//                    bw.Write(thrMap[i]);
+//                }
+//                bw.Write(blkMap.Length);
+//                for (int i = 0, icnt = blkMap.Length; i < icnt; ++i)
+//                {
+//                    bw.Write(blkMap[i]);
+//                }
 
-#if FALSE
-                graph.Dump(bw, out error);
-#endif
-                DGraph.Dump(bw, dgraph, out error);
+//#if FALSE
+//                graph.Dump(bw, out error);
+//#endif
+//                DGraph.Dump(bw, dgraph, out error);
 
-                bw.Close();
-                bw = null;
+//                bw.Close();
+//                bw = null;
                 if (error != null)
                     AddError(_currentRuntimeIndex, "Exception in GetThreadsInfos." + Environment.NewLine + error);
 
@@ -1804,7 +1671,7 @@ namespace ClrMDRIndex
                             frameIds.Add(frId);
                         }
                     }
-
+                    var blkCmp = new BlockingObjectCmp();
                     var clrtThread = new ClrtThread(thread, blocks, blkCmp, frameIds.ToArray(), frameStackPtrs.ToArray(), aliveIds.ToArray(), deadIds.ToArray());
                     Debug.Assert(clrtThread != null);
                     clrtThread.Dump(bw);
@@ -2060,11 +1927,19 @@ namespace ClrMDRIndex
                     txtWriter.WriteLine("Is server GC : " + runtime.ServerGC);
                     if (runtime.AppDomains != null)
                     {
+                        txtWriter.WriteLine("Application domains: [" + runtime.AppDomains.Count + "]");
                         for (int j = 0, jcnt = runtime.AppDomains.Count; j < jcnt; ++j)
                         {
                             var appDoamin = runtime.AppDomains[j];
-                            txtWriter.WriteLine("Application domain: " + (appDoamin.Name ?? "unnamed") + ", id: " +
-                                                appDoamin.Id + ", module cnt: " + appDoamin.Modules.Count);
+                            txtWriter.Write("## (" + appDoamin.Id + ") " 
+                                                + Utils.RealAddressStringHeader(appDoamin.Address)
+                                                + (appDoamin.Name ?? "unnamed")
+                                                 + ", modules " + appDoamin.Modules.Count);
+                            if (appDoamin.ApplicationBase != null)
+                                txtWriter.Write(" base: " + Utils.ReplaceUriSpaces(appDoamin.ApplicationBase));
+                            if (appDoamin.ConfigurationFile != null)
+                                txtWriter.Write(" config: " + Utils.ReplaceUriSpaces(appDoamin.ConfigurationFile));
+                            txtWriter.WriteLine();
                         }
                     }
                     if (runtime.SystemDomain != null)

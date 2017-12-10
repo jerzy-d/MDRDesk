@@ -105,20 +105,25 @@ namespace ClrMDRIndex
         private IndexProxy _indexProxy;
         public IndexProxy IndexProxy => _indexProxy;
 
-        // threads and blocking objects
-        private int[][] _deadlock;
-        public int[][] Deadlock => _deadlock;
-        public bool DeadlockFound => _deadlock.Length > 0;
+        //// threads and blocking objects
+        //private int[][] _deadlock;
+        //public int[][] Deadlock => _deadlock;
+        //public bool DeadlockFound => _deadlock.Length > 0;
+        public int[][] Deadlock => _threadBlockgraph.Deadlock;
+        public bool DeadlockFound => _threadBlockgraph.HasDeadlock();
+
 #if FALSE
         private Digraph _threadBlockgraph;
         public Digraph ThreadBlockgraph => _threadBlockgraph;
 #endif
-        private DGraph _threadBlockgraph;
-        public DGraph ThreadBlockgraph => _threadBlockgraph;
+        //private DGraph _threadBlockgraph;
+        //public DGraph ThreadBlockgraph => _threadBlockgraph;
+        private ThreadBlockGraph _threadBlockgraph;
+        public ThreadBlockGraph ThreadBlockgraph => _threadBlockgraph;
         private ClrtThread[] _threads;
         private ClrtBlkObject[] _blocks;
-        private int[] _threadBlockingMap;
-        private int[] _blockBlockingMap;
+        //private int[] _threadBlockingMap;
+        //private int[] _blockBlockingMap;
         private WeakReference<string[]> _frames; // just address and methods name
         private WeakReference<KeyValuePair<int,ulong>[]> _stackVars; // just address and methods name
         private int[] _frameGroupIdCounts;
@@ -248,35 +253,37 @@ namespace ClrMDRIndex
         private bool LoadThreadBlockGraph(out string error)
         {
             error = null;
-            BinaryReader br = null;
+ //           BinaryReader br = null;
             try
             {
                 var path = _fileMoniker.GetFilePath(_currentRuntimeIndex, Constants.MapThreadsAndBlocksGraphFilePostfix);
-                br = new BinaryReader(File.Open(path, FileMode.Open));
-                int cycleCount = br.ReadInt32();
-                _deadlock = cycleCount > 0 ? new int[cycleCount][] : Utils.EmptyArray<int[]>.Value;
-                for (int i = 0; i < cycleCount; ++i)
-                {
-                    int ccnt = br.ReadInt32();
-                    _deadlock[i] = new int[ccnt];
-                    for (int j = 0; j < ccnt; ++j)
-                    {
-                        _deadlock[i][j] = br.ReadInt32();
-                    }
-                }
-                int count = br.ReadInt32();
-                _threadBlockingMap = count > 0 ? new int[count] : Utils.EmptyArray<int>.Value;
-                for (int i = 0; i < count; ++i)
-                    _threadBlockingMap[i] = br.ReadInt32();
+//             br = new BinaryReader(File.Open(path, FileMode.Open));
+                _threadBlockgraph = ThreadBlockGraph.Load(path,out error);
 
-                count = br.ReadInt32();
-                _blockBlockingMap = count > 0 ? new int[count] : Utils.EmptyArray<int>.Value;
-                for (int i = 0; i < count; ++i)
-                    _blockBlockingMap[i] = br.ReadInt32();
-#if FALSE
-                _threadBlockgraph = Digraph.Load(br, out error);
-#endif
-                _threadBlockgraph = DGraph.Load(br, out error);
+//                int cycleCount = br.ReadInt32();
+//                _deadlock = cycleCount > 0 ? new int[cycleCount][] : Utils.EmptyArray<int[]>.Value;
+//                for (int i = 0; i < cycleCount; ++i)
+//                {
+//                    int ccnt = br.ReadInt32();
+//                    _deadlock[i] = new int[ccnt];
+//                    for (int j = 0; j < ccnt; ++j)
+//                    {
+//                        _deadlock[i][j] = br.ReadInt32();
+//                    }
+//                }
+//                int count = br.ReadInt32();
+//                _threadBlockingMap = count > 0 ? new int[count] : Utils.EmptyArray<int>.Value;
+//                for (int i = 0; i < count; ++i)
+//                    _threadBlockingMap[i] = br.ReadInt32();
+
+//                count = br.ReadInt32();
+//                _blockBlockingMap = count > 0 ? new int[count] : Utils.EmptyArray<int>.Value;
+//                for (int i = 0; i < count; ++i)
+//                    _blockBlockingMap[i] = br.ReadInt32();
+//#if FALSE
+//                _threadBlockgraph = Digraph.Load(br, out error);
+//#endif
+//                _threadBlockgraph = DGraph.Load(br, out error);
                 LoadThreadsAndBlocks(out error);
                 return error == null;
             }
@@ -285,10 +292,10 @@ namespace ClrMDRIndex
                 error = Utils.GetExceptionErrorString(ex);
                 return false;
             }
-            finally
-            {
-                br?.Close();
-            }
+            //finally
+            //{
+            //    br?.Close();
+            //}
         }
 
 
@@ -3543,43 +3550,13 @@ namespace ClrMDRIndex
 
         public bool IsThreadId(int id)
         {
-            return id < _threadBlockingMap.Length; // TODO JRD
+            return _threadBlockgraph.IsThread(id);
         }
 
         public int GetIdFromGraph(int id)
         {
-            return IsThreadId(id) ? id : _blockBlockingMap[id- _blockBlockingMap.Length]; // TODO JRD
+            return _threadBlockgraph.GetIndex(id);
         }
-
-        //public int GetBlockingId(int id)
-        //{
-        //    if (_threads == null) return Constants.InvalidIndex;
-        //    Debug.Assert(id >= _threads.Length);
-        //    return _threads.Length - id;
-        //}
-
-        //public string GetThreadLabel(int id)
-        //{
-        //    if (_threads == null) return Constants.Unknown;
-        //    ClrtThread thread = _threads[_threadBlockingMap[id]];
-        //    return thread.OSThreadId + "/" + thread.ManagedThreadId;
-        //}
-
-        //public string GetThreadOrBlkLabel(int id, out bool isThread)
-        //{
-        //    isThread = false;
-        //    if (_threads == null) return Constants.Unknown;
-        //    isThread = IsThreadId(id);
-        //    if (isThread)
-        //    {
-        //        ClrtThread thread = _threads[_threadBlockingMap[id]];
-        //        return thread.OSThreadId + "/" + thread.ManagedThreadId;
-        //    }
-        //    ClrtBlkObject blk = _blocks[GetIdFromGraph(id)];
-        //    if (blk.BlkReason != BlockingReason.None)
-        //        return Utils.BaseTypeName(GetTypeName(blk.TypeId)) + "/" + blk.BlkReason;
-        //    return Utils.BaseTypeName(GetTypeName(blk.TypeId));
-        //}
 
         public string GetThreadOrBlkUniqueLabel(int id, out bool isThread)
         {
@@ -3588,11 +3565,11 @@ namespace ClrMDRIndex
             isThread = IsThreadId(id);
             if (isThread)
             {
-                int threadId = _threadBlockingMap[id];
+                int threadId = _threadBlockgraph.GetThreadIndex(id);
                 ClrtThread thread = _threads[threadId];
                 return Constants.HeavyRightArrowStr + threadId + "] " + thread.OSThreadId + "/" + thread.ManagedThreadId;
             }
-            int blockId = GetIdFromGraph(id);
+            int blockId = _threadBlockgraph.GetBlockIndex(id);
             ClrtBlkObject blk = _blocks[blockId];
             //if (blk.BlkReason != BlockingReason.None)
             //    return Constants.HeavyAsteriskStr + blockId + "] " + Utils.BaseTypeName(GetTypeName(blk.TypeId)) + "/" + blk.BlkReason;
@@ -3621,11 +3598,9 @@ namespace ClrMDRIndex
         /// Gets blocking object info from Threds/Blocks grapk.
         /// </summary>
         /// <param name="id">Blocking object graph id.</param>
-        public ClrtBlkObject GetGraphBlkObject(int id)
+        public ClrtBlkObject GetBlkObject(int id)
         {
-            if (_threads == null) return ClrtBlkObject.Invalid;
-            int blockId = GetIdFromGraph(id);
-            return blockId >= 0 && blockId < _blocks.Length ? _blocks[blockId] : ClrtBlkObject.Invalid;
+            return id >= 0 && id < _blocks.Length ? _blocks[id] : ClrtBlkObject.Invalid;
         }
 
         public Tuple<ClrtThread[], string[], KeyValuePair<int, ulong>[]> GetThreads(out string error)
@@ -3714,9 +3689,6 @@ namespace ClrMDRIndex
             }
             return new KeyValuePair<string[], string[]>(aliveStrs, deadStrs);
         }
-
-
-
 
         #endregion threads/blocking objects
 

@@ -411,7 +411,7 @@
                 <RowDefinition Height="15*"/>
                 <RowDefinition Height="15*"/>
             </Grid.RowDefinitions>
-            <ScrollViewer Grid.Row="0" BorderBrush="Black" BorderThickness="2" Background="LightGray">
+            <ScrollViewer Grid.Row="0" BorderBrush="Black" BorderThickness="2" Background="LightGray" ScrollViewer.HorizontalScrollBarVisibility="Auto" ScrollViewer.VerticalScrollBarVisibility="Visible">
                 <TextBlock Name="GeneralInfoText" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" FontFamily="Consolas" Margin="8,8,2,2"></TextBlock>
             </ScrollViewer>
             <DataGrid Name="GeneralInfoGenerations" v4:Grid.Row="1" Grid.RowSpan="2"  AlternatingRowBackground="LightGray" Width="700" HorizontalAlignment="Stretch" VerticalAlignment="Center" IsReadOnly="True" AutoGenerateColumns="False" FontFamily="Consolas">

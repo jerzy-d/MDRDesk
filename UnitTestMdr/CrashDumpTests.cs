@@ -3724,6 +3724,50 @@ namespace UnitTestMdr
 
         #endregion open dump
 
+        #region general info
+
+        [TestMethod]
+        public void TestRuntimeInfo()
+        {
+            string error = null;
+            using (var clrDump = OpenDump(@"C:\WinDbgStuff\Dumps\Analytics\Viking\VikingDlkAnalytics1_12_06_17.dmp"))
+            {
+                try
+                {
+                    var runtime = clrDump.Runtimes[0];
+                    foreach (var ad in runtime.AppDomains)
+                    {
+                        TestContext.WriteLine("### " + Utils.SmallIdHeader(ad.Id) + Utils.RealAddressStringHeader(ad.Address) + ad.Name);
+                        TestContext.WriteLine(Utils.ReplaceUriSpaces(ad.ApplicationBase));
+                        TestContext.WriteLine(Utils.ReplaceUriSpaces(ad.ConfigurationFile));
+                     }
+                    var heap = runtime.Heap;
+                    //var segs = heap.Segments;
+                    //for (int i = 0, icnt = segs.Count; i < icnt; ++i)
+                    //{
+                    //    var seg = segs[i];
+                    //    ulong addr = seg.FirstObject;
+                    //    while (addr != 0ul)
+                    //    {
+                    //        var clrType = heap.GetObjectType(addr);
+                    //        if (clrType == null) goto NEXT_OBJECT;
+
+
+                    //        NEXT_OBJECT:
+                    //        addr = seg.NextObject(addr);
+                    //    }
+                    //}
+                }
+                catch (Exception ex)
+                {
+                    error = Utils.GetExceptionErrorString(ex);
+                    Assert.IsTrue(false, error);
+                }
+            }
+        }
+
+        #endregion general info
+
         #region template
 
         [TestMethod]
