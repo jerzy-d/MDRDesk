@@ -40,10 +40,13 @@ namespace MDRDesk
         private DispatcherTimer _dispatcherTimer; // to update some stuff periodically
 
         /// <summary>
-        /// List of recent files.
+        /// List of recent index files.
         /// </summary>
         private RecentFileList RecentIndexList;
 
+        /// <summary>
+        /// List of recent files. TODO JRD Will we use it?
+        /// </summary>
         private RecentFileList RecentAdhocList;
 
         public static bool WndDbgLoaded { get; private set; }
@@ -91,7 +94,7 @@ namespace MDRDesk
                 var result = Setup.GetConfigSettings(out error);
                 if (!result)
                 {
-                    Dispatcher.CurrentDispatcher.InvokeAsync(() => MessageBoxShowError(error));
+                    Dispatcher.CurrentDispatcher.InvokeAsync(() => GuiUtils.MessageBoxShowError(error));
                     return;
                 }
 
@@ -132,14 +135,14 @@ namespace MDRDesk
                     if (!WndDbgLoaded)
                     {
                         error = error + Environment.NewLine + "All dbgeng queries will be disabled.";
-                        Dispatcher.CurrentDispatcher.InvokeAsync(() => ShowError(error));
+                        Dispatcher.CurrentDispatcher.InvokeAsync(() => GuiUtils.ShowError(error,this));
                     }
                 }
             }
             catch (Exception ex)
             {
                 error = Utils.GetExceptionErrorString(ex);
-                Dispatcher.CurrentDispatcher.InvokeAsync(() => MessageBoxShowError(error));
+                Dispatcher.CurrentDispatcher.InvokeAsync(() => GuiUtils.MessageBoxShowError(error));
             }
         }
 
@@ -240,9 +243,9 @@ namespace MDRDesk
             GuiUtils.CopyToClipboard(dacFiles[dacFiles.Length - 1]);
             string lst = string.Join("\n", dacFiles);
             if (dacFiles.Length > 1)
-                ShowInformation("Required Dac Files", lst, "Last dac file name (shown above) is copied to Clipboard.", string.Empty);
+                GuiUtils.ShowInformation("Required Dac Files", lst, "Last dac file name (shown above) is copied to Clipboard.", string.Empty,this);
             else
-                ShowInformation("Required Dac File", lst, "Dac file name (shown above) is copied to Clipboard.", string.Empty);
+                GuiUtils.ShowInformation("Required Dac File", lst, "Dac file name (shown above) is copied to Clipboard.", string.Empty,this);
         }
 
         private void AddDacFileClicked(object sender, RoutedEventArgs e)
@@ -392,14 +395,14 @@ namespace MDRDesk
                     {
                         dump.Dispose(); // TODO JRD -- pass dump to indexer
                         dump = null;
-                        if (IsIndexAvailable(null)) CloseCurrentIndex();
+                        if (GuiUtils.IsIndexAvailable(this, null)) CloseCurrentIndex();
                         Dispatcher.CurrentDispatcher.InvokeAsync(() => DoCreateDumpIndex(dlg.DumpPath));
                     }
                 }
             }
             catch (Exception ex)
             {
-                ShowError(Utils.GetExceptionErrorString(ex));
+                GuiUtils.ShowError(Utils.GetExceptionErrorString(ex),this);
             }
         }
 
@@ -424,7 +427,7 @@ namespace MDRDesk
                     Setup.SetTypesDisplayMode("fulltypenames");
                     break;
             }
-            if (!IsIndexAvailable(null) || TypeDisplayExists()) return;
+            if (!GuiUtils.IsIndexAvailable(this, null) || TypeDisplayExists()) return;
             switch (Setup.TypesDisplayMode)
             {
                 case "namespaces":
@@ -468,7 +471,7 @@ namespace MDRDesk
 
         private void CreateDumpIndexClicked(object sender, RoutedEventArgs e)
         {
-            if (IsIndexAvailable(null)) CloseCurrentIndex();
+            if (GuiUtils.IsIndexAvailable(this,null)) CloseCurrentIndex();
             var path = GuiUtils.SelectCrashDumpFile();
             if (path == null) return;
             DoCreateDumpIndex(path);
@@ -505,7 +508,7 @@ namespace MDRDesk
             if (!result.Item1)
             {
                 SetTitle(dmpFileName + " [INDEXING FAILED]");
-                ShowError(result.Item2);
+                GuiUtils.ShowError(result.Item2,this);
                 return;
             }
             Dispatcher.CurrentDispatcher.InvokeAsync(() => DoOpenDumpIndex(0, result.Item3));
@@ -513,7 +516,7 @@ namespace MDRDesk
 
         private void OpenDumpIndexClicked(object sender, RoutedEventArgs e)
         {
-            if (IsIndexAvailable(null)) CloseCurrentIndex();
+            if (GuiUtils.IsIndexAvailable(this, null)) CloseCurrentIndex();
             string path = null;
             if (sender != null && sender is MenuItem)
             {
@@ -532,7 +535,7 @@ namespace MDRDesk
             }
             catch (Exception ex)
             {
-                ShowError(Utils.GetExceptionErrorString(ex));
+                GuiUtils.ShowError(Utils.GetExceptionErrorString(ex),this);
             }
         }
 
@@ -573,7 +576,7 @@ namespace MDRDesk
 
                 if (result.Item1 != null)
                 {
-                    ShowError(result.Item1);
+                    GuiUtils.ShowError(result.Item1,this);
                     return;
                 }
                 if (CurrentIndex != null)
@@ -614,7 +617,7 @@ namespace MDRDesk
             }
             catch (Exception ex)
             {
-                ShowError(Utils.GetExceptionErrorString(ex));
+                GuiUtils.ShowError(Utils.GetExceptionErrorString(ex),this);
                 return;
             }
 
@@ -631,24 +634,24 @@ namespace MDRDesk
 
         private void CloseDumpIndexClicked(object sender, RoutedEventArgs e)
         {
-            if (IsIndexAvailable(null)) CloseCurrentIndex();
+            if (GuiUtils.IsIndexAvailable(this,null)) CloseCurrentIndex();
         }
 
         private void IndexShowIndexingInfoClicked(object sender, RoutedEventArgs e)
         {
-            if (!IsIndexAvailable("Show Indexing Info")) return;
+            if (!GuiUtils.IsIndexAvailable(this, "Show Indexing Info")) return;
             if (AlreadyDisplayed("IndexingGrid")) return;
             var path = CurrentIndex.GetFilePath(-1, Constants.TxtIndexingInfoFilePostfix);
             string error;
             if (!IndexingProgress.ShowIndexingInfo(this, path, out error))
             {
-                ShowError(error);
+                GuiUtils.ShowError(error,this);
             }
         }
 
         private void IndexShowModuleInfosClicked(object sender, RoutedEventArgs e)
         {
-            if (!IsIndexAvailable("Show Loaded Modules Infos")) return;
+            if (!GuiUtils.IsIndexAvailable(this,"Show Loaded Modules Infos")) return;
             var path = CurrentIndex.GetFilePath(-1, Constants.TxtTargetModulesPostfix);
 
             string error, title;
@@ -665,7 +668,7 @@ namespace MDRDesk
 
         private async void IndexShowFinalizerQueueClicked(object sender, RoutedEventArgs e)
         {
-            if (!IsIndexAvailable("Show Finalizer Queue")) return;
+            if (!GuiUtils.IsIndexAvailable(this, "Show Finalizer Queue")) return;
             if (AlreadyDisplayed(GridFinalizerQueue)) return;
             SetStartTaskMainWindowState("Getting finalizer queue info, please wait...");
 
@@ -688,7 +691,7 @@ namespace MDRDesk
 
         private async void IndexShowRootsClicked(object sender, RoutedEventArgs e)
         {
-            if (!IsIndexAvailable("Show Roots")) return;
+            if (!GuiUtils.IsIndexAvailable(this, "Show Roots")) return;
             if (AlreadyDisplayed(RootsGrid)) return;
             SetStartTaskMainWindowState("Getting WeakReference information, please wait...");
 
@@ -706,7 +709,7 @@ namespace MDRDesk
 
             if (error != null)
             {
-                ShowError(error);
+                GuiUtils.ShowError(error,this);
                 return;
             }
 
@@ -715,7 +718,7 @@ namespace MDRDesk
 
         private async void IndexShowWeakReferencesClicked(object sender, RoutedEventArgs e)
         {
-            if (!IsIndexAvailable("Show Weak References")) return;
+            if (!GuiUtils.IsIndexAvailable(this, "Show Weak References")) return;
             if (AlreadyDisplayed(WeakReferenceViewGrid)) return;
             SetStartTaskMainWindowState("Getting WeakReference information, please wait...");
 
@@ -732,12 +735,12 @@ namespace MDRDesk
 
             if (result.Error != null)
             {
-                ShowError(result.Error);
+                GuiUtils.ShowError(result.Error,this);
                 return;
             }
             if (result.Items.Length < 1)
             {
-                ShowInformation("Not Found", "WeakReference Information", "No WeakReference instances found", string.Empty);
+                GuiUtils.ShowInformation("Not Found", "WeakReference Information", "No WeakReference instances found", string.Empty,this);
                 return;
             }
 
@@ -746,13 +749,13 @@ namespace MDRDesk
 
         private void IndexShowBlockingThreadsClicked(object sender, RoutedEventArgs e)
         {
-            if (!IsIndexAvailable("Threads and Blocks Graph")) return;
+            if (!GuiUtils.IsIndexAvailable(this, "Threads and Blocks Graph")) return;
             if (AlreadyDisplayed(ThreadBlockingObjectGraphGrid)) return;
 
             string error;
             if (!CurrentIndex.LoadThreadBlockInfo(out error))
             {
-                ShowError(error);
+                GuiUtils.ShowError(error,this);
                 return;
             }
             Dispatcher.CurrentDispatcher.InvokeAsync(DisplayThreadBlockMap2);
@@ -760,19 +763,19 @@ namespace MDRDesk
 
         private void IndexShowThreadsClicked(object sender, RoutedEventArgs e)
         {
-            if (!IsIndexAvailable("Threads View")) return;
+            if (!GuiUtils.IsIndexAvailable(this, "Threads View")) return;
             Dispatcher.CurrentDispatcher.InvokeAsync(ExecuteGetThreadInfos);
         }
 
         private void IndexShowBlockingObjectsClicked(object sender, RoutedEventArgs e)
         {
-            if (!IsIndexAvailable("Blocking Objects View")) return;
+            if (!GuiUtils.IsIndexAvailable(this, "Blocking Objects View")) return;
             Dispatcher.CurrentDispatcher.InvokeAsync(ExecuteGetBlkObjectInfos);
         }
 
         private void IndexShowDeadlocksClicked(object sender, RoutedEventArgs e)
         {
-            if (!IsIndexAvailable("Deadlock View")) return;
+            if (!GuiUtils.IsIndexAvailable(this, "Deadlock View")) return;
             if (AlreadyDisplayed("D" + ThreadBlockingObjectGraphGrid)) return;
             DisplayDeadlockMap();
         }
@@ -789,7 +792,7 @@ namespace MDRDesk
 
         private async void GetSizeInformation(bool baseSize)
         {
-            if (!IsIndexAvailable("Get Size Information")) return;
+            if (!GuiUtils.IsIndexAvailable(this, "Get Size Information")) return;
 
             SetStartTaskMainWindowState("Getting type size information: , please wait...");
             // var result = await Task.Run(() => CurrentIndex.GetAllTypesSizesInfo(baseSize));
@@ -816,7 +819,7 @@ namespace MDRDesk
 
         private async void IndexStringUsageClicked(object sender, RoutedEventArgs e)
         {
-            if (!IsIndexAvailable("Get String Usage")) return;
+            if (!GuiUtils.IsIndexAvailable(this, "Get String Usage")) return;
 
             bool addGenerationInfo = false;
             MenuItem menuItem = sender as MenuItem;
@@ -873,7 +876,7 @@ namespace MDRDesk
 
         private ulong GetInstanceAddressFromUser(string title)
         {
-            if (!IsIndexAvailable(title)) return Constants.InvalidAddress;
+            if (!GuiUtils.IsIndexAvailable(this, title)) return Constants.InvalidAddress;
             ulong addr;
             if (!GetUserEnteredAddress("Instance Address", "Enter instance address, if not hex format prefix with n/N.", out addr)) return Constants.InvalidAddress;
             return addr;
@@ -929,7 +932,7 @@ namespace MDRDesk
 
         private async void IndexCompareSizeInformationClicked(object sender, RoutedEventArgs e)
         {
-            if (!IsIndexAvailable("Compare Size Information")) return;
+            if (!GuiUtils.IsIndexAvailable(this, "Compare Size Information")) return;
             var path = GuiUtils.SelectCrashDumpFile();
             if (path == null) return;
             SetStartTaskMainWindowState("Getting type sizes to compare. Please wait...");
@@ -958,7 +961,7 @@ namespace MDRDesk
 
         private async void IndexCompareStringInformationClicked(object sender, RoutedEventArgs e)
         {
-            if (!IsIndexAvailable("Compare String _instances Information")) return;
+            if (!GuiUtils.IsIndexAvailable(this, "Compare String _instances Information")) return;
             var path = GuiUtils.SelectCrashDumpFile();
             if (path == null) return;
             SetStartTaskMainWindowState("Getting string instances to compare. Please wait...");
@@ -974,7 +977,7 @@ namespace MDRDesk
 
             if (taskResult.Error != null)
             {
-                ShowError(taskResult.Error);
+                GuiUtils.ShowError(taskResult.Error,this);
                 return;
             }
 
@@ -984,7 +987,7 @@ namespace MDRDesk
 
         private void IndexViewCopyIndexPathClicked(object sender, RoutedEventArgs e)
         {
-            if (!IsIndexAvailable("Copy the index path.")) return;
+            if (!GuiUtils.IsIndexAvailable(this, "Copy the index path.")) return;
             string path = CurrentIndex.IndexFolder;
             GuiUtils.CopyToClipboard(path);
             MainStatusShowMessage("Copied to clipboard: " + path);
@@ -992,7 +995,7 @@ namespace MDRDesk
 
         public void RecentIndicesClicked(object sender, RoutedEventArgs e)
         {
-            if (IsIndexAvailable(null)) CloseCurrentIndex();
+            if (GuiUtils.IsIndexAvailable(this, null)) CloseCurrentIndex();
             var menuItem = sender as MenuItem;
             Debug.Assert(menuItem != null);
             var fileInfo = menuItem.Header as FileInfo;
@@ -1125,7 +1128,7 @@ namespace MDRDesk
 
             SetEndTaskMainWindowState(msg);
             if (taskResult.Key != null)
-                ShowError(taskResult.Key);
+                GuiUtils.ShowError(taskResult.Key,this);
 
         }
 
@@ -1256,24 +1259,10 @@ namespace MDRDesk
 
                                 if (task.Result.Item1 != null)
                                 {
-                                    //Dispatcher.CurrentDispatcher.InvokeAsync(() =>
-                                    //	ShowInformation("Empty List", "Search for string references failed",
-                                    //			"References not found for string: " + selStr, null));
-                                    Dispatcher.CurrentDispatcher.InvokeAsync(() => ShowError(task.Result.Item1));
+                                    Dispatcher.CurrentDispatcher.InvokeAsync(() => GuiUtils.ShowError(task.Result.Item1,this));
                                     return;
                                 }
                                 DisplayTypeAncestorsGrid(task.Result.Item2);
-
-                                //{
-
-                                //SWC.MenuItem[] menuItems = new SWC.MenuItem[]
-                                //{
-                                //	new SWC.MenuItem {Header = "Copy List Row"},
-                                //	new SWC.MenuItem {Header = "GC Generation Distribution"},
-                                //	new SWC.MenuItem {Header = "Get References"},
-                                //};
-                                //DisplayListViewBottomGrid(task.Result, Constants.BlackDiamond, ReportNameTypesWithString,
-                                //	ReportTitleSTypesWithString, menuItems);
                                 break;
                             case ReportTitleSTypesWithString:
                                 selStr = entries[ndx].Second;
@@ -1282,11 +1271,9 @@ namespace MDRDesk
                                 var report = CurrentIndex.GetParentReferencesReport(addr, 4);
                                 if (report.Error != null)
                                 {
-                                    Dispatcher.CurrentDispatcher.InvokeAsync(() => ShowError(report.Error));
-                                    //MessageBox.Show(report.Error, "Action Aborted", MessageBoxButton.OK, MessageBoxImage.Exclamation);
+                                    Dispatcher.CurrentDispatcher.InvokeAsync(() => GuiUtils.ShowError(report.Error,this));
                                     return;
                                 }
-                                //DisplayListViewBottomGrid(report, Constants.BlackDiamond, ReportNameInstRef, ReportTitleInstRef);
                                 DisplayListingGrid(report, Constants.BlackDiamondHeader, ReportNameInstRef, ReportTitleInstRef);
                                 break;
                         }
@@ -1452,7 +1439,7 @@ namespace MDRDesk
             }
             catch (Exception ex)
             {
-                ShowError(Utils.GetExceptionErrorString(ex));
+                GuiUtils.ShowError(Utils.GetExceptionErrorString(ex),this);
             }
         }
 
@@ -1471,97 +1458,15 @@ namespace MDRDesk
             }
             catch (Exception ex)
             {
-                ShowError(Utils.GetExceptionErrorString(ex));
+                GuiUtils.ShowError(Utils.GetExceptionErrorString(ex),this);
             }
         }
 
         private async void ExtrasTestClicked(object sender, RoutedEventArgs e)
         {
-            //if (!IsIndexAvailable("Test Instance Values")) return;
-            SetStartTaskMainWindowState("Test, might take very long time. Please wait.");
-            string error=null;
-#if false
-            var result = await Task.Factory.StartNew(() =>
-            {
-                return CurrentIndex.TestInstanceValues(out error);
-            }, _dumpSTAScheduler);
-#endif
+            FolderSelector dlg = new FolderSelector("Select MdrDesk Index Folder", @"C:\WinDbgStuff\Dumps", ".map") { Owner = this };
+            dlg.ShowDialog();
 
-            var grid = FindResourceGrid("GraphGrid");
-            var graphGrid = (Grid)LogicalTreeHelper.FindLogicalNode(grid, "GraphGrid");
-
-            //var dockPanel = new StackPanel();
-
-
-            //dockPanel.Children.Add(graphViewer.GraphCanvas);
-            //dockPanel.UpdateLayout();
-            //graphViewer.BindToPanel(dockPanel);
-            //dockPanel.UpdateLayout();
-
-
-            GraphViewer graphViewer = new GraphViewer();
-            graphViewer.GraphCanvas.HorizontalAlignment = HorizontalAlignment.Stretch;
-            graphViewer.GraphCanvas.VerticalAlignment = VerticalAlignment.Stretch;
-            graphGrid.Children.Add(graphViewer.GraphCanvas);
-            graphGrid.UpdateLayout();
-            DisplayTab(Constants.BlackDiamondHeader, "Test Graph", grid, grid.Name + "TAB");
-            //foreach (UIElement child in grid.Children)
-            //{
-            //    child.ClipToBounds = true;
-
-            //}
-            //graphViewer.GraphCanvas.ContextMenu 
-
-            Graph graph = new Graph();
-            graph.AddEdge("47", "58");
-            graph.AddEdge("70", "71");
-            List<Node> nodes = new List<Node>(2000);
-
-            for(int i = 100; i < 2000; ++i)
-            {
-                Node node = graph.AddNode(i.ToString());
-                if ((i%5)==0) node.Attr.FillColor = Color.Yellow;
-                nodes.Add(node);
-
-            }
-
-            for (int i = 101; i < 150; ++i)
-            {
-                Edge edge = 
-                    (Edge)graph.AddEdge(nodes[i-1].Id, nodes[i].Id);
-                if ((i % 2) == 0)
-                {
-                    edge.Attr.AddStyle(Microsoft.Msagl.Drawing.Style.Dashed);
-                    edge.Attr.AddStyle(Microsoft.Msagl.Drawing.Style.Bold);
-                    edge.Attr.Color = Color.Red;
-                }
-                //else
-                //    edge.Attr.AddStyle(Microsoft.Msagl.Drawing.Style.Solid);
-            }
-            graph.AddEdge(nodes[149].Id, nodes[101].Id);
-
-            var subgraph = new Subgraph("subgraph1");
-            graph.RootSubgraph.AddSubgraph(subgraph);
-            subgraph.AddNode(graph.FindNode("47"));
-            subgraph.AddNode(graph.FindNode("58"));
-
-            var subgraph2 = new Subgraph("subgraph2");
-            subgraph2.Attr.Color = Color.Black;
-            subgraph2.Attr.FillColor = Color.Yellow;
-            subgraph2.AddNode(graph.FindNode("70"));
-            subgraph2.AddNode(graph.FindNode("71"));
-            subgraph.AddSubgraph(subgraph2);
-            Edge gedge = (Edge)graph.AddEdge("58", subgraph2.Id);
-            gedge.Attr.AddStyle(Microsoft.Msagl.Drawing.Style.Dashed);
-            graph.Attr.LayerDirection = LayerDirection.LR;
-            graphViewer.Graph = graph;
-
-
-            //graphViewer.GraphCanvas.ClipToBounds = true;
-
-            SetEndTaskMainWindowState(error == null
-                ? "Test done."
-                : "Test failed.");
         }
 
 #endregion Extras
@@ -1788,7 +1693,7 @@ namespace MDRDesk
                     string lstPath = DumpFileMoniker.GetFileDistinctPath(CurrentIndex.AdhocFolder, pair.Item2 + ".txt");
                     ListingInfo.DumpListing(lstPath, pair.Item1, pair.Item2, out error, 0, 100);
                     MainStatusShowMessage(error == null ? "Report written: " + lstPath : "Report writing failed: " + Utils.GetShorterStringRemoveNewlines(error, 40));
-                    if (error != null) ShowError(error);
+                    if (error != null) GuiUtils.ShowError(error,this);
                     break;
                 default:
                     MainStatusShowMessage("Cannot write report, the current tab reporting is not supported.");
@@ -1860,7 +1765,7 @@ namespace MDRDesk
             }
             catch (Exception ex)
             {
-                ShowError(Utils.GetExceptionErrorString(ex));
+                GuiUtils.ShowError(Utils.GetExceptionErrorString(ex),this);
             }
         }
 
@@ -2007,7 +1912,7 @@ namespace MDRDesk
 
             if (lbAddresses == null)
             {
-                ShowInformation("Copy Address Command", "ACTION FAILED", "Grid's ListBox control not found.", null);
+                GuiUtils.ShowInformation("Copy Address Command", "ACTION FAILED", "Grid's ListBox control not found.", null,this);
                 return;
             }
 
@@ -2041,7 +1946,7 @@ namespace MDRDesk
             var lbAddresses = GetTypeAddressesListBox(sender);
             if (lbAddresses == null)
             {
-                ShowInformation("Copy Address Command", "ACTION FAILED", "Grid's ListBox control not found.", null);
+                GuiUtils.ShowInformation("Copy Address Command", "ACTION FAILED", "Grid's ListBox control not found.", null,this);
                 return;
             }
 
@@ -2099,7 +2004,7 @@ namespace MDRDesk
 
             if (result.Item1 != null)
             {
-                ShowError(result.Item1);
+                GuiUtils.ShowError(result.Item1,this);
                 SetEndTaskMainWindowState("Getting instance [" + Utils.RealAddressString(addr) + "] sizes failed.");
                 return;
             }
@@ -2314,7 +2219,7 @@ namespace MDRDesk
 
         }
 
-        private async void GetTypeValuesReportClicked(object sender, RoutedEventArgs e)
+        private void GetTypeValuesReportClicked(object sender, RoutedEventArgs e)
         {
 
             var lbTypeNames = GetTypeNameListBox(sender);
@@ -2332,14 +2237,15 @@ namespace MDRDesk
                 typeId = ((KeyValuePair<string, int>)selectedItem).Value;
                 typeName = ((KeyValuePair<string, int>)selectedItem).Key;
             }
+            Dispatcher.CurrentDispatcher.InvokeAsync(() => GetTypeValuesReport(typeName, typeId));
+        }
+
+        public async void GetTypeValuesReport(string typeName, int typeId)
+        {
             var baseTypeName = Utils.BaseTypeName(typeName); // get type name without namespace
 
             SetStartTaskMainWindowState("Getting type details for: '" + baseTypeName + "', please wait...");
 
-            //(string error, ClrtDisplayableType dispType, ulong[] instances) = await Task.Run(() =>
-            //{
-            //    return CurrentIndex.GetTypeDisplayableRecord(typeId);
-            //});
             (string error, ClrtDisplayableType dispType, ulong[] instances) = await Task.Factory.StartNew(() =>
             {
                 return CurrentIndex.GetTypeDisplayableRecord(typeId);
@@ -2347,11 +2253,10 @@ namespace MDRDesk
 
             SetEndTaskMainWindowState("Getting type details for: '" + baseTypeName + "', done");
 
-
             if (error != null)
             {
                 if (Utils.IsInformation(error))
-                    ShowInformation("Type Values Report","Cannot be done.",error,null);
+                    GuiUtils.ShowInformation("Type Values Report","Cannot be done.",error,null,this);
                 else 
                     GuiUtils.ShowError(error, this);
                 return;
@@ -2363,8 +2268,8 @@ namespace MDRDesk
 
         private ulong GetAddressFromList(object listBox)
         {
-            AssertIndexIsAvailable();
-            if (!IsIndexAvailable()) return Constants.InvalidAddress;
+            Debug.Assert(CurrentIndex != null);
+            if (!GuiUtils.IsIndexAvailable(this, null)) return Constants.InvalidAddress;
             var lbAddresses = GetTypeAddressesListBox(listBox);
             if (lbAddresses.SelectedItems.Count < 1)
             {
@@ -2388,7 +2293,7 @@ namespace MDRDesk
 
         private void LbGetInstValueClicked(object sender, RoutedEventArgs e)
         {
-            AssertIndexIsAvailable();
+            Debug.Assert(CurrentIndex != null);
             ulong addr = GetAddressFromList(sender);
             if (addr == Constants.InvalidAddress)
             {
@@ -2398,28 +2303,11 @@ namespace MDRDesk
             Dispatcher.CurrentDispatcher.InvokeAsync(() => ExecuteInstanceValueQuery(msg, addr));
         }
 
-
         private void LbGetInstHierarchyClicked(object sender, RoutedEventArgs e)
         {
             ulong addr = GetAddressFromList(sender);
             if (addr == Constants.InvalidAddress) return;
             Dispatcher.CurrentDispatcher.InvokeAsync(() => ExecuteInstanceHierarchyQuery("Get instance hierarchy " + Utils.AddressStringHeader(addr), addr, Constants.InvalidIndex));
-        }
-
-        private void AssertIndexIsAvailable()
-        {
-            Debug.Assert(CurrentIndex != null);
-        }
-
-        private bool IsIndexAvailable(string caption = null)
-        {
-            if (CurrentIndex == null)
-            {
-                if (caption == null) return false;
-                ShowInformation(caption, "No Index Available", "There's no opened index" + Environment.NewLine + "Please open one. Dump indices folders have extension: '.map'.", null);
-                return false;
-            }
-            return true;
         }
 
         private bool AlreadyDisplayed(string gridNamePrefix, bool showMessage = true)
@@ -2433,12 +2321,11 @@ namespace MDRDesk
             return false;
         }
 
-
         private bool AreReferencesAvailable(string caption = null)
         {
             if (CurrentIndex != null && CurrentIndex.HasInstanceReferences) return true;
             if (caption == null) return false;
-            ShowInformation(caption, "References Not Available", "References were not indexed." + Environment.NewLine + "Check the setup 'Skip indexing reference'." + Environment.NewLine + "Sometimes this setting is used to when indexing huge dumps.", null);
+            GuiUtils.ShowInformation(caption, "References Not Available", "References were not indexed." + Environment.NewLine + "Check the setup 'Skip indexing reference'." + Environment.NewLine + "Sometimes this setting is used to when indexing huge dumps.", null,this);
             return false;
         }
 
@@ -2467,7 +2354,7 @@ namespace MDRDesk
 
         private void GetTypeStringUsage(object sender, RoutedEventArgs e)
         {
-            if (!IsIndexAvailable("Cannot get type string, an index is not opened.")) return;
+            if (!GuiUtils.IsIndexAvailable(this, "Cannot get type string, an index is not opened.")) return;
             ListBox listBox = GetTypeNameListBox(sender);
             string typeName = null;
             if (listBox == null || listBox.SelectedItems.Count <= 0) return;
@@ -2480,7 +2367,7 @@ namespace MDRDesk
 
         private void AddrLstViewMemoryClicked(object sender, RoutedEventArgs e)
         {
-            if (!IsIndexAvailable("Cannot view memory, an index is not opened.")) return;
+            if (!GuiUtils.IsIndexAvailable(this, "Cannot view memory, an index is not opened.")) return;
             ulong addr = GetAddressFromList(sender);
             if (addr == Constants.InvalidAddress) return;
             ShowMemoryViewWindow(addr);
@@ -2488,19 +2375,19 @@ namespace MDRDesk
 
         public void ShowMemoryViewWindow(ulong addr)
         {
-            if (!IsIndexAvailable("Show Memory View")) return;
+            if (!GuiUtils.IsIndexAvailable(this, "Show Memory View")) return;
             string error;
             var dumpClone = CurrentIndex.Dump.Clone(out error);
             if (dumpClone == null)
             {
-                ShowError(error);
+                GuiUtils.ShowError(error,this);
                 return;
             }
             var wnd = new HexView(Utils.GetNewID(), _wndDct, dumpClone, addr) { Owner = this };
             if (!wnd.Init(out error))
             {
                 wnd.Close();
-                ShowError(error);
+                GuiUtils.ShowError(error,this);
                 return;
             }
             wnd.Show();
@@ -2568,7 +2455,7 @@ namespace MDRDesk
 
             if (error != null)
             {
-                ShowError(error);
+                GuiUtils.ShowError(error,this);
                 return;
             }
 
@@ -2602,7 +2489,7 @@ namespace MDRDesk
             catch (Exception ex)
             {
                 error = Utils.GetExceptionErrorString(ex);
-                ShowError(error);
+                GuiUtils.ShowError(error,this);
             }
             finally
             {
@@ -2668,6 +2555,20 @@ namespace MDRDesk
 
 
         #endregion help
+
+        private void IndexShowTypeSizesClicked(object sender, RoutedEventArgs e)
+        {
+            if (!GuiUtils.IsIndexAvailable(this, "Cannot show type sizes, an index is not opened.")) return;
+            var wnd = new TreemapView(CurrentIndex) { Owner = this, Title = "Type Sizes " };
+            wnd.Show();
+        }
+
+        private void IndexShowTypeCountsClicked(object sender, RoutedEventArgs e)
+        {
+            if (!GuiUtils.IsIndexAvailable(this, "Cannot show type counts, an index is not opened.")) return;
+            var wnd = new TreemapView(CurrentIndex, true) { Owner = this, Title = "Type Counts " };
+            wnd.Show();
+        }
     }
 
     public static class MenuCommands

@@ -2743,9 +2743,65 @@ namespace ClrMDRIndex
             }
         }
 
-#endregion strings
+        #endregion strings
 
-    #region segments/generations/sizes
+        #region segments/generations/sizes
+
+        //var count = _typeInstanceOffsets[offNdx + 1].Value - _typeInstanceOffsets[offNdx].Value;
+
+        public ValueTuple<double[], string[]> GetTypeCountsWithNames(out string error)
+        {
+            error = null;
+            try
+            {
+                double[] typeCounts = new double[_typeNames.Length];
+                for (int i = 0, icnt = _typeInstanceOffsets.Length-1, typeIndex = 0; i < icnt; ++i)
+                {
+                    var kv = _typeInstanceOffsets[i];
+                    while (kv.Key > typeIndex) ++typeIndex;
+                    typeCounts[typeIndex] = _typeInstanceOffsets[i + 1].Value - _typeInstanceOffsets[i].Value;
+                }
+                return (typeCounts, _typeNames);
+            }
+            catch (Exception ex)
+            {
+                error = Utils.GetExceptionErrorString(ex);
+                return (null, null);
+            }
+        }
+
+        public ValueTuple<double[], string[]> GetTypeSizesWithNames(out string error)
+        {
+            try
+            {
+                ulong[] sizes = GetTypeSizes(out error);
+                double[] typeSizes = new double[_typeNames.Length];
+                for (int i = 0, icnt = sizes.Length; i < icnt; ++i)
+                {
+                    typeSizes[_instanceTypes[i]] += sizes[i];
+                }
+                return (typeSizes, _typeNames);
+            }
+            catch(Exception ex)
+            {
+                error = Utils.GetExceptionErrorString(ex);
+                return (null, null);
+            }
+        }
+
+        public ulong[] GetTypeSizes(out string error)
+        {
+            error = null;
+            var sizes = GetSizeArray(false, out error);
+            if (error != null) return null;
+            var instTypes = _instanceTypes;
+            ulong[] typeSizes = new ulong[instTypes.Length];
+            for (int i = 0, icnt = sizes.Length; i < icnt; ++i)
+            {
+                typeSizes[instTypes[i]] += sizes[i];
+            }
+            return typeSizes;
+        }
 
         public KeyValuePair<uint[], uint[]> GetSizeArrays(out string error)
         {

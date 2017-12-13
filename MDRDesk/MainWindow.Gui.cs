@@ -130,7 +130,7 @@ namespace MDRDesk
             }
             catch (Exception ex)
             {
-                ShowError(Utils.GetExceptionErrorString(ex));
+                GuiUtils.ShowError(Utils.GetExceptionErrorString(ex),this);
             }
         }
 
@@ -142,7 +142,7 @@ namespace MDRDesk
             }
             catch (Exception ex)
             {
-                ShowError(Utils.GetExceptionErrorString(ex));
+                GuiUtils.ShowError(Utils.GetExceptionErrorString(ex),this);
             }
         }
 
@@ -168,7 +168,7 @@ namespace MDRDesk
 
                 if (result.Item1 != null) // error
                 {
-                    ShowError(result.Item1);
+                    GuiUtils.ShowError(result.Item1,this);
                     return;
                 }
 
@@ -299,7 +299,7 @@ namespace MDRDesk
             {
                 error = Utils.GetExceptionErrorString(ex);
                 graphTab?.Close();
-                ShowError(error);
+                GuiUtils.ShowError(error,this);
             }
             finally
             {
@@ -378,7 +378,7 @@ namespace MDRDesk
                 }
                 catch (Exception ex)
                 {
-                    ShowError(Utils.GetExceptionErrorString(ex));
+                    GuiUtils.ShowError(Utils.GetExceptionErrorString(ex),this);
                 }
                 finally
                 {
@@ -613,7 +613,7 @@ namespace MDRDesk
             }
             catch (Exception ex)
             {
-                ShowError(Utils.GetExceptionErrorString(ex));
+                GuiUtils.ShowError(Utils.GetExceptionErrorString(ex),this);
                 return Constants.InvalidAddress;
             }
         }
@@ -1068,14 +1068,18 @@ namespace MDRDesk
             SetEndTaskMainWindowState(msg);
         }
 
-        private async void GetParentReferences(object sender, RoutedEventArgs e)
+        private void GetParentReferences(object sender, RoutedEventArgs e)
         {
-            if (!IsIndexAvailable("No index is loaded")) return;
+            if (!GuiUtils.IsIndexAvailable(this, "No index is loaded")) return;
             if (!AreReferencesAvailable("There are no references indexed")) return;
             string typeName;
             int typeId;
             if (!GetTypeNameInfo(sender, out typeName, out typeId)) return;
+            System.Windows.Threading.Dispatcher.CurrentDispatcher.InvokeAsync(() => GetParentReferences(typeName, typeId));
+        }
 
+        public async void GetParentReferences(string typeName, int typeId)
+        {
             int instCount = CurrentIndex.GetTypeInstanceCount(typeId);
 
             string description = "Get references of: " + Environment.NewLine + typeName + Environment.NewLine +
@@ -1127,8 +1131,8 @@ namespace MDRDesk
                 SetEndTaskMainWindowState("Getting parent references for: '" + Utils.BaseTypeName(typeName) + "', done.");
                 DisplayTypeAncestorsGrid(report.Item2);
             }
-
         }
+
 
         /// <summary>
         /// Get parents of a selected single instance.
@@ -1137,7 +1141,7 @@ namespace MDRDesk
         /// <param name="e">Delegate argument, not used.</param>
         private void LbInstanceParentsClicked(object sender, RoutedEventArgs e)
         {
-            if (!IsIndexAvailable("No index is loaded")) return;
+            if (!GuiUtils.IsIndexAvailable(this, "No index is loaded")) return;
 
             // get the address
             //
@@ -1157,7 +1161,7 @@ namespace MDRDesk
             DisplayInstanceParentReferences(addr);
         }
 
-        private async void DisplayInstanceParentReferences(ulong addr)
+        public async void DisplayInstanceParentReferences(ulong addr)
         {
             if (!AreReferencesAvailable("There are no references indexed")) return;
             // get reference search info
@@ -1676,7 +1680,7 @@ namespace MDRDesk
 
             if (error != null)
             {
-                ShowError(error);
+                GuiUtils.ShowError(error,this);
                 return;
             }
 
@@ -1729,7 +1733,7 @@ namespace MDRDesk
 
             if (error != null)
             {
-                ShowError(error);
+                GuiUtils.ShowError(error,this);
                 return;
             }
 
@@ -2102,7 +2106,7 @@ namespace MDRDesk
 
             if (error != null)
             {
-                ShowError(error);
+                GuiUtils.ShowError(error,this);
                 return;
             }
 
@@ -2116,7 +2120,7 @@ namespace MDRDesk
                 }
                 if ((inst.KeyValuePairs == null || inst.KeyValuePairs.Length < 1) && (inst.ArrayValues == null || inst.ArrayValues.Length < 1))
                 {
-                    ShowInformation("Empty Collection", TypeExtractor.GetKnowTypeName(knownType), "The collection at address " + Utils.RealAddressString(addr) + " is empty.", inst.TypeName);
+                    GuiUtils.ShowInformation("Empty Collection", TypeExtractor.GetKnowTypeName(knownType), "The collection at address " + Utils.RealAddressString(addr) + " is empty.", inst.TypeName,this);
                     return;
                 }
 
@@ -2312,7 +2316,7 @@ namespace MDRDesk
 
         #region Instance Hierarchy Traversing
 
-            private async void ExecuteInstanceHierarchyQuery(string statusMessage, ulong addr, int fldNdx)
+        public async void ExecuteInstanceHierarchyQuery(string statusMessage, ulong addr, int fldNdx)
         {
             SetStartTaskMainWindowState(statusMessage + ", please wait...");
             var result = await Task.Factory.StartNew(() =>
@@ -2326,9 +2330,9 @@ namespace MDRDesk
             {
                 SetEndTaskMainWindowState(statusMessage + ", FAILED.");
                 if (result.Item1[0] == Constants.InformationSymbol)
-                    ShowInformation("Instance Hierarchy", "Instance " + Utils.AddressString(addr) + " seatrch failed", result.Item1, null);
+                    GuiUtils.ShowInformation("Instance Hierarchy", "Instance " + Utils.AddressString(addr) + " seatrch failed", result.Item1, null,this);
                 else
-                    ShowError(result.Item1);
+                    GuiUtils.ShowError(result.Item1,this);
                 return;
             }
 
@@ -2455,9 +2459,9 @@ namespace MDRDesk
                     {
                         SetEndTaskMainWindowState("Getting instance info" + ", FAILED.");
                         if (result.Item1[0] == Constants.InformationSymbol)
-                            ShowInformation("Instance Hierarchy", "Instance " + Utils.AddressString(addr) + " seatrch failed", result.Item1, null);
+                            GuiUtils.ShowInformation("Instance Hierarchy", "Instance " + Utils.AddressString(addr) + " seatrch failed", result.Item1, null,this);
                         else
-                            ShowError(result.Item1);
+                            GuiUtils.ShowError(result.Item1,this);
                         return;
                     }
                     undoList.Add(result.Item2);
@@ -2503,10 +2507,10 @@ namespace MDRDesk
                     {
                         SetEndTaskMainWindowState("Getting instance info" + ", FAILED.");
                         if (result.Item1[0] == Constants.InformationSymbol)
-                            ShowInformation("Instance Hierarchy", "Instance " + Utils.AddressString(selectedAddress) + " seatrch failed",
-                                result.Item1, null);
+                            GuiUtils.ShowInformation("Instance Hierarchy", "Instance " + Utils.AddressString(selectedAddress) + " seatrch failed",
+                                result.Item1, null,this);
                         else
-                            ShowError(result.Item1);
+                            GuiUtils.ShowError(result.Item1,this);
                         return;
                     }
                     undoList.Add(result.Item2);
@@ -2558,86 +2562,86 @@ namespace MDRDesk
 
         #region MessageBox
 
-        private void ShowInformation(string caption, string header, string text, string details)
-        {
-            var dialog = new MdrMessageBox()
-            {
-                Owner = this,
-                Caption = string.IsNullOrWhiteSpace(caption) ? "Message" : caption,
-                InstructionHeading = string.IsNullOrWhiteSpace(header) ? "???" : header,
-                InstructionText = string.IsNullOrWhiteSpace(text) ? String.Empty : text,
-                DeatilsText = string.IsNullOrWhiteSpace(details) ? String.Empty : details
-            };
-            dialog.SetButtonsPredefined(EnumPredefinedButtons.Ok);
-            dialog.DetailsExpander.Visibility = string.IsNullOrEmpty(details) ? Visibility.Collapsed : Visibility.Visible;
-            dialog.ShowDialog();
-        }
+        //private void ShowInformation(string caption, string header, string text, string details)
+        //{
+        //    var dialog = new MdrMessageBox()
+        //    {
+        //        Owner = this,
+        //        Caption = string.IsNullOrWhiteSpace(caption) ? "Message" : caption,
+        //        InstructionHeading = string.IsNullOrWhiteSpace(header) ? "???" : header,
+        //        InstructionText = string.IsNullOrWhiteSpace(text) ? String.Empty : text,
+        //        DeatilsText = string.IsNullOrWhiteSpace(details) ? String.Empty : details
+        //    };
+        //    dialog.SetButtonsPredefined(EnumPredefinedButtons.Ok);
+        //    dialog.DetailsExpander.Visibility = string.IsNullOrEmpty(details) ? Visibility.Collapsed : Visibility.Visible;
+        //    dialog.ShowDialog();
+        //}
 
-        private void ShowError(string errStr)
-        {
-            MdrMessageBox dialog;
-            if (string.IsNullOrWhiteSpace(errStr))
-            {
-                dialog = new MdrMessageBox()
-                {
-                    Owner = this,
-                    Caption = "INVALID ERROR",
-                    InstructionHeading = "ShowError called with null/empty error string.",
-                    InstructionText = "Please copy the details text below, and send it to jdominos@gmail.com. Thank you.",
-                    DeatilsText = Environment.StackTrace
-                };
-            }
-            string[] parts = errStr.Split(new[] { Constants.HeavyGreekCrossPadded }, StringSplitOptions.None);
+        //private void ShowError(string errStr)
+        //{
+        //    MdrMessageBox dialog;
+        //    if (string.IsNullOrWhiteSpace(errStr))
+        //    {
+        //        dialog = new MdrMessageBox()
+        //        {
+        //            Owner = this,
+        //            Caption = "INVALID ERROR",
+        //            InstructionHeading = "ShowError called with null/empty error string.",
+        //            InstructionText = "Please copy the details text below, and send it to jdominos@gmail.com. Thank you.",
+        //            DeatilsText = Environment.StackTrace
+        //        };
+        //    }
+        //    string[] parts = errStr.Split(new[] { Constants.HeavyGreekCrossPadded }, StringSplitOptions.None);
 
-            if (parts.Length > 2)
-            {
-                dialog = new MdrMessageBox()
-                {
-                    Owner = this,
-                    Caption = parts[0],
-                    InstructionHeading = parts[1],
-                    InstructionText = parts[2],
-                    DeatilsText = parts.Length > 3 ? parts[3] : string.Empty
-                };
-            }
-            else if (parts.Length > 1)
-            {
-                dialog = new MdrMessageBox()
-                {
-                    Owner = this,
-                    Caption = "ERROR",
-                    InstructionHeading = parts[0],
-                    InstructionText = parts[1],
-                    DeatilsText = string.Empty
-                };
-            }
-            else
-            {
-                dialog = new MdrMessageBox()
-                {
-                    Owner = this,
-                    Caption = "ERROR",
-                    InstructionHeading = "ERROR",
-                    InstructionText = errStr,
-                    DeatilsText = string.Empty
-                };
-            }
+        //    if (parts.Length > 2)
+        //    {
+        //        dialog = new MdrMessageBox()
+        //        {
+        //            Owner = this,
+        //            Caption = parts[0],
+        //            InstructionHeading = parts[1],
+        //            InstructionText = parts[2],
+        //            DeatilsText = parts.Length > 3 ? parts[3] : string.Empty
+        //        };
+        //    }
+        //    else if (parts.Length > 1)
+        //    {
+        //        dialog = new MdrMessageBox()
+        //        {
+        //            Owner = this,
+        //            Caption = "ERROR",
+        //            InstructionHeading = parts[0],
+        //            InstructionText = parts[1],
+        //            DeatilsText = string.Empty
+        //        };
+        //    }
+        //    else
+        //    {
+        //        dialog = new MdrMessageBox()
+        //        {
+        //            Owner = this,
+        //            Caption = "ERROR",
+        //            InstructionHeading = "ERROR",
+        //            InstructionText = errStr,
+        //            DeatilsText = string.Empty
+        //        };
+        //    }
 
-            dialog.SetButtonsPredefined(EnumPredefinedButtons.Ok);
-            dialog.DetailsExpander.Visibility = string.IsNullOrWhiteSpace(dialog.DeatilsText) ? Visibility.Collapsed : Visibility.Visible;
-            var result = dialog.ShowDialog();
-        }
+        //    dialog.SetButtonsPredefined(EnumPredefinedButtons.Ok);
+        //    dialog.DetailsExpander.Visibility = string.IsNullOrWhiteSpace(dialog.DeatilsText) ? Visibility.Collapsed : Visibility.Visible;
+        //    var result = dialog.ShowDialog();
+        //}
 
-        private void MessageBoxShowError(string errStr)
-        {
-            string[] parts = errStr.Split(new[] { Constants.HeavyGreekCrossPadded }, StringSplitOptions.None);
-            Debug.Assert(parts.Length > 2);
-            var sb = StringBuilderCache.Acquire(StringBuilderCache.MaxCapacity);
-            for (int i = 1, icnt = parts.Length; i < icnt; ++i)
-                sb.AppendLine(parts[i]);
-            MessageBox.Show(StringBuilderCache.GetStringAndRelease(sb), parts[0], MessageBoxButton.OK,
-                MessageBoxImage.Error);
-        }
+        //private void MessageBoxShowError(string errStr)
+        //{
+        //    string[] parts = errStr.Split(new[] { Constants.HeavyGreekCrossPadded }, StringSplitOptions.None);
+        //    Debug.Assert(parts.Length > 2);
+        //    var sb = StringBuilderCache.Acquire(StringBuilderCache.MaxCapacity);
+        //    for (int i = 1, icnt = parts.Length; i < icnt; ++i)
+        //        sb.AppendLine(parts[i]);
+        //    MessageBox.Show(StringBuilderCache.GetStringAndRelease(sb), parts[0], MessageBoxButton.OK,
+        //        MessageBoxImage.Error);
+        //}
 
         //private MdrMessageBox GetErrorMsgBox(string errStr)
         //{
@@ -2674,7 +2678,7 @@ namespace MDRDesk
             }
             _wndDct.Clear();
             MainTab.Items.Clear();
-            if (IsIndexAvailable(null))
+            if (GuiUtils.IsIndexAvailable(this, null))
             {
                 var result = await Task.Factory.StartNew(() =>
                 {

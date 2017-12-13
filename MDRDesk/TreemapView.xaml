@@ -1,0 +1,68 @@
+﻿<Window x:Class="MDRDesk.TreemapView"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:MDRDesk"
+        mc:Ignorable="d"
+        Title="Treemap Chart" Height="600" Width="1080"
+        WindowStartupLocation="CenterOwner"
+        Loaded="OnLoaded">
+    <Window.Resources>
+        <local:LongHexConverter x:Key="LongHexConverter" />
+    </Window.Resources>
+    <Grid Name ="MainGrid" VerticalAlignment="Stretch" HorizontalAlignment="Stretch" >
+        <Grid.RowDefinitions>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="30"/>
+        </Grid.RowDefinitions>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="*"/>
+            <ColumnDefinition Width="150"/>
+            <ColumnDefinition Width="30"/>
+        </Grid.ColumnDefinitions>
+        <Label HorizontalContentAlignment="Center" VerticalContentAlignment="Top" Grid.Row="0" Grid.RowSpan="2" Grid.Column="2" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" Margin="1,0,1,0" Background="LightGray">
+            <TextBlock Name="TypeNameLabel" Text="No Type Selected" FontWeight="Bold" FontSize="12">
+                <TextBlock.LayoutTransform>
+                    <RotateTransform Angle="90"/>
+                </TextBlock.LayoutTransform>
+            </TextBlock>
+        </Label>
+        <Viewbox Name="MainViewBox" Grid.Row="0" Grid.Column="0" HorizontalAlignment="Left"  VerticalAlignment="Stretch"  Margin="0,0,0,0" Stretch="Fill">
+            <Canvas Name="MainRectangle" Height="600" Width="900" VerticalAlignment="Stretch" HorizontalAlignment="Stretch" Margin="0,0,0,0" MouseMove="TreemapMouseMove" MouseDown="TreemapMouseDown"/>
+            <Viewbox.ContextMenu>
+                <ContextMenu>
+                    <MenuItem x:Name="TypeCopyName" Header="Copy Type Name" Click="TypeCopyNameClicked"></MenuItem>
+                    <MenuItem x:Name="TypeGenerationDistribution" Header="Generation Ditribution" Click="TypeGenerationDistributionClicked"></MenuItem>
+                    <!--<MenuItem x:Name="TypeListGetFieldValues" Header="Get Field Values" Click="GetFieldValuesClicked"></MenuItem>
+                    <MenuItem x:Name="TypeListGetFieldDefaultValues" Header="Field Default Values Report" Click="GetFieldDefaultValuesClicked"></MenuItem>-->
+                    <Separator></Separator>
+                    <MenuItem x:Name="TypeReferences" Header="Get Parent References" Click="TypeReferencesClicked"></MenuItem>
+                    <!--<MenuItem x:Name="TypeSizeDetailsReport" Header="Generate Size Details Report" Click="TypeSizeDetailsReportClicked"></MenuItem>-->
+                    <MenuItem x:Name="TypeValuesReport" Header="Type Values Report" Click="TypeValuesReportClicked"></MenuItem>
+                </ContextMenu>
+            </Viewbox.ContextMenu>
+        </Viewbox>
+        <TextBox Name="MainTextBox" Grid.Row="1" Grid.Column="0" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" Margin="0,1,1,0" VerticalContentAlignment="Center" Padding="1,0,0,0"></TextBox>
+        <ListBox Name="AddrListBox" Grid.Row="0" Grid.Column="1" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" Margin="1,0,1,0" MouseDoubleClick="AddrListBoxDoubleClick">
+            <ListBox.ItemTemplate>
+                <DataTemplate>
+                    <TextBlock Text="{Binding Converter={StaticResource LongHexConverter}}"/>
+                </DataTemplate>
+            </ListBox.ItemTemplate>
+            <ListBox.ContextMenu>
+                <ContextMenu x:Name="AddrListContextMenu">
+                    <MenuItem x:Name="AddrLstCopy" Header="Copy Address (clipboard)" Click="CopyAddressSelectionClicked" ></MenuItem>
+                    <MenuItem x:Name="AddrLstCopyAll" Header="Copy All Addresses (clipboard)" Click="CopyAddressAllClicked"></MenuItem>
+                    <MenuItem x:Name="AddrLstRefs" Header="Get Instance References" Click="AddrLstRefsClicked"/>
+                    <MenuItem x:Name="AddrLstInstSize" Header="Get Instance Sizes" Click="AddrLstInstSizeClicked"/>
+                    <MenuItem x:Name="AddrLstInstValue" Header="Get Instance Value" Click="AddrLstInstValueClicked"/>
+                    <MenuItem x:Name="AddrLstInstHierarchy" Header="Get Instance Hierarchy" Click="AddrLstInstHierarchyClicked"/>
+                    <Separator></Separator>
+                    <MenuItem x:Name="AddrLstViewMemory" Header="View Memory" Click="AddrLstViewMemoryClicked"/>
+                </ContextMenu>
+            </ListBox.ContextMenu>
+        </ListBox>
+        <TextBox Name="AddressTextBox" Grid.Row="1" Grid.Column="1" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" Margin="1,1,1,1" VerticalContentAlignment="Center"></TextBox>
+    </Grid>
+</Window>

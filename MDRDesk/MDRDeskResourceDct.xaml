@@ -11,6 +11,8 @@
     <Image x:Key="GroupPng" Source="./Images/GroupClause_16x.png"/>
     <Image x:Key="LockPng" Source="./Images/Lock_24px.png"/>
     <Image x:Key="UnlockPng" Source="./Images/Unlock_24px.png"/>
+    <Image x:Key="HardDiskPng" Source="./Images/HardDrive_16x.png"/>
+    <Image x:Key="FolderPng" Source="./Images/Folder_grey_16x.png"/>
     
     <!-- Flat ComboBox -->
     <SolidColorBrush x:Key="ComboBoxNormalBorderBrush" Color="#e3e9ef" />

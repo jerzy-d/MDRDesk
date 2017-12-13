@@ -1484,6 +1484,12 @@ namespace ClrMDRIndex
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static string JustSizeString(ulong sz)
+        {
+            return sz == 0 ? Constants.ZeroStr : string.Format("{0:#,###,###}", sz);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static string CountStringHeader(int sz)
         {
             return sz == 0 ? "[       0] " : string.Format("[{0,8:#,###,###}] ", sz);

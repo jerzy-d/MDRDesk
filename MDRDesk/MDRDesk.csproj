@@ -149,6 +149,7 @@
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </ApplicationDefinition>
+    <Compile Include="Charts\Treemap.cs" />
     <Compile Include="ClassStructDisplay.xaml.cs">
       <DependentUpon>ClassStructDisplay.xaml</DependentUpon>
     </Compile>
@@ -162,6 +163,9 @@
     <Compile Include="Converters.cs" />
     <Compile Include="CreateCrashDump.xaml.cs">
       <DependentUpon>CreateCrashDump.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="Dialogs\FolderSelector.xaml.cs">
+      <DependentUpon>FolderSelector.xaml</DependentUpon>
     </Compile>
     <Compile Include="DisplayableGeneration.cs" />
     <Compile Include="GuiUtils.cs" />
@@ -188,10 +192,16 @@
     <Compile Include="ReferenceSearchSetup.xaml.cs">
       <DependentUpon>ReferenceSearchSetup.xaml</DependentUpon>
     </Compile>
+    <Compile Include="SearchType.xaml.cs">
+      <DependentUpon>SearchType.xaml</DependentUpon>
+    </Compile>
     <Compile Include="TextBlockAdorner.cs" />
     <Compile Include="Threading\SingleThreadTaskScheduler.cs" />
     <Compile Include="Threading\TaskFactoryExtensions.cs" />
     <Compile Include="Threading\TaskLazy.cs" />
+    <Compile Include="TreemapView.xaml.cs">
+      <DependentUpon>TreemapView.xaml</DependentUpon>
+    </Compile>
     <Compile Include="TypeFieldValueQrySetup.xaml.cs">
       <DependentUpon>TypeFieldValueQrySetup.xaml</DependentUpon>
     </Compile>
@@ -217,6 +227,10 @@
       <Generator>MSBuild:Compile</Generator>
     </Page>
     <Page Include="CreateCrashDump.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="Dialogs\FolderSelector.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>
@@ -268,9 +282,17 @@
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>
+    <Page Include="SearchType.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
     <Page Include="themes\generic.xaml">
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
+    </Page>
+    <Page Include="TreemapView.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
     </Page>
     <Page Include="TypeFieldValueQrySetup.xaml">
       <SubType>Designer</SubType>
@@ -473,6 +495,12 @@
   </ItemGroup>
   <ItemGroup>
     <Resource Include="Images\SequenceFile_32x.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <Resource Include="Images\HardDrive_16x.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <Resource Include="Images\Folder_grey_16x.png" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <PropertyGroup>

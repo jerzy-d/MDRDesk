@@ -930,9 +930,11 @@
                             <MenuItem x:Name="IndexShowBlockingObjects" Header="Blocking Object Listing" Click="IndexShowBlockingObjectsClicked"/>
                             <MenuItem x:Name="IndexShowDeadlocks" Header="Deadlock(s)" Click="IndexShowDeadlocksClicked"/>
                         </MenuItem>
-                        <MenuItem x:Name="Sizes" Header="Type Sizes">
-                            <MenuItem x:Name="IndexGetSizeInformation" Header="Types' Size Listing" Click="IndexGetSizeInformationClicked"/>
-                            <MenuItem x:Name="IndexGetBaseSizeInformation" Header="Types' Base Size Listing" Click="IndexGetBaseSizeInformationClicked"/>
+                        <MenuItem x:Name="Sizes" Header="Type Sizes/Counts">
+                            <MenuItem x:Name="IndexGetSizeInformation" Header="Type Sizes" Click="IndexGetSizeInformationClicked"/>
+                            <MenuItem x:Name="IndexGetBaseSizeInformation" Header="Type Base Sizes" Click="IndexGetBaseSizeInformationClicked"/>
+                            <MenuItem x:Name="IndexShowTypeSizes" Header="Show Type Sizes (Treemap Chart)" Click="IndexShowTypeSizesClicked"/>
+                            <MenuItem x:Name="IndexShowTypeCounts" Header="Show Type Counts (Treemap Chart)" Click="IndexShowTypeCountsClicked"/>
                             <MenuItem x:Name="IndexCompareSizeInformation" Header="Type Sizes Comparison (with other dump)..." Click="IndexCompareSizeInformationClicked"/>
                         </MenuItem>
                         <MenuItem x:Name="Strings" Header="Strings Usage">
