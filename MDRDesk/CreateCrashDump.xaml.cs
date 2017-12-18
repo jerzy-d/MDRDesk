@@ -170,7 +170,7 @@ namespace MDRDesk
 			string currentPath = OutputFolder.Text.Trim();
 			if (!Directory.Exists(currentPath))
 				currentPath = null;
-			currentPath = GuiUtils.GetFolderPath(currentPath);
+			currentPath = GuiUtils.GetFolderPath(currentPath, null, this);
 			if (Directory.Exists(currentPath))
 			{
 				OutputFolder.Text = currentPath;
@@ -203,7 +203,7 @@ namespace MDRDesk
             }
             catch (Exception ex)
             {
-                GuiUtils.ShowError(Utils.GetExceptionErrorString(ex), this);
+                GuiUtils.ShowError(ex, this);
             }
         }
 

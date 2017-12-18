@@ -194,7 +194,7 @@ namespace ClrMDRIndex
                 int[][] deadlock = null;
                 if (DGraph.HasCycle(graph))
                 {
-                    deadlock = Circuits.GetCycles(graph);
+                    deadlock = Circuits.GetCycles(graph, out error);
                 }
                 return new ThreadBlockGraph(graph, edgeCount, graphThreadCnt, map, deadlock);
 

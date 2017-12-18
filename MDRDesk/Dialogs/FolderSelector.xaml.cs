@@ -179,12 +179,12 @@ namespace MDRDesk
             }
             catch (UnauthorizedAccessException uex)
             {
-                GuiUtils.ShowInformation("Unauthorized Access", "Can't view content of this folder.", folder.FullPath, null, this);
+                GuiUtils.ShowInformation("Unauthorized Access", "Can't view content of this folder.", folder.FullPath, Utils.GetExceptionErrorString(uex), this);
                 return Utils.EmptyArray<TreeViewItem>.Value;
             }
             catch (Exception ex)
             {
-                GuiUtils.ShowError(Utils.GetExceptionErrorString(ex),this);
+                GuiUtils.ShowError(ex,this);
                 return Utils.EmptyArray<TreeViewItem>.Value;
             }
         }
@@ -300,8 +300,8 @@ namespace MDRDesk
         {
             string dtype = _drive.DriveType.ToString();
             string name = _drive.Name;
-            string space = _drive.IsReady ? Utils.JustSizeString((ulong)_drive.TotalSize) : "?";
-            string free = _drive.IsReady ? Utils.JustSizeString((ulong)_drive.AvailableFreeSpace) : "?";
+            string space = _drive.IsReady ? Utils.FormatBytes(_drive.TotalSize) : "?";
+            string free = _drive.IsReady ? Utils.FormatBytes(_drive.AvailableFreeSpace) : "?";
             return (name, dtype, space, free);
         }
     }

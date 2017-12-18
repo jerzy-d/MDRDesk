@@ -29,26 +29,26 @@ module CollectionContent =
             let raddr = ValueExtractor.ReadUlongAtAddress(elemAddr,heap)
             ValueExtractor.GetStringAtAddress(raddr,heap)
 
-    let aryElemDecimal (heap:ClrHeap) (addr:address) (aryType:ClrType) (elemType:ClrType) (ndx:int) =
-        let elemAddr = aryType.GetArrayElementAddress(addr,ndx)
-        if elemAddr = Constants.InvalidAddress then
-            Constants.NullValue
-        else
-            ValueExtractor.GetDecimalValueR( elemAddr, elemType,null)
+    //let aryElemDecimal (heap:ClrHeap) (addr:address) (aryType:ClrType) (elemType:ClrType) (ndx:int) =
+    //    let elemAddr = aryType.GetArrayElementAddress(addr,ndx)
+    //    if elemAddr = Constants.InvalidAddress then
+    //        Constants.NullValue
+    //    else
+    //        ValueExtractor.GetDecimalValueR( elemAddr, elemType,null)
 
-    let aryElemDatetime (heap:ClrHeap) (addr:address) (aryType:ClrType) (elemType:ClrType) (ndx:int) =
-        let elemAddr = aryType.GetArrayElementAddress(addr,ndx)
-        if elemAddr = Constants.InvalidAddress then
-            Constants.NullValue
-        else
-            ValueExtractor.GetDateTimeValue( elemAddr, elemType,elemType.IsValueClass,null)
+    //let aryElemDatetime (heap:ClrHeap) (addr:address) (aryType:ClrType) (elemType:ClrType) (ndx:int) =
+    //    let elemAddr = aryType.GetArrayElementAddress(addr,ndx)
+    //    if elemAddr = Constants.InvalidAddress then
+    //        Constants.NullValue
+    //    else
+    //        ValueExtractor.GetDateTimeValue( elemAddr, elemType,elemType.IsValueClass,null)
 
-    let aryElemDatetimeR (heap:ClrHeap) (addr:address) (aryType:ClrType) (elemType:ClrType) (ndx:int) =
-        let elemAddr = aryType.GetArrayElementAddress(addr,ndx)
-        if elemAddr = Constants.InvalidAddress then
-            Constants.NullValue
-        else
-            ValueExtractor.GetDateTimeValue(elemAddr, elemType, elemType.IsValueClass,null)
+    //let aryElemDatetimeR (heap:ClrHeap) (addr:address) (aryType:ClrType) (elemType:ClrType) (ndx:int) =
+    //    let elemAddr = aryType.GetArrayElementAddress(addr,ndx)
+    //    if elemAddr = Constants.InvalidAddress then
+    //        Constants.NullValue
+    //    else
+    //        ValueExtractor.GetDateTimeValue(elemAddr, elemType, elemType.IsValueClass,null)
 
     let aryElemTimespanR (heap:ClrHeap) (addr:address) (aryType:ClrType) (elemType:ClrType) (ndx:int) =
         let elemAddr = aryType.GetArrayElementAddress(addr,ndx)

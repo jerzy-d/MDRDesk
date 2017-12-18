@@ -209,7 +209,7 @@ namespace MDRDesk
                     }
                     catch (ArgumentException ex)
                     {
-                        MessageBox.Show("String format of the regular expression is invalid.", "INVALID FORMAT", MessageBoxButton.OK, MessageBoxImage.Error);
+                        GuiUtils.ShowError(ex, this);
                         return;
                     }
                 }

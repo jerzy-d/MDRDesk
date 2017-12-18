@@ -1279,7 +1279,8 @@ namespace ClrMDRIndex
                 if (DGraph.HasCycle(dgraph.Graph))
                 {
                     progress?.Report(progressHeader + "Found one cycle, searching for more, possible deadlock(s)...");
-                    allCycles = Circuits.GetCycles(dgraph.Graph);
+                    allCycles = Circuits.GetCycles(dgraph.Graph, out error);
+                    // TODO JRD -- handle error 
                 }
 #if FALSE
                 var cycle = new DirectedCycle(graph);

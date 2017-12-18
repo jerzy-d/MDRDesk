@@ -8,15 +8,15 @@ using Microsoft.Diagnostics.Runtime;
 
 namespace ClrMDRIndex
 {
-	public class ClrtBlockingObjects
-	{
-		private ClrtBlkObject[] _blockingObjects;
+	//public class ClrtBlockingObjects
+	//{
+	//	private ClrtBlkObject[] _blockingObjects;
 
-		//public static ClrtBlkObject[] GetClrtBlkObjects(BinaryReader br, int activeBlockCount)
-		//{
+	//	//public static ClrtBlkObject[] GetClrtBlkObjects(BinaryReader br, int activeBlockCount)
+	//	//{
 			
-		//}
-	}
+	//	//}
+	//}
 
 	public class ClrtBlkObject
 	{

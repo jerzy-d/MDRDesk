@@ -249,9 +249,9 @@ namespace MDRDesk
                 firstSettings.InputGestures.Add(new KeyGesture(Key.F1));
                 CommandBindings.Add(new CommandBinding(firstSettings, ButtonHelpClicked));
             }
-            catch (Exception err)
+            catch (Exception ex)
             {
-                //handle exception error
+                GuiUtils.ShowError(Utils.GetExceptionErrorString(ex), this);
             }
         }
         private void LockBtnClicked(object sender, RoutedEventArgs e)

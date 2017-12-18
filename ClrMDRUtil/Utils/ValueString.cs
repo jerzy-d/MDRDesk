@@ -14,7 +14,7 @@ namespace ClrMDRIndex
         public DisplayableString(string str)
         {
             _content = str;
-            if (str == null) str = Constants.NullValue;
+            if (str == null) str = Constants.NullValueOld;
         }
 
         public bool IsNull()
@@ -27,7 +27,7 @@ namespace ClrMDRIndex
             return _content != null && _content.Length > MaxLength;
         }
 
-        public string FullContent => (_content == null) ? Constants.NonValueChar + Constants.NullValue : _content;
+        public string FullContent => (_content == null) ? Constants.NonValueChar + Constants.NullValueOld : _content;
 
 
         public int SizeInBytes =>  _content == null ? 0 : _content.Length * sizeof(char);
@@ -49,7 +49,7 @@ namespace ClrMDRIndex
 
         public override string ToString()
         {
-            if (_content == null) return Constants.NonValueChar + Constants.NullValue;
+            if (_content == null) return Constants.NonValueChar + Constants.NullValueOld;
             if (_content.Length > MaxLength)
             {
                 var newStr = _content.Substring(0, MaxLength - 1) + Constants.HorizontalEllipsisChar;
@@ -82,13 +82,13 @@ namespace ClrMDRIndex
             return _content != null && _content.Length > MaxLength;
         }
 
-        public string FullContent => (_content == null) ? Constants.NonValueChar + Constants.NullValue : _content;
+        public string FullContent => (_content == null) ? Constants.NonValueChar + Constants.NullValueOld : _content;
 
         public int SizeInBytes => _content == null ? 0 : _content.Length * sizeof(char);
 
         public static string GetExpo(string str)
         {
-            if (str == null) return Constants.NonValueChar + Constants.NullValue;
+            if (str == null) return Constants.NonValueChar + Constants.NullValueOld;
             if (str.Length > MaxLength)
             {
                 var newStr = str.Substring(0, MaxLength - 1) + Constants.HorizontalEllipsisChar;

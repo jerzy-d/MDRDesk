@@ -123,14 +123,13 @@ namespace MDRDesk
 
         public void DisplayThreadBlockMap2()
         {
-            string error = null;
             try
             {
                 DisplayThreadBlockGraph(CurrentIndex.ThreadBlockgraph.Graph.Graph, false);
             }
             catch (Exception ex)
             {
-                GuiUtils.ShowError(Utils.GetExceptionErrorString(ex),this);
+                GuiUtils.ShowError(ex,this);
             }
         }
 
@@ -142,7 +141,7 @@ namespace MDRDesk
             }
             catch (Exception ex)
             {
-                GuiUtils.ShowError(Utils.GetExceptionErrorString(ex),this);
+                GuiUtils.ShowError(ex,this);
             }
         }
 
@@ -378,7 +377,7 @@ namespace MDRDesk
                 }
                 catch (Exception ex)
                 {
-                    GuiUtils.ShowError(Utils.GetExceptionErrorString(ex),this);
+                    GuiUtils.ShowError(ex,this);
                 }
                 finally
                 {
@@ -613,7 +612,7 @@ namespace MDRDesk
             }
             catch (Exception ex)
             {
-                GuiUtils.ShowError(Utils.GetExceptionErrorString(ex),this);
+                GuiUtils.ShowError(ex,this);
                 return Constants.InvalidAddress;
             }
         }
@@ -1156,7 +1155,7 @@ namespace MDRDesk
             DisplayInstanceParentReferences(addr);
         }
 
-        private async void ExecuteReferenceQuery(ulong addr)
+        private void ExecuteReferenceQuery(ulong addr)
         {
             DisplayInstanceParentReferences(addr);
         }
@@ -1291,7 +1290,7 @@ namespace MDRDesk
             }
             catch (Exception ex)
             {
-                GuiUtils.ShowError(Utils.GetExceptionErrorString(ex),this);
+                GuiUtils.ShowError(ex,this);
             }
         }
 
@@ -1687,7 +1686,7 @@ namespace MDRDesk
             DisplayTypeValuesGrid(listing, Constants.BlackDiamondHeader, TypeValuesReportGrid, Utils.BaseTypeName(query.TypeName));
         }
 
-        private async void ExecuteTypeFieldUsageQuery(string typeName, string fieldTypeName = null, string fieldName = null)
+        private void ExecuteTypeFieldUsageQuery(string typeName, string fieldTypeName = null, string fieldName = null)
         {
             string baseTypeName = Utils.BaseTypeName(typeName);
             string error = null;

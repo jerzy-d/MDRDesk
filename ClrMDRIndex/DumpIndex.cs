@@ -5,7 +5,6 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Text;
-using DmpNdxQueries;
 using Microsoft.Diagnostics.Runtime;
 using Microsoft.Diagnostics.Runtime.Interop;
 
@@ -55,7 +54,7 @@ namespace ClrMDRIndex
         public string[] TypeNames => _typeNames;
         private WeakReference<IdReferences> _typeFieldIds;
         public IdReferences TypeFieldIds => GetTypeFieldReferences();
-        private WeakReference<IdReferences> _fieldParentTypeIds;
+        //private WeakReference<IdReferences> _fieldParentTypeIds;
         public IdReferences FieldParentTypeIds => GetFieldParentTypeReferences();
 
         private KeyValuePair<string, int>[] _displayableTypeNames;
@@ -2050,6 +2049,51 @@ namespace ClrMDRIndex
             return heap.GetObjectType(addr);
         }
 
+        public static ValueTuple<string, SortedDictionary<string, List<ulong>>> GetObjectsImplementingInterface(ClrHeap heap, string interfaceName)
+        {
+            try
+            {
+                var result = new SortedDictionary<string, List<ulong>>(StringComparer.Ordinal);
+                var segs = heap.Segments;
+                for (int i = 0, icnt = segs.Count; i < icnt; ++i)
+                {
+                    var seg = segs[i];
+                    ulong addr = seg.FirstObject;
+                    while (addr != 0ul)
+                    {
+                        var clrType = heap.GetObjectType(addr);
+                        if (clrType == null) goto NEXT_OBJECT;
+                        bool found = false;
+                        foreach(var intrf in clrType.Interfaces)
+                        {
+                            if (Utils.SameStrings(intrf.Name, interfaceName))
+                            {
+                                found = true;
+                                break;
+                            }
+                        }
+                        if (!found) goto NEXT_OBJECT;
+                        List<ulong> lst;
+                        if (result.TryGetValue(clrType.Name,out lst))
+                        {
+                            lst.Add(addr);
+                        }
+                        else
+                        {
+                            result.Add(clrType.Name, new List<ulong>() { addr });
+                        }
+                        NEXT_OBJECT:
+                        addr = seg.NextObject(addr);
+                    }
+                }
+                return (null,result);
+            }
+            catch (Exception ex)
+            {
+                return (Utils.GetExceptionErrorString(ex),null);
+            }
+        }
+
 #endregion ah-hoc queries
 
 #endregion queries
@@ -2745,7 +2789,7 @@ namespace ClrMDRIndex
 
         #endregion strings
 
-        #region segments/generations/sizes
+    #region segments/generations/sizes
 
         //var count = _typeInstanceOffsets[offNdx + 1].Value - _typeInstanceOffsets[offNdx].Value;
 
@@ -3342,7 +3386,7 @@ namespace ClrMDRIndex
                         var fldType = clrType.Fields[f].Type;
                         fieldTypeNames[f] = fldType.Name;
                         fldTypes[f] = fldType;
-                        var defValue = Types.typeDefaultValue(fldType);
+                        var defValue = ValueExtractor.TypeDefaultValueAsString(fldType);
                         fieldDefValues[f] = new KeyValuePair<string, string>(clrType.Fields[f].Name, defValue);
                         fields[f] = clrType.Fields[f];
                         fldKinds[f] = TypeExtractor.GetElementKind(fldType);

@@ -94,7 +94,9 @@ namespace MDRDesk
                 var result = Setup.GetConfigSettings(out error);
                 if (!result)
                 {
+#pragma warning disable CS4014
                     Dispatcher.CurrentDispatcher.InvokeAsync(() => GuiUtils.MessageBoxShowError(error));
+#pragma warning restore CS4014
                     return;
                 }
 
@@ -135,14 +137,18 @@ namespace MDRDesk
                     if (!WndDbgLoaded)
                     {
                         error = error + Environment.NewLine + "All dbgeng queries will be disabled.";
+#pragma warning disable CS4014
                         Dispatcher.CurrentDispatcher.InvokeAsync(() => GuiUtils.ShowError(error,this));
+#pragma warning restore CS4014
                     }
                 }
             }
             catch (Exception ex)
             {
                 error = Utils.GetExceptionErrorString(ex);
+#pragma warning disable CS4014
                 Dispatcher.CurrentDispatcher.InvokeAsync(() => GuiUtils.MessageBoxShowError(error));
+#pragma warning restore CS4014
             }
         }
 
@@ -402,7 +408,7 @@ namespace MDRDesk
             }
             catch (Exception ex)
             {
-                GuiUtils.ShowError(Utils.GetExceptionErrorString(ex),this);
+                GuiUtils.ShowError(ex,this);
             }
         }
 
@@ -511,7 +517,9 @@ namespace MDRDesk
                 GuiUtils.ShowError(result.Item2,this);
                 return;
             }
+#pragma warning disable CS4014
             Dispatcher.CurrentDispatcher.InvokeAsync(() => DoOpenDumpIndex(0, result.Item3));
+#pragma warning restore CS4014
         }
 
         private void OpenDumpIndexClicked(object sender, RoutedEventArgs e)
@@ -526,7 +534,7 @@ namespace MDRDesk
                     path = e.OriginalSource as string;
                 }
             }
-            if (path == null) path = GuiUtils.GetFolderPath(Setup.DumpsFolder);
+            if (path == null) path = GuiUtils.GetFolderPath(Setup.DumpsFolder, ".map", this);
 
             if (path == null) return;
             try
@@ -535,7 +543,7 @@ namespace MDRDesk
             }
             catch (Exception ex)
             {
-                GuiUtils.ShowError(Utils.GetExceptionErrorString(ex),this);
+                GuiUtils.ShowError(ex,this);
             }
         }
 
@@ -617,7 +625,7 @@ namespace MDRDesk
             }
             catch (Exception ex)
             {
-                GuiUtils.ShowError(Utils.GetExceptionErrorString(ex),this);
+                GuiUtils.ShowError(ex,this);
                 return;
             }
 
@@ -1439,7 +1447,7 @@ namespace MDRDesk
             }
             catch (Exception ex)
             {
-                GuiUtils.ShowError(Utils.GetExceptionErrorString(ex),this);
+                GuiUtils.ShowError(ex,this);
             }
         }
 
@@ -1458,15 +1466,14 @@ namespace MDRDesk
             }
             catch (Exception ex)
             {
-                GuiUtils.ShowError(Utils.GetExceptionErrorString(ex),this);
+                GuiUtils.ShowError(ex,this);
             }
         }
 
-        private async void ExtrasTestClicked(object sender, RoutedEventArgs e)
+        private void ExtrasTestClicked(object sender, RoutedEventArgs e)
         {
             FolderSelector dlg = new FolderSelector("Select MdrDesk Index Folder", @"C:\WinDbgStuff\Dumps", ".map") { Owner = this };
             dlg.ShowDialog();
-
         }
 
 #endregion Extras
@@ -1765,7 +1772,7 @@ namespace MDRDesk
             }
             catch (Exception ex)
             {
-                GuiUtils.ShowError(Utils.GetExceptionErrorString(ex),this);
+                GuiUtils.ShowError(ex,this);
             }
         }
 
@@ -2447,7 +2454,7 @@ namespace MDRDesk
             SetStartTaskMainWindowState("Searching for interface implementors, please wait...");
             (string error, SortedDictionary<string, List<ulong>> dct) = await Task.Factory.StartNew(() =>
             {
-                return DmpNdxQueries.FQry.getObjectsImplementingInterface(CurrentAdhocDump.Heap, interfaceName);
+                return DumpIndex.GetObjectsImplementingInterface(CurrentAdhocDump.Heap, interfaceName);
             }, _adhocSTAScheduler);
             SetEndTaskMainWindowState("Searching for interface implementors done.");
 
@@ -2546,9 +2553,9 @@ namespace MDRDesk
                 firstSettings.InputGestures.Add(new KeyGesture(Key.F1));
                 CommandBindings.Add(new CommandBinding(firstSettings, ButtonHelpClicked));
             }
-            catch (Exception err)
+            catch (Exception ex)
             {
-                //handle exception error
+                GuiUtils.ShowError(ex, this);
             }
         }
 

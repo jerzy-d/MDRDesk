@@ -43,56 +43,67 @@ namespace MDRDesk
         private void OnLoaded(object sender, RoutedEventArgs e)
         {
             string error;
-            (double[] values, string[] typeNames) = _counts ? _index.GetTypeCountsWithNames(out error) : _index.GetTypeSizesWithNames(out error);
-            if (error != null)
+            try
             {
-                Title = "Treemap Chart cannot be generated, please copy error and close this window.";
-                GuiUtils.ShowError(error, this);
-                return;
-            }
-            int[] map = Utils.Iota(values.Length);
-            Array.Sort(values, map, new DoubleDescCmp()); // need to reverse order
-            int validSizeCnt = 0;
-            for (int i = 0, icnt = values.Length; i < icnt; ++i)
-            {
-                if (values[i] < _minValue) break;
-                ++validSizeCnt;
-            }
-            if (_counts)
-            {
-                Title = "Treemap Chart Type Counts " + Utils.CountString(validSizeCnt) + " out of " + Utils.CountString(values.Length)
-                        + "  min count: " + Utils.JustSizeString((ulong)_minValue);
-            }
-            else
-            {
-                Title = "Treemap Chart Type Sizes " + Utils.CountString(validSizeCnt) + " out of " + Utils.CountString(values.Length)
-                    + "  min size: " + Utils.JustSizeString((ulong)_minValue);
-            }
-            _values = new double[validSizeCnt];
-            Array.Copy(values, 0, _values, 0, validSizeCnt);
-            _map = new int[validSizeCnt];
-            Array.Copy(map, 0, _map, 0, validSizeCnt);
-            _typeNames = typeNames;
+                Mouse.OverrideCursor = Cursors.Wait;
+                (double[] values, string[] typeNames) = _counts ? _index.GetTypeCountsWithNames(out error) : _index.GetTypeSizesWithNames(out error);
+                if (error != null)
+                {
+                    Title = "Treemap Chart cannot be generated, please copy error and close this window.";
+                    GuiUtils.ShowError(error, this);
+                    return;
+                }
+                int[] map = Utils.Iota(values.Length);
+                Array.Sort(values, map, new DoubleDescCmp()); // need to reverse order
+                int validSizeCnt = 0;
+                for (int i = 0, icnt = values.Length; i < icnt; ++i)
+                {
+                    if (values[i] < _minValue) break;
+                    ++validSizeCnt;
+                }
+                if (_counts)
+                {
+                    Title = "Treemap Chart Type Counts " + Utils.CountString(validSizeCnt) + " out of " + Utils.CountString(values.Length)
+                            + "  min count: " + Utils.JustSizeString((ulong)_minValue);
+                }
+                else
+                {
+                    Title = "Treemap Chart Type Sizes " + Utils.CountString(validSizeCnt) + " out of " + Utils.CountString(values.Length)
+                        + "  min size: " + Utils.JustSizeString((ulong)_minValue);
+                }
+                _values = new double[validSizeCnt];
+                Array.Copy(values, 0, _values, 0, validSizeCnt);
+                _map = new int[validSizeCnt];
+                Array.Copy(map, 0, _map, 0, validSizeCnt);
+                _typeNames = typeNames;
 
-            var tm = new Treemap(_values, 0, 0, MainRectangle.Width, MainRectangle.Height);
-            tm.Squarify();
-            Brush brush = _counts ? Brushes.LightSlateGray : Brushes.Wheat;
-            for (int i = 0, icnt = tm.Rectangles.Length; i < icnt; ++i)
-            {
-                var tr = tm.Rectangles[i];
-                var r = new Rectangle() { Stroke = Brushes.Black, Fill = brush, Width = tr.Width, Height = tr.Height, StrokeThickness = 0.5 };
-                r.Tag = i;
-                    //typeNames[map[i]] + Constants.HeavyRightArrowPadded + Utils.SizeString((ulong)vsizes[i]) + " bytes";
-                Canvas.SetLeft(r, tr.X);
-                Canvas.SetTop(r, tr.Y);
-                MainRectangle.Children.Add(r);
+                var tm = new Treemap(_values, 0, 0, MainRectangle.Width, MainRectangle.Height);
+                tm.Squarify();
+                Brush brush = _counts ? Brushes.LightSlateGray : Brushes.Wheat;
+                for (int i = 0, icnt = tm.Rectangles.Length; i < icnt; ++i)
+                {
+                    var tr = tm.Rectangles[i];
+                    var r = new Rectangle() { Stroke = Brushes.Black, Fill = brush, Width = tr.Width, Height = tr.Height, StrokeThickness = 0.5 };
+                    r.Tag = i;
+                    Canvas.SetLeft(r, tr.X);
+                    Canvas.SetTop(r, tr.Y);
+                    MainRectangle.Children.Add(r);
+                }
+                string typeName = typeNames[map[0]];
+                (ulong[] addresses, int unrootedCnt) = GetTypeAddresses(typeName);
+                AddrListBox.ItemsSource = addresses;
+                AddrListBox.ContextMenu.Tag = AddrListBox;
+                AddressTextBox.Text = Utils.CountString(addresses.Length) + "/" + Utils.CountString(unrootedCnt);
+                TypeNameLabel.Text = typeName;
             }
-            string typeName = typeNames[map[0]];
-            (ulong[] addresses, int unrootedCnt) = GetTypeAddresses(typeName);
-            AddrListBox.ItemsSource = addresses;
-            AddrListBox.ContextMenu.Tag = AddrListBox;
-            AddressTextBox.Text = Utils.CountString(addresses.Length) + "/" + Utils.CountString(unrootedCnt);
-            TypeNameLabel.Text = typeName;
+            catch(Exception ex)
+            {
+                GuiUtils.ShowError(ex, this);
+            }
+            finally
+            {
+                Mouse.OverrideCursor = null;
+            }
         }
 
         int _currentIndex = -1;
@@ -102,14 +113,40 @@ namespace MDRDesk
             int index = (int)r.Tag;
             if (index == _currentIndex) return;
             _currentIndex = index;
-            string txt = _typeNames[_map[index]] + Constants.HeavyRightArrowPadded + Utils.SizeString((ulong)_values[index]) + (_counts ? string.Empty :" bytes");
-            MainTextBox.Text = txt;
+            string txt = _typeNames[_map[index]] + Constants.HeavyRightArrowPadded + FormatValue(_values[index],_counts);
+                //Utils.SizeString((ulong)_values[index]) + (_counts ? string.Empty :" bytes");
+            MainTextBox.Content = FormatValue(_typeNames[_map[index]], _values[index], _counts);
+        }
+
+        private string FormatValue(double val, bool isCount)
+        {
+            if (isCount) return Utils.JustSizeString((ulong)val);
+            return Utils.FormatBytes((long)val) + " ("
+                    + Utils.JustSizeString((ulong)val) + " bytes)";
+
+        }
+
+        private TextBlock FormatValue(string typeName, double val, bool isCount)
+        {
+            var txtBlk = new TextBlock();
+            txtBlk.Inlines.Add(new Run(typeName + " "));
+            if (isCount)
+            {
+                txtBlk.Inlines.Add(new Bold(new Run(Utils.JustSizeString((ulong)val))) { Foreground = Brushes.DarkRed });
+            }
+            else
+            {
+                txtBlk.Inlines.Add(new Bold(new Run(Utils.FormatBytes((long)val))) { Foreground = Brushes.DarkRed });
+                txtBlk.Inlines.Add(new Italic(new Run("  " + Utils.JustSizeString((ulong)val) + " bytes" ) { Foreground = Brushes.Black }));
+            }
+            return txtBlk;
         }
 
         private void TreemapMouseDown(object sender, MouseButtonEventArgs e)
         {
             try
             {
+                Mouse.OverrideCursor = Cursors.Wait;
                 Rectangle r = e.OriginalSource as Rectangle;
                 int index = (int)r.Tag;
                 string typeName = _typeNames[_map[index]];
@@ -120,7 +157,11 @@ namespace MDRDesk
             }
             catch (Exception ex)
             {
-                GuiUtils.ShowError(Utils.GetExceptionErrorString(ex),this);
+                GuiUtils.ShowError(ex,this);
+            }
+            finally
+            {
+                Mouse.OverrideCursor = null;
             }
         }
 
@@ -173,7 +214,7 @@ namespace MDRDesk
                 GuiUtils.ShowError(error, this);
                 return;
             }
-            MainTextBox.Text = "Instance: " + Utils.RealAddressString(addr) + ", base size: " + Utils.JustSizeString(kv.Key) + ", actual size: " + Utils.JustSizeString(kv.Value);
+            MainTextBox.Content = "Instance: " + Utils.RealAddressString(addr) + ", base size: " + Utils.JustSizeString(kv.Key) + ", actual size: " + Utils.JustSizeString(kv.Value);
         }
 
         private void AddrLstInstValueClicked(object sender, RoutedEventArgs e)
@@ -208,7 +249,7 @@ namespace MDRDesk
             int id = Array.BinarySearch(_typeNames, typeName, StringComparer.Ordinal);
             var genHistogram = _index.GetTypeGcGenerationHistogram(id);
             var histStr = ClrtSegment.GetGenerationHistogramSimpleString(genHistogram);
-            MainTextBox.Text = histStr + " " + typeName;
+            MainTextBox.Content = histStr + " " + typeName;
         }
 
         private void TypeReferencesClicked(object sender, RoutedEventArgs e)

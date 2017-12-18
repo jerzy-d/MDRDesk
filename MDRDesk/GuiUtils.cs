@@ -7,10 +7,8 @@ using System.Windows.Documents;
 using System.Windows.Media;
 using ClrMDRIndex;
 using System.Collections.Generic;
-using System.Text;
 using System.Linq;
 using System.Windows.Threading;
-using System.Globalization;
 
 namespace MDRDesk
 {
@@ -95,8 +93,9 @@ namespace MDRDesk
             }
         }
 
-        public static string GetFolderPath(string initialFolder)
+        public static string GetFolderPath(string initialFolder, string filter,  Window wnd)
         {
+#if FALSE
             string path = null;
             var dialog = new System.Windows.Forms.FolderBrowserDialog();
             using (dialog)
@@ -106,10 +105,17 @@ namespace MDRDesk
                 if (result != System.Windows.Forms.DialogResult.OK) return null;
                 path = dialog.SelectedPath;
             }
-            return path;
+#else
+            FolderSelector dlg = new FolderSelector("Select MdrDesk Index Folder", initialFolder, filter) { Owner = wnd };
+            if ((bool)dlg.ShowDialog())
+            {
+                return dlg.SelectedPath;
+            }
+            return string.Empty;
+#endif
         }
 
-        #endregion disk io
+#endregion disk io
 
         public static TextBlock GetClrtDisplayableTypeTextBlock(ClrtDisplayableType val)
         {
@@ -190,7 +196,7 @@ namespace MDRDesk
             }
         }
 
-        #region displayable type
+#region displayable type
 
         public static TreeViewItem GetTypeValueSetupTreeViewItem(ClrtDisplayableType dispType)
         {
@@ -289,7 +295,7 @@ namespace MDRDesk
             return stackPanel;
         }
 
-        #endregion
+#endregion
 
         public static void AddListViewColumn(Grid grid, string lstName, string colHeader, int width)
         {
@@ -465,7 +471,7 @@ namespace MDRDesk
             return true;
         }
 
-        #region message box
+#region message box
 
         public static void ShowInformation(string caption, string header, string text, string details, Window wnd)
         {
@@ -480,6 +486,11 @@ namespace MDRDesk
             dialog.SetButtonsPredefined(EnumPredefinedButtons.Ok);
             dialog.DetailsExpander.Visibility = string.IsNullOrEmpty(details) ? Visibility.Collapsed : Visibility.Visible;
             dialog.ShowDialog();
+        }
+
+        public static void ShowError(Exception ex, Window wnd)
+        {
+            ShowError(Utils.GetExceptionErrorString(ex), wnd);
         }
 
         public static void ShowError(string errStr, Window wnd)
@@ -537,6 +548,6 @@ namespace MDRDesk
                 MessageBoxImage.Error);
         }
 
-        #endregion message box
+#endregion message box
     }
 }

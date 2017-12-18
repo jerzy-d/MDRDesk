@@ -442,7 +442,6 @@ namespace MDRDesk
 
                 var que = new Queue<ClrtDisplayableType>(Math.Max(needed.Count * 2, 64));
                 var lst = new LinkedList<ClrtDisplayableType>();
-                int ndx = 0;
                 lst.AddFirst(_typeInfo);
                 if (_typeInfo.Fields == null)
                 {

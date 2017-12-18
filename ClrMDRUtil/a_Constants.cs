@@ -28,10 +28,11 @@ namespace ClrMDRIndex
 		public const string UnknownName = "{unknown}";
 		public const string UnknownValue = "{unknown value}";
 		public const string NullName = "{null}";
-		public const string NullValue = "null";
+		public const string NullValueOld = "null";
 		public const int NullNameId = 0;
+        public const string NullValue = "`null`";
 
-		public const string NullTypeName = "NullType";
+        public const string NullTypeName = "NullType";
         public const string UnknownTypeName = "UnknownType";
         public const string UnknownFieldTypeName = "\u2714UnknownFieldType";
         public const string TypeNotFound = "TypeNotFound";
@@ -188,8 +189,10 @@ namespace ClrMDRIndex
 
 		public const ulong InvalidAddress = 0ul;
         public const int AddressStringLength = 16;
+        public const string InvalidAddressStr = "0x00000000000000";
 
-		public const string ReportPath = @"ad-hoc.queries";
+
+        public const string ReportPath = @"ad-hoc.queries";
 
 
 		public const string MapRefFwdDataFilePostfix = ".`REFFWDDATA[0].bin";

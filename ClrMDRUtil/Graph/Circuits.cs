@@ -25,8 +25,7 @@ namespace ClrMDRIndex
         Stack<int> _stack;
         List<int[]> _cycles;
         int _start;
-
-
+ 
         public Circuits(int[][] g)
         {
             _graph = g;
@@ -184,8 +183,9 @@ namespace ClrMDRIndex
             return f;
         }
 
-        public static int[][] GetCycles(int[][] graph)
+        public static int[][] GetCycles(int[][] graph, out string error)
         {
+            error = null;
             Circuits cr = new Circuits(graph);
             int vertexCount = graph.Length;
             while(cr._start < vertexCount)
@@ -198,7 +198,7 @@ namespace ClrMDRIndex
                 }
                 catch(Exception ex)
                 {
-                    int a = 1;
+                    error = Utils.GetExceptionErrorString(ex);
                 }
             }
             return cr._cycles.ToArray();

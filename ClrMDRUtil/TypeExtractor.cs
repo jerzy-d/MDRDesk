@@ -105,6 +105,22 @@ namespace ClrMDRIndex
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static bool IsSpecialKind(ClrElementKind kind)
+        {
+            return ((int)kind & (int)0x7FFF0000) != 0;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static bool IsKnownStruct(ClrElementKind kind)
+        {
+            ClrElementKind specKind = (ClrElementKind)((int)kind & 0x7FFF0000);
+            return specKind == ClrElementKind.DateTime
+                || specKind == ClrElementKind.Decimal
+                || specKind == ClrElementKind.Guid
+                || specKind == ClrElementKind.TimeSpan;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static ClrElementKind GetSpecialKind(ClrElementKind kind)
         {
             int specKind = (int)kind & (int)0x7FFF0000;
@@ -119,6 +135,13 @@ namespace ClrMDRIndex
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static ClrElementType GetClrElementType(ClrElementKind kind)
+        {
+            int stdKind = (int)kind & 0x0000FFFF;
+            return (ClrElementType)stdKind;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool IsString(ClrElementKind kind)
         {
             return GetStandardKind(kind) == ClrElementKind.String;
@@ -127,7 +150,13 @@ namespace ClrMDRIndex
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool IsGuid(ClrElementKind kind)
         {
-            return ((int)GetSpecialKind(kind) & (int)ClrElementKind.Guid) != 0;
+            return GetSpecialKind(kind) == ClrElementKind.Guid;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static bool IsEnum(ClrElementKind kind)
+        {
+            return GetSpecialKind(kind) == ClrElementKind.Enum;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -617,11 +646,6 @@ namespace ClrMDRIndex
             for (int i = 0, icnt = ambiguousFields.Count; i < icnt; ++i)
             {
                 int fldNdx = ambiguousFields[i];
-                //if (fldNdx == 53 || fldNdx == 55 || fldNdx == 68)
-                if (fldNdx == 53)
-                {
-                    int a = 1;
-                }
                 var cdt = flds[fldNdx];
                 var dct = fldAddresses[i];
                 var nextParentType = heap.GetObjectType(addr);
@@ -636,10 +660,6 @@ namespace ClrMDRIndex
                 }
                 else
                 {
-                    if (fldNdx == 53)
-                    {
-                        int a = 1;
-                    }
                     addrLst = new List<ulong>(64) { address };
                     dct.Add(nextFldType.Name, addrLst);
                     var typeId = ndxProxy.GetTypeId(nextFldType.Name);
@@ -808,7 +828,7 @@ namespace ClrMDRIndex
                                         }
                                         catch (Exception ex)
                                         {
-                                            int a = 1;
+                                            error = Utils.GetExceptionErrorString(ex);
                                         }
                                     }
                                     HandleAlternatives(dispType, dispFlds, ambiguousFields, fldAddrDcts);
@@ -902,7 +922,7 @@ namespace ClrMDRIndex
                                     }
                                     catch (Exception ex)
                                     {
-                                        int a = 1;
+                                        error = Utils.GetExceptionErrorString(ex);
                                     }
                                 }
                                 HandleAlternatives(parent, dispFlds, ambiguousFields, fldAddrDcts);

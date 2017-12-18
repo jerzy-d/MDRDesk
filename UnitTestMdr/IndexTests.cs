@@ -96,8 +96,6 @@ namespace UnitTestMdr
 
                 var thrd = FindThread(info.Item1, 6428);
                 var thrd2 = FindThreadWithFrameGroup(info.Item1, 0);
-                int a = 1;
-
             }
 
             Assert.IsNull(error, error);
@@ -175,150 +173,6 @@ namespace UnitTestMdr
 
 				var blksUnion = blksWithWaiters.Union(blksOwnedByMany, new BlockingObjectEqualityCmp()).ToArray();
 				blksUnion = blksUnion.Union(blksWithWaiters, new BlockingObjectEqualityCmp()).ToArray();
-			}
-
-			Assert.IsNull(error, error);
-		}
-
-		[TestMethod]
-		public void ThreadBlockingThreadGraphInfo()
-		{
-			string error = null;
-			Stopwatch stopWatch = new Stopwatch();
-			stopWatch.Start();
-			var index = OpenIndex();
-			TestContext.WriteLine(index.DumpFileName + " INDEX OPEN DURATION: " + Utils.StopAndGetDurationString(stopWatch));
-
-			using (index)
-			{
-				stopWatch.Restart();
-				var heap = index.Dump.Heap;
-				var result = DmpNdxQueries.FQry.heapWarmup(heap);
-				Assert.IsNull(result.Item1);
-				TestContext.WriteLine("NULL OBJECT COUNT: " + Utils.LargeNumberString(result.Item2.Length)
-				                      + " OBJECT COUNT: " + Utils.LargeNumberString(result.Item3)
-				                      + ", HEAP WARMUP DURATION: " + Utils.StopAndGetDurationString(stopWatch));
-
-				stopWatch.Restart();
-				var threads = DumpIndexer.GetThreads(index.Runtime);
-				TestContext.WriteLine("THREAD COUNT: " + Utils.LargeNumberString(threads.Length) +
-				                      ", GETTING THREAD LIST DURATION: " + Utils.StopAndGetDurationString(stopWatch));
-				stopWatch.Restart();
-				var blocks = DumpIndexer.GetBlockingObjects(heap);
-				TestContext.WriteLine("BLOCKING OBJECT COUNT: " + Utils.LargeNumberString(blocks.Length) +
-				                      ", GETTING BLOCKING OBJECTS DURATION: " + Utils.StopAndGetDurationString(stopWatch));
-
-				var threadSet = new HashSet<ClrThread>(new ClrThreadEqualityCmp());
-				var blkGraph = new List<Tuple<BlockingObject, ClrThread[], ClrThread[]>>();
-				var owners = new List<ClrThread>();
-				var waiters = new List<ClrThread>();
-				int nullOwnerCount = 0;
-				int nullOwnersCount = 0;
-				int nullWaitersCount = 0;
-				for (int i = 0, icnt = blocks.Length; i < icnt; ++i)
-				{
-					var blk = blocks[i];
-					owners.Clear();
-					waiters.Clear();
-					ClrThread owner = null;
-					if (blk.Taken && blk.HasSingleOwner)
-					{
-						owner = blk.Owner;
-						if (owner != null)
-						{
-							threadSet.Add(owner);
-							owners.Add(owner);
-						}
-						else
-						{
-							++nullOwnerCount;
-						}
-					}
-
-					if (blk.Owners != null && blk.Owners.Count > 0)
-					{
-						for (int j = 0, jcnt = blk.Owners.Count; j < jcnt; ++j)
-						{
-							var th = blk.Owners[j];
-							if (th == null)
-							{
-								++nullOwnersCount;
-								continue;
-							}
-							threadSet.Add(th);
-							if (owner == null || owner.OSThreadId != th.OSThreadId)
-								owners.Add(th);
-						}
-					}
-
-					if (blk.Waiters != null && blk.Waiters.Count > 0)
-					{
-						for (int j = 0, jcnt = blk.Waiters.Count; j < jcnt; ++j)
-						{
-							var th = blk.Waiters[j];
-							if (th == null)
-							{
-								++nullWaitersCount;
-								continue;
-							}
-							threadSet.Add(th);
-							waiters.Add(th);
-						}
-					}
-
-					if (owners.Count > 0)
-					{
-						var ownerAry = owners.ToArray();
-						var waiterAry = waiters.ToArray();
-						blkGraph.Add(new Tuple<BlockingObject, ClrThread[], ClrThread[]>(blk, ownerAry, waiterAry));
-					}
-					else if (waiters.Count > 0)
-					{
-						blkGraph.Add(new Tuple<BlockingObject, ClrThread[], ClrThread[]>(blk, Utils.EmptyArray<ClrThread>.Value,
-							waiters.ToArray()));
-					}
-				}
-
-				int nullThreadBlkObjCount = 0;
-				int notFoundThreadBlkObjCount = 0;
-				int threadBlkObjCount = 0;
-				var cmp = new BlockingObjectCmp();
-				for (int i = 0, icnt = threads.Length; i < icnt; ++i)
-				{
-					var th = threads[i];
-					if (th.BlockingObjects != null && th.BlockingObjects.Count > 0)
-					{
-						for (int j = 0, jcnt = th.BlockingObjects.Count; j < jcnt; ++j)
-						{
-							var blk = th.BlockingObjects[j];
-							if (blk == null)
-							{
-								++nullThreadBlkObjCount;
-								continue;
-							}
-							var ndx = Array.BinarySearch(blocks, blk, cmp);
-							if (ndx < 0)
-							{
-								++notFoundThreadBlkObjCount;
-								continue;
-							}
-							++threadBlkObjCount;
-						}
-					}
-				}
-
-				TestContext.WriteLine("ACTIVE BLOCKING OBJECT COUNT: " + Utils.LargeNumberString(blkGraph.Count));
-				TestContext.WriteLine("ACTIVE THREADS COUNT: " + Utils.LargeNumberString(threadSet.Count));
-
-				TestContext.WriteLine("NULL OWNER COUNT COUNT: " + Utils.LargeNumberString(nullOwnerCount));
-				TestContext.WriteLine("NULL OWNERS COUNT COUNT: " + Utils.LargeNumberString(nullOwnersCount));
-				TestContext.WriteLine("NULL WAITERS COUNT COUNT: " + Utils.LargeNumberString(nullWaitersCount));
-
-				TestContext.WriteLine("NULL THREAD BLKOBJ COUNT: " + Utils.LargeNumberString(nullThreadBlkObjCount));
-				TestContext.WriteLine("NOT FOUND THREAD BLKOBJ COUNT: " + Utils.LargeNumberString(notFoundThreadBlkObjCount));
-				TestContext.WriteLine("THREAD BLKOBJ COUNT: " + Utils.LargeNumberString(threadBlkObjCount));
-
-				Assert.IsTrue(true);
 			}
 
 			Assert.IsNull(error, error);
@@ -631,7 +485,7 @@ namespace UnitTestMdr
             {
                 var digraph = index.ThreadBlockgraph;
                 var haveCycle = DGraph.HasCycle(digraph.Graph.Graph);
-                var result = Circuits.GetCycles(digraph.Graph.Graph);
+                var result = Circuits.GetCycles(digraph.Graph.Graph, out error);
                 Assert.IsTrue(haveCycle);
             }
 
@@ -780,7 +634,7 @@ namespace UnitTestMdr
 
             using (index)
             {
-                ClrHeap heap = index.Dump.Runtime.GetHeap();
+                ClrHeap heap = index.Dump.Runtime.Heap;
                 var segs = heap.Segments;
                 string[] typeNames = index.TypeNames;
                 for (int i = 0, icnt = segs.Count; i < icnt; ++i)
@@ -883,89 +737,6 @@ namespace UnitTestMdr
                 }
 
                 index.GetTypeFieldDefaultValues(typeId);
-            }
-
-            Assert.IsNull(error, error);
-        }
-
-        [TestMethod]
-        public void CompareTypeSizes()
-        {
-            string error = null;
-            Stopwatch stopWatch = new Stopwatch();
-            stopWatch.Start();
-            var index = OpenIndex(Setup.DumpsFolder + @"\Analytics\Cowen\Cowen.Analytics.Svc_170717_165238.dmp.map");
-            //var index = OpenIndex(Setup.DumpsFolder + @"\MDRDesk\MDRDesk.exe_170821_083408.dmp.map");
-            TestContext.WriteLine(index.DumpFileName + " INDEX OPEN DURATION: " + Utils.StopAndGetDurationString(stopWatch));
-
-            using (index)
-            {
-                uint[] sizes = index.Sizes;
-                Assert.IsNotNull(sizes);
-                uint[] basesizes = index.BaseSizes;
-                Assert.IsNotNull(basesizes);
-                Tuple<int[], int[]> aryLenghts = index.ArrayLengths;
-                Assert.IsNotNull(aryLenghts);
-                ClrElementKind[] kinds = index.TypeKinds;
-                var path = index.OutputFolder + Path.DirectorySeparatorChar + "ArraysTestInfo.txt";
-
-                int aryMinLenght = aryLenghts.Item2.Min();
-                int aryMaxLenght = aryLenghts.Item2.Max();
-                int[] diffs = new int[aryLenghts.Item1.Length];
-                StreamWriter sw = null;
-                try
-                {
-                    goto NEXT_TEST;
-                    sw = new StreamWriter(path);
-                    for (int i = 0, icnt = aryLenghts.Item1.Length; i < icnt; ++i)
-                    {
-                        var ndx = aryLenghts.Item1[i];
-                        var len = aryLenghts.Item2[i];
-
-                        var size = sizes[ndx];
-                        var baseSize = basesizes[ndx];
-                        var addr = index.Instances[ndx];
-                        var typeName = index.TypeNames[index.InstanceTypes[ndx]];
-
-                        diffs[i] = (int)size - (int)baseSize;
-                        sw.Write(Utils.RealAddressStringHeader(addr));
-                        sw.Write(Utils.SizeStringHeader(baseSize));
-                        sw.Write(Utils.SizeStringHeader(size));
-                        sw.Write(Utils.SizeStringHeader(len));
-                        sw.WriteLine(typeName);
-
-                        if (len == aryMaxLenght)
-                        {
-                            TestContext.WriteLine("len: " + aryMaxLenght + " addr: " + Utils.RealAddressStringHeader(addr));
-                        }
-                    }
-
-                    NEXT_TEST:
-
-                    var result = index.GetInstanceValue(0x0000571427d208, null);
-
-                    InstanceValue val = result.Item2;
-                    long addrSize = 0L;
-                    long strSize = 0L;
-                    for (int i = 0, icnt = val.ArrayValues.Length; i < icnt; ++i)
-                    {
-                        var elem = val.ArrayValues[i].FullContent;
-                        addrSize += 8;
-                        strSize += elem.Length * sizeof(char);
-                    }
-                    //addrSize 131072  long
-                    //strSize 231122  long
-
-                }
-                catch (Exception ex)
-                {
-                    Assert.IsTrue(false, ex.ToString());
-                }
-                finally
-                {
-                    sw?.Close();
-                }
-
             }
 
             Assert.IsNull(error, error);
@@ -1173,14 +944,6 @@ namespace UnitTestMdr
                 {
                     ulong a = index.GetInstanceAddress(indices[i]);
                     addresses[i] = a;
-                    if (Utils.AddressSearch(roots,a)>=0)
-                    {
-                        int b = 1;
-                    }
-                    if (Utils.AddressSearch(objects, a) >= 0)
-                    {
-                        int b = 1;
-                    }
                 }
              }
 
@@ -1272,14 +1035,12 @@ namespace UnitTestMdr
         [TestMethod]
         public void TestInstancesTimestamps()
         {
-            ulong addr = 0x0256e64c;
             string error = null;
             Stopwatch stopWatch = new Stopwatch();
             stopWatch.Start();
             var index = OpenIndex(@"D:\Jerzy\WinDbgStuff\dumps\Analytics\Ellerston\Eze.Analytics.Svc_170607_214916.dmp.map");
             TestContext.WriteLine(index.DumpFileName + " INDEX OPEN DURATION: " + Utils.StopAndGetDurationString(stopWatch));
 
-            InstanceValue inst;
             using (index)
             {
                 var heap = index.Heap;
@@ -1763,10 +1524,6 @@ namespace UnitTestMdr
                     if (clrType == null)
                     {
                         myType = heap.GetObjectType(addr);
-                        if (myType == null)
-                        {
-                            int a = 1;
-                        }
                         Assert.IsNotNull(myType);
                         kind = TypeExtractor.GetElementKind(myType);
                         Assert.IsFalse(kind == ClrElementKind.Unknown);
@@ -1888,8 +1645,6 @@ namespace UnitTestMdr
 
                 try
                 {
-                    string[] values = null;
-                    ulong[] addrs = null;
                     string[] typeNames = index.TypeNames;
                     string[] strIds = index.StringIds;
                     IdReferences typeToFields = index.TypeFieldIds;
@@ -2233,7 +1988,6 @@ namespace UnitTestMdr
             var str1b = String.Format(CultureInfo.InvariantCulture, "{0,12:#.##}", 11.126m);
             var str1c = String.Format(CultureInfo.InvariantCulture, "{0,12:#.##}", -11.126m);
 
-            var str2a = "         0.00";
             var str2b = String.Format(CultureInfo.InvariantCulture, "{0,12:#.##}", 11.126m);
             var str2c = String.Format(CultureInfo.InvariantCulture, "{0,11:#.##}", -11.126m);
             var str2d = String.Format(CultureInfo.InvariantCulture, "{0,12:#.##}", 111m);

@@ -43,7 +43,7 @@
                 </ContextMenu>
             </Viewbox.ContextMenu>
         </Viewbox>
-        <TextBox Name="MainTextBox" Grid.Row="1" Grid.Column="0" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" Margin="0,1,1,0" VerticalContentAlignment="Center" Padding="1,0,0,0"></TextBox>
+        <Label Name="MainTextBox" Grid.Row="1" Grid.Column="0" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" Margin="0,1,1,0" VerticalContentAlignment="Center" Padding="1,0,0,0"></Label>
         <ListBox Name="AddrListBox" Grid.Row="0" Grid.Column="1" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" Margin="1,0,1,0" MouseDoubleClick="AddrListBoxDoubleClick">
             <ListBox.ItemTemplate>
                 <DataTemplate>

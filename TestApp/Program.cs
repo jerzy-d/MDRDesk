@@ -28,6 +28,8 @@ namespace TestApp
             var testClass = new TestClass(Process.GetCurrentProcess().Id);
 			testClass.Init();
 
+            TestEnumInt32[] _TestEnumInt32 = new TestEnumInt32[] { TestEnumInt32.Third, TestEnumInt32.Second, TestEnumInt32.First};
+
             Guid guid1 = Guid.NewGuid();
             var cls = (object)guid1;
 

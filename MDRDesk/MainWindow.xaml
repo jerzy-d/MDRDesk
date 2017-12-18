@@ -601,7 +601,7 @@
                     <GridView>
                         <GridViewColumn DisplayMemberBinding="{Binding Path=TotalCount}" Header="Total Count" Width="150"/>
                         <GridViewColumn DisplayMemberBinding="{Binding Path=NotRootedCount}" Header="Unrooted Count" Width="150"/>
-                        <GridViewColumn DisplayMemberBinding="{Binding Path=TypeName}" Header="Type Name" Width="150"/>
+                        <GridViewColumn DisplayMemberBinding="{Binding Path=TypeName}" Header="Type Name" Width="400"/>
                     </GridView>
                 </ListView.View>
             </ListView>

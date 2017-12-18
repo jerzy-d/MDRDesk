@@ -107,6 +107,7 @@
     <Compile Include="IndexTests.cs" />
     <Compile Include="Lou.cs" />
     <Compile Include="MapTests.cs" />
+    <Compile Include="MiscTests.cs" />
     <Compile Include="TestConfiguration.cs" />
     <Compile Include="UnitTestUtils.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
@@ -119,10 +120,6 @@
     <ProjectReference Include="..\ClrMDRUtil\ClrMDRUtil.csproj">
       <Project>{7b01ccc0-8c10-4aa1-8154-4b55160e322b}</Project>
       <Name>ClrMDRUtil</Name>
-    </ProjectReference>
-    <ProjectReference Include="..\DmpNdxQueries\DmpNdxQueries.fsproj">
-      <Project>{edc2770a-abb6-482e-a78f-a8d5d5c40d86}</Project>
-      <Name>DmpNdxQueries</Name>
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>

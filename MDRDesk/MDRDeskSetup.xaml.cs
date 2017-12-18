@@ -67,7 +67,7 @@ namespace MDRDesk
             string currentPath = txtBox.Text.Trim();
             if (!Directory.Exists(currentPath))
                 currentPath = null;
-            currentPath = GuiUtils.GetFolderPath(currentPath);
+            currentPath = GuiUtils.GetFolderPath(currentPath, null, this);
             if (Directory.Exists(currentPath))
             {
                 txtBox.Text = currentPath;
@@ -131,7 +131,7 @@ namespace MDRDesk
             }
             catch (Exception ex)
             {
-                GuiUtils.ShowError(Utils.GetExceptionErrorString(ex), this);
+                GuiUtils.ShowError(ex, this);
             }
         }
     }

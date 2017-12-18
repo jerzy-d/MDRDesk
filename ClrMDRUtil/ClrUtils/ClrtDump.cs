@@ -15,7 +15,6 @@ namespace ClrMDRIndex
 	{
         #region Fields/Properties
 
-        private string _error;
 		private readonly string _dumpPath;
 		private DataTarget _dataTarget;
 		private ClrRuntime[] _runtimes;
@@ -24,7 +23,6 @@ namespace ClrMDRIndex
 		private string[] _requiredDacs;
 		private int _curRuntimeIndex;
 
-        public string Error => _error;
 		public DataTarget DataTarget => _dataTarget;
 		public string DumpPath => _dumpPath;
 		public string DumpFileName => Path.GetFileName(_dumpPath);
@@ -39,10 +37,9 @@ namespace ClrMDRIndex
 		public ClrRuntime Runtime => _runtimes[_curRuntimeIndex];
         public ClrHeap Heap => Runtime.Heap;
 
-        private WeakReference<ClrType[]> _clrTypes;
-        public ClrType[] ClrTypes => GetClrTypes();
-        public bool AreClrTypesAvailable => HasClrTypes();
-        private ulong[] _instances;
+        //private WeakReference<ClrType[]> _clrTypes;
+        //public ClrType[] ClrTypes => GetClrTypes();
+        //public bool AreClrTypesAvailable => HasClrTypes();
 
         public long DumpSize()
         {
@@ -234,52 +231,52 @@ namespace ClrMDRIndex
 
         #region types
 
-        public ClrType[] GetClrTypes()
-        {
-            if (_instances == null) return null;
-            try
-            {
-                ClrType[] types = null;
-                if (_clrTypes == null || !_clrTypes.TryGetTarget(out types))
-                {
-                    types = new ClrType[_instances.Length];
-                    var heap = Heap;
-                    for(int i = 0, icnt = _instances.Length; i < icnt; ++i)
-                    {
-                        types[i] = heap.GetObjectType(_instances[i]);
-                    }
-                    if (_clrTypes == null)
-                        _clrTypes = new WeakReference<ClrType[]>(types);
-                    else
-                        _clrTypes.SetTarget(types);
-                }
-                return types;
-            }
-            catch (Exception ex)
-            {
-                _error = Utils.GetExceptionErrorString(ex);
-                return null;
-            }
-        }
+        //public ClrType[] GetClrTypes()
+        //{
+        //    if (_instances == null) return null;
+        //    try
+        //    {
+        //        ClrType[] types = null;
+        //        if (_clrTypes == null || !_clrTypes.TryGetTarget(out types))
+        //        {
+        //            types = new ClrType[_instances.Length];
+        //            var heap = Heap;
+        //            for(int i = 0, icnt = _instances.Length; i < icnt; ++i)
+        //            {
+        //                types[i] = heap.GetObjectType(_instances[i]);
+        //            }
+        //            if (_clrTypes == null)
+        //                _clrTypes = new WeakReference<ClrType[]>(types);
+        //            else
+        //                _clrTypes.SetTarget(types);
+        //        }
+        //        return types;
+        //    }
+        //    catch (Exception ex)
+        //    {
+        //        _error = Utils.GetExceptionErrorString(ex);
+        //        return null;
+        //    }
+        //}
 
-        public bool HasClrTypes()
-        {
-            if (_instances == null) return false;
-            try
-            {
-                ClrType[] types = null;
-                if (_clrTypes != null && _clrTypes.TryGetTarget(out types))
-                {
-                    return true;
-                }
-                return false;
-            }
-            catch (Exception ex)
-            {
-                _error = Utils.GetExceptionErrorString(ex);
-                return false;
-            }
-        }
+        //public bool HasClrTypes()
+        //{
+        //    if (_instances == null) return false;
+        //    try
+        //    {
+        //        ClrType[] types = null;
+        //        if (_clrTypes != null && _clrTypes.TryGetTarget(out types))
+        //        {
+        //            return true;
+        //        }
+        //        return false;
+        //    }
+        //    catch (Exception ex)
+        //    {
+        //        _error = Utils.GetExceptionErrorString(ex);
+        //        return false;
+        //    }
+        //}
 
         #endregion types
 
@@ -588,7 +585,7 @@ namespace ClrMDRIndex
 
 					if (fldType.IsPrimitive)
 					{
-						var value = ValueExtractor.GetPrimitiveValue(fldObj, fldType.ElementType);
+						var value = ValueExtractor.PrimitiveValueAsString(fldObj, fldType.ElementType);
 						var sz = (ulong)ValueExtractor.GetPrimitiveValueSize(fldType.ElementType);
 						totSize += sz;
 						var node = new InstanceSizeNode(nodeId++, fldTypeName, fld.ElementType, fldName, value, sz);

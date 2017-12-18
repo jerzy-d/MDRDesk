@@ -95,6 +95,7 @@
     <Compile Include="Address.cs" />
     <Compile Include="a_Constants.cs" />
     <Compile Include="b_Setup.cs" />
+    <Compile Include="ClrUtils\BitSet.cs" />
     <Compile Include="ClrUtils\ClrtAppDomain.cs" />
     <Compile Include="ClrUtils\ClrtBlkObject.cs" />
     <Compile Include="ClrUtils\ClrtDisplayableType.cs" />
@@ -115,9 +116,10 @@
     <Compile Include="ClrUtils\References.cs" />
     <Compile Include="ClrUtils\StringStats.cs" />
     <Compile Include="ClrUtils\TypeInterfaces.cs" />
+    <Compile Include="CollectionContent.cs" />
     <Compile Include="Graph\Circuits.cs" />
-    <Compile Include="Graph\Cycle.cs" />
     <Compile Include="Graph\DGraph.cs" />
+    <Compile Include="Graph\DisjointSubsets.cs" />
     <Compile Include="Graph\ThreadBlockGraph.cs" />
     <Compile Include="MdrException.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />

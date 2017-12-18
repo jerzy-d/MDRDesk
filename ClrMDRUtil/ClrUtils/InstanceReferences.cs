@@ -63,7 +63,8 @@ namespace ClrMDRIndex
         Stopwatch _stopWatch;
         IProgress<string> _progress;
         string _instanceFilePath;
-        HashSet<int> _reflagSet;
+        BitSet _reflagSet;
+        //HashSet<int> _reflagSet;
 
         #endregion building fields
 
@@ -399,8 +400,8 @@ namespace ClrMDRIndex
             error = null;
             int nullCount = 0;
             BinaryWriter bwFwdRefs = null, bwFwdOffs = null;
-            _reflagSet = new HashSet<int>();
-
+            _reflagSet = new BitSet(_instances.Length);
+            //_reflagSet = new HashSet<int>();
             try
             {
                 _stopWatch = new Stopwatch();
@@ -446,7 +447,8 @@ namespace ClrMDRIndex
                         Debug.Assert(childNdx >= 0);
                         if (copy_addr_flags_check(_instances, parentNdx, childNdx))
                         {
-                            _reflagSet.Add(childNdx);
+                            _reflagSet.Set(childNdx);
+                            //_reflagSet.Add(childNdx);
                         }
                         _reversedRefsCounts[childNdx] += 1; // update reversed references count
                         ++_totalReversedRefs;
@@ -506,7 +508,8 @@ namespace ClrMDRIndex
                         if (copy_addr_flags_check(_instances, i, childNdx))
                         {
                             if (_forwardRefsCounts[childNdx] > 0)
-                                _reflagSet.Add(childNdx);
+                                _reflagSet.Set(childNdx);
+                                //_reflagSet.Add(childNdx);
                         }
 
                         int childRefCount = _reversedRefsCounts[childNdx];
@@ -551,9 +554,11 @@ namespace ClrMDRIndex
                 if (_reflagSet.Count > 0)
                 {
                     _progress?.Report(progressHeader + "Start of reflagging, count: " + Utils.CountString(_reflagSet.Count));
-                    var ary = new int[_reflagSet.Count];
-                    _reflagSet.CopyTo(ary);
-                    Array.Sort(ary);
+                    var ary = _reflagSet.GetSetBitIndices();
+                    //var ary = new int[_reflagSet.Count];
+                    //_reflagSet.CopyTo(ary);
+                    Debug.Assert(Utils.IsSorted(ary));
+                    //Array.Sort(ary);
                     IntSterta bh = new IntSterta(ary.Length + 8, ary); // transfer reflag items to the binary heap, data is sorted so heap constraints are met
                     ary = null;
                     Utils.ForceGcWithCompaction();
@@ -570,7 +575,8 @@ namespace ClrMDRIndex
                     while (bh.Count > 0)
                     {
                         int ndx = bh.Pop();
-                        _reflagSet.Remove(ndx); // keep in this set values which are in the binary heap
+                        _reflagSet.Unset(ndx);
+                        //_reflagSet.Remove(ndx);
                         int cnt = _forwardRefsCounts[ndx];
                         if (cnt < 1) continue; // this should not happen
                         intBuf = CheckBufferSize(intBuf, cnt);
@@ -580,7 +586,8 @@ namespace ClrMDRIndex
                         {
                             int childNdx = intBuf[i];
                             bool check = copy_addr_flags_check(_instances, ndx, childNdx);
-                            if (check && _forwardRefsCounts[childNdx] > 0 && _reflagSet.Add(childNdx))
+                            if (check && _forwardRefsCounts[childNdx] > 0 && _reflagSet.Set(childNdx))
+                            //if (check && _forwardRefsCounts[childNdx] > 0 && _reflagSet.Add(childNdx))
                                 bh.Push(childNdx); // need to revisit this instance
                         }
                     }
@@ -675,10 +682,6 @@ namespace ClrMDRIndex
 
         bool copy_addr_flags_check(ulong[] ary, int from, int to)
         {
-            if ((ary[from] & Utils.RootBits.Mask) > 0)
-            {
-                int a = 1;
-            }
             ulong fromValFlg = (ary[from] & Utils.RootBits.Mask) & Utils.RootBits.NotRootMask;
             if (fromValFlg == 0UL) return false;
             ulong toVal = ary[to];

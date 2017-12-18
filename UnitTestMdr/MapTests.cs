@@ -11,7 +11,7 @@ using System.Text;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using ClrMDRIndex;
 using Microsoft.Diagnostics.Runtime;
-using DmpNdxQueries;
+
 
 namespace UnitTestMdr
 {
@@ -248,166 +248,6 @@ namespace UnitTestMdr
 		#endregion instance sizes
 
 		[TestMethod]
-		public void TestBuildTestUnitIssues()
-		{
-			const string typeName = @"Microsoft.VisualStudio.TestTools.TestTypes.Unit.UnitTestResult";
-			string error = null;
-			//var map = OpenMap(@"D:\Jerzy\WinDbgStuff\Dumps\DumpTest\DumpTest.exe_160820_073947.map");
-			//var map = OpenMap(@"D:\Jerzy\WinDbgStuff\dumps\Analytics\Memory.Usage.OPAM.971\DupCacheIssue\A2_noDF.map");
-			var map = OpenMap(@"D:\Jerzy\WinDbgStuff\dumps\mainlinebuildissue\LouDump.map");
-			using (map)
-			{
-				int typeId = map.GetTypeId(typeName);
-				ulong[] typeAddresses = map.GetTypeRealAddresses(typeId);
-				var heap = map.GetFreshHeap();
-				ClrType clrType = null;
-				ClrInstanceField m_timerResults = null;
-				List<ulong> lst = new List<ulong>();
-
-				for (int i = 0, icnt = typeAddresses.Length; i < icnt; ++i)
-				{
-					if (clrType == null)
-					{
-						clrType = heap.GetObjectType(typeAddresses[i]);
-						if (clrType != null)
-						{
-							m_timerResults = clrType.GetFieldByName("m_timerResults");
-							break;
-						}
-					}
-				}
-
-
-				for (int i = 0, icnt = typeAddresses.Length; i < icnt; ++i)
-				{
-					ulong address = SpecializedQueries.getAddressFromField(typeAddresses[i], m_timerResults, false);
-					if (address == Constants.InvalidAddress)
-						lst.Add(typeAddresses[i]);
-				}
-			}
-			Assert.IsNull(error, error);
-		}
-
-		#region Specialized Queries
-
-
-		//[TestMethod]
-		//public void TestWeakReferenceFields()
-		//{
-		//	string error;
-		//	ulong address = 0x0000008000c0d8;
-		//	var map =
-		//		OpenMap(@"D:\Jerzy\WinDbgStuff\dumps\Analytics\Memory.Usage.OPAM.971\Eze.Analytics.Svc.exe.EzeBitVector.PadOff.map");
-		//	Assert.IsNotNull(map);
-		//	List<string> errors = new List<string>();
-		//	using (map)
-		//	{
-		//		int totalCount;
-		//		KeyValuePair<int, ulong[]>[] prefaddresses = map.GetTypeWithPrefixAddresses("System.WeakReference", false,
-		//			out totalCount);
-
-		//		int typeId = map.GetTypeId("System.WeakReference");
-		//		ulong[] addresses = map.GetTypeRealAddresses(typeId);
-
-		//		var heap = map.GetFreshHeap();
-		//		ClrType weakReferenceType = heap.GetObjectType(address); // System.WeakReference
-		//		ClrInstanceField m_handleField = weakReferenceType.Fields[0];
-		//		object m_handleValue = m_handleField.GetValue(address, false, false);
-		//		ClrType m_handleType = m_handleField.Type; //  System.IntPtr
-		//		ClrInstanceField m_valueField = m_handleType.Fields[0];
-		//		ulong m_valueValue = (ulong) m_valueField.GetValue((ulong) (long) m_handleValue, true, false);
-		//		ClrType eeferencedType = heap.GetObjectType(m_valueValue); // type this WeakReference points to
-
-		//		//ulong[] addrTest = new[] {address};
-		//		var result = DmpNdxQueries.SpecializedQueries.getWeakReferenceInfos(heap, addresses, m_handleField, m_valueField);
-		//		if (result.Item1 != null)
-		//		{
-		//			Assert.IsTrue(false, result.Item1);
-		//		}
-
-
-
-		//		string repPath = map.AdhocFolder + @"\WeakReferenceObjects.txt";
-		//		StreamWriter sw = null;
-		//		try
-		//		{
-		//			sw = new StreamWriter(repPath);
-		//			var infos = result.Item2;
-		//			Array.Sort(infos, new Utils.TripleUlUlStrByStrUl2Cmp());
-
-		//			sw.WriteLine("### MDRDESK REPORT: WeakReference");
-		//			sw.WriteLine("### TITLE: WeakReference");
-		//			sw.WriteLine("### COUNT: " + Utils.LargeNumberString(infos.Length));
-		//			sw.WriteLine("### COLUMNS: Address|ulong \u271A Object Address|string \u271A Object Type|string");
-		//			sw.WriteLine("### SEPARATOR:  \u271A ");
-		//			sw.WriteLine("#### WeakReference count: " + Utils.LargeNumberString(infos.Length));
-
-		//			sw.WriteLine("#### Total WeakReference instance count: " + infos.Length);
-		//			sw.WriteLine("#### Clumns: address of WeakReference, address of type pointed to, type name");
-		//			sw.WriteLine("####");
-		//			for (int i = 0, icnt = infos.Length; i < icnt; ++i)
-		//			{
-		//				sw.Write(Utils.AddressStringHeader(infos[i].First) + Constants.HeavyGreekCrossPadded);
-		//				sw.Write(Utils.AddressStringHeader(infos[i].Second) + Constants.HeavyGreekCrossPadded);
-		//				sw.WriteLine(infos[i].Third);
-		//			}
-		//		}
-		//		catch (Exception ex)
-		//		{
-		//			Assert.IsTrue(false, ex.ToString());
-		//		}
-		//		finally
-		//		{
-		//			sw?.Close();
-		//		}
-
-		//	}
-
-		//	//Assert.IsNull(error, error);
-		//}
-
-
-
-
-
-
-		[TestMethod]
-		public void TestMisc()
-		{
-			System.Collections.Generic.Dictionary<System.String, System.Collections.Generic.IList<System.String>> dct =
-				new Dictionary<string, IList<string>>();
-			var tp = dct.GetType();
-			var niceName = DmpNdxQueries.Types.NiceTypeName(tp);
-
-			string s = "aaabbb";
-			var pos = s.IndexOf('`');
-			var s2 = s.Substring(0, pos);
-
-		}
-
-		//[TestMethod]
-		//public void TestConcurrentDictionaryContent()
-		//{
-		//	var sbTypeName =
-		//		@"System.Collections.Concurrent.ConcurrentDictionary<System.String,System.Collections.Generic.KeyValuePair<System.String,System.String>>";
-		//	var map = OpenMap(@"D:\Jerzy\WinDbgStuff\dumps\TestApp\TestApp.exe_160928_083345.map");
-		//	bool found = false;
-		//	using (map)
-		//	{
-		//		var typeId = map.GetTypeId(sbTypeName);
-		//		Assert.IsFalse(typeId == Constants.InvalidIndex);
-		//		ulong[] typeAddresses = map.GetTypeRealAddresses(typeId);
-		//		Assert.IsTrue(typeAddresses != null && typeAddresses.Length > 0);
-		//		for (int i = 0, icnt = typeAddresses.Length; i < icnt; ++i)
-		//		{
-		//			SpecializedQueries.getConcurrentDictionaryContent(map.GetFreshHeap(), typeAddresses[i]);
-		//		}
-		//	}
-		//}
-
-		#endregion Specialized Queries
-
-		[TestMethod]
 		public void TestTypeNamespaceDisplay()
 		{
 			using (var map = OpenMap(@"D:\Jerzy\WinDbgStuff\Dumps\DumpTest\DumpTest.exe_160820_073947.map"))
@@ -415,107 +255,6 @@ namespace UnitTestMdr
 				var dispInfo = map.GetNamespaceDisplay();
 			}
 		}
-
-
-		//[TestMethod]
-		//public void TestDictionaries()
-		//{
-		//	using (var map = OpenMap(@"D:\Jerzy\WinDbgStuff\dumps\Analytics\Lou\Eze.Analytics.App_161018_173251.map"))
-		//	{
-
-		//		var typeName = "System.Collections.Generic.Dictionary<System.String,System.Object>";
-		//		var typeId = map.GetTypeId(typeName);
-		//		ulong[] addresses = map.GetTypeRealAddresses(typeId);
-		//		int[] counts = new int[addresses.Length];
-		//		var heap = map.GetFreshHeap();
-		//		for (int i = 0, icnt = addresses.Length; i < icnt; ++i)
-		//		{
-		//			var result = CollectionContent.getDictionaryCount(heap, addresses[i]);
-		//			counts[i] = result.Item2;
-		//		}
-		//		Array.Sort(counts, addresses);
-		//		List<string> keyLst = new List<string>();
-		//		for (int i = addresses.Length - 4; i > 0; --i)
-		//		{
-		//			if (counts[i] < 1) break;
-		//			var eresult = CollectionContent.getDictionaryEntries(heap, addresses[i]);
-		//			var keys = CollectionContent.getDictionaryStringKeys(heap, eresult.Item2, eresult.Item3);
-
-		//			string str = string.Join(Constants.HeavyGreekCrossPadded, keys);
-		//			keyLst.Add(str);
-		//		}
-
-		//		keyLst.Sort();
-
-
-		//		List<string[]> keyAry = new List<string[]>();
-		//		for (int i = addresses.Length - 1, icnt = addresses.Length - 4; i > icnt; --i)
-		//		{
-		//			if (counts[i] < 1) break;
-		//			var eresult = CollectionContent.getDictionaryEntries(heap, addresses[i]);
-		//			var keys = CollectionContent.getDictionaryStringKeys(heap, eresult.Item2, eresult.Item3);
-		//			keyAry.Add(keys);
-		//		}
-
-		//	}
-		//}
-
-
-		//[TestMethod]
-		//public void TestDictionaryEntries()
-		//{
-		//	using (var map = OpenMap(@"D:\Jerzy\WinDbgStuff\dumps\Analytics\Lou\Eze.Analytics.App_161018_173251.map"))
-		//	{
-
-		//		var typeName = "System.Collections.Generic.Dictionary+Entry<System.String,System.Object>[]";
-		//		var typeId = map.GetTypeId(typeName);
-		//		ulong[] addresses = map.GetTypeRealAddresses(typeId);
-		//		int[] counts = new int[addresses.Length];
-		//		var heap = map.GetFreshHeap();
-		//		var keyLst = new List<KeyValuePair<ulong, string[]>>();
-		//		var specKeysLst = new List<KeyValuePair<ulong, string[]>>();
-		//		var specKeyAddresses = new List<ulong>();
-		//		for (int i = 0, icnt = addresses.Length; i < icnt; ++i)
-		//		{
-		//			var keys = CollectionContent.getEntryStringKeys(heap, addresses[i]);
-		//			keyLst.Add(new KeyValuePair<ulong, string[]>(addresses[i], keys));
-		//			for (int j = 0; j < 5 && j < keys.Length; ++j)
-		//			{
-		//				if (keys[j] == "1")
-		//				{
-		//					specKeysLst.Add(new KeyValuePair<ulong, string[]>(addresses[i], keys));
-		//					specKeyAddresses.Add(addresses[i]);
-		//					break;
-		//				}
-		//			}
-		//		}
-		//		var keyAry = keyLst.ToArray();
-		//		keyLst = null;
-		//		var specKeyAry = specKeysLst.ToArray();
-		//		specKeysLst = null;
-
-		//		var specKeyAryAddr = specKeyAddresses.ToArray();
-
-		//		Array.Sort(keyAry, (a, b) => a.Value.Length < b.Value.Length ? 1 : (a.Value.Length > b.Value.Length ? -1 : 0));
-		//		Array.Sort(specKeyAry, (a, b) => a.Value.Length < b.Value.Length ? 1 : (a.Value.Length > b.Value.Length ? -1 : 0));
-
-		//		var hist1 = map.GetGenerationHistogram(addresses);
-		//		var hist2 = map.GetGenerationHistogram(specKeyAryAddr);
-
-		//		string error;
-
-		//		//HashSet<ulong> parents = new HashSet<ulong>();
-		//		//for (int i = 0, icnt = specKeyAryAddr.Length; i < icnt; ++i)
-		//		//{
-		//		//	var pars = map.GetReferences(specKeyAryAddr[i], out error);
-		//		//	for (int j = 0, jcnt = pars.Length; j < jcnt; ++j)
-		//		//	{
-		//		//		parents.Add(pars[j].Key);
-		//		//	}
-		//		//}
-
-		//	}
-		//}
 
 		[TestMethod]
 		public void TestDumpTypeFields()
@@ -587,165 +326,6 @@ namespace UnitTestMdr
 
 			//Assert.IsNull(error, error);
 		}
-
-		//[TestMethod]
-		////public void TestParentGraph()
-		////{
-		////	string error;
-		//	var map = OpenMap0();
-
-		//	const ulong addr = 0x000000a1d518e230;
-
-		//	var result = map.GetParentReferences(addr,out error);
-		//	Assert.IsNull(error,error);
-
-		//	string name1 = map.GetTypeNameAtAddr(addr);
-		//	int typeId = map.GetInstanceIdAtAddr(addr);
-		//	string name2 = map.GetTypeName(typeId);
-		//	Assert.IsTrue(name1 == name2);
-		//}
-
-		//[TestMethod]
-		//public void TestRoots()
-		//{
-		//    ulong addr = 0x000000800f5a10;
-		//    string error;
-		//    var map = OpenMap(@"C:\WinDbgStuff\Dumps\Analytics\AnalyticsMemory\Eze.Analytics.O971_160722_152115.FC.4300MB.map");
-		//    var heap = map.GetFreshHeap();
-		//    var clrType = heap.GetObjectType(addr);
-		//}
-
-		//      [TestMethod]
-		//public void TestMultipleParentGraphs()
-		//{
-		//	string error;
-		//	//const string typeName = "System.Threading.ReaderWriterLock";
-		//	const string typeName = "System.Threading.CancellationTokenRegistration[]";
-
-		//	var map = OpenMap0();
-		//	StreamWriter wr = null;
-		//	//BinaryWriter bw = null;
-		//	try
-		//	{
-		//		var id = map.GetTypeId(typeName);
-		//		Assert.IsFalse(IndexValue.IsInvalidIndex(id));
-		//		Assert.IsTrue(IndexValue.IsIndex(id));
-
-		//		var addresses = map.GetTypeRealAddresses(id);
-		//		var icnt = addresses.Length; //Math.Min(addresses.Length, 10);
-		//		var resultLst = new List<KeyValuePair<ulong, string>[]>(addresses.Length);
-		//		var orphans = new List<ulong>(256);
-		//		var parented = new List<ulong>(256);
-		//		var strCache = new StringCache(5000);
-		//		var lst = new List<InstanceTypeNode>(64);
-		//		var que = new Queue<InstanceTypeNode>();
-
-		//		for (int i = 0; i < icnt; ++i)
-		//		{
-		//			var result = map.GetParentReferences(addresses[i], out error, 1);
-		//			que.Clear();
-		//			lst.Clear();
-		//			result.GetNodeList(que,lst,false);
-		//			if (lst.Count < 1)
-		//			{
-		//				orphans.Add(addresses[i]);
-		//				continue;
-		//			}
-		//			parented.Add(addresses[i]);
-		//			var ary = new KeyValuePair<ulong, string>[lst.Count];
-		//			for (int j = 0, jcnt = lst.Count; j < jcnt; ++j)
-		//			{
-		//				ary[j] = new KeyValuePair<ulong, string>(lst[j].Address,lst[j].TypeName);
-		//			}
-		//			Array.Sort(ary, (a, b) =>
-		//			{
-		//				var cmp = string.Compare(a.Value, b.Value,StringComparison.Ordinal);
-		//				if (cmp == 0) return a.Key < b.Key ? -1 : (a.Key > b.Key ? 1 : 0);
-		//				return cmp;
-		//			});
-		//			resultLst.Add(ary);
-		//		}
-
-		//		List<ClrtRoot> rootLst = new List<ClrtRoot>();
-		//		for (int i = 0; i < icnt; ++i)
-		//		{
-		//			ClrtRoot info;
-		//			bool inFinilizerQueue;
-		//			if (map.GetRootInfo(addresses[i], out info, out inFinilizerQueue))
-		//			{
-		//				rootLst.Add(info);
-		//			}
-		//		}
-
-
-
-		//		var results = resultLst.ToArray();
-		//		Array.Sort(results, (a, b) => string.Compare(a[0].Value,b[0].Value,StringComparison.Ordinal) );
-		//		icnt = results.Length;
-		//		orphans.Sort();
-		//		wr = new StreamWriter(TestConfiguration.OutPath0 + typeName + ".PARENTS.txt");
-
-		//		wr.WriteLine("###");
-		//		wr.WriteLine("### " + typeName + " ... total count: " + (results.Length + orphans.Count));
-		//		wr.WriteLine("### with parents ... count: " + results.Length + ", 1st level parents only");
-		//		wr.WriteLine("### [instance address] -> ([parent address] parent name)+");
-
-		//		for (int i = 0; i < icnt; ++i)
-		//		{
-		//			wr.Write("[" + Utils.AddressString(addresses[i]) + "] -> ");
-		//			if (results[i].Length < 0)
-		//			{
-		//				wr.WriteLine();
-		//				continue;
-		//			}
-		//			for (int j = 0, jcnt = results[i].Length; j < jcnt; ++j)
-		//			{
-		//				var res = results[i];
-		//				wr.Write("[" + Utils.AddressString(res[j].Key) + "] " + res[j].Value + " ");
-		//			}
-		//			wr.WriteLine();
-		//		}
-
-		//		wr.WriteLine("###");
-		//		wr.WriteLine("### ORPHANS ... count: " + orphans.Count);
-		//		wr.WriteLine("### instance addresses");
-
-		//		icnt = orphans.Count;
-		//		for (int i = 0; i < icnt; ++i)
-		//		{
-		//			if (i > 0 && (i%6)==0)
-		//				wr.WriteLine();
-		//			wr.Write(Utils.AddressString(orphans[i]) + ", ");
-		//		}
-		//		wr.WriteLine();
-		//		wr.Close();
-		//		wr = null;
-
-		//		var writeResult = Utils.WriteUlongArray(TestConfiguration.OutPath0 + typeName + ".ORPHANS.map", orphans, out error);
-		//		Assert.IsTrue(writeResult,error);
-		//		writeResult = Utils.WriteUlongArray(TestConfiguration.OutPath0 + typeName + ".PARENTED.map", parented, out error);
-		//		Assert.IsTrue(writeResult, error);
-
-		//		//bw = new BinaryWriter(File.Open(TestConfiguration.OutPath0 + typeName + ".ORPHANS.map", FileMode.Create));
-		//		//bw.Write(orphans.Count);
-		//		//for (int i = 0; i < icnt; ++i)
-		//		//{
-		//		//	bw.Write(orphans[i]);
-		//		//}
-		//		//bw.Close();
-		//		//bw = null;
-		//	}
-		//	catch (Exception ex)
-		//	{
-		//		Assert.Fail(Utils.GetExceptionErrorString(ex));
-		//	}
-		//	finally
-		//	{
-		//		wr?.Close();
-		//	}
-
-		//}
-
 
 		#region Types
 
@@ -972,59 +552,6 @@ namespace UnitTestMdr
 
 		#endregion Instance References
 
-
-		//[TestMethod]
-		//public void TestFindInstanceParent()
-		//{
-		//	const string typeName = "System.EventHandler";
-		//	string[] typePrefixes = new string[] { "ECS.", "Eze." };
-		//	string error = null;
-		//	Queue<InstanceTypeNode> que = new Queue<InstanceTypeNode>();
-		//	List<InstanceTypeNode> lst = new List<InstanceTypeNode>(32);
-		//	SortedDictionary<string, List<ulong>> dct = new SortedDictionary<string, List<ulong>>();
-
-		//	using (var map = OpenMap(@"D:\Jerzy\WinDbgStuff\dumps\OMS\AustralianSuper\EzeOMSFrozen07272016.map"))
-		//	{
-		//		try
-		//		{
-
-		//			var id = map.GetTypeId(typeName);
-		//			Assert.IsTrue(IndexValue.IsIndex(id));
-		//			Assert.IsFalse(IndexValue.IsInvalidIndex(id));
-		//			var addresses = map.GetTypeRealAddresses(id);
-		//			for (int i = 0, icnt = addresses.Length; i < icnt; ++i)
-		//			{
-		//				lst.Clear();
-		//				que.Clear();
-		//				var addr = addresses[i];
-		//				var node = map.GetParentReferences(addr, out error, 3);
-		//				node.GetNodeList(que, lst, false);
-		//				for (int j = 0, jcnt = lst.Count; j < jcnt; ++j)
-		//				{
-		//					if (Utils.StartsWithPrefix(lst[j].TypeName, typePrefixes))
-		//					{
-		//						List<ulong> alst;
-		//						if (dct.TryGetValue(lst[j].TypeName, out alst))
-		//						{
-		//							alst.Add(lst[j].Address);
-		//						}
-		//						else
-		//						{
-		//							dct.Add(lst[j].TypeName,new List<ulong>() { lst[j].Address });
-		//						}
-		//					}
-		//				}
-
-		//			}
-		//		}
-		//		catch (Exception ex)
-		//		{
-		//			error = Utils.GetExceptionErrorString(ex);
-		//			Assert.IsTrue(false, error);
-		//		}
-		//	}
-		//}
-
 		[TestMethod]
 		public void TestTypeParents()
 		{
@@ -1068,43 +595,6 @@ namespace UnitTestMdr
 			var addresses = map.GetTypeRealAddresses(id);
 			Assert.IsNotNull(addresses, "Map.GetTypeRealAddresses returned null.");
 		}
-
-
-		//[TestMethod]
-		//public void TestFilteredTypeParents()
-		//{
-		//	//const string typeName = "System.Threading.CancellationTokenRegistration[]";
-		//	string typeName = "System.String";
-		//	string content = "Caption";
-		//	var map = OpenMap(@"C:\WinDbgStuff\Dumps\DumpSearch\DumpSearch.exe_160813_062931.map");
-
-		//	var id = map.GetTypeId(typeName);
-		//	string name = map.GetTypeName(id);
-
-		//	Assert.IsTrue(IndexValue.IsIndex(id));
-		//	Assert.IsFalse(IndexValue.IsInvalidIndex(id));
-
-		//	var addresses = map.GetTypeRealAddresses(id);
-		//	Assert.IsNotNull(addresses, "Map.GetTypeRealAddresses returned null.");
-		//	string error;
-		//	List<ulong> addrLst = new List<ulong>(1024);
-		//	List<InstanceTypeNode> nodeLst = new List<InstanceTypeNode>(1024);
-		//	var heap = map.Dump.Runtime.Heap;
-
-		//	for (int i = 0, icnt = addresses.Length; i < icnt;  ++i)
-		//	{
-		//		var addr = addresses[i];
-		//		ClrType clrType = heap.GetObjectType(addresses[i]);
-		//		if (clrType == null) continue;
-		//		var str = ValueExtractor.GetStringAtAddress(addr, heap);
-		//		if (str == content)
-		//		{
-		//			addrLst.Add(addr);
-		//			var node = map.GetParentReferences(addr, out error, 3);
-		//			nodeLst.Add(node);
-		//		}
-		//	}
-		//}
 
 		[TestMethod]
 		public void TestGetTypeGroupedContent()
@@ -1257,284 +747,6 @@ namespace UnitTestMdr
 			}
 		}
 
-		//[TestMethod]
-		//public void TestDictionaryCounts()
-		//{
-		//	const string typeName0 = "System.Decimal";
-		//	const string typeName1 = "System.Collections.Generic.Dictionary+Entry<System.String,System.Object>[]";
-		//	const string typeName2 = "System.Collections.Generic.Dictionary<System.String,System.Object>";
-
-		//	string error = null;
-		//	SortedDictionary<string, int> dct = new SortedDictionary<string, int>(StringComparer.Ordinal);
-		//	int nullFieldCount = 0;
-		//	StringBuilder sb = new StringBuilder(256);
-		//	using (var index = OpenMap(@"D:\Jerzy\WinDbgStuff\dumps\Analytics\Lou\Analytics1.dmp.map"))
-		//	{
-		//		try
-		//		{
-		//			int typeId0 = index.GetTypeId(typeName0);
-		//			int typeId1 = index.GetTypeId(typeName1);
-		//			int typeId2 = index.GetTypeId(typeName2);
-
-		//			var instNdxs = index.GetTypeInstanceIndices(typeId0);
-		//			KeyValuePair<IndexNode, int>[] parentTree = index.GetParentReferences(instNdxs, out error, 3);
-
-		//			int notRootedCount = 0;
-		//			var set = new HashSet<ulong>();
-		//			for (int i = 0, icnt = parentTree.Length; i < icnt; ++i)
-		//			{
-		//				var node = parentTree[i].Key;
-		//				if (node.Nodes.Length < 1)
-		//				{
-		//					++notRootedCount;
-		//					continue;
-		//				}
-		//				for (int j = 0, jcnt = node.Nodes.Length; j < jcnt; ++j)
-		//				{
-		//					int typeId = index.GetTypeId(node.Nodes[j].Index);
-		//					if (typeId == typeId1)
-		//					{
-		//						var nodes = node.Nodes[j].Nodes;
-		//						for (int k = 0, kcnt = nodes.Length; k < kcnt; ++k)
-		//						{
-		//							int tpId = index.GetTypeId(nodes[k].Index);
-		//							if (tpId == typeId2)
-		//							{
-		//								var addr = index.GetInstanceAddress(nodes[k].Index);
-		//								set.Add(Utils.RealAddress(addr));
-		//							}
-		//						}
-		//					}
-		//				}
-		//			}
-
-		//			ulong[] addresses = set.ToArray();
-		//			Array.Sort(addresses);
-		//			var heap = index.GetFreshHeap();
-
-		//			int maxCount = 0;
-		//			int minCount = Int32.MaxValue;
-		//			int emptyCount = 0;
-		//			long countSum = 0L;
-
-		//			for (int i = 0, icnt = addresses.Length; i < icnt; ++i)
-		//			{
-		//				var result = CollectionContent.getDictionaryCount(heap, addresses[i]);
-		//				var count = result.Item2;
-		//				if (count > maxCount) maxCount = count;
-		//				if (count < minCount) minCount = count;
-		//				countSum += count;
-		//			}
-
-		//			double avgCount = (double) countSum/addresses.Length;
-
-		//			int a = 0;
-
-		//			//StreamWriter sw = null;
-		//			//try
-		//			//{
-
-		//			//	sw = new StreamWriter(index.AdhocFolder + Path.DirectorySeparatorChar + "EzeBitVector.txt");
-		//			//	sw.WriteLine("#### Total EzeBitVector Instance Count: " + Utils.SizeString(addresses.Length));
-		//			//	sw.WriteLine("#### Total EzeBitVector Unique Count: " + Utils.SizeString(dct.Count));
-		//			//	sw.WriteLine("#### Columns: duplicate count, ulong[] size, vector content");
-		//			//	foreach (var kv in dct)
-		//			//	{
-		//			//		var pos = kv.Key.IndexOf('_');
-		//			//		int aryCount = Int32.Parse(kv.Key.Substring(0, pos));
-		//			//		sw.WriteLine(Utils.CountStringHeader(kv.Value) + Utils.CountStringHeader(aryCount) + kv.Key.Substring(pos + 1));
-		//			//	}
-
-		//			//}
-		//			//catch (Exception ex)
-		//			//{
-		//			//	Assert.IsTrue(false, ex.ToString());
-		//			//}
-		//			//finally { sw?.Close(); }
-
-		//		}
-		//		catch (Exception ex)
-		//		{
-		//			Assert.IsTrue(false, ex.ToString());
-		//		}
-		//	}
-		//}
-
-
-		//[TestMethod]
-		//public void TestDictionaryCounts2()
-		//{
-		//	const string typeName0 = "ECS.Common.HierarchyCache.Structure.PositionIndexGroup";
-		//	SortedDictionary<string, int> dct = new SortedDictionary<string, int>(StringComparer.Ordinal);
-		//	int recalcRequiredPoisonPositionsIfTtzSignChangesEmpty = 0;
-		//	int recalcRequiredPositionsInducingRecalcEmpty = 0;
-
-		//	StringBuilder sb = new StringBuilder(256);
-		//	using (var index = OpenMap(@"D:\Jerzy\WinDbgStuff\dumps\Analytics\Lou\Analytics3.dmp.map"))
-		//	{
-		//		try
-		//		{
-		//			int typeId0 = index.GetTypeId(typeName0);
-		//			var addresses = index.GetTypeRealAddresses(typeId0);
-		//			var heap = index.GetFreshHeap();
-		//			int clrTypeNullCount = 0;
-		//			for (int i = 0, icnt = addresses.Length; i < icnt; ++i)
-		//			{
-		//				var clrType = heap.GetObjectType(addresses[i]);
-		//				if (clrType == null)
-		//				{
-		//					++clrTypeNullCount;
-		//					continue;
-		//				}
-
-		//				var addr = addresses[i];
-		//				var fld1 = clrType.GetFieldByName("recalcRequiredPoisonPositionsIfTtzSignChanges");
-		//				var addr1 = Auxiliaries.getReferenceFieldAddress(addr, fld1, false);
-		//				var fld2 = clrType.GetFieldByName("recalcRequiredPositionsInducingRecalc");
-		//				var addr2 = Auxiliaries.getReferenceFieldAddress(addr, fld2, false);
-		//				int cnt1 = 0;
-		//				if (addr1 != Constants.InvalidAddress)
-		//				{
-		//					cnt1 = CollectionContent.getDictionaryCount(heap, addr1).Item2;
-		//					if (cnt1 == 0)
-		//						++recalcRequiredPoisonPositionsIfTtzSignChangesEmpty;
-		//				}
-		//				int cnt2 = 0;
-		//				if (addr2 != Constants.InvalidAddress)
-		//				{
-		//					cnt2 = CollectionContent.getDictionaryCount(heap, addr2).Item2;
-		//					if (cnt2 == 0)
-		//						++recalcRequiredPositionsInducingRecalcEmpty;
-		//				}
-
-		//			}
-
-
-		//		}
-		//		catch (Exception ex)
-		//		{
-		//			Assert.IsTrue(false, ex.ToString());
-		//		}
-		//	}
-		//}
-
-		//[TestMethod]
-		//public void TestDictionaryCounts3()
-		//{
-		//	const string typeName0 = "ECS.Common.HierarchyCache.Structure.AggregationTracksClosedPositions";
-
-		//	string error = null;
-		//	SortedDictionary<string, int> dct = new SortedDictionary<string, int>(StringComparer.Ordinal);
-		//	int nullFieldCount = 0;
-		//	int recalcRequiredPoisonPositionsIfTtzSignChangesEmpty = 0;
-		//	int recalcRequiredPositionsInducingRecalcEmpty = 0;
-
-		//	StringBuilder sb = new StringBuilder(256);
-		//	using (var index = OpenMap(@"C:\WinDbgStuff\dumps\Analytics\Lou\Analytics3.dmp.map"))
-		//	{
-		//		try
-		//		{
-		//			int typeId0 = index.GetTypeId(typeName0);
-		//			var addresses = index.GetTypeRealAddresses(typeId0);
-		//			var heap = index.GetFreshHeap();
-		//			int dupCount = 0;
-		//			int nullCount = 0;
-		//			List<KeyValuePair<string[], string[]>> lst = new List<KeyValuePair<string[], string[]>>();
-		//			HashSet<string> set = new HashSet<string>();
-		//			SortedDictionary<string, int> dups = new SortedDictionary<string, int>();
-		//			for (int i = 0, icnt = addresses.Length; i < icnt; ++i)
-		//			{
-		//				var clrType = heap.GetObjectType(addresses[i]);
-		//				if (clrType == null)
-		//				{
-		//					++nullCount;
-		//					continue;
-		//				}
-
-		//				var addr = addresses[i];
-		//				var fldKeyValue = clrType.GetFieldByName("keyValue");
-		//				var fldKeyValueAddr = Auxiliaries.getReferenceFieldAddress(addr, fldKeyValue, false);
-		//				var fldKeyValueArray = clrType.GetFieldByName("keyValueArray");
-		//				var fldKeyValueArrayAddr = Auxiliaries.getReferenceFieldAddress(addr, fldKeyValueArray, false);
-		//				var fldKeyValueObj = heap.GetObjectType(fldKeyValueAddr);
-		//				var fldData = fldKeyValueObj.GetFieldByName("data");
-		//				var fldDataStr = fldData.GetValue(fldKeyValueAddr, false, true) as string;
-		//				if (!set.Add(fldDataStr))
-		//				{
-		//					++dupCount;
-		//					int cnt;
-		//					if (dups.TryGetValue(fldDataStr, out cnt))
-		//					{
-		//						dups[fldDataStr] = cnt + 1;
-		//					}
-		//					else
-		//					{
-		//						dups.Add(fldDataStr, 1);
-		//					}
-		//				}
-		//				var fldDataStrAry = fldDataStr.Split('\u001e');
-		//				var aryInfo = CollectionContent.getArrayContent(heap, fldKeyValueArrayAddr);
-
-		//				lst.Add(new KeyValuePair<string[], string[]>(fldDataStrAry, aryInfo.Item4));
-
-
-		//			}
-
-		//			int notTheSameCount = 0;
-		//			Dictionary<int, int> countDct = new Dictionary<int, int>();
-		//			for (int i = 0, icnt = lst.Count; i < icnt; ++i)
-		//			{
-		//				var ary1 = lst[i].Key;
-		//				var ary2 = lst[i].Value;
-		//				int len;
-		//				if (countDct.TryGetValue(ary1.Length, out len))
-		//				{
-		//					countDct[ary1.Length] = len + 1;
-		//				}
-		//				else
-		//				{
-		//					countDct.Add(ary1.Length,1);
-		//				}
-		//				if (ary1.Length != ary2.Length)
-		//				{
-		//					++notTheSameCount;
-		//				}
-		//				for (int j = 0, jcnt = ary1.Length; j < jcnt; ++j)
-		//				{
-		//					if (ary1[j] == ary2[j]) continue;
-		//					++notTheSameCount;
-		//				}
-
-		//			}
-
-		//			StreamWriter sw = null;
-		//			try
-		//			{
-		//				var path = index.AdhocFolder + @"\KeyDups.txt";
-		//				sw = new StreamWriter(path);
-		//				foreach (var kv in dups)
-		//				{
-		//					sw.WriteLine("[" + (kv.Value + 1) + "] " + kv.Key);
-		//				}
-		//			}
-		//			catch (Exception ex)
-		//			{
-		//				Assert.IsTrue(false, ex.ToString());
-		//			}
-		//			finally
-		//			{
-		//				sw?.Close();
-		//			}
-
-		//			Assert.IsTrue(true);
-		//		}
-		//		catch (Exception ex)
-		//		{
-		//			Assert.IsTrue(false, ex.ToString());
-		//		}
-		//	}
-		//}
-
 		[TestMethod]
 		public void TestGetTypeSizeDetails()
 		{
@@ -1610,9 +822,6 @@ namespace UnitTestMdr
 			{
 				sw?.Close();
 			}
-
-
-
 		}
 
 		[TestMethod]
@@ -1673,7 +882,6 @@ namespace UnitTestMdr
 			}
 		}
 
-
 		[TestMethod]
 		public void TestGetProportionsOfFromTwoFiles()
 		{
@@ -1723,8 +931,6 @@ namespace UnitTestMdr
 			}
 		}
 
-
-
 		private bool ReadProportionsFromFile(string path, int saveNdx, int aryLen, SortedDictionary<string, long[]> resDct, string[] seps)
 		{
 			StreamReader sr = null;
@@ -1754,7 +960,6 @@ namespace UnitTestMdr
 						resDct.Add(parts[2],ary);
 					}
 				}
-
 				return true;
 			}
 			catch (Exception ex)
@@ -1827,8 +1032,6 @@ namespace UnitTestMdr
                     parRd?.Close();
                     sw?.Close();
                 }
-
-
             }
         }
 
@@ -1910,95 +1113,6 @@ namespace UnitTestMdr
 				}
 			}
 		}
-
-		//[TestMethod]
-		//public void TestNonrootedFinalizationObjects()
-		//{
-		//	var map = OpenMap0();
-		//	Stopwatch stopWatch = new Stopwatch();
-		//	stopWatch.Start();
-		//	var finalizerQue = map.FinalizerQueue;
-		//	Assert.IsNotNull(finalizerQue, "Map.FinalizerQueue property returned null.");
-		//	var notRootedInfo = map.GetNotRooted(finalizerQue);
-		//	Assert.IsNotNull(notRootedInfo, "Map.GetNotRooted() method returned null.");
-		//	stopWatch.Stop();
-
-		//	TestContext.WriteLine("TEST DURATION: " + Utils.DurationString(stopWatch.Elapsed));
-		//	TestContext.WriteLine("Finalizer Queue Count: " + finalizerQue.Length);
-		//	TestContext.WriteLine("Not Rooted Count: " + notRootedInfo.Item1.Length);
-		//	TestContext.WriteLine("Not Found Count: " + notRootedInfo.Item2.Length);
-		//}
-
-		//[TestMethod]
-		//public void CompareDumpsTypeInstances()
-		//{
-		//	var map0 = OpenMap(@"");
-		//	var map1 = OpenMap(@"");
-		//	Map.MapsDiff(map0,map1);
-		//}
-
-		//[TestMethod]
-		//public void ArraysScanTest()
-		//{
-		//	var map = OpenMap(@"");
-		//	using (map)
-		//	{
-		//		var stopWatch = new Stopwatch();
-		//		stopWatch.Start();
-
-		//		var lst = map.GetElementTypeTypes(ClrElementType.SZArray);
-
-		//		int instanceCount = 0;
-		//		int maxTypeInstanceCount = 0;
-		//		int minTypeInstanceCount = Int32.MaxValue;
-		//		int maxInstanceId = -1;
-		//		int minInstanceId = -1;
-
-		//		for (int i = 0, icnt = lst.Count; i < icnt; ++i)
-		//		{
-		//			try
-		//			{
-		//				var addresses = map.GetTypeRealAddresses(lst[i]);
-		//				Assert.IsNotNull(addresses, "Map.GetTypeRealAddresses returned null.");
-		//				instanceCount += addresses.Length;
-		//				if (maxTypeInstanceCount < addresses.Length)
-		//				{
-		//					maxTypeInstanceCount = addresses.Length;
-		//					maxInstanceId = lst[i];
-		//				}
-		//				if (minTypeInstanceCount > addresses.Length)
-		//				{
-		//					minTypeInstanceCount = addresses.Length;
-		//					minInstanceId = lst[i];
-		//				}
-		//			}
-		//			catch (Exception ex)
-		//			{
-		//				var id = lst[i];
-		//				var typeName = "Type id is outside id range.";
-		//				if (id >= 0 && id < map.TypeCount())
-		//					typeName = map.GetTypeName(id);
-		//				Assert.Fail(
-		//					Environment.NewLine + "Map.GetTypeRealAddresses failed, for type id: " + id + Environment.NewLine
-		//					+ "Type: " + typeName + Environment.NewLine
-		//					+ ex.ToString()
-		//					);
-		//			}
-		//		}
-
-		//		stopWatch.Stop();
-		//		var duration = Utils.DurationString(stopWatch.Elapsed);
-
-		//		var maxInstanceName = map.GetTypeName(maxInstanceId);
-		//		var minInstanceName = map.GetTypeName(minInstanceId);
-		//		TestContext.WriteLine("Scanning arrays duration: " + duration + Environment.NewLine
-		//								+ "Type count: " + Utils.LargeNumberString(lst.Count) + Environment.NewLine
-		//								+ "Instance count: " + Utils.LargeNumberString(instanceCount) + Environment.NewLine
-		//								+ "Max instances type: [" + Utils.LargeNumberString(maxTypeInstanceCount) + "] " + maxInstanceName + Environment.NewLine
-		//								+ "Min instances type: [" + Utils.LargeNumberString(minTypeInstanceCount) + "] " + minInstanceName);
-
-		//	}
-		//}
 
 		#region Field Parents / Dependencies
 
@@ -2309,14 +1423,11 @@ namespace UnitTestMdr
 			}
 		}
 
+        #endregion Object Sizes
 
+        #region Open Map
 
-
-		#endregion Object Sizes
-
-		#region Open Map
-
-		public static DumpIndex OpenMap(string mapPath)
+        public static DumpIndex OpenMap(string mapPath)
 		{
 			string error;
 			var map = DumpIndex.OpenIndexInstanceReferences(new Version(0,2,0,1), mapPath, 0, out error);
@@ -2334,6 +1445,5 @@ namespace UnitTestMdr
 		}
 
 		#endregion OpenMap
-
 	}
 }
