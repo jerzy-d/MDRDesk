@@ -8,7 +8,7 @@
     <OutputType>WinExe</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
     <RootNamespace>MDRDesk</RootNamespace>
-    <AssemblyName>MDRDesk32</AssemblyName>
+    <AssemblyName>MDRDesk</AssemblyName>
     <TargetFrameworkVersion>v4.7.1</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
     <ProjectTypeGuids>{60dc8134-eba5-43b8-bcc9-bb4bc16c2548};{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}</ProjectTypeGuids>
@@ -101,10 +101,6 @@
   </PropertyGroup>
   <PropertyGroup />
   <ItemGroup>
-    <Reference Include="FSharp.Charting">
-      <HintPath>..\packages\FSharp.Charting.0.90.14\lib\net40\FSharp.Charting.dll</HintPath>
-    </Reference>
-    <Reference Include="FSharp.Core, Version=4.4.1.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL" />
     <Reference Include="Markdown.Xaml, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
       <HintPath>..\Markdown.XAML\Markdown.Xaml.dll</HintPath>
@@ -500,7 +496,8 @@
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <PropertyGroup>
-    <PostBuildEvent>if  $(Platform) == x86 "C:\Program Files (x86)\Microsoft Visual Studio\2017\Professional\VC\Tools\MSVC\14.12.25827\bin\HostX86\x86\editbin.exe"  /LARGEADDRESSAWARE MDRDesk32.exe
+    <PostBuildEvent>if  $(Platform) == x86 copy "$(TargetDir)MDRDesk.exe" "$(TargetDir)MDRDesk32.exe""
+if  $(Platform) == x86 "C:\Program Files (x86)\Microsoft Visual Studio\2017\Professional\VC\Tools\MSVC\14.12.25827\bin\HostX86\x86\editbin.exe"  /LARGEADDRESSAWARE MDRDesk32.exe
 mkdir "$(TargetDir)Documentation"
 xcopy "$(SolutionDir)README.md" "$(TargetDir)" /Y /D /R
 xcopy "$(SolutionDir)Documentation\*.*" "$(TargetDir)Documentation" /Y /D /R  /E
