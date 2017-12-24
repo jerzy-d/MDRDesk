@@ -540,7 +540,7 @@ namespace ClrMDRIndex
             }
         }
 
-        public static Tuple<int[], int[]> ReadKvIntIntArrayAsTwoArrays(string path, out string error)
+        public static ValueTuple<int[], int[]> ReadKvIntIntArrayAsTwoArrays(string path, out string error)
         {
             error = null;
             BinaryReader br = null;
@@ -555,12 +555,42 @@ namespace ClrMDRIndex
                     ary1[i] = br.ReadInt32();
                     ary2[i] = br.ReadInt32();
                 }
-                return new Tuple<int[], int[]>(ary1, ary2);
+                return (ary1, ary2);
             }
             catch (Exception ex)
             {
                 error = GetExceptionErrorString(ex);
-                return null;
+                return (null,null);
+            }
+            finally
+            {
+                br?.Close();
+            }
+        }
+
+        public static ValueTuple<int[], int[], ClrElementKind[]> ReadArrayInfos(string path, out string error)
+        {
+            error = null;
+            BinaryReader br = null;
+            try
+            {
+                br = new BinaryReader(File.Open(path, FileMode.Open));
+                var cnt = br.ReadInt32();
+                int[] ary1 = new int[cnt];
+                int[] ary2 = new int[cnt];
+                ClrElementKind[] ary3 = new ClrElementKind[cnt];
+                for (int i = 0; i < cnt; ++i)
+                {
+                    ary1[i] = br.ReadInt32();
+                    ary2[i] = br.ReadInt32();
+                    ary3[i] = (ClrElementKind)br.ReadInt32();
+                }
+                return (ary1, ary2, ary3);
+            }
+            catch (Exception ex)
+            {
+                error = GetExceptionErrorString(ex);
+                return (null, null, null);
             }
             finally
             {
@@ -637,6 +667,34 @@ namespace ClrMDRIndex
                     var kv = lst[i];
                     br.Write(kv.Key);
                     br.Write(kv.Value);
+                }
+                return true;
+            }
+            catch (Exception ex)
+            {
+                error = GetExceptionErrorString(ex);
+                return false;
+            }
+            finally
+            {
+                br?.Close();
+            }
+        }
+
+        public static bool WriteArrayInfos(string path, IList<ValueTuple<int, int, ClrElementKind>> lst, out string error)
+        {
+            error = null;
+            BinaryWriter br = null;
+            try
+            {
+                br = new BinaryWriter(File.Open(path, FileMode.Create));
+                br.Write(lst.Count);
+                for (int i = 0, icnt = lst.Count; i < icnt; ++i)
+                {
+                    var kv = lst[i];
+                    br.Write(kv.Item1);
+                    br.Write(kv.Item2);
+                    br.Write((int)(kv.Item3));
                 }
                 return true;
             }
@@ -923,19 +981,22 @@ namespace ClrMDRIndex
             return str;
         }
 
-        public static string GetFancyIntStr(int val, int width)
-        {
-            char[] digits = new char[width];
-            for (int i = width - 1; i >= 0; --i)
-            {
-                if (val == 0) { digits[i] = '\u274D'; continue; }
-                int rem = val % 10;
-                digits[i] = rem == 0 ? '\u274D' : (char)(0x277F + rem);
-                val /= 10;
-            }
-            return new string(digits);
-        }
+        //public static string GetFancyIntStr(int val, int width)
+        //{
+        //    char[] digits = new char[width];
+        //    for (int i = width - 1; i >= 0; --i)
+        //    {
+        //        if (val == 0) { digits[i] = '\u274D'; continue; }
+        //        int rem = val % 10;
+        //        digits[i] = rem == 0 ? '\u274D' : (char)(0x277F + rem);
+        //        val /= 10;
+        //    }
+        //    return new string(digits);
+        //}
 
+        /// <summary>
+        /// TODO JRD -- can I use this?
+        /// </summary>
         public static string GetSubscriptIntStr(int val, int width)
         {
             char[] digits = new char[width];
@@ -966,7 +1027,10 @@ namespace ClrMDRIndex
             for (; pos < str.Length && !Char.IsWhiteSpace(str[pos]); ++pos) ;
             return pos;
         }
-
+        
+        /// <summary>
+        /// TODO JRD -- can I use this?
+        /// </summary>
         public static bool SameStringArrays(string[] ary1, string[] ary2)
         {
             if (ary1 == null && ary2 == null) return true;
@@ -1067,6 +1131,21 @@ namespace ClrMDRIndex
 
         #region Comparers
 
+        public class LambdaComparer<T> : IComparer<T>
+        {
+            readonly Func<T, T, int> _compareFunction;
+
+            public LambdaComparer(Func<T, T, int> compareFunction)
+            {
+                _compareFunction = compareFunction;
+            }
+
+            public int Compare(T item1, T item2)
+            {
+                return _compareFunction(item1, item2);
+            }
+        }
+
         public static bool SameIntArrays(int[] ary1, int[] ary2)
         {
             if (ary1 == null && ary2 == null) return true;
@@ -1123,13 +1202,13 @@ namespace ClrMDRIndex
             }
         }
 
-        public class IntTripleCmp : IComparer<triple<int, String, ulong>>
-        {
-            public int Compare(triple<int, String, ulong> a, triple<int, String, ulong> b)
-            {
-                return a.First < b.First ? -1 : (a.First > b.First ? 1 : 0);
-            }
-        }
+        //public class IntTripleCmp : IComparer<triple<int, String, ulong>>
+        //{
+        //    public int Compare(triple<int, String, ulong> a, triple<int, String, ulong> b)
+        //    {
+        //        return a.First < b.First ? -1 : (a.First > b.First ? 1 : 0);
+        //    }
+        //}
 
         public class KVStrStrCmp : IComparer<KeyValuePair<string, string>>
         {
@@ -1149,14 +1228,6 @@ namespace ClrMDRIndex
             }
         }
 
-        public class KVUlongIntKCmp : IComparer<KeyValuePair<ulong, int>>
-        {
-            public int Compare(KeyValuePair<ulong, int> a, KeyValuePair<ulong, int> b)
-            {
-                return a.Key < b.Key ? -1 : (a.Key > b.Key ? 1 : 0);
-            }
-        }
-
         public class KVIntUlongCmpAsc : IComparer<KeyValuePair<int, ulong>>
         {
             public int Compare(KeyValuePair<int, ulong> a, KeyValuePair<int, ulong> b)
@@ -1164,77 +1235,6 @@ namespace ClrMDRIndex
                 if (a.Key == b.Key)
                     return a.Value > b.Value ? -1 : (a.Value < b.Value ? 1 : 0);
                 return a.Key > b.Key ? -1 : (a.Key < b.Key ? 1 : 0);
-            }
-        }
-
-        public class TripleIntUlongStrCmpAsc : IComparer<triple<int, ulong, string>>
-        {
-            public int Compare(triple<int, ulong, string> a, triple<int, ulong, string> b)
-            {
-                if (a.First == b.First)
-                {
-                    if (a.Second == b.Second)
-                        return string.Compare(a.Third, b.Third, StringComparison.Ordinal);
-                    return a.Second < b.Second ? -1 : (a.Second > b.Second ? 1 : 0);
-                }
-                return a.First < b.First ? -1 : (a.First > b.First ? 1 : 0);
-            }
-        }
-
-        public class TripleIntUlongStrCmpDesc : IComparer<triple<int, ulong, string>>
-        {
-            public int Compare(triple<int, ulong, string> a, triple<int, ulong, string> b)
-            {
-                if (a.First == b.First)
-                {
-                    if (a.Second == b.Second)
-                        return string.Compare(b.Third, a.Third, StringComparison.Ordinal);
-                    return b.Second < a.Second ? -1 : (b.Second > a.Second ? 1 : 0);
-                }
-                return b.First < a.First ? -1 : (b.First > a.First ? 1 : 0);
-            }
-        }
-
-        public class TripleStrStrStrCmp : IComparer<triple<string, string, string>>
-        {
-            private int _ndx;
-
-            public TripleStrStrStrCmp(int ndx)
-            {
-                _ndx = ndx;
-            }
-
-            public int Compare(triple<string, string, string> a, triple<string, string, string> b)
-            {
-                switch (_ndx)
-                {
-                    case 0:
-                        return string.Compare(a.First, b.First, StringComparison.Ordinal);
-                    case 1:
-                        return string.Compare(a.Second, b.Second, StringComparison.Ordinal);
-                    default:
-                        return string.Compare(a.Third, b.Third, StringComparison.Ordinal);
-                }
-            }
-        }
-
-        public class QuadrupleUlongUlongIntKeyCmp : IComparer<quadruple<ulong, ulong, int, int>>
-        {
-            public int Compare(quadruple<ulong, ulong, int, int> a, quadruple<ulong, ulong, int, int> b)
-            {
-                if (a.First == b.First)
-                {
-                    if (a.Second == b.Second)
-                    {
-                        if (a.Third == b.Third)
-                        {
-                            return a.Forth < b.Forth ? -1 : (a.Forth > b.Forth ? 1 : 0);
-                        }
-                        return a.Third < b.Third ? -1 : (a.Third > b.Third ? 1 : 0);
-                    }
-                    return a.Second < b.Second ? -1 : (a.Second > b.Second ? 1 : 0);
-                }
-                return a.First < b.First ? -1 : (a.First > b.First ? 1 : 0);
             }
         }
 
@@ -1293,48 +1293,6 @@ namespace ClrMDRIndex
             }
         }
 
-        public static NumStrCmpDesc NumStrDescComparer = new NumStrCmpDesc();
-
-        public class NumStrCmpDesc : IComparer<string>
-        {
-            public int Compare(string a, string b)
-            {
-                bool aMinusSign = a.Length > 0 && a[0] == '-';
-                bool bMinusSign = b.Length > 0 && b[0] == '-';
-                if (aMinusSign && bMinusSign)
-                    return CompareNegatives(a, b);
-                if (aMinusSign && !bMinusSign) return 1;
-                if (!aMinusSign && bMinusSign) return -1;
-
-                if (a.Length == b.Length)
-                {
-                    for (int i = 0, icnt = a.Length; i < icnt; ++i)
-                    {
-                        if (a[i] < b[i]) return 1;
-                        if (a[i] > b[i]) return -1;
-                    }
-                    return 0;
-                }
-                return a.Length > b.Length ? -1 : 1;
-            }
-
-            private int CompareNegatives(string a, string b)
-            {
-                if (a.Length == b.Length)
-                {
-                    for (int i = 1, icnt = a.Length; i < icnt; ++i)
-                    {
-                        if (a[i] > b[i]) return 1;
-                        if (a[i] < b[i]) return -1;
-                    }
-                    return 0;
-                }
-                return a.Length < b.Length ? -1 : 1;
-            }
-        }
-
-
-
         public class KvStrKvStrInt : IComparer<KeyValuePair<string, KeyValuePair<string, int>[]>>
         {
             public int Compare(KeyValuePair<string, KeyValuePair<string, int>[]> a,
@@ -1383,7 +1341,6 @@ namespace ClrMDRIndex
                 return a.Length == b.Length ? 0 : (a.Length < b.Length ? -1 : 1);
             }
         }
-
 
         #endregion Comparers
 
@@ -1492,7 +1449,7 @@ namespace ClrMDRIndex
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static string CountStringHeader(int sz)
         {
-            return sz == 0 ? "[       0] " : string.Format("[{0,8:#,###,###}] ", sz);
+            return sz == 0 ? "[          0] " : string.Format("[{0,11:#,###,###}] ", sz);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -2109,7 +2066,6 @@ namespace ClrMDRIndex
         {
             return name.Replace('+', '_');
         }
-
 
         public static double GetStandardDeviation(IList<double> lst, out bool suspect, out double average)
         {

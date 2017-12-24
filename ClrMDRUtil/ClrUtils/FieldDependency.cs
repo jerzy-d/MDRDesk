@@ -180,170 +180,170 @@ namespace ClrMDRIndex
 		/// Tuple&lt;string,string,string,string,List&lt;string&gt;&gt;.
 		/// (input: parent -> child addresses file, output: parents offsets file, output: parents addresses, list of errors send to a caller)
 		/// </param>
-		public static void SortFieldDependencies(object data)
-		{
-			var info = data as Tuple<string, string, string, List<string>, IProgress<string>>;
-			Debug.Assert(info != null);
+		//public static void SortFieldDependencies(object data)
+		//{
+		//	var info = data as Tuple<string, string, string, List<string>, IProgress<string>>;
+		//	Debug.Assert(info != null);
 
-			BinaryReader dpndbrSource = null;
-			BinaryWriter dpndbrTarget = null;
-			BinaryWriter offsetTarget = null;
-			KeyValuePair<BinaryReader, int>[] readers = null;
-			List<string> tempFiles = new List<string>();
-			var progress = info.Item5;
+		//	BinaryReader dpndbrSource = null;
+		//	BinaryWriter dpndbrTarget = null;
+		//	BinaryWriter offsetTarget = null;
+		//	KeyValuePair<BinaryReader, int>[] readers = null;
+		//	List<string> tempFiles = new List<string>();
+		//	var progress = info.Item5;
 
-			progress?.Report("Generating fields dependency files...");
-			Stopwatch stopWatch = new Stopwatch();
-			stopWatch.Start();
-			int maxRead = ((1024 * 1024) / (sizeof(ulong) * 2)) * (IntPtr.Size==4 ? 50 : 100); // ~50 for 32-bit, ~100 MB otherwise
-			int read = 0;
-			var records = new List<triple<ulong, ulong,int>>(maxRead);
+		//	progress?.Report("Generating fields dependency files...");
+		//	Stopwatch stopWatch = new Stopwatch();
+		//	stopWatch.Start();
+		//	int maxRead = ((1024 * 1024) / (sizeof(ulong) * 2)) * (IntPtr.Size==4 ? 50 : 100); // ~50 for 32-bit, ~100 MB otherwise
+		//	int read = 0;
+		//	var records = new List<triple<ulong, ulong,int>>(maxRead);
 
-			try
-			{
-				dpndbrSource = new BinaryReader(File.Open(info.Item1, FileMode.Open));
-				int srcCnt = dpndbrSource.ReadInt32();
-				TimeSpan tm = stopWatch.Elapsed;
-				while (read < srcCnt)
-				{
-					records.Clear();
-					int toRead = Math.Min(maxRead, srcCnt - read);
-					for (int i = 0, icnt = toRead; i < icnt; ++i)
-					{
-						var fld = dpndbrSource.ReadUInt64();
-                        var par = dpndbrSource.ReadUInt64();
-                        var fldNameNdx = dpndbrSource.ReadInt32();
-                        if (fld == Constants.InvalidAddress) continue;
-						records.Add(new triple<ulong, ulong, int>(fld, par,fldNameNdx));
-					}
+		//	try
+		//	{
+		//		dpndbrSource = new BinaryReader(File.Open(info.Item1, FileMode.Open));
+		//		int srcCnt = dpndbrSource.ReadInt32();
+		//		TimeSpan tm = stopWatch.Elapsed;
+		//		while (read < srcCnt)
+		//		{
+		//			records.Clear();
+		//			int toRead = Math.Min(maxRead, srcCnt - read);
+		//			for (int i = 0, icnt = toRead; i < icnt; ++i)
+		//			{
+		//				var fld = dpndbrSource.ReadUInt64();
+  //                      var par = dpndbrSource.ReadUInt64();
+  //                      var fldNameNdx = dpndbrSource.ReadInt32();
+  //                      if (fld == Constants.InvalidAddress) continue;
+		//				records.Add(new triple<ulong, ulong, int>(fld, par,fldNameNdx));
+		//			}
 
-					// we like to have stable sort here
-					//
-					IEnumerable<triple<ulong, ulong,int>> sorted = records.OrderBy(record => record.First);
+		//			// we like to have stable sort here
+		//			//
+		//			IEnumerable<triple<ulong, ulong,int>> sorted = records.OrderBy(record => record.First);
 
-					// write to temp file
-					//
-					string path = info.Item2 + tempFiles.Count.ToString() + ".tmp";
-					tempFiles.Add(path);
-					dpndbrTarget = new BinaryWriter(File.Open(path, FileMode.Create));
-					dpndbrTarget.Write(sorted.Count());
-				    var prevKey = 0UL;
-					foreach (triple<ulong, ulong,int> kv in sorted)
-					{
-                        Debug.Assert(kv.First>=prevKey);
-						dpndbrTarget.Write(kv.First);
-                        dpndbrTarget.Write(kv.Second);
-                        dpndbrTarget.Write(kv.Third);
-                        prevKey = kv.First;
-					}
-					dpndbrTarget.Close();
-					dpndbrTarget = null;
+		//			// write to temp file
+		//			//
+		//			string path = info.Item2 + tempFiles.Count.ToString() + ".tmp";
+		//			tempFiles.Add(path);
+		//			dpndbrTarget = new BinaryWriter(File.Open(path, FileMode.Create));
+		//			dpndbrTarget.Write(sorted.Count());
+		//		    var prevKey = 0UL;
+		//			foreach (triple<ulong, ulong,int> kv in sorted)
+		//			{
+  //                      Debug.Assert(kv.First>=prevKey);
+		//				dpndbrTarget.Write(kv.First);
+  //                      dpndbrTarget.Write(kv.Second);
+  //                      dpndbrTarget.Write(kv.Third);
+  //                      prevKey = kv.First;
+		//			}
+		//			dpndbrTarget.Close();
+		//			dpndbrTarget = null;
 
-					read += toRead;
+		//			read += toRead;
 
-					progress?.Report("Generating fields dependency, sorted file: " + tempFiles.Count + ", duration: " + Utils.DurationString(stopWatch.Elapsed - tm));
-				}
-				progress?.Report("Fields dependency, temp files count: " + tempFiles.Count + ", sorting files took: " + Utils.DurationString(stopWatch.Elapsed) + ", now merging...");
-				tm = stopWatch.Elapsed;
-				// merge sorted files
-				//
-				BinaryHeap<quadruple<ulong, ulong, int, int>> heap =
+		//			progress?.Report("Generating fields dependency, sorted file: " + tempFiles.Count + ", duration: " + Utils.DurationString(stopWatch.Elapsed - tm));
+		//		}
+		//		progress?.Report("Fields dependency, temp files count: " + tempFiles.Count + ", sorting files took: " + Utils.DurationString(stopWatch.Elapsed) + ", now merging...");
+		//		tm = stopWatch.Elapsed;
+		//		// merge sorted files
+		//		//
+		//		BinaryHeap<quadruple<ulong, ulong, int, int>> heap =
 
-					new BinaryHeap<quadruple<ulong, ulong, int, int>>(new Utils.QuadrupleUlongUlongIntKeyCmp());
-				readers = new KeyValuePair<BinaryReader, int>[tempFiles.Count];
-				for (int i = 0, icnt = readers.Length; i < icnt; ++i)
-				{
-					var reader = new BinaryReader(File.Open(tempFiles[i], FileMode.Open));
-					var cnt = reader.ReadInt32();
-				    if (cnt > 0)
-				    {
-				        readers[i] = new KeyValuePair<BinaryReader, int>(reader, cnt - 1); // we read firstrecord below
-				        var fld = reader.ReadUInt64();
-				        var par = reader.ReadUInt64();
-				        var id = reader.ReadInt32();
-				        heap.Insert(new quadruple<ulong, ulong, int, int>(fld, par, id, i));
-				    }
-				    else
-				    {
-                        readers[i] = new KeyValuePair<BinaryReader, int>(reader, 0); // we read firstrecord below
-                        heap.Insert(new quadruple<ulong, ulong, int, int>(UInt64.MaxValue, UInt64.MaxValue, Constants.InvalidIndex, i));
-                    }
-                }
+		//			new BinaryHeap<quadruple<ulong, ulong, int, int>>(new Utils.QuadrupleUlongUlongIntKeyCmp());
+		//		readers = new KeyValuePair<BinaryReader, int>[tempFiles.Count];
+		//		for (int i = 0, icnt = readers.Length; i < icnt; ++i)
+		//		{
+		//			var reader = new BinaryReader(File.Open(tempFiles[i], FileMode.Open));
+		//			var cnt = reader.ReadInt32();
+		//		    if (cnt > 0)
+		//		    {
+		//		        readers[i] = new KeyValuePair<BinaryReader, int>(reader, cnt - 1); // we read firstrecord below
+		//		        var fld = reader.ReadUInt64();
+		//		        var par = reader.ReadUInt64();
+		//		        var id = reader.ReadInt32();
+		//		        heap.Insert(new quadruple<ulong, ulong, int, int>(fld, par, id, i));
+		//		    }
+		//		    else
+		//		    {
+  //                      readers[i] = new KeyValuePair<BinaryReader, int>(reader, 0); // we read firstrecord below
+  //                      heap.Insert(new quadruple<ulong, ulong, int, int>(UInt64.MaxValue, UInt64.MaxValue, Constants.InvalidIndex, i));
+  //                  }
+  //              }
 
-				offsetTarget = new BinaryWriter(File.Open(info.Item2, FileMode.Create));
-				dpndbrTarget = new BinaryWriter(File.Open(info.Item3, FileMode.Create));
-				int dpnCnt = 0;
-				int offCnt = 0;
-				offsetTarget.Write(offCnt);
-				dpndbrTarget.Write(dpnCnt);
+		//		offsetTarget = new BinaryWriter(File.Open(info.Item2, FileMode.Create));
+		//		dpndbrTarget = new BinaryWriter(File.Open(info.Item3, FileMode.Create));
+		//		int dpnCnt = 0;
+		//		int offCnt = 0;
+		//		offsetTarget.Write(offCnt);
+		//		dpndbrTarget.Write(dpnCnt);
 
-				ulong prevFld = Constants.InvalidAddress;
-				while (heap.Count > 0)
-				{
-					var item = heap.RemoveRoot();
-					ReadNextRecord(readers, item.Forth, heap);
-					if (item.First != prevFld)
-					{
-						offsetTarget.Write(item.First); // field address
-						offsetTarget.Write(dpndbrTarget.Seek(0, SeekOrigin.Current));
-						++offCnt;
-                        Debug.Assert(prevFld<=item.First);
-						prevFld = item.First;
-					}
-                    dpndbrTarget.Write(item.Second); // parent address
-                    dpndbrTarget.Write(item.Third); // fld name index
-                    ++dpnCnt;
-				}
-				// add extra entry at the end
-				offsetTarget.Write(UInt64.MaxValue); // dummy address
-				offsetTarget.Write(dpndbrTarget.Seek(0, SeekOrigin.Current));
-				++offCnt;
+		//		ulong prevFld = Constants.InvalidAddress;
+		//		while (heap.Count > 0)
+		//		{
+		//			var item = heap.RemoveRoot();
+		//			ReadNextRecord(readers, item.Forth, heap);
+		//			if (item.First != prevFld)
+		//			{
+		//				offsetTarget.Write(item.First); // field address
+		//				offsetTarget.Write(dpndbrTarget.Seek(0, SeekOrigin.Current));
+		//				++offCnt;
+  //                      Debug.Assert(prevFld<=item.First);
+		//				prevFld = item.First;
+		//			}
+  //                  dpndbrTarget.Write(item.Second); // parent address
+  //                  dpndbrTarget.Write(item.Third); // fld name index
+  //                  ++dpnCnt;
+		//		}
+		//		// add extra entry at the end
+		//		offsetTarget.Write(UInt64.MaxValue); // dummy address
+		//		offsetTarget.Write(dpndbrTarget.Seek(0, SeekOrigin.Current));
+		//		++offCnt;
 
-				offsetTarget.Seek(0, SeekOrigin.Begin);
-				offsetTarget.Write(offCnt);
-				offsetTarget.Close();
-				offsetTarget = null;
-				dpndbrTarget.Seek(0, SeekOrigin.Begin);
-				dpndbrTarget.Write(dpnCnt);
-				dpndbrTarget.Close();
-				dpndbrTarget = null;
+		//		offsetTarget.Seek(0, SeekOrigin.Begin);
+		//		offsetTarget.Write(offCnt);
+		//		offsetTarget.Close();
+		//		offsetTarget = null;
+		//		dpndbrTarget.Seek(0, SeekOrigin.Begin);
+		//		dpndbrTarget.Write(dpnCnt);
+		//		dpndbrTarget.Close();
+		//		dpndbrTarget = null;
 
-				progress?.Report("Fields dependency, merge done: " + Utils.DurationString(stopWatch.Elapsed - tm));
+		//		progress?.Report("Fields dependency, merge done: " + Utils.DurationString(stopWatch.Elapsed - tm));
 
 
-				// remove temp files
-				//
-				for (int i = 0, icnt = readers.Length; i < icnt; ++i)
-				{
-					readers[i].Key.Close();
-					readers[i].Key.Dispose();
-					readers[i] = new KeyValuePair<BinaryReader, int>(null, 0);
-				}
+		//		// remove temp files
+		//		//
+		//		for (int i = 0, icnt = readers.Length; i < icnt; ++i)
+		//		{
+		//			readers[i].Key.Close();
+		//			readers[i].Key.Dispose();
+		//			readers[i] = new KeyValuePair<BinaryReader, int>(null, 0);
+		//		}
 
-				Utils.ForceGcWithCompaction();
+		//		Utils.ForceGcWithCompaction();
 
-				for (int i = 0, icnt = readers.Length; i < icnt; ++i)
-				{
-					File.Delete(tempFiles[i]);
-				}
-			}
-			catch (Exception ex)
-			{
-				info.Item4.Add(Utils.GetExceptionErrorString(ex));
-				return;
-			}
-			finally
-			{
-				dpndbrSource?.Close();
-				dpndbrTarget?.Close();
-				offsetTarget?.Close();
-				if (readers != null)
-				{
-					for (int i = 0, icnt = readers.Length; i < icnt; ++i)
-						readers[i].Key?.Close();
-				}
-			}
-		}
+		//		for (int i = 0, icnt = readers.Length; i < icnt; ++i)
+		//		{
+		//			File.Delete(tempFiles[i]);
+		//		}
+		//	}
+		//	catch (Exception ex)
+		//	{
+		//		info.Item4.Add(Utils.GetExceptionErrorString(ex));
+		//		return;
+		//	}
+		//	finally
+		//	{
+		//		dpndbrSource?.Close();
+		//		dpndbrTarget?.Close();
+		//		offsetTarget?.Close();
+		//		if (readers != null)
+		//		{
+		//			for (int i = 0, icnt = readers.Length; i < icnt; ++i)
+		//				readers[i].Key?.Close();
+		//		}
+		//	}
+		//}
 
 //		#region Field References
 
@@ -583,17 +583,17 @@ namespace ClrMDRIndex
 
 //		#endregion Field References
 
-		private static void ReadNextRecord(KeyValuePair<BinaryReader, int>[] readers, int readerNdx, BinaryHeap<quadruple<ulong, ulong, int, int>> heap)
-		{
-			var reader = readers[readerNdx].Key;
-			var cnt = readers[readerNdx].Value;
-			if (cnt == 0) return;
-			var fld = reader.ReadUInt64();
-            var par = reader.ReadUInt64();
-            var id = reader.ReadInt32();
-            readers[readerNdx] = new KeyValuePair<BinaryReader, int>(reader, cnt - 1);
-			heap.Insert(new quadruple<ulong, ulong, int, int>(fld, par, id, readerNdx));
-		}
+		//private static void ReadNextRecord(KeyValuePair<BinaryReader, int>[] readers, int readerNdx, BinaryHeap<quadruple<ulong, ulong, int, int>> heap)
+		//{
+		//	var reader = readers[readerNdx].Key;
+		//	var cnt = readers[readerNdx].Value;
+		//	if (cnt == 0) return;
+		//	var fld = reader.ReadUInt64();
+  //          var par = reader.ReadUInt64();
+  //          var id = reader.ReadInt32();
+  //          readers[readerNdx] = new KeyValuePair<BinaryReader, int>(reader, cnt - 1);
+		//	heap.Insert(new quadruple<ulong, ulong, int, int>(fld, par, id, readerNdx));
+		//}
 
 		public static MemoryMappedFile GetFieldParentMap(string path, string mapName, out string error)
 		{

@@ -494,130 +494,130 @@ namespace ClrMDRIndex
         /// <param name="nodeId"></param>
         /// <param name="done"></param>
         /// <returns></returns>
-        private static ulong GetRootTypeSizeHierarchy(ClrHeap heap, Queue<KeyValuePair<ulong, InstanceSizeNode>> instQue,
-			int nodeId, HashSet<ulong> done)
-		{
-			ulong totSize = 0ul;
-			InstanceSizeNode prevNode = null;
-			InstanceSizeNode curNode = null;
-			List<InstanceSizeNode> fldLst = new List<InstanceSizeNode>(64);
-			while (instQue.Count > 0)
-			{
-				var kv = instQue.Dequeue();
-				if (!done.Add(kv.Key)) continue;
-				var curAddr = kv.Key;
-				curNode = kv.Value;
-				if (prevNode != null && prevNode.NodeId != curNode.NodeId)
-				{
-					if (fldLst.Count > 0)
-					{
-						prevNode.AddNodes(fldLst.ToArray());
-						fldLst.Clear();
-					}
-				}
-				prevNode = curNode;
-				var clrType = heap.GetObjectType(curAddr);
-				if (clrType == null) continue;
+  //      private static ulong GetRootTypeSizeHierarchy(ClrHeap heap, Queue<KeyValuePair<ulong, InstanceSizeNode>> instQue,
+		//	int nodeId, HashSet<ulong> done)
+		//{
+		//	ulong totSize = 0ul;
+		//	InstanceSizeNode prevNode = null;
+		//	InstanceSizeNode curNode = null;
+		//	List<InstanceSizeNode> fldLst = new List<InstanceSizeNode>(64);
+		//	while (instQue.Count > 0)
+		//	{
+		//		var kv = instQue.Dequeue();
+		//		if (!done.Add(kv.Key)) continue;
+		//		var curAddr = kv.Key;
+		//		curNode = kv.Value;
+		//		if (prevNode != null && prevNode.NodeId != curNode.NodeId)
+		//		{
+		//			if (fldLst.Count > 0)
+		//			{
+		//				prevNode.AddNodes(fldLst.ToArray());
+		//				fldLst.Clear();
+		//			}
+		//		}
+		//		prevNode = curNode;
+		//		var clrType = heap.GetObjectType(curAddr);
+		//		if (clrType == null) continue;
 
-				if (clrType.IsArray)
-				{
-					var asz = clrType.GetSize(curAddr);
-					totSize += asz;
-					var acnt = clrType.GetArrayLength(curAddr);
-					ClrType componentType = clrType.ComponentType;
-					if (componentType == null || componentType.IsPrimitive || !componentType.ContainsPointers) continue;
-					bool compTypeIsObjRef = componentType.IsObjectReference;
-					bool compTypeIsStruct = componentType.IsValueClass;
-
-
-					for (int i = 0; i < acnt; ++i)
-					{
-						ulong aryItemAddr = clrType.GetArrayElementAddress(curAddr, i);
-						if (aryItemAddr == 0) continue;
-						if (compTypeIsObjRef)
-						{
-							var aryItemType = heap.GetObjectType(aryItemAddr);
-							if (aryItemType != null)
-							{
-								// enqueque ??;
-							}
-							continue;
-						}
-						if (compTypeIsStruct && componentType.Fields != null)
-						{
-							for (int j = 0, jcnt = componentType.Fields.Count; j < jcnt; ++j)
-							{
-								var fld = componentType.Fields[j];
-								if (fld.IsPrimitive) continue;
-							}
-						}
-					}
-
-					continue;
-				}
+		//		if (clrType.IsArray)
+		//		{
+		//			var asz = clrType.GetSize(curAddr);
+		//			totSize += asz;
+		//			var acnt = clrType.GetArrayLength(curAddr);
+		//			ClrType componentType = clrType.ComponentType;
+		//			if (componentType == null || componentType.IsPrimitive || !componentType.ContainsPointers) continue;
+		//			bool compTypeIsObjRef = componentType.IsObjectReference;
+		//			bool compTypeIsStruct = componentType.IsValueClass;
 
 
+		//			for (int i = 0; i < acnt; ++i)
+		//			{
+		//				ulong aryItemAddr = clrType.GetArrayElementAddress(curAddr, i);
+		//				if (aryItemAddr == 0) continue;
+		//				if (compTypeIsObjRef)
+		//				{
+		//					var aryItemType = heap.GetObjectType(aryItemAddr);
+		//					if (aryItemType != null)
+		//					{
+		//						// enqueque ??;
+		//					}
+		//					continue;
+		//				}
+		//				if (compTypeIsStruct && componentType.Fields != null)
+		//				{
+		//					for (int j = 0, jcnt = componentType.Fields.Count; j < jcnt; ++j)
+		//					{
+		//						var fld = componentType.Fields[j];
+		//						if (fld.IsPrimitive) continue;
+		//					}
+		//				}
+		//			}
 
-				for (int i = 0, icnt = clrType.Fields.Count; i < icnt; ++i)
-				{
-					var fld = clrType.Fields[i];
-					var fldName = fld.Name;
-					var fldType = fld.Type;
-					var fldTypeName = fldType?.Name ?? Constants.NullName;
+		//			continue;
+		//		}
 
-					var fldObj = fld.GetValue(curAddr, clrType.ElementType == ClrElementType.Struct);
-					if (fldObj == null)
-					{
-						var node = new InstanceSizeNode(nodeId++, fldTypeName, fld.ElementType, fldName, Constants.ZeroAddressStr,
-							(ulong)Constants.PointerSize);
-						totSize += (ulong)Constants.PointerSize;
-						fldLst.Add(node);
-						continue;
-					}
-					if (fldType == null)
-					{
-						var node = new InstanceSizeNode(nodeId++, fldTypeName, fld.ElementType, fldName, Constants.ZeroAddressStr,
-							(ulong)Constants.PointerSize);
-						totSize += (ulong)Constants.PointerSize;
-						fldLst.Add(node);
-						continue;
-					}
 
-					if (fldType.IsPrimitive)
-					{
-						var value = ValueExtractor.PrimitiveValueAsString(fldObj, fldType.ElementType);
-						var sz = (ulong)ValueExtractor.GetPrimitiveValueSize(fldType.ElementType);
-						totSize += sz;
-						var node = new InstanceSizeNode(nodeId++, fldTypeName, fld.ElementType, fldName, value, sz);
-						fldLst.Add(node);
-						continue;
-					}
 
-					if (fldType.IsObjectReference)
-					{
-						ulong fldObjAddr = (ulong)fldObj;
-						totSize += (ulong)Constants.PointerSize;
-						var node = new InstanceSizeNode(nodeId++, fldTypeName, fld.ElementType, fldName, Utils.AddressString(fldObjAddr),
-							(ulong)Constants.PointerSize);
-						fldLst.Add(node);
-						instQue.Enqueue(new KeyValuePair<ulong, InstanceSizeNode>(fldObjAddr, node));
+		//		for (int i = 0, icnt = clrType.Fields.Count; i < icnt; ++i)
+		//		{
+		//			var fld = clrType.Fields[i];
+		//			var fldName = fld.Name;
+		//			var fldType = fld.Type;
+		//			var fldTypeName = fldType?.Name ?? Constants.NullName;
 
-						continue;
-					}
-				}
-			}
+		//			var fldObj = fld.GetValue(curAddr, clrType.ElementType == ClrElementType.Struct);
+		//			if (fldObj == null)
+		//			{
+		//				var node = new InstanceSizeNode(nodeId++, fldTypeName, fld.ElementType, fldName, Constants.ZeroAddressStr,
+		//					(ulong)Constants.PointerSize);
+		//				totSize += (ulong)Constants.PointerSize;
+		//				fldLst.Add(node);
+		//				continue;
+		//			}
+		//			if (fldType == null)
+		//			{
+		//				var node = new InstanceSizeNode(nodeId++, fldTypeName, fld.ElementType, fldName, Constants.ZeroAddressStr,
+		//					(ulong)Constants.PointerSize);
+		//				totSize += (ulong)Constants.PointerSize;
+		//				fldLst.Add(node);
+		//				continue;
+		//			}
 
-			if (prevNode != null && prevNode.NodeId != curNode.NodeId)
-			{
-				if (fldLst.Count > 0)
-				{
-					prevNode.AddNodes(fldLst.ToArray());
-					fldLst.Clear();
-				}
-			}
+		//			if (fldType.IsPrimitive)
+		//			{
+		//				var value = ValueExtractor.PrimitiveValueAsString(fldObj, fldType.ElementType);
+		//				var sz = (ulong)ValueExtractor.GetPrimitiveValueSize(fldType.ElementType);
+		//				totSize += sz;
+		//				var node = new InstanceSizeNode(nodeId++, fldTypeName, fld.ElementType, fldName, value, sz);
+		//				fldLst.Add(node);
+		//				continue;
+		//			}
 
-			return totSize;
-		}
+		//			if (fldType.IsObjectReference)
+		//			{
+		//				ulong fldObjAddr = (ulong)fldObj;
+		//				totSize += (ulong)Constants.PointerSize;
+		//				var node = new InstanceSizeNode(nodeId++, fldTypeName, fld.ElementType, fldName, Utils.AddressString(fldObjAddr),
+		//					(ulong)Constants.PointerSize);
+		//				fldLst.Add(node);
+		//				instQue.Enqueue(new KeyValuePair<ulong, InstanceSizeNode>(fldObjAddr, node));
+
+		//				continue;
+		//			}
+		//		}
+		//	}
+
+		//	if (prevNode != null && prevNode.NodeId != curNode.NodeId)
+		//	{
+		//		if (fldLst.Count > 0)
+		//		{
+		//			prevNode.AddNodes(fldLst.ToArray());
+		//			fldLst.Clear();
+		//		}
+		//	}
+
+		//	return totSize;
+		//}
 
 		/// <summary>
 		/// 
@@ -635,7 +635,7 @@ namespace ClrMDRIndex
 		public static
 			Tuple
 			<ulong, ulong[], SortedDictionary<string, KeyValuePair<int, ulong>>, SortedDictionary<string, List<int>>,
-				triple<int, ulong, string>[]> GetTotalSizeDetail(ClrtDump dmp, ulong[] addresses, out string error)
+				ValueTuple<int, ulong, string>[]> GetTotalSizeDetail(ClrtDump dmp, ulong[] addresses, out string error)
 		{
 			error = null;
 			ulong totalSize = 0;
@@ -648,8 +648,10 @@ namespace ClrMDRIndex
 				var aryDct = new SortedDictionary<string, List<int>>(StringComparer.Ordinal);
 				var typeDct = new SortedDictionary<string, KeyValuePair<int, ulong>>(StringComparer.Ordinal);
 				List<ulong> typesNotFound = new List<ulong>();
-				var largeArrays = new BinaryHeap<triple<int, ulong, string>>(new Utils.TripleIntUlongStrCmpAsc());
-				for (int i = 0, icnt = addresses.Length; i < icnt; ++i)
+                var cmp = new Utils.LambdaComparer<ValueTuple<int, ulong, string>>((a, b) => a.Item1 < b.Item1 ? -1 : (a.Item1 > b.Item1 ? 1 :
+                (a.Item2 < b.Item2 ? -1 : (a.Item2 > b.Item2 ? 1 : string.Compare(a.Item3, b.Item3, StringComparison.Ordinal)))));
+                var largeArrays = new BinaryHeap<ValueTuple<int, ulong, string>>(cmp);
+                for (int i = 0, icnt = addresses.Length; i < icnt; ++i)
 				{
 					var addr = addresses[i];
 					ClrType clrType = heap.GetObjectType(addr);
@@ -669,17 +671,17 @@ namespace ClrMDRIndex
 					}
 				}
 
-				var bigArrays = new triple<int, ulong, string>[largeArrays.Count];
+				var bigArrays = new ValueTuple<int, ulong, string>[largeArrays.Count];
 				for (int i = 0, icnt = largeArrays.Count; i < icnt; ++i)
 				{
 					bigArrays[i] = largeArrays.RemoveRoot();
 				}
 
-				Array.Sort(bigArrays, new Utils.TripleIntUlongStrCmpDesc());
-				return
-					new Tuple
+                Array.Sort(bigArrays, cmp);
+                return
+                    new Tuple
 					<ulong, ulong[], SortedDictionary<string, KeyValuePair<int, ulong>>, SortedDictionary<string, List<int>>,
-						triple<int, ulong, string>[]>(totalSize, typesNotFound.ToArray(), typeDct, aryDct, bigArrays);
+						ValueTuple<int, ulong, string>[]>(totalSize, typesNotFound.ToArray(), typeDct, aryDct, bigArrays);
 			}
 			catch (Exception ex)
 			{
@@ -690,7 +692,7 @@ namespace ClrMDRIndex
 
 		private static ulong GetObjectSizeDetails(ClrHeap heap, ulong addr, HashSet<ulong> done, List<ulong> typesNotFound,
 			SortedDictionary<string, List<int>> aryDct, SortedDictionary<string, KeyValuePair<int, ulong>> typeDct,
-			BinaryHeap<triple<int, ulong, string>> largeArrays)
+			BinaryHeap<ValueTuple<int, ulong, string>> largeArrays)
 		{
 			var que = new Queue<ulong>(64);
 			que.Enqueue(addr);
@@ -715,11 +717,11 @@ namespace ClrMDRIndex
 					totalSize += asz;
 					AddNameCount(curType.Name, asz, typeDct);
 					var acnt = curType.GetArrayLength(curAddr);
-					if (largeArrays.Count < 20) largeArrays.Insert(new triple<int, ulong, string>(acnt, curAddr, curType.Name));
-					else if (largeArrays.Peek().First < acnt)
+					if (largeArrays.Count < 20) largeArrays.Insert(new ValueTuple<int, ulong, string>(acnt, curAddr, curType.Name));
+					else if (largeArrays.Peek().Item1 < acnt)
 					{
 						largeArrays.RemoveRoot();
-						largeArrays.Insert(new triple<int, ulong, string>(acnt, curAddr, curType.Name));
+						largeArrays.Insert((acnt, curAddr, curType.Name));
 					}
 					List<int> lst;
 					if (aryDct.TryGetValue(curType.Name, out lst))
@@ -1364,7 +1366,7 @@ namespace ClrMDRIndex
 			}
 		}
 
-		public static SortedDictionary<string, quadruple<int, ulong, ulong, ulong>> GetTypeSizesInfo(ClrHeap heap,
+		public static SortedDictionary<string, ValueTuple<int, ulong, ulong, ulong>> GetTypeSizesInfo(ClrHeap heap,
 			out string error)
 		{
 			error = null;
@@ -1372,7 +1374,7 @@ namespace ClrMDRIndex
 			{
 				ulong grandTotal = 0ul;
 				int instanceCount = 0;
-				var typeDct = new SortedDictionary<string, quadruple<int, ulong, ulong, ulong>>(StringComparer.Ordinal);
+				var typeDct = new SortedDictionary<string, ValueTuple<int, ulong, ulong, ulong>>(StringComparer.Ordinal);
 				var segs = heap.Segments;
 				for (int i = 0, icnt = segs.Count; i < icnt; ++i)
 				{
@@ -1385,21 +1387,16 @@ namespace ClrMDRIndex
 						++instanceCount;
 						var sz = clrType.GetSize(addr);
 						grandTotal += sz;
-						quadruple<int, ulong, ulong, ulong> info;
+						ValueTuple<int, ulong, ulong, ulong> info;
 						if (typeDct.TryGetValue(clrType.Name, out info))
 						{
-							var maxSz = info.Third < sz ? sz : info.Third;
-							var minSz = info.Third > sz ? sz : info.Third;
-							typeDct[clrType.Name] = new quadruple<int, ulong, ulong, ulong>(
-								info.First + 1,
-								info.Second + sz,
-								maxSz,
-								minSz
-							);
+							var maxSz = info.Item3 < sz ? sz : info.Item3;
+							var minSz = info.Item3 > sz ? sz : info.Item3;
+							typeDct[clrType.Name] = (info.Item1 + 1, info.Item2 + sz, maxSz, minSz);
 						}
 						else
 						{
-							typeDct.Add(clrType.Name, new quadruple<int, ulong, ulong, ulong>(1, sz, sz, sz));
+							typeDct.Add(clrType.Name, (1, sz, sz, sz));
 						}
 						NEXT_OBJECT:
 						addr = seg.NextObject(addr);
@@ -1421,7 +1418,7 @@ namespace ClrMDRIndex
 			{
 				ulong grandTotal = 0ul;
 				int instanceCount = 0;
-				var typeDct = new SortedDictionary<string, quadruple<int, ulong, ulong, ulong>>(StringComparer.Ordinal);
+				var typeDct = new SortedDictionary<string, ValueTuple<int, ulong, ulong, ulong>>(StringComparer.Ordinal);
 				var segs = heap.Segments;
 				for (int i = 0, icnt = segs.Count; i < icnt; ++i)
 				{
@@ -1434,21 +1431,16 @@ namespace ClrMDRIndex
 						++instanceCount;
 						var sz = clrType.GetSize(addr);
 						grandTotal += sz;
-						quadruple<int, ulong, ulong, ulong> info;
+						ValueTuple<int, ulong, ulong, ulong> info;
 						if (typeDct.TryGetValue(clrType.Name, out info))
 						{
-							var maxSz = info.Third < sz ? sz : info.Third;
-							var minSz = info.Third > sz ? sz : info.Third;
-							typeDct[clrType.Name] = new quadruple<int, ulong, ulong, ulong>(
-								info.First + 1,
-								info.Second + sz,
-								maxSz,
-								minSz
-							);
+							var maxSz = info.Item3 < sz ? sz : info.Item3;
+							var minSz = info.Item3 > sz ? sz : info.Item3;
+							typeDct[clrType.Name] = (info.Item1 + 1, info.Item2 + sz, maxSz, minSz);
 						}
 						else
 						{
-							typeDct.Add(clrType.Name, new quadruple<int, ulong, ulong, ulong>(1, sz, sz, sz));
+							typeDct.Add(clrType.Name, (1, sz, sz, sz));
 						}
 						NEXT_OBJECT:
 						addr = seg.NextObject(addr);
@@ -1462,10 +1454,7 @@ namespace ClrMDRIndex
 				foreach (var kv in typeDct)
 				{
 					infoAry[ndx++] = new listing<string>(dataAry, off, 6);
-					int cnt = kv.Value.First;
-					ulong totSz = kv.Value.Second;
-					ulong maxSz = kv.Value.Third;
-					ulong minSz = kv.Value.Forth;
+					(int cnt, ulong totSz, ulong maxSz, ulong minSz) = kv.Value;
 					double avg = (double)totSz / (double)(cnt);
 					ulong uavg = Convert.ToUInt64(avg);
 

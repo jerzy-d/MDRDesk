@@ -947,6 +947,8 @@
                             <MenuItem x:Name="InstReferences" Header="References" Command="local:MenuCommands.InstanceReferencesCmd"/>
                             <MenuItem x:Name="InstValue" Header="Value" Command="local:MenuCommands.InstanceValueCmd"/>
                             <MenuItem x:Name="InstHierarchy" Header="Hierarchy" Command="local:MenuCommands.InstanceHierarchyCmd"/>
+                            <Separator></Separator>
+                            <MenuItem x:Name="InstRawValues" Header="Raw Instance Values" IsCheckable="True" Click="InstRawValuesClicked"/>
                         </MenuItem>
                         <Separator></Separator>
                         <MenuItem x:Name="TypeInfo" Header="Get Type Information">

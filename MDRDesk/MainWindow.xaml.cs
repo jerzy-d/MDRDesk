@@ -621,7 +621,7 @@ namespace MDRDesk
                 }
                 Title = BaseTitle + Constants.BlackDiamondPadded + CurrentIndex.DumpFileName;
                 RecentIndexList.Add(CurrentIndex.IndexFolder);
-
+                if (InstRawValues.IsChecked) CurrentIndex.RawInstanceValue = true;
             }
             catch (Exception ex)
             {
@@ -1368,65 +1368,65 @@ namespace MDRDesk
                 dataView.Refresh();
                 return;
             }
-            var tuples = mapListView.ItemsSource as sextuple<int, ulong, ulong, ulong, ulong, string>[];
-            if (tuples != null)
-            {
-                string header = column.Column.Header.ToString();
-                bool sorted = false;
-                string sortedBy = mapListView.Tag == null ? string.Empty : mapListView.Tag.ToString();
-                switch (header)
-                {
-                    case "Count":
-                        if (sortedBy != Constants.ByCount)
-                        {
-                            Array.Sort(tuples, (a, b) => a.First < b.First ? 1 : (a.First > b.First ? -1 : 0));
-                            sortedBy = Constants.ByCount;
-                            sorted = true;
-                        }
-                        break;
-                    case "Total Size":
-                        if (sortedBy != Constants.ByTotalSize)
-                        {
-                            sortedBy = Constants.ByTotalSize;
-                            Array.Sort(tuples, (a, b) => a.Second < b.Second ? 1 : (a.Second > b.Second ? -1 : 0));
-                            sorted = true;
-                        }
-                        break;
-                    case "Max Size":
-                        if (sortedBy != Constants.ByMaxSize)
-                        {
-                            Array.Sort(tuples, (a, b) => a.Third < b.Third ? 1 : (a.Third > b.Third ? -1 : 0));
-                            sortedBy = Constants.ByMaxSize;
-                            sorted = true;
-                        }
-                        break;
-                    case "Avg Size":
-                        if (sortedBy != Constants.ByAvgSize)
-                        {
-                            Array.Sort(tuples, (a, b) => a.Fifth < b.Fifth ? 1 : (a.Fifth > b.Fifth ? -1 : 0));
-                            sortedBy = Constants.ByAvgSize;
-                            sorted = true;
-                        }
-                        break;
-                    case "Type":
-                        if (sortedBy != Constants.ByTypeName)
-                        {
-                            Array.Sort(tuples, (a, b) => string.Compare(a.Sixth, b.Sixth, StringComparison.Ordinal));
-                            sortedBy = Constants.ByTypeName;
-                            sorted = true;
-                        }
-                        break;
+            //var tuples = mapListView.ItemsSource as sextuple<int, ulong, ulong, ulong, ulong, string>[];
+            //if (tuples != null)
+            //{
+            //    string header = column.Column.Header.ToString();
+            //    bool sorted = false;
+            //    string sortedBy = mapListView.Tag == null ? string.Empty : mapListView.Tag.ToString();
+            //    switch (header)
+            //    {
+            //        case "Count":
+            //            if (sortedBy != Constants.ByCount)
+            //            {
+            //                Array.Sort(tuples, (a, b) => a.First < b.First ? 1 : (a.First > b.First ? -1 : 0));
+            //                sortedBy = Constants.ByCount;
+            //                sorted = true;
+            //            }
+            //            break;
+            //        case "Total Size":
+            //            if (sortedBy != Constants.ByTotalSize)
+            //            {
+            //                sortedBy = Constants.ByTotalSize;
+            //                Array.Sort(tuples, (a, b) => a.Second < b.Second ? 1 : (a.Second > b.Second ? -1 : 0));
+            //                sorted = true;
+            //            }
+            //            break;
+            //        case "Max Size":
+            //            if (sortedBy != Constants.ByMaxSize)
+            //            {
+            //                Array.Sort(tuples, (a, b) => a.Third < b.Third ? 1 : (a.Third > b.Third ? -1 : 0));
+            //                sortedBy = Constants.ByMaxSize;
+            //                sorted = true;
+            //            }
+            //            break;
+            //        case "Avg Size":
+            //            if (sortedBy != Constants.ByAvgSize)
+            //            {
+            //                Array.Sort(tuples, (a, b) => a.Fifth < b.Fifth ? 1 : (a.Fifth > b.Fifth ? -1 : 0));
+            //                sortedBy = Constants.ByAvgSize;
+            //                sorted = true;
+            //            }
+            //            break;
+            //        case "Type":
+            //            if (sortedBy != Constants.ByTypeName)
+            //            {
+            //                Array.Sort(tuples, (a, b) => string.Compare(a.Sixth, b.Sixth, StringComparison.Ordinal));
+            //                sortedBy = Constants.ByTypeName;
+            //                sorted = true;
+            //            }
+            //            break;
 
-                }
-                if (sorted)
-                {
-                    mapListView.Tag = sortedBy;
-                    mapListView.ItemsSource = tuples;
-                    ICollectionView dataView = CollectionViewSource.GetDefaultView(mapListView.ItemsSource);
-                    dataView.Refresh();
-                }
-                return;
-            }
+            //    }
+            //    if (sorted)
+            //    {
+            //        mapListView.Tag = sortedBy;
+            //        mapListView.ItemsSource = tuples;
+            //        ICollectionView dataView = CollectionViewSource.GetDefaultView(mapListView.ItemsSource);
+            //        dataView.Refresh();
+            //    }
+            //    return;
+            //}
         }
 
         #endregion AdhocQueries
@@ -1529,23 +1529,23 @@ namespace MDRDesk
                     return;
                 }
                 GuiUtils.CopyToClipboard(lstPath);
-                GuiUtils.ShowInformation("Report","Report file " + (isCsv ? "(csv)" : "(text)"),lstPath + Environment.NewLine + "...the path is copied to the clippboard...",null, this);
+                GuiUtils.ShowInformation("Report", "Report file " + (isCsv ? "(csv)" : "(text)"), lstPath + Environment.NewLine + "...the path is copied to the clippboard...", null, this);
                 return;
             }
 
             switch (gridName)
             {
-                case "IndexSizesInfo":
-                    dmpInfo = (grid.Tag as Tuple<DumpFileMoniker, ulong>).Item1;
-                    Debug.Assert(dmpInfo != null);
-                    Debug.Assert(listView != null);
-                    var dataAry = listView.ItemsSource as sextuple<int, ulong, ulong, ulong, ulong, string>[];
-                    Debug.Assert(dataAry != null);
-                    var sortBy = listView.Tag as string;
-                    Debug.Assert(sortBy != null);
-                    var reportPath = dmpInfo.OutputFolder + System.IO.Path.DirectorySeparatorChar + dmpInfo.DumpFileName +
-                                     ".TYPESIZES." + sortBy + ".txt";
-                    break;
+                //case "IndexSizesInfo":
+                //    dmpInfo = (grid.Tag as Tuple<DumpFileMoniker, ulong>).Item1;
+                //    Debug.Assert(dmpInfo != null);
+                //    Debug.Assert(listView != null);
+                //    var dataAry = listView.ItemsSource as sextuple<int, ulong, ulong, ulong, ulong, string>[];
+                //    Debug.Assert(dataAry != null);
+                //    var sortBy = listView.Tag as string;
+                //    Debug.Assert(sortBy != null);
+                //    var reportPath = dmpInfo.OutputFolder + System.IO.Path.DirectorySeparatorChar + dmpInfo.DumpFileName +
+                //                     ".TYPESIZES." + sortBy + ".txt";
+                //    break;
                 case "IndexStringUsage":
                     dmpInfo = grid.Tag as DumpFileMoniker;
                     Debug.Assert(dmpInfo != null);
@@ -1564,7 +1564,7 @@ namespace MDRDesk
                     listView = (ListView)LogicalTreeHelper.FindLogicalNode(grid, "TopListView");
                     Debug.Assert(listView != null);
 
- 
+
                     break;
             }
 
@@ -1621,92 +1621,92 @@ namespace MDRDesk
 
         }
 
-        private void FileReportCsvClicked(object sender, RoutedEventArgs e)
-        {
-            (Grid grid, ListView listView) = GetReportGrid(false);
-            if (grid == null || listView == null) return;
-            string error;
-            DumpFileMoniker filePathInfo;
-            string repPath;
-            string gridName = Utils.GetNameWithoutId(grid.Name);
-            switch (gridName)
-            {
-                case "IndexSizesInfo":
-                    var info = grid.Tag as Tuple<DumpFileMoniker, ulong>;
-                    Debug.Assert(info != null);
-                    Debug.Assert(listView != null);
-                    var dataAry = listView.ItemsSource as sextuple<int, ulong, ulong, ulong, ulong, string>[];
-                    Debug.Assert(dataAry != null);
-                    var sortBy = listView.Tag as string;
-                    Debug.Assert(sortBy != null);
-                    var reportPath = info.Item1.OutputFolder + System.IO.Path.DirectorySeparatorChar + info.Item1.DumpFileName +
-                                     ".TYPESIZES.TOP64." + sortBy + ".txt";
-                    StreamWriter sw = null;
-                    try
-                    {
-                        sw = new StreamWriter(reportPath);
-                        sw.WriteLine("Grand total of all instances base sizes: " + Utils.SizeString(info.Item2) + ", (" +
-                                     Utils.FormatBytes((long)info.Item2) + ")");
-                        sw.WriteLine(
-                            "Columns:  'Count', 'Total Size', 'Max Size', 'Min Size', 'Avg Size', 'Type'    ...all sizes in bytes.");
-                        sw.WriteLine();
-                        for (int i = 0; i < 64; ++i)
-                        {
-                            var tuple = dataAry[i];
-                            sw.WriteLine(
-                                string.Format("{0,14:#,###,###}  ", tuple.First)
-                                + string.Format("{0,14:#,###,###}  ", tuple.Second)
-                                + string.Format("{0,14:#,###,###}  ", tuple.Third)
-                                + string.Format("{0,14:#,###,###}  ", tuple.Forth)
-                                + string.Format("{0,14:#,###,###}  ", tuple.Fifth)
-                                + tuple.Sixth
-                            );
-                        }
+        //private void FileReportCsvClicked(object sender, RoutedEventArgs e)
+        //{
+        //    (Grid grid, ListView listView) = GetReportGrid(false);
+        //    if (grid == null || listView == null) return;
+        //    string error;
+        //    DumpFileMoniker filePathInfo;
+        //    string repPath;
+        //    string gridName = Utils.GetNameWithoutId(grid.Name);
+        //    switch (gridName)
+        //    {
+        //        case "IndexSizesInfo":
+        //            var info = grid.Tag as Tuple<DumpFileMoniker, ulong>;
+        //            Debug.Assert(info != null);
+        //            Debug.Assert(listView != null);
+        //            var dataAry = listView.ItemsSource as sextuple<int, ulong, ulong, ulong, ulong, string>[];
+        //            Debug.Assert(dataAry != null);
+        //            var sortBy = listView.Tag as string;
+        //            Debug.Assert(sortBy != null);
+        //            var reportPath = info.Item1.OutputFolder + System.IO.Path.DirectorySeparatorChar + info.Item1.DumpFileName +
+        //                             ".TYPESIZES.TOP64." + sortBy + ".txt";
+        //            StreamWriter sw = null;
+        //            try
+        //            {
+        //                sw = new StreamWriter(reportPath);
+        //                sw.WriteLine("Grand total of all instances base sizes: " + Utils.SizeString(info.Item2) + ", (" +
+        //                             Utils.FormatBytes((long)info.Item2) + ")");
+        //                sw.WriteLine(
+        //                    "Columns:  'Count', 'Total Size', 'Max Size', 'Min Size', 'Avg Size', 'Type'    ...all sizes in bytes.");
+        //                sw.WriteLine();
+        //                for (int i = 0; i < 64; ++i)
+        //                {
+        //                    var tuple = dataAry[i];
+        //                    sw.WriteLine(
+        //                        string.Format("{0,14:#,###,###}  ", tuple.First)
+        //                        + string.Format("{0,14:#,###,###}  ", tuple.Second)
+        //                        + string.Format("{0,14:#,###,###}  ", tuple.Third)
+        //                        + string.Format("{0,14:#,###,###}  ", tuple.Forth)
+        //                        + string.Format("{0,14:#,###,###}  ", tuple.Fifth)
+        //                        + tuple.Sixth
+        //                    );
+        //                }
 
-                    }
-                    catch (Exception ex)
-                    {
-                        error = Utils.GetExceptionErrorString(ex);
-                    }
-                    finally
-                    {
-                        sw?.Close();
-                    }
-                    break;
-                case "IndexStringUsage":
-                    filePathInfo = grid.Tag as DumpFileMoniker;
-                    Debug.Assert(filePathInfo != null);
-                    listView = (ListView)LogicalTreeHelper.FindLogicalNode(grid, "TopListView");
-                    Debug.Assert(listView != null);
-                    var datAry = listView.ItemsSource as StringStatsDispEntry[];
-                    Debug.Assert(datAry != null);
-                    repPath = filePathInfo.OutputFolder + System.IO.Path.DirectorySeparatorChar + "STRINGUSAGE.txt";
-                    StringStatsDispEntry.WriteShortReport(datAry, repPath, "String usage in: " + CurrentIndex.DumpFileName, 100,
-                        new string[] { "Count", "TotalSize" }, null, out error);
-                    break;
-                case "ReportFile":
-                    var pathInfo = grid.Tag as Tuple<string, DumpFileMoniker>;
-                    Debug.Assert(pathInfo != null);
-                    listView = (ListView)LogicalTreeHelper.FindLogicalNode(grid, "TopListView");
-                    Debug.Assert(listView != null);
-                    var listingInfo = listView.Tag as Tuple<ListingInfo, string>;
-                    Debug.Assert(listingInfo != null);
-                    var outPath = pathInfo.Item2.GetPathAppendingToFileName(".ShortReport.txt");
-                    ListingInfo.DumpListing(outPath, listingInfo.Item1, pathInfo.Item1, out error, 0, 100);
-                    break;
-                case ListingGrid:
-                    listView = (ListView)LogicalTreeHelper.FindLogicalNode(grid, ListingGridView);
-                    Tuple<ListingInfo, string> pair = listView.Tag as Tuple<ListingInfo, string>;
-                    string lstPath = DumpFileMoniker.GetFileDistinctPath(CurrentIndex.AdhocFolder, pair.Item2 + ".txt");
-                    ListingInfo.DumpListing(lstPath, pair.Item1, pair.Item2, out error, 0, 100);
-                    MainStatusShowMessage(error == null ? "Report written: " + lstPath : "Report writing failed: " + Utils.GetShorterStringRemoveNewlines(error, 40));
-                    if (error != null) GuiUtils.ShowError(error,this);
-                    break;
-                default:
-                    MainStatusShowMessage("Cannot write report, the current tab reporting is not supported.");
-                    break;
-            }
-        }
+        //            }
+        //            catch (Exception ex)
+        //            {
+        //                error = Utils.GetExceptionErrorString(ex);
+        //            }
+        //            finally
+        //            {
+        //                sw?.Close();
+        //            }
+        //            break;
+        //        case "IndexStringUsage":
+        //            filePathInfo = grid.Tag as DumpFileMoniker;
+        //            Debug.Assert(filePathInfo != null);
+        //            listView = (ListView)LogicalTreeHelper.FindLogicalNode(grid, "TopListView");
+        //            Debug.Assert(listView != null);
+        //            var datAry = listView.ItemsSource as StringStatsDispEntry[];
+        //            Debug.Assert(datAry != null);
+        //            repPath = filePathInfo.OutputFolder + System.IO.Path.DirectorySeparatorChar + "STRINGUSAGE.txt";
+        //            StringStatsDispEntry.WriteShortReport(datAry, repPath, "String usage in: " + CurrentIndex.DumpFileName, 100,
+        //                new string[] { "Count", "TotalSize" }, null, out error);
+        //            break;
+        //        case "ReportFile":
+        //            var pathInfo = grid.Tag as Tuple<string, DumpFileMoniker>;
+        //            Debug.Assert(pathInfo != null);
+        //            listView = (ListView)LogicalTreeHelper.FindLogicalNode(grid, "TopListView");
+        //            Debug.Assert(listView != null);
+        //            var listingInfo = listView.Tag as Tuple<ListingInfo, string>;
+        //            Debug.Assert(listingInfo != null);
+        //            var outPath = pathInfo.Item2.GetPathAppendingToFileName(".ShortReport.txt");
+        //            ListingInfo.DumpListing(outPath, listingInfo.Item1, pathInfo.Item1, out error, 0, 100);
+        //            break;
+        //        case ListingGrid:
+        //            listView = (ListView)LogicalTreeHelper.FindLogicalNode(grid, ListingGridView);
+        //            Tuple<ListingInfo, string> pair = listView.Tag as Tuple<ListingInfo, string>;
+        //            string lstPath = DumpFileMoniker.GetFileDistinctPath(CurrentIndex.AdhocFolder, pair.Item2 + ".txt");
+        //            ListingInfo.DumpListing(lstPath, pair.Item1, pair.Item2, out error, 0, 100);
+        //            MainStatusShowMessage(error == null ? "Report written: " + lstPath : "Report writing failed: " + Utils.GetShorterStringRemoveNewlines(error, 40));
+        //            if (error != null) GuiUtils.ShowError(error,this);
+        //            break;
+        //        default:
+        //            MainStatusShowMessage("Cannot write report, the current tab reporting is not supported.");
+        //            break;
+        //    }
+        //}
 
         private ValueTuple<Grid,ListView> GetReportGrid(bool reportFormat)
         {
@@ -2575,6 +2575,18 @@ namespace MDRDesk
             if (!GuiUtils.IsIndexAvailable(this, "Cannot show type counts, an index is not opened.")) return;
             var wnd = new TreemapView(CurrentIndex, true) { Owner = this, Title = "Type Counts " };
             wnd.Show();
+        }
+
+        private void InstRawValuesClicked(object sender, RoutedEventArgs e)
+        {
+            if (InstRawValues.IsChecked)
+            {
+                if (CurrentIndex != null) CurrentIndex.RawInstanceValue = true;
+            }
+            else
+            {
+                if (CurrentIndex != null) CurrentIndex.RawInstanceValue = false;
+            }
         }
     }
 

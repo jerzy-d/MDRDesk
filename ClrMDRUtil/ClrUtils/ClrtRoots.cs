@@ -353,21 +353,21 @@ namespace ClrMDRIndex
 			return ndx >= 0;
 		}
 
-		public triple<string, string, string>[] GetDisplayableFinalizationQueue(int[] instTypes, string[] typeNames, ulong[] unrooted)
-		{
-			var que = new triple<string, string, string>[_finalizerQue.Length];
-			for (int i = 0, icnt = _finalizerQue.Length; i < icnt; ++i)
-			{
-				var addrStr = Utils.AddressString(_finalizerQue[i]);
-				var typeId = _finalizerQueInstanceIds[i];
-				var notRooted = IsRooted(_finalizerQue[i], unrooted) ? string.Empty : Constants.HeavyCheckMarkHeader;
-				string typeName = typeId != Constants.InvalidIndex ? typeNames[instTypes[typeId]] : Constants.UnknownName;
-				que[i] = new triple<string, string, string>(addrStr, notRooted, typeName);
+		//public triple<string, string, string>[] GetDisplayableFinalizationQueue(int[] instTypes, string[] typeNames, ulong[] unrooted)
+		//{
+		//	var que = new triple<string, string, string>[_finalizerQue.Length];
+		//	for (int i = 0, icnt = _finalizerQue.Length; i < icnt; ++i)
+		//	{
+		//		var addrStr = Utils.AddressString(_finalizerQue[i]);
+		//		var typeId = _finalizerQueInstanceIds[i];
+		//		var notRooted = IsRooted(_finalizerQue[i], unrooted) ? string.Empty : Constants.HeavyCheckMarkHeader;
+		//		string typeName = typeId != Constants.InvalidIndex ? typeNames[instTypes[typeId]] : Constants.UnknownName;
+		//		que[i] = new triple<string, string, string>(addrStr, notRooted, typeName);
 
 
-			}
-			return que;
-		}
+		//	}
+		//	return que;
+		//}
 
 		public bool IsRooted(ulong addr, ulong[] unrooted)
 		{

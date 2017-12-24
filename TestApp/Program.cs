@@ -30,6 +30,13 @@ namespace TestApp
 
             TestEnumInt32[] _TestEnumInt32 = new TestEnumInt32[] { TestEnumInt32.Third, TestEnumInt32.Second, TestEnumInt32.First};
 
+            ValueTuple<string, int, ValueTuple<string, int>, string>[] vtary = new ValueTuple<string, int, ValueTuple<string, int>, string>[]
+            {
+                ("aaa", 0, ("in-aaa",0),"l-aaa"),
+                ("bbb", 1, ("in-bbb",0),"l-bbb"),
+                ("ccc", 1, ("in-ccc",0),"l-ccc")
+            };
+
             Guid guid1 = Guid.NewGuid();
             var cls = (object)guid1;
 

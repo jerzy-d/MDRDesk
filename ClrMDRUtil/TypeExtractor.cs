@@ -105,6 +105,16 @@ namespace ClrMDRIndex
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static string ToString(ClrElementKind kind)
+        {
+            var clrKind = GetClrElementType(kind);
+            var spKind = GetSpecialKind(kind);
+            if (spKind != ClrElementKind.Unknown)
+                return clrKind.ToString() + "|" + spKind.ToString();
+            return clrKind.ToString();
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool IsSpecialKind(ClrElementKind kind)
         {
             return ((int)kind & (int)0x7FFF0000) != 0;
@@ -502,7 +512,9 @@ namespace ClrMDRIndex
             "System.Collections.Generic.SortedDictionary<",
             "System.Collections.Generic.SortedList<",
             "System.Collections.Generic.List<",
-            "System.Collections.Generic.Queue<"
+            "System.Collections.Generic.Queue<",
+            "System.Collections.Generic.Stack<",
+            "System.Collections.Concurrent.ConcurrentDictionary<",
         };
 
         public enum KnownTypes
@@ -514,6 +526,8 @@ namespace ClrMDRIndex
             SortedList,
             List,
             Queue,
+            Stack,
+            ConcurrentDictionary,
             Unknown,
         }
 
@@ -541,6 +555,10 @@ namespace ClrMDRIndex
                     return "List<T>";
                 case KnownTypes.Queue:
                     return "Queue<T>";
+                case KnownTypes.Stack:
+                    return "Stack<T>";
+                case KnownTypes.ConcurrentDictionary:
+                    return "ConcurrentDictionary<TKey,TValue>";
                 default:
                     return "Unknown Type";
             }

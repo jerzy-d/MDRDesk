@@ -496,11 +496,14 @@
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <PropertyGroup>
-    <PostBuildEvent>if  $(Platform) == x86 copy "$(TargetDir)MDRDesk.exe" "$(TargetDir)MDRDesk32.exe""
-if  $(Platform) == x86 "C:\Program Files (x86)\Microsoft Visual Studio\2017\Professional\VC\Tools\MSVC\14.12.25827\bin\HostX86\x86\editbin.exe"  /LARGEADDRESSAWARE MDRDesk32.exe
+    <PostBuildEvent>if  $(Platform) == x86 ("C:\Program Files (x86)\Microsoft Visual Studio\2017\Professional\VC\Tools\MSVC\14.12.25827\bin\HostX86\x86\editbin.exe"  /LARGEADDRESSAWARE MDRDesk32.exe)
 mkdir "$(TargetDir)Documentation"
 xcopy "$(SolutionDir)README.md" "$(TargetDir)" /Y /D /R
 xcopy "$(SolutionDir)Documentation\*.*" "$(TargetDir)Documentation" /Y /D /R  /E
+if $(ConfigurationName) == Release del "$(TargetDir)*.pdb"
+if $(ConfigurationName) == Release del "$(TargetDir)*.xml"
+if  $(ConfigurationName)== Release del "C:\WinDbgStuff\MDRDesk\dotMemory.Unit.dll"
+if  $(ConfigurationName)== Release del "C:\WinDbgStuff\MDRDesk\UnitTestMdr.dll.config"
 
 </PostBuildEvent>
   </PropertyGroup>

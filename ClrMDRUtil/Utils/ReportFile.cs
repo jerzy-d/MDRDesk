@@ -180,7 +180,7 @@ namespace ClrMDRIndex
 				}
 
 				ColumnType[] colTypes;
-				triple<string, ColumnType, int>[] columns = GetColumnInfo(colSpecs, separators, out colTypes);
+				ValueTuple<string, ColumnType, int>[] columns = GetColumnInfo(colSpecs, separators, out colTypes);
 
 				var itemLst = new List<string>(itemCnt * columns.Length);
 
@@ -218,7 +218,7 @@ namespace ClrMDRIndex
 				var colInfos = new ColumnInfo[columns.Length];
 				for (int i = 0, icnt = colInfos.Length; i < icnt; ++i)
 				{
-					colInfos[i] = new ColumnInfo(columns[i].First, columns[i].Second, columns[i].Third, i + 1, true);
+					colInfos[i] = new ColumnInfo(columns[i].Item1, columns[i].Item2, columns[i].Item3, i + 1, true);
 				}
 
 				//if (IsColumnTypeString(colInfos[0].ColumnType))
@@ -357,12 +357,12 @@ namespace ClrMDRIndex
 			return str;
 		}
 
-		private static triple<string, ColumnType, int>[] GetColumnInfo(string colSpec, string[] seps,
+		private static ValueTuple<string, ColumnType, int>[] GetColumnInfo(string colSpec, string[] seps,
 			out ColumnType[] colTypes)
 		{
 			var charSep = new char[] { '|' };
 			var cols = colSpec.Split(seps, StringSplitOptions.None);
-			var colInfos = new triple<string, ColumnType, int>[cols.Length];
+			var colInfos = new ValueTuple<string, ColumnType, int>[cols.Length];
 			colTypes = new ColumnType[cols.Length];
 
 			for (int i = 0, icnt = cols.Length; i < icnt; ++i)
@@ -378,7 +378,7 @@ namespace ClrMDRIndex
 						width = w;
 					}
 				}
-				colInfos[i] = new triple<string, ColumnType, int>(ary[0], colType, width <= 0 ? 200 : width);
+				colInfos[i] = (ary[0], colType, width <= 0 ? 200 : width);
 				colTypes[i] = colType;
 			}
 			return colInfos;

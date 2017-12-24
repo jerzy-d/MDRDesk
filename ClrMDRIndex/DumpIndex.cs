@@ -20,7 +20,7 @@ namespace ClrMDRIndex
             All = 0xFFFFFFF,
         }
 
-    #region fields/properties
+        #region fields/properties
 
         private ConcurrentBag<string> _errors;
 
@@ -81,9 +81,6 @@ namespace ClrMDRIndex
         private WeakReference<ClrElementKind[]> _typeKinds;
         public ClrElementKind[] TypeKinds => GetElementKindList();
 
-        private WeakReference<Tuple<int[], int[]>> _arraySizes;
-        public Tuple<int[], int[]> ArrayLengths => GetArrayLenghts();
-
         private ClrtSegment[] _segments; // segment infos, for instances generation histograms
         private bool _segmentInfoUnrooted;
 
@@ -104,33 +101,22 @@ namespace ClrMDRIndex
         private IndexProxy _indexProxy;
         public IndexProxy IndexProxy => _indexProxy;
 
-        //// threads and blocking objects
-        //private int[][] _deadlock;
-        //public int[][] Deadlock => _deadlock;
-        //public bool DeadlockFound => _deadlock.Length > 0;
         public int[][] Deadlock => _threadBlockgraph.Deadlock;
         public bool DeadlockFound => _threadBlockgraph.HasDeadlock();
-
-#if FALSE
-        private Digraph _threadBlockgraph;
-        public Digraph ThreadBlockgraph => _threadBlockgraph;
-#endif
-        //private DGraph _threadBlockgraph;
-        //public DGraph ThreadBlockgraph => _threadBlockgraph;
         private ThreadBlockGraph _threadBlockgraph;
         public ThreadBlockGraph ThreadBlockgraph => _threadBlockgraph;
         private ClrtThread[] _threads;
         private ClrtBlkObject[] _blocks;
-        //private int[] _threadBlockingMap;
-        //private int[] _blockBlockingMap;
         private WeakReference<string[]> _frames; // just address and methods name
-        private WeakReference<KeyValuePair<int,ulong>[]> _stackVars; // just address and methods name
+        private WeakReference<KeyValuePair<int, ulong>[]> _stackVars; // just address and methods name
         private int[] _frameGroupIdCounts;
         public int[] FrameGroupIdCounts => _frameGroupIdCounts;
 
+        public bool RawInstanceValue { get; set; }
+
         #endregion fields/properties
 
-    #region ctors/initialization
+        #region ctors/initialization
 
         private DumpIndex(string dumpOrIndexPath, int runtimeIndex, IndexType type = IndexType.All)
         {
@@ -252,37 +238,37 @@ namespace ClrMDRIndex
         private bool LoadThreadBlockGraph(out string error)
         {
             error = null;
- //           BinaryReader br = null;
+            //           BinaryReader br = null;
             try
             {
                 var path = _fileMoniker.GetFilePath(_currentRuntimeIndex, Constants.MapThreadsAndBlocksGraphFilePostfix);
-//             br = new BinaryReader(File.Open(path, FileMode.Open));
-                _threadBlockgraph = ThreadBlockGraph.Load(path,out error);
+                //             br = new BinaryReader(File.Open(path, FileMode.Open));
+                _threadBlockgraph = ThreadBlockGraph.Load(path, out error);
 
-//                int cycleCount = br.ReadInt32();
-//                _deadlock = cycleCount > 0 ? new int[cycleCount][] : Utils.EmptyArray<int[]>.Value;
-//                for (int i = 0; i < cycleCount; ++i)
-//                {
-//                    int ccnt = br.ReadInt32();
-//                    _deadlock[i] = new int[ccnt];
-//                    for (int j = 0; j < ccnt; ++j)
-//                    {
-//                        _deadlock[i][j] = br.ReadInt32();
-//                    }
-//                }
-//                int count = br.ReadInt32();
-//                _threadBlockingMap = count > 0 ? new int[count] : Utils.EmptyArray<int>.Value;
-//                for (int i = 0; i < count; ++i)
-//                    _threadBlockingMap[i] = br.ReadInt32();
+                //                int cycleCount = br.ReadInt32();
+                //                _deadlock = cycleCount > 0 ? new int[cycleCount][] : Utils.EmptyArray<int[]>.Value;
+                //                for (int i = 0; i < cycleCount; ++i)
+                //                {
+                //                    int ccnt = br.ReadInt32();
+                //                    _deadlock[i] = new int[ccnt];
+                //                    for (int j = 0; j < ccnt; ++j)
+                //                    {
+                //                        _deadlock[i][j] = br.ReadInt32();
+                //                    }
+                //                }
+                //                int count = br.ReadInt32();
+                //                _threadBlockingMap = count > 0 ? new int[count] : Utils.EmptyArray<int>.Value;
+                //                for (int i = 0; i < count; ++i)
+                //                    _threadBlockingMap[i] = br.ReadInt32();
 
-//                count = br.ReadInt32();
-//                _blockBlockingMap = count > 0 ? new int[count] : Utils.EmptyArray<int>.Value;
-//                for (int i = 0; i < count; ++i)
-//                    _blockBlockingMap[i] = br.ReadInt32();
-//#if FALSE
-//                _threadBlockgraph = Digraph.Load(br, out error);
-//#endif
-//                _threadBlockgraph = DGraph.Load(br, out error);
+                //                count = br.ReadInt32();
+                //                _blockBlockingMap = count > 0 ? new int[count] : Utils.EmptyArray<int>.Value;
+                //                for (int i = 0; i < count; ++i)
+                //                    _blockBlockingMap[i] = br.ReadInt32();
+                //#if FALSE
+                //                _threadBlockgraph = Digraph.Load(br, out error);
+                //#endif
+                //                _threadBlockgraph = DGraph.Load(br, out error);
                 LoadThreadsAndBlocks(out error);
                 return error == null;
             }
@@ -446,9 +432,9 @@ namespace ClrMDRIndex
             }
         }
 
-#endregion ctors/initialization
+        #endregion ctors/initialization
 
-    #region utils
+        #region utils
 
         public int GetInstanceIndex(ulong address)
         {
@@ -488,7 +474,7 @@ namespace ClrMDRIndex
             }
         }
 
-        public static bool SaveStringDictionaries(string path, IDictionary<string,List<string>> dct1, IDictionary<string, List<string>> dct2, List<KeyValuePair<string,string>> lst, out string error)
+        public static bool SaveStringDictionaries(string path, IDictionary<string, List<string>> dct1, IDictionary<string, List<string>> dct2, List<KeyValuePair<string, string>> lst, out string error)
         {
             error = null;
             StreamWriter sw = null;
@@ -512,7 +498,7 @@ namespace ClrMDRIndex
                 }
                 return true;
             }
-            catch(Exception ex)
+            catch (Exception ex)
             {
                 error = Utils.GetExceptionErrorString(ex);
                 return false;
@@ -523,11 +509,11 @@ namespace ClrMDRIndex
             }
         }
 
-#endregion utils
+        #endregion utils
 
-    #region queries
+        #region queries
 
-#region io
+        #region io
 
         /// <summary>
         /// Get full path of one of the index files.
@@ -540,14 +526,18 @@ namespace ClrMDRIndex
             return _fileMoniker.GetFilePath(r, postfix);
         }
 
+        /// <summary>
+        /// Gets full path of the file in ad-hoc folder.
+        /// </summary>
+        /// <returns></returns>
         public string GetAdHocPath(string fileName)
         {
             return _fileMoniker.OutputFolder + Path.DirectorySeparatorChar + fileName;
         }
 
-#endregion io
+        #endregion io
 
-#region heap
+        #region heap
 
         public ClrHeap GetFreshHeap()
         {
@@ -567,9 +557,9 @@ namespace ClrMDRIndex
             return addresses;
         }
 
-#endregion heap
+        #endregion heap
 
-#region types
+        #region types
 
         public string GetTypeName(ulong address)
         {
@@ -795,7 +785,7 @@ namespace ClrMDRIndex
                 if (typeId == Constants.InvalidIndex)
                 {
                     error = "Uknown type: " + typeName;
-                    return (null, Constants.InvalidIndex, ClrElementKind.Unknown, null, null, null,null);
+                    return (null, Constants.InvalidIndex, ClrElementKind.Unknown, null, null, null, null);
                 }
 
                 var kinds = TypeKinds;
@@ -804,7 +794,7 @@ namespace ClrMDRIndex
                 if (fldIds.Key == null || fldIds.Key.Length < 1)
                 {
                     error = "No fields found for type: " + typeName;
-                    return (null, Constants.InvalidIndex, ClrElementKind.Unknown, null, null, null,null);
+                    return (null, Constants.InvalidIndex, ClrElementKind.Unknown, null, null, null, null);
                 }
 
                 string[] fldNames = new string[fldIds.Key.Length];
@@ -812,7 +802,7 @@ namespace ClrMDRIndex
                 int[] fldTypeIds = new int[fldIds.Key.Length];
                 string[] strings = StringIds;
                 ClrElementKind[] fldKinds = new ClrElementKind[fldTypeIds.Length];
-                for( int i = 0, icnt = fldIds.Key.Length; i < icnt; ++i)
+                for (int i = 0, icnt = fldIds.Key.Length; i < icnt; ++i)
                 {
                     var fldTypeId = fldIds.Key[i];
                     fldTypeIds[i] = fldTypeId;
@@ -821,17 +811,17 @@ namespace ClrMDRIndex
                     fldTypeNames[i] = GetTypeName(fldTypeId);
                     fldKinds[i] = kinds[i];
                 }
-                return (typeName, typeId, typeKind, fldTypeNames, fldTypeIds, fldKinds,fldNames);
+                return (typeName, typeId, typeKind, fldTypeNames, fldTypeIds, fldKinds, fldNames);
             }
             catch (Exception ex)
             {
                 error = Utils.GetExceptionErrorString(ex);
-                return (null, Constants.InvalidIndex, ClrElementKind.Unknown, null, null, null,null);
+                return (null, Constants.InvalidIndex, ClrElementKind.Unknown, null, null, null, null);
             }
 
         }
-        
-        public ValueTuple<string,object> GetFieldUsage(int typeId, ClrElementKind typeKind, string[] fldTypeNames, int[] fldIds, ClrElementKind[] fldKinds, string[] fldNames)
+
+        public ValueTuple<string, object> GetFieldUsage(int typeId, ClrElementKind typeKind, string[] fldTypeNames, int[] fldIds, ClrElementKind[] fldKinds, string[] fldNames)
         {
             try
             {
@@ -847,7 +837,7 @@ namespace ClrMDRIndex
 
                 return (null, null);
             }
-            catch(Exception ex)
+            catch (Exception ex)
             {
                 return (Utils.GetExceptionErrorString(ex), null);
             }
@@ -902,28 +892,23 @@ namespace ClrMDRIndex
                 Debug.Assert(sizes.Length == _instances.Length);
 
                 ulong grandTotal = 0UL;
-                var typeDct = new SortedDictionary<string, quadruple<int, ulong, ulong, ulong>>(StringComparer.Ordinal);
+                var typeDct = new SortedDictionary<string, ValueTuple<int, ulong, ulong, ulong>>(StringComparer.Ordinal);
 
                 for (int i = 0, icnt = sizes.Length; i < icnt; ++i)
                 {
                     var sz = sizes[i];
                     var typeName = _typeNames[_instanceTypes[i]];
                     grandTotal += sz;
-                    quadruple<int, ulong, ulong, ulong> info;
+                    ValueTuple<int, ulong, ulong, ulong> info;
                     if (typeDct.TryGetValue(typeName, out info))
                     {
-                        var maxSz = info.Third < sz ? sz : info.Third;
-                        var minSz = info.Third > sz ? sz : info.Third;
-                        typeDct[typeName] = new quadruple<int, ulong, ulong, ulong>(
-                            info.First + 1,
-                            info.Second + sz,
-                            maxSz,
-                            minSz
-                        );
+                        var maxSz = info.Item3 < sz ? sz : info.Item3;
+                        var minSz = info.Item3 > sz ? sz : info.Item3;
+                        typeDct[typeName] = (info.Item1 + 1, info.Item2 + sz, maxSz, minSz);
                     }
                     else
                     {
-                        typeDct.Add(typeName, new quadruple<int, ulong, ulong, ulong>(1, sz, sz, sz));
+                        typeDct.Add(typeName, (1, sz, sz, sz));
                     }
 
                 }
@@ -934,10 +919,7 @@ namespace ClrMDRIndex
                 foreach (var kv in typeDct)
                 {
                     infoAry[ndx++] = new listing<string>(dataAry, off, 6);
-                    int cnt = kv.Value.First;
-                    ulong totSz = kv.Value.Second;
-                    ulong maxSz = kv.Value.Third;
-                    ulong minSz = kv.Value.Forth;
+                    (int cnt, ulong totSz, ulong maxSz, ulong minSz) = kv.Value;
                     double avg = (double)totSz / (double)(cnt);
                     ulong uavg = Convert.ToUInt64(avg);
 
@@ -983,62 +965,49 @@ namespace ClrMDRIndex
         }
 
         /// <summary>
-        /// 
+        /// Returns array of (total array count, array of (type name, type id, array of (inst address, inst count))).
         /// </summary>
-        /// <param name="error"></param>
-        /// <returns>
-        /// Tuple (total array count, list of 
-        /// </returns>
-        public Tuple<int, triple<string, int, pair<ulong, int>[]>[]> GetArrayCounts(bool skipFree, out string error)
+        public ValueTuple<int, ValueTuple<string, int, ClrElementKind, ValueTuple<ulong, int>[]>[]> GetArrayCounts(out string error)
         {
             error = null;
             try
             {
-                ClrElementKind[] elems = GetElementKindList();
-                if (error != null) return null;
-                Tuple<int[], int[]> arySizes = GetArrayLenghts(out error);
-                if (error != null) return null;
-                Debug.Assert(elems.Length == _instances.Length);
-                SortedDictionary<int, List<pair<ulong, int>>> dct = new SortedDictionary<int, List<pair<ulong, int>>>();
-
-                for (int i = 0, icnt = _instances.Length; i < icnt; ++i)
+                if (error != null) return (0,null);
+                (int[] instIds, int[] counts, ClrElementKind[] kinds) = GetArrayLenghts(out error);
+                if (error != null) return (0,null);
+                var dct = new SortedDictionary<int, ValueTuple<string, ClrElementKind, List<ValueTuple<ulong, int>>>>();
+                for (int i = 0, icnt = instIds.Length; i < icnt; ++i)
                 {
-                    var typeId = _instanceTypes[i];
-                    if (typeId < 0) continue;
-                    var elemType = elems[typeId];
-                    if (!TypeExtractor.IsArray(elemType)) continue;
-                    var addr = _instances[i];
+                    int instId = instIds[i];
+                    var typeId = _instanceTypes[instId];
+                    var kind = kinds[i];
+                    Debug.Assert(typeId >= 0 && typeId < _typeNames.Length);
+                    var addr = _instances[instId];
                     var typeName = _typeNames[typeId];
-                    if (skipFree && Utils.SameStrings(typeName, "Free")) continue;
-
-                    var aryCnt = GetArraySize(i, arySizes);
-                    List<pair<ulong, int>> lst;
-                    if (dct.TryGetValue(typeId, out lst))
+                    ValueTuple<string, ClrElementKind, List<ValueTuple<ulong, int>>> info;
+                    if (dct.TryGetValue(typeId, out info))
                     {
-                        lst.Add(new pair<ulong, int>(addr, aryCnt));
+                        info.Item3.Add((addr, counts[i]));
                     }
                     else
                     {
-                        dct.Add(typeId, new List<pair<ulong, int>>(32) { new pair<ulong, int>(addr, aryCnt) });
+                        var lst = new List<ValueTuple<ulong, int>>(32) { (addr, counts[i]) };
+                        dct.Add(typeId, (typeName, kind, lst));
                     }
                 }
 
-                var result = new triple<string, int, pair<ulong, int>[]>[dct.Count];
+                var result = new ValueTuple<string, int, ClrElementKind, ValueTuple<ulong, int>[]>[dct.Count];
                 int ndx = 0;
-                int totalAryCnt = 0;
                 foreach (var kv in dct)
                 {
-                    var typeName = _typeNames[kv.Key];
-                    var ary = kv.Value.ToArray();
-                    totalAryCnt += ary.Length;
-                    result[ndx++] = new triple<string, int, pair<ulong, int>[]>(typeName, kv.Key, ary);
+                    result[ndx++] = (kv.Value.Item1, kv.Key, kv.Value.Item2, kv.Value.Item3.ToArray());
                 }
-                return Tuple.Create(totalAryCnt, result);
+                return (instIds.Length, result);
             }
             catch (Exception ex)
             {
                 error = Utils.GetExceptionErrorString(ex);
-                return null;
+                return (0,null);
             }
         }
 
@@ -1047,9 +1016,9 @@ namespace ClrMDRIndex
             return _clrtDump.GetTypesImplementingInterface(interfaceList, out error);
         }
 
-#endregion types
+        #endregion types
 
-#region instance references
+        #region instance references
 
         public ValueTuple<string, AncestorNode> GetParentTree(ulong address, int levelMax)
         {
@@ -1113,7 +1082,7 @@ namespace ClrMDRIndex
             {
                 HashSet<int> set = new HashSet<int>();
                 Queue<AncestorNode> que = new Queue<AncestorNode>(Math.Min(1000, rootNode.Instances.Length));
-                var dct = new SortedDictionary<int, quadruple<string, List<int>, int, int>>();
+                var dct = new SortedDictionary<int, ValueTuple<string, List<int>, int, int>>();
                 que.Enqueue(rootNode);
                 while (que.Count > 0)
                 {
@@ -1135,27 +1104,27 @@ namespace ClrMDRIndex
                             var ancestor = ancestors[j];
                             var typeid = _instanceTypes[ancestor];
                             var typename = _typeNames[typeid];
-                            quadruple<string, List<int>, int, int> quad;
+                            ValueTuple<string, List<int>, int, int> quad;
                             if (dct.TryGetValue(typeid, out quad))
                             {
-                                quad.Second.Add(ancestor);
+                                quad.Item2.Add(ancestor);
                                 var childNdx = i + 1;
-                                if (quad.Third != childNdx)
+                                if (quad.Item3 != childNdx)
                                 {
-                                    var childCount = quad.Forth + 1;
-                                    dct[typeid] = new quadruple<string, List<int>, int, int>(quad.First, quad.Second, childNdx, childCount);
+                                    var childCount = quad.Item4 + 1;
+                                    dct[typeid] = (quad.Item1, quad.Item2, childNdx, childCount);
                                 }
                                 continue;
                             }
-                            dct.Add(typeid, new quadruple<string, List<int>, int, int>(typename, new List<int>(16) { ancestor }, i + 1, 1));
+                            dct.Add(typeid, (typename, new List<int>(16) { ancestor }, i + 1, 1));
                         }
                     }
                     var nodes = new AncestorNode[dct.Count];
                     int n = 0;
                     foreach (var kv in dct)
                     {
-                        var ancestors = Utils.RemoveDuplicates(kv.Value.Second);
-                        nodes[n] = new AncestorNode(currentNode, currentNodeLevel, kv.Value.Forth, kv.Key, kv.Value.First, ancestors);
+                        var ancestors = Utils.RemoveDuplicates(kv.Value.Item2);
+                        nodes[n] = new AncestorNode(currentNode, currentNodeLevel, kv.Value.Item4, kv.Key, kv.Value.Item1, ancestors);
                         nodes[n].Sort(AncestorNode.SortAncestors.ByteInstanceCountDesc);
                         que.Enqueue(nodes[n]);
                         ++n;
@@ -1182,10 +1151,10 @@ namespace ClrMDRIndex
                 return new ListingInfo(error);
             }
 
-            KeyValuePair<IndexNode, int> result = //_references.GetReferenceNodes(instNdx, References.Direction.FieldParent,References.DataSource.All, out error, level);
-
-            _instanceReferences.GetAncestors(instNdx, level, out error, InstanceReferences.ReferenceType.Ancestors | InstanceReferences.ReferenceType.All);
-
+            KeyValuePair<IndexNode, int> result = _instanceReferences.GetAncestors(instNdx,
+                                                                                    level,
+                                                                                    out error,
+                                                                                    InstanceReferences.ReferenceType.Ancestors | InstanceReferences.ReferenceType.All);
 
             if (!string.IsNullOrEmpty(error) && error[0] != Constants.InformationSymbol)
             {
@@ -1372,9 +1341,9 @@ namespace ClrMDRIndex
             return new ListingInfo(null, items, colInfos, sb.ToString());
         }
 
-#endregion instance references
+        #endregion instance references
 
-#region instance value
+        #region instance value
 
         public ValueTuple<string, InstanceValue, TypeExtractor.KnownTypes> GetInstanceValue(ulong addr, InstanceValue parent)
         {
@@ -1385,16 +1354,16 @@ namespace ClrMDRIndex
                 if (instId < 0)
                 {
                     string err = Constants.InformationSymbolHeader + "Cannot find address on the heap: " + Utils.RealAddressString(addr);
-                    return (err, null,TypeExtractor.KnownTypes.Unknown);
+                    return (err, null, TypeExtractor.KnownTypes.Unknown);
                 }
                 int typeId = _instanceTypes[instId];
                 string typeName = GetTypeName(typeId);
-                var knownCollection = TypeExtractor.IsKnownCollection(typeName);
+                var knownCollection = RawInstanceValue ? TypeExtractor.KnownTypes.Unknown : TypeExtractor.IsKnownCollection(typeName);
                 string error;
                 InstanceValue inst;
                 if (knownCollection != TypeExtractor.KnownTypes.Unknown)
                 {
-                    switch(knownCollection)
+                    switch (knownCollection)
                     {
                         case TypeExtractor.KnownTypes.Dictionary:
                             return GetDictionaryContent(addr, typeId, typeName);
@@ -1491,9 +1460,9 @@ namespace ClrMDRIndex
             }
         }
 
-#endregion instance value
+        #endregion instance value
 
-#region instance hierarchy 
+        #region instance hierarchy 
 
         /// <summary>
         /// TODO JRD -- refactor this, it's using old code!!!
@@ -1562,9 +1531,9 @@ namespace ClrMDRIndex
             return ary;
         }
 
-#endregion instance hierarchy 
+        #endregion instance hierarchy 
 
-#region type values report
+        #region type values report
 
         public ValueTuple<string, ClrtDisplayableType, ulong[]> GetTypeDisplayableRecord(int typeId)
         {
@@ -1757,7 +1726,7 @@ namespace ClrMDRIndex
                 {
                     for (int i = 0, icnt = qry.Children.Length; i < icnt; ++i)
                     {
-                        if (!GetValues(null, qry,faddr, qry.Children[i]))
+                        if (!GetValues(null, qry, faddr, qry.Children[i]))
                             accepted = false;
                     }
                 }
@@ -1870,15 +1839,15 @@ namespace ClrMDRIndex
                         ++nonAcceptedCount;
                     }
                 }
- 
+
                 // prepare listing output
                 //
                 int qryGetValueCnt = query.RowValueCount;
                 int valCnt = query.ValueCount;
 
-                string[] data = nonAcceptedCount > 0 ? new string[(valCnt - nonAcceptedCount)* qryGetValueCnt] : query.Data; // data is already populated
+                string[] data = nonAcceptedCount > 0 ? new string[(valCnt - nonAcceptedCount) * qryGetValueCnt] : query.Data; // data is already populated
                 string[] qryData = query.Data;
-                listing<string>[] items = new listing<string>[valCnt-nonAcceptedCount];
+                listing<string>[] items = new listing<string>[valCnt - nonAcceptedCount];
 
                 ColumnInfo[] colInfos = GetTypeValueReportColumns(query);
                 int dataNdx = 0;
@@ -1892,9 +1861,9 @@ namespace ClrMDRIndex
                     items[ndx++] = new listing<string>(data, dataNdx, qryGetValueCnt);
                     if (nonAcceptedCount > 0)
                     {
-                        for(int j =0, jcnt= qryGetValueCnt; j < jcnt; ++j)
+                        for (int j = 0, jcnt = qryGetValueCnt; j < jcnt; ++j)
                         {
-                            data[dataNdx++] = qryData[i* qryGetValueCnt + j];
+                            data[dataNdx++] = qryData[i * qryGetValueCnt + j];
                         }
                     }
                     else
@@ -1957,7 +1926,7 @@ namespace ClrMDRIndex
             colInfos.Add(new ColumnInfo("ADDRESS", ReportFile.ColumnType.UInt64, 150, ndx, true));
             if (qry.HasChildren)
             {
-                foreach(var child in qry.Children)
+                foreach (var child in qry.Children)
                 {
                     GetTypeValueReportColumns(child, colInfos, ref ndx);
                 }
@@ -1965,9 +1934,9 @@ namespace ClrMDRIndex
             return colInfos.ToArray();
         }
 
-#endregion type values report
+        #endregion type values report
 
-#region disassemble
+        #region disassemble
 
         private Tuple<ClrMethod, MethodCompilationType, ulong, ulong> GetMethodInfo(ClrType clrType, string methodName,
             out string error)
@@ -2030,9 +1999,9 @@ namespace ClrMDRIndex
             return methods;
         }
 
-#endregion disassemble
+        #endregion disassemble
 
-#region ah-hoc queries
+        #region ah-hoc queries
 
         public ClrHeap GetHeap()
         {
@@ -2041,7 +2010,7 @@ namespace ClrMDRIndex
 
         public ClrType GetObjectType(ulong addr)
         {
-             return GetObjectType(Dump.Heap, addr);
+            return GetObjectType(Dump.Heap, addr);
         }
 
         public static ClrType GetObjectType(ClrHeap heap, ulong addr)
@@ -2064,7 +2033,7 @@ namespace ClrMDRIndex
                         var clrType = heap.GetObjectType(addr);
                         if (clrType == null) goto NEXT_OBJECT;
                         bool found = false;
-                        foreach(var intrf in clrType.Interfaces)
+                        foreach (var intrf in clrType.Interfaces)
                         {
                             if (Utils.SameStrings(intrf.Name, interfaceName))
                             {
@@ -2074,7 +2043,7 @@ namespace ClrMDRIndex
                         }
                         if (!found) goto NEXT_OBJECT;
                         List<ulong> lst;
-                        if (result.TryGetValue(clrType.Name,out lst))
+                        if (result.TryGetValue(clrType.Name, out lst))
                         {
                             lst.Add(addr);
                         }
@@ -2086,19 +2055,19 @@ namespace ClrMDRIndex
                         addr = seg.NextObject(addr);
                     }
                 }
-                return (null,result);
+                return (null, result);
             }
             catch (Exception ex)
             {
-                return (Utils.GetExceptionErrorString(ex),null);
+                return (Utils.GetExceptionErrorString(ex), null);
             }
         }
 
-#endregion ah-hoc queries
+        #endregion ah-hoc queries
 
-#endregion queries
+        #endregion queries
 
-    #region roots
+        #region roots
 
         public ClrtRootInfo GetRoots(out string error)
         {
@@ -2159,7 +2128,7 @@ namespace ClrMDRIndex
                     + Environment.NewLine
                     + "If the root has a thread associated with it, the thread's OS id is displayed.";
 
-        private string GetRootListingNote(int i, int count,  StringBuilder sb)
+        private string GetRootListingNote(int i, int count, StringBuilder sb)
         {
             sb.Clear();
             switch (((GCRootKind)i))
@@ -2236,7 +2205,7 @@ namespace ClrMDRIndex
                     string[] data = new string[rt.Length * 5];
                     var lstInfo = new listing<string>[rt.Length];
                     int ndx = 0, off = 0;
-                    for (int j = 0, jcnt=rt.Length; j < jcnt; ++j)
+                    for (int j = 0, jcnt = rt.Length; j < jcnt; ++j)
                     {
                         var r = rt[j];
                         sb.Clear();
@@ -2254,7 +2223,7 @@ namespace ClrMDRIndex
                         var addr = Utils.RealAddressString(r.Address);
                         var obj = Utils.RealAddressString(r.Object);
                         var objType = GetTypeName(r.TypeId);
-                        var rname = r.NameId >=0 && r.NameId < names.Length ? names[r.NameId] : r.NameId.ToString();
+                        var rname = r.NameId >= 0 && r.NameId < names.Length ? names[r.NameId] : r.NameId.ToString();
 
                         lstInfo[ndx] = new listing<string>(data, off, 5);
                         data[off++] = trait;
@@ -2272,7 +2241,7 @@ namespace ClrMDRIndex
 
                 return listingInfos;
             }
-            catch(Exception ex)
+            catch (Exception ex)
             {
                 error = Utils.GetExceptionErrorString(ex);
                 return null;
@@ -2283,9 +2252,9 @@ namespace ClrMDRIndex
             }
         }
 
-#endregion roots
+        #endregion roots
 
-    #region weakreferences
+        #region weakreferences
 
         public ListingInfo GetWeakReferenceInfo(out string error)
         {
@@ -2412,9 +2381,9 @@ namespace ClrMDRIndex
             return GetTypeAddresses(ids, out totalCount, out unrootedCount);
         }
 
-#endregion weakreferences
+        #endregion weakreferences
 
-    #region strings
+        #region strings
 
         public bool AreStringDataFilesAvailable()
         {
@@ -2789,7 +2758,7 @@ namespace ClrMDRIndex
 
         #endregion strings
 
-    #region segments/generations/sizes
+        #region segments/generations/sizes
 
         //var count = _typeInstanceOffsets[offNdx + 1].Value - _typeInstanceOffsets[offNdx].Value;
 
@@ -2799,7 +2768,7 @@ namespace ClrMDRIndex
             try
             {
                 double[] typeCounts = new double[_typeNames.Length];
-                for (int i = 0, icnt = _typeInstanceOffsets.Length-1, typeIndex = 0; i < icnt; ++i)
+                for (int i = 0, icnt = _typeInstanceOffsets.Length - 1, typeIndex = 0; i < icnt; ++i)
                 {
                     var kv = _typeInstanceOffsets[i];
                     while (kv.Key > typeIndex) ++typeIndex;
@@ -2826,7 +2795,7 @@ namespace ClrMDRIndex
                 }
                 return (typeSizes, _typeNames);
             }
-            catch(Exception ex)
+            catch (Exception ex)
             {
                 error = Utils.GetExceptionErrorString(ex);
                 return (null, null);
@@ -2922,7 +2891,7 @@ namespace ClrMDRIndex
                 var heap = runtime.Heap;
 
                 var segs = heap.Segments;
-                var segMemFragments = new List<triple<bool, ulong, ulong>[]>();
+                var segMemFragments = new List<ValueTuple<bool, ulong, ulong>[]>();
                 var stringsLsts = new List<string[]>(segs.Count);
                 var typeInfoLst = new List<SortedDictionary<string, List<KeyValuePair<ulong, ulong>>>>(segs.Count);
                 var countAndSize = new List<KeyValuePair<ulong, int>>(segs.Count);
@@ -2935,8 +2904,8 @@ namespace ClrMDRIndex
                     int cnt = 0;
                     var dct = new SortedDictionary<string, List<KeyValuePair<ulong, ulong>>>(StringComparer.Ordinal);
                     var strings = new List<string>(128);
-                    var fragments = new List<triple<bool, ulong, ulong>>(1024);
-                    fragments.Add(new triple<bool, ulong, ulong>(true, seg.Start, 0));
+                    var fragments = new List<ValueTuple<bool, ulong, ulong>>(1024);
+                    fragments.Add((true, seg.Start, 0));
 
                     ulong addr = seg.FirstObject;
                     while (addr != 0ul)
@@ -2966,7 +2935,7 @@ namespace ClrMDRIndex
                         addr = seg.NextObject(addr);
                     }
                     var lastFragment = fragments[fragments.Count - 1];
-                    var lastAddr = lastFragment.Second + lastFragment.Third;
+                    var lastAddr = lastFragment.Item2 + lastFragment.Item3;
                     if (seg.End > lastAddr)
                         ClrMDRIndex.ValueExtractor.SetSegmentInterval(fragments, lastAddr, seg.End - lastAddr, true);
 
@@ -3148,7 +3117,7 @@ namespace ClrMDRIndex
                 string[] strings = null;
                 if (_frames == null || !_frames.TryGetTarget(out strings))
                 {
-                     strings = Utils.GetStringListFromFile(_fileMoniker.GetFilePath(_currentRuntimeIndex, Constants.TxtThreadFrameDescriptionFilePostfix), out error);
+                    strings = Utils.GetStringListFromFile(_fileMoniker.GetFilePath(_currentRuntimeIndex, Constants.TxtThreadFrameDescriptionFilePostfix), out error);
                     if (strings == null)
                     {
                         if (!string.IsNullOrWhiteSpace(error)) _errors.Add(error);
@@ -3173,7 +3142,7 @@ namespace ClrMDRIndex
             error = null;
             try
             {
-                KeyValuePair<int,ulong>[] vars = null;
+                KeyValuePair<int, ulong>[] vars = null;
                 if (_stackVars == null || !_stackVars.TryGetTarget(out vars))
                 {
                     vars = Utils.ReadKvIntUInt64Array(_fileMoniker.GetFilePath(_currentRuntimeIndex, Constants.MapThreadFramesFilePostfix), out error);
@@ -3195,39 +3164,30 @@ namespace ClrMDRIndex
                 return null;
             }
         }
-        private Tuple<int[], int[]> GetArrayLenghts()
-        {
-            string error;
-            var arySizes = GetArrayLenghts(out error);
-            if (error != null) _errors.Add(error);
-            return arySizes;
-        }
+
+        //private Tuple<int[], int[]> GetArrayLenghts()
+        //{
+        //    string error;
+        //    var arySizes = GetArrayLenghts(out error);
+        //    if (error != null) _errors.Add(error);
+        //    return arySizes;
+        //}
 
 
-        private Tuple<int[], int[]> GetArrayLenghts(out string error)
+        private ValueTuple<int[], int[], ClrElementKind[]> GetArrayLenghts(out string error)
         {
             error = null;
             try
             {
-                Tuple<int[], int[]> arySizes = null;
-                if (_arraySizes == null || !_arraySizes.TryGetTarget(out arySizes))
-                {
-                    arySizes = Utils.ReadKvIntIntArrayAsTwoArrays(_fileMoniker.GetFilePath(_currentRuntimeIndex, Constants.MapArraySizesFilePostfix),
-                        out error);
-                    if (arySizes == null) return null;
-                    if (_arraySizes == null)
-                        _arraySizes = new WeakReference<Tuple<int[], int[]>>(arySizes);
-                    else
-                        _arraySizes.SetTarget(arySizes);
-                }
-                return arySizes;
+                return Utils.ReadArrayInfos(_fileMoniker.GetFilePath(_currentRuntimeIndex, Constants.MapArraySizesFilePostfix), out error);
             }
             catch (Exception ex)
             {
                 error = Utils.GetExceptionErrorString(ex);
-                return null;
+                return (null,null,null);
             }
         }
+
         public KeyValuePair<ulong, ulong> GetTypeSizes(int typeId, out string error)
         {
             error = null;
@@ -3291,14 +3251,14 @@ namespace ClrMDRIndex
         //	}
         //}
 
-        public SortedDictionary<string, quadruple<int, ulong, ulong, ulong>> GetTypeSizesInfo(out string error)
+        public SortedDictionary<string, ValueTuple<int, ulong, ulong, ulong>> GetTypeSizesInfo(out string error)
         {
             error = null;
             try
             {
                 ulong grandTotal = 0ul;
                 int instanceCount = 0;
-                var typeDct = new SortedDictionary<string, quadruple<int, ulong, ulong, ulong>>(StringComparer.Ordinal);
+                var typeDct = new SortedDictionary<string, ValueTuple<int, ulong, ulong, ulong>>(StringComparer.Ordinal);
                 uint[] sizes = GetSizeArray(false, out error);
 
                 for (int i = 0, icnt = sizes.Length; i < icnt; ++i)
@@ -3307,21 +3267,16 @@ namespace ClrMDRIndex
                     var sz = sizes[i];
                     grandTotal += sz;
                     var typeName = _typeNames[_instanceTypes[i]];
-                    quadruple<int, ulong, ulong, ulong> info;
+                    ValueTuple<int, ulong, ulong, ulong> info;
                     if (typeDct.TryGetValue(typeName, out info))
                     {
-                        var maxSz = info.Third < sz ? sz : info.Third;
-                        var minSz = info.Third > sz ? sz : info.Third;
-                        typeDct[typeName] = new quadruple<int, ulong, ulong, ulong>(
-                            info.First + 1,
-                            info.Second + sz,
-                            maxSz,
-                            minSz
-                        );
+                        var maxSz = info.Item3 < sz ? sz : info.Item3;
+                        var minSz = info.Item3 > sz ? sz : info.Item3;
+                        typeDct[typeName] = (info.Item1 + 1, info.Item2 + sz, maxSz, minSz);
                     }
                     else
                     {
-                        typeDct.Add(typeName, new quadruple<int, ulong, ulong, ulong>(1, sz, sz, sz));
+                        typeDct.Add(typeName, (1, sz, sz, sz));
                     }
                 }
                 return typeDct;
@@ -3339,7 +3294,7 @@ namespace ClrMDRIndex
         /// <param name="typeId"></param>
         /// <param name="error"></param>
         /// <returns></returns>
-        public Tuple<ulong, ulong[], SortedDictionary<string, KeyValuePair<int, ulong>>, SortedDictionary<string, List<int>>, triple<int, ulong, string>[]> GetTypeSizeDetails(int typeId, out string error)
+        public Tuple<ulong, ulong[], SortedDictionary<string, KeyValuePair<int, ulong>>, SortedDictionary<string, List<int>>, ValueTuple<int, ulong, string>[]> GetTypeSizeDetails(int typeId, out string error)
         {
             ulong[] addresses = GetTypeRealAddresses(typeId);
             return ClrtDump.GetTotalSizeDetail(Dump, addresses, out error);
@@ -3556,19 +3511,19 @@ namespace ClrMDRIndex
                 int count1 = 0;
                 ulong totSize0 = 0UL;
                 ulong totSize1 = 0UL;
-                quadruple<int, ulong, ulong, ulong> info0;
+                ValueTuple<int, ulong, ulong, ulong> info0;
                 if (myTypeDCT.TryGetValue(str, out info0))
                 {
-                    count0 = info0.First;
-                    totSize0 = info0.Second;
+                    count0 = info0.Item1;
+                    totSize0 = info0.Item2;
                     totalCount0 += count0;
                     grandTotalSize0 += totSize0;
                 }
-                quadruple<int, ulong, ulong, ulong> info1;
+                ValueTuple<int, ulong, ulong, ulong> info1;
                 if (otherTypeDct.TryGetValue(str, out info1))
                 {
-                    count1 = info1.First;
-                    totSize1 = info1.Second;
+                    count1 = info1.Item1;
+                    totSize1 = info1.Item2;
                     totalCount1 += count1;
                     grandTotalSize1 += totSize1;
                 }
@@ -3613,7 +3568,7 @@ namespace ClrMDRIndex
             return new ListingInfo(null, dataListing, colInfos, sb.ToString());
         }
 
-        public SortedDictionary<string, quadruple<int, ulong, ulong, ulong>> GetTypeSizesInfo(string path, out string error)
+        public SortedDictionary<string, ValueTuple<int, ulong, ulong, ulong>> GetTypeSizesInfo(string path, out string error)
         {
             try
             {
@@ -3636,9 +3591,9 @@ namespace ClrMDRIndex
             }
         }
 
-#endregion segments/generations/sizes
+        #endregion segments/generations/sizes
 
-    #region threads/blocking objects
+        #region threads/blocking objects
 
         public bool LoadThreadBlockInfo(out string error)
         {
@@ -3739,7 +3694,7 @@ namespace ClrMDRIndex
             var frmCmp = new Utils.IntArrayHeadCmp();
             int[] frMap = Utils.Iota(threads.Length);
             Array.Sort(frames, frMap, frmCmp);
-            int cnt=1, frmId = 0;
+            int cnt = 1, frmId = 0;
             int[] frmGroupIds = new int[frames.Length];
             List<int> frmGrpCounts = new List<int>(frames.Length / 3);
             frmGroupIds[0] = frmId;
@@ -3792,15 +3747,15 @@ namespace ClrMDRIndex
 
         #endregion threads/blocking objects
 
-    #region dump
+        #region dump
 
-        private bool InitDump(out string error, IProgress<string> progress, ulong[] instances=null)
+        private bool InitDump(out string error, IProgress<string> progress, ulong[] instances = null)
         {
             error = null;
             try
             {
                 _clrtDump = new ClrtDump(DumpPath);
-                if (_clrtDump.Init(out error,instances))
+                if (_clrtDump.Init(out error, instances))
                 {
                     _clrtDump.WarmupHeap();
                     return true;
@@ -3814,9 +3769,9 @@ namespace ClrMDRIndex
             }
         }
 
-#endregion dump
+        #endregion dump
 
-    #region testing
+        #region testing
 
         public bool TestInstanceValues(out string error)
         {
@@ -3857,9 +3812,9 @@ namespace ClrMDRIndex
             }
         }
 
-#endregion testing
+        #endregion testing
 
-    #region dispose
+        #region dispose
 
         volatile
         bool _disposed = false;
@@ -3892,7 +3847,7 @@ namespace ClrMDRIndex
             Dispose(false);
         }
 
-#endregion dispose
+        #endregion dispose
 
     }
 

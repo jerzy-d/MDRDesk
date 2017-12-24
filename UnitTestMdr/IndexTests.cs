@@ -785,6 +785,189 @@ namespace UnitTestMdr
             //Assert.IsNull(error, error);
         }
 
+        [TestMethod]
+        public void TestArrayCounts()
+        {
+            string error;
+            var map = OpenIndex(@"C:\WinDbgStuff\Dumps\Analytics\RCG\analytics3.dmp.map");
+            Stopwatch stopWatch = new Stopwatch();
+            stopWatch.Start();
+            int totalAryCount = 0;
+            ValueTuple<string, int, ClrElementKind, ValueTuple<ulong, int>[]>[] aryInfos = null;
+            string path = string.Empty;
+            using (map)
+            {
+                var result = map.GetArrayCounts(out error);
+                Assert.IsNull(error, error);
+                totalAryCount = result.Item1;
+                aryInfos = result.Item2;
+                path = map.GetAdHocPath("ArrayCounts.txt");
+                var mapKinds = map.TypeKinds;
+            }
+
+            StreamWriter sw = null;
+            try
+            {
+                sw = new StreamWriter(path);
+                sw.WriteLine("Total Count: " + Utils.CountString(totalAryCount));
+                int totalMaxCount = Int32.MinValue;
+                ulong totalMaxAddr = Constants.InvalidAddress;
+                string totaMaxType = string.Empty;
+                for (int i = 0, icnt = aryInfos.Length; i < icnt; ++i)
+                {
+                    (string typeName, int typeId, ClrElementKind kind, ValueTuple<ulong, int>[] instances) = aryInfos[i];
+                    int maxCount = Int32.MinValue;
+                    ulong maxAddr = Constants.InvalidAddress; ;
+                    for(int j = 0, jcnt = instances.Length; j < jcnt; ++j)
+                    {
+                        (ulong addr, int count) = instances[j];
+                        if (count > maxCount)
+                        {
+                            maxCount = count;
+                            maxAddr = addr;
+                        }
+                    }
+                    if (totalMaxCount < maxCount)
+                    {
+                        totalMaxCount = maxCount;
+                        totalMaxAddr = maxAddr;
+                        totaMaxType = typeName;
+                    }
+
+                    sw.Write(Utils.CountStringHeader(maxCount));
+                    sw.Write(Utils.RealAddressStringHeader(maxAddr));
+                    if (TypeExtractor.IsStruct(kind))
+                    {
+                        sw.Write(Constants.HeavyAsteriskHeader);
+                    }
+                    sw.WriteLine(typeName);
+                }
+                sw.WriteLine("####");
+                sw.Write(Utils.CountStringHeader(totalMaxCount));
+                sw.Write(Utils.RealAddressStringHeader(totalMaxAddr));
+                sw.WriteLine(totaMaxType);
+
+            }
+            finally
+            {
+                sw?.Close();
+            }
+
+            return;
+
+            // get some stats
+
+            // these counts are disjoint
+            int emptyCnt = 0;
+            int oneItemCnt = 0;
+            int twoItemCnt = 0;
+            int lessEq5Cnt = 0;
+            int lessEq10Cnt = 0;
+            int moreEq1000000Cnt = 0;
+            int moreEq10000000Cnt = 0;
+
+            int maxCnt = 0;
+
+            var binHeap = new BinaryHeap<ValueTuple<int, string, ulong>>(new Utils.LambdaComparer<ValueTuple<int, string, ulong>>((a,b)=> a.Item1 < b.Item1 ? -1 : (a.Item1 > b.Item1 ? 1 : 0)));
+
+            bool cntDone = false;
+            const int TopCnt = 50;
+
+            //ValueTuple<string, int, ValueTuple<ulong, int>[]>[]>
+
+            for (int i = 0, icnt = aryInfos.Length; i < icnt; ++i)
+            {
+                //var aryInfo = aryInfos[i];
+                (string typeName, int typeId, ClrElementKind kind, ValueTuple<ulong, int>[] instances) = aryInfos[i];
+
+                for (int j = 0, jcnt = instances.Length; j < jcnt; ++j)
+                {
+                    var ary = instances[j];
+                    var cnt = ary.Item2;
+
+                    cntDone = true;
+                    switch (cnt)
+                    {
+                        case 0:
+                            ++emptyCnt;
+                            break;
+                        case 1:
+                            ++oneItemCnt;
+                            break;
+                        case 2:
+                            ++twoItemCnt;
+                            break;
+                        case 3:
+                        case 4:
+                        case 5:
+                            ++lessEq5Cnt;
+                            break;
+                        case 6:
+                        case 7:
+                        case 8:
+                        case 10:
+                        case 11:
+                            ++lessEq10Cnt;
+                            break;
+                        default:
+                            cntDone = false;
+                            break;
+                    }
+
+                    if (cntDone) continue;
+
+                    if (maxCnt < cnt) maxCnt = cnt;
+                    if (cnt >= 10000000)
+                        ++moreEq10000000Cnt;
+                    else if (cnt > 1000000)
+                        ++moreEq1000000Cnt;
+
+                    var hcnt = binHeap.Count;
+                    if (hcnt < TopCnt) // populate heap
+                    {
+                        if (hcnt == 0) binHeap.Insert((cnt, typeName, ary.Item1));
+                        else
+                        {
+                            if (binHeap.Peek().Item1 < cnt) binHeap.Insert((cnt, typeName, ary.Item1));
+                        }
+                    }
+                    else
+                    {
+                        if (binHeap.Peek().Item1 < cnt)
+                        {
+                            binHeap.RemoveRoot();
+                            binHeap.Insert((cnt, typeName, ary.Item1));
+                        }
+                    }
+                }
+            }
+
+            var topCnt = binHeap.ToArray();
+            Array.Sort(topCnt, (a, b) => a.Item1 < b.Item1 ? 1 : (a.Item1 > b.Item1 ? -1 : string.Compare(a.Item2, b.Item2, StringComparison.Ordinal)));
+
+            stopWatch.Stop();
+            TestContext.WriteLine("TEST DURATION: " + Utils.DurationString(stopWatch.Elapsed));
+            TestContext.WriteLine("Array Total Count: " + Utils.SizeString((long)totalAryCount));
+            TestContext.WriteLine("Array Type Count: " + Utils.SizeString((long)aryInfos.Length));
+            TestContext.WriteLine("###");
+            TestContext.WriteLine("Empty Array Count: " + Utils.SizeString(emptyCnt));
+            TestContext.WriteLine("One Item Array Count: " + Utils.SizeString(oneItemCnt));
+            TestContext.WriteLine("Two Item Array Count: " + Utils.SizeString(twoItemCnt));
+            TestContext.WriteLine("Less Eq 5 Items Array Count: " + Utils.SizeString(lessEq5Cnt));
+            TestContext.WriteLine("Less Eq 10 Items Array Count: " + Utils.SizeString(lessEq10Cnt));
+            TestContext.WriteLine("###");
+            TestContext.WriteLine("More Eq 1 million Count: " + Utils.SizeString(moreEq1000000Cnt));
+            TestContext.WriteLine("More Eq 10 million Count: " + Utils.SizeString(moreEq10000000Cnt));
+            TestContext.WriteLine("###");
+            TestContext.WriteLine("Max Item Count: " + Utils.SizeString(maxCnt));
+            TestContext.WriteLine("Top Counts:");
+            foreach (var a in topCnt)
+            {
+                TestContext.WriteLine(Utils.SizeStringHeader(a.Item1) + Utils.AddressString(a.Item3) + "  " + a.Item2);
+            }
+        }
+
+
         #endregion type sizes and distribution
 
         #region references
@@ -1843,15 +2026,30 @@ namespace UnitTestMdr
         [TestMethod]
         public void TestQueueContent()
         {
-            Stopwatch stopWatch = new Stopwatch();
-            stopWatch.Start();
-            var index = OpenIndex(@"C:\WinDbgStuff\Dumps\Analytics\Highline\analyticsdump111.dlk.dmp.map");
-            TestContext.WriteLine(index.DumpFileName + " INDEX OPEN DURATION: " + Utils.StopAndGetDurationString(stopWatch));
-            ulong addr = 0x000001808d4d48; // 0x00000081fe9a48;
+            var index = OpenIndex(@"C:\WinDbgStuff\Dumps\Analytics\RCG\analytics3.dmp.map");
+            // 0x0000074ab3c3b0 System.Collections.Generic.Queue<ECS.Common.Transport.EzeNotificationMessage>
+            ulong addr = 0x0000074ab3c3b0;
             using (index)
             {
-                var heap = index.GetHeap();
-                var (error, description, values) = ValueExtractor.GetQueueContent(heap, addr);
+                var heap = index.Heap;
+                (string error, KeyValuePair<string, string>[] values, string[] ex) = CollectionContent.QueueContentAsStrings(heap, addr);
+
+                Assert.IsNull(error, error);
+            }
+
+        }
+
+        [TestMethod]
+        public void TestConcurrentDictionaryContent()
+        {
+            var index = OpenIndex(@"C:\WinDbgStuff\Dumps\Analytics\RCG\analytics3.dmp.map");
+            // 0x0000064b45beb8 System.Collections.Concurrent.ConcurrentDictionary<ECS.Common.HierarchyCache.Structure.CacheKeySourceIdMap,System.Int32>
+            ulong addr = 0x0000064b45beb8;
+            using (index)
+            {
+                var heap = index.Heap;
+                (string error, KeyValuePair<string, string>[] values, string[] ex) = CollectionContent.ConcurrentDictionaryContentAsStrings(heap, addr);
+
                 Assert.IsNull(error, error);
             }
 

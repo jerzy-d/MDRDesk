@@ -90,5 +90,28 @@ namespace UnitTestMdr
                 && ary[5] == 129
                 );
         }
+
+        [TestMethod]
+        public void Conversions()
+        {
+            TimeSpan ts1 = new TimeSpan(0, 2, 38, 19);
+            TimeSpan ts2 = new TimeSpan(0, 0, 3, 02);
+
+            double gain = 100 * ((ts1.TotalMilliseconds - ts2.TotalMilliseconds) / ts2.TotalMilliseconds);
+        }
+
+        [TestMethod]
+        public void TestMisc()
+        {
+            var ndx = Int32.MinValue;
+
+            var s1 = String.Format("0x{0:x8}", ndx);
+            var s2 = String.Format("0x{0:x8}", 0xC0000000);
+            var s3 = String.Format("0x{0:x8}", 0x80000000);
+            var s4 = String.Format("0x{0:x8}", 0x40000000);
+            var s5 = String.Format("0x{0:x8}", -1);
+
+            Assert.IsTrue(s1 == s3);
+        }
     }
 }

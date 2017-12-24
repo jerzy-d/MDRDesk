@@ -717,7 +717,7 @@ namespace ClrMDRIndex
                 uint[] sizes = new uint[addresses.Length];
                 uint[] baseSizes = new uint[addresses.Length];
                 int[] typeKinds = new int[typeNames.Length];
-                var arraySizes = new List<KeyValuePair<int, int>>(addresses.Length / 25);
+                var arraySizes = new List<ValueTuple<int, int,ClrElementKind>>(addresses.Length / 25);
                 HashSet<int> doneTypeFields = new HashSet<int>();
                 HashSet<int> tofixTypeFields = new HashSet<int>();
                 var typeFields = new SortedDictionary<int, long[]>();
@@ -760,7 +760,8 @@ namespace ClrMDRIndex
                         if (clrType.IsArray)
                         {
                             int asz = clrType.GetArrayLength(addr);
-                            arraySizes.Add(new KeyValuePair<int, int>(addrNdx, asz));
+                            ClrElementKind aryElKind = TypeExtractor.GetElementKind(clrType.ComponentType);
+                            arraySizes.Add((addrNdx, asz, aryElKind));
                         }
 
                         NEXT_OBJECT:
@@ -800,7 +801,7 @@ namespace ClrMDRIndex
                 {
                     _errors[_currentRuntimeIndex].Add("Dumping type kinds failed." + Environment.NewLine + error);
                 }
-                if (!Utils.WriteKvIntIntArray(_fileMoniker.GetFilePath(_currentRuntimeIndex, Constants.MapArraySizesFilePostfix), arraySizes, out error))
+                if (!Utils.WriteArrayInfos(_fileMoniker.GetFilePath(_currentRuntimeIndex, Constants.MapArraySizesFilePostfix), arraySizes, out error))
                 {
                     _errors[_currentRuntimeIndex].Add("Dumping array sizes failed." + Environment.NewLine + error);
                 }

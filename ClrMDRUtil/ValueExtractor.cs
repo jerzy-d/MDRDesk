@@ -92,11 +92,7 @@ namespace ClrMDRIndex
 
         public static string DecimalValue(ulong addr, ClrInstanceField field)
         {
-            //var flags = (int)field.Type.Fields[0].GetValue(addr, true);
-            //var hi = (int)field.Type.Fields[1].GetValue(addr, true);
-            //var lo = (int)field.Type.Fields[2].GetValue(addr, true);
-            //var mid = (int)field.Type.Fields[3].GetValue(addr, true);
-
+            Debug.Assert(field.Type != null);
             var flags = (int)field.Type.Fields[0].GetValue(addr, false);
             var hi = (int)field.Type.Fields[1].GetValue(addr, false);
             var lo = (int)field.Type.Fields[2].GetValue(addr, false);
@@ -282,6 +278,13 @@ namespace ClrMDRIndex
             return formatSpec == null ? dt.ToString(CultureInfo.InvariantCulture) : dt.ToString(formatSpec);
         }
 
+        public static DateTime DateTimeValue(ulong addr, ClrType type)
+        {
+            var data = (ulong)type.Fields[0].GetValue(addr, true);
+            data = data & TicksMask;
+            return  DateTime.FromBinary((long)data);
+        }
+
         //public static string GetDateTimeValue(ulong addr, ClrType clrType, string formatSpec = null)
         //{
         //    var data = (ulong)clrType.Fields[0].GetValue(addr, false);
@@ -359,6 +362,12 @@ namespace ClrMDRIndex
             var data = (long)type.Fields[0].GetValue(addr, true);
             var ts = TimeSpan.FromTicks(data);
             return ts.ToString("c");
+        }
+
+        public static TimeSpan TimeSpanValue(ulong addr, ClrType type)
+        {
+            var data = (long)type.Fields[0].GetValue(addr, true);
+            return TimeSpan.FromTicks(data);
         }
 
         public static string TimeSpanValue(ulong addr, ClrInstanceField fld) // TODO JRD -- check if this works
@@ -452,6 +461,12 @@ namespace ClrMDRIndex
             return StringBuilderCache.GetStringAndRelease(sb);
         }
 
+        /// <summary>
+        /// TODO JRD -- looks like we have to pass 
+        /// </summary>
+        /// <param name="addr"></param>
+        /// <param name="type"></param>
+        /// <returns></returns>
         public static Guid GetGuid(ulong addr, ClrInstanceField field)
         {
             var ival = (int)field.Type.Fields[0].GetValue(addr, true);
@@ -465,6 +480,39 @@ namespace ClrMDRIndex
             byte b6 = (byte)field.Type.Fields[8].GetValue(addr, true);
             byte b7 = (byte)field.Type.Fields[9].GetValue(addr, true);
             byte b8 = (byte)field.Type.Fields[10].GetValue(addr, true);
+            return new Guid(ival, sval1, sval2, b1, b2, b3, b4, b5, b6, b7, b8);
+        }
+
+        public static Guid GetGuid(ulong parentAddr, ClrInstanceField field, bool intr)
+        {
+            ulong addr = field.GetAddress(parentAddr, intr);
+            var ival = (int)field.Type.Fields[0].GetValue(addr, true);
+            var sval1 = (short)field.Type.Fields[1].GetValue(addr, true);
+            var sval2 = (short)field.Type.Fields[2].GetValue(addr, true);
+            byte b1 = (byte)field.Type.Fields[3].GetValue(addr, true);
+            byte b2 = (byte)field.Type.Fields[4].GetValue(addr, true);
+            byte b3 = (byte)field.Type.Fields[5].GetValue(addr, true);
+            byte b4 = (byte)field.Type.Fields[6].GetValue(addr, true);
+            byte b5 = (byte)field.Type.Fields[7].GetValue(addr, true);
+            byte b6 = (byte)field.Type.Fields[8].GetValue(addr, true);
+            byte b7 = (byte)field.Type.Fields[9].GetValue(addr, true);
+            byte b8 = (byte)field.Type.Fields[10].GetValue(addr, true);
+            return new Guid(ival, sval1, sval2, b1, b2, b3, b4, b5, b6, b7, b8);
+        }
+
+        public static Guid GuidValue(ulong addr, ClrType type)
+        {
+            var ival = (int)type.Fields[0].GetValue(addr, true);
+            var sval1 = (short)type.Fields[1].GetValue(addr, true);
+            var sval2 = (short)type.Fields[2].GetValue(addr, true);
+            byte b1 = (byte)type.Fields[3].GetValue(addr, true);
+            byte b2 = (byte)type.Fields[4].GetValue(addr, true);
+            byte b3 = (byte)type.Fields[5].GetValue(addr, true);
+            byte b4 = (byte)type.Fields[6].GetValue(addr, true);
+            byte b5 = (byte)type.Fields[7].GetValue(addr, true);
+            byte b6 = (byte)type.Fields[8].GetValue(addr, true);
+            byte b7 = (byte)type.Fields[9].GetValue(addr, true);
+            byte b8 = (byte)type.Fields[10].GetValue(addr, true);
             return new Guid(ival, sval1, sval2, b1, b2, b3, b4, b5, b6, b7, b8);
         }
 
@@ -543,11 +591,10 @@ namespace ClrMDRIndex
             var exTypeName = exType.Type != null ? exType.Type.Name : Constants.UnknownTypeName;
             var hresult = exType.HResult;
             var message = exType.Message;
-            sb.Append("HRESULT: ").AppendLine(Utils.HResultStringHeader(hresult));
-            sb.Append("MESSAGE: ").AppendLine(message);
-            sb.Append("TYPE:    ").Append(exTypeName);
-
-
+            sb.Append(Utils.RealAddressStringHeader(addr));
+            sb.Append(Utils.HResultStringHeader(hresult)).Append(" ");
+            sb.Append(message);
+            sb.Append(" TYPE: ").Append(exTypeName);
             return StringBuilderCache.GetStringAndRelease(sb);
 
             //var classNameObj = type.GetFieldByName("_className").GetValue(addr);
@@ -684,6 +731,39 @@ namespace ClrMDRIndex
             return (num == null ? "?" : num) + " " + (name == null ? "?" : name);
         }
 
+        public static long GetEnumValue(ulong addr, ClrType clrType, ClrElementType enumElem)
+        {
+            object enumVal = clrType.GetValue(addr);
+
+            if (enumVal is int)
+            {
+                return (long)(int)enumVal;
+            }
+            else
+            {
+                // The approved types for an enum are byte, sbyte, short, ushort, int, uint, long, or ulong.
+                switch (enumElem)
+                {
+                    case ClrElementType.UInt32:
+                        return (long)((uint)enumVal);
+                    case ClrElementType.UInt8:
+                        return (long)(byte)enumVal;
+                    case ClrElementType.Int8:
+                        return (long)(sbyte)enumVal;
+                    case ClrElementType.Int16:
+                        return (long)(short)enumVal;
+                    case ClrElementType.UInt16:
+                        return (long)(ushort)enumVal;
+                    case ClrElementType.Int64:
+                        return (long)enumVal;
+                    case ClrElementType.UInt64:
+                        return (long)(ulong)enumVal;
+                    default:
+                        return long.MinValue;
+                }
+            }
+        }
+
         public static string GetEnumAsString(ulong addr, ClrType clrType, ClrElementType enumElem, object enumVal, out long intVal)
         {
             string name = null;
@@ -755,13 +835,44 @@ namespace ClrMDRIndex
             return int.MinValue;
         }
 
+
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="parentAddr"></param>
+        /// <param name="field"></param>
+        /// <param name="intr"></param>
+        /// <returns></returns>
         public static string GetEnumString(ulong parentAddr, ClrInstanceField field, bool intr)
         {
-            var addrObj = field.GetAddress(parentAddr, intr);
+            var enumObj = field.GetValue(parentAddr, intr);
+            var addrObj = field.GetAddress(parentAddr, true);
+            string name = null;
+            if (field.Type != null)
+            {
+                name = field.Type.GetEnumName(enumObj);
+            }
+            return enumObj.ToString() + " " + (name==null ? "?" : name);
+        }
+
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="parentAddr"></param>
+        /// <param name="field"></param>
+        /// <param name="intr"></param>
+        /// <returns></returns>
+        public static object GetEnumValueObject(ulong parentAddr, ClrInstanceField field, bool intr)
+        {
+            return field.GetValue(parentAddr, intr);
+        }
+
+        public static string GetEnumStringOfField(ulong addr, ClrInstanceField field, bool intr)
+        {
             if (field.Type != null)
             {
                 long intVal;
-                string outStr = GetEnumValueString(addrObj, field.Type, out intVal);
+                string outStr = GetEnumValueString(addr, field.Type, out intVal);
                 return outStr;
             }
             return Constants.UnknownValue;
@@ -1012,13 +1123,13 @@ namespace ClrMDRIndex
             return GetPrimitiveValue(addrObj, field.Type);
         }
 
-        public static void SetSegmentInterval(List<triple<bool, ulong, ulong>> intervals, ulong addr, ulong sz, bool free)
+        public static void SetSegmentInterval(List<ValueTuple<bool, ulong, ulong>> intervals, ulong addr, ulong sz, bool free)
         {
             Debug.Assert(intervals.Count > 0 && sz > 0ul);
             var lstNdx = intervals.Count - 1;
             var last = intervals[lstNdx];
-            bool lastFree = last.First;
-            var lastAddr = last.Second + last.Third;
+            bool lastFree = last.Item1;
+            var lastAddr = last.Item2 + last.Item3;
 
             var curLastAddr = addr + sz;
             if (curLastAddr <= lastAddr) return; // ?
@@ -1030,7 +1141,7 @@ namespace ClrMDRIndex
 
             if (lastFree && free) // append to last
             {
-                last.Third = curLastAddr - last.Second;
+                last.Item3 = curLastAddr - last.Item2;
                 intervals[lstNdx] = last;
                 return;
             }
@@ -1039,11 +1150,11 @@ namespace ClrMDRIndex
             {
                 if (diff > 0)
                 {
-                    intervals.Add(new triple<bool, ulong, ulong>(true, lastAddr, (ulong)diff));
-                    intervals.Add(new triple<bool, ulong, ulong>(false, addr, sz));
+                    intervals.Add((true, lastAddr, (ulong)diff));
+                    intervals.Add((false, addr, sz));
                     return;
                 }
-                last.Third = curLastAddr - last.Second;
+                last.Item3 = curLastAddr - last.Item2;
                 intervals[lstNdx] = last;
                 return;
             }
@@ -1053,20 +1164,20 @@ namespace ClrMDRIndex
             {
                 if (diff > 0)
                 {
-                    last.Third = last.Third + (ulong)diff;
+                    last.Item3 = last.Item3 + (ulong)diff;
                     intervals[lstNdx] = last;
                 }
                 else if (diff < 0)
                 {
                     throw new MdrException("[ValueExtractor.SetSegmentInterval] Address less then last address.");
                 }
-                intervals.Add(new triple<bool, ulong, ulong>(false, addr, sz));
+                intervals.Add((false, addr, sz));
                 return;
             }
 
             Debug.Assert(!lastFree && free);
 
-            intervals.Add(new triple<bool, ulong, ulong>(false, lastAddr, curLastAddr - lastAddr));
+            intervals.Add((false, lastAddr, curLastAddr - lastAddr));
         }
 
         /// <summary>
@@ -1147,6 +1258,7 @@ namespace ClrMDRIndex
 
         public static string ValueToString(object val, ClrElementKind kind)
         {
+            if (val == null) return Constants.NullValue;
             var specKind = TypeExtractor.GetSpecialKind(kind);
             if (specKind != ClrElementKind.Unknown)
             {
@@ -1161,10 +1273,11 @@ namespace ClrMDRIndex
                     case ClrElementKind.Decimal:
                         return (((decimal)val)).ToString(CultureInfo.InvariantCulture);
                     case ClrElementKind.Enum:
-                        switch(TypeExtractor.GetStandardKind(kind))
+                        if (val is long) return ((long)val).ToString(CultureInfo.InvariantCulture);
+                        switch (TypeExtractor.GetStandardKind(kind))
                         {
                             case ClrElementKind.Int32:
-                                return (((int)val)).ToString(CultureInfo.InvariantCulture);
+                                return ((int)val).ToString(CultureInfo.InvariantCulture);
                             case ClrElementKind.Int64:
                                 return (((long)val)).ToString(CultureInfo.InvariantCulture);
                             case ClrElementKind.UInt32:
@@ -1179,6 +1292,7 @@ namespace ClrMDRIndex
                     case ClrElementKind.Abstract:
                     case ClrElementKind.SystemVoid:
                     case ClrElementKind.SystemObject:
+                    case ClrElementKind.Interface:
                         return Utils.RealAddressString((ulong)val);
                     default:
                         throw new ArgumentException("[ValueExtractor.ValueToString(..)] Invalid kind: " + kind.ToString());
@@ -1594,7 +1708,7 @@ namespace ClrMDRIndex
             }
         }
 
-        public static string GetFieldValue(ClrHeap heap, ulong addr, bool intr, ClrInstanceField fld, ClrElementKind fldKind)
+        public static string GetFieldValueString(ClrHeap heap, ulong addr, bool intr, ClrInstanceField fld, ClrElementKind fldKind)
         {
             if (TypeExtractor.IsKnownStruct(fldKind))
             {
@@ -1624,7 +1738,7 @@ namespace ClrMDRIndex
 
             if (TypeExtractor.IsEnum(fldKind))
             {
-                return GetEnumString(addr, fld, intr);
+                return GetEnumStringOfField(addr, fld, intr);
             }
 
             if (TypeExtractor.IsKnownPrimitive(fldKind))
@@ -1636,7 +1750,49 @@ namespace ClrMDRIndex
             return "Don't know how to get value.";
         }
 
-        public static string GetTypeValue(ClrHeap heap, ulong addr, ClrType type, ClrElementKind kind)
+        public static object GetFieldValue(ClrHeap heap, ulong addr, bool intr, ClrInstanceField fld, ClrElementKind fldKind)
+        {
+            if (TypeExtractor.IsKnownStruct(fldKind))
+            {
+                switch (TypeExtractor.GetSpecialKind(fldKind))
+                {
+                    case ClrElementKind.Decimal:
+                        return GetDecimalValue(addr, fld, intr);
+                    case ClrElementKind.DateTime:
+                        return GetDateTimeValue(addr, fld, intr);
+                    case ClrElementKind.TimeSpan:
+                        return TimeSpanValue(addr, fld);
+                    case ClrElementKind.Guid:
+                        return GuidValue(addr, fld);
+                }
+            }
+
+            if (TypeExtractor.IsString(fldKind))
+            {
+                return GetStringAtAddress(addr, heap);
+            }
+
+            if (TypeExtractor.IsObjectReference(fldKind))
+            {
+                var vals = fld.GetAddress(addr, intr);
+                return Utils.RealAddressString(vals);
+            }
+
+            if (TypeExtractor.IsEnum(fldKind))
+            {
+                return GetEnumStringOfField(addr, fld, intr);
+            }
+
+            if (TypeExtractor.IsKnownPrimitive(fldKind))
+            {
+                object val = fld.GetValue(addr, intr);
+                return PrimitiveValueAsString(val, TypeExtractor.GetClrElementType(fldKind));
+            }
+
+            return "Don't know how to get value.";
+        }
+
+        public static string GetTypeValueString(ClrHeap heap, ulong addr, ClrType type, ClrElementKind kind)
         {
             if (TypeExtractor.IsKnownStruct(kind))
             {
@@ -1678,6 +1834,46 @@ namespace ClrMDRIndex
 
             return "Don't know how to get value.";
 
+        }
+
+        public static object GetTypeValue(ClrHeap heap, ulong addr, ClrType type, ClrElementKind kind)
+        {
+            if (TypeExtractor.IsKnownStruct(kind))
+            {
+                switch (TypeExtractor.GetSpecialKind(kind))
+                {
+                    case ClrElementKind.Decimal:
+                        return GetDecimalValue(addr, type);
+                    case ClrElementKind.DateTime:
+                        return DateTimeValue(addr, type);
+                    case ClrElementKind.TimeSpan:
+                        return TimeSpanValue(addr, type);
+                    case ClrElementKind.Guid:
+                        return GuidValue(addr, type);
+                }
+            }
+
+            if (TypeExtractor.IsString(kind))
+            {
+                return GetStringAtAddress(addr, heap);
+            }
+
+            if (TypeExtractor.IsObjectReference(kind))
+            {
+                return addr;
+            }
+
+            if (TypeExtractor.IsEnum(kind))
+            {
+                return GetEnumValue(addr, type, TypeExtractor.GetClrElementType(kind));
+            }
+
+            if (TypeExtractor.IsKnownPrimitive(kind))
+            {
+                return type.GetValue(addr);
+            }
+
+            throw new ApplicationException("[ValueExtractor.GetTypeValue(..)]: Don't know how to get value.");
         }
 
         #region utils
