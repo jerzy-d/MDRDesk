@@ -1303,7 +1303,8 @@ namespace ClrMDRIndex
                 switch (kind)
                 {
                     case ClrElementKind.String:
-                        return (string)val;
+                        if (val is string) return (string)val;
+                        return "Object is not a string.";
                     case ClrElementKind.SZArray:
                     case ClrElementKind.Array:
                     case ClrElementKind.Object:
@@ -1708,8 +1709,14 @@ namespace ClrMDRIndex
             }
         }
 
-        public static string GetFieldValueString(ClrHeap heap, ulong addr, bool intr, ClrInstanceField fld, ClrElementKind fldKind)
+        public static string GetFieldValueString(ClrHeap heap, ulong addr, bool intr, ClrInstanceField fld, ClrElementKind fldKind, StructFieldsEx structFld=null)
         {
+            if (structFld != null)
+            {
+                var fldAddr = fld.GetAddress(addr, intr);
+                return StructFieldsEx.StructString(structFld, heap, fldAddr);
+            }
+
             if (TypeExtractor.IsKnownStruct(fldKind))
             {
                 switch(TypeExtractor.GetSpecialKind(fldKind))
@@ -1727,18 +1734,18 @@ namespace ClrMDRIndex
 
             if (TypeExtractor.IsString(fldKind))
             {
-                return GetStringAtAddress(addr, heap);
+                return fld.GetValue(addr, intr,true) as string;
             }
 
             if (TypeExtractor.IsObjectReference(fldKind))
             {
-                var vals = fld.GetAddress(addr,intr);
-                return Utils.RealAddressString(vals);
+                ulong fldAddr = (ulong)fld.GetValue(addr,intr,false);
+                return Utils.RealAddressString(fldAddr);
             }
 
             if (TypeExtractor.IsEnum(fldKind))
             {
-                return GetEnumStringOfField(addr, fld, intr);
+                return GetEnumString(addr, fld, intr);
             }
 
             if (TypeExtractor.IsKnownPrimitive(fldKind))

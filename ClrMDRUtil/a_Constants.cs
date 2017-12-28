@@ -54,7 +54,15 @@ namespace ClrMDRIndex
 		public const string ByAvgSize = "ByAvgSize";
 		public const string ByTypeName = "ByTypeName";
 
-		public const string ImprobableString = @"\u2700\u2700\u2701u\u2758\u2758\u2759\u27BE\u27BF\u27BF";
+
+        public const string LeftParenthesisPadded = " \u276A "; // ❪ MEDIUM FLATTENED LEFT PARENTHESIS ORNAMENT
+        public const string RightParenthesisPadded = " \u276B "; // 276B ❫ MEDIUM FLATTENED RIGHT PARENTHESIS ORNAMENT
+
+        public const string LeftAngleBracketPadded = " \u276E "; // ❮ HEAVY LEFT-POINTING ANGLE QUOTATION MARK ORNAMENT
+        public const string RightAngleBracketPadded = " \u276F "; // ❯ HEAVY RIGHT-POINTING ANGLE QUOTATION MARK ORNAMENT
+        public const string LeftAngleBracketStr = "\u276E"; // ❮ HEAVY LEFT-POINTING ANGLE QUOTATION MARK ORNAMENT
+        public const string RightAngleBracketStr = "\u276F"; // ❯ HEAVY RIGHT-POINTING ANGLE QUOTATION MARK ORNAMENT
+        public const string ImprobableString = @"\u2700\u2700\u2701u\u2758\u2758\u2759\u27BE\u27BF\u27BF";
         public const char HeavyMultiplication = '\u2716'; // ✖ HEAVY MULTIPLICATION X
         public const string HeavyMultiplicationHeader = "\u2716 "; // ✖ HEAVY MULTIPLICATION X
         public const char HeavyGreekCross = '\u271A'; // ✚ HEAVY GREEK CROSS		

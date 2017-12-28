@@ -93,7 +93,7 @@ namespace MDRDesk
         private const string RootsGrid_RootTypeList = "RootTypeList";
 
         private const string GraphGrid = "GraphGrid";
-
+        private const string ReferenceGraphGrid = "ReferenceGraphGrid";
 
         private string GetReportTitle(ListView lst)
         {
@@ -363,8 +363,17 @@ namespace MDRDesk
         {
             var grid = GetCurrentTabGrid();
             if (grid == null) return;
+            GraphViewer graphViewer = null;
             var info = grid.Tag as Tuple<GraphViewer, ClrtThread[], string[], KeyValuePair<int, ulong>[]>;
-            GraphViewer graphViewer = info.Item1;
+            if (info != null)
+            {
+                graphViewer = info.Item1;
+            }
+            else
+            {
+                graphViewer = grid.Tag as GraphViewer;
+            }
+
             if (graphViewer != null)
             {
                 SetStartTaskMainWindowState("Changing layout of threads and blocking objects graph...");
@@ -625,22 +634,169 @@ namespace MDRDesk
 
         #endregion  threads/blocks
 
+        #region type references
+
+        private void DisplayTypeAncestorsGraph(AncestorNode root)
+        {
+            try
+            {
+                SetStartTaskMainWindowState("Generating graph, please wait...");
+                var que = new Queue<AncestorNode>();
+                que.Enqueue(root);
+                var gedges = new List<Edge>(1024);
+                var gnodes = new List<Node>();
+                var cmp = new AncestorNode.AncestorNodeCmp();
+                var dct = new SortedDictionary<AncestorNode, Node>(cmp);
+                var labels = new HashSet<string>(StringComparer.Ordinal);
+                while (que.Count > 0)
+                {
+                    var parentNode = que.Dequeue();
+                    Node gnode = null;
+                    if (!dct.TryGetValue(parentNode, out gnode))
+                    {
+                        string label = Utils.BaseTypeName(parentNode.TypeName) + Utils.GetSubscriptIntStr(parentNode.Instances != null ? parentNode.Instances.Length : 0);
+                        label = GetAncestorUniqueLabel(label, labels);
+                        gnode = new Node(label);
+                        gnode.Attr.LabelMargin = 10;
+                        gnode.Attr.Padding = 5;
+                        gnode.UserData = parentNode;
+                        if (parentNode.Level == 0)
+                        {
+                            gnode.Attr.FillColor = Color.Chocolate;
+                        }
+                        dct.Add(parentNode, gnode);
+                        gnodes.Add(gnode);
+                    }
+                    AncestorNode[] descendants = parentNode.Ancestors;
+                    for (int i = 0, icount = descendants.Length; i < icount; ++i)
+                    {
+                        var descNode = descendants[i];
+
+                        Node gdnode = null;
+                        if (!dct.TryGetValue(descNode, out gdnode))
+                        {
+                            string glabel = Utils.BaseTypeName(descNode.TypeName) + Utils.GetSubscriptIntStr(descNode.Instances != null ? descNode.Instances.Length : 0);
+                            glabel = GetAncestorUniqueLabel(glabel, labels);
+                            gdnode = new Node(glabel);
+                            gdnode.Attr.LabelMargin = 10;
+                            gdnode.Attr.Padding = 5;
+                            gdnode.UserData = descNode;
+                            dct.Add(descNode, gdnode);
+                            gnodes.Add(gdnode);
+                        }
+                        que.Enqueue(descNode);
+                        gedges.Add(new Edge(gdnode, gnode, ConnectionToGraph.Connected));
+                    }
+                }
+                CloseableTabItem graphTab = null;
+                var grid = this.TryFindResource(ReferenceGraphGrid) as Grid;
+                Debug.Assert(grid != null);
+                var graphGrid = (Grid)LogicalTreeHelper.FindLogicalNode(grid, "ReferenceGrid");
+                Debug.Assert(graphGrid != null);
+                GraphViewer graphViewer = new GraphViewer();
+                graphViewer.GraphCanvas.HorizontalAlignment = HorizontalAlignment.Stretch;
+                graphViewer.GraphCanvas.VerticalAlignment = VerticalAlignment.Stretch;
+                graphGrid.Children.Add(graphViewer.GraphCanvas);
+                graphGrid.UpdateLayout();
+                graphTab = DisplayTab(Constants.BlackDiamondHeader, "Type References", grid, ReferenceGraphGrid);
+                Graph graph = new Graph();
+                grid.Tag = graphViewer;
+                grid.Name = ReferenceGraphGrid + "__" + Utils.GetNewID();
+
+                Microsoft.Msagl.Layout.MDS.MdsLayoutSettings layoutAlgorithmSettings = new Microsoft.Msagl.Layout.MDS.MdsLayoutSettings();
+                //Microsoft.Msagl.Layout.Layered.SugiyamaLayoutSettings layoutAlgorithmSettings = new Microsoft.Msagl.Layout.Layered.SugiyamaLayoutSettings();
+                layoutAlgorithmSettings.NodeSeparation = 20.0;
+
+                graph.LayoutAlgorithmSettings = layoutAlgorithmSettings;
+
+                for (int i = 0, icnt = gnodes.Count; i < icnt; ++i)
+                {
+                    graph.AddNode(gnodes[i]);
+                }
+                for (int i = 0, icnt = gedges.Count; i < icnt; ++i)
+                {
+                    graph.AddPrecalculatedEdge(gedges[i]);
+                }
+                graphViewer.Graph = graph;
+                graphViewer.MouseUp += GraphViewer_RfMouseUp;
+                var menuItems = new Tuple<string, VoidDelegate>[]
+                {
+                    new Tuple<string, VoidDelegate>("Get References",GraphContextMenuGetReferences)
+                };
+                graphViewer.PopupMenus(menuItems);
+
+                (ulong[] addresses, int unrooted) = CurrentIndex.GetInstancesAddressesWithUnrootedCount(root.Instances);
+                var lstBox = (ListBox)LogicalTreeHelper.FindLogicalNode(grid, "RfAddresses");
+                lstBox.ItemsSource = addresses;
+                var addrLabel = (Label)LogicalTreeHelper.FindLogicalNode(grid, "RfAddressesInfo");
+                addrLabel.Content = (unrooted > 0)
+                    ? Utils.CountString(addresses.Length) + " unrooted: " + Utils.CountString(unrooted)
+                    : Utils.CountString(addresses.Length);
+                var txtBox = (TextBox)LogicalTreeHelper.FindLogicalNode(grid, "ReferenceInfo");
+                txtBox.Text = root.TypeName;
+
+            }
+            catch (Exception ex)
+            {
+                GuiUtils.ShowError(Utils.GetExceptionErrorString(ex), this);
+            }
+            finally
+            {
+                SetEndTaskMainWindowState("Generating graph, done.");
+            }
+        }
+
+        private void GraphContextMenuGetReferences()
+        {
+            int a = 1;
+        }
+
+        private void GraphViewer_RfMouseUp(object sender, MsaglMouseEventArgs e)
+        {
+            var grid = GetCurrentTabGrid();
+            if (grid == null) return;
+            GraphViewer graphViewer = grid.Tag as GraphViewer;
+            if (graphViewer != null && graphViewer.ObjectUnderMouseCursor != null)
+            {
+                VNode node = graphViewer.ObjectUnderMouseCursor as VNode;
+                if (node != null)
+                {
+                    var data = node.Node.UserData as AncestorNode;
+                    (ulong[] addresses, int unrooted) = CurrentIndex.GetInstancesAddressesWithUnrootedCount(data.Instances);
+                    var lstBox = (ListBox)LogicalTreeHelper.FindLogicalNode(grid, "RfAddresses");
+                    lstBox.ItemsSource = addresses;
+                    var addrLabel = (Label)LogicalTreeHelper.FindLogicalNode(grid, "RfAddressesInfo");
+                    addrLabel.Content = (unrooted > 0)
+                        ? Utils.CountString(addresses.Length) + " unrooted: " + Utils.CountString(unrooted)
+                        : Utils.CountString(addresses.Length);
+                    var txtBox = (TextBox)LogicalTreeHelper.FindLogicalNode(grid, "ReferenceInfo");
+                    txtBox.Text = data.TypeName;
+                }
+            }
+        }
+
+
+        string GetAncestorUniqueLabel(string label, HashSet<string> labels)
+        {
+            if (labels.Add(label))
+            {
+                return label;
+            }
+            string newLabel = label;
+            int ndx = 1;
+            do
+            {
+                newLabel = label + "(" + ndx.ToString() + ")";
+                ++ndx;
+            } while (labels.Contains(newLabel));
+            labels.Add(newLabel);
+            return newLabel;
+        }
+
+        #endregion type references
+
+
         #region common
-
-        //private void SetGraphHelpTextBlock(TextBlock txtBlk)
-        //{
-        //    txtBlk.Inlines.Add(new Run(" thread ") { Background = Brushes.Chocolate });
-        //    //txtBlk.Inlines.Add(new Bold(new Run("-->")) { FontSize = 18 });
-        //    txtBlk.Inlines.Add(new Run(Constants.RightDashedArrowPadded) { FontSize = 18 });
-        //    txtBlk.Inlines.Add(new Run(" blocking obj ") { Background = Brushes.LightGray });
-        //    txtBlk.Inlines.Add(new Run(" thread waits for blocking obj    "));
-
-        //    txtBlk.Inlines.Add(new Run(" blocking obj ") { Background = Brushes.LightGray });
-        //    //txtBlk.Inlines.Add(new Bold(new Run(Constants.RightSolidArrowPadded)) { FontSize = 16 });
-        //    txtBlk.Inlines.Add(new Run(Constants.RightSolidArrowPadded) { FontSize = 18 });
-        //    txtBlk.Inlines.Add(new Run(" os/mngd ids ") { Background = Brushes.Chocolate });
-        //    txtBlk.Inlines.Add(new Run(" thread owns blocking obj  "));
-        //}
 
         #endregion common
 
@@ -1111,7 +1267,7 @@ namespace MDRDesk
                 //DisplayListViewBottomGrid(report, Constants.BlackDiamond, ReportNameInstRef, ReportTitleInstRef);
                 DisplayListingGrid(report, Constants.BlackDiamondHeader, ReportNameInstRef, ReportTitleInstRef);
             }
-            if (dispMode == ReferenceSearchSetup.DispMode.Tree)
+            if (dispMode == ReferenceSearchSetup.DispMode.Tree || dispMode == ReferenceSearchSetup.DispMode.Graph)
             {
                 SetStartTaskMainWindowState("Getting parent references for: '" + typeName + "', please wait...");
 
@@ -1128,10 +1284,10 @@ namespace MDRDesk
                     return;
                 }
                 SetEndTaskMainWindowState("Getting parent references for: '" + Utils.BaseTypeName(typeName) + "', done.");
-                DisplayTypeAncestorsGrid(report.Item2);
+                if (dispMode == ReferenceSearchSetup.DispMode.Graph) DisplayTypeAncestorsGraph(report.Item2);
+                else DisplayTypeAncestorsGrid(report.Item2);
             }
         }
-
 
         /// <summary>
         /// Get parents of a selected single instance.
@@ -1140,19 +1296,27 @@ namespace MDRDesk
         /// <param name="e">Delegate argument, not used.</param>
         private void LbInstanceParentsClicked(object sender, RoutedEventArgs e)
         {
-            if (!GuiUtils.IsIndexAvailable(this, "No index is loaded")) return;
-
-            // get the address
-            //
-            var lbAddresses = GetTypeAddressesListBox(sender);
-            if (lbAddresses.SelectedItems.Count < 1)
+            try
             {
-                MessageBox.Show("No address is selected!", "Action Aborted", MessageBoxButton.OK, MessageBoxImage.Exclamation);
-                return;
-            }
-            var addr = (ulong)lbAddresses.SelectedItems[0];
+                if (!GuiUtils.IsIndexAvailable(this, "No index is loaded")) return;
 
-            DisplayInstanceParentReferences(addr);
+                // get the address
+                //
+                var lbAddresses = GetTypeAddressesListBox(sender);
+                if (lbAddresses.SelectedItems.Count < 1)
+                {
+                    MessageBox.Show("No address is selected!", "Action Aborted", MessageBoxButton.OK, MessageBoxImage.Exclamation);
+                    return;
+                }
+                var addr = (ulong)lbAddresses.SelectedItems[0];
+
+                DisplayInstanceParentReferences(addr);
+
+            }
+            catch(Exception ex)
+            {
+                GuiUtils.ShowError(Utils.GetExceptionErrorString(ex), this);
+            }
         }
 
         private void ExecuteReferenceQuery(ulong addr)
@@ -1979,7 +2143,6 @@ namespace MDRDesk
             }
         }
 
-
         private async void TypeTreeGetReferences(object sender, RoutedEventArgs e)
         {
             AncestorNode node = GetAncestorTreeViewSelectedNode();
@@ -2113,24 +2276,27 @@ namespace MDRDesk
 
             if (knownType != TypeExtractor.KnownTypes.Unknown)
             {
-                if (knownType == TypeExtractor.KnownTypes.StringBuilder)
+                if ((inst.KeyValuePairs == null || inst.KeyValuePairs.Length < 1) && (inst.ArrayValues == null || inst.ArrayValues.Length < 1) && knownType != TypeExtractor.KnownTypes.StringBuilder)
                 {
-                    ValueWindows.ShowContentWindow(inst.GetDescription(), inst, ValueWindows.WndType.Content);
-                }
-                if ((inst.KeyValuePairs == null || inst.KeyValuePairs.Length < 1) && (inst.ArrayValues == null || inst.ArrayValues.Length < 1))
-                {
-                    GuiUtils.ShowInformation("Empty Collection", TypeExtractor.GetKnowTypeName(knownType), "The collection at address " + Utils.RealAddressString(addr) + " is empty.", inst.TypeName,this);
-                    return;
-                }
 
-                if (knownType == TypeExtractor.KnownTypes.HashSet || knownType == TypeExtractor.KnownTypes.List)
-                {
-                    ValueWindows.ShowContentWindow(inst.GetDescription(), inst, ValueWindows.WndType.List);
+                    GuiUtils.ShowInformation("Empty Collection", TypeExtractor.GetKnowTypeName(knownType), "The collection at address " + Utils.RealAddressString(addr) + " is empty.", inst.GetDescription(), this);
                     return;
                 }
+                switch (knownType)
                 {
-                    ValueWindows.ShowContentWindow(inst.GetDescription(), inst, ValueWindows.WndType.KeyValues);
-                    return;
+                    case TypeExtractor.KnownTypes.StringBuilder:
+                        ValueWindows.ShowContentWindow(inst.GetDescription(), inst, ValueWindows.WndType.Content);
+                        return;
+                    case TypeExtractor.KnownTypes.HashSet:
+                    case TypeExtractor.KnownTypes.List:
+                    case TypeExtractor.KnownTypes.Stack:
+                    case TypeExtractor.KnownTypes.Queue:
+                    case TypeExtractor.KnownTypes.SortedSet:
+                        ValueWindows.ShowContentWindow(inst.GetDescription(), inst, ValueWindows.WndType.List);
+                        return;
+                    default:
+                        ValueWindows.ShowContentWindow(inst.GetDescription(), inst, ValueWindows.WndType.KeyValues);
+                        return;
                 }
             }
 
@@ -2555,7 +2721,7 @@ namespace MDRDesk
             }
         }
 
-#endregion Instance Hierarchy Traversing
+        #endregion Instance Hierarchy Traversing
 
         #endregion Display Grids
 
@@ -2663,7 +2829,7 @@ namespace MDRDesk
 
         #region Map Queries
 
-#endregion Map Queries
+        #endregion Map Queries
 
         #region TabItem Cleanup
 

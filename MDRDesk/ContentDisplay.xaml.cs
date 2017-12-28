@@ -47,6 +47,7 @@ namespace MDRDesk
             UpdateInstanceValue(instVal, description);
             _locked = locked;
             LockBtn.Content = locked ? _lockedImg : _unlockedImg;
+            Title = TypeExtractor.GetKnowTypeName(instVal.TypeName);
         }
 
         public void UpdateInstanceValue(InstanceValue instVal, string descr)

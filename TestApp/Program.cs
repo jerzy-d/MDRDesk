@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Collections.Concurrent;
 using System.Linq;
 using System.Text;
 using System.Threading;
@@ -36,6 +37,35 @@ namespace TestApp
                 ("bbb", 1, ("in-bbb",0),"l-bbb"),
                 ("ccc", 1, ("in-ccc",0),"l-ccc")
             };
+
+            var cdct = new ConcurrentDictionary<int, TestEnum>();
+            cdct.TryAdd(0, TestEnum.First);
+            cdct.TryAdd(1, TestEnum.Second);
+            cdct.TryAdd(2, TestEnum.Third);
+            cdct.TryAdd(3, TestEnum.Forth);
+            cdct.TryAdd(4, TestEnum.Fifth);
+
+            var stack = new Stack<TestEnum>(8);
+            stack.Push(TestEnum.First);
+            stack.Push(TestEnum.Second);
+            stack.Push(TestEnum.Third);
+            stack.Push(TestEnum.Forth);
+            stack.Push(TestEnum.First);
+
+            var que1 = new Queue<TestEnum>(8);
+            que1.Enqueue(TestEnum.First);
+            que1.Enqueue(TestEnum.Second);
+            que1.Enqueue(TestEnum.Third);
+            que1.Enqueue(TestEnum.Forth);
+            que1.Enqueue(TestEnum.Fifth);
+
+            var que2 = new Queue<int>(10);
+            for (int i = 0; i < 100; ++i)
+            {
+                que2.Enqueue(i);
+                que2.Dequeue();
+                que2.Enqueue(i + 100);
+            }
 
             Guid guid1 = Guid.NewGuid();
             var cls = (object)guid1;

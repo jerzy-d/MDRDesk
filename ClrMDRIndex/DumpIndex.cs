@@ -557,6 +557,22 @@ namespace ClrMDRIndex
             return addresses;
         }
 
+        public ValueTuple<ulong[],int> GetInstancesAddressesWithUnrootedCount(int[] instIds)
+        {
+            int count = 0;
+            ulong[] addresses = new ulong[instIds.Length];
+            for (int i = 0, icnt = instIds.Length; i < icnt; ++i)
+            {
+                var addr = _instances[instIds[i]];
+                addresses[i] = addr;
+                if (Utils.IsUnrooted(addr))
+                    ++count;
+
+            }
+            Utils.SortAddresses(addresses);
+            return (addresses,count);
+        }
+
         #endregion heap
 
         #region types
@@ -1363,19 +1379,37 @@ namespace ClrMDRIndex
                 InstanceValue inst;
                 if (knownCollection != TypeExtractor.KnownTypes.Unknown)
                 {
-                    switch (knownCollection)
-                    {
-                        case TypeExtractor.KnownTypes.Dictionary:
-                            return GetDictionaryContent(addr, typeId, typeName);
-                        case TypeExtractor.KnownTypes.SortedDictionary:
-                            return GetSortedDictionaryContent(addr, typeId, typeName);
-                        case TypeExtractor.KnownTypes.SortedList:
-                            return GetSortedListContent(addr, typeId, typeName);
-                        case TypeExtractor.KnownTypes.HashSet:
-                            return GetHashSetContent(addr, typeId, typeName);
-                        case TypeExtractor.KnownTypes.List:
-                            return GetListContent(addr, typeId, typeName);
-                    }
+                    Debug.Assert(knownCollection == TypeExtractor.KnownTypes.ConcurrentDictionary
+                        || knownCollection == TypeExtractor.KnownTypes.Dictionary
+                        || knownCollection == TypeExtractor.KnownTypes.HashSet
+                        || knownCollection == TypeExtractor.KnownTypes.List
+                        || knownCollection == TypeExtractor.KnownTypes.Queue
+                        || knownCollection == TypeExtractor.KnownTypes.SortedDictionary
+                        || knownCollection == TypeExtractor.KnownTypes.SortedList
+                        || knownCollection == TypeExtractor.KnownTypes.Stack
+                        || knownCollection == TypeExtractor.KnownTypes.StringBuilder
+                        || knownCollection == TypeExtractor.KnownTypes.SortedSet
+                        );
+                    return GetKnownCollectionContent(addr, typeId, typeName, knownCollection);
+                    //switch (knownCollection)
+                    //{
+                    //    case TypeExtractor.KnownTypes.Stack:
+                    //        return GetKnownCollectionContent(addr, typeId, typeName, TypeExtractor.KnownTypes.Stack);
+                    //    case TypeExtractor.KnownTypes.Queue:
+                    //        return GetKnownCollectionContent(addr, typeId, typeName, TypeExtractor.KnownTypes.Queue);
+                    //    case TypeExtractor.KnownTypes.ConcurrentDictionary:
+                    //        return GetConcurrentDictionaryContent(addr, typeId, typeName);
+                    //    case TypeExtractor.KnownTypes.Dictionary:
+                    //        return GetDictionaryContent(addr, typeId, typeName);
+                    //    case TypeExtractor.KnownTypes.SortedDictionary:
+                    //        return GetSortedDictionaryContent(addr, typeId, typeName);
+                    //    case TypeExtractor.KnownTypes.SortedList:
+                    //        return GetSortedListContent(addr, typeId, typeName);
+                    //    case TypeExtractor.KnownTypes.HashSet:
+                    //        return GetHashSetContent(addr, typeId, typeName);
+                    //    case TypeExtractor.KnownTypes.List:
+                    //        return GetListContent(addr, typeId, typeName);
+                    //}
                 }
 
                 (error, inst) = ValueExtractor.GetInstanceValue(IndexProxy, Dump.Heap, addr, Constants.InvalidIndex, parent);
@@ -1388,62 +1422,133 @@ namespace ClrMDRIndex
             }
         }
 
-        public ValueTuple<string, InstanceValue, TypeExtractor.KnownTypes> GetDictionaryContent(ulong addr, int typeId, string typeName)
+        public ValueTuple<string, InstanceValue, TypeExtractor.KnownTypes> GetKnownCollectionContent(ulong addr, int typeId, string typeName, TypeExtractor.KnownTypes collectionType)
         {
             Debug.Assert(TypeExtractor.IsKnownCollection(typeName) != TypeExtractor.KnownTypes.Unknown);
-            //(string error, KeyValuePair< string, string>[] description, KeyValuePair<string, string>[] values) =
-            var (error, description, values) = ValueExtractor.GetDictionaryContent(Heap, addr);
+            string error = null;
+            KeyValuePair<string, string>[] description = null;
+            KeyValuePair<string, string>[] kvValues = null;
+            string[] values = null;
+            string value = null;
+            switch (collectionType)
+            {
+                case TypeExtractor.KnownTypes.Dictionary:
+                    (error, description, kvValues) = ValueExtractor.GetDictionaryContent(Heap, addr);
+                    break;
+                case TypeExtractor.KnownTypes.Stack:
+                    (error, description, values) = CollectionContent.StackContentAsStrings(Heap, addr);
+                    break;
+                case TypeExtractor.KnownTypes.Queue:
+                    (error, description, values) = CollectionContent.QueueContentAsStrings(Heap, addr);
+                    break;
+                case TypeExtractor.KnownTypes.ConcurrentDictionary:
+                    (error, description, kvValues) = CollectionContent.ConcurrentDictionaryContentAsStrings(Heap, addr);
+                    break;
+                case TypeExtractor.KnownTypes.SortedDictionary:
+                    (error, description, kvValues) = ValueExtractor.GetSortedDictionaryContent(Heap, addr);
+                    break;
+                case TypeExtractor.KnownTypes.SortedList:
+                    (error, description, kvValues) = ValueExtractor.GetSortedDictionaryContent(Heap, addr);
+                    break;
+                case TypeExtractor.KnownTypes.List:
+                    (error, description, values) = ValueExtractor.GetListContent(Heap, addr);
+                    break;
+                case TypeExtractor.KnownTypes.HashSet:
+                    (error, description, values) = ValueExtractor.GetHashSetContent(Heap, addr);
+                    break;
+                case TypeExtractor.KnownTypes.StringBuilder:
+                    (error, description, value) = CollectionContent.StringBuilderContent(Heap, addr);
+                    break;
+                case TypeExtractor.KnownTypes.SortedSet:
+                    (error, description, values) = CollectionContent.SortedSetContentStrings(Heap, addr);
+                    break;
+            }
             if (error != null) return (error, null, TypeExtractor.KnownTypes.Unknown);
-            var inst = new InstanceValue(typeId, ClrElementKind.Object, addr, typeName, null, null);
+            var inst = new InstanceValue(typeId, ClrElementKind.Object, addr, typeName, null, value);
             inst.AddExtraData(description);
-            inst.AddKeyValuePairs(values);
-            return (null, inst, TypeExtractor.KnownTypes.Dictionary);
+            if (kvValues != null) inst.AddKeyValuePairs(kvValues);
+            else if (values != null) inst.AddArrayValues(values);
+            return (null, inst, collectionType);
         }
 
-        public ValueTuple<string, InstanceValue, TypeExtractor.KnownTypes> GetSortedDictionaryContent(ulong addr, int typeId, string typeName)
-        {
-            Debug.Assert(TypeExtractor.IsKnownCollection(typeName) != TypeExtractor.KnownTypes.Unknown);
-            var (error, description, values) = ValueExtractor.GetSortedDictionaryContent(Heap, addr);
-            if (error != null) return (error, null, TypeExtractor.KnownTypes.Unknown);
-            var inst = new InstanceValue(typeId, ClrElementKind.Object, addr, typeName, null, null);
-            inst.AddExtraData(description);
-            inst.AddKeyValuePairs(values);
-            return (null, inst, TypeExtractor.KnownTypes.SortedDictionary);
-        }
+        //public ValueTuple<string, InstanceValue, TypeExtractor.KnownTypes> GetDictionaryContent(ulong addr, int typeId, string typeName)
+        //{
+        //    Debug.Assert(TypeExtractor.IsKnownCollection(typeName) != TypeExtractor.KnownTypes.Unknown);
+        //    //(string error, KeyValuePair< string, string>[] description, KeyValuePair<string, string>[] values) =
+        //    var (error, description, values) = ValueExtractor.GetDictionaryContent(Heap, addr);
+        //    if (error != null) return (error, null, TypeExtractor.KnownTypes.Unknown);
+        //    var inst = new InstanceValue(typeId, ClrElementKind.Object, addr, typeName, null, null);
+        //    inst.AddExtraData(description);
+        //    inst.AddKeyValuePairs(values);
+        //    return (null, inst, TypeExtractor.KnownTypes.Dictionary);
+        //}
 
-        public ValueTuple<string, InstanceValue, TypeExtractor.KnownTypes> GetSortedListContent(ulong addr, int typeId, string typeName)
-        {
-            Debug.Assert(TypeExtractor.IsKnownCollection(typeName) != TypeExtractor.KnownTypes.Unknown);
-            var (error, description, values) = ValueExtractor.GetSortedListContent(Heap, addr);
-            if (error != null) return (error, null, TypeExtractor.KnownTypes.Unknown);
-            var inst = new InstanceValue(typeId, ClrElementKind.Object, addr, typeName, null, null);
-            inst.AddExtraData(description);
-            inst.AddKeyValuePairs(values);
-            return (null, inst, TypeExtractor.KnownTypes.SortedList);
-        }
+        //public ValueTuple<string, InstanceValue, TypeExtractor.KnownTypes> GetConcurrentDictionaryContent(ulong addr, int typeId, string typeName)
+        //{
+        //    Debug.Assert(TypeExtractor.IsKnownCollection(typeName) != TypeExtractor.KnownTypes.Unknown);
+        //    var (error, description, values) = CollectionContent.ConcurrentDictionaryContentAsStrings(Heap, addr);
+        //    if (error != null) return (error, null, TypeExtractor.KnownTypes.Unknown);
+        //    var inst = new InstanceValue(typeId, ClrElementKind.Object, addr, typeName, null, null);
+        //    inst.AddExtraData(description);
+        //    inst.AddKeyValuePairs(values);
+        //    return (null, inst, TypeExtractor.KnownTypes.ConcurrentDictionary);
+        //}
 
-        public ValueTuple<string, InstanceValue, TypeExtractor.KnownTypes> GetListContent(ulong addr, int typeId, string typeName)
-        {
-            Debug.Assert(TypeExtractor.IsKnownCollection(typeName) != TypeExtractor.KnownTypes.Unknown);
-            var (error, description, values) = ValueExtractor.GetListContent(Heap, addr);
-            if (error != null) return (error, null, TypeExtractor.KnownTypes.Unknown);
-            var inst = new InstanceValue(typeId, ClrElementKind.Object, addr, typeName, null, null);
-            inst.AddExtraData(description);
-            inst.AddArrayValues(values);
-            return (null, inst, TypeExtractor.KnownTypes.List);
-        }
+        //public ValueTuple<string, InstanceValue, TypeExtractor.KnownTypes> GetStackContent(ulong addr, int typeId, string typeName)
+        //{
+        //    Debug.Assert(TypeExtractor.IsKnownCollection(typeName) != TypeExtractor.KnownTypes.Unknown);
+        //    var (error, description, values) = CollectionContent.StackContentAsStrings(Heap, addr);
+        //    if (error != null) return (error, null, TypeExtractor.KnownTypes.Unknown);
+        //    var inst = new InstanceValue(typeId, ClrElementKind.Object, addr, typeName, null, null);
+        //    inst.AddExtraData(description);
+        //    inst.AddArrayValues(values);
+        //    return (null, inst, TypeExtractor.KnownTypes.Stack);
+        //}
 
-        public ValueTuple<string, InstanceValue, TypeExtractor.KnownTypes> GetHashSetContent(ulong addr, int typeId, string typeName)
-        {
-            Debug.Assert(TypeExtractor.IsKnownCollection(typeName) != TypeExtractor.KnownTypes.Unknown);
-            var (error, description, values) = ValueExtractor.GetHashSetContent(Heap, addr);
+        //public ValueTuple<string, InstanceValue, TypeExtractor.KnownTypes> GetSortedDictionaryContent(ulong addr, int typeId, string typeName)
+        //{
+        //    Debug.Assert(TypeExtractor.IsKnownCollection(typeName) != TypeExtractor.KnownTypes.Unknown);
+        //    var (error, description, values) = ValueExtractor.GetSortedDictionaryContent(Heap, addr);
+        //    if (error != null) return (error, null, TypeExtractor.KnownTypes.Unknown);
+        //    var inst = new InstanceValue(typeId, ClrElementKind.Object, addr, typeName, null, null);
+        //    inst.AddExtraData(description);
+        //    inst.AddKeyValuePairs(values);
+        //    return (null, inst, TypeExtractor.KnownTypes.SortedDictionary);
+        //}
 
-            if (error != null) return (error, null, TypeExtractor.KnownTypes.Unknown);
-            var inst = new InstanceValue(typeId, ClrElementKind.Object, addr, typeName, null, null);
-            inst.AddExtraData(description);
-            inst.AddArrayValues(values);
-            return (null, inst, TypeExtractor.KnownTypes.HashSet);
-        }
+        //public ValueTuple<string, InstanceValue, TypeExtractor.KnownTypes> GetSortedListContent(ulong addr, int typeId, string typeName)
+        //{
+        //    Debug.Assert(TypeExtractor.IsKnownCollection(typeName) != TypeExtractor.KnownTypes.Unknown);
+        //    var (error, description, values) = ValueExtractor.GetSortedListContent(Heap, addr);
+        //    if (error != null) return (error, null, TypeExtractor.KnownTypes.Unknown);
+        //    var inst = new InstanceValue(typeId, ClrElementKind.Object, addr, typeName, null, null);
+        //    inst.AddExtraData(description);
+        //    inst.AddKeyValuePairs(values);
+        //    return (null, inst, TypeExtractor.KnownTypes.SortedList);
+        //}
+
+        //public ValueTuple<string, InstanceValue, TypeExtractor.KnownTypes> GetListContent(ulong addr, int typeId, string typeName)
+        //{
+        //    Debug.Assert(TypeExtractor.IsKnownCollection(typeName) != TypeExtractor.KnownTypes.Unknown);
+        //    var (error, description, values) = ValueExtractor.GetListContent(Heap, addr);
+        //    if (error != null) return (error, null, TypeExtractor.KnownTypes.Unknown);
+        //    var inst = new InstanceValue(typeId, ClrElementKind.Object, addr, typeName, null, null);
+        //    inst.AddExtraData(description);
+        //    inst.AddArrayValues(values);
+        //    return (null, inst, TypeExtractor.KnownTypes.List);
+        //}
+
+        //public ValueTuple<string, InstanceValue, TypeExtractor.KnownTypes> GetHashSetContent(ulong addr, int typeId, string typeName)
+        //{
+        //    Debug.Assert(TypeExtractor.IsKnownCollection(typeName) != TypeExtractor.KnownTypes.Unknown);
+        //    var (error, description, values) = ValueExtractor.GetHashSetContent(Heap, addr);
+
+        //    if (error != null) return (error, null, TypeExtractor.KnownTypes.Unknown);
+        //    var inst = new InstanceValue(typeId, ClrElementKind.Object, addr, typeName, null, null);
+        //    inst.AddExtraData(description);
+        //    inst.AddArrayValues(values);
+        //    return (null, inst, TypeExtractor.KnownTypes.HashSet);
+        //}
 
         public ValueTuple<string, InstanceValue[]> GetInstanceValueFields(ulong addr, InstanceValue parent)
         {
@@ -1699,7 +1804,7 @@ namespace ClrMDRIndex
             if (qry.IsAlternative)
             {
                 KeyValuePair<ClrType, ClrElementKind> kv0 = TypeExtractor.TryGetRealType(heap, addr);
-                ulong faddr = ValueExtractor.GetReferenceFieldAddress(addr, parentQry.Type.Fields[qry.FieldIndex], qry.IsInternal);
+                ulong faddr = ValueExtractor.GetReferenceFieldAddress(addr, parentQry.Type.Fields[qry.FieldIndex], qry.IsValueClass);
                 KeyValuePair<ClrType, ClrElementKind> kv = TypeExtractor.TryGetRealType(heap, faddr);
                 if (kv.Key == null || !qry.IsMyType(kv.Key.Name))
                 {
@@ -1740,19 +1845,19 @@ namespace ClrMDRIndex
                 qry.SetField(pFld);
                 if (!pmatch)
                 {
-                    ulong faddr = ValueExtractor.GetReferenceFieldAddress(addr, pFld, qry.IsInternal);
+                    ulong faddr = ValueExtractor.GetReferenceFieldAddress(addr, pFld, qry.IsValueClass);
                     KeyValuePair<ClrType, ClrElementKind> kv = TypeExtractor.TryGetRealType(heap, faddr);
                     qry.SetTypeAndKind(kv.Key, kv.Value);
                 }
 
                 if (qry.HasChildren)
                 {
-                    ulong faddr = ValueExtractor.GetReferenceFieldAddress(addr, qry.Field, qry.IsInternal);
+                    ulong faddr = ValueExtractor.GetReferenceFieldAddress(addr, qry.Field, qry.IsValueClass);
                     KeyValuePair<ClrType, ClrElementKind> kv = TypeExtractor.TryGetRealType(heap, faddr);
                     qry.SetTypeAndKind(kv.Key, kv.Value);
                 }
             }
-            object val = ValueExtractor.GetFieldValue(heap, addr, qry.Field, qry.Type, qry.Kind, parentQry.IsInternal, true);
+            object val = ValueExtractor.GetFieldValue(heap, addr, qry.Field, qry.Type, qry.Kind, parentQry.IsValueClass, true);
             if (qry.GetValue)
             {
                 if (!qry.Accept(val))
@@ -1771,7 +1876,7 @@ namespace ClrMDRIndex
                 {
                     if (TypeExtractor.GetSpecialKind(qry.Kind) == ClrElementKind.Enum)
                     {
-                        string strVal = ValueExtractor.GetEnumString(addr, qry.Field, parentQry.IsInternal);
+                        string strVal = ValueExtractor.GetEnumString(addr, qry.Field, parentQry.IsValueClass);
                         qry.AddValue(strVal);
                     }
                     else

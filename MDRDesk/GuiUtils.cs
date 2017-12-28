@@ -336,7 +336,10 @@ namespace MDRDesk
             }
             for (int i = 0, icnt = data.Length; i < icnt; ++i)
             {
-                sb.Append(data[i].Key).Append(" = ").Append(data[i].Value).AppendLine();
+                if (data[i].Key == null)
+                    sb.Append(data[i].Value).AppendLine();
+                else
+                    sb.Append(data[i].Key).Append(" = ").Append(data[i].Value).AppendLine();
             }
 
             return StringBuilderCache.GetStringAndRelease(sb);

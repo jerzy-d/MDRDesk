@@ -60,4 +60,13 @@ namespace TestApp
         Third
     }
 
+    enum TestEnum
+    {
+        First,
+        Second,
+        Third,
+        Forth,
+        Fifth
+    }
+
 }

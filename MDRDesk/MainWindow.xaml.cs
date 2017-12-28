@@ -2050,6 +2050,9 @@ namespace MDRDesk
                 case AncestorTreeViewGrid:
                     listName = "AncestorAddressList";
                     break;
+                case ReferenceGraphGrid:
+                    listName = "RfAddresses";
+                    break;
             }
             if (listName == null) return null;
             var lbAddresses = (ListBox)LogicalTreeHelper.FindLogicalNode(grid, listName);

@@ -2042,13 +2042,64 @@ namespace UnitTestMdr
         [TestMethod]
         public void TestConcurrentDictionaryContent()
         {
-            var index = OpenIndex(@"C:\WinDbgStuff\Dumps\Analytics\RCG\analytics3.dmp.map");
-            // 0x0000064b45beb8 System.Collections.Concurrent.ConcurrentDictionary<ECS.Common.HierarchyCache.Structure.CacheKeySourceIdMap,System.Int32>
-            ulong addr = 0x0000064b45beb8;
+            string[] paths = new string[]
+            {
+                @"C:\WinDbgStuff\dumps\TestApp.exe_171224_113813.dmp",
+                // 0x0002a98000f1e8 System.Collections.Concurrent.ConcurrentDictionary<System.Int32,TestApp.TestEnum>
+                @"C:\WinDbgStuff\Dumps\Analytics\RCG\analytics3.dmp.map",
+                // 0x0000064b45beb8 System.Collections.Concurrent.ConcurrentDictionary<ECS.Common.HierarchyCache.Structure.CacheKeySourceIdMap,System.Int32>
+                // 0x0000064ad1dc28 System.Collections.Concurrent.ConcurrentDictionary<ECS.Common.HierarchyCache.Structure.SymbolAndSide,ECS.Common.HierarchyCache.Structure.IReadOnlyPosition>
+                // 0x0000064abbc7a0 System.Collections.Concurrent.ConcurrentDictionary<Microsoft.Practices.CompositeUI.Utility.AbstractKey<Microsoft.Practices.CompositeUI.WorkItem>,Microsoft.Practices.CompositeUI.EventBroker.WorkItemSubscriptions>
+            };
+            var index = OpenIndex(paths[1]);
+            ulong addr = 0x0000064abbc7a0;
             using (index)
             {
                 var heap = index.Heap;
-                (string error, KeyValuePair<string, string>[] values, string[] ex) = CollectionContent.ConcurrentDictionaryContentAsStrings(heap, addr);
+                (string error, KeyValuePair<string, string>[] decrs, KeyValuePair<string, string>[] values) = CollectionContent.ConcurrentDictionaryContentAsStrings(heap, addr);
+
+                Assert.IsNull(error, error);
+            }
+
+        }
+
+        [TestMethod]
+        public void TestStringBuilderContent()
+        {
+            string[] paths = new string[]
+            {
+                @"C:\WinDbgStuff\dumps\TestApp.exe_171224_113813.dmp",
+                @"C:\WinDbgStuff\Dumps\Analytics\RCG\analytics3.dmp.map",
+                // 0x0000064fd30bf0 System.Text.StringBuilder
+            };
+            var index = OpenIndex(paths[1]);
+            ulong addr = 0x0000064fd30bf0;
+            using (index)
+            {
+                var heap = index.Heap;
+                (string error, KeyValuePair<string, string>[] decrs, string value) = CollectionContent.StringBuilderContent(heap, addr);
+
+                Assert.IsNull(error, error);
+            }
+
+        }
+
+        [TestMethod]
+        public void TestSortedSetContent()
+        {
+            string[] paths = new string[]
+            {
+                @"C:\WinDbgStuff\dumps\TestApp.exe_171224_113813.dmp",
+                @"C:\WinDbgStuff\Dumps\Analytics\RCG\analytics3.dmp.map",
+                // 0x00000850abd5a8 System.Collections.Generic.SortedSet<System.String>
+                // 0x0000074aaba4e0 System.Collections.Generic.SortedSet<System.UInt16>
+            };
+            var index = OpenIndex(paths[1]);
+            ulong addr = 0x0000074aaba4e0;
+            using (index)
+            {
+                var heap = index.Heap;
+                (string error, KeyValuePair<string, string>[] decrs, string[] values) = CollectionContent.SortedSetContentStrings(heap, addr);
 
                 Assert.IsNull(error, error);
             }

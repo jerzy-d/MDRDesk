@@ -1010,6 +1010,20 @@ namespace ClrMDRIndex
             return new string(digits);
         }
 
+        public static string GetSubscriptIntStr(int val)
+        {
+            int width = NumberOfDigits(val);
+            char[] digits = new char[width];
+            for (int i = width - 1; i >= 0; --i)
+            {
+                if (val == 0) { digits[i] = '\u2080'; continue; }
+                int rem = val % 10;
+                digits[i] = rem == 0 ? '\u2080' : (char)(0x2080 + rem);
+                val /= 10;
+            }
+            return new string(digits);
+        }
+
         public static int SkipWhites(string str, int pos)
         {
             for (; pos < str.Length && Char.IsWhiteSpace(str[pos]); ++pos) ;

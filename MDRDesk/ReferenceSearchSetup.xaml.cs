@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Windows;
+using System.Windows.Controls;
 using ClrMDRIndex;
 
 namespace MDRDesk
@@ -113,5 +114,15 @@ namespace MDRDesk
 
 			DialogResult = true;
 		}
-	}
+
+
+        private void DispModeRadioButtonClicked(object sender, RoutedEventArgs e)
+        {
+            if (RefSearchDisplayGraph.IsChecked == true)
+            {
+                RefSearchLevel.Text = "3";
+                _searchDepthLevel = 3;
+            }
+        }
+    }
 }

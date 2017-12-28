@@ -152,7 +152,10 @@ namespace ClrMDRIndex
                 var ary = _extraData as KeyValuePair<string, string>[];
                 for (int i = 0, icnt=ary.Length; i < icnt; ++i)
                 {
-                    sb.Append(ary[i].Key).Append(" : ").AppendLine(ary[i].Value);
+                    if (ary[i].Key == null)
+                        sb.AppendLine(ary[i].Value);
+                    else
+                        sb.Append(ary[i].Key).Append(" : ").AppendLine(ary[i].Value);
                 }
             }
             else if (IsArray())

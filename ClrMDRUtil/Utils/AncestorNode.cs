@@ -92,7 +92,20 @@ namespace ClrMDRIndex
 			}
 		}
 
-		public class FrequencyCmp : IComparer<AncestorNode>
+        public class AncestorNodeCmp : IComparer<AncestorNode>
+        {
+            public int Compare(AncestorNode a, AncestorNode b)
+            {
+                int cmp = string.Compare(a.TypeName, b.TypeName, StringComparison.Ordinal);
+                if (cmp != 0) return cmp;
+                cmp = a._instances.Length < b._instances.Length ? -1 : (a._instances.Length > b._instances.Length ? 1 : 0);
+                if (cmp != 0) return cmp;
+                var aryCmp = new Utils.IntArrayHeadCmp();
+                return aryCmp.Compare(a.Instances, b.Instances);
+            }
+        }
+
+        public class FrequencyCmp : IComparer<AncestorNode>
 		{
 			public int Compare(AncestorNode a, AncestorNode b)
 			{

@@ -30,6 +30,39 @@ namespace ClrMDRIndex
             _values = values;
             _structs = structs;
         }
+
+        public static string MergeValues(StructValueStrings val)
+        {
+            StringBuilder sb = new StringBuilder(128);
+            sb.Append(Constants.LeftAngleBracketStr);
+            var values = val._values;
+            var structs = val._structs;
+            if (structs == null)
+            {
+                sb.Append(values[0]);
+                for (int i = 1, icnt = values.Length; i < icnt; ++i)
+                {
+                    sb.Append(Constants.MediumVerticalBarPadded).Append(values[i]);
+                }
+                sb.Append(Constants.RightAngleBracketStr);
+                return sb.ToString();
+            }
+
+            if (values[0] == null)
+                sb.Append(MergeValues(structs[0]));
+            else
+                sb.Append(values[0]);
+            for (int i = 1, icnt = values.Length; i < icnt; ++i)
+            {
+                sb.Append(Constants.MediumVerticalBarPadded);
+                if (values[i] == null)
+                    sb.Append(MergeValues(structs[i]));
+                else
+                    sb.Append(values[i]);
+            }
+            sb.Append(Constants.RightAngleBracketStr);
+            return sb.ToString();
+        }
     }
 
     public class StructFields
@@ -92,11 +125,26 @@ namespace ClrMDRIndex
             }
             return new StructFields(kinds, names, typeNames, structFields);
         }
+
+        public void Description(StringBuilder sb, string indent)
+        {
+            for (int i = 0, icnt = _names.Length; i < icnt; ++i)
+            {
+                sb.AppendLine();
+                sb.Append(indent).Append(_names[i]).Append(" : ").Append(_typeNames[i]);
+                if (Structs != null && !Structs[i].IsEmpty())
+                {
+                    sb.AppendLine();
+                    Description(sb, indent + "   ");
+                }
+            }
+        }
     }
 
     public class StructFieldsEx
     {
         StructFields _structFields;
+        public StructFields Structs => _structFields;
         ClrType[] _types;
         ClrInstanceField[] _fields;
         StructFieldsEx[] _ex;
@@ -152,6 +200,11 @@ namespace ClrMDRIndex
                 }
             }
         }
+        public static string StructString(StructFieldsEx structFld, ClrHeap heap, ulong addr)
+        {
+            StructValueStrings val = GetStructValueStrings(structFld, heap, addr);
+            return StructValueStrings.MergeValues(val);
+        }
 
         public static StructValueStrings GetArrayElementStructStrings(StructFieldsEx structFld, ClrHeap heap, ulong addr)
         {
@@ -195,6 +248,7 @@ namespace ClrMDRIndex
             }
             return new StructValueStrings(vals, structVals);
         }
+
 
         public static StructValues GetStructValues(StructFieldsEx structFld, ClrHeap heap, ulong addr)
         {
@@ -276,7 +330,9 @@ namespace ClrMDRIndex
                 }
                 else
                 {
-                    vals[i] = ValueExtractor.GetFieldValueString(heap, addr, true, fld, kind);
+                    var fobj = fld.GetAddress(addr, true);
+                    var faddr = (ulong)fobj;
+                    vals[i] = ValueExtractor.GetFieldValueString(heap, faddr, true, fld, kind);
                 }
             }
             return new StructValueStrings(vals, structVals);

@@ -31,9 +31,9 @@
                 <ColumnDefinition Width="20*"/>
             </Grid.ColumnDefinitions>
             <Label Grid.Column="0" HorizontalAlignment="Left" VerticalAlignment="Center" FontFamily="Consolas" FontWeight="Bold" Margin="8,0,0,0">Display Result As:</Label>
-            <RadioButton x:Name ="RefSearchDisplayList" GroupName="RefSearchDisplayMode" Grid.Column="1" HorizontalAlignment="Left" VerticalAlignment="Center" Margin="4,0,4,0" FontWeight="Bold" >List</RadioButton>
-            <RadioButton x:Name ="RefSearchDisplayTree" GroupName="RefSearchDisplayMode" Grid.Column="2" HorizontalAlignment="Left" VerticalAlignment="Center" Margin="4,0,4,0" FontWeight="Bold">Tree</RadioButton>
-            <RadioButton x:Name ="RefSearchDisplayGraph" GroupName="RefSearchDisplayMode" Grid.Column="3" HorizontalAlignment="Left" VerticalAlignment="Center" Margin="4,0,4,0" FontWeight="Bold" IsEnabled="False">Graph</RadioButton>
+            <RadioButton x:Name ="RefSearchDisplayList" GroupName="RefSearchDisplayMode" Grid.Column="1" HorizontalAlignment="Left" VerticalAlignment="Center" Margin="4,0,4,0" FontWeight="Bold" Click="DispModeRadioButtonClicked">List</RadioButton>
+            <RadioButton x:Name ="RefSearchDisplayTree" GroupName="RefSearchDisplayMode" Grid.Column="2" HorizontalAlignment="Left" VerticalAlignment="Center" Margin="4,0,4,0" FontWeight="Bold" Click="DispModeRadioButtonClicked">Tree</RadioButton>
+            <RadioButton x:Name ="RefSearchDisplayGraph" GroupName="RefSearchDisplayMode" Grid.Column="3" HorizontalAlignment="Left" VerticalAlignment="Center" Margin="4,0,4,0" FontWeight="Bold" Click="DispModeRadioButtonClicked">Graph</RadioButton>
         </Grid>
         <Grid Grid.Row="3" VerticalAlignment="Stretch" HorizontalAlignment="Stretch" Grid.ColumnSpan="2">
             <Grid.ColumnDefinitions>

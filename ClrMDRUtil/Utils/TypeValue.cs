@@ -55,7 +55,7 @@ namespace ClrMDRIndex
 
         public bool GetValue => _getValue;
         public bool HasFilter => _filter != null;
-        public bool IsInternal => TypeExtractor.IsInternal(_kind);
+        public bool IsValueClass => TypeExtractor.IsValueClass(_kind);
         public bool HasChildren => _children != null;
 
         public string[] Data => _values;

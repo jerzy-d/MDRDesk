@@ -179,7 +179,7 @@ namespace ClrMDRIndex
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static bool IsInternal(ClrElementKind kind)
+        public static bool IsValueClass(ClrElementKind kind)
         {
             var stdKind = GetStandardKind(kind);
             return stdKind == ClrElementKind.Struct;
@@ -515,6 +515,7 @@ namespace ClrMDRIndex
             "System.Collections.Generic.Queue<",
             "System.Collections.Generic.Stack<",
             "System.Collections.Concurrent.ConcurrentDictionary<",
+            "System.Collections.Generic.SortedSet<",
         };
 
         public enum KnownTypes
@@ -528,6 +529,7 @@ namespace ClrMDRIndex
             Queue,
             Stack,
             ConcurrentDictionary,
+            SortedSet,
             Unknown,
         }
 
@@ -559,6 +561,8 @@ namespace ClrMDRIndex
                     return "Stack<T>";
                 case KnownTypes.ConcurrentDictionary:
                     return "ConcurrentDictionary<TKey,TValue>";
+                case KnownTypes.SortedSet:
+                    return "SortedSet<T>";
                 default:
                     return "Unknown Type";
             }

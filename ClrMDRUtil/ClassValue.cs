@@ -28,8 +28,21 @@ namespace ClrMDRIndex
                 {
                     var fld = type.Fields[i];
                     var fldType = fld.Type; // returns ClrElementKind.Unknown if fld.Type is null
-                    fldTypes[i] = fldType;
                     var fldKind = TypeExtractor.GetElementKind(fldType);
+                    if (fldType == null || TypeExtractor.IsAmbiguousKind(fldKind))
+                    {
+                        var fldValObj = fld.GetValue(addr, type.IsValueClass, false);
+                        if (fldValObj != null && fldValObj is ulong)
+                        {
+                            var t = heap.GetObjectType((ulong)fldValObj);
+                            if (t != null)
+                            {
+                                fldType = t;
+                                fldKind = TypeExtractor.GetElementKind(t);
+                            }
+                        }
+                    }
+                    fldTypes[i] = fldType;
                     fldKinds[i] = fldKind;
                     if (fldKind == ClrElementKind.Unknown) continue; // nothing to do here, from MDR lib: There is
                                                                      // a bug in several versions of our debugging layer which causes this.
@@ -152,6 +165,9 @@ namespace ClrMDRIndex
                         StructFields sf = StructFields.GetStructFields(fldType);
                         StructFieldsEx sfx = StructFieldsEx.GetStructFields(sf, fldType);
                         sfx.ResetTypes();
+                        if (structVals == null) structVals = new StructValueStrings[fldCnt];
+                        ulong structAddr = fld.GetAddress(addr, false);
+                        structVals[i] = StructFieldsEx.GetStructValueStrings(sfx, heap, structAddr);
                     }
                 }
 
