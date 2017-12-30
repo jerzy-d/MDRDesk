@@ -101,9 +101,16 @@
             <Separator></Separator>
             <MenuItem x:Name="TypeListGetStringUsage" Header="Get String Usage" Click="GetTypeStringUsage"></MenuItem>
 
-            <MenuItem x:Name="TypeListGetParentReferences" Header="Get Parent References" Click="GetParentReferences"></MenuItem>
+            <MenuItem x:Name="TypeListGetParentReferences" Header="Get Type References" Click="GetParentReferences"></MenuItem>
             <MenuItem x:Name="TypeListGenerateSizeDetailsReport" Header="Generate Size Details Report" Click="GenerateSizeDetailsReport"></MenuItem>
             <MenuItem x:Name="TypeListGetTypeValuesReport" Header="Type Values Report" Click="GetTypeValuesReportClicked"></MenuItem>
+        </ContextMenu>
+        <ContextMenu x:Key="GraphContextMenuMenu" x:Shared="False">
+            <MenuItem Header="Copy Type Name" Click="GraphContextMenuCopyTypeName"></MenuItem>
+            <MenuItem Header="Type Sizes" Click="GraphContextMenuTypeSizes"></MenuItem>
+            <MenuItem Header="Type GC Generations" Click="GraphContextMenuGenerationDistribution"></MenuItem>
+            <MenuItem Header="Get Type References" Click="GraphContextMenuGetReferences"></MenuItem>
+            <MenuItem Header="Type Values Report" Click="GraphContextMenuTypeValuesReport"></MenuItem>
         </ContextMenu>
         <ContextMenu x:Key="TypeTreeContextMenu" x:Shared="False">
             <MenuItem x:Name="TypeTreeCopyTypeName" Header="Copy Type Name" Click="TypeTreeCopyTypeNameClicked"></MenuItem>
@@ -398,20 +405,21 @@
             <Grid x:Name="ReferenceMainGrid" v4:Grid.Column="0">
                 <Grid.RowDefinitions>
                     <RowDefinition Height="30"/>
-                    <RowDefinition Height="65*"/>
+                    <RowDefinition Height="90*"/>
                     <RowDefinition Height="5"/>
-                    <RowDefinition Height="15*"/>
+                    <RowDefinition Height="10*"/>
                 </Grid.RowDefinitions>
                 <ToolBar Grid.Row="0" Grid.Column="0" FontSize="11" FontWeight="Bold" FontStyle="Italic">
                     <RadioButton Name="RfLayoutSugiyama" GroupName="GraphLayout" Content="[Sugiyama]" Click="LayoutSugiyama_Click"/>
                     <RadioButton Name="RfLayoutMDS" GroupName="GraphLayout" Content="[MDS]" Click="LayoutMDS_Click" IsChecked="True" />
                     <RadioButton Name="RfLayoutIncremental" GroupName="GraphLayout" Content="[Incremental]" Click="LayoutIncremental_Click" />
                     <RadioButton Name="RfLayoutRanking" GroupName="GraphLayout" Content="[Ranking]" Click="LayoutRanking_Click" />
+                    <Label Name="RfGraphDescription" FontFamily="Consolas" FontSize="12" FontStyle="Italic" FontWeight="Heavy">"..."</Label>
                 </ToolBar>
-                <Grid Name="ReferenceGrid" Grid.Row="1" VerticalAlignment="Stretch" HorizontalAlignment="Stretch" ClipToBounds="True">
+                <Grid Name="ReferenceGrid" Grid.Row="1" VerticalAlignment="Stretch" HorizontalAlignment="Stretch" ClipToBounds="True" ContextMenu="{StaticResource GraphContextMenuMenu}">
                 </Grid>
                 <GridSplitter Grid.Row="2" VerticalAlignment="Center" HorizontalAlignment="Stretch" Height="5" ShowsPreview="False" Background="DarkGray"></GridSplitter>
-                <TextBox Name="ReferenceInfo" Grid.Row="3">
+                <TextBox Name="ReferenceInfo" Grid.Row="3" FontFamily="Consolas" FontSize="12" FontWeight="Heavy" >
                     
                 </TextBox>
             </Grid>
@@ -428,7 +436,7 @@
                         </DataTemplate>
                     </ListBox.ItemTemplate>
                 </ListBox>
-                <Label Grid.Row="1" v4:Grid.Column="0" Name="RfAddressesInfo" IsEnabled="True" Margin="2,2,2,2" VerticalAlignment="Stretch" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center"  FontFamily="Consolas" FontSize="10" FontStyle="Italic" FontWeight="Heavy" Background="LightGray"></Label>
+                <Label Grid.Row="1" v4:Grid.Column="0" Name="RfAddressesInfo" IsEnabled="True" Margin="2,2,2,2" VerticalAlignment="Stretch" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center"  FontFamily="Consolas" FontSize="12" FontStyle="Italic" FontWeight="Heavy" Background="LightGray"></Label>
             </Grid>
         </Grid>
 
@@ -603,8 +611,8 @@
                 </ToolBar>
             </ToolBarTray>
         </Grid>
-        <!-- display tree view -->
-        <!--<Grid x:Key="TypeTreeViewGrid" x:Shared="False">
+         <!--display tree view--> 
+        <Grid x:Key="TypeTreeViewGrid" x:Shared="False">
             <Grid.RowDefinitions>
                 <RowDefinition Height="10*"/>
                 <RowDefinition Height="90*"/>
@@ -619,7 +627,7 @@
             </TreeView>
             <GridSplitter Grid.Row="1" Grid.Column="1" VerticalAlignment="Stretch" HorizontalAlignment="Center" Width="5" ShowsPreview="False" Background="DarkGray"></GridSplitter>
             <ListBox x:Name="TypeArrayValues" Grid.Row="1" Grid.Column="2"></ListBox>
-        </Grid>-->
+        </Grid>
         <!-- display data grid and information text -->
         <Grid x:Key="DataViewGrid" x:Shared="False">
             <Grid.RowDefinitions>

@@ -1036,7 +1036,7 @@ namespace ClrMDRIndex
 
         #region instance references
 
-        public ValueTuple<string, AncestorNode> GetParentTree(ulong address, int levelMax)
+        public ValueTuple<string, AncestorNode> GetParentTree(ulong address, int levelMax, InstanceReferences.ReferenceType flag)
         {
             string error = null;
             try
@@ -1051,7 +1051,7 @@ namespace ClrMDRIndex
                 var typeName = _typeNames[typeId];
                 AncestorNode rootNode = new AncestorNode(null, 0, 0, typeId, typeName, new[] { instanceId });
 
-                return GetParentTree(rootNode, levelMax);
+                return GetParentTree(rootNode, levelMax, flag);
             }
             catch (Exception ex)
             {
@@ -1069,7 +1069,7 @@ namespace ClrMDRIndex
                 if (instances.Length < 1)
                     return ("Cannot find find instances of type: " + GetTypeName(typeId), null);
                 var rootNode = new AncestorNode(null, 0, 0, typeId, typeName, instances);
-                return GetParentTree(rootNode, levelMax);
+                return GetParentTree(rootNode, levelMax, refType);
             }
             catch (Exception ex)
             {
@@ -1077,13 +1077,13 @@ namespace ClrMDRIndex
             }
         }
 
-        public ValueTuple<string, AncestorNode> GetParentTree(int typeId, int[] instIds, int levelMax)
+        public ValueTuple<string, AncestorNode> GetParentTree(int typeId, int[] instIds, int levelMax, InstanceReferences.ReferenceType flag)
         {
             try
             {
                 string typeName = GetTypeName(typeId);
                 var rootNode = new AncestorNode(null, 0, 0, typeId, typeName, instIds);
-                return GetParentTree(rootNode, levelMax);
+                return GetParentTree(rootNode, levelMax, flag);
             }
             catch (Exception ex)
             {
@@ -1091,7 +1091,7 @@ namespace ClrMDRIndex
             }
         }
 
-        public ValueTuple<string, AncestorNode> GetParentTree(AncestorNode rootNode, int levelMax)
+        public ValueTuple<string, AncestorNode> GetParentTree(AncestorNode rootNode, int levelMax, InstanceReferences.ReferenceType flag)
         {
             string error = null;
             try
@@ -1112,7 +1112,7 @@ namespace ClrMDRIndex
                         var inst = instances[i];
                         if (!set.Add(inst)) continue;
 
-                        var ancestors = _instanceReferences.GetReferences(inst, out error, InstanceReferences.ReferenceType.Ancestors | InstanceReferences.ReferenceType.All);
+                        var ancestors = _instanceReferences.GetReferences(inst, out error, flag);
 
 
                         for (int j = 0, jcnt = ancestors.Length; j < jcnt; ++j)
@@ -1157,7 +1157,7 @@ namespace ClrMDRIndex
             }
         }
 
-        public ListingInfo GetParentReferencesReport(ulong addr, int level = Int32.MaxValue)
+        public ListingInfo GetParentReferencesReport(ulong addr, InstanceReferences.ReferenceType flag, int level = Int32.MaxValue)
         {
             string error;
             var instNdx = GetInstanceIndex(addr);
@@ -1167,10 +1167,7 @@ namespace ClrMDRIndex
                 return new ListingInfo(error);
             }
 
-            KeyValuePair<IndexNode, int> result = _instanceReferences.GetAncestors(instNdx,
-                                                                                    level,
-                                                                                    out error,
-                                                                                    InstanceReferences.ReferenceType.Ancestors | InstanceReferences.ReferenceType.All);
+            KeyValuePair<IndexNode, int> result = _instanceReferences.GetAncestors(instNdx, level, out error, flag);
 
             if (!string.IsNullOrEmpty(error) && error[0] != Constants.InformationSymbol)
             {
@@ -2826,7 +2823,7 @@ namespace ClrMDRIndex
 
                 var indices = GetInstanceIndices(addresses);
                 int typeId = GetTypeId("System.String");
-                (string err, AncestorNode node) = GetParentTree(typeId, indices, 2);
+                (string err, AncestorNode node) = GetParentTree(typeId, indices, 2, InstanceReferences.ReferenceType.Ancestors | InstanceReferences.ReferenceType.All);
                 if (err != null)
                 {
                     return (err, null);

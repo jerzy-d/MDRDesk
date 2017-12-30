@@ -636,10 +636,11 @@ namespace MDRDesk
 
         #region type references
 
-        private void DisplayTypeAncestorsGraph(AncestorNode root)
+        private void DisplayTypeAncestorsGraph(AncestorNode root, InstanceReferences.ReferenceType flag)
         {
             try
             {
+                bool ancestorDir = (flag & InstanceReferences.ReferenceType.Ancestors) != InstanceReferences.ReferenceType.None;
                 SetStartTaskMainWindowState("Generating graph, please wait...");
                 var que = new Queue<AncestorNode>();
                 que.Enqueue(root);
@@ -657,13 +658,10 @@ namespace MDRDesk
                         string label = Utils.BaseTypeName(parentNode.TypeName) + Utils.GetSubscriptIntStr(parentNode.Instances != null ? parentNode.Instances.Length : 0);
                         label = GetAncestorUniqueLabel(label, labels);
                         gnode = new Node(label);
-                        gnode.Attr.LabelMargin = 10;
+                        gnode.Attr.LabelMargin = 5;
                         gnode.Attr.Padding = 5;
                         gnode.UserData = parentNode;
-                        if (parentNode.Level == 0)
-                        {
-                            gnode.Attr.FillColor = Color.Chocolate;
-                        }
+                        gnode.Attr.FillColor = GetColor(parentNode.Level);
                         dct.Add(parentNode, gnode);
                         gnodes.Add(gnode);
                     }
@@ -678,20 +676,24 @@ namespace MDRDesk
                             string glabel = Utils.BaseTypeName(descNode.TypeName) + Utils.GetSubscriptIntStr(descNode.Instances != null ? descNode.Instances.Length : 0);
                             glabel = GetAncestorUniqueLabel(glabel, labels);
                             gdnode = new Node(glabel);
-                            gdnode.Attr.LabelMargin = 10;
+                            gdnode.Attr.LabelMargin = 5;
                             gdnode.Attr.Padding = 5;
                             gdnode.UserData = descNode;
+                            gdnode.Attr.FillColor = GetColor(descNode.Level);
                             dct.Add(descNode, gdnode);
                             gnodes.Add(gdnode);
                         }
                         que.Enqueue(descNode);
-                        gedges.Add(new Edge(gdnode, gnode, ConnectionToGraph.Connected));
+                        Edge edge = ancestorDir ? new Edge(gdnode, gnode, ConnectionToGraph.Connected) : new Edge(gnode, gdnode, ConnectionToGraph.Connected);
+                        gedges.Add(edge);
                     }
                 }
                 CloseableTabItem graphTab = null;
                 var grid = this.TryFindResource(ReferenceGraphGrid) as Grid;
                 Debug.Assert(grid != null);
                 var graphGrid = (Grid)LogicalTreeHelper.FindLogicalNode(grid, "ReferenceGrid");
+                var graphLabel = (Label)LogicalTreeHelper.FindLogicalNode(grid, "RfGraphDescription");
+                graphLabel.Content = GetGraphDescription(root, flag);
                 Debug.Assert(graphGrid != null);
                 GraphViewer graphViewer = new GraphViewer();
                 graphViewer.GraphCanvas.HorizontalAlignment = HorizontalAlignment.Stretch;
@@ -719,11 +721,6 @@ namespace MDRDesk
                 }
                 graphViewer.Graph = graph;
                 graphViewer.MouseUp += GraphViewer_RfMouseUp;
-                var menuItems = new Tuple<string, VoidDelegate>[]
-                {
-                    new Tuple<string, VoidDelegate>("Get References",GraphContextMenuGetReferences)
-                };
-                graphViewer.PopupMenus(menuItems);
 
                 (ulong[] addresses, int unrooted) = CurrentIndex.GetInstancesAddressesWithUnrootedCount(root.Instances);
                 var lstBox = (ListBox)LogicalTreeHelper.FindLogicalNode(grid, "RfAddresses");
@@ -746,9 +743,94 @@ namespace MDRDesk
             }
         }
 
-        private void GraphContextMenuGetReferences()
+        private void GraphContextMenuGetReferences(object sender, RoutedEventArgs e)
         {
-            int a = 1;
+            try
+            {
+                (string typeName, int typeId) = GraphContextMenuGetTypeName();
+                if (typeName == null) return;
+                System.Windows.Threading.Dispatcher.CurrentDispatcher.InvokeAsync(() => GetParentReferences(typeName, typeId));
+            }
+            catch(Exception ex)
+            {
+                GuiUtils.ShowError(Utils.GetExceptionErrorString(ex), this);
+            }
+        }
+
+        private void GraphContextMenuCopyTypeName(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                (string typeName, int typeId) = GraphContextMenuGetTypeName();
+                if (typeName == null) return;
+                GuiUtils.CopyToClipboard(typeName);
+                MainStatusShowMessage("Copied to Clipboard: " + typeName);
+            }
+            catch (Exception ex)
+            {
+                GuiUtils.ShowError(Utils.GetExceptionErrorString(ex), this);
+            }
+        }
+
+        private void GraphContextMenuTypeValuesReport(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                (string typeName, int typeId) = GraphContextMenuGetTypeName();
+                if (typeName == null) return;
+                System.Windows.Threading.Dispatcher.CurrentDispatcher.InvokeAsync(() => GetTypeValuesReport(typeName, typeId));
+
+            }
+            catch (Exception ex)
+            {
+                GuiUtils.ShowError(Utils.GetExceptionErrorString(ex), this);
+            }
+        }
+
+        private void GraphContextMenuGenerationDistribution(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                (string typeName, int typeId) = GraphContextMenuGetTypeName();
+                if (typeName == null) return;
+                var genHistogram = CurrentIndex.GetTypeGcGenerationHistogram(typeId);
+                var histStr = ClrtSegment.GetGenerationHistogramSimpleString(genHistogram);
+                MainStatusShowMessage(typeName + ": " + histStr);
+            }
+            catch (Exception ex)
+            {
+                GuiUtils.ShowError(Utils.GetExceptionErrorString(ex), this);
+            }
+        }
+        private void GraphContextMenuTypeSizes(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                (string typeName, int typeId) = GraphContextMenuGetTypeName();
+                if (typeName == null) return;
+                System.Windows.Threading.Dispatcher.CurrentDispatcher.InvokeAsync(() => GetTypeSizes(typeName, typeId));
+            }
+            catch (Exception ex)
+            {
+                GuiUtils.ShowError(Utils.GetExceptionErrorString(ex), this);
+            }
+        }
+
+        private ValueTuple<string,int> GraphContextMenuGetTypeName()
+        {
+            try
+            {
+                var grid = GetCurrentTabGrid();
+                var txtBox = (TextBox)LogicalTreeHelper.FindLogicalNode(grid, "ReferenceInfo");
+                var typeName = txtBox.GetLineText(0).Trim();
+                var typeId = CurrentIndex.GetTypeId(typeName);
+                return (typeName, typeId);
+            }
+            catch (Exception ex)
+            {
+                GuiUtils.ShowError(Utils.GetExceptionErrorString(ex), this);
+                return (null,Constants.InvalidIndex);
+            }
         }
 
         private void GraphViewer_RfMouseUp(object sender, MsaglMouseEventArgs e)
@@ -791,6 +873,35 @@ namespace MDRDesk
             } while (labels.Contains(newLabel));
             labels.Add(newLabel);
             return newLabel;
+        }
+
+        Color GetColor(int level)
+        {
+            if (level == 0) return Color.Chocolate;
+            if (level == 1) return Color.SlateGray;
+            if (level == 2) return Color.LightGray;
+            return Color.WhiteSmoke;
+        }
+
+        TextBlock GetGraphDescription(AncestorNode node, InstanceReferences.ReferenceType flag)
+        {
+            var txtBlk = new TextBlock();
+
+            if ((flag& InstanceReferences.ReferenceType.Ancestors)!= InstanceReferences.ReferenceType.None)
+                txtBlk.Inlines.Add(new Run("Ancestors of: ") { Foreground = Brushes.DarkBlue, FontStyle = FontStyles.Italic, FontWeight = FontWeights.Bold, FontSize = 12 });
+            else
+                txtBlk.Inlines.Add(new Run("Descendants of: ") { Foreground = Brushes.DarkBlue, FontStyle = FontStyles.Italic, FontWeight = FontWeights.Bold, FontSize = 12 });
+            txtBlk.Inlines.Add(new Run(node.TypeName) { Foreground = Brushes.Black, FontStyle = FontStyles.Normal, FontWeight = FontWeights.Bold, FontSize = 10 });
+
+            if ((flag & InstanceReferences.ReferenceType.Rooted) != InstanceReferences.ReferenceType.None)
+                txtBlk.Inlines.Add(new Run("  rooted  ") { Foreground = Brushes.DarkRed, FontStyle = FontStyles.Italic, FontWeight = FontWeights.Bold, FontSize = 10 });
+            if ((flag & InstanceReferences.ReferenceType.Unrooted) != InstanceReferences.ReferenceType.None)
+                txtBlk.Inlines.Add(new Run("  unrooted  ") { Foreground = Brushes.DarkRed, FontStyle = FontStyles.Italic, FontWeight = FontWeights.Bold, FontSize = 10 });
+            if ((flag & InstanceReferences.ReferenceType.Finalizer) != InstanceReferences.ReferenceType.None)
+                txtBlk.Inlines.Add(new Run(" finalizer  ") { Foreground = Brushes.DarkRed, FontStyle = FontStyles.Italic, FontWeight = FontWeights.Bold, FontSize = 10 });
+            if ((flag & InstanceReferences.ReferenceType.All) != InstanceReferences.ReferenceType.None)
+                txtBlk.Inlines.Add(new Run(" all ") { Foreground = Brushes.DarkRed, FontStyle = FontStyles.Italic, FontWeight = FontWeights.Bold, FontSize = 10 });
+            return txtBlk;
         }
 
         #endregion type references
@@ -1189,18 +1300,17 @@ namespace MDRDesk
         //	MessageBox.Show("Not implemented yet.", "Get Type Total Heap Size Report", MessageBoxButton.OK, MessageBoxImage.Information);
         //}
 
-        private async void GetTypeSizesClicked(object sender, RoutedEventArgs e)
+        private void GetTypeSizesClicked(object sender, RoutedEventArgs e)
         {
             string typeName;
             int typeId;
             if (!GetTypeNameInfo(sender, out typeName, out typeId)) return;
+            System.Windows.Threading.Dispatcher.CurrentDispatcher.InvokeAsync(() => GetTypeSizes(typeName, typeId));
+        }
+
+        private async void GetTypeSizes(string typeName, int typeId)
+        {
             SetStartTaskMainWindowState("getting type sizes, please wait...");
-            //var result = await Task.Run(() =>
-            //{
-            //    string error;
-            //    var tuple = CurrentIndex.GetTypeSizes(typeId, out error);
-            //    return new Tuple<string, ulong, ulong>(error, tuple.Key, tuple.Value);
-            //});
 
             var result = await Task.Factory.StartNew(() =>
             {
@@ -1222,7 +1332,6 @@ namespace MDRDesk
             }
             SetEndTaskMainWindowState(msg);
         }
-
         private void GetParentReferences(object sender, RoutedEventArgs e)
         {
             if (!GuiUtils.IsIndexAvailable(this, "No index is loaded")) return;
@@ -1274,7 +1383,7 @@ namespace MDRDesk
                 //var report = await Task.Run(() => CurrentIndex.GetParentTree(typeId, level));
                 var report = await Task.Factory.StartNew(() =>
                 {
-                    return CurrentIndex.GetParentTree(typeId, level);
+                    return CurrentIndex.GetParentTree(typeId, level, searchFlag);
                 }, DumpSTAScheduler);
 
                 if (report.Item1 != null)
@@ -1284,8 +1393,8 @@ namespace MDRDesk
                     return;
                 }
                 SetEndTaskMainWindowState("Getting parent references for: '" + Utils.BaseTypeName(typeName) + "', done.");
-                if (dispMode == ReferenceSearchSetup.DispMode.Graph) DisplayTypeAncestorsGraph(report.Item2);
-                else DisplayTypeAncestorsGrid(report.Item2);
+                if (dispMode == ReferenceSearchSetup.DispMode.Graph) DisplayTypeAncestorsGraph(report.Item2,searchFlag);
+                else DisplayTypeAncestorsTree(report.Item2, searchFlag);
             }
         }
 
@@ -1345,7 +1454,7 @@ namespace MDRDesk
                 //var report = await Task.Run(() => CurrentIndex.GetParentReferencesReport(addr, level));
                 var report = await Task.Factory.StartNew(() =>
                 {
-                    return CurrentIndex.GetParentReferencesReport(addr, level);
+                    return CurrentIndex.GetParentReferencesReport(addr, direction|dataSource, level);
                 }, DumpSTAScheduler);
 
                 if (report.Error != null)
@@ -1359,14 +1468,14 @@ namespace MDRDesk
                 DisplayListingGrid(report, Constants.BlackDiamondHeader, ReportNameInstRef, ReportTitleInstRef);
 
             }
-            if (dispMode == ReferenceSearchSetup.DispMode.Tree)
+            if (dispMode == ReferenceSearchSetup.DispMode.Tree || dispMode == ReferenceSearchSetup.DispMode.Graph)
             {
                 SetStartTaskMainWindowState(msg + "please wait...");
 
                 //(string error, AncestorNode node) = await Task.Run(() => CurrentIndex.GetParentTree(addr, level));
                 (string error, AncestorNode node) = await Task.Factory.StartNew(() =>
                 {
-                    return CurrentIndex.GetParentTree(addr, level);
+                    return CurrentIndex.GetParentTree(addr, level, InstanceReferences.ReferenceType.Ancestors | InstanceReferences.ReferenceType.All);
                 }, DumpSTAScheduler);
 
                 if (error != null)
@@ -1376,7 +1485,8 @@ namespace MDRDesk
                     return;
                 }
                 SetEndTaskMainWindowState(msg + "done.");
-                DisplayTypeAncestorsGrid(node);
+                if (dispMode == ReferenceSearchSetup.DispMode.Graph) DisplayTypeAncestorsGraph(node, direction | dataSource);
+                else DisplayTypeAncestorsTree(node, direction|dataSource);
             }
         }
 
@@ -1981,7 +2091,7 @@ namespace MDRDesk
         //    MainTab.UpdateLayout();
         //}
 
-        private void DisplayTypeAncestorsGrid(AncestorNode root)
+        private void DisplayTypeAncestorsTree(AncestorNode root, InstanceReferences.ReferenceType flag)
         {
             // populate tree view
             TreeViewItem tvRoot = new TreeViewItem();
@@ -2019,28 +2129,31 @@ namespace MDRDesk
 
             // display general information, this will be updated when tree selection changes
             var txtBlk = (TextBlock)LogicalTreeHelper.FindLogicalNode(grid, "AncestorInformation");
+            bool ascending = (flag & InstanceReferences.ReferenceType.Ancestors) != InstanceReferences.ReferenceType.None;
+            txtBlk.Tag = ascending; // true if fields -> class refs
             Debug.Assert(txtBlk != null);
-            if (root.Data is Tuple<string, int>)
-            {
-                txtBlk.Inlines.Add(new Run(root.TypeName + " \"") { FontSize = 16, FontWeight = FontWeights.Bold });
-                var data = root.Data as Tuple<string, int>;
-                var str = data.Item1;
-                var cnt = data.Item2; // TODO JRD
-                txtBlk.Inlines.Add(new Run(ShortenString(str, 60)) { FontSize = 12, Foreground = Brushes.Green });
-                txtBlk.Inlines.Add(new Run("\"") { FontSize = 16, FontWeight = FontWeights.Bold });
-            }
-            else
-            {
-                txtBlk.Inlines.Add(new Run(root.TypeName) { FontSize = 16, FontWeight = FontWeights.Bold });
-            }
+            //if (root.Data is Tuple<string, int>)
+            //{
+            //    txtBlk.Inlines.Add(new Run(root.TypeName + " \"") { FontSize = 16, FontWeight = FontWeights.Bold });
+            //    var data = root.Data as Tuple<string, int>;
+            //    var str = data.Item1;
+            //    var cnt = data.Item2; // TODO JRD
+            //    txtBlk.Inlines.Add(new Run(ShortenString(str, 60)) { FontSize = 12, Foreground = Brushes.Green });
+            //    txtBlk.Inlines.Add(new Run("\"") { FontSize = 16, FontWeight = FontWeights.Bold });
+            //}
+            //else
+            //{
+            txtBlk.Inlines.Add(new Run(root.TypeName) { FontSize = 16, FontWeight = FontWeights.Bold });
+            txtBlk.Inlines.Add(new Run("   ref type: " + (ascending ? "FIELDS->CLASS" : "CLASS->FIELDS")) { FontSize = 14, FontWeight = FontWeights.Bold, FontStyle = FontStyles.Italic, Foreground = Brushes.SlateGray });
+            //}
 
             txtBlk.Inlines.Add(Environment.NewLine);
 
-            txtBlk.Inlines.Add(new Run("") { Name = "Child", Foreground = Brushes.DarkBlue, FontSize = 12, FontStyle = FontStyles.Italic, FontWeight = FontWeights.DemiBold });
+            txtBlk.Inlines.Add(new Run("") { Foreground = Brushes.DarkBlue, FontSize = 12, FontWeight = FontWeights.DemiBold });
             txtBlk.Inlines.Add(Environment.NewLine);
-            txtBlk.Inlines.Add(new Run("") { Name = "Parent", Foreground = Brushes.DarkBlue, FontSize = 12, FontStyle = FontStyles.Italic, FontWeight = FontWeights.DemiBold });
+            txtBlk.Inlines.Add(new Run("") { Foreground = Brushes.DarkBlue, FontSize = 12, FontWeight = FontWeights.DemiBold });
             txtBlk.Inlines.Add(Environment.NewLine);
-            txtBlk.Inlines.Add(new Run("Instance addresses of the selected node are shown in the list box. To inspect individual instances right click on selected address.") { Foreground = Brushes.DarkBlue, FontSize = 12, FontStyle = FontStyles.Italic, FontWeight = FontWeights.DemiBold });
+            txtBlk.Inlines.Add(new Run("Instance addresses of the selected node are shown in the list box. To inspect individual instances right click on selected address.") { Foreground = Brushes.Chocolate, FontSize = 12, FontStyle = FontStyles.Italic, FontWeight = FontWeights.DemiBold });
             txtBlk.Inlines.Add(Environment.NewLine);
 
             var tab = new CloseableTabItem() { Header = Constants.BlackDiamond + " Type References", Content = grid, Name = "HeapIndexTypeViewTab" };
@@ -2057,7 +2170,8 @@ namespace MDRDesk
             // ReSharper disable ConditionIsAlwaysTrueOrFalse
             if (item == null) return;
             // ReSharper restore ConditionIsAlwaysTrueOrFalse
-            AncestorNode node = (AncestorNode)item.Tag;
+            AncestorNode node = item.Tag as AncestorNode;
+
             var addresses = CurrentIndex.GetInstancesAddresses(node.Instances);
             Debug.Assert(CurrentIndex != null);
             var grid = GetCurrentTabGrid();
@@ -2065,24 +2179,57 @@ namespace MDRDesk
             Debug.Assert(lbAddresses != null);
             lbAddresses.ItemsSource = addresses;
             var txtBlk = (TextBlock)LogicalTreeHelper.FindLogicalNode(grid, "AncestorInformation");
-
+            bool ancending = (bool)txtBlk.Tag;
             // first change information of the selected node
-            UpdateAncestorInfoLine(txtBlk.Inlines, "Child", node.TypeName);
+            int lnNdx = txtBlk.Inlines.Count - 4;
+            //UpdateAncestorInfoLine(txtBlk.Inlines, txtBlk.Inlines.ElementAt(0), node.TypeName);
             if (node.Parent != null)
             {
-                var txt = Utils.CountString(node.Instances.Length) + " instance(s) of '" + node.TypeName + "' are referencing";
-                UpdateAncestorInfoLine(txtBlk.Inlines, "Child", txt);
-                txt = Utils.CountString(node.ReferenceCount) + " unique instance(s) of '" + node.Parent.TypeName + "'";
-                UpdateAncestorInfoLine(txtBlk.Inlines, "Parent", txt);
+                if (node.Instances.Length < 2)
+                {
+                    var txt = Utils.CountString(node.Instances.Length) + " instance of '" + node.TypeName + (ancending ? "' is referencing" : "' is referenced by");
+                    UpdateAncestorInfoLine(txtBlk.Inlines, txtBlk.Inlines.ElementAt(lnNdx - 2), txt);
+                    txt = Utils.CountString(node.ReferenceCount) + (node.ReferenceCount > 1 ? " unique instances of '" : " instance of ") + node.Parent.TypeName + "'";
+                    UpdateAncestorInfoLine(txtBlk.Inlines, txtBlk.Inlines.ElementAt(lnNdx), txt);
+                }
+                else
+                {
+                    var txt = Utils.CountString(node.Instances.Length) + " instances of '" + node.TypeName + (ancending ? "' are referencing" : "' are referenced by");
+                    UpdateAncestorInfoLine(txtBlk.Inlines, txtBlk.Inlines.ElementAt(lnNdx - 2), txt);
+                    txt = Utils.CountString(node.ReferenceCount) + (node.ReferenceCount > 1 ? " unique instances of '" : " instance of ") + node.Parent.TypeName + "'";
+                    UpdateAncestorInfoLine(txtBlk.Inlines, txtBlk.Inlines.ElementAt(lnNdx), txt);
+                }
+
             }
             else
             {
-                var txt = Utils.CountString(node.Instances.Length) + " instance(s) of '" + node.TypeName + "' are referenced by";
-                UpdateAncestorInfoLine(txtBlk.Inlines, "Child", txt);
-                txt = Utils.CountString(node.Ancestors.Length) + " types, total referencing instances " + Utils.CountString(node.AncestorInstanceCount());
-                UpdateAncestorInfoLine(txtBlk.Inlines, "Parent", txt);
+                if (node.Instances.Length < 2)
+                {
+                    var txt = Utils.CountString(node.Instances.Length) + " instance of '" + node.TypeName + (ancending ? "' is referenced by" : "' is referencing");
+                    UpdateAncestorInfoLine(txtBlk.Inlines, txtBlk.Inlines.ElementAt(lnNdx - 2), txt);
+                    txt = Utils.CountString(node.Ancestors.Length) + " types, " + (ancending ? " total referencing instances " : " total referenced instances ") + Utils.CountString(node.AncestorInstanceCount());
+                    UpdateAncestorInfoLine(txtBlk.Inlines, txtBlk.Inlines.ElementAt(lnNdx), txt);
+                }
+                else
+                {
+                    var txt = Utils.CountString(node.Instances.Length) + " instances of '" + node.TypeName + (ancending ? "' are referenced by" : "' are referencing");
+                    UpdateAncestorInfoLine(txtBlk.Inlines, txtBlk.Inlines.ElementAt(lnNdx - 2), txt);
+                    txt = Utils.CountString(node.Ancestors.Length) + " types, " + (ancending ? " total referencing instances " : " total referenced instances ") + Utils.CountString(node.AncestorInstanceCount());
+                    UpdateAncestorInfoLine(txtBlk.Inlines, txtBlk.Inlines.ElementAt(lnNdx), txt);
+                }
             }
         }
+
+        private void UpdateAncestorInfoLine(InlineCollection lines, Inline inline, string text)
+        {
+            if (inline != null)
+            {
+                var newChildLine = new Run(text) { Foreground = Brushes.DarkBlue, FontSize = 12, FontWeight = FontWeights.DemiBold };
+                lines.InsertAfter(inline, newChildLine);
+                lines.Remove(inline);
+            }
+        }
+
 
         private void AncestorExpandAllClick(object sender, RoutedEventArgs e)
         {
@@ -2114,7 +2261,6 @@ namespace MDRDesk
                         }
                     }
                 }
-
             }
         }
 
@@ -2151,7 +2297,6 @@ namespace MDRDesk
                 MainStatusShowMessage("Node not found. Is a tree item selected?");
                 return;
             }
-
             var baseTypeName = Utils.BaseTypeName(node.TypeName);
 
             ReferenceSearchSetup dlg = new ReferenceSearchSetup(baseTypeName) { Owner = this };
@@ -2166,7 +2311,7 @@ namespace MDRDesk
             //var report = await Task.Run(() => CurrentIndex.GetParentTree(typeId, level));
             var report = await Task.Factory.StartNew(() =>
             {
-                return CurrentIndex.GetParentTree(node.TypeId, node.Instances, level);
+                return CurrentIndex.GetParentTree(node.TypeId, node.Instances, level,searchFlag);
             }, DumpSTAScheduler);
 
             if (report.Item1 != null)
@@ -2176,7 +2321,13 @@ namespace MDRDesk
                 return;
             }
             SetEndTaskMainWindowState("Getting parent references for: '" + Utils.BaseTypeName(baseTypeName) + "', done.");
-            DisplayTypeAncestorsGrid(report.Item2);
+            if (dispMode == ReferenceSearchSetup.DispMode.Tree) DisplayTypeAncestorsTree(report.Item2,searchFlag);
+            else if (dispMode == ReferenceSearchSetup.DispMode.Graph) DisplayTypeAncestorsGraph(report.Item2, searchFlag);
+            else
+            {
+                Debug.Assert(dispMode == ReferenceSearchSetup.DispMode.List);
+                DisplayTypeAncestorsTree(report.Item2,searchFlag);
+            }
         }
 
         private void TypeTreeGenerationDistributionClicked(object sender, RoutedEventArgs e)
@@ -2194,24 +2345,6 @@ namespace MDRDesk
             MessageBox.Show("Not implemented yet.", "TypeTreeGetTypeStringUsageClicked", MessageBoxButton.OK, MessageBoxImage.Information);
         }
 
-        private void UpdateAncestorInfoLine(InlineCollection lines, string inlineName, string text)
-        {
-            Inline line = null;
-            foreach (var inline in lines)
-            {
-                if (Utils.SameStrings(inline.Name, inlineName))
-                {
-                    line = inline;
-                    break;
-                }
-            }
-            if (line != null)
-            {
-                var newChildLine = new Run(text) { Name = inlineName, FontSize = 12 };
-                lines.InsertAfter(line, newChildLine);
-                lines.Remove(line);
-            }
-        }
 
         private void ListingViewDoubleClicked(object sender, MouseButtonEventArgs e)
         {

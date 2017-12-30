@@ -1270,13 +1270,13 @@ namespace MDRDesk
                                     Dispatcher.CurrentDispatcher.InvokeAsync(() => GuiUtils.ShowError(task.Result.Item1,this));
                                     return;
                                 }
-                                DisplayTypeAncestorsGrid(task.Result.Item2);
+                                DisplayTypeAncestorsTree(task.Result.Item2, InstanceReferences.ReferenceType.Ancestors| InstanceReferences.ReferenceType.All);
                                 break;
                             case ReportTitleSTypesWithString:
                                 selStr = entries[ndx].Second;
                                 var addr = Convert.ToUInt64(selStr, 16);
 
-                                var report = CurrentIndex.GetParentReferencesReport(addr, 4);
+                                var report = CurrentIndex.GetParentReferencesReport(addr, InstanceReferences.ReferenceType.Ancestors| InstanceReferences.ReferenceType.All, 4);
                                 if (report.Error != null)
                                 {
                                     Dispatcher.CurrentDispatcher.InvokeAsync(() => GuiUtils.ShowError(report.Error,this));
@@ -1817,20 +1817,7 @@ namespace MDRDesk
             MainStatusLabel.Content = msg;
         }
 
-        private void DisplayTreeView(TreeViewItem root, string title)
-        {
-            var grid = this.TryFindResource("TreeViewGrid") as Grid;
-            Debug.Assert(grid != null);
-            var tv = grid.Children[0] as TreeView;
-            Debug.Assert(tv != null);
-            tv.Items.Add(root);
-            root.ExpandSubtree();
-            var tab = new CloseableTabItem() { Header = title, Content = grid };
-            MainTab.Items.Add(tab);
-            MainTab.SelectedItem = tab;
-        }
-
-         private void ListingInfoListViewHeaderClick(object sender, RoutedEventArgs e)
+        private void ListingInfoListViewHeaderClick(object sender, RoutedEventArgs e)
         {
             GridViewColumnHeader column = e.OriginalSource as GridViewColumnHeader;
             if (column == null) return;

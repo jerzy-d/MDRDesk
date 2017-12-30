@@ -30,10 +30,15 @@ namespace MDRDesk
 			Button closeButton = base.GetTemplateChild("PART_Close") as Button;
 			if (closeButton != null)
 				closeButton.Click += new System.Windows.RoutedEventHandler(closeButton_Click);
-			ContextMenu = new ContextMenu();
+ 			var contextMenu = new ContextMenu();
 			MenuItem menuItem = new MenuItem() { Header = "Change Tab Header/Title" };
-			menuItem.Click += ChangeTabHeader;
-			ContextMenu.Items.Add(menuItem);
+            menuItem.Click += ChangeTabHeader;
+            contextMenu.Items.Add(menuItem);
+            this.Header = new ContentControl
+            {
+                Content = this.Header.ToString(),
+                ContextMenu = contextMenu
+            };
 		}
 
 		private void ChangeTabHeader(object sender, RoutedEventArgs e)

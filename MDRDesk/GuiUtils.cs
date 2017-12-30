@@ -196,7 +196,7 @@ namespace MDRDesk
             }
         }
 
-#region displayable type
+        #region displayable type
 
         public static TreeViewItem GetTypeValueSetupTreeViewItem(ClrtDisplayableType dispType)
         {
@@ -474,7 +474,7 @@ namespace MDRDesk
             return true;
         }
 
-#region message box
+        #region message box
 
         public static void ShowInformation(string caption, string header, string text, string details, Window wnd)
         {
@@ -551,6 +551,13 @@ namespace MDRDesk
                 MessageBoxImage.Error);
         }
 
-#endregion message box
+        #endregion message box
+
+        #region misc
+
+        public static Microsoft.Msagl.Drawing.Color MediumGray = new Microsoft.Msagl.Drawing.Color(192, 192, 192);
+
+        #endregion misc
+
     }
 }

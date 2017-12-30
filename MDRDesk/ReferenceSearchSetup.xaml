@@ -65,7 +65,7 @@
                     <ColumnDefinition Width="50*"/>
                 </Grid.ColumnDefinitions>
                 <RadioButton x:Name ="RefSearchFieldParents" GroupName="RefSearchDirection" Grid.Column="0" HorizontalAlignment="Left" VerticalAlignment="Center" Margin="4,0,4,0" FontWeight="Bold" IsEnabled="True">Fields->Parents</RadioButton>
-                <RadioButton x:Name ="RefSearchParentFields" GroupName="RefSearchDirection" Grid.Column="1" HorizontalAlignment="Left" VerticalAlignment="Center" Margin="4,0,4,0" FontWeight="Bold"  IsEnabled="False" >Parents->Fields</RadioButton>
+                <RadioButton x:Name ="RefSearchParentFields" GroupName="RefSearchDirection" Grid.Column="1" HorizontalAlignment="Left" VerticalAlignment="Center" Margin="4,0,4,0" FontWeight="Bold"  IsEnabled="True" >Parents->Fields</RadioButton>
             </Grid>
         </Grid>
         <Grid Grid.Row="4" Grid.ColumnSpan="2">
