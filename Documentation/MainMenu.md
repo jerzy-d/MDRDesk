@@ -35,19 +35,19 @@ Exits application.
 
 #### Help
 
-![Write report file](WriteToHistory_32x.PNG)
+![Write report file](../Documentation/WriteToHistory_32x.PNG)
 *Write report file, from a current tab.*
 
-![Write csv file](SequenceFile_32x.PNG)
+![Write csv file](../Documentation/SequenceFile_32x.PNG)
 *Write csv file, from a current tab.*
 
-![Write csv file](Settings_32x.PNG)
+![Write csv file](../Documentation/Settings_32x.PNG)
 *MDRDesk settings/configuration.*
 
-![Force GC](ClearWindowContent_16x.PNG)
+![Force GC](../Documentation/ClearWindowContent_16x.PNG)
 *Force GC*
 
-![Type Display](TypeDisplay.PNG)
+![Type Display](../Documentation/TypeDisplay.PNG)
 *How to display type list.*
 
 
