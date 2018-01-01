@@ -23,7 +23,6 @@ namespace MDRDesk
 		public InstanceReferences.ReferenceType DataSource => _dataSource;
 		private static InstanceReferences.ReferenceType _direction = InstanceReferences.ReferenceType.Ancestors;
 		public InstanceReferences.ReferenceType Direction => _direction;
-        public InstanceReferences.ReferenceType Strict => (RefSearchStrict.IsChecked != null && (bool)RefSearchStrict.IsChecked) ? InstanceReferences.ReferenceType.Strict : InstanceReferences.ReferenceType.None;
 
         public bool Cancelled => !_okExit;
         public bool GetAllReferences => RefSearchAllLevels.IsChecked != null && (bool)RefSearchAllLevels.IsChecked;
@@ -94,15 +93,22 @@ namespace MDRDesk
 			else if (RefSearchDisplayGraph.IsChecked == true) _displayMode = DispMode.Graph;
 			else _displayMode = DispMode.Tree;
 
-			if (RefSearchRooted.IsChecked == true)
-				_dataSource = InstanceReferences.ReferenceType.Rooted;
-			else if (RefSearchAll.IsChecked == true)
-				_dataSource = InstanceReferences.ReferenceType.All;
-            else if (RefSearchNotRooted.IsChecked == true)
-                _dataSource = InstanceReferences.ReferenceType.Unrooted;
-            else if (RefSearchFinalizer.IsChecked == true)
-                _dataSource = InstanceReferences.ReferenceType.Finalizer;
+            _dataSource = InstanceReferences.ReferenceType.None;
+            if (RefSearchAll.IsChecked == true)
+                _dataSource = InstanceReferences.ReferenceType.All;
             else
+            {
+                if (RefSearchRooted.IsChecked == true)
+                    _dataSource = InstanceReferences.ReferenceType.Rooted;
+                else if (RefSearchNotRooted.IsChecked == true)
+                    _dataSource = InstanceReferences.ReferenceType.Unrooted;
+
+                if (RefSearchFinalizer.IsChecked == true)
+                    _dataSource |= InstanceReferences.ReferenceType.Finalizer;
+            }
+
+
+            if (_dataSource == InstanceReferences.ReferenceType.None)
                 _dataSource = InstanceReferences.ReferenceType.All;
 
 			if (RefSearchFieldParents.IsChecked == true)
@@ -122,6 +128,47 @@ namespace MDRDesk
             {
                 RefSearchLevel.Text = "3";
                 _searchDepthLevel = 3;
+            }
+        }
+
+        private void ConsideredClicked(object sender, RoutedEventArgs e)
+        {
+            CheckBox chkBox = sender as CheckBox;
+            bool ischecked = (bool)chkBox.IsChecked;
+            if (chkBox != null)
+            {
+                switch (chkBox.Name)
+                {
+                    case "RefSearchAll":
+                        if (ischecked)
+                        {
+                            RefSearchRooted.IsChecked = false;
+                            RefSearchNotRooted.IsChecked = false;
+                            RefSearchFinalizer.IsChecked = false;
+                        }
+                        break;
+                    case "RefSearchRooted":
+                        if (ischecked)
+                        {
+                            RefSearchAll.IsChecked = false;
+                            RefSearchNotRooted.IsChecked = false;
+                        }
+                        break;
+                    case "RefSearchNotRooted":
+                        if (ischecked)
+                        {
+                            RefSearchAll.IsChecked = false;
+                            RefSearchRooted.IsChecked = false;
+                        }
+                        break;
+                    case "RefSearchFinalizer":
+                        if (ischecked)
+                        {
+                            RefSearchAll.IsChecked = false;
+                        }
+                        break;
+
+                }
             }
         }
     }

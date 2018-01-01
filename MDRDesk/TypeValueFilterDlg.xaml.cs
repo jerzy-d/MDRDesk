@@ -52,7 +52,9 @@ namespace MDRDesk
                     if (op == FilterValue.Op.EQ
                         || op == FilterValue.Op.NOTEQ
                         || op == FilterValue.Op.CONTAINS
-                        || op == FilterValue.Op.NOTCONTAINS)
+                        || op == FilterValue.Op.NOTCONTAINS
+                        || op == FilterValue.Op.STARTSWITH
+                        || op == FilterValue.Op.ENDSWITH)
                         TypeValueOperator.Items.Add(FilterValue.GetOpDescr(op));
                 }
                 else

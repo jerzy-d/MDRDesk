@@ -1354,7 +1354,7 @@ namespace MDRDesk
             if (dlg.Cancelled) return;
             int level = dlg.GetAllReferences ? Int32.MaxValue : dlg.SearchDepthLevel;
             var dispMode = dlg.DisplayMode;
-            var searchFlag = dlg.DataSource | dlg.Direction | dlg.Strict;
+            var searchFlag = dlg.DataSource | dlg.Direction;
 
             if (dispMode == ReferenceSearchSetup.DispMode.List)
             {
@@ -1466,9 +1466,8 @@ namespace MDRDesk
                 SetEndTaskMainWindowState(msg + "done.");
                 //DisplayListViewBottomGrid(report, Constants.BlackDiamond, ReportNameInstRef, ReportTitleInstRef);
                 DisplayListingGrid(report, Constants.BlackDiamondHeader, ReportNameInstRef, ReportTitleInstRef);
-
             }
-            if (dispMode == ReferenceSearchSetup.DispMode.Tree || dispMode == ReferenceSearchSetup.DispMode.Graph)
+            else if (dispMode == ReferenceSearchSetup.DispMode.Tree || dispMode == ReferenceSearchSetup.DispMode.Graph)
             {
                 SetStartTaskMainWindowState(msg + "please wait...");
 
@@ -2304,7 +2303,7 @@ namespace MDRDesk
             if (dlg.Cancelled) return;
             int level = dlg.GetAllReferences ? Int32.MaxValue : dlg.SearchDepthLevel;
             var dispMode = dlg.DisplayMode;
-            var searchFlag = dlg.DataSource | dlg.Direction | dlg.Strict;
+            var searchFlag = dlg.DataSource | dlg.Direction;
 
             SetStartTaskMainWindowState("Getting parent references for: '" + baseTypeName + "', please wait...");
 

@@ -307,8 +307,11 @@ namespace ClrMDRIndex
 
             CONTAINS = 1 << 11,
             NOTCONTAINS = 1 << 12,
+            STARTSWITH = 1 << 13,
+            ENDSWITH = 1 << 14,
 
-            COUNT = 14
+
+            COUNT = 16
 		}
 
 		public static string GetOpDescr(Op op)
@@ -343,6 +346,10 @@ namespace ClrMDRIndex
                     return "contains";
                 case Op.NOTCONTAINS:
                     return "not contains";
+                case Op.STARTSWITH:
+                    return "starts with";
+                case Op.ENDSWITH:
+                    return "ends with";
                 default:
 					return "none";
 			}
@@ -381,6 +388,10 @@ namespace ClrMDRIndex
                     return Op.CONTAINS;
                 case "not contains":
                     return Op.NOTCONTAINS;
+                case "starts with":
+                    return Op.STARTSWITH;
+                case "ends with":
+                    return Op.ENDSWITH;
                 default:
 					return Op.NONE;
 			}
@@ -667,17 +678,23 @@ namespace ClrMDRIndex
 
 		private bool AcceptString(string val, string filterValue, Op op)
 		{
-			if (FilterValue.IsOp(Op.REGEX, op))
-				return _regex.IsMatch(filterValue);
+            if (FilterValue.IsOp(Op.REGEX, op))
+            {
+                return _regex.IsMatch(val);
+            }
 
-			else if (FilterValue.IsOp(Op.EQ, op))
-				return string.Compare(val, filterValue, FilterValue.IsOp(Op.IGNORECASE, op) ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal) == 0;
-			else if (FilterValue.IsOp(Op.NOTEQ, op))
-				return string.Compare(val, filterValue, FilterValue.IsOp(Op.IGNORECASE, op) ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal) != 0;
+            else if (FilterValue.IsOp(Op.EQ, op))
+                return string.Compare(val, filterValue, FilterValue.IsOp(Op.IGNORECASE, op) ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal) == 0;
+            else if (FilterValue.IsOp(Op.NOTEQ, op))
+                return string.Compare(val, filterValue, FilterValue.IsOp(Op.IGNORECASE, op) ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal) != 0;
             else if (FilterValue.IsOp(Op.CONTAINS, op))
                 return val.IndexOf(filterValue, FilterValue.IsOp(Op.IGNORECASE, op) ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal) >= 0;
             else if (FilterValue.IsOp(Op.NOTCONTAINS, op))
                 return val.IndexOf(filterValue, FilterValue.IsOp(Op.IGNORECASE, op) ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal) < 0;
+            else if (FilterValue.IsOp(Op.STARTSWITH, op))
+                return val.StartsWith(filterValue, FilterValue.IsOp(Op.IGNORECASE, op) ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal);
+            else if (FilterValue.IsOp(Op.ENDSWITH, op))
+                return val.EndsWith(filterValue, FilterValue.IsOp(Op.IGNORECASE, op) ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal);
 
             return true;
 		}

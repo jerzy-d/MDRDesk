@@ -19,9 +19,7 @@ namespace ClrMDRIndex
             Rooted = 1 << 3,
             Unrooted = 1 << 4,
             Finalizer = 1 << 5,
-            Strict = 1 << 6,
-            All = 1 << 7,
-
+            All = 1 << 6,
         }
 
         public static string InstanceTypeString(ReferenceType refType)
