@@ -35,7 +35,7 @@ Exits application.
 
 #### Help
 
-![Write report file](./WriteToHistory_32x.PNG)
+![Write report file](https://github.com/jerzy-d/MDRDesk/blob/master/Documentation/WriteToHistory32x.png)
 *Write report file, from a current tab.*
 
 ![Write csv file](../Documentation/SequenceFile_32x.PNG)
