@@ -355,7 +355,7 @@
   </ItemGroup>
   <ItemGroup>
     <Resource Include="Images\WriteToHistory_16x.png" />
-    <Resource Include="Images\WriteToHistory_32x.png" />
+    <Resource Include="Images\WriteToHistory32x.png" />
   </ItemGroup>
   <ItemGroup>
     <BootstrapperPackage Include="Microsoft.Net.Framework.3.5.SP1">

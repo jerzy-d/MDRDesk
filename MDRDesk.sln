@@ -33,6 +33,7 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Documentation", "Documentat
 		Documentation\RootsDisplay.md = Documentation\RootsDisplay.md
 		Documentation\ThreadsBlocksGraph.md = Documentation\ThreadsBlocksGraph.md
 		Documentation\ValueWindows.md = Documentation\ValueWindows.md
+		Documentation\WriteToHistory32x.png = Documentation\WriteToHistory32x.png
 	EndProjectSection
 EndProject
 Global

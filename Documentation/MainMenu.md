@@ -35,7 +35,7 @@ Exits application.
 
 #### Help
 
-![Write report file](../Documentation/WriteToHistory_32x.PNG)
+![Write report file](WriteToHistory32x.PNG)
 *Write report file, from a current tab.*
 
 ![Write csv file](../Documentation/SequenceFile_32x.PNG)
