@@ -971,8 +971,8 @@
                         <MenuItem x:Name="CreateDumpIndex" Header="Create Dump Index..." Click="CreateDumpIndexClicked"/>
                         <MenuItem x:Name="OpenDumpIndex" Header="Open Dump Index..." Click="OpenDumpIndexClicked"/>
                         <MenuItem x:Name="CloseDumpIndex" Header="Close Current Index..." Click="CloseDumpIndexClicked"/>
-                        <Separator></Separator>
                         <MenuItem x:Name="IndexShowIndexingInfo" Header="Show Indexing Report" Click="IndexShowIndexingInfoClicked"/>
+                        <Separator></Separator>
                         <MenuItem x:Name="IndexShowModuleInfos" Header="Show Loaded Modules" Click="IndexShowModuleInfosClicked"/>
                         <MenuItem x:Name="IndexShowFinalizerQueue" Header="Show Finalizer Queue" Click="IndexShowFinalizerQueueClicked"/>
                         <MenuItem x:Name="IndexShowRoots" Header="Show Roots" Click="IndexShowRootsClicked"/>
@@ -1007,7 +1007,6 @@
                         <MenuItem x:Name="TypeInfo" Header="Get Type Information">
                             <MenuItem x:Name="TypeWithInterface" Header="List Types Implementing Interface" Click="TypesImplementingInterfaceClicked"/>
                         </MenuItem>
-                        <Separator></Separator>
                         <Separator></Separator>
                         <MenuItem x:Name="IndexViewMemory" Header="View Memory..." Click="IndexViewMemoryClicked"/>
                         <Separator></Separator>
@@ -1057,7 +1056,7 @@
                     </MenuItem>
                     <MenuItem x:Name="FileReport"  HorizontalContentAlignment="Center" HorizontalAlignment="Center" Click="FileReportClicked">
                         <MenuItem.Icon>
-                            <Image Source="./Images/WriteToHistory_32x.png" ToolTip="Write report file, from a current tab." ToolTipService.HasDropShadow="True" Height="24" Width="24" HorizontalAlignment="Center" VerticalAlignment="Center" Margin="16,0,0,0"></Image>
+                            <Image Source="./Images/WriteToHistory32x.png" ToolTip="Write report file, from a current tab." ToolTipService.HasDropShadow="True" Height="24" Width="24" HorizontalAlignment="Center" VerticalAlignment="Center" Margin="16,0,0,0"></Image>
                         </MenuItem.Icon>
                     </MenuItem>
                     <MenuItem x:Name="FileReportShort" Background="LightBlue" HorizontalContentAlignment="Center" HorizontalAlignment="Center" Click="FileReportClicked">
