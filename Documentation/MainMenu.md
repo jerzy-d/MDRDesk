@@ -57,6 +57,7 @@ Displays the list of module basic informations.
 **Show Finalizer Queue...**  
 Displays the list of module basic informations.
 
+
 #### Ad-hoc Queries
 Various utilities/tests normally not used by a regular user.
 I'll add information if something practical is added there.
