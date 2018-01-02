@@ -1034,7 +1034,6 @@
                         <MenuItem x:Name="AhqImplementedInterfaceObjects" Header="Objects Implementing Interface..." Click="AhqImplementedInterfaceObjectsClicked"/>
 
                         <!--<Separator></Separator>
-                        <!--<Separator></Separator>
                     <MenuItem x:Name="AhqInstanceRefs" Header="Instance Reference Map">
                             <MenuItem x:Name="AhqCreateInstanceRefs" Header="Create Instance Reference Map..." Click="AhqCreateInstanceRefsClicked"/>
                             <MenuItem x:Name="AhqOpenInstanceRefs" Header="Open Instance Reference Map..." Click="AhqOpenInstanceRefsClicked"/>
