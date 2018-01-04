@@ -2582,7 +2582,7 @@ namespace MDRDesk
 
     public static class MenuCommands
     {
-        public static readonly RoutedUICommand InstanceValueCmd = new RoutedUICommand
+        private static readonly RoutedUICommand instanceValueCmd = new RoutedUICommand
         (
             "Get Instance Value",
             "GetInstanceValue",
@@ -2592,7 +2592,7 @@ namespace MDRDesk
                 new KeyGesture(Key.V, System.Windows.Input.ModifierKeys.Alt)
             }
         );
-        public static readonly RoutedUICommand InstanceReferencesCmd = new RoutedUICommand
+        private static readonly RoutedUICommand instanceReferencesCmd = new RoutedUICommand
         (
             "Get Instance References",
             "GetInstanceRefrences",
@@ -2602,7 +2602,7 @@ namespace MDRDesk
                 new KeyGesture(Key.R, System.Windows.Input.ModifierKeys.Alt)
             }
         );
-        public static readonly RoutedUICommand InstanceHierarchyCmd = new RoutedUICommand
+        private static readonly RoutedUICommand instanceHierarchyCmd = new RoutedUICommand
         (
             "Get Instance Hierarchy",
             "GetInstanceHierarchy",
@@ -2612,6 +2612,12 @@ namespace MDRDesk
                 new KeyGesture(Key.H, System.Windows.Input.ModifierKeys.Alt)
             }
         );
+
+        public static RoutedUICommand InstanceValueCmd => instanceValueCmd;
+
+        public static RoutedUICommand InstanceHierarchyCmd => instanceHierarchyCmd;
+
+        public static RoutedUICommand InstanceReferencesCmd => instanceReferencesCmd;
         //Define more commands here, just like the one above
     }
 

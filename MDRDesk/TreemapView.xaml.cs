@@ -256,7 +256,7 @@ namespace MDRDesk
         {
             string typeName = TypeNameLabel.Text;
             int typeId = Array.BinarySearch(_typeNames, typeName, StringComparer.Ordinal);
-            Dispatcher.CurrentDispatcher.InvokeAsync(() => GuiUtils.MainWindowInstance.GetParentReferences(typeName, typeId));
+            Dispatcher.CurrentDispatcher.InvokeAsync(() => GuiUtils.MainWindowInstance.GetParentReferences(typeName, typeId, null));
         }
 
         //private void TypeSizeDetailsReportClicked(object sender, RoutedEventArgs e)

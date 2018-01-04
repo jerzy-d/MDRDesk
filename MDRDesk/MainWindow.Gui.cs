@@ -747,9 +747,9 @@ namespace MDRDesk
         {
             try
             {
-                (string typeName, int typeId) = GraphContextMenuGetTypeName();
+                (string typeName, int typeId, int[] instIds) = GraphContextMenuGetTypeNameAndInstances();
                 if (typeName == null) return;
-                System.Windows.Threading.Dispatcher.CurrentDispatcher.InvokeAsync(() => GetParentReferences(typeName, typeId));
+                System.Windows.Threading.Dispatcher.CurrentDispatcher.InvokeAsync(() => GetParentReferences(typeName, typeId, instIds));
             }
             catch(Exception ex)
             {
@@ -833,6 +833,27 @@ namespace MDRDesk
             }
         }
 
+        private ValueTuple<string, int, int[]> GraphContextMenuGetTypeNameAndInstances()
+        {
+            try
+            {
+                var grid = GetCurrentTabGrid();
+                var txtBox = (TextBox)LogicalTreeHelper.FindLogicalNode(grid, "ReferenceInfo");
+                var typeName = txtBox.GetLineText(0).Trim();
+                var typeId = CurrentIndex.GetTypeId(typeName);
+                var lstBox = (ListBox)LogicalTreeHelper.FindLogicalNode(grid, "RfAddresses");
+                ulong[] addresses = (ulong[])lstBox.ItemsSource;
+                int[] instIds = CurrentIndex.GetRealAddressIndices(addresses);
+
+                return (typeName, typeId, instIds);
+            }
+            catch (Exception ex)
+            {
+                GuiUtils.ShowError(Utils.GetExceptionErrorString(ex), this);
+                return (null, Constants.InvalidIndex, null);
+            }
+        }
+
         private void GraphViewer_RfMouseUp(object sender, MsaglMouseEventArgs e)
         {
             var grid = GetCurrentTabGrid();
@@ -905,7 +926,6 @@ namespace MDRDesk
         }
 
         #endregion type references
-
 
         #region common
 
@@ -1339,10 +1359,10 @@ namespace MDRDesk
             string typeName;
             int typeId;
             if (!GetTypeNameInfo(sender, out typeName, out typeId)) return;
-            System.Windows.Threading.Dispatcher.CurrentDispatcher.InvokeAsync(() => GetParentReferences(typeName, typeId));
+            System.Windows.Threading.Dispatcher.CurrentDispatcher.InvokeAsync(() => GetParentReferences(typeName, typeId, null));
         }
 
-        public async void GetParentReferences(string typeName, int typeId)
+        public async void GetParentReferences(string typeName, int typeId, int[] instIds)
         {
             int instCount = CurrentIndex.GetTypeInstanceCount(typeId);
 
@@ -1383,7 +1403,7 @@ namespace MDRDesk
                 //var report = await Task.Run(() => CurrentIndex.GetParentTree(typeId, level));
                 var report = await Task.Factory.StartNew(() =>
                 {
-                    return CurrentIndex.GetParentTree(typeId, level, searchFlag);
+                    return CurrentIndex.GetParentTree(typeId, level, searchFlag, instIds);
                 }, DumpSTAScheduler);
 
                 if (report.Item1 != null)

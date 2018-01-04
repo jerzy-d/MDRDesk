@@ -1060,12 +1060,12 @@ namespace ClrMDRIndex
             }
         }
 
-        public ValueTuple<string, AncestorNode> GetParentTree(int typeId, int levelMax, InstanceReferences.ReferenceType refType = InstanceReferences.ReferenceType.All | InstanceReferences.ReferenceType.Ancestors)
+        public ValueTuple<string, AncestorNode> GetParentTree(int typeId, int levelMax, InstanceReferences.ReferenceType refType, int[] instances)
         {
             try
             {
                 string typeName = GetTypeName(typeId);
-                int[] instances = GetTypeInstanceIndices(typeId, refType);
+                if (instances == null) instances = GetTypeInstanceIndices(typeId, refType);
                 if (instances.Length < 1)
                     return ("Cannot find find instances of type: " + GetTypeName(typeId), null);
                 var rootNode = new AncestorNode(null, 0, 0, typeId, typeName, instances);

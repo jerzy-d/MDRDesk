@@ -133,11 +133,16 @@ namespace MDRDesk
                     item.ItemsSource = GetSubFolders(folder);
                     item.ExpandSubtree();
                 }
+                else if (item.Items != null && !item.IsExpanded)
+                {
+                    item.ExpandSubtree();
+                }
                 _selectedPath = folder.FullPath;
                 if (MatchesFilter(_selectedPath))
                     btnDialogOk.IsEnabled = true;
                 else
                     btnDialogOk.IsEnabled = false;
+
             }
         }
 
