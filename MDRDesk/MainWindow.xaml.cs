@@ -1812,7 +1812,7 @@ namespace MDRDesk
             MainStatusProgressBar.Visibility = Visibility.Collapsed;
         }
 
-        private void MainStatusShowMessage(string msg)
+        public void MainStatusShowMessage(string msg)
         {
             MainStatusLabel.Content = msg;
         }

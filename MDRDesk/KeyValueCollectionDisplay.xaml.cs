@@ -13,6 +13,7 @@ using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Shapes;
+using ClrMDRIndex;
 
 namespace MDRDesk
 {
@@ -160,26 +161,30 @@ namespace MDRDesk
 
         private void KeyGetInstValueClicked(object sender, RoutedEventArgs e)
         {
-            string value = GetSelectionString(true); // true for key
-            if (value == null) return;
-            ulong addr = GetAddressFromEntry(value);
-            if (addr != Constants.InvalidAddress)
-            {
-                System.Windows.Threading.Dispatcher.CurrentDispatcher.InvokeAsync(() => ((MainWindow)Owner).ExecuteInstanceValueQuery("Getting object value at: " + Utils.RealAddressString(addr), addr));
-            }
-            // TODO JRD -- display large strings
+            GetInstValueClicked(true); // true for key
         }
 
         private void ValueGetInstValueClicked(object sender, RoutedEventArgs e)
         {
-            string value = GetSelectionString(false); // false for value
+            GetInstValueClicked(false); // false for value
+        }
+
+        private void GetInstValueClicked(bool forKey)
+        {
+            string value = GetSelectionString(forKey); // true for key
             if (value == null) return;
             ulong addr = GetAddressFromEntry(value);
             if (addr != Constants.InvalidAddress)
             {
                 System.Windows.Threading.Dispatcher.CurrentDispatcher.InvokeAsync(() => ((MainWindow)Owner).ExecuteInstanceValueQuery("Getting object value at: " + Utils.RealAddressString(addr), addr));
             }
-            // TODO JRD -- display large strings
+            if (DisplayableString.IsLargeString(value))
+            {
+                var inst = new InstanceValue(Constants.InvalidIndex, ClrElementKind.Unknown, Constants.InvalidAddress, "FROM: " + _instValue.TypeName, null, value);
+                ValueWindows.ShowContentWindow("A collection item " + (forKey ? "key." : "value."), inst, ValueWindows.WndType.Content);
+                return;
+            }
+            ((MainWindow)Owner).MainStatusShowMessage("The value requested cannot be elaborated more. The values is what you see.");
         }
 
         private void KeyGetInstHierarchyClicked(object sender, RoutedEventArgs e)

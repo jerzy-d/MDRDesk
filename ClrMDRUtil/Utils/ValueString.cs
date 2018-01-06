@@ -11,6 +11,11 @@ namespace ClrMDRIndex
         private const int MaxLength = 40;
         private readonly string _content;
 
+        public static bool IsLargeString(string s)
+        {
+            return s != null && s.Length > MaxLength;
+        }
+
         public DisplayableString(string str)
         {
             _content = str;

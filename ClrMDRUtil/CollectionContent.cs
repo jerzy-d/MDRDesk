@@ -471,15 +471,18 @@ namespace ClrMDRIndex
                 int m_valueNdx=0;
                 int m_nextNdx=-1;
                 int resultNdx = 0;
+                ClrType nodeType=null;
+                ClrElementKind nodeKind;
+                ClrType[] nodeFldTypes=null;
+                ClrElementKind[] nodeFldKinds=null;
+
                 for (int i = 0, icnt = bucketValues.Length; i < icnt; ++i)
                 {
                     ulong bAddr = (ulong)bucketValues[i];
                     if (bAddr == Constants.InvalidAddress) continue;
-                    (string berr, ClrType nodeType, ClrElementKind nodeKind, (ClrType[] nodeFldTypes, ClrElementKind[] nodeFldKinds, string[] nodeValues, StructValueStrings[] nodeStructValues)) =
-                        ClassValue.GetClassValueStrings(heap, bAddr);
-
                     if (m_nextNdx == -1)
                     {
+                        (error, nodeType, nodeKind, nodeFldTypes, nodeFldKinds) = ClassValue.GetClassTypeInfo(heap, bAddr);
                         m_keyNdx = ClassValue.IndexOfField(nodeType.Fields, "m_key");
                         fldDescriptionLst.Add(new KeyValuePair<string, string>("key type", nodeFldTypes[m_keyNdx].Name));
                         m_valueNdx = ClassValue.IndexOfField(nodeType.Fields, "m_value");
@@ -490,6 +493,10 @@ namespace ClrMDRIndex
                     {
                         string key = Constants.NullValue;
                         string val = Constants.NullValue;
+
+                        ulong keyAddr = TypeExtractor.IsObjectReference(nodeFldKinds[m_keyNdx])
+                                            ? (ulong)nodeType.Fields[m_keyNdx].GetValue(node,false,false)
+                                            : nodeType.Fields[m_keyNdx].GetAddress(node);
                         if (TypeExtractor.IsStruct(nodeFldKinds[m_keyNdx]))
                         {
                             if (sfxKey == null)
@@ -498,12 +505,18 @@ namespace ClrMDRIndex
                                 sfxKey = StructFieldsEx.GetStructFields(sf, nodeFldTypes[m_keyNdx]);
                                 sfxKey.ResetTypes();
                             }
-                            key = ValueExtractor.GetFieldValueString(heap, node, false, nodeType.Fields[m_keyNdx], nodeFldKinds[m_keyNdx],sfxKey);
+                            var structVal = StructFieldsEx.GetStructValueStrings(sfxKey, heap, keyAddr);
+                            key = StructValueStrings.MergeValues(structVal);
+                            //key = ValueExtractor.GetTypeValueString(heap, keyAddr, nodeFldTypes[m_keyNdx], nodeFldKinds[m_keyNdx]);
                         }
                         else
                         {
-                            key = ValueExtractor.GetFieldValueString(heap, node, false, nodeType.Fields[m_keyNdx], nodeFldKinds[m_keyNdx]);
+                            key = ValueExtractor.GetTypeValueString(heap, keyAddr, nodeFldTypes[m_keyNdx], nodeFldKinds[m_keyNdx]);
+                            //key = ValueExtractor.GetFieldValueString(heap, node, false, nodeType.Fields[m_keyNdx], nodeFldKinds[m_keyNdx]);
                         }
+                        ulong valAddr = TypeExtractor.IsObjectReference(nodeFldKinds[m_valueNdx])
+                                            ? (ulong)nodeType.Fields[m_valueNdx].GetValue(node, false, false)
+                                            : nodeType.Fields[m_valueNdx].GetAddress(node);
                         if (TypeExtractor.IsStruct(nodeFldKinds[m_valueNdx]))
                         {
                             if (sfxValue == null)
@@ -512,11 +525,15 @@ namespace ClrMDRIndex
                                 sfxValue = StructFieldsEx.GetStructFields(sf, nodeFldTypes[m_valueNdx]);
                                 sfxValue.ResetTypes();
                             }
-                            val = ValueExtractor.GetFieldValueString(heap, node, false, nodeType.Fields[m_valueNdx], nodeFldKinds[m_valueNdx], sfxValue);
+                            var structVal = StructFieldsEx.GetStructValueStrings(sfxValue, heap, valAddr);
+                            val = StructValueStrings.MergeValues(structVal);
+                            //val = ValueExtractor.GetFieldValueString(heap, node, false, nodeType.Fields[m_valueNdx], nodeFldKinds[m_valueNdx], sfxValue);
+                            //val = ValueExtractor.GetTypeValueString(heap, valAddr, nodeFldTypes[m_valueNdx], nodeFldKinds[m_valueNdx]);
                         }
                         else
                         {
-                            val = ValueExtractor.GetFieldValueString(heap, node, false, nodeType.Fields[m_valueNdx], nodeFldKinds[m_valueNdx]);
+                            val = ValueExtractor.GetTypeValueString(heap, valAddr, nodeFldTypes[m_valueNdx], nodeFldKinds[m_valueNdx]);
+                            //val = ValueExtractor.GetFieldValueString(heap, node, false, nodeType.Fields[m_valueNdx], nodeFldKinds[m_valueNdx]);
                         }
                         result[resultNdx++] = new KeyValuePair<string, string>(key, val);
                         node = (ulong)nodeType.Fields[m_nextNdx].GetValue(node,false);
@@ -531,12 +548,63 @@ namespace ClrMDRIndex
             }
             catch (Exception ex)
             {
-                var error = Utils.GetExceptionErrorString(ex);
-                return (error, null, null);
+                return (Utils.GetExceptionErrorString(ex), null, null);
             }
         }
 
         #endregion System.Collections.Concurrent.ConcurrentDictionary<TKey,TValue>
+
+        #region System.Collections.Generic.Dictionary<TKey,TValue>
+
+        public static ValueTuple<string, KeyValuePair<string, string>[], KeyValuePair<string, string>[]> DictionaryContentAsStrings(ClrHeap heap, ulong addr)
+        {
+            try
+            {
+                addr = Utils.RealAddress(addr);
+                ClrType clrType = heap.GetObjectType(addr);
+                if (clrType == null)
+                    return ("Cannot get type of instance at: " + Utils.RealAddressString(addr) + ", invalid address?", null, null);
+                if (!TypeExtractor.Is(TypeExtractor.KnownTypes.Dictionary, clrType.Name))
+                    return ("Instance at: " + Utils.RealAddressString(addr) + " is not " + TypeExtractor.GetKnowTypeName(TypeExtractor.KnownTypes.Dictionary), null, null);
+                (string error, ClrType type, ClrElementKind kind, (ClrType[] fldTypes, ClrElementKind[] fldKinds, object[] values, StructValues[] structValues)) =
+                    ClassValue.GetClassValues(heap, addr);
+                if (error != null) return (error, null, null);
+
+                int count = GetFieldInt(type, "count", values);
+                int version = GetFieldInt(type, "version", values);
+                int freeCount = GetFieldInt(type, "freeCount", values);
+                (ulong entriesAddr, ClrType entriesType) = GetFieldUInt64AndType(type, "entries", fldTypes, values);
+
+                if (entriesType == null || entriesAddr == Constants.InvalidAddress || (count - freeCount) < 1)
+                    return (TypeExtractor.GetKnowTypeName(TypeExtractor.KnownTypes.Dictionary) + " is empty.", null, null);
+
+                (ClrType aryElemType, ClrElementKind aryElemKind, int aryLen) = ArrayInfo(heap, entriesType, entriesAddr);
+
+                (ClrType hashType, ClrInstanceField hashFld, ClrElementKind hashKind) = TypeExtractor.GetTypeFieldAndKind(aryElemType, "hashCode");
+                (ClrType nextType, ClrInstanceField nextFld, ClrElementKind nextKind) = TypeExtractor.GetTypeFieldAndKind(aryElemType, "next");
+                (ClrType keyType, ClrInstanceField keyFld, ClrElementKind keyKind) = TypeExtractor.GetTypeFieldAndKind(aryElemType, "key");
+                (ClrType valType, ClrInstanceField valFld, ClrElementKind valKind) = TypeExtractor.GetTypeFieldAndKind(aryElemType, "value");
+
+
+                KeyValuePair<string, string>[] fldDescription = new KeyValuePair<string, string>[]
+                {
+                new KeyValuePair<string, string>("count", Utils.CountString(count-freeCount)),
+                new KeyValuePair<string, string>("array count", Utils.CountString(aryLen)),
+                new KeyValuePair<string, string>("version", version.ToString())
+                };
+
+                
+                return (error, null, null);
+            }
+            catch (Exception ex)
+            {
+                return (Utils.GetExceptionErrorString(ex), null, null);
+            }
+        }
+
+        #endregion System.Collections.Concurrent.ConcurrentDictionary<TKey,TValue>
+
+
 
         #region System.Text.StringBuilder
 
@@ -775,8 +843,20 @@ namespace ClrMDRIndex
             return sb.ToString();
         }
 
+        static int GetFieldInt(ClrType type, string fldName, object[] values)
+        {
+            int ndx = ClassValue.IndexOfField(type.Fields, fldName);
+            Debug.Assert(values[ndx] is int);
+            return (int)values[ndx];
+        }
 
+        static ValueTuple<ulong,ClrType> GetFieldUInt64AndType(ClrType type, string fldName, ClrType[] fldTypes, object[] values)
+        {
+            int ndx = ClassValue.IndexOfField(type.Fields, fldName);
+            Debug.Assert(values[ndx] is ulong);
+            return ((ulong)values[ndx],fldTypes[ndx]);
+        }
 
-    #endregion utils
-}
+        #endregion utils
+    }
 }

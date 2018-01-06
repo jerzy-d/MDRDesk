@@ -82,7 +82,7 @@ namespace MDRDesk
                 switch (wndType)
                 {
                     case WndType.Content:
-                        wnd = new ContentDisplay(id, inst.GetDescription(), inst) { Owner = GuiUtils.MainWindowInstance };
+                        wnd = new ContentDisplay(id, description != null ? description : inst.GetDescription(), inst) { Owner = GuiUtils.MainWindowInstance };
                         break;
                     case WndType.Tree:
                         wnd = new ClassStructDisplay(id, inst.GetDescription(), inst) { Owner = GuiUtils.MainWindowInstance };

@@ -100,6 +100,49 @@ namespace ClrMDRIndex
 
         }
 
+        public static ValueTuple<string, ClrType, ClrElementKind, ClrType[], ClrElementKind[]>
+        GetClassTypeInfo(ClrHeap heap, ulong addr)
+        {
+            try
+            {
+                addr = Utils.RealAddress(addr);
+                var type = heap.GetObjectType(addr);
+                if (type == null) return ("Object Value Error" + Constants.HeavyGreekCrossPadded + "Cannot find an instance." + Constants.HeavyGreekCrossPadded + "Heap cannot get object type at address: " + Utils.RealAddressString(addr), null, ClrElementKind.Unknown, null, null);
+                var kind = TypeExtractor.GetElementKind(type);
+                var fldCnt = type.Fields.Count;
+
+                var fldTypes = fldCnt == 0 ? Utils.EmptyArray<ClrType>.Value : new ClrType[fldCnt];
+                var fldKinds = fldCnt == 0 ? Utils.EmptyArray<ClrElementKind>.Value : new ClrElementKind[fldCnt];
+                var strings = fldCnt == 0 ? Utils.EmptyArray<string>.Value : new string[fldCnt];
+                for (int i = 0; i < fldCnt; ++i)
+                {
+                    var fld = type.Fields[i];
+                    var fldType = fld.Type; // returns ClrElementKind.Unknown if fld.Type is null
+                    fldTypes[i] = fldType;
+                    var fldKind = TypeExtractor.GetElementKind(fldType);
+                    fldKinds[i] = fldKind;
+                    if (fldKind == ClrElementKind.Unknown) continue; // nothing to do here, from MDR lib: There is
+                                                                     // a bug in several versions of our debugging layer which causes this.
+                    if (TypeExtractor.IsAmbiguousKind(fldKind))
+                    {
+                        (ClrType aType, ClrElementKind aKind) = TypeExtractor.GetReferenceFieldRealTypeAndKind(heap, addr, fld);
+                        if (aType != null)
+                        {
+                            fldType = aType;
+                            fldTypes[i] = fldType;
+                            fldKind = aKind;
+                            fldKinds[i] = fldKind;
+                        }
+                    }
+                }
+                return (null, type, kind, fldTypes, fldKinds);
+            }
+            catch (Exception ex)
+            {
+                return (Utils.GetExceptionErrorString(ex), null, ClrElementKind.Unknown, null, null);
+            }
+        }
+
         public static ValueTuple<string, ClrType, ClrElementKind, ValueTuple<ClrType[], ClrElementKind[], string[], StructValueStrings[]>>
         GetClassValueStrings(ClrHeap heap, ulong addr)
         {
@@ -124,6 +167,71 @@ namespace ClrMDRIndex
                     fldKinds[i] = fldKind;
                     if (fldKind == ClrElementKind.Unknown) continue; // nothing to do here, from MDR lib: There is
                                                                      // a bug in several versions of our debugging layer which causes this.
+                    if (TypeExtractor.IsAmbiguousKind(fldKind))
+                    {
+                        (ClrType aType, ClrElementKind aKind) = TypeExtractor.GetReferenceFieldRealTypeAndKind(heap, addr, fld);
+                        if (aType != null)
+                        {
+                            fldType = aType;
+                            fldTypes[i] = fldType;
+                            fldKind = aKind;
+                            fldKinds[i] = fldKind;
+                        }
+                    }
+                    if (!Utils.SameStrings(fld.Type.Name,fldType.Name))
+                    {
+                        ulong fldAddr = fld.GetAddress(addr, type.IsValueClass);
+                        if (TypeExtractor.IsString(fldKind))
+                        {
+                            var obj = ValueExtractor.GetStringValue(fldType, fldAddr);
+                            strings[i] = obj == null ? Constants.NullValue : (string)obj;
+                        }
+                        else if (TypeExtractor.IsObjectReference(fldKind))
+                        {
+                            var obj = fld.GetValue(addr, false, false);
+                            strings[i] = obj == null ? Constants.InvalidAddressStr : Utils.RealAddressString((ulong)obj);
+                        }
+                        else if (TypeExtractor.IsEnum(fldKind))
+                        {
+                            long intVal;
+                            strings[i] = ValueExtractor.GetEnumValueString(fldAddr, fldType, out intVal);
+                        }
+                        else if (fldType.IsPrimitive)
+                        {
+                            var obj = fld.Type.GetValue(fldAddr);
+                            strings[i] = ValueExtractor.PrimitiveValue(obj, fldKind);
+                        }
+                        else if (TypeExtractor.IsKnownStruct(fldKind))
+                        {
+                            switch (TypeExtractor.GetSpecialKind(fldKind))
+                            {
+                                case ClrElementKind.DateTime:
+                                    strings[i] = ValueExtractor.DateTimeValueString(fldAddr, fldType, null);
+                                    break;
+                                case ClrElementKind.Guid:
+                                    strings[i] = ValueExtractor.GuidValueAsString(fldAddr, fldType);
+                                    break;
+                                case ClrElementKind.Decimal:
+                                    strings[i] = ValueExtractor.DecimalValueAsString(fldAddr, fldType,null);
+                                    break;
+                                case ClrElementKind.TimeSpan:
+                                    strings[i] = ValueExtractor.TimeSpanValueAsString(fldAddr, fldType);
+                                    break;
+                            }
+                        }
+                        else if (TypeExtractor.IsStruct(fldKind))
+                        {
+                            StructFields sf = StructFields.GetStructFields(fldType);
+                            StructFieldsEx sfx = StructFieldsEx.GetStructFields(sf, fldType);
+                            sfx.ResetTypes();
+                            if (structVals == null) structVals = new StructValueStrings[fldCnt];
+                            ulong structAddr = fld.GetAddress(addr, false);
+                            structVals[i] = StructFieldsEx.GetStructValueStrings(sfx, heap, structAddr);
+                        }
+
+                        continue;
+                    }
+
                     if (TypeExtractor.IsString(fldKind))
                     {
                         var obj = fld.GetValue(addr, false, true);

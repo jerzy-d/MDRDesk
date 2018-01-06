@@ -125,7 +125,7 @@ namespace ClrMDRIndex
         public static string DecimalValueAsString(ulong addr, ClrType type, string formatSpec)
         {
             decimal d = GetDecimalValue(addr, type);
-            return formatSpec == null ? d.ToString(CultureInfo.InvariantCulture) : d.ToString(formatSpec);
+            return formatSpec == null ? d.ToString("G",CultureInfo.InvariantCulture) : d.ToString(formatSpec);
         }
 
         public static decimal GetDecimalValue(ulong addr, ClrType type)
@@ -283,6 +283,14 @@ namespace ClrMDRIndex
             var data = (ulong)type.Fields[0].GetValue(addr, true);
             data = data & TicksMask;
             return  DateTime.FromBinary((long)data);
+        }
+
+        public static string DateTimeValueString(ulong addr, ClrType type, string formatSpec = null)
+        {
+            DateTime dt = DateTimeValue(addr, type);
+            var data = (ulong)type.Fields[0].GetValue(addr, true);
+            data = data & TicksMask;
+            return formatSpec == null ? dt.ToString(CultureInfo.InvariantCulture) : dt.ToString(formatSpec);
         }
 
         //public static string GetDateTimeValue(ulong addr, ClrType clrType, string formatSpec = null)

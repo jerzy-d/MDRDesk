@@ -2040,6 +2040,24 @@ namespace UnitTestMdr
         }
 
         [TestMethod]
+        public void TestDictionaryContent2()
+        {
+            var index = OpenIndex(@"C:\WinDbgStuff\Dumps\Analytics\RCG\analytics3.dmp.map");
+            // 0x000006caadcb68 System.Collections.Generic.Dictionary<System.String,ECS.Common.Collections.Tag>
+            ulong addr = 0x000006caadcb68;
+            using (index)
+            {
+                var heap = index.Heap;
+                //(string error0, KeyValuePair<string, string>[] descr0, KeyValuePair<string, string>[] values0) = ValueExtractor.GetDictionaryContent(heap, addr);
+
+               (string error, KeyValuePair<string, string>[] descr, KeyValuePair<string, string>[] values) = CollectionContent.DictionaryContentAsStrings(heap, addr);
+
+                Assert.IsNull(error, error);
+            }
+
+        }
+
+        [TestMethod]
         public void TestConcurrentDictionaryContent()
         {
             string[] paths = new string[]
