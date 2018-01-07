@@ -52,7 +52,20 @@ namespace ClrMDRIndex
                     }
                     else if (TypeExtractor.IsObjectReference(fldKind))
                     {
-                        objects[i] = fld.GetValue(addr, false, false);
+
+                        object obj = fld.GetValue(addr, false, false);
+                        if (obj != null && (ulong)obj != Constants.InvalidAddress)
+                        {
+                            var t = heap.GetObjectType((ulong)obj);
+                            if (t!=null)
+                            {
+                                var k = TypeExtractor.GetElementKind(t);
+                                fldTypes[i] = t;
+                                fldKinds[i] = k;
+                            }
+                        }
+
+                        objects[i] = obj;
                     }
                     else if (TypeExtractor.IsEnum(fldKind))
                     {

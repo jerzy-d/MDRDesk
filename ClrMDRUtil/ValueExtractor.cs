@@ -2086,66 +2086,66 @@ namespace ClrMDRIndex
 
         #endregion SortedList<TKey, TValue> 
 
-        #region System.Collections.Generic.Dictionary<TKey, TValue>
+        //#region System.Collections.Generic.Dictionary<TKey, TValue>
 
-        public static ValueTuple<string, KeyValuePair<string, string>[] , KeyValuePair<string, string>[]> GetDictionaryContent(ClrHeap heap, ulong addr)
-        {
-            try
-            {
-                ClrType dctClrType = heap.GetObjectType(addr);
-                if (!TypeExtractor.Is(TypeExtractor.KnownTypes.Dictionary, dctClrType.Name))
-                    return ("Instance at: " + Utils.RealAddressString(addr) + " is not " + TypeExtractor.GetKnowTypeName(TypeExtractor.KnownTypes.Dictionary), null, null);
-                ValueTuple<ClrType, ClrInstanceField, ClrElementKind>[] dctFldInfos = TypeExtractor.GetFieldsAndKinds(dctClrType);
-                (ClrType entriesType, ClrInstanceField entriesFld, ClrElementKind emtriesKind) = FindFieldByName(dctFldInfos, "entries");
-                Debug.Assert(entriesType != null);
-                ulong entriesAddr = GetReferenceFieldAddress(addr, entriesFld, false);
+        //public static ValueTuple<string, KeyValuePair<string, string>[] , KeyValuePair<string, string>[]> GetDictionaryContent(ClrHeap heap, ulong addr)
+        //{
+        //    try
+        //    {
+        //        ClrType dctClrType = heap.GetObjectType(addr);
+        //        if (!TypeExtractor.Is(TypeExtractor.KnownTypes.Dictionary, dctClrType.Name))
+        //            return ("Instance at: " + Utils.RealAddressString(addr) + " is not " + TypeExtractor.GetKnowTypeName(TypeExtractor.KnownTypes.Dictionary), null, null);
+        //        ValueTuple<ClrType, ClrInstanceField, ClrElementKind>[] dctFldInfos = TypeExtractor.GetFieldsAndKinds(dctClrType);
+        //        (ClrType entriesType, ClrInstanceField entriesFld, ClrElementKind emtriesKind) = FindFieldByName(dctFldInfos, "entries");
+        //        Debug.Assert(entriesType != null);
+        //        ulong entriesAddr = GetReferenceFieldAddress(addr, entriesFld, false);
  
-                int count = GetFieldIntValue(dctFldInfos, "count", heap, addr, false);
-                int version = GetFieldIntValue(dctFldInfos, "version", heap, addr, false);
-                int freeCount = GetFieldIntValue(dctFldInfos, "freeCount", heap, addr, false);
-                var aryLen = entriesType == null ? 0 : entriesType.GetArrayLength(entriesAddr);
+        //        int count = GetFieldIntValue(dctFldInfos, "count", heap, addr, false);
+        //        int version = GetFieldIntValue(dctFldInfos, "version", heap, addr, false);
+        //        int freeCount = GetFieldIntValue(dctFldInfos, "freeCount", heap, addr, false);
+        //        var aryLen = entriesType == null ? 0 : entriesType.GetArrayLength(entriesAddr);
 
-                KeyValuePair<string, string>[] fldDescription = new KeyValuePair<string, string>[]
-                {
-                new KeyValuePair<string, string>("count", Utils.CountString(count-freeCount)),
-                new KeyValuePair<string, string>("array count", Utils.CountString(aryLen)),
-                new KeyValuePair<string, string>("version", version.ToString())
-                };
+        //        KeyValuePair<string, string>[] fldDescription = new KeyValuePair<string, string>[]
+        //        {
+        //        new KeyValuePair<string, string>("count", Utils.CountString(count-freeCount)),
+        //        new KeyValuePair<string, string>("array count", Utils.CountString(aryLen)),
+        //        new KeyValuePair<string, string>("version", version.ToString())
+        //        };
 
-                if (entriesType == null || entriesAddr == Constants.InvalidAddress || (count - freeCount) < 1)
-                    return (TypeExtractor.GetKnowTypeName(TypeExtractor.KnownTypes.Dictionary) + " is empty.", fldDescription, null);
+        //        if (entriesType == null || entriesAddr == Constants.InvalidAddress || (count - freeCount) < 1)
+        //            return (TypeExtractor.GetKnowTypeName(TypeExtractor.KnownTypes.Dictionary) + " is empty.", fldDescription, null);
 
-                (string error, ClrType exEntriesType, ClrType elemType, ClrElementKind elemKind, int len) = ArrayInfo(heap, entriesAddr);
-                if (error != null)
-                    return (error, fldDescription, null);
-                ValueTuple<ClrType, ClrInstanceField, ClrElementKind>[] fldInfos = TypeExtractor.GetFieldsAndKinds(elemType);
+        //        (string error, ClrType exEntriesType, ClrType elemType, ClrElementKind elemKind, int len) = ArrayInfo(heap, entriesAddr);
+        //        if (error != null)
+        //            return (error, fldDescription, null);
+        //        ValueTuple<ClrType, ClrInstanceField, ClrElementKind>[] fldInfos = TypeExtractor.GetFieldsAndKinds(elemType);
 
-                (ClrType hashType, ClrInstanceField hashFld, ClrElementKind hashKind) = FindFieldByName(fldInfos, "hashCode");
-                (ClrType nextType, ClrInstanceField nextFld, ClrElementKind nextKind) = FindFieldByName(fldInfos, "next");
-                (ClrType keyType, ClrInstanceField keyFld, ClrElementKind keyKind) = FindFieldByName(fldInfos, "key");
-                (ClrType valType, ClrInstanceField valFld, ClrElementKind valKind) = FindFieldByName(fldInfos, "value");
+        //        (ClrType hashType, ClrInstanceField hashFld, ClrElementKind hashKind) = FindFieldByName(fldInfos, "hashCode");
+        //        (ClrType nextType, ClrInstanceField nextFld, ClrElementKind nextKind) = FindFieldByName(fldInfos, "next");
+        //        (ClrType keyType, ClrInstanceField keyFld, ClrElementKind keyKind) = FindFieldByName(fldInfos, "key");
+        //        (ClrType valType, ClrInstanceField valFld, ClrElementKind valKind) = FindFieldByName(fldInfos, "value");
 
-                var values = new List<KeyValuePair<string, string>>(count - freeCount);
-                for (int i = 0; i < aryLen; ++i)
-                {
-                    // TODO JRD -- handle structures here as in array
-                    var eaddr = entriesType.GetArrayElementAddress(entriesAddr, i);
-                    var hash = GetFieldIntValue(heap, eaddr, hashFld, true);
-                    if (hash <= 0) continue;
-                    string keyVal = (string)GetFieldValue(heap, eaddr, keyFld, keyType, keyKind, true, false);
-                    string valueVal = (string)GetFieldValue(heap, eaddr, valFld, valType, valKind, true, false);
-                    values.Add(new KeyValuePair<string, string>(keyVal, valueVal));
-                }
-                return (null, fldDescription,values.ToArray());
-            }
-            catch (Exception ex)
-            {
-                string error = Utils.GetExceptionErrorString(ex);
-                return (error, null, null);
-            }
-        }
+        //        var values = new List<KeyValuePair<string, string>>(count - freeCount);
+        //        for (int i = 0; i < aryLen; ++i)
+        //        {
+        //            // TODO JRD -- handle structures here as in array
+        //            var eaddr = entriesType.GetArrayElementAddress(entriesAddr, i);
+        //            var hash = GetFieldIntValue(heap, eaddr, hashFld, true);
+        //            if (hash <= 0) continue;
+        //            string keyVal = (string)GetFieldValue(heap, eaddr, keyFld, keyType, keyKind, true, false);
+        //            string valueVal = (string)GetFieldValue(heap, eaddr, valFld, valType, valKind, true, false);
+        //            values.Add(new KeyValuePair<string, string>(keyVal, valueVal));
+        //        }
+        //        return (null, fldDescription,values.ToArray());
+        //    }
+        //    catch (Exception ex)
+        //    {
+        //        string error = Utils.GetExceptionErrorString(ex);
+        //        return (error, null, null);
+        //    }
+        //}
 
-        #endregion System.Collections.Generic.Dictionary<TKey, TValue>
+        //#endregion System.Collections.Generic.Dictionary<TKey, TValue>
 
         #region System.Collections.Generic.SortedDictionary<TKey, TValue>
 

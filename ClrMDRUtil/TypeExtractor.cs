@@ -267,7 +267,6 @@ namespace ClrMDRIndex
         {
             int cnt = GetFieldCount(type);
             if (cnt < 1) return (null, null, ClrElementKind.Unknown);
-            var ary = new ValueTuple<ClrType, ClrInstanceField, ClrElementKind>[cnt];
             for (int i = 0; i < cnt; ++i)
             {
                 ClrInstanceField fld = type.Fields[i];

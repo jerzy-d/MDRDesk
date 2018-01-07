@@ -562,10 +562,15 @@ namespace ClrMDRIndex
             {
                 addr = Utils.RealAddress(addr);
                 ClrType clrType = heap.GetObjectType(addr);
+
                 if (clrType == null)
                     return ("Cannot get type of instance at: " + Utils.RealAddressString(addr) + ", invalid address?", null, null);
                 if (!TypeExtractor.Is(TypeExtractor.KnownTypes.Dictionary, clrType.Name))
                     return ("Instance at: " + Utils.RealAddressString(addr) + " is not " + TypeExtractor.GetKnowTypeName(TypeExtractor.KnownTypes.Dictionary), null, null);
+
+                (ClrType keyTypeByName, ClrType valTypeByName) = GetKeyValuePairTypesByName(heap, clrType.Name, "System.Collections.Generic.Dictionary<");
+                ClrElementKind keyKindByName = TypeExtractor.GetElementKind(keyTypeByName);
+                ClrElementKind valKindByName = TypeExtractor.GetElementKind(valTypeByName);
                 (string error, ClrType type, ClrElementKind kind, (ClrType[] fldTypes, ClrElementKind[] fldKinds, object[] values, StructValues[] structValues)) =
                     ClassValue.GetClassValues(heap, addr);
                 if (error != null) return (error, null, null);
@@ -584,7 +589,47 @@ namespace ClrMDRIndex
                 (ClrType nextType, ClrInstanceField nextFld, ClrElementKind nextKind) = TypeExtractor.GetTypeFieldAndKind(aryElemType, "next");
                 (ClrType keyType, ClrInstanceField keyFld, ClrElementKind keyKind) = TypeExtractor.GetTypeFieldAndKind(aryElemType, "key");
                 (ClrType valType, ClrInstanceField valFld, ClrElementKind valKind) = TypeExtractor.GetTypeFieldAndKind(aryElemType, "value");
+                //if (TypeExtractor.IsAmbiguousKind(keyKind))
 
+
+                StructFieldsEx sfxKey = null;
+                StructFieldsEx sfxValue = null;
+
+                var valList = new List<KeyValuePair<string, string>>(count - freeCount);
+                for (int i = 0; i < aryLen; ++i)
+                {
+                    // TODO JRD -- handle structures here as in array
+                    var eaddr = entriesType.GetArrayElementAddress(entriesAddr, i);
+                    var hash = ValueExtractor.GetFieldIntValue(heap, eaddr, hashFld, true);
+                    if (hash <= 0) continue;
+
+                    object keyObj = keyFld.GetValue(eaddr, keyType.HasSimpleValue, false);
+                    if (keyObj != null && TypeExtractor.IsAmbiguousKind(keyKind))
+                    {
+                        var t = heap.GetObjectType((ulong)keyObj);
+                        if (t != null)
+                        {
+                            var k = TypeExtractor.GetElementKind(t);
+                            keyType = t;
+                            keyKind = k;
+                        }
+                    }
+                    object valObj = valFld.GetValue(eaddr, valType.HasSimpleValue, false);
+                    if (valObj != null && TypeExtractor.IsAmbiguousKind(valKind))
+                    {
+                        var t = heap.GetObjectType((ulong)valObj);
+                        if (t != null)
+                        {
+                            var k = TypeExtractor.GetElementKind(t);
+                            valType = t;
+                            valKind = k;
+                        }
+                    }
+
+                    string keyVal = (string)ValueExtractor.GetFieldValue(heap, eaddr, keyFld, keyType, keyKind, true, false);
+                    string valueVal = (string)ValueExtractor.GetFieldValue(heap, eaddr, valFld, valType, valKind, true, false);
+                    valList.Add(new KeyValuePair<string, string>(keyVal, valueVal));
+                }
 
                 KeyValuePair<string, string>[] fldDescription = new KeyValuePair<string, string>[]
                 {
@@ -594,7 +639,7 @@ namespace ClrMDRIndex
                 };
 
                 
-                return (error, null, null);
+                return (error, fldDescription, valList.ToArray());
             }
             catch (Exception ex)
             {
@@ -855,6 +900,48 @@ namespace ClrMDRIndex
             int ndx = ClassValue.IndexOfField(type.Fields, fldName);
             Debug.Assert(values[ndx] is ulong);
             return ((ulong)values[ndx],fldTypes[ndx]);
+        }
+
+        static ValueTuple<ClrType,ClrType> GetKeyValuePairTypesByName(ClrHeap heap, string name, string nameBase)
+        {
+            int baseLen = nameBase.Length;
+            string genericStr = name.Substring(baseLen, name.Length - baseLen - 1);
+            int comaCount = genericStr.Count(x => x == ',');
+            if (comaCount == 1)
+            {
+                string[] items = genericStr.Split(',');
+                return (heap.GetTypeByName(items[0]),heap.GetTypeByName(items[1]));
+            }
+            (string keyName, string valName) = SplitKeyValuePairTypeNames(genericStr);
+            return (heap.GetTypeByName(keyName), heap.GetTypeByName(valName));
+        }
+
+        static ValueTuple<string,string> SplitKeyValuePairTypeNames(string s)
+        {
+            int firstOpenBracket = s.IndexOf("<");
+            int lastCloseBracket = s.LastIndexOf(">");
+            int firstComaIndex = s.IndexOf(',');
+            int lastComaIndex = s.IndexOf(',');
+            if (firstComaIndex < firstOpenBracket)
+            {
+                return (s.Substring(firstComaIndex), s.Substring(firstComaIndex+1));
+            }
+            if (lastComaIndex > lastCloseBracket)
+            {
+                return (s.Substring(lastComaIndex), s.Substring(lastComaIndex + 1));
+            }
+            int matchCount = 1;
+            int bracketNdx = 0;
+            while (matchCount > 0)
+            {
+                for (int i = firstOpenBracket, icnt = s.Length; i < icnt; ++i)
+                {
+                    if (s[i] == '>') { --matchCount; bracketNdx = i; }
+                    else if (s[i] == '<') ++matchCount;
+                }
+            }
+            firstComaIndex = s.IndexOf(',',bracketNdx);
+            return (s.Substring(firstComaIndex), s.Substring(firstComaIndex + 1));
         }
 
         #endregion utils

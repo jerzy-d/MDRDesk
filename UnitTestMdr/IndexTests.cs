@@ -1925,27 +1925,27 @@ namespace UnitTestMdr
 
 		}
 
-        [TestMethod]
-        public void TestDictionaryContent()
-        {
-            Stopwatch stopWatch = new Stopwatch();
-            stopWatch.Start();
-            var index = OpenIndex(@"D:\Jerzy\WinDbgStuff\Dumps\Analytics\Cowen\Cowen.Analytics.Svc_170717_165238.dmp.map");
-            TestContext.WriteLine(index.DumpFileName + " INDEX OPEN DURATION: " + Utils.StopAndGetDurationString(stopWatch));
-            ulong addr = 0x0000550415a8f8; // 0x00005308d8b3c0; // 0x000055070662f0;
-            using (index)
-            {
-                //       (string error, InstanceValue inst) = ValueExtractor.GetDictionaryInfo(index.IndexProxy, index.Heap, addr, null);
-                var heap = index.GetHeap();
-                var clrType = index.GetObjectType(addr);
+        //[TestMethod]
+        //public void TestDictionaryContent()
+        //{
+        //    Stopwatch stopWatch = new Stopwatch();
+        //    stopWatch.Start();
+        //    var index = OpenIndex(@"D:\Jerzy\WinDbgStuff\Dumps\Analytics\Cowen\Cowen.Analytics.Svc_170717_165238.dmp.map");
+        //    TestContext.WriteLine(index.DumpFileName + " INDEX OPEN DURATION: " + Utils.StopAndGetDurationString(stopWatch));
+        //    ulong addr = 0x0000550415a8f8; // 0x00005308d8b3c0; // 0x000055070662f0;
+        //    using (index)
+        //    {
+        //        //       (string error, InstanceValue inst) = ValueExtractor.GetDictionaryInfo(index.IndexProxy, index.Heap, addr, null);
+        //        var heap = index.GetHeap();
+        //        var clrType = index.GetObjectType(addr);
 
-                //(string error0, KeyValuePair<string, string>[] fldDescription, int count, ClrType dctType, ClrType entryKeyType, ClrType entryValueType, KeyValuePair< string,string >[] entryList) = CollectionContent.dictionaryContent(heap, addr);
-                //Assert.IsNull(error0, error0);
-                var (error1, description, values) = ValueExtractor.GetDictionaryContent(heap, addr);
+        //        //(string error0, KeyValuePair<string, string>[] fldDescription, int count, ClrType dctType, ClrType entryKeyType, ClrType entryValueType, KeyValuePair< string,string >[] entryList) = CollectionContent.dictionaryContent(heap, addr);
+        //        //Assert.IsNull(error0, error0);
+        //        var (error1, description, values) = ValueExtractor.GetDictionaryContent(heap, addr);
 
-            }
+        //    }
 
-        }
+        //}
 
         [TestMethod]
         public void TestSortedDictionaryContent()
@@ -2042,9 +2042,20 @@ namespace UnitTestMdr
         [TestMethod]
         public void TestDictionaryContent2()
         {
-            var index = OpenIndex(@"C:\WinDbgStuff\Dumps\Analytics\RCG\analytics3.dmp.map");
+            string[] paths = new string[]
+            {
+                @"C:\WinDbgStuff\Dumps\TestApp.exe_171226_161444.dmp.map",
+                @"C:\WinDbgStuff\Dumps\Analytics\RCG\analytics3.dmp.map"
+            };
+            var index = OpenIndex(paths[0]);
+            // C:\WinDbgStuff\Dumps\TestApp.exe_171226_161444.dmp.map
+            // 0x0002379fb4a520 System.Collections.Generic.Dictionary<System.String,System.AppContext+SwitchValueState>
+            // 0x0002379fb463d8 System.Collections.Generic.Dictionary<System.Int32,System.Object> ERROR test this!
+            // C:\WinDbgStuff\Dumps\Analytics\RCG\analytics3.dmp.map
             // 0x000006caadcb68 System.Collections.Generic.Dictionary<System.String,ECS.Common.Collections.Tag>
-            ulong addr = 0x000006caadcb68;
+            // 0x0000094afa1bb0 System.Collections.Generic.Dictionary<System.String,System.Boolean>
+            // 0x000007caaa7408 System.Collections.Generic.Dictionary<Microsoft.Practices.ObjectBuilder.BuilderStage,System.Collections.Generic.List<Microsoft.Practices.ObjectBuilder.IBuilderStrategy>>
+            ulong addr = 0x0002379fb4a520;
             using (index)
             {
                 var heap = index.Heap;

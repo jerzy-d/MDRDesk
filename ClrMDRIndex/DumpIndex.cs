@@ -1430,7 +1430,8 @@ namespace ClrMDRIndex
             switch (collectionType)
             {
                 case TypeExtractor.KnownTypes.Dictionary:
-                    (error, description, kvValues) = ValueExtractor.GetDictionaryContent(Heap, addr);
+                    (error, description, kvValues) = // ValueExtractor.GetDictionaryContent(Heap, addr);
+                                                        CollectionContent.DictionaryContentAsStrings(Heap, addr);
                     break;
                 case TypeExtractor.KnownTypes.Stack:
                     (error, description, values) = CollectionContent.StackContentAsStrings(Heap, addr);
