@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -312,5 +313,128 @@ namespace ClrMDRIndex
             }
             return Constants.InvalidIndex;
         }
+    }
+
+    public class EnumValues
+    {
+        public const long InvalidEnumValue = long.MinValue + 1;
+        string[] enumNames;
+        long[] enumValues;
+        ClrElementType enumKind;
+
+        public EnumValues(ClrType type)
+        {
+            Debug.Assert(type.IsEnum);
+            enumNames = type.GetEnumNames().ToArray();
+            enumValues = new long[enumNames.Length];
+            enumKind = type.GetEnumElementType();
+            for (int i = 0, icnt = enumNames.Length; i < icnt; ++i)
+            {
+                object obj;
+                if (type.TryGetEnumValue(enumNames[i], out obj))
+                {
+                    enumValues[i] = ConvertToLong(obj, enumKind);
+                }
+                else
+                {
+                    enumValues[i] = InvalidEnumValue;
+                }
+            }
+        }
+
+        public string GetEnumName(long val)
+        {
+            for (int i = 0, icnt = enumNames.Length; i < icnt; ++i)
+            {
+                if (enumValues[i] == val) return enumNames[i];
+            }
+            return "?";
+        }
+
+        public ValueTuple<long, string> GetEnumValueAndName(ulong addr, ClrType clrType, ClrElementType enumElem)
+        {
+            long val = GetEnumValue(addr, clrType, enumElem);
+            string name = GetEnumName(val);
+            return (val, name);
+        }
+
+        public string GetEnumString(ulong addr, ClrType clrType, ClrElementType enumElem)
+        {
+            long val = GetEnumValue(addr, clrType, enumElem);
+            string name = GetEnumName(val);
+            return val.ToString() + " " + name;
+        }
+
+        public string GetEnumString(object valObj, ClrElementType enumElem)
+        {
+            long val = ConvertToLong(valObj, enumElem);
+            string name = GetEnumName(val);
+            return val.ToString() + " " + name;
+        }
+
+        public static long ConvertToLong(object enumVal, ClrElementType enumElem)
+        {
+            if (enumVal is int)
+            {
+                return (long)(int)enumVal;
+            }
+            else
+            {
+                // The approved types for an enum are byte, sbyte, short, ushort, int, uint, long, or ulong.
+                switch (enumElem)
+                {
+                    case ClrElementType.UInt32:
+                        return (long)((uint)enumVal);
+                    case ClrElementType.UInt8:
+                        return (long)(byte)enumVal;
+                    case ClrElementType.Int8:
+                        return (long)(sbyte)enumVal;
+                    case ClrElementType.Int16:
+                        return (long)(short)enumVal;
+                    case ClrElementType.UInt16:
+                        return (long)(ushort)enumVal;
+                    case ClrElementType.Int64:
+                        return (long)enumVal;
+                    case ClrElementType.UInt64:
+                        return (long)(ulong)enumVal;
+                    default:
+                        return EnumValues.InvalidEnumValue;
+                }
+            }
+        }
+
+        public static long GetEnumValue(ulong addr, ClrType clrType, ClrElementType enumElem)
+        {
+            object enumVal = clrType.GetValue(addr);
+
+            if (enumVal is int)
+            {
+                return (long)(int)enumVal;
+            }
+            else
+            {
+                // The approved types for an enum are byte, sbyte, short, ushort, int, uint, long, or ulong.
+                switch (enumElem)
+                {
+                    case ClrElementType.UInt32:
+                        return (long)((uint)enumVal);
+                    case ClrElementType.UInt8:
+                        return (long)(byte)enumVal;
+                    case ClrElementType.Int8:
+                        return (long)(sbyte)enumVal;
+                    case ClrElementType.Int16:
+                        return (long)(short)enumVal;
+                    case ClrElementType.UInt16:
+                        return (long)(ushort)enumVal;
+                    case ClrElementType.Int64:
+                        return (long)enumVal;
+                    case ClrElementType.UInt64:
+                        return (long)(ulong)enumVal;
+                    default:
+                        return EnumValues.InvalidEnumValue;
+                }
+            }
+        }
+
     }
 }

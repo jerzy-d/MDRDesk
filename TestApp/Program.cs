@@ -17,14 +17,25 @@ namespace TestApp
 
             Dictionary<int, object> dct = new Dictionary<int, object>();
 
-            dct.Add(0, TestEnumInt8.Second);
+            dct.Add(0, TestEnumUInt8.First);
             dct.Add(1, TestEnumUInt8.Second);
-            dct.Add(2, TestEnumInt16.Second);
-            dct.Add(3, TestEnumUInt16.Second);
-            dct.Add(4, TestEnumInt32.Second);
-            dct.Add(5, TestEnumUInt32.Second);
-            dct.Add(6, TestEnumInt64.Second);
-            dct.Add(7, TestEnumUInt64.Second);
+            dct.Add(2, TestEnumUInt8.Third);
+            dct.Add(3, TestEnumUInt8.First);
+            dct.Add(4, TestEnumUInt8.Second);
+            dct.Add(5, TestEnumUInt8.Third);
+            dct.Add(6, TestEnumUInt8.First);
+            dct.Add(7, TestEnumUInt8.Second);
+
+            Dictionary<int, TestEnumUInt8> dct2 = new Dictionary<int, TestEnumUInt8>();
+
+            dct2.Add(0, TestEnumUInt8.First);
+            dct2.Add(1, TestEnumUInt8.Second);
+            dct2.Add(2, TestEnumUInt8.Third);
+            dct2.Add(3, TestEnumUInt8.First);
+            dct2.Add(4, TestEnumUInt8.Second);
+            dct2.Add(5, TestEnumUInt8.Third);
+            dct2.Add(6, TestEnumUInt8.First);
+            dct2.Add(7, TestEnumUInt8.Second);
 
             var testClass = new TestClass(Process.GetCurrentProcess().Id);
 			testClass.Init();

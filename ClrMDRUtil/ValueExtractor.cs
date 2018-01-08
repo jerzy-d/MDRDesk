@@ -767,7 +767,7 @@ namespace ClrMDRIndex
                     case ClrElementType.UInt64:
                         return (long)(ulong)enumVal;
                     default:
-                        return long.MinValue;
+                        return EnumValues.InvalidEnumValue;
                 }
             }
         }

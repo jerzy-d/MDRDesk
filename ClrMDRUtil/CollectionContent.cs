@@ -554,6 +554,13 @@ namespace ClrMDRIndex
 
         #endregion System.Collections.Concurrent.ConcurrentDictionary<TKey,TValue>
 
+        #region System.Collections.Generic.HashSet<
+
+        // C:\WinDbgStuff\Dumps\TestApp.exe_180107_110845.dmp.map
+        // TODO JRD -- check error
+        //  0x000173c1b230a8       System.Collections.Generic.HashSet<System.String>
+
+
         #region System.Collections.Generic.Dictionary<TKey,TValue>
 
         public static ValueTuple<string, KeyValuePair<string, string>[], KeyValuePair<string, string>[]> DictionaryContentAsStrings(ClrHeap heap, ulong addr)
@@ -589,12 +596,16 @@ namespace ClrMDRIndex
                 (ClrType nextType, ClrInstanceField nextFld, ClrElementKind nextKind) = TypeExtractor.GetTypeFieldAndKind(aryElemType, "next");
                 (ClrType keyType, ClrInstanceField keyFld, ClrElementKind keyKind) = TypeExtractor.GetTypeFieldAndKind(aryElemType, "key");
                 (ClrType valType, ClrInstanceField valFld, ClrElementKind valKind) = TypeExtractor.GetTypeFieldAndKind(aryElemType, "value");
-                //if (TypeExtractor.IsAmbiguousKind(keyKind))
+                EnumValues keyEnum = null;
+                EnumValues valEnum = null;
+                if (keyType.IsEnum) keyEnum = new EnumValues(keyType);
+                if (valType.IsEnum) valEnum = new EnumValues(valType);
 
 
                 StructFieldsEx sfxKey = null;
                 StructFieldsEx sfxValue = null;
-
+                bool useKeyTypeToGetValue = false;
+                bool useValTypeToGetValue = false;
                 var valList = new List<KeyValuePair<string, string>>(count - freeCount);
                 for (int i = 0; i < aryLen; ++i)
                 {
@@ -612,6 +623,10 @@ namespace ClrMDRIndex
                             var k = TypeExtractor.GetElementKind(t);
                             keyType = t;
                             keyKind = k;
+                            if (keyType.IsEnum)
+                            {
+                                keyEnum = new EnumValues(keyType);
+                            }
                         }
                     }
                     object valObj = valFld.GetValue(eaddr, valType.HasSimpleValue, false);
@@ -622,12 +637,40 @@ namespace ClrMDRIndex
                         {
                             var k = TypeExtractor.GetElementKind(t);
                             valType = t;
+                            if (valKind != k) useValTypeToGetValue = true;
                             valKind = k;
+                            if (valType.IsEnum)
+                            {
+                                valEnum = new EnumValues(valType);
+                            }
                         }
                     }
 
-                    string keyVal = (string)ValueExtractor.GetFieldValue(heap, eaddr, keyFld, keyType, keyKind, true, false);
-                    string valueVal = (string)ValueExtractor.GetFieldValue(heap, eaddr, valFld, valType, valKind, true, false);
+                    string keyVal = string.Empty;
+                    if (useKeyTypeToGetValue)
+                    {
+                        ulong a = keyFld.GetAddress(eaddr, true);
+                        if (keyEnum != null) keyVal = keyEnum.GetEnumString(a, keyType, TypeExtractor.GetClrElementType(keyKind));
+                        else keyVal = ValueExtractor.GetTypeValueAsString(heap, a, keyType, keyKind);
+                    }
+                    else
+                    {
+                        if (keyEnum != null) keyVal = keyEnum.GetEnumString(keyObj, TypeExtractor.GetClrElementType(keyKind));
+                        else keyVal = (string)ValueExtractor.GetFieldValue(heap, eaddr, keyFld, keyType, keyKind, true, false);
+                    }
+
+                    string valueVal = string.Empty;
+                    if (useValTypeToGetValue)
+                    {
+                        ulong a = valFld.GetAddress(eaddr,true);
+                        if (valEnum != null) valueVal = valEnum.GetEnumString(a, valType, TypeExtractor.GetClrElementType(valKind));
+                        else valueVal = ValueExtractor.GetTypeValueAsString(heap, a, valType, valKind);
+                    }
+                    else
+                    {
+                        if (valEnum != null) valueVal = valEnum.GetEnumString(valObj, TypeExtractor.GetClrElementType(valKind));
+                        else                 valueVal = (string)ValueExtractor.GetFieldValue(heap, eaddr, valFld, valType, valKind, true, false);
+                    }
                     valList.Add(new KeyValuePair<string, string>(keyVal, valueVal));
                 }
 

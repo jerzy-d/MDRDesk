@@ -2045,17 +2045,25 @@ namespace UnitTestMdr
             string[] paths = new string[]
             {
                 @"C:\WinDbgStuff\Dumps\TestApp.exe_171226_161444.dmp.map",
-                @"C:\WinDbgStuff\Dumps\Analytics\RCG\analytics3.dmp.map"
+                @"C:\WinDbgStuff\Dumps\Analytics\RCG\analytics3.dmp.map",
+                @"C:\WinDbgStuff\dumps\TestApp.exe_180107_110845.dmp.map"
             };
-            var index = OpenIndex(paths[0]);
+            var index = OpenIndex(paths[2]);
             // C:\WinDbgStuff\Dumps\TestApp.exe_171226_161444.dmp.map
             // 0x0002379fb4a520 System.Collections.Generic.Dictionary<System.String,System.AppContext+SwitchValueState>
             // 0x0002379fb463d8 System.Collections.Generic.Dictionary<System.Int32,System.Object> ERROR test this!
+
             // C:\WinDbgStuff\Dumps\Analytics\RCG\analytics3.dmp.map
             // 0x000006caadcb68 System.Collections.Generic.Dictionary<System.String,ECS.Common.Collections.Tag>
             // 0x0000094afa1bb0 System.Collections.Generic.Dictionary<System.String,System.Boolean>
             // 0x000007caaa7408 System.Collections.Generic.Dictionary<Microsoft.Practices.ObjectBuilder.BuilderStage,System.Collections.Generic.List<Microsoft.Practices.ObjectBuilder.IBuilderStrategy>>
-            ulong addr = 0x0002379fb4a520;
+
+            // C:\WinDbgStuff\dumps\TestApp.exe_180107_110845.dmp.map
+            // 0x000173c1b16900 System.Collections.Generic.Dictionary<System.Int32,TestApp.TestEnumUInt8>
+            // 0x000173c1b163d8 System.Collections.Generic.Dictionary<System.Int32,System.Object>
+            // 0x000173c1b1a828 System.Collections.Generic.Dictionary<System.String,System.AppContext+SwitchValueState>
+
+            ulong addr = 0x000173c1b1a828;
             using (index)
             {
                 var heap = index.Heap;
