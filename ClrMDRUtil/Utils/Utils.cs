@@ -2098,6 +2098,48 @@ namespace ClrMDRIndex
             return sd;
         }
 
+        public static void Gnomesort<T>(T[] seq, Comparer<T> cmp = null)
+        {
+            Debug.Assert(seq != null);
+            int len = seq.Length;
+            if (len < 2) return;
+            if (cmp == null) cmp = Comparer<T>.Default;
+            for (int i = 0, icnt = seq.Length; i < icnt; )
+            {
+                if (i == 0 || cmp.Compare(seq[i - 1], seq[i]) <= 0) ++i;
+                else
+                {
+                    T t = seq[i];
+                    seq[i] = seq[i - 1];
+                    seq[i - 1] = t;
+                    --i;
+                }
+            }
+        }
+
+        public static void Gnomesort2<T>(T[] seq, Comparer<T> cmp = null)
+        {
+            Debug.Assert(seq != null);
+            int len = seq.Length;
+            if (len < 2) return;
+            if (cmp == null) cmp = Comparer<T>.Default;
+            for (int i = 1, icnt = seq.Length; i < icnt; ++i)
+            {
+                GnomesortImpl<T>(seq, i, cmp);
+            }
+        }
+
+        public static void GnomesortImpl<T>(T[] seq, int pos, Comparer<T> cmp)
+        {
+            while (pos > 0 && cmp.Compare(seq[pos-1],seq[pos]) > 0)
+            {
+                T t = seq[pos];
+                seq[pos] = seq[pos - 1];
+                seq[pos - 1] = t;
+                --pos;
+            }
+        }
+
         #endregion Misc
     }
 }

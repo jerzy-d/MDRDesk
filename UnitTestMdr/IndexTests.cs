@@ -2040,29 +2040,26 @@ namespace UnitTestMdr
         }
 
         [TestMethod]
-        public void TestDictionaryContent2()
+        public void CollectionTest_Dictionary()
         {
             string[] paths = new string[]
             {
                 @"C:\WinDbgStuff\Dumps\TestApp.exe_171226_161444.dmp.map",
+                // 0x0002379fb4a520 System.Collections.Generic.Dictionary<System.String,System.AppContext+SwitchValueState>
+                // 0x0002379fb463d8 System.Collections.Generic.Dictionary<System.Int32,System.Object> ERROR test this!
                 @"C:\WinDbgStuff\Dumps\Analytics\RCG\analytics3.dmp.map",
-                @"C:\WinDbgStuff\dumps\TestApp.exe_180107_110845.dmp.map"
+                // 0x000006caadcb68 System.Collections.Generic.Dictionary<System.String,ECS.Common.Collections.Tag>
+                // 0x0000094afa1bb0 System.Collections.Generic.Dictionary<System.String,System.Boolean>
+                // 0x000007caaa7408 System.Collections.Generic.Dictionary<Microsoft.Practices.ObjectBuilder.BuilderStage,System.Collections.Generic.List<Microsoft.Practices.ObjectBuilder.IBuilderStrategy>>
+                @"C:\WinDbgStuff\dumps\TestApp.exe_180107_110845.dmp.map",
+                // 0x000173c1b16900 System.Collections.Generic.Dictionary<System.Int32,TestApp.TestEnumUInt8>
+                // 0x000173c1b163d8 System.Collections.Generic.Dictionary<System.Int32,System.Object>
+                // 0x000173c1b1a828 System.Collections.Generic.Dictionary<System.String,System.AppContext+SwitchValueState>
+                @"D:\Jerzy\WinDbgStuff\dumps\TestApp.exe_180108_083751.dmp.map",
+                // 0x00000002bc7130 System.Collections.Generic.Dictionary<System.ValueTuple<System.String,System.String>,System.ValueTuple<System.Int32,System.String,System.ValueTuple<System.Int32,System.String>>>
             };
+
             var index = OpenIndex(paths[2]);
-            // C:\WinDbgStuff\Dumps\TestApp.exe_171226_161444.dmp.map
-            // 0x0002379fb4a520 System.Collections.Generic.Dictionary<System.String,System.AppContext+SwitchValueState>
-            // 0x0002379fb463d8 System.Collections.Generic.Dictionary<System.Int32,System.Object> ERROR test this!
-
-            // C:\WinDbgStuff\Dumps\Analytics\RCG\analytics3.dmp.map
-            // 0x000006caadcb68 System.Collections.Generic.Dictionary<System.String,ECS.Common.Collections.Tag>
-            // 0x0000094afa1bb0 System.Collections.Generic.Dictionary<System.String,System.Boolean>
-            // 0x000007caaa7408 System.Collections.Generic.Dictionary<Microsoft.Practices.ObjectBuilder.BuilderStage,System.Collections.Generic.List<Microsoft.Practices.ObjectBuilder.IBuilderStrategy>>
-
-            // C:\WinDbgStuff\dumps\TestApp.exe_180107_110845.dmp.map
-            // 0x000173c1b16900 System.Collections.Generic.Dictionary<System.Int32,TestApp.TestEnumUInt8>
-            // 0x000173c1b163d8 System.Collections.Generic.Dictionary<System.Int32,System.Object>
-            // 0x000173c1b1a828 System.Collections.Generic.Dictionary<System.String,System.AppContext+SwitchValueState>
-
             ulong addr = 0x000173c1b1a828;
             using (index)
             {
@@ -2077,7 +2074,7 @@ namespace UnitTestMdr
         }
 
         [TestMethod]
-        public void TestConcurrentDictionaryContent()
+        public void CollectionTest_ConcurrentDictionary()
         {
             string[] paths = new string[]
             {
@@ -2087,9 +2084,11 @@ namespace UnitTestMdr
                 // 0x0000064b45beb8 System.Collections.Concurrent.ConcurrentDictionary<ECS.Common.HierarchyCache.Structure.CacheKeySourceIdMap,System.Int32>
                 // 0x0000064ad1dc28 System.Collections.Concurrent.ConcurrentDictionary<ECS.Common.HierarchyCache.Structure.SymbolAndSide,ECS.Common.HierarchyCache.Structure.IReadOnlyPosition>
                 // 0x0000064abbc7a0 System.Collections.Concurrent.ConcurrentDictionary<Microsoft.Practices.CompositeUI.Utility.AbstractKey<Microsoft.Practices.CompositeUI.WorkItem>,Microsoft.Practices.CompositeUI.EventBroker.WorkItemSubscriptions>
+                @"D:\Jerzy\WinDbgStuff\dumps\TestApp.exe_180108_083751.dmp.map",
+                // 0x00000002bd04b0 System.Collections.Concurrent.ConcurrentDictionary<System.ValueTuple<System.String,System.String>,System.ValueTuple<System.Int32,System.String,System.ValueTuple<System.Int32,System.String>>>
             };
-            var index = OpenIndex(paths[1]);
-            ulong addr = 0x0000064abbc7a0;
+            var index = OpenIndex(paths[2]);
+            ulong addr = 0x00000002bd04b0;
             using (index)
             {
                 var heap = index.Heap;
@@ -2141,6 +2140,106 @@ namespace UnitTestMdr
                 Assert.IsNull(error, error);
             }
 
+        }
+
+
+        [TestMethod]
+        public void InstanceValue_StructInContext()
+        {
+            string[] paths = new string[]
+            {
+                @"D:\Jerzy\WinDbgStuff\dumps\TestApp.exe_180108_083751.dmp.map",
+                // 0x00000002bc7130 System.Collections.Generic.Dictionary<System.ValueTuple<System.String,System.String>,System.ValueTuple<System.Int32,System.String,System.ValueTuple<System.Int32,System.String>>>
+
+            };
+            var index = OpenIndex(paths[0]);
+            ulong addr = 0x00000002bc7130;
+            using (index)
+            {
+                var heap = index.Heap;
+
+                (string error, ClrType type, ClrElementKind kind, (ClrType[] fldTypes, ClrElementKind[] fldKinds, object[] values, StructValues[] structValues)) =
+                    ClassValue.GetClassValues(heap, addr);
+                Assert.IsNull(error, error);
+
+                var infos = GatherInfo(type, kind, fldTypes, fldKinds, values, structValues);
+
+                (ulong entriesAddr, ClrType entriesType) = CollectionContent.GetFieldUInt64AndType(type, "entries", fldTypes, values);
+
+                (ClrType entriesElemType, ClrElementKind entriesElemKind, int entriesLen) = CollectionContent.ArrayInfo(heap, entriesType, entriesAddr);
+
+                (ClrType keyTypeByName, ClrType valTypeByName) = TypeExtractor.GetKeyValuePairTypesByName(heap, type.Name, "System.Collections.Generic.Dictionary<");
+                ClrElementKind keyKindByName = TypeExtractor.GetElementKind(keyTypeByName);
+                ClrElementKind valKindByName = TypeExtractor.GetElementKind(valTypeByName);
+
+                Assert.IsNull(error, error);
+            }
+        }
+
+        private Tuple<string, string, string, string, string, string>[] GatherInfo(ClrType type, ClrElementKind kind, ClrType[] fldTypes, ClrElementKind[] fldKinds, object[] fldValues, StructValues[] structData)
+        {
+            Assert.IsTrue(type.Fields.Count == fldTypes.Length);
+            int fldCount = type.Fields.Count;
+            var infos = new Tuple<string, string, string, string, string, string>[fldCount];
+            for (int i = 0; i < fldCount; ++i)
+            {
+                infos[i] = Tuple.Create(
+                        type.Fields[i].Name,
+                        type.Fields[i].Type.Name,
+                        TypeExtractor.GetElementKind(type.Fields[i].Type).ToString(),
+                        fldTypes[i].Name,
+                        fldKinds[i].ToString(),
+                        fldValues[i].ToString()
+                    );
+            }
+            return infos;
+        }
+
+        [TestMethod]
+        public void ArrayElement_Tests()
+        {
+            string[] paths = new string[]
+            {
+                @"D:\Jerzy\WinDbgStuff\dumps\TestApp.exe_180108_083751.dmp.map",
+                // 0x00000002bc7230 System.Collections.Generic.Dictionary+Entry<System.ValueTuple<System.String,System.String>,System.ValueTuple<System.Int32,System.String,System.ValueTuple<System.Int32,System.String>>>[]
+                // 0x00000002bc6a18 System.Collections.Generic.Dictionary+Entry<System.Int32,System.Object>[]
+            };
+            var index = OpenIndex(paths[0]);
+            ulong addr = 0x00000002bc6a18;
+            using (index)
+            {
+                var heap = index.Heap;
+
+                ClrType aryType = heap.GetObjectType(addr);
+
+                (ClrType entriesElemType, ClrElementKind entriesElemKind, int entriesLen) = ArrayInfo(heap, aryType, addr);
+
+                (string error, ClrType aType, ClrType eType, StructFields sf, string[] vals, StructValueStrings[] structVals) = CollectionContent.GetArrayContentAsStrings(heap, addr);
+
+                string[] structStrinfs = new string[structVals.Length];
+                for (int i = 0, icnt = structVals.Length; i < icnt; ++i)
+                {
+                    structStrinfs[i] = StructValueStrings.MergeValues(structVals[i]);
+                }
+
+                Assert.IsNull(error, error);
+            }
+
+        }
+
+        private ValueTuple<ClrType, ClrElementKind, int> ArrayInfo(ClrHeap heap, ClrType type, ulong addr)
+        {
+            ClrType elType = type.ComponentType;
+            ClrElementKind elKind = TypeExtractor.GetElementKind(elType);
+            int len = type.GetArrayLength(addr);
+            if (elKind == ClrElementKind.Unknown || TypeExtractor.IsAmbiguousKind(elKind))
+            {
+                for (int i = 0; i < len; ++i)
+                {
+
+                }
+            }
+            return (elType, elKind, len);
         }
 
         #endregion instance value

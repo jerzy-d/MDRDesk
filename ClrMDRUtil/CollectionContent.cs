@@ -16,6 +16,13 @@ namespace ClrMDRIndex
             ClrType elType = type.ComponentType;
             ClrElementKind elKind = TypeExtractor.GetElementKind(elType);
             int len = type.GetArrayLength(addr);
+            if (elKind == ClrElementKind.Unknown || TypeExtractor.IsAmbiguousKind(elKind))
+            {
+                for (int i = 0; i < len; ++i)
+                {
+
+                }
+            }
             return (elType, elKind, len);
         }
 
@@ -430,11 +437,15 @@ namespace ClrMDRIndex
             try
             {
                 addr = Utils.RealAddress(addr);
-                ClrType clrType = heap.GetObjectType(addr);
-                if (clrType == null)
-                    return ("Cannot get type of instance at: " + Utils.RealAddressString(addr) + ", invalid address?", null, null);
-                if (!TypeExtractor.Is(TypeExtractor.KnownTypes.ConcurrentDictionary, clrType.Name))
-                    return ("Instance at: " + Utils.RealAddressString(addr) + " is not " + TypeExtractor.GetKnowTypeName(TypeExtractor.KnownTypes.ConcurrentDictionary), null, null);
+                { // check if we have desired type at the given address
+                    ClrType clrType = heap.GetObjectType(addr);
+                    if (clrType == null)
+                        return ("Cannot get type of instance at: " + Utils.RealAddressString(addr) + ", invalid address?", null, null);
+                    if (!TypeExtractor.Is(TypeExtractor.KnownTypes.ConcurrentDictionary, clrType.Name))
+                        return ("Instance at: " + Utils.RealAddressString(addr) + " is not " + TypeExtractor.GetKnowTypeName(TypeExtractor.KnownTypes.ConcurrentDictionary), null, null);
+                    clrType = null;
+                }
+
                 (string error, ClrType type, ClrElementKind kind, (ClrType[] fldTypes, ClrElementKind[] fldKinds, object[] values, StructValues[] structValues)) =
                     ClassValue.GetClassValues(heap, addr);
                 if (error != null) return (error, null, null);
@@ -444,6 +455,8 @@ namespace ClrMDRIndex
                 var fldDescriptionLst = new List<KeyValuePair<string, string>>(8);
                 StructFieldsEx sfxKey = null;
                 StructFieldsEx sfxValue = null;
+
+                (ClrType keyTypeByName, ClrType valTypeByName) = TypeExtractor.GetKeyValuePairTypesByName(heap, type.Name, "System.Collections.Concurrent.ConcurrentDictionary<");
 
                 (string err, ClrType tblType, ClrElementKind tblKind, (ClrType[] tblFldTypes, ClrElementKind[] tblFldKinds, object[] tblValues, StructValues[] tblStructValues)) =
                     ClassValue.GetClassValues(heap, tblAddr);
@@ -475,6 +488,7 @@ namespace ClrMDRIndex
                 ClrElementKind nodeKind;
                 ClrType[] nodeFldTypes=null;
                 ClrElementKind[] nodeFldKinds=null;
+                ClrType aNodeType = null;
 
                 for (int i = 0, icnt = bucketValues.Length; i < icnt; ++i)
                 {
@@ -494,6 +508,8 @@ namespace ClrMDRIndex
                         string key = Constants.NullValue;
                         string val = Constants.NullValue;
 
+
+
                         ulong keyAddr = TypeExtractor.IsObjectReference(nodeFldKinds[m_keyNdx])
                                             ? (ulong)nodeType.Fields[m_keyNdx].GetValue(node,false,false)
                                             : nodeType.Fields[m_keyNdx].GetAddress(node);
@@ -501,18 +517,18 @@ namespace ClrMDRIndex
                         {
                             if (sfxKey == null)
                             {
+                                var kAddr = nodeType.Fields[m_keyNdx].GetAddress(node,true);
+                                var kType = heap.GetObjectType(kAddr);
                                 StructFields sf = StructFields.GetStructFields(nodeFldTypes[m_keyNdx]);
                                 sfxKey = StructFieldsEx.GetStructFields(sf, nodeFldTypes[m_keyNdx]);
                                 sfxKey.ResetTypes();
                             }
                             var structVal = StructFieldsEx.GetStructValueStrings(sfxKey, heap, keyAddr);
                             key = StructValueStrings.MergeValues(structVal);
-                            //key = ValueExtractor.GetTypeValueString(heap, keyAddr, nodeFldTypes[m_keyNdx], nodeFldKinds[m_keyNdx]);
                         }
                         else
                         {
                             key = ValueExtractor.GetTypeValueString(heap, keyAddr, nodeFldTypes[m_keyNdx], nodeFldKinds[m_keyNdx]);
-                            //key = ValueExtractor.GetFieldValueString(heap, node, false, nodeType.Fields[m_keyNdx], nodeFldKinds[m_keyNdx]);
                         }
                         ulong valAddr = TypeExtractor.IsObjectReference(nodeFldKinds[m_valueNdx])
                                             ? (ulong)nodeType.Fields[m_valueNdx].GetValue(node, false, false)
@@ -527,13 +543,10 @@ namespace ClrMDRIndex
                             }
                             var structVal = StructFieldsEx.GetStructValueStrings(sfxValue, heap, valAddr);
                             val = StructValueStrings.MergeValues(structVal);
-                            //val = ValueExtractor.GetFieldValueString(heap, node, false, nodeType.Fields[m_valueNdx], nodeFldKinds[m_valueNdx], sfxValue);
-                            //val = ValueExtractor.GetTypeValueString(heap, valAddr, nodeFldTypes[m_valueNdx], nodeFldKinds[m_valueNdx]);
                         }
                         else
                         {
                             val = ValueExtractor.GetTypeValueString(heap, valAddr, nodeFldTypes[m_valueNdx], nodeFldKinds[m_valueNdx]);
-                            //val = ValueExtractor.GetFieldValueString(heap, node, false, nodeType.Fields[m_valueNdx], nodeFldKinds[m_valueNdx]);
                         }
                         result[resultNdx++] = new KeyValuePair<string, string>(key, val);
                         node = (ulong)nodeType.Fields[m_nextNdx].GetValue(node,false);
@@ -560,6 +573,8 @@ namespace ClrMDRIndex
         // TODO JRD -- check error
         //  0x000173c1b230a8       System.Collections.Generic.HashSet<System.String>
 
+        #endregion System.Collections.Generic.HashSet<
+
 
         #region System.Collections.Generic.Dictionary<TKey,TValue>
 
@@ -568,19 +583,22 @@ namespace ClrMDRIndex
             try
             {
                 addr = Utils.RealAddress(addr);
-                ClrType clrType = heap.GetObjectType(addr);
+                {
+                    ClrType clrType = heap.GetObjectType(addr);
+                    if (clrType == null)
+                        return ("Cannot get type of instance at: " + Utils.RealAddressString(addr) + ", invalid address?", null, null);
+                    if (!TypeExtractor.Is(TypeExtractor.KnownTypes.Dictionary, clrType.Name))
+                        return ("Instance at: " + Utils.RealAddressString(addr) + " is not " + TypeExtractor.GetKnowTypeName(TypeExtractor.KnownTypes.Dictionary), null, null);
+                    clrType = null;
+                }
 
-                if (clrType == null)
-                    return ("Cannot get type of instance at: " + Utils.RealAddressString(addr) + ", invalid address?", null, null);
-                if (!TypeExtractor.Is(TypeExtractor.KnownTypes.Dictionary, clrType.Name))
-                    return ("Instance at: " + Utils.RealAddressString(addr) + " is not " + TypeExtractor.GetKnowTypeName(TypeExtractor.KnownTypes.Dictionary), null, null);
-
-                (ClrType keyTypeByName, ClrType valTypeByName) = GetKeyValuePairTypesByName(heap, clrType.Name, "System.Collections.Generic.Dictionary<");
-                ClrElementKind keyKindByName = TypeExtractor.GetElementKind(keyTypeByName);
-                ClrElementKind valKindByName = TypeExtractor.GetElementKind(valTypeByName);
                 (string error, ClrType type, ClrElementKind kind, (ClrType[] fldTypes, ClrElementKind[] fldKinds, object[] values, StructValues[] structValues)) =
                     ClassValue.GetClassValues(heap, addr);
                 if (error != null) return (error, null, null);
+
+                (ClrType keyTypeByName, ClrType valTypeByName) = TypeExtractor.GetKeyValuePairTypesByName(heap, type.Name, "System.Collections.Generic.Dictionary<");
+                ClrElementKind keyKindByName = TypeExtractor.GetElementKind(keyTypeByName);
+                ClrElementKind valKindByName = TypeExtractor.GetElementKind(valTypeByName);
 
                 int count = GetFieldInt(type, "count", values);
                 int version = GetFieldInt(type, "version", values);
@@ -922,12 +940,11 @@ namespace ClrMDRIndex
             return ary;
         }
 
-
         static string GetStructFieldsDescr(StructFieldsEx sfx, string title)
         {
             StringBuilder sb = new StringBuilder(128);
             sb.Append(title);
-            sfx.Structs.Description(sb, string.Empty);
+            StructFields.Description(sfx.Structs, sb, string.Empty);
             return sb.ToString();
         }
 
@@ -938,53 +955,11 @@ namespace ClrMDRIndex
             return (int)values[ndx];
         }
 
-        static ValueTuple<ulong,ClrType> GetFieldUInt64AndType(ClrType type, string fldName, ClrType[] fldTypes, object[] values)
+        public static ValueTuple<ulong,ClrType> GetFieldUInt64AndType(ClrType type, string fldName, ClrType[] fldTypes, object[] values)
         {
             int ndx = ClassValue.IndexOfField(type.Fields, fldName);
             Debug.Assert(values[ndx] is ulong);
             return ((ulong)values[ndx],fldTypes[ndx]);
-        }
-
-        static ValueTuple<ClrType,ClrType> GetKeyValuePairTypesByName(ClrHeap heap, string name, string nameBase)
-        {
-            int baseLen = nameBase.Length;
-            string genericStr = name.Substring(baseLen, name.Length - baseLen - 1);
-            int comaCount = genericStr.Count(x => x == ',');
-            if (comaCount == 1)
-            {
-                string[] items = genericStr.Split(',');
-                return (heap.GetTypeByName(items[0]),heap.GetTypeByName(items[1]));
-            }
-            (string keyName, string valName) = SplitKeyValuePairTypeNames(genericStr);
-            return (heap.GetTypeByName(keyName), heap.GetTypeByName(valName));
-        }
-
-        static ValueTuple<string,string> SplitKeyValuePairTypeNames(string s)
-        {
-            int firstOpenBracket = s.IndexOf("<");
-            int lastCloseBracket = s.LastIndexOf(">");
-            int firstComaIndex = s.IndexOf(',');
-            int lastComaIndex = s.IndexOf(',');
-            if (firstComaIndex < firstOpenBracket)
-            {
-                return (s.Substring(firstComaIndex), s.Substring(firstComaIndex+1));
-            }
-            if (lastComaIndex > lastCloseBracket)
-            {
-                return (s.Substring(lastComaIndex), s.Substring(lastComaIndex + 1));
-            }
-            int matchCount = 1;
-            int bracketNdx = 0;
-            while (matchCount > 0)
-            {
-                for (int i = firstOpenBracket, icnt = s.Length; i < icnt; ++i)
-                {
-                    if (s[i] == '>') { --matchCount; bracketNdx = i; }
-                    else if (s[i] == '<') ++matchCount;
-                }
-            }
-            firstComaIndex = s.IndexOf(',',bracketNdx);
-            return (s.Substring(firstComaIndex), s.Substring(firstComaIndex + 1));
         }
 
         #endregion utils

@@ -37,6 +37,15 @@ namespace TestApp
             dct2.Add(6, TestEnumUInt8.First);
             dct2.Add(7, TestEnumUInt8.Second);
 
+            var structDct = new Dictionary<(string, string), (int, string, (int, string))>();
+            structDct.Add(("key1_a", "key1_b"), (1, "value1_a", (1, "value1_b")));
+            structDct.Add(("key2_a", "key2_b"), (2, "value2_a", (2, "value2_b")));
+            structDct.Add(("key3_a", "key3_b"), (3, "value3_a", (3, "value3_b")));
+            structDct.Add(("key4_a", "key4_b"), (4, "value4_a", (4, "value4_b")));
+            structDct.Add(("key5_a", "key5_b"), (5, "value5_a", (5, "value5_b")));
+            structDct.Add(("key6_a", "key6_b"), (6, "value6_a", (6, "value6_b")));
+            structDct.Add(("key7_a", "key7_b"), (7, "value7_a", (7, "value7_b")));
+
             var testClass = new TestClass(Process.GetCurrentProcess().Id);
 			testClass.Init();
 
@@ -55,6 +64,16 @@ namespace TestApp
             cdct.TryAdd(2, TestEnum.Third);
             cdct.TryAdd(3, TestEnum.Forth);
             cdct.TryAdd(4, TestEnum.Fifth);
+
+            var concstructDct = new ConcurrentDictionary<(string, string), (int, string, (int, string))>();
+            concstructDct.TryAdd(("key1_a", "key1_b"), (1, "value1_a", (1, "value1_b")));
+            concstructDct.TryAdd(("key2_a", "key2_b"), (2, "value2_a", (2, "value2_b")));
+            concstructDct.TryAdd(("key3_a", "key3_b"), (3, "value3_a", (3, "value3_b")));
+            concstructDct.TryAdd(("key4_a", "key4_b"), (4, "value4_a", (4, "value4_b")));
+            concstructDct.TryAdd(("key5_a", "key5_b"), (5, "value5_a", (5, "value5_b")));
+            concstructDct.TryAdd(("key6_a", "key6_b"), (6, "value6_a", (6, "value6_b")));
+            concstructDct.TryAdd(("key7_a", "key7_b"), (7, "value7_a", (7, "value7_b")));
+
 
             var stack = new Stack<TestEnum>(8);
             stack.Push(TestEnum.First);

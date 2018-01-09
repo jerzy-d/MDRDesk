@@ -1295,5 +1295,39 @@ namespace ClrMDRIndex
             var fldType = heap.GetObjectType(fldAddr);
             return (fldType, fld, fldAddr);
         }
+
+        public static ValueTuple<ClrType, ClrType> GetKeyValuePairTypesByName(ClrHeap heap, string name, string nameBase)
+        {
+            int baseLen = nameBase.Length;
+            string genericStr = name.Substring(baseLen, name.Length - baseLen - 1);
+            int comaCount = genericStr.Count(x => x == ',');
+            if (comaCount == 1)
+            {
+                string[] items = genericStr.Split(',');
+                return (heap.GetTypeByName(items[0]), heap.GetTypeByName(items[1]));
+            }
+            (string keyName, string valName) = SplitKeyValuePairTypeNames(genericStr);
+            return (heap.GetTypeByName(keyName), heap.GetTypeByName(valName));
+        }
+
+        public static ValueTuple<string, string> SplitKeyValuePairTypeNames(string s)
+        {
+            int firstOpenBracket = s.IndexOf("<");
+            int lastCloseBracket = s.LastIndexOf(">");
+            int firstComaIndex = s.IndexOf(',');
+            int lastComaIndex = s.IndexOf(',');
+            if (firstComaIndex < firstOpenBracket) return (s.Substring(firstComaIndex), s.Substring(firstComaIndex + 1));
+            if (lastComaIndex > lastCloseBracket) return (s.Substring(lastComaIndex), s.Substring(lastComaIndex + 1));
+            int matchCount = 1;
+            int bracketNdx = 0;
+            for (int i = firstOpenBracket + 1, icnt = s.Length; matchCount > 0 && i < icnt; ++i)
+            {
+                if (s[i] == '>') { --matchCount; bracketNdx = i; }
+                else if (s[i] == '<') ++matchCount;
+            }
+            firstComaIndex = s.IndexOf(',', bracketNdx);
+            return (s.Substring(0, firstComaIndex), s.Substring(firstComaIndex + 1));
+        }
+
     }
 }

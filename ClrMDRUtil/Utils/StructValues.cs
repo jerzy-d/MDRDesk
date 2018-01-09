@@ -126,16 +126,16 @@ namespace ClrMDRIndex
             return new StructFields(kinds, names, typeNames, structFields);
         }
 
-        public void Description(StringBuilder sb, string indent)
+        public static void Description(StructFields sf, StringBuilder sb, string indent)
         {
-            for (int i = 0, icnt = _names.Length; i < icnt; ++i)
+            for (int i = 0, icnt = sf._names.Length; i < icnt; ++i)
             {
                 sb.AppendLine();
-                sb.Append(indent).Append(_names[i]).Append(" : ").Append(_typeNames[i]);
-                if (Structs != null && !Structs[i].IsEmpty())
+                sb.Append(indent).Append(sf._names[i]).Append(" : ").Append(sf._typeNames[i]);
+                if (sf.Structs != null && sf.Structs[i]!=null && !sf.Structs[i].IsEmpty())
                 {
                     sb.AppendLine();
-                    Description(sb, indent + "   ");
+                    Description(sf.Structs[i], sb, indent + "   ");
                 }
             }
         }
@@ -330,9 +330,16 @@ namespace ClrMDRIndex
                 }
                 else
                 {
-                    var fobj = fld.GetAddress(addr, true);
-                    var faddr = (ulong)fobj;
-                    vals[i] = ValueExtractor.GetFieldValueString(heap, faddr, true, fld, kind);
+                    if (TypeExtractor.IsKnownPrimitive(kind))
+                    {
+                        vals[i] = ValueExtractor.GetFieldValueString(heap, addr, true, fld, kind);
+                    }
+                    else
+                    {
+                        var fobj = fld.GetAddress(addr, true);
+                        var faddr = (ulong)fobj;
+                        vals[i] = ValueExtractor.GetFieldValueString(heap, faddr, true, fld, kind);
+                    }
                 }
             }
             return new StructValueStrings(vals, structVals);
