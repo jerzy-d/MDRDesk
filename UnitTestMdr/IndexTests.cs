@@ -2061,10 +2061,12 @@ namespace UnitTestMdr
                 // 0x0001f2b55e70e0 System.Collections.Generic.Dictionary<System.ValueTuple<System.String,System.String>,System.ValueTuple<System.Int32,System.String,System.ValueTuple<System.Int32,System.String>>>
                 @"C:\WinDbgStuff\Dumps\TestApp\64\TestApp.exe_180113_074917.dmp.map",
                 // 0x0001521d577590 System.Collections.Generic.Dictionary<System.Collections.Generic.KeyValuePair<System.String,System.Int32>,System.Collections.Generic.KeyValuePair<System.String,System.Int32>>
+                @"D:\Jerzy\WinDbgStuff\dumps\TestApp\TestApp.exe_180116_080637.dmp.map",
+                // 0x000000029075f0 System.Collections.Generic.Dictionary<System.Collections.Generic.KeyValuePair<System.String,System.Int32>,System.Collections.Generic.KeyValuePair<System.String,System.Int32>>
             };
 
-            var index = OpenIndex(paths[5]);
-            ulong addr = 0x0001521d577590;
+            var index = OpenIndex(paths[6]);
+            ulong addr = 0x000000029075f0;
             using (index)
             {
                 var heap = index.Heap;
