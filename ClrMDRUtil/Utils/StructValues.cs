@@ -186,6 +186,79 @@ namespace ClrMDRIndex
             return new StructFieldsEx(sf, types, fields, structFields);
         }
 
+        public static StructFieldsEx GetStructFields(StructFields sf, ClrType type, ClrHeap heap, ulong addr)
+        {
+            Debug.Assert(type.IsValueClass);
+            var flds = type.Fields;
+            var cnt = flds.Count;
+            StructFieldsEx[] structFields = null;
+            var types = new ClrType[cnt];
+            var fields = new ClrInstanceField[cnt];
+            for (int i = 0; i < cnt; ++i)
+            {
+                var fld = flds[i];
+                var kind = TypeExtractor.GetElementKind(fld.Type);
+                ClrType fType = null;
+                if (TypeExtractor.IsAmbiguousKind(kind))
+                {
+                    object obj = fld.GetValue(addr, false, false);
+                    if (obj is ulong)
+                    {
+                        fType = heap.GetObjectType((ulong)obj);
+                    }
+                }
+
+                fields[i] = fld;
+                types[i] = fType ?? fld.Type;
+
+                if (TypeExtractor.IsStruct(kind))
+                {
+                    if (structFields == null) structFields = new StructFieldsEx[cnt];
+                    Debug.Assert(sf.Structs[i] != null);
+                    structFields[i] = GetStructFields(sf.Structs[i], fld.Type);
+                }
+            }
+            return new StructFieldsEx(sf, types, fields, structFields);
+        }
+
+        public static ValueTuple<StructFields, StructFieldsEx> GetStructInfo(ClrHeap heap, ulong addr, out string error)
+        {
+            error = null;
+            try
+            {
+                ClrType type = heap.GetObjectType(addr);
+                if (type == null)
+                {
+                    error = "StructValues.GetStructInfo" + Constants.HeavyGreekCrossPadded
+                   + "Expected structure at address: " + Utils.RealAddressString(addr) + Constants.HeavyGreekCrossPadded
+                   + "ClrHeap.GetObjectType return null." + type.Name + Constants.HeavyGreekCrossPadded;
+                    return (null, null);
+                }
+                ClrElementKind kind = TypeExtractor.GetElementKind(type);
+                if (TypeExtractor.IsStruct(kind))
+                {
+                    error = "StructValues.GetStructInfo" + Constants.HeavyGreekCrossPadded
+                   + "Expected structure at address: " + Utils.RealAddressString(addr) + Constants.HeavyGreekCrossPadded
+                   + "Found: " + type.Name + Constants.HeavyGreekCrossPadded;
+                    return (null,null);
+                }
+
+                StructFields sf = StructFields.GetStructFields(type);
+                StructFieldsEx sfx = StructFieldsEx.GetStructFields(sf, type, heap, addr);
+                return (sf, sfx);
+            }
+            catch(Exception ex)
+            {
+                error = Utils.GetExceptionErrorString(ex);
+                return (null, null);
+            }
+
+        }
+
+
+
+
+
         public void ResetTypes()
         {
             for (int i = 0; i < _types.Length; ++i)

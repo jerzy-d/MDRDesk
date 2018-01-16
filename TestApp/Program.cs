@@ -46,6 +46,11 @@ namespace TestApp
             structDct.Add(("key6_a", "key6_b"), (6, "value6_a", (6, "value6_b")));
             structDct.Add(("key7_a", "key7_b"), (7, "value7_a", (7, "value7_b")));
 
+            var kvDict = new Dictionary<KeyValuePair<string, int>, KeyValuePair<string, int>>();
+            kvDict.Add(new KeyValuePair<string, int>("kvDictKey0", 0), new KeyValuePair<string, int>("kvDictVal0", 0));
+            kvDict.Add(new KeyValuePair<string, int>("kvDictKey1", 1), new KeyValuePair<string, int>("kvDictVal1", 1));
+            kvDict.Add(new KeyValuePair<string, int>("kvDictKey2", 2), new KeyValuePair<string, int>("kvDictVal2", 2));
+
             var testClass = new TestClass(Process.GetCurrentProcess().Id);
 			testClass.Init();
 

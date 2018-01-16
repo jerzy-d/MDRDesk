@@ -2057,10 +2057,14 @@ namespace UnitTestMdr
                 // 0x000173c1b1a828 System.Collections.Generic.Dictionary<System.String,System.AppContext+SwitchValueState>
                 @"D:\Jerzy\WinDbgStuff\dumps\TestApp.exe_180108_083751.dmp.map",
                 // 0x00000002bc7130 System.Collections.Generic.Dictionary<System.ValueTuple<System.String,System.String>,System.ValueTuple<System.Int32,System.String,System.ValueTuple<System.Int32,System.String>>>
+                @"C:\WinDbgStuff\Dumps\TestApp\64\TestApp.exe_180113_065315.dmp.map",
+                // 0x0001f2b55e70e0 System.Collections.Generic.Dictionary<System.ValueTuple<System.String,System.String>,System.ValueTuple<System.Int32,System.String,System.ValueTuple<System.Int32,System.String>>>
+                @"C:\WinDbgStuff\Dumps\TestApp\64\TestApp.exe_180113_074917.dmp.map",
+                // 0x0001521d577590 System.Collections.Generic.Dictionary<System.Collections.Generic.KeyValuePair<System.String,System.Int32>,System.Collections.Generic.KeyValuePair<System.String,System.Int32>>
             };
 
-            var index = OpenIndex(paths[2]);
-            ulong addr = 0x000173c1b1a828;
+            var index = OpenIndex(paths[5]);
+            ulong addr = 0x0001521d577590;
             using (index)
             {
                 var heap = index.Heap;

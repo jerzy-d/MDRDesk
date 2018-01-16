@@ -596,9 +596,9 @@ namespace ClrMDRIndex
                     ClassValue.GetClassValues(heap, addr);
                 if (error != null) return (error, null, null);
 
-                (ClrType keyTypeByName, ClrType valTypeByName) = TypeExtractor.GetKeyValuePairTypesByName(heap, type.Name, "System.Collections.Generic.Dictionary<");
-                ClrElementKind keyKindByName = TypeExtractor.GetElementKind(keyTypeByName);
-                ClrElementKind valKindByName = TypeExtractor.GetElementKind(valTypeByName);
+                //(ClrType keyTypeByName, ClrType valTypeByName) = TypeExtractor.GetKeyValuePairTypesByName(heap, type.Name, "System.Collections.Generic.Dictionary<");
+                //ClrElementKind keyKindByName = TypeExtractor.GetElementKind(keyTypeByName);
+                //ClrElementKind valKindByName = TypeExtractor.GetElementKind(valTypeByName);
 
                 int count = GetFieldInt(type, "count", values);
                 int version = GetFieldInt(type, "version", values);
@@ -620,17 +620,23 @@ namespace ClrMDRIndex
                 if (valType.IsEnum) valEnum = new EnumValues(valType);
 
 
+                StructFields sfKey = null;
                 StructFieldsEx sfxKey = null;
+                StructFields sfValue = null;
                 StructFieldsEx sfxValue = null;
                 bool useKeyTypeToGetValue = false;
                 bool useValTypeToGetValue = false;
                 var valList = new List<KeyValuePair<string, string>>(count - freeCount);
                 for (int i = 0; i < aryLen; ++i)
                 {
-                    // TODO JRD -- handle structures here as in array
                     var eaddr = entriesType.GetArrayElementAddress(entriesAddr, i);
                     var hash = ValueExtractor.GetFieldIntValue(heap, eaddr, hashFld, true);
                     if (hash <= 0) continue;
+
+                    if (TypeExtractor.IsStruct(keyKind))
+                    {
+                        (sfKey, sfxKey) = StructFieldsEx.GetStructInfo(heap, eaddr, out error);
+                    }
 
                     object keyObj = keyFld.GetValue(eaddr, keyType.HasSimpleValue, false);
                     if (keyObj != null && TypeExtractor.IsAmbiguousKind(keyKind))
@@ -647,6 +653,12 @@ namespace ClrMDRIndex
                             }
                         }
                     }
+
+                    if (TypeExtractor.IsStruct(valKind))
+                    {
+                        (sfValue, sfxValue) = StructFieldsEx.GetStructInfo(heap, eaddr, out error);
+                    }
+
                     object valObj = valFld.GetValue(eaddr, valType.HasSimpleValue, false);
                     if (valObj != null && TypeExtractor.IsAmbiguousKind(valKind))
                     {
