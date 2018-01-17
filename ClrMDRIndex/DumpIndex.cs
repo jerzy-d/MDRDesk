@@ -2892,9 +2892,10 @@ namespace ClrMDRIndex
             {
                 ulong[] sizes = GetTypeSizes(out error);
                 double[] typeSizes = new double[_typeNames.Length];
+                //string[] typeNames = new string[_typeNames.Length];
                 for (int i = 0, icnt = sizes.Length; i < icnt; ++i)
                 {
-                    typeSizes[_instanceTypes[i]] += sizes[i];
+                    typeSizes[i] = (double)sizes[i];
                 }
                 return (typeSizes, _typeNames);
             }
@@ -2911,7 +2912,7 @@ namespace ClrMDRIndex
             var sizes = GetSizeArray(false, out error);
             if (error != null) return null;
             var instTypes = _instanceTypes;
-            ulong[] typeSizes = new ulong[instTypes.Length];
+            ulong[] typeSizes = new ulong[_typeNames.Length];
             for (int i = 0, icnt = sizes.Length; i < icnt; ++i)
             {
                 typeSizes[instTypes[i]] += sizes[i];
