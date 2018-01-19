@@ -210,7 +210,6 @@ namespace MDRDesk
             GetInstanceValue(selTreeItem, selInstValue);
         }
 
-
         private void InstanceValueCopyAddressClicked(object sender, RoutedEventArgs e)
         {
             (bool ok, TreeViewItem selTreeItem, InstanceValue selInstValue) = GetSelectedItem();
@@ -221,7 +220,7 @@ namespace MDRDesk
                 return;
             }
             var addrStr = Utils.RealAddressString(selInstValue.Address);
-            Clipboard.SetText(addrStr);
+            GuiUtils.CopyToClipboard(addrStr);
             StatusText.Text = "The address was copied to the clipboard.";
         }
 

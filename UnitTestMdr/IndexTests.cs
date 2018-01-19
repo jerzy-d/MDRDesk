@@ -2044,29 +2044,31 @@ namespace UnitTestMdr
         {
             string[] paths = new string[]
             {
-                @"C:\WinDbgStuff\Dumps\TestApp.exe_171226_161444.dmp.map",
+/* 0*/          @"C:\WinDbgStuff\Dumps\TestApp.exe_171226_161444.dmp.map",
                 // 0x0002379fb4a520 System.Collections.Generic.Dictionary<System.String,System.AppContext+SwitchValueState>
                 // 0x0002379fb463d8 System.Collections.Generic.Dictionary<System.Int32,System.Object> ERROR test this!
-                @"C:\WinDbgStuff\Dumps\Analytics\RCG\analytics3.dmp.map",
+/* 1*/          @"C:\WinDbgStuff\Dumps\Analytics\RCG\analytics3.dmp.map",
                 // 0x000006caadcb68 System.Collections.Generic.Dictionary<System.String,ECS.Common.Collections.Tag>
                 // 0x0000094afa1bb0 System.Collections.Generic.Dictionary<System.String,System.Boolean>
                 // 0x000007caaa7408 System.Collections.Generic.Dictionary<Microsoft.Practices.ObjectBuilder.BuilderStage,System.Collections.Generic.List<Microsoft.Practices.ObjectBuilder.IBuilderStrategy>>
-                @"C:\WinDbgStuff\dumps\TestApp.exe_180107_110845.dmp.map",
+/* 2*/          @"C:\WinDbgStuff\dumps\TestApp.exe_180107_110845.dmp.map",
                 // 0x000173c1b16900 System.Collections.Generic.Dictionary<System.Int32,TestApp.TestEnumUInt8>
                 // 0x000173c1b163d8 System.Collections.Generic.Dictionary<System.Int32,System.Object>
                 // 0x000173c1b1a828 System.Collections.Generic.Dictionary<System.String,System.AppContext+SwitchValueState>
-                @"D:\Jerzy\WinDbgStuff\dumps\TestApp.exe_180108_083751.dmp.map",
+/* 3*/          @"D:\Jerzy\WinDbgStuff\dumps\TestApp.exe_180108_083751.dmp.map",
                 // 0x00000002bc7130 System.Collections.Generic.Dictionary<System.ValueTuple<System.String,System.String>,System.ValueTuple<System.Int32,System.String,System.ValueTuple<System.Int32,System.String>>>
-                @"C:\WinDbgStuff\Dumps\TestApp\64\TestApp.exe_180113_065315.dmp.map",
+/* 4*/          @"C:\WinDbgStuff\Dumps\TestApp\64\TestApp.exe_180113_065315.dmp.map",
                 // 0x0001f2b55e70e0 System.Collections.Generic.Dictionary<System.ValueTuple<System.String,System.String>,System.ValueTuple<System.Int32,System.String,System.ValueTuple<System.Int32,System.String>>>
-                @"C:\WinDbgStuff\Dumps\TestApp\64\TestApp.exe_180113_074917.dmp.map",
+/* 5*/          @"C:\WinDbgStuff\Dumps\TestApp\64\TestApp.exe_180113_074917.dmp.map",
                 // 0x0001521d577590 System.Collections.Generic.Dictionary<System.Collections.Generic.KeyValuePair<System.String,System.Int32>,System.Collections.Generic.KeyValuePair<System.String,System.Int32>>
-                @"D:\Jerzy\WinDbgStuff\dumps\TestApp\TestApp.exe_180116_080637.dmp.map",
+/* 6*/          @"D:\Jerzy\WinDbgStuff\dumps\TestApp\TestApp.exe_180116_080637.dmp.map",
                 // 0x000000029075f0 System.Collections.Generic.Dictionary<System.Collections.Generic.KeyValuePair<System.String,System.Int32>,System.Collections.Generic.KeyValuePair<System.String,System.Int32>>
+/* 7*/          @"D:\Jerzy\WinDbgStuff\dumps\Analytics\PrimeCap\a6.dmp.map",
+                // 0x0000de8bdeeae8 System.Collections.Generic.Dictionary<System.String,ECS.Common.Transport.Event_Data.PricingNode>
             };
 
-            var index = OpenIndex(paths[6]);
-            ulong addr = 0x000000029075f0;
+            var index = OpenIndex(paths[7]);
+            ulong addr = 0x0000de8bdeeae8;
             using (index)
             {
                 var heap = index.Heap;
