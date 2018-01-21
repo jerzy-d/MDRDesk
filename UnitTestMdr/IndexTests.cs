@@ -2065,10 +2065,13 @@ namespace UnitTestMdr
                 // 0x000000029075f0 System.Collections.Generic.Dictionary<System.Collections.Generic.KeyValuePair<System.String,System.Int32>,System.Collections.Generic.KeyValuePair<System.String,System.Int32>>
 /* 7*/          @"D:\Jerzy\WinDbgStuff\dumps\Analytics\PrimeCap\a6.dmp.map",
                 // 0x0000de8bdeeae8 System.Collections.Generic.Dictionary<System.String,ECS.Common.Transport.Event_Data.PricingNode>
+/* 8*/          @"C:\WinDbgStuff\Dumps\TestApp\64\TestApp.exe_180121_101608.dmp.map",
+                // 0x0001dd80237598 System.Collections.Generic.Dictionary<System.Collections.Generic.KeyValuePair<System.String,System.Int32>,System.Collections.Generic.KeyValuePair<System.String,System.Int32>>
+
             };
 
-            var index = OpenIndex(paths[7]);
-            ulong addr = 0x0000de8bdeeae8;
+            var index = OpenIndex(paths[8]);
+            ulong addr = 0x0001dd80237598;
             using (index)
             {
                 var heap = index.Heap;

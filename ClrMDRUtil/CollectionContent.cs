@@ -636,7 +636,7 @@ namespace ClrMDRIndex
                     if (TypeExtractor.IsStruct(keyKind))
                     {
                         var kAddr = keyFld.GetAddress(eaddr, true);
-                        (sfKey, sfxKey) = StructFieldsEx.GetStructInfo(heap, kAddr, out error);
+                        (sfKey, sfxKey) = StructFieldsEx.GetStructInfo(keyType, heap, kAddr, out error);
                     }
 
                     object keyObj = keyFld.GetValue(eaddr, keyType.HasSimpleValue, false);
@@ -658,7 +658,7 @@ namespace ClrMDRIndex
                     if (TypeExtractor.IsStruct(valKind))
                     {
                         var vAddr = valFld.GetAddress(eaddr, false);
-                        (sfValue, sfxValue) = StructFieldsEx.GetStructInfo(heap, vAddr, out error);
+                        (sfValue, sfxValue) = StructFieldsEx.GetStructInfo(valType, heap, vAddr, out error);
                     }
 
                     object valObj = valFld.GetValue(eaddr, valType.HasSimpleValue, false);

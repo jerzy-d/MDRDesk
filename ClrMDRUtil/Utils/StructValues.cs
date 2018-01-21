@@ -221,17 +221,23 @@ namespace ClrMDRIndex
             return new StructFieldsEx(sf, types, fields, structFields);
         }
 
-        public static ValueTuple<StructFields, StructFieldsEx> GetStructInfo(ClrHeap heap, ulong addr, out string error)
+        public static ValueTuple<StructFields, StructFieldsEx> GetStructInfo(ClrType structType, ClrHeap heap, ulong addr, out string error)
         {
+            Debug.Assert(structType.IsValueClass);
             error = null;
             try
             {
-                ClrType type = heap.GetObjectType(addr);
+                ClrType type = null;
+                object val = structType.Fields[0].GetValue(addr,true,false);
+
+                if (val is ulong)
+                    type = heap.GetObjectType((ulong)val);
+
                 if (type == null)
                 {
                     error = "StructValues.GetStructInfo" + Constants.HeavyGreekCrossPadded
                    + "Expected structure at address: " + Utils.RealAddressString(addr) + Constants.HeavyGreekCrossPadded
-                   + "ClrHeap.GetObjectType return null." + type.Name + Constants.HeavyGreekCrossPadded;
+                   + "ClrHeap.GetObjectType return null. Field name: " + structType.Fields[0].Name + Constants.HeavyGreekCrossPadded;
                     return (null, null);
                 }
                 ClrElementKind kind = TypeExtractor.GetElementKind(type);
@@ -242,6 +248,7 @@ namespace ClrMDRIndex
                    + "Found: " + type.Name + Constants.HeavyGreekCrossPadded;
                     return (null,null);
                 }
+
 
                 StructFields sf = StructFields.GetStructFields(type);
                 StructFieldsEx sfx = StructFieldsEx.GetStructFields(sf, type, heap, addr);

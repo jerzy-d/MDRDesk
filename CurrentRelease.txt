@@ -1,0 +1,4 @@
+version::0.9.0.18
+mdrdeskzip::https://github.com/jerzy-d/MDRDesk/releases/download/v1.0-test.0/MDRDesk.zip
+mdrdeskzip::https://github.com/jerzy-d/MDRDesk/releases/download/v1.0-test.0/mscordacwks.zip
+

@@ -2578,6 +2578,11 @@ namespace MDRDesk
                 if (CurrentIndex != null) CurrentIndex.RawInstanceValue = false;
             }
         }
+
+        private void UpdateMDRDeskClicked(object sender, RoutedEventArgs e)
+        {
+
+        }
     }
 
     public static class MenuCommands

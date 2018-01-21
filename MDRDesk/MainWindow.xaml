@@ -1053,6 +1053,7 @@
                     </MenuItem>
                     <MenuItem x:Name="Help" Header="Help" Background="LightBlue" VerticalAlignment="Center">
                         <MenuItem x:Name="HelpViewHelp" Header="View Help"  Click="HelpViewHelpClicked"/>
+                        <MenuItem x:Name="UpdateMDRDesk" Header="Update MDRDesk"  Click="UpdateMDRDeskClicked"/>
                     </MenuItem>
                     <MenuItem x:Name="FileReport"  HorizontalContentAlignment="Center" HorizontalAlignment="Center" Click="FileReportClicked">
                         <MenuItem.Icon>
