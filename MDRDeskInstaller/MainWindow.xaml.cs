@@ -171,10 +171,12 @@ namespace MDRDeskInstaller
             var updateInfo = new List<string>();
             try
             {
-                if (_localServerPath != null)
+                string ln;
+                if (_localServerPath != null) // we have release on our local server
                 {
+
                     sr = new StreamReader(_localServerPath);
-                    string ln = sr.ReadLine();
+                    ln = sr.ReadLine();
 
                     while (ln != null)
                     {
@@ -183,26 +185,24 @@ namespace MDRDeskInstaller
                     }
                     return (true,updateInfo);
                 }
-                else
+
+                var path = folder + @"\CurrentRelease.txt";
+                WebClient client = new WebClient();
+                using (client)
                 {
-                    var path = folder + @"\CurrentRelease.txt";
-                    WebClient client = new WebClient();
-                    using (client)
-                    {
-                        client.DownloadFile(@"https://github.com/jerzy-d/MDRDesk/releases/download/v.0.0-info.0/CurrentRelease.txt", path);
+                    client.DownloadFile(@"https://github.com/jerzy-d/MDRDesk/releases/download/v.0.0-info.0/CurrentRelease.txt", path);
 
-                    }
-                    client = null;
-                    sr = new StreamReader(path);
-                    string ln = sr.ReadLine();
-
-                    while (ln != null)
-                    {
-                        updateInfo.Add(ln);
-                        ln = sr.ReadLine();
-                    }
-                    return (true,updateInfo);
                 }
+                client = null;
+                sr = new StreamReader(path);
+                ln = sr.ReadLine();
+
+                while (ln != null)
+                {
+                    updateInfo.Add(ln);
+                    ln = sr.ReadLine();
+                }
+                return (true,updateInfo);
             }
             catch(Exception ex)
             {
