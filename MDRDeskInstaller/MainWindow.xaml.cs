@@ -13,7 +13,10 @@ using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Navigation;
 using System.Windows.Shapes;
+using System.Windows.Threading;
 using System.Net;
+using System.Configuration;
+using System.Threading;
 
 namespace MDRDeskInstaller
 {
@@ -22,27 +25,195 @@ namespace MDRDeskInstaller
     /// </summary>
     public partial class MainWindow : Window
     {
+        const char InformationSymbol = '\u2110'; // ℐ SCRIPT CAPITAL I
+
+        enum UpdtNdx
+        {
+            Version,
+            MDRDeskZip,
+            DacVersion,
+            DacZip,
+            Count
+        }
+
         string _myFolder;
+        string _myVersion;
+        string _myDacVersion;
+        string _localServerPath;
+
+        IProgress<string> _progress;
+        DateTime _time;
+        object _progressLock;
+
         public MainWindow()
         {
             InitializeComponent();
+        }
+
+        private void MainWindow_Loaded(object sender, RoutedEventArgs e)
+        {
+
             string error;
             _myFolder = AppDomain.CurrentDomain.BaseDirectory;
+            if (!ReadConfig(out error))
+            {
+                MessageBox.Show(error, "Cannot Read App Config", MessageBoxButton.OK, MessageBoxImage.Error);
+                return;
+            }
+
+            _progressLock = new object();
+            _time = DateTime.Now;
+            _progress = new Progress<string>(ShowMessage);
+            _progress.Report("CURRENT VERSION: " + _myVersion + ", DACS VERSION " + _myDacVersion);
+
+            if (_localServerPath == null || !Directory.Exists(_localServerPath))
+            {
+                _localServerPath = null;
+            }
+
+            Dispatcher.CurrentDispatcher.InvokeAsync(() => Upgrade());
+
+        }
+
+        private async void Upgrade()
+        {
+            string error;
+
+            _progress.Report("Checking available updates.");
+
+            string tempFolder = _myFolder + @"Temp";
+            if (Directory.Exists(tempFolder))
+            {
+                CleanDir(tempFolder);
+            }
+            else
+            {
+                Directory.CreateDirectory(tempFolder);
+            }
+
+            (bool ok, bool updateMdrDesk, bool updateDacs, string[] updateInfo) =
+            await Task.Factory.StartNew(() =>
+            {
+                return CheckUpdates(tempFolder);
+            });
+
+            if (!ok)
+            {
+
+            }
+
+            if(!updateMdrDesk && !updateDacs)
+            {
+                _progress.Report("Current MDRDesk and dacs are the latest. No need to upgrade.");
+            }
+
+            if (updateMdrDesk)
+            {
+                _progress.Report("Checking if MDRDesk files can be overwritten.");
+
+                var lockedFiles = CheckFiles(_myFolder, out error);
+                if (lockedFiles.Length > 1)
+                {
+
+                }
 
 
-            var lockedFiles = CheckFiles(_myFolder, out error);
+                string mdrDeskZip = tempFolder + @"\MDRDesk.zip";
+                WebClient client = new WebClient();
+                client.DownloadFile(updateInfo[1].Substring("mdrdeskzip::".Length), mdrDeskZip);
+                System.IO.Compression.ZipFile.ExtractToDirectory(mdrDeskZip, tempFolder);
+            }
+        }
 
+        private ValueTuple<bool, bool, bool, string[]> CheckUpdates(string folder)
+        {
+            (bool ok, List<string> updateInfoLst) = GetUpdateInfo(folder);
+            if (!ok)
+            {
+                return (false, false, false, updateInfoLst.ToArray());
+            }
+            string[] updateInfo = new string[(int)UpdtNdx.Count];
+            string[] prefixes = new string[]
+            {
+                "version::",
+                "mdrdeskzip::",
+                "dacversion::",
+                "mscordacwks::"
+            };
 
-            string tempFolder = _myFolder + @"/Temp";
-            Directory.CreateDirectory(tempFolder);
-            string mdrDeskZip = tempFolder + @"/MDRDesk.zip";
+            for(int i = 0, icnt = updateInfoLst.Count; i < icnt; ++i)
+            {
+                var item = updateInfoLst[i];
+                if (item.StartsWith(prefixes[(int)UpdtNdx.Version]))
+                    updateInfo[(int)UpdtNdx.Version] = item.Substring(prefixes[(int)UpdtNdx.Version].Length);
+                else if (item.StartsWith(prefixes[(int)UpdtNdx.MDRDeskZip]))
+                    updateInfo[(int)UpdtNdx.MDRDeskZip] = item.Substring(prefixes[(int)UpdtNdx.MDRDeskZip].Length);
+                else if (item.StartsWith(prefixes[(int)UpdtNdx.DacVersion]))
+                    updateInfo[(int)UpdtNdx.DacVersion] = item.Substring(prefixes[(int)UpdtNdx.DacVersion].Length);
+                else if (item.StartsWith(prefixes[(int)UpdtNdx.DacZip]))
+                    updateInfo[(int)UpdtNdx.DacZip] = item.Substring(prefixes[(int)UpdtNdx.DacZip].Length);
+            }
+            bool updateMdrDesk = false, updateDacs = false;
+            if (string.Compare(updateInfo[(int)UpdtNdx.Version], _myVersion) > 0) updateMdrDesk = true;
+            var dacver = updateInfo[(int)UpdtNdx.DacVersion];
+            if (!(dacver.Length < _myDacVersion.Length))
+            {
+                if (dacver.Length > _myDacVersion.Length) updateDacs = true;
+                else updateDacs = string.Compare(dacver, _myDacVersion) > 0;
+            }
 
-            WebClient client = new WebClient();
-            client.DownloadFile(@"https://github.com/jerzy-d/MDRDesk/releases/download/v1.0-test.0/MDRDesk.zip", mdrDeskZip);
-            System.IO.Compression.ZipFile.ExtractToDirectory(mdrDeskZip, tempFolder);
+            return (true, updateMdrDesk, updateDacs, updateInfo);
+        }
 
+        public ValueTuple<bool,List<string>> GetUpdateInfo(string folder)
+        {
+            StreamReader sr = null;
+            var updateInfo = new List<string>();
+            try
+            {
+                if (_localServerPath != null)
+                {
+                    sr = new StreamReader(_localServerPath);
+                    string ln = sr.ReadLine();
 
+                    while (ln != null)
+                    {
+                        updateInfo.Add(ln);
+                        ln = sr.ReadLine();
+                    }
+                    return (true,updateInfo);
+                }
+                else
+                {
+                    var path = folder + @"\CurrentRelease.txt";
+                    WebClient client = new WebClient();
+                    using (client)
+                    {
+                        client.DownloadFile(@"https://github.com/jerzy-d/MDRDesk/releases/download/v.0.0-info.0/CurrentRelease.txt", path);
 
+                    }
+                    client = null;
+                    sr = new StreamReader(path);
+                    string ln = sr.ReadLine();
+
+                    while (ln != null)
+                    {
+                        updateInfo.Add(ln);
+                        ln = sr.ReadLine();
+                    }
+                    return (true,updateInfo);
+                }
+            }
+            catch(Exception ex)
+            {
+                updateInfo.Add(ex.Message);
+                updateInfo.Add(ex.StackTrace);
+                return (false,updateInfo);
+            }
+            finally
+            {
+                sr?.Close();
+            }
         }
 
         public string GetTemporaryDirectory()
@@ -123,6 +294,94 @@ namespace MDRDeskInstaller
             //file is not locked
             return false;
         }
+
+        void CleanDir(string path)
+        {
+            System.IO.DirectoryInfo di = new DirectoryInfo(path);
+            var stack = new Stack<DirectoryInfo>();
+            stack.Push(di);
+            List<DirectoryInfo> lst = new List<DirectoryInfo>();
+            do
+            {
+                di = stack.Pop();
+                foreach (FileInfo file in di.GetFiles())
+                {
+                    file.Delete();
+                }
+                foreach (DirectoryInfo dir in di.GetDirectories())
+                {
+                    stack.Push(dir);
+                    lst.Add(dir);
+                }
+            } while (stack.Count > 0);
+            lst.Reverse();
+            foreach(var d in lst)
+            {
+                d.Delete();
+            }
+        }
+
+        /// <summary>
+        /// Append message to the appropriate text box.
+        /// Messages are coming from an indexing progess delegete.
+        /// </summary>
+        /// <param name="msg">Text to display.</param>
+        public void ShowMessage(string msg)
+        {
+            if (string.IsNullOrWhiteSpace(msg) || msg.Length < 1) return;
+            lock (_progressLock)
+            {
+                var dt = DateTime.Now;
+                var tmStr = dt.ToLongTimeString();
+                // get duration of previous action
+                //
+                if (!string.IsNullOrEmpty(UpdateProgressText.Text))
+                {
+                    TimeSpan ts = dt - _time;
+                    var duration = DurationString(ts);
+                    _time = dt;
+                    // append duration to the previous action
+                    //
+                    UpdateProgressText.AppendText("  DURATION: " + duration + Environment.NewLine);
+                }
+                // display current message
+                //
+                msg = tmStr + " : " + msg;
+                UpdateProgressText.AppendText(msg);
+                UpdateProgressText.ScrollToEnd();
+            }
+        }
+
+        public static string DurationString(TimeSpan ts)
+        {
+            return string.Format(" {0:00}:{1:00}:{2:00}.{3:00}", ts.Hours, ts.Minutes, ts.Seconds, ts.Milliseconds / 10);
+        }
+
+
+        private bool ReadConfig(out string error)
+        {
+            error = null;
+            try
+            {
+                var config = ConfigurationManager.OpenExeConfiguration(ConfigurationUserLevel.None);
+                var appSettings = (AppSettingsSection)config.GetSection("appSettings");
+                _localServerPath = appSettings.Settings["localserver"].Value.Trim();
+                _myVersion = appSettings.Settings["version"].Value.Trim();
+                _myDacVersion = appSettings.Settings["dacversion"].Value.Trim();
+                return true;
+            }
+            catch (Exception ex)
+            {
+                error = ex.ToString();
+                return false;
+            }
+        }
+
+        private void ButtonCancelClicked(object sender, RoutedEventArgs e)
+        {
+
+        }
+
 
     }
 }
