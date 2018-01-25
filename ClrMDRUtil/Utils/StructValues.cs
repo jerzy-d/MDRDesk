@@ -132,7 +132,7 @@ namespace ClrMDRIndex
             {
                 sb.AppendLine();
                 sb.Append(indent).Append(sf._names[i]).Append(" : ").Append(sf._typeNames[i]);
-                if (sf.Structs != null && sf.Structs[i]!=null && !sf.Structs[i].IsEmpty())
+                if (sf.Structs != null && sf.Structs[i] != null && !sf.Structs[i].IsEmpty())
                 {
                     sb.AppendLine();
                     Description(sf.Structs[i], sb, indent + "   ");
@@ -140,6 +140,63 @@ namespace ClrMDRIndex
             }
         }
     }
+
+
+    public class StructFieldsInfo
+    {
+        ClrType _type;
+        ClrType[] _types;
+        ClrInstanceField[] _fields;
+        StructFieldsInfo[] _structFlds;
+
+        public StructFieldsInfo(ClrType type, ClrType[] types, ClrInstanceField[] fields, StructFieldsInfo[] structFlds)
+        {
+            _type = type;
+            _types = types;
+            _fields = fields;
+            _structFlds = structFlds;
+        }
+
+        public static StructFieldsInfo GetStructFields(ClrType type, ClrHeap heap, ulong addr)
+        {
+            Debug.Assert(type.IsValueClass);
+            var flds = type.Fields;
+            var cnt = flds.Count;
+            StructFieldsInfo[] structFields = null;
+            var types = new ClrType[cnt];
+            var fields = new ClrInstanceField[cnt];
+            for (int i = 0; i < cnt; ++i)
+            {
+                var fld = flds[i];
+                var kind = TypeExtractor.GetElementKind(fld.Type);
+                ClrType fType = null;
+                if (TypeExtractor.IsAmbiguousKind(kind))
+                {
+                    object obj = fld.GetValue(addr, true, false);
+                    if (obj is ulong)
+                    {
+                        fType = heap.GetObjectType((ulong)obj);
+                        if (fType != null)
+                        {
+                            kind = TypeExtractor.GetElementKind(fType);
+                        }
+                    }
+                }
+                fields[i] = fld;
+                types[i] = fType ?? fld.Type;
+
+                if (TypeExtractor.IsStruct(kind))
+                {
+                    if (structFields == null) structFields = new StructFieldsInfo[cnt];
+                    var faddr = fld.GetAddress(addr, true);
+                    structFields[i] = GetStructFields(types[i], heap, faddr);
+                }
+            }
+            return new StructFieldsInfo(type, types, fields, structFields);
+        }
+
+    }
+
 
     public class StructFieldsEx
     {

@@ -2070,8 +2070,8 @@ namespace UnitTestMdr
 
             };
 
-            var index = OpenIndex(paths[8]);
-            ulong addr = 0x0001dd80237598;
+            var index = OpenIndex(paths[6]);
+            ulong addr = 0x000000029075f0;
             using (index)
             {
                 var heap = index.Heap;
