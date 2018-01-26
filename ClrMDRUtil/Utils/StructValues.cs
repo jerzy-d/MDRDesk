@@ -148,6 +148,7 @@ namespace ClrMDRIndex
         ClrType[] _types;
         ClrInstanceField[] _fields;
         StructFieldsInfo[] _structFlds;
+        int _totalFldCount;
 
         public StructFieldsInfo(ClrType type, ClrType[] types, ClrInstanceField[] fields, StructFieldsInfo[] structFlds)
         {
@@ -155,6 +156,40 @@ namespace ClrMDRIndex
             _types = types;
             _fields = fields;
             _structFlds = structFlds;
+            _totalFldCount = -1;
+        }
+
+        private bool IsTotalFldCountSet => _totalFldCount != -1;
+
+        private void SetTotalFldCount()
+        {
+            _totalFldCount = _fields.Length;
+            if (_structFlds != null)
+            {
+                for (int i = 0, icnt = _structFlds.Length; i < icnt; ++i)
+                {
+                    if (_structFlds[i] != null)
+                    {
+                        SetTotalFldCount(_structFlds[i]);
+                    }
+                }
+            }
+        }
+
+        private void SetTotalFldCount(StructFieldsInfo sfi)
+        {
+            Debug.Assert(sfi != null);
+            _totalFldCount += sfi._fields.Length;
+            if (sfi._structFlds != null)
+            {
+                for (int i = 0, icnt = sfi._structFlds.Length; i < icnt; ++i)
+                {
+                    if (sfi._structFlds[i] != null)
+                    {
+                        SetTotalFldCount(sfi._structFlds[i]);
+                    }
+                }
+            }
         }
 
         public static StructFieldsInfo GetStructFields(ClrType type, ClrHeap heap, ulong addr)
@@ -195,6 +230,27 @@ namespace ClrMDRIndex
             return new StructFieldsInfo(type, types, fields, structFields);
         }
 
+        public StructValueStrings GetStructValueStrings(ClrHeap heap, ulong addr)
+        {
+            if (!IsTotalFldCountSet) SetTotalFldCount();
+            var values = new string[_fields.Length];
+            StructValueStrings[] structs = null;
+
+            for (int i = 0, icnt = _fields.Length; i < icnt; ++i)
+            {
+                if (_structFlds[i] != null)
+                {
+                    if (structs == null) structs = new StructValueStrings[_fields.Length];
+                    var faddr = _fields[i].GetAddress(addr, true);
+                    structs[i] = GetStructValueStrings(heap, faddr);
+                }
+                else
+                {
+
+                }
+            }
+            return new StructValueStrings(values, structs);
+        }
     }
 
 

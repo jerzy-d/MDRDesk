@@ -51,6 +51,17 @@ namespace TestApp
             kvDict.Add(new KeyValuePair<string, int>("kvDictKey1", 1), new KeyValuePair<string, int>("kvDictVal1", 1));
             kvDict.Add(new KeyValuePair<string, int>("kvDictKey2", 2), new KeyValuePair<string, int>("kvDictVal2", 2));
 
+            var kvDictDtDecEnum = new Dictionary<string, KeyValuePair<string, ValueTuple<DateTime, decimal, TestEnumInt8>>>();
+            kvDictDtDecEnum.Add("kvDictDtDecEnumKey0",
+                new KeyValuePair<string, ValueTuple<DateTime, decimal, TestEnumInt8>>(
+                    "kvDictDtDecEnumVal0", (new DateTime(2018, 1, 1), 0.1m, TestEnumInt8.First)));
+            kvDictDtDecEnum.Add("kvDictDtDecEnumKey1",
+                new KeyValuePair<string, ValueTuple<DateTime, decimal, TestEnumInt8>>(
+                    "kvDictDtDecEnumVal1", (new DateTime(2018, 1, 2), 0.2m, TestEnumInt8.Second)));
+            kvDictDtDecEnum.Add("kvDictDtDecEnumKey2",
+                new KeyValuePair<string, ValueTuple<DateTime, decimal, TestEnumInt8>>(
+                    "kvDictDtDecEnumVal2", (new DateTime(2018, 1, 3), 0.3m, TestEnumInt8.Third)));
+
             var testClass = new TestClass(Process.GetCurrentProcess().Id);
 			testClass.Init();
 

@@ -2061,17 +2061,15 @@ namespace UnitTestMdr
                 // 0x0001f2b55e70e0 System.Collections.Generic.Dictionary<System.ValueTuple<System.String,System.String>,System.ValueTuple<System.Int32,System.String,System.ValueTuple<System.Int32,System.String>>>
 /* 5*/          @"C:\WinDbgStuff\Dumps\TestApp\64\TestApp.exe_180113_074917.dmp.map",
                 // 0x0001521d577590 System.Collections.Generic.Dictionary<System.Collections.Generic.KeyValuePair<System.String,System.Int32>,System.Collections.Generic.KeyValuePair<System.String,System.Int32>>
-/* 6*/          @"D:\Jerzy\WinDbgStuff\dumps\TestApp\TestApp.exe_180116_080637.dmp.map",
-                // 0x000000029075f0 System.Collections.Generic.Dictionary<System.Collections.Generic.KeyValuePair<System.String,System.Int32>,System.Collections.Generic.KeyValuePair<System.String,System.Int32>>
-/* 7*/          @"D:\Jerzy\WinDbgStuff\dumps\Analytics\PrimeCap\a6.dmp.map",
+/* 6*/          @"D:\Jerzy\WinDbgStuff\dumps\Analytics\PrimeCap\a6.dmp.map",
                 // 0x0000de8bdeeae8 System.Collections.Generic.Dictionary<System.String,ECS.Common.Transport.Event_Data.PricingNode>
-/* 8*/          @"C:\WinDbgStuff\Dumps\TestApp\64\TestApp.exe_180121_101608.dmp.map",
-                // 0x0001dd80237598 System.Collections.Generic.Dictionary<System.Collections.Generic.KeyValuePair<System.String,System.Int32>,System.Collections.Generic.KeyValuePair<System.String,System.Int32>>
-
+/* 7*/          @"D:\Jerzy\WinDbgStuff\dumps\TestApp\TestApp.exe_180126_134041.dmp.map",
+                // 0x000000028d7768 System.Collections.Generic.Dictionary<System.Collections.Generic.KeyValuePair<System.String,System.Int32>,System.Collections.Generic.KeyValuePair<System.String,System.Int32>>
+                // 0x000000028d79c8 System.Collections.Generic.Dictionary<System.String,System.Collections.Generic.KeyValuePair<System.String,System.ValueTuple<System.DateTime,System.Decimal,TestApp.TestEnumInt8>>>
             };
 
-            var index = OpenIndex(paths[6]);
-            ulong addr = 0x000000029075f0;
+            var index = OpenIndex(paths[7]);
+            ulong addr = 0x000000028d79c8;
             using (index)
             {
                 var heap = index.Heap;

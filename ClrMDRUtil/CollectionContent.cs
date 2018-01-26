@@ -655,8 +655,8 @@ namespace ClrMDRIndex
                     {
                         if (valSfi == null)
                         {
-                            var vAddr = keyFld.GetAddress(eaddr, true);
-                            valSfi = StructFieldsInfo.GetStructFields(keyType, heap, vAddr);
+                            var vAddr = valFld.GetAddress(eaddr, true);
+                            valSfi = StructFieldsInfo.GetStructFields(valType, heap, vAddr);
                         }
                     }
 
