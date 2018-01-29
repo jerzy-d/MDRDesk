@@ -240,6 +240,30 @@ namespace ClrMDRIndex
             return false;
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static bool IsPrimitive(ClrElementKind kind)
+        {
+            var stdKind = GetStandardKind(kind);
+            if (stdKind == ClrElementKind.Boolean
+                || stdKind == ClrElementKind.Char
+                || stdKind == ClrElementKind.Double
+                || stdKind == ClrElementKind.Float
+                || stdKind == ClrElementKind.FunctionPointer
+                || stdKind == ClrElementKind.Int16
+                || stdKind == ClrElementKind.Int32
+                || stdKind == ClrElementKind.Int64
+                || stdKind == ClrElementKind.Int8
+                || stdKind == ClrElementKind.NativeInt
+                || stdKind == ClrElementKind.NativeUInt
+                || stdKind == ClrElementKind.Pointer
+                || stdKind == ClrElementKind.UInt16
+                || stdKind == ClrElementKind.UInt32
+                || stdKind == ClrElementKind.UInt64
+                || stdKind == ClrElementKind.UInt8
+                )
+                return true;
+            return false;
+        }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static int GetFieldCount(ClrType type)
@@ -442,6 +466,7 @@ namespace ClrMDRIndex
 
         public static bool IsAmbiguousKind(ClrElementKind kind)
         {
+            if (kind == ClrElementKind.Unknown) return true;
             ClrElementKind specKind = GetSpecialKind(kind);
             switch (specKind)
             {

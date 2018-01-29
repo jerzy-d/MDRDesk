@@ -27,7 +27,8 @@ namespace ClrMDRIndex
 		//
 		public const string UnknownName = "{unknown}";
 		public const string UnknownValue = "{unknown value}";
-		public const string NullName = "{null}";
+        public const string DontKnowHowToGetValue = "{don't know how to get value}";
+        public const string NullName = "{null}";
 		public const string NullValueOld = "null";
 		public const int NullNameId = 0;
         public const string NullValue = "`null`";
@@ -37,9 +38,9 @@ namespace ClrMDRIndex
         public const string UnknownFieldTypeName = "\u2714UnknownFieldType";
         public const string TypeNotFound = "TypeNotFound";
         public const string FreeTypeName = "Free";
-		public const string ErrorTypeName = "ERROR";
+        public const string ErrorTypeName = "ERROR";
 
-		public const string ErrorStr = "ERROR";
+        public const string ErrorStr = "ERROR";
 		public const int ErrorStrId = 1;
 		//public const string Free = "Free";
 		public const string SystemObject = "System.Object";

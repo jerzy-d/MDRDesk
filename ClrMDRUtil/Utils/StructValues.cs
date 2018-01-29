@@ -67,6 +67,8 @@ namespace ClrMDRIndex
 
     public class StructFields
     {
+        private string _typeName;
+        public string TypeName => _typeName;
         ClrElementKind[] _kinds;
         public ClrElementKind[] Kinds => _kinds;
         string[] _names;
@@ -76,8 +78,9 @@ namespace ClrMDRIndex
         StructFields[] _structs;
         public StructFields[] Structs => _structs;
 
-        public StructFields(ClrElementKind[] kinds, string[] names, string[] typeNames, StructFields[] structs)
+        public StructFields(string typeName, ClrElementKind[] kinds, string[] names, string[] typeNames, StructFields[] structs)
         {
+            _typeName = typeName;
             _kinds = kinds;
             _names = names;
             _typeNames = typeNames;
@@ -123,7 +126,7 @@ namespace ClrMDRIndex
                     structFields[i] = GetStructFields(fld.Type);
                 }
             }
-            return new StructFields(kinds, names, typeNames, structFields);
+            return new StructFields(type.Name, kinds, names, typeNames, structFields);
         }
 
         public static void Description(StructFields sf, StringBuilder sb, string indent)
@@ -146,15 +149,19 @@ namespace ClrMDRIndex
     {
         ClrType _type;
         ClrType[] _types;
+        ClrElementKind[] _typeKinds;
         ClrInstanceField[] _fields;
+        ClrElementKind[] _fldKinds;
         StructFieldsInfo[] _structFlds;
         int _totalFldCount;
 
-        public StructFieldsInfo(ClrType type, ClrType[] types, ClrInstanceField[] fields, StructFieldsInfo[] structFlds)
+        public StructFieldsInfo(ClrType type, ClrType[] types, ClrElementKind[] typeKinds, ClrInstanceField[] fields, ClrElementKind[] fldKinds, StructFieldsInfo[] structFlds)
         {
             _type = type;
             _types = types;
+            _typeKinds = typeKinds;
             _fields = fields;
+            _fldKinds = fldKinds;
             _structFlds = structFlds;
             _totalFldCount = -1;
         }
@@ -199,13 +206,15 @@ namespace ClrMDRIndex
             var cnt = flds.Count;
             StructFieldsInfo[] structFields = null;
             var types = new ClrType[cnt];
+            var typeKinds = new ClrElementKind[cnt];
             var fields = new ClrInstanceField[cnt];
+            var fldKinds = new ClrElementKind[cnt];
             for (int i = 0; i < cnt; ++i)
             {
                 var fld = flds[i];
-                var kind = TypeExtractor.GetElementKind(fld.Type);
+                fldKinds[i] = TypeExtractor.GetElementKind(fld.Type);
                 ClrType fType = null;
-                if (TypeExtractor.IsAmbiguousKind(kind))
+                if (TypeExtractor.IsAmbiguousKind(fldKinds[i]))
                 {
                     object obj = fld.GetValue(addr, true, false);
                     if (obj is ulong)
@@ -213,43 +222,123 @@ namespace ClrMDRIndex
                         fType = heap.GetObjectType((ulong)obj);
                         if (fType != null)
                         {
-                            kind = TypeExtractor.GetElementKind(fType);
+                            typeKinds[i] = TypeExtractor.GetElementKind(fType);
                         }
                     }
                 }
                 fields[i] = fld;
                 types[i] = fType ?? fld.Type;
+                if (fType==null) typeKinds[i] = fldKinds[i];
 
-                if (TypeExtractor.IsStruct(kind))
+                if (TypeExtractor.IsStruct(fldKinds[i]))
                 {
                     if (structFields == null) structFields = new StructFieldsInfo[cnt];
                     var faddr = fld.GetAddress(addr, true);
                     structFields[i] = GetStructFields(types[i], heap, faddr);
                 }
             }
-            return new StructFieldsInfo(type, types, fields, structFields);
+            return new StructFieldsInfo(type, types, typeKinds, fields, fldKinds, structFields);
         }
 
-        public StructValueStrings GetStructValueStrings(ClrHeap heap, ulong addr)
+        public static StructValueStrings GetStructValueStrings(StructFieldsInfo sfi, ClrHeap heap, ulong addr)
         {
-            if (!IsTotalFldCountSet) SetTotalFldCount();
-            var values = new string[_fields.Length];
+            if (!sfi.IsTotalFldCountSet) sfi.SetTotalFldCount();
+            var values = new string[sfi._fields.Length];
             StructValueStrings[] structs = null;
 
-            for (int i = 0, icnt = _fields.Length; i < icnt; ++i)
+            for (int i = 0, icnt = sfi._fields.Length; i < icnt; ++i)
             {
-                if (_structFlds[i] != null)
+                if (sfi._structFlds != null && sfi._structFlds[i] != null)
                 {
-                    if (structs == null) structs = new StructValueStrings[_fields.Length];
-                    var faddr = _fields[i].GetAddress(addr, true);
-                    structs[i] = GetStructValueStrings(heap, faddr);
+                    if (structs == null) structs = new StructValueStrings[sfi._fields.Length];
+                    var faddr = sfi._fields[i].GetAddress(addr, true);
+                    structs[i] = GetStructValueStrings(sfi._structFlds[i], heap, faddr);
                 }
                 else
                 {
-
+                    values[i] = GetValue(sfi._types[i], sfi._typeKinds[i], sfi._fields[i], sfi._fldKinds[i], heap, addr, true);
                 }
             }
             return new StructValueStrings(values, structs);
+        }
+
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="type"></param>
+        /// <param name="field"></param>
+        /// <param name="kind"></param>
+        /// <param name="heap"></param>
+        /// <param name="addr"></param>
+        /// <returns></returns>
+        public static string GetValue(ClrType type, ClrElementKind typeKind, ClrInstanceField field, ClrElementKind fldKind, ClrHeap heap, ulong addr, bool intr)
+        {
+            if (TypeExtractor.IsAmbiguousKind(fldKind))
+            {
+                if (TypeExtractor.IsString(typeKind))
+                {
+                    var faddr = ValueExtractor.ReadUlongAtAddress(addr, heap);
+                    return ValueExtractor.GetStringAtAddress(faddr,heap);
+                }
+                if (TypeExtractor.IsPrimitive(typeKind))
+                {
+                    return ValueExtractor.PrimitiveValueAsString(addr, type, typeKind);
+                }
+                return Constants.DontKnowHowToGetValue;
+            }
+            if (TypeExtractor.IsString(fldKind))
+            {
+                return ValueExtractor.GetStringAtAddress(addr, intr, field);
+            }
+            if (TypeExtractor.IsPrimitive(fldKind))
+            {
+                return ValueExtractor.PrimitiveValue(addr, field, intr);
+            }
+
+            return Constants.DontKnowHowToGetValue;
+        }
+
+        public static StructFields GetStructDescription(StructFieldsInfo sfi)
+        {
+            int cnt = sfi._fields.Length;
+            StructFields[] structFields = null;
+            var names = new string[cnt];
+            var typeNames = new string[cnt];
+            var kinds = new ClrElementKind[cnt];
+            for (int i = 0, icnt = sfi._fields.Length; i < icnt; ++i)
+            {
+                if (sfi._structFlds != null && sfi._structFlds[i] != null)
+                {
+                    if (structFields == null) structFields = new StructFields[cnt];
+                    structFields[i] = GetStructDescription(sfi._structFlds[i]);
+                    continue;
+                }
+                var fld = sfi._fields[i];
+                var fldKind = sfi._fldKinds[i];
+                var typ = sfi._types[i];
+                var typKind = sfi._typeKinds[i];
+                names[i] = fld.Name;
+                typeNames[i] = typ.Name;
+                kinds[i] = typKind;
+            }
+
+            return new StructFields(sfi._type.Name, kinds, names, typeNames, structFields);
+        }
+
+        public static void Description(StructFieldsInfo sfi, StringBuilder sb, string indent)
+        {
+            sb.Append(indent).Append(sfi._type.Name);
+            indent = indent + "   ";
+            for (int i = 0, icnt = sfi._fields.Length; i < icnt; ++i)
+            {
+                sb.AppendLine();
+                sb.Append(indent).Append(sfi._fields[i].Name).Append(" : ").Append(sfi._types[i].Name);
+                if (sfi._structFlds != null && sfi._structFlds[i] != null)
+                {
+                    sb.AppendLine();
+                    Description(sfi._structFlds[i], sb, indent + "   ");
+                }
+            }
         }
     }
 

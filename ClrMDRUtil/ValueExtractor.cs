@@ -179,6 +179,12 @@ namespace ClrMDRIndex
 
         #region string
 
+        public static string GetStringAtAddress(ulong addr, bool intr, ClrInstanceField fld)
+        {
+            var obj = fld.GetValue(addr, intr, true);
+            return obj == null ? Constants.NullValue : (string)obj;
+        }
+
         public static string GetStringAtAddress(ulong addr, ClrHeap heap)
         {
             if (addr == 0UL) return Constants.NullValueOld;
@@ -191,7 +197,6 @@ namespace ClrMDRIndex
             heap.ReadMemory(addr + 4, strBuf, 0, len);
             return Encoding.Unicode.GetString(strBuf);
         }
-
 
         public static ulong ReadUlongAtAddress(ulong addr, ClrHeap heap)
         {
@@ -1082,6 +1087,12 @@ namespace ClrMDRIndex
             }
         }
 
+        public static string PrimitiveValueAsString(ulong addr, ClrType type, ClrElementKind elemKind)
+        {
+            var obj = type.GetValue(addr);
+            return PrimitiveValueAsString(obj, TypeExtractor.GetClrElementType(elemKind));
+
+        }
 
         public static string PrimitiveValueAsString(object obj, ClrElementType elemType)
         {

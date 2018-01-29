@@ -2059,8 +2059,11 @@ namespace UnitTestMdr
                 // 0x00000002bc7130 System.Collections.Generic.Dictionary<System.ValueTuple<System.String,System.String>,System.ValueTuple<System.Int32,System.String,System.ValueTuple<System.Int32,System.String>>>
 /* 4*/          @"C:\WinDbgStuff\Dumps\TestApp\64\TestApp.exe_180113_065315.dmp.map",
                 // 0x0001f2b55e70e0 System.Collections.Generic.Dictionary<System.ValueTuple<System.String,System.String>,System.ValueTuple<System.Int32,System.String,System.ValueTuple<System.Int32,System.String>>>
-/* 5*/          @"C:\WinDbgStuff\Dumps\TestApp\64\TestApp.exe_180113_074917.dmp.map",
-                // 0x0001521d577590 System.Collections.Generic.Dictionary<System.Collections.Generic.KeyValuePair<System.String,System.Int32>,System.Collections.Generic.KeyValuePair<System.String,System.Int32>>
+/* 5*/          @"C:\WinDbgStuff\Dumps\TestApp\64\TestApp.exe_180126_201106.dmp.map",
+                // 0x0001ab80007718 System.Collections.Generic.Dictionary<System.Collections.Generic.KeyValuePair<System.String,System.Int32>,System.Collections.Generic.KeyValuePair<System.String,System.Int32>>
+                // 0x0001ab80007380 System.Collections.Generic.Dictionary<System.ValueTuple<System.String,System.String>,System.ValueTuple<System.Int32,System.String,System.ValueTuple<System.Int32,System.String>>>
+                // 0x0001ab80007978 System.Collections.Generic.Dictionary<System.String,System.Collections.Generic.KeyValuePair<System.String,System.ValueTuple<System.DateTime,System.Decimal,TestApp.TestEnumInt8>>>
+                // 0x0001ab8000f668 System.Collections.Generic.Dictionary<System.String,System.TimeZoneInfo>
 /* 6*/          @"D:\Jerzy\WinDbgStuff\dumps\Analytics\PrimeCap\a6.dmp.map",
                 // 0x0000de8bdeeae8 System.Collections.Generic.Dictionary<System.String,ECS.Common.Transport.Event_Data.PricingNode>
 /* 7*/          @"D:\Jerzy\WinDbgStuff\dumps\TestApp\TestApp.exe_180126_134041.dmp.map",
@@ -2068,8 +2071,8 @@ namespace UnitTestMdr
                 // 0x000000028d79c8 System.Collections.Generic.Dictionary<System.String,System.Collections.Generic.KeyValuePair<System.String,System.ValueTuple<System.DateTime,System.Decimal,TestApp.TestEnumInt8>>>
             };
 
-            var index = OpenIndex(paths[7]);
-            ulong addr = 0x000000028d79c8;
+            var index = OpenIndex(paths[5]);
+            ulong addr = 0x0001ab80007380;
             using (index)
             {
                 var heap = index.Heap;

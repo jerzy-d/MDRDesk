@@ -622,94 +622,124 @@ namespace ClrMDRIndex
                 var valList = new List<KeyValuePair<string, string>>(count - freeCount);
                 for (int i = 0; i < aryLen; ++i)
                 {
+                    var keyVal = Constants.UnknownValue;
+                    var valVal = Constants.UnknownValue;
                     var eaddr = entriesType.GetArrayElementAddress(entriesAddr, i);
                     var hash = ValueExtractor.GetFieldIntValue(heap, eaddr, hashFld, true);
                     if (hash <= 0) continue;
 
                     if (TypeExtractor.IsStruct(keyKind))
                     {
+                        var kAddr = keyFld.GetAddress(eaddr, true);
                         if (keySfi == null)
                         {
-                            var kAddr = keyFld.GetAddress(eaddr, true);
                             keySfi = StructFieldsInfo.GetStructFields(keyType, heap, kAddr);
                         }
+                        StructValueStrings structVal = StructFieldsInfo.GetStructValueStrings(keySfi, heap, kAddr);
+                        keyVal = StructValueStrings.MergeValues(structVal);
                     }
-
-                    object keyObj = keyFld.GetValue(eaddr, keyType.HasSimpleValue, false);
-                    if (keyObj != null && TypeExtractor.IsAmbiguousKind(keyKind))
+                    else
                     {
-                        var t = heap.GetObjectType((ulong)keyObj);
-                        if (t != null)
+                        object keyObj = keyFld.GetValue(eaddr, keyType.HasSimpleValue, false);
+                        if (keyObj != null && TypeExtractor.IsAmbiguousKind(keyKind))
                         {
-                            var k = TypeExtractor.GetElementKind(t);
-                            keyType = t;
-                            keyKind = k;
-                            if (keyType.IsEnum)
+                            var t = heap.GetObjectType((ulong)keyObj);
+                            if (t != null)
                             {
-                                keyEnum = new EnumValues(keyType);
+                                var k = TypeExtractor.GetElementKind(t);
+                                keyType = t;
+                                keyKind = k;
+                                if (keyType.IsEnum)
+                                {
+                                    keyEnum = new EnumValues(keyType);
+                                }
                             }
+                        }
+                        if (useKeyTypeToGetValue)
+                        {
+                            ulong a = TypeExtractor.IsObjectReference(keyKind)
+                                        ? (ulong)keyFld.GetValue(eaddr, true)
+                                        : keyFld.GetAddress(eaddr, true);
+                            if (keyEnum != null) keyVal = keyEnum.GetEnumString(a, keyType, TypeExtractor.GetClrElementType(keyKind));
+                            else keyVal = ValueExtractor.GetTypeValueAsString(heap, a, keyType, keyKind);
+                        }
+                        else
+                        {
+                            if (keyEnum != null) keyVal = keyEnum.GetEnumString(keyObj, TypeExtractor.GetClrElementType(keyKind));
+                            else keyVal = (string)ValueExtractor.GetFieldValue(heap, eaddr, keyFld, keyType, keyKind, true, false);
                         }
                     }
 
                     if (TypeExtractor.IsStruct(valKind))
                     {
+                        var vAddr = valFld.GetAddress(eaddr, true);
                         if (valSfi == null)
                         {
-                            var vAddr = valFld.GetAddress(eaddr, true);
                             valSfi = StructFieldsInfo.GetStructFields(valType, heap, vAddr);
                         }
+                        StructValueStrings structVal = StructFieldsInfo.GetStructValueStrings(valSfi, heap, vAddr);
+                        valVal = StructValueStrings.MergeValues(structVal);
                     }
-
-                    object valObj = valFld.GetValue(eaddr, valType.HasSimpleValue, false);
-                    if (valObj != null && TypeExtractor.IsAmbiguousKind(valKind))
+                    else
                     {
-                        var t = heap.GetObjectType((ulong)valObj);
-                        if (t != null)
+                        object valObj = valFld.GetValue(eaddr, valType.HasSimpleValue, false);
+                        if (valObj != null && TypeExtractor.IsAmbiguousKind(valKind))
                         {
-                            var k = TypeExtractor.GetElementKind(t);
-                            valType = t;
-                            if (valKind != k) useValTypeToGetValue = true;
-                            valKind = k;
-                            if (valType.IsEnum)
+                            var t = heap.GetObjectType((ulong)valObj);
+                            if (t != null)
                             {
-                                valEnum = new EnumValues(valType);
+                                var k = TypeExtractor.GetElementKind(t);
+                                valType = t;
+                                if (valKind != k) useValTypeToGetValue = true;
+                                valKind = k;
+                                if (valType.IsEnum)
+                                {
+                                    valEnum = new EnumValues(valType);
+                                }
                             }
+                        }
+
+                        if (useValTypeToGetValue)
+                        {
+                            ulong a = TypeExtractor.IsObjectReference(valKind)
+                                ? (ulong)valFld.GetValue(eaddr, true)
+                                : valFld.GetAddress(eaddr, true);
+                            if (valEnum != null) valVal = valEnum.GetEnumString(a, valType, TypeExtractor.GetClrElementType(valKind));
+                            else valVal = ValueExtractor.GetTypeValueAsString(heap, a, valType, valKind);
+                        }
+                        else
+                        {
+                            if (valEnum != null) valVal = valEnum.GetEnumString(valObj, TypeExtractor.GetClrElementType(valKind));
+                            else valVal = (string)ValueExtractor.GetFieldValue(heap, eaddr, valFld, valType, valKind, true, false);
                         }
                     }
 
-                    string keyVal = string.Empty;
-                    if (useKeyTypeToGetValue)
-                    {
-                        ulong a = keyFld.GetAddress(eaddr, true);
-                        if (keyEnum != null) keyVal = keyEnum.GetEnumString(a, keyType, TypeExtractor.GetClrElementType(keyKind));
-                        else keyVal = ValueExtractor.GetTypeValueAsString(heap, a, keyType, keyKind);
-                    }
-                    else
-                    {
-                        if (keyEnum != null) keyVal = keyEnum.GetEnumString(keyObj, TypeExtractor.GetClrElementType(keyKind));
-                        else keyVal = (string)ValueExtractor.GetFieldValue(heap, eaddr, keyFld, keyType, keyKind, true, false);
-                    }
+                    valList.Add(new KeyValuePair<string, string>(keyVal, valVal));
+                }
 
-                    string valueVal = string.Empty;
-                    if (useValTypeToGetValue)
-                    {
-                        ulong a = valFld.GetAddress(eaddr,true);
-                        if (valEnum != null) valueVal = valEnum.GetEnumString(a, valType, TypeExtractor.GetClrElementType(valKind));
-                        else valueVal = ValueExtractor.GetTypeValueAsString(heap, a, valType, valKind);
-                    }
-                    else
-                    {
-                        if (valEnum != null) valueVal = valEnum.GetEnumString(valObj, TypeExtractor.GetClrElementType(valKind));
-                        else                 valueVal = (string)ValueExtractor.GetFieldValue(heap, eaddr, valFld, valType, valKind, true, false);
-                    }
-                    valList.Add(new KeyValuePair<string, string>(keyVal, valueVal));
+                var keyTypeName = keyType.Name;
+                if (keySfi != null)
+                {
+                    var sb = StringBuilderCache.Acquire(StringBuilderCache.MaxCapacity);
+                    StructFieldsInfo.Description(keySfi, sb, "   ");
+                    keyTypeName = StringBuilderCache.GetStringAndRelease(sb);
+                }
+                var valTypeName = valType.Name;
+                if (valSfi != null)
+                {
+                    var sb = StringBuilderCache.Acquire(StringBuilderCache.MaxCapacity);
+                    StructFieldsInfo.Description(valSfi, sb, "   ");
+                    valTypeName = StringBuilderCache.GetStringAndRelease(sb);
                 }
 
                 KeyValuePair<string, string>[] fldDescription = new KeyValuePair<string, string>[]
                 {
-                new KeyValuePair<string, string>("count", Utils.CountString(count-freeCount)),
-                new KeyValuePair<string, string>("array count", Utils.CountString(aryLen)),
-                new KeyValuePair<string, string>("version", version.ToString())
+                    new KeyValuePair<string, string>("count", Utils.CountString(count-freeCount)),
+                    new KeyValuePair<string, string>("array count", Utils.CountString(aryLen)),
+                    new KeyValuePair<string, string>("version", version.ToString()),
+                    new KeyValuePair<string, string>("entry type", aryElemType.Name),
+                    new KeyValuePair<string, string>("key type", keyTypeName),
+                    new KeyValuePair<string, string>("value type", valTypeName),
                 };
 
                 
