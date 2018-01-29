@@ -637,9 +637,36 @@ namespace ClrMDRIndex
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static KeyValuePair<ClrType, ClrElementKind> TryGetRealType(ClrHeap heap, ulong addr)
         {
+            ClrElementKind kind = ClrElementKind.Unknown;
             ClrType clrType = heap.GetObjectType(addr);
-            ClrElementKind kind = clrType == null ? ClrElementKind.Unknown : GetElementKind(clrType);
+            if (clrType != null && clrType.IsRuntimeType)
+            {
+                var type = clrType.GetRuntimeType(addr);
+                if (type != null)
+                {
+                    clrType = type;
+                }
+                kind = GetElementKind(clrType);
+            }
             return new KeyValuePair<ClrType, ClrElementKind>(clrType, kind);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static ValueTuple<ClrType, ClrElementKind> GetRealType(ClrHeap heap, ulong addr)
+        {
+            ClrElementKind kind = ClrElementKind.Unknown;
+            ClrType clrType = heap.GetObjectType(addr);
+            kind = GetElementKind(clrType);
+            if (clrType != null && clrType.IsRuntimeType)
+            {
+                var type = clrType.GetRuntimeType(addr);
+                if (type != null)
+                {
+                    clrType = type;
+                }
+                kind = GetElementKind(clrType);
+            }
+            return (clrType, kind);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]

@@ -212,23 +212,25 @@ namespace ClrMDRIndex
             for (int i = 0; i < cnt; ++i)
             {
                 var fld = flds[i];
+                fields[i] = fld;
                 fldKinds[i] = TypeExtractor.GetElementKind(fld.Type);
-                ClrType fType = null;
+                types[i] = fld.Type;
+                typeKinds[i] = fldKinds[i];
                 if (TypeExtractor.IsAmbiguousKind(fldKinds[i]))
                 {
+                    ClrType fType = null;
+                    ClrElementKind fKind = ClrElementKind.Unknown;
                     object obj = fld.GetValue(addr, true, false);
                     if (obj is ulong)
                     {
-                        fType = heap.GetObjectType((ulong)obj);
-                        if (fType != null)
-                        {
-                            typeKinds[i] = TypeExtractor.GetElementKind(fType);
-                        }
+                        (fType,fKind) = TypeExtractor.GetRealType(heap, (ulong)obj);
+                    }
+                    if (fType != null)
+                    {
+                        types[i] = fType;
+                        typeKinds[i] = fKind;
                     }
                 }
-                fields[i] = fld;
-                types[i] = fType ?? fld.Type;
-                if (fType==null) typeKinds[i] = fldKinds[i];
 
                 if (TypeExtractor.IsStruct(fldKinds[i]))
                 {
@@ -284,6 +286,12 @@ namespace ClrMDRIndex
                 {
                     return ValueExtractor.PrimitiveValueAsString(addr, type, typeKind);
                 }
+                if (TypeExtractor.IsObjectReference(typeKind))
+                {
+                    var obj = field.GetValue(addr, intr, false);
+                    if (obj == null || !(obj is ulong)) return Constants.ZeroAddressStr;
+                    return Utils.RealAddressString((ulong)obj);
+                }
                 return Constants.DontKnowHowToGetValue;
             }
             if (TypeExtractor.IsString(fldKind))
@@ -294,7 +302,13 @@ namespace ClrMDRIndex
             {
                 return ValueExtractor.PrimitiveValue(addr, field, intr);
             }
-
+            if (TypeExtractor.IsObjectReference(fldKind))
+            {
+                var obj = field.GetValue(addr, intr, false);
+                if (obj == null || !(obj is ulong)) return Constants.ZeroAddressStr;
+                return Utils.RealAddressString((ulong)obj);
+                
+            }
             return Constants.DontKnowHowToGetValue;
         }
 

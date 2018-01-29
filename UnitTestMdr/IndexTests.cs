@@ -2066,13 +2066,21 @@ namespace UnitTestMdr
                 // 0x0001ab8000f668 System.Collections.Generic.Dictionary<System.String,System.TimeZoneInfo>
 /* 6*/          @"D:\Jerzy\WinDbgStuff\dumps\Analytics\PrimeCap\a6.dmp.map",
                 // 0x0000de8bdeeae8 System.Collections.Generic.Dictionary<System.String,ECS.Common.Transport.Event_Data.PricingNode>
-/* 7*/          @"D:\Jerzy\WinDbgStuff\dumps\TestApp\TestApp.exe_180126_134041.dmp.map",
+                // TODO JRD TEST 0x0000dc8b887ba8 System.Collections.Generic.Dictionary<Microsoft.Practices.ObjectBuilder.BuilderPolicyKey,Microsoft.Practices.ObjectBuilder.IBuilderPolicy>
+                // TODO JRD TEST 0x0000dc8b884de0 ERROR Unexpected special kind Crash Dump: a6.dmp(x64) MDR Desk  0.9.0.18[64 - bit] ❖ a6.dmp
+
+                // TODO JRD TEST 0x0000dc8c06a748 System.Collections.Generic.HashSet<System.String>
+/* 7*/
+                @"D:\Jerzy\WinDbgStuff\dumps\TestApp\TestApp.exe_180126_134041.dmp.map",
                 // 0x000000028d7768 System.Collections.Generic.Dictionary<System.Collections.Generic.KeyValuePair<System.String,System.Int32>,System.Collections.Generic.KeyValuePair<System.String,System.Int32>>
                 // 0x000000028d79c8 System.Collections.Generic.Dictionary<System.String,System.Collections.Generic.KeyValuePair<System.String,System.ValueTuple<System.DateTime,System.Decimal,TestApp.TestEnumInt8>>>
+                // 0x000000028db720 System.Collections.Generic.Dictionary<System.String,System.AppContext+SwitchValueState>
+                // 0x000000028d73d0 System.Collections.Generic.Dictionary<System.ValueTuple<System.String,System.String>,System.ValueTuple<System.Int32,System.String,System.ValueTuple<System.Int32,System.String>>>
+
             };
 
-            var index = OpenIndex(paths[5]);
-            ulong addr = 0x0001ab80007380;
+            var index = OpenIndex(paths[7]);
+            ulong addr = 0x000000028d73d0;
             using (index)
             {
                 var heap = index.Heap;
