@@ -2040,6 +2040,27 @@ namespace UnitTestMdr
         }
 
         [TestMethod]
+        public void CollectionTest_array()
+        {
+            string[] paths = new string[]
+            {
+                @"D:\Jerzy\WinDbgStuff\dumps\TestApp\TestApp.exe_180126_134041.dmp.map",
+                // 0x000000028e13e0 TestApp.TestEnum[]
+            };
+            var index = OpenIndex(paths[0]);
+            ulong addr = 0x000000028e13e0;
+            using (index)
+            {
+                var heap = index.Heap;
+                (string error, ClrType type1, ClrType type2, StructFields structs, string[] values, StructValueStrings[] structValues)
+                    = CollectionContent.GetArrayContentAsStrings(heap, addr);
+                
+                Assert.IsNull(error, error);
+            }
+
+        }
+
+        [TestMethod]
         public void CollectionTest_Dictionary()
         {
             string[] paths = new string[]

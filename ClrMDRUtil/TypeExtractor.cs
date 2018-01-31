@@ -639,12 +639,15 @@ namespace ClrMDRIndex
         {
             ClrElementKind kind = ClrElementKind.Unknown;
             ClrType clrType = heap.GetObjectType(addr);
-            if (clrType != null && clrType.IsRuntimeType)
+            if (clrType != null)
             {
-                var type = clrType.GetRuntimeType(addr);
-                if (type != null)
+                if (clrType.IsRuntimeType)
                 {
-                    clrType = type;
+                    var type = clrType.GetRuntimeType(addr);
+                    if (type != null)
+                    {
+                        clrType = type;
+                    }
                 }
                 kind = GetElementKind(clrType);
             }

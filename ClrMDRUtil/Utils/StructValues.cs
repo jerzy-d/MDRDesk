@@ -275,6 +275,7 @@ namespace ClrMDRIndex
         /// <returns></returns>
         public static string GetValue(ClrType type, ClrElementKind typeKind, ClrInstanceField field, ClrElementKind fldKind, ClrHeap heap, ulong addr, bool intr)
         {
+            Debug.Assert(!TypeExtractor.IsStruct(typeKind) && !TypeExtractor.IsStruct(fldKind));
             if (TypeExtractor.IsAmbiguousKind(fldKind))
             {
                 if (TypeExtractor.IsString(typeKind))
@@ -282,6 +283,24 @@ namespace ClrMDRIndex
                     var faddr = ValueExtractor.ReadUlongAtAddress(addr, heap);
                     return ValueExtractor.GetStringAtAddress(faddr,heap);
                 }
+
+                if (TypeExtractor.IsKnownStruct(fldKind))
+                {
+                    switch (TypeExtractor.GetSpecialKind(fldKind))
+                    {
+                        case ClrElementKind.Decimal:
+                            return ValueExtractor.DecimalValueAsString(addr, type, null);
+                        case ClrElementKind.DateTime:
+                            return ValueExtractor.DateTimeValueString(addr, type);
+                        case ClrElementKind.TimeSpan:
+                            return ValueExtractor.TimeSpanValueAsString(addr, type);
+                        case ClrElementKind.Guid:
+                            return ValueExtractor.GuidValue(addr, field);
+                        default:
+                            return Constants.DontKnowHowToGetValue;
+                    }
+                }
+
                 if (TypeExtractor.IsPrimitive(typeKind))
                 {
                     return ValueExtractor.PrimitiveValueAsString(addr, type, typeKind);
@@ -297,6 +316,22 @@ namespace ClrMDRIndex
             if (TypeExtractor.IsString(fldKind))
             {
                 return ValueExtractor.GetStringAtAddress(addr, intr, field);
+            }
+            if (TypeExtractor.IsKnownStruct(fldKind))
+            {
+                switch (TypeExtractor.GetSpecialKind(fldKind))
+                {
+                    case ClrElementKind.Decimal:
+                        return ValueExtractor.GetDecimalValue(addr, field, intr);
+                    case ClrElementKind.DateTime:
+                        return ValueExtractor.GetDateTimeValue(addr, field, intr);
+                    case ClrElementKind.TimeSpan:
+                        return ValueExtractor.TimeSpanValue(addr, field);
+                    case ClrElementKind.Guid:
+                        return ValueExtractor.GuidValue(addr, field);
+                    default:
+                        return Constants.DontKnowHowToGetValue;
+                }
             }
             if (TypeExtractor.IsPrimitive(fldKind))
             {
