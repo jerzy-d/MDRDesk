@@ -97,3 +97,10 @@
 	Solution:
 	You can enumerate the System.Threading.Thread objects and match the ClrThread with the managed thread id with m_ManagedThreadId.
 0047 11/08/17 Organize Index menu. Add show Deadlock item.
+0048 02/01/18 Roshabh enhancement/bug report:
+	 1)	*** Ctrl + O To open a previously saved dump index
+	 2)	Compare dmp1 with dmp2 Need to also show “totalsize” diff – currently only shows countdiff
+	 3)	Opening two indexes in two separate instances takes a *long* time – need to open one at a time
+	 4)	Compare dmp1 with dmp2 In the same MDRDesk instance, compare dmp1 to dmp3. Uncaught exception occurs
+	 5)	Compare dmp1 to dmp2 Initiate String Usages causes exception, or trying to get string info forever.
+

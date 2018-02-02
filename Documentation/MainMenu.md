@@ -95,4 +95,10 @@ Instances (list of heap instances) tab content can be displayed in 3 ways:
 ![My Memory](../Documentation/MyMemory.PNG)  
 Current MDRDesk usage of memory: private working set, and peak working set are displayed.
 
+##### Hot Keys
 
+Alt + V -> Get instance value, shows a dialog where you have to enter an instance address.  
+Alt + R -> Get instance references, shows a dialog where you have to enter an instance address.  
+Alt + H -> Show instance hierarchy, shows a dialog where you have to enter an instance address.  
+
+Ctrl + O -> Opens most recent index, same as clicking on the first item in Index -> Recent Indices menu item.

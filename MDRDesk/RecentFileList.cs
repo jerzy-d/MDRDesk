@@ -37,7 +37,21 @@ namespace MDRDesk
 	        }
         }
 
-	    public void Add(string path)
+        public string GetMostRecent()
+        {
+            lock (_lock)
+            {
+                foreach (var item in _menuItem.Items)
+                {
+                    var menuItem = item as MenuItem;
+                    FileInfo fileInfo = menuItem.Header as FileInfo;
+                    return fileInfo.FilePath;
+                }
+                return null;
+            }
+        }
+
+        public void Add(string path)
 	    {
 	        lock (_lock)
 	        {

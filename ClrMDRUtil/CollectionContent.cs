@@ -653,6 +653,7 @@ namespace ClrMDRIndex
                                 {
                                     keyEnum = new EnumValues(keyType);
                                 }
+                                useKeyTypeToGetValue = true;
                             }
                         }
                         if (useKeyTypeToGetValue)
@@ -696,6 +697,7 @@ namespace ClrMDRIndex
                                 {
                                     valEnum = new EnumValues(valType);
                                 }
+                                useValTypeToGetValue = true;
                             }
                         }
 
@@ -737,7 +739,6 @@ namespace ClrMDRIndex
                     new KeyValuePair<string, string>("count", Utils.CountString(count-freeCount)),
                     new KeyValuePair<string, string>("array count", Utils.CountString(aryLen)),
                     new KeyValuePair<string, string>("version", version.ToString()),
-                    new KeyValuePair<string, string>("entry type", aryElemType.Name),
                     new KeyValuePair<string, string>("key type", keyTypeName),
                     new KeyValuePair<string, string>("value type", valTypeName),
                 };

@@ -1375,7 +1375,9 @@ namespace ClrMDRIndex
 
             }
 
-            switch (kind)
+            var stdKind = TypeExtractor.GetStandardKind(kind);
+
+            switch (stdKind)
             {
                 case ClrElementKind.String:
                     return GetStringAtAddress(addr,heap);

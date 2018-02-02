@@ -886,13 +886,14 @@ namespace MDRDesk
         {
             if (!GuiUtils.IsIndexAvailable(this, title)) return Constants.InvalidAddress;
             ulong addr;
-            if (!GetUserEnteredAddress("Instance Address", "Enter instance address, if not hex format prefix with n/N.", out addr)) return Constants.InvalidAddress;
+            if (string.IsNullOrWhiteSpace(title)) title = "Instance Address";
+            if (!GetUserEnteredAddress(title, "Enter an instance address, if not hex format prefix with n/N.", out addr)) return Constants.InvalidAddress;
             return addr;
         }
 
         private void ExecuteInstanceValue(object sender, ExecutedRoutedEventArgs e)
         {
-            ulong addr = GetInstanceAddressFromUser("Instance Information");
+            ulong addr = GetInstanceAddressFromUser("Get Instance Value");
             if (addr == Constants.InvalidAddress) return;
             var msg = "Getting object value at: " + Utils.RealAddressString(addr);
             Dispatcher.CurrentDispatcher.InvokeAsync(() => ExecuteInstanceValueQuery(msg, addr));
@@ -905,7 +906,7 @@ namespace MDRDesk
 
         private void ExecuteInstanceReferences(object sender, ExecutedRoutedEventArgs e)
         {
-            ulong addr = GetInstanceAddressFromUser("Instance Information");
+            ulong addr = GetInstanceAddressFromUser("Get Instance References");
             if (addr == Constants.InvalidAddress) return;
             var msg = "Getting object references at: " + Utils.RealAddressString(addr);
             Dispatcher.CurrentDispatcher.InvokeAsync(() => ExecuteReferenceQuery(addr));
@@ -918,7 +919,7 @@ namespace MDRDesk
 
         private void ExecuteInstanceHierarchy(object sender, ExecutedRoutedEventArgs e)
         {
-            ulong addr = GetInstanceAddressFromUser("Instance Information");
+            ulong addr = GetInstanceAddressFromUser("Instance Hierarchy");
             if (addr == Constants.InvalidAddress) return;
             var msg = "Getting object hierarchy at: " + Utils.RealAddressString(addr);
             Dispatcher.CurrentDispatcher.InvokeAsync(() => ExecuteInstanceHierarchyQuery("Get instance hierarchy " + Utils.AddressStringHeader(addr),
@@ -1010,6 +1011,16 @@ namespace MDRDesk
             if (fileInfo != null)
             {
                 Dispatcher.CurrentDispatcher.InvokeAsync(() => DoOpenDumpIndex(0, fileInfo.FilePath));
+            }
+        }
+
+        public void OpenMostRecentIndex(object sender, RoutedEventArgs e)
+        {
+            if (GuiUtils.IsIndexAvailable(this, null)) CloseCurrentIndex();
+            string path = RecentIndexList.GetMostRecent();
+            if (path != null)
+            {
+                Dispatcher.CurrentDispatcher.InvokeAsync(() => DoOpenDumpIndex(0, path));
             }
         }
 
@@ -1792,7 +1803,7 @@ namespace MDRDesk
 
 #endregion Menu
 
-#region GUI Helpers
+        #region GUI Helpers
 
         private static Stopwatch _taskDurationStopwatch = new Stopwatch();
         private void SetStartTaskMainWindowState(string message)
@@ -1849,9 +1860,9 @@ namespace MDRDesk
             }
         }
 
-#endregion GUI Helpers
+        #endregion GUI Helpers
 
-#region Dialogs
+        #region Dialogs
 
         private bool GetDlgString(string title, string descr, string defValue, out string str)
         {
@@ -1896,9 +1907,9 @@ namespace MDRDesk
             return true;
         }
 
-#endregion Dialogs
+        #endregion Dialogs
 
-#region context menus
+        #region context menus
 
         private void CopyAddressSelectionClicked(object sender, RoutedEventArgs e)
         {
@@ -2084,7 +2095,7 @@ namespace MDRDesk
             return (contextMenu.Tag is ListView) ? contextMenu.Tag as ListView : null;
         }
 
-#region TypeValuesReportContextMenu
+        #region TypeValuesReportContextMenu
 
 
         private listing<string> GetypeValuesReportRow()
@@ -2172,9 +2183,9 @@ namespace MDRDesk
             ShowMemoryViewWindow(addr);
         }
 
-#endregion TypeValuesReportContextMenu
+        #endregion TypeValuesReportContextMenu
 
-#endregion context menus
+        #endregion context menus
 
         private async void GenerateSizeDetailsReport(object sender, RoutedEventArgs e) // TODO JRD -- display as ListView (listing)
         {
@@ -2539,17 +2550,19 @@ namespace MDRDesk
         {
             try
             {
-                RoutedCommand firstSettings = new RoutedCommand();
-                firstSettings.InputGestures.Add(new KeyGesture(Key.F1));
-                CommandBindings.Add(new CommandBinding(firstSettings, ButtonHelpClicked));
+                RoutedCommand rcmd = new RoutedCommand();
+                rcmd.InputGestures.Add(new KeyGesture(Key.F1));
+                CommandBindings.Add(new CommandBinding(rcmd, ButtonHelpClicked));
+
+                rcmd = new RoutedCommand();
+                rcmd.InputGestures.Add(new KeyGesture(Key.O, System.Windows.Input.ModifierKeys.Control));
+                CommandBindings.Add(new CommandBinding(rcmd, OpenMostRecentIndex));
             }
             catch (Exception ex)
             {
                 GuiUtils.ShowError(ex, this);
             }
         }
-
-
 
         #endregion help
 

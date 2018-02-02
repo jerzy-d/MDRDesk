@@ -2089,6 +2089,7 @@ namespace UnitTestMdr
                 // 0x0000de8bdeeae8 System.Collections.Generic.Dictionary<System.String,ECS.Common.Transport.Event_Data.PricingNode>
                 // TODO JRD TEST 0x0000dc8b887ba8 System.Collections.Generic.Dictionary<Microsoft.Practices.ObjectBuilder.BuilderPolicyKey,Microsoft.Practices.ObjectBuilder.IBuilderPolicy>
                 // TODO JRD TEST 0x0000dc8b884de0 ERROR Unexpected special kind Crash Dump: a6.dmp(x64) MDR Desk  0.9.0.18[64 - bit] ❖ a6.dmp
+                // TODO JRD TEST 0x0000de8bb32c58 System.Collections.Generic.Dictionary<Eze.Server.Common.Pulse.Common.Types.RelatedViews,System.Object>
 
                 // TODO JRD TEST 0x0000dc8c06a748 System.Collections.Generic.HashSet<System.String>
 /* 7*/
@@ -2100,14 +2101,24 @@ namespace UnitTestMdr
 
             };
 
-            var index = OpenIndex(paths[7]);
-            ulong addr = 0x000000028d73d0;
+            decimal d;
+            var ok = decimal.TryParse("", NumberStyles.Number, NumberFormatInfo.InvariantInfo, out d);
+
+
+                var index = OpenIndex(paths[6]);
+            ulong addr = 0x0000de8bb32c58;
             using (index)
             {
                 var heap = index.Heap;
                 //(string error0, KeyValuePair<string, string>[] descr0, KeyValuePair<string, string>[] values0) = ValueExtractor.GetDictionaryContent(heap, addr);
+                var instanceTypeName = index.GetTypeName(addr);
+                var initType = index.Heap.GetObjectType(addr);
+                (ClrType type, ClrElementKind kind) = TypeExtractor.GetRealType(index.Heap, addr);
+                object val = type.GetValue(addr);
 
-               (string error, KeyValuePair<string, string>[] descr, KeyValuePair<string, string>[] values) = CollectionContent.DictionaryContentAsStrings(heap, addr);
+                (ClrType type1, ClrElementKind kind1) = TypeExtractor.GetRealType(index.Heap, (ulong)val);
+
+                (string error, KeyValuePair<string, string>[] descr, KeyValuePair<string, string>[] values) = CollectionContent.DictionaryContentAsStrings(heap, addr);
 
                 Assert.IsNull(error, error);
             }
