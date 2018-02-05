@@ -536,7 +536,7 @@ namespace MDRDesk
             }
             if (path == null) path = GuiUtils.GetFolderPath(Setup.DumpsFolder, ".map", this);
 
-            if (path == null) return;
+            if (string.IsNullOrWhiteSpace(path)) return;
             try
             {
                 DoOpenDumpIndex(0, path);

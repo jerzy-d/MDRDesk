@@ -2046,15 +2046,48 @@ namespace UnitTestMdr
             {
                 @"D:\Jerzy\WinDbgStuff\dumps\TestApp\TestApp.exe_180126_134041.dmp.map",
                 // 0x000000028e13e0 TestApp.TestEnum[]
+                @"C:\WinDbgStuff\Dumps\TestApp\64\TestApp.exe_180126_201106.dmp.map",
+                // 0x0001ab80007888 System.Collections.Generic.Dictionary+Entry<System.Collections.Generic.KeyValuePair<System.String,System.Int32>,System.Collections.Generic.KeyValuePair<System.String,System.Int32>>[]
             };
-            var index = OpenIndex(paths[0]);
-            ulong addr = 0x000000028e13e0;
+            var index = OpenIndex(paths[1]);
+            ulong addr = 0x0001ab80007888;
             using (index)
             {
                 var heap = index.Heap;
                 (string error, ClrType type1, ClrType type2, StructFields structs, string[] values, StructValueStrings[] structValues)
                     = CollectionContent.GetArrayContentAsStrings(heap, addr);
+                string[] structStrings = null;
+                if (structValues != null)
+                {
+                    structStrings = new string[structValues.Length];
+                    for (int i = 0, icnt = structValues.Length; i < icnt; ++i)
+                    {
+                        structStrings[i] = StructValueStrings.MergeValues(structValues[i]);
+                    }
+                }
                 
+                Assert.IsNull(error, error);
+            }
+
+        }
+
+
+        [TestMethod]
+        public void CollectionTest_HashSet()
+        {
+            string[] paths = new string[]
+            {
+                @"C:\WinDbgStuff\Dumps\TestApp\64\TestApp.exe_180126_201106.dmp.map",
+                // 0x0001ab800130a8 System.Collections.Generic.HashSet<System.String>
+            };
+
+            var index = OpenIndex(paths[0]);
+            ulong addr = 0x0001ab800130a8;
+            using (index)
+            {
+                var heap = index.Heap;
+                (string error, KeyValuePair<string, string>[] decrs, string[] values) = CollectionContent.HashSetContentAsStrings(heap, addr);
+
                 Assert.IsNull(error, error);
             }
 

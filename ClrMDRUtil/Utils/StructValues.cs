@@ -31,6 +31,17 @@ namespace ClrMDRIndex
             _structs = structs;
         }
 
+        public static string[] GetStrings(StructValueStrings[] vals)
+        {
+            if (vals == null) return null;
+            string[] strvals = new string[vals.Length];
+            for(int i = 0, icnt = vals.Length; i < icnt; ++i)
+            {
+                strvals[i] = StructValueStrings.MergeValues(vals[i]);
+            }
+            return strvals;
+        }
+
         public static string MergeValues(StructValueStrings val)
         {
             StringBuilder sb = new StringBuilder(128);
@@ -349,6 +360,7 @@ namespace ClrMDRIndex
 
         public static StructFields GetStructDescription(StructFieldsInfo sfi)
         {
+            if (sfi == null) return null;
             int cnt = sfi._fields.Length;
             StructFields[] structFields = null;
             var names = new string[cnt];

@@ -621,6 +621,12 @@ namespace ClrMDRIndex
             return id < 0 ? Constants.InvalidIndex : id;
         }
 
+        public ClrElementKind GetTypeKind(int typeId)
+        {
+            var kinds = GetElementKindList();
+            return (typeId < 0 || typeId >= kinds.Length) ? ClrElementKind.Unknown : kinds[typeId];
+        }
+
         public ulong[] GetTypeInstances(int typeId, out int unrootedCount)
         {
             unrootedCount = 0;
@@ -1388,25 +1394,29 @@ namespace ClrMDRIndex
                         || knownCollection == TypeExtractor.KnownTypes.SortedSet
                         );
                     return GetKnownCollectionContent(addr, typeId, typeName, knownCollection);
-                    //switch (knownCollection)
-                    //{
-                    //    case TypeExtractor.KnownTypes.Stack:
-                    //        return GetKnownCollectionContent(addr, typeId, typeName, TypeExtractor.KnownTypes.Stack);
-                    //    case TypeExtractor.KnownTypes.Queue:
-                    //        return GetKnownCollectionContent(addr, typeId, typeName, TypeExtractor.KnownTypes.Queue);
-                    //    case TypeExtractor.KnownTypes.ConcurrentDictionary:
-                    //        return GetConcurrentDictionaryContent(addr, typeId, typeName);
-                    //    case TypeExtractor.KnownTypes.Dictionary:
-                    //        return GetDictionaryContent(addr, typeId, typeName);
-                    //    case TypeExtractor.KnownTypes.SortedDictionary:
-                    //        return GetSortedDictionaryContent(addr, typeId, typeName);
-                    //    case TypeExtractor.KnownTypes.SortedList:
-                    //        return GetSortedListContent(addr, typeId, typeName);
-                    //    case TypeExtractor.KnownTypes.HashSet:
-                    //        return GetHashSetContent(addr, typeId, typeName);
-                    //    case TypeExtractor.KnownTypes.List:
-                    //        return GetListContent(addr, typeId, typeName);
-                    //}
+                }
+                var kinds = GetElementKindList();
+                var kind = kinds[typeId];
+                if (TypeExtractor.IsArray(kind))
+                {
+                    (string err, ClrType type1, ClrType elemType, StructFields structs, string[] values, StructValueStrings[] structValues)
+                            = CollectionContent.GetArrayContentAsStrings(Dump.Heap, addr);
+                    if (err != null)
+                    {
+                        return (err, null, TypeExtractor.KnownTypes.Unknown);
+                    }
+                    int len = values != null ? values.Length : (structValues != null ? structValues.Length : 0);
+                    var instanceVal = new InstanceValue(typeId, ClrElementKind.Array, addr, typeName, null, null);
+                    var elemTypeId = GetTypeId(elemType.Name);
+                    var elemInst = new InstanceValue(elemTypeId, GetTypeKind(elemTypeId), Constants.InvalidAddress, elemType.Name, String.Empty, Utils.CountString(len), Constants.InvalidIndex, instanceVal);
+                    if (values == null)
+                    {
+                        values = StructValueStrings.GetStrings(structValues);
+                    }
+                    //inst.AddExtraData(description);
+                    instanceVal.AddArrayValues(values);
+                    instanceVal.SetFields(new InstanceValue[] { elemInst });
+                    return (err, instanceVal, TypeExtractor.KnownTypes.Unknown);
                 }
 
                 (error, inst) = ValueExtractor.GetInstanceValue(IndexProxy, Dump.Heap, addr, Constants.InvalidIndex, parent);

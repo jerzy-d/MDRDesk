@@ -291,16 +291,19 @@ namespace ClrMDRIndex
 
         public static ValueTuple<StructFields,StructValueStrings[]> ArrayOfStructValueStrings(ClrHeap heap, ClrType type, ClrType elType, ulong addr, int aryLen)
         {
-            StructFields sf = StructFields.GetStructFields(elType);
-            StructFieldsEx sfx = StructFieldsEx.GetStructFields(sf, elType);
-            sfx.ResetTypes();
+            StructFieldsInfo sfi = null;
             StructValueStrings[] values = new StructValueStrings[aryLen];
             for (int i = 0; i < aryLen; ++i)
             {
                 ulong elAddr = type.GetArrayElementAddress(addr, i);
-                values[i] = StructFieldsEx.GetArrayElementStructStrings(sfx, heap, elAddr);
+                if (sfi == null)
+                {
+                    sfi = StructFieldsInfo.GetStructFields(elType, heap, elAddr);
+                    if (sfi == null) continue;
+                }
+                values[i] = StructFieldsInfo.GetStructValueStrings(sfi, heap, elAddr);
             }
-            return (sf,values);
+            return (StructFieldsInfo.GetStructDescription(sfi), values);
         }
 
         #endregion array
@@ -567,14 +570,64 @@ namespace ClrMDRIndex
 
         #endregion System.Collections.Concurrent.ConcurrentDictionary<TKey,TValue>
 
-        #region System.Collections.Generic.HashSet<
+        #region System.Collections.Generic.HashSet<T>
 
         // C:\WinDbgStuff\Dumps\TestApp.exe_180107_110845.dmp.map
         // TODO JRD -- check error
         //  0x000173c1b230a8       System.Collections.Generic.HashSet<System.String>
 
-        #endregion System.Collections.Generic.HashSet<
+        public static ValueTuple<string, KeyValuePair<string, string>[], string[]> HashSetContentAsStrings(ClrHeap heap, ulong addr)
+        {
+            try
+            {
+                addr = Utils.RealAddress(addr);
+                {
+                    ClrType clrType = heap.GetObjectType(addr);
+                    if (clrType == null)
+                        return ("Cannot get type of instance at: " + Utils.RealAddressString(addr) + ", invalid address?", null, null);
+                    if (!TypeExtractor.Is(TypeExtractor.KnownTypes.HashSet, clrType.Name))
+                        return ("Instance at: " + Utils.RealAddressString(addr) + " is not " + TypeExtractor.GetKnowTypeName(TypeExtractor.KnownTypes.HashSet), null, null);
+                    clrType = null;
+                }
+                (string error, ClrType type, ClrElementKind kind, (ClrType[] fldTypes, ClrElementKind[] fldKinds, object[] values, StructValues[] structValues)) =
+                    ClassValue.GetClassValues(heap, addr);
 
+                int m_count = GetFieldInt(type.Fields, "m_count", values);
+                int m_freeList = GetFieldInt(type.Fields, "m_freeList", values);
+                int m_lastIndex = GetFieldInt(type.Fields, "m_lastIndex", values);
+                int m_version = GetFieldInt(type.Fields, "m_version", values);
+                int slotsFldNdx = GetFieldNdx(type.Fields, "m_slots");
+
+                ClrType slotsFldType = fldTypes[slotsFldNdx];
+                ulong slotsFldAddr =(ulong)values[slotsFldNdx];
+
+                ClrType slotType = null;
+
+                string[] hvalues = new string[m_count];
+                int copied = 0;
+                for (int i = 0; i < m_lastIndex && copied < m_count; ++i)
+                {
+                    if (slotType == null)
+                    {
+
+                    }
+                    var eaddr = slotsFldType.GetArrayElementAddress(slotsFldAddr, i);
+                    //int hash = GetFieldIntValue(heap, eaddr, slotHashFld, true);
+                    //if (hash < 0) continue;
+                    //string val = (string)GetFieldValue(heap, eaddr, slotValueFld, slotValueFld.Type, valueFldTypeKind, true, false);
+                    //values[copied++] = val;
+                }
+
+                return (null, null, null);
+            }
+            catch(Exception ex)
+            {
+                return (Utils.GetExceptionErrorString(ex), null, null);
+            }
+        }
+
+
+        #endregion System.Collections.Generic.HashSet<T>
 
         #region System.Collections.Generic.Dictionary<TKey,TValue>
 
@@ -997,6 +1050,35 @@ namespace ClrMDRIndex
             int ndx = ClassValue.IndexOfField(type.Fields, fldName);
             Debug.Assert(values[ndx] is int);
             return (int)values[ndx];
+        }
+        static int GetFieldInt(IList<ClrInstanceField> fields, string fldName, object[] values)
+        {
+            int ndx = Constants.InvalidIndex;
+            for (int i = 0, icnt = fields.Count; i < icnt; ++i)
+            {
+                if (string.Compare(fldName,fields[i].Name,StringComparison.Ordinal)==0)
+                {
+                    ndx = i;
+                    break;
+                }
+            }
+            if (ndx == Constants.InvalidIndex) return Constants.InvalidIndex;
+            Debug.Assert(values[ndx] is int);
+            return (int)values[ndx];
+        }
+
+        static int GetFieldNdx(IList<ClrInstanceField> fields, string fldName)
+        {
+            int ndx = Constants.InvalidIndex;
+            for (int i = 0, icnt = fields.Count; i < icnt; ++i)
+            {
+                if (string.Compare(fldName, fields[i].Name, StringComparison.Ordinal) == 0)
+                {
+                    ndx = i;
+                    break;
+                }
+            }
+            return ndx;
         }
 
         public static ValueTuple<ulong,ClrType> GetFieldUInt64AndType(ClrType type, string fldName, ClrType[] fldTypes, object[] values)
