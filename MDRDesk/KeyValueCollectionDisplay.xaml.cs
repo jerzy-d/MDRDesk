@@ -48,7 +48,7 @@ namespace MDRDesk
         public void UpdateInstanceValue(InstanceValue instVal, string descr)
         {
             _instValue = instVal;
-            Title = TypeExtractor.GetKnowTypeName(instVal.TypeName);
+            Title = TypeExtractor.GetDisplayableTypeName(instVal.TypeName);
             CollectionInfo.Text = GuiUtils.GetExtraDataString(instVal.ExtraData as KeyValuePair<string, string>[], instVal.TypeName, instVal.Address);
             KeyValuePairs.ItemsSource = instVal.KeyValuePairs;
         }

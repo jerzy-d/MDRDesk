@@ -624,6 +624,13 @@ namespace ClrMDRIndex
             return GetKnowTypeName(kt);
         }
 
+        public static string GetDisplayableTypeName(string typeName)
+        {
+            KnownTypes kt = IsKnownCollection(typeName);
+            if (kt != KnownTypes.Unknown) return GetKnowTypeName(kt);
+            return Utils.BaseTypeName(typeName);
+        }
+
         public static KnownTypes IsKnownCollection(string typeName)
         {
             for (int i = 0, icnt = KnownTypeNames.Length; i < icnt; ++i)

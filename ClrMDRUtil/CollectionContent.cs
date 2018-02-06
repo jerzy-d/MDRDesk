@@ -598,32 +598,91 @@ namespace ClrMDRIndex
                 int m_version = GetFieldInt(type.Fields, "m_version", values);
                 int slotsFldNdx = GetFieldNdx(type.Fields, "m_slots");
 
-                ClrType slotsFldType = fldTypes[slotsFldNdx];
-                ulong slotsFldAddr =(ulong)values[slotsFldNdx];
-
-                ClrType slotType = null;
-
+                ClrType slotsType = fldTypes[slotsFldNdx];
+                ulong slotsAddr =(ulong)values[slotsFldNdx];
+                bool useItemType;
+                (ClrType slotType, ClrType itemType, ClrInstanceField itemFld, StructFieldsInfo itemSfi, ClrElementKind itemKind, ClrInstanceField hashCodeFld, ClrInstanceField nextFld) = GetHashSetSlotTypeInfo(heap, slotsAddr, slotsType, out useItemType);
+                int aryLen = slotsType.GetArrayLength(slotsAddr);
                 string[] hvalues = new string[m_count];
                 int copied = 0;
                 for (int i = 0; i < m_lastIndex && copied < m_count; ++i)
                 {
-                    if (slotType == null)
-                    {
+                    var eaddr = slotsType.GetArrayElementAddress(slotsAddr, i);
+                    int hash = GetIntFromField(hashCodeFld, eaddr, true);
+                    if (hash < 0) continue;
 
+                    if (useItemType)
+                    {
+                        ulong a = TypeExtractor.IsObjectReference(itemKind)
+                            ? (ulong)itemFld.GetValue(eaddr, true)
+                            : itemFld.GetAddress(eaddr, true);
+                        //if (valEnum != null) valVal = valEnum.GetEnumString(a, valType, TypeExtractor.GetClrElementType(valKind));
+                        hvalues[copied++] = ValueExtractor.GetTypeValueAsString(heap, a, itemType, itemKind);
                     }
-                    var eaddr = slotsFldType.GetArrayElementAddress(slotsFldAddr, i);
-                    //int hash = GetFieldIntValue(heap, eaddr, slotHashFld, true);
-                    //if (hash < 0) continue;
+                    else
+                    {
+                        //if (valEnum != null) valVal = valEnum.GetEnumString(valObj, TypeExtractor.GetClrElementType(valKind));
+                        hvalues[copied++] = (string)ValueExtractor.GetFieldValue(heap, eaddr, itemFld, itemType, itemKind, true, false);
+                    }
+
                     //string val = (string)GetFieldValue(heap, eaddr, slotValueFld, slotValueFld.Type, valueFldTypeKind, true, false);
                     //values[copied++] = val;
                 }
 
-                return (null, null, null);
+                KeyValuePair<string, string>[] fldDescription = new KeyValuePair<string, string>[]
+                {
+                    new KeyValuePair<string, string>("count", m_count.ToString()),
+                    new KeyValuePair<string, string>("array len", aryLen.ToString()),
+                    new KeyValuePair<string, string>("version", m_version.ToString())
+                };
+
+
+                return (null, fldDescription, hvalues);
             }
             catch(Exception ex)
             {
                 return (Utils.GetExceptionErrorString(ex), null, null);
             }
+        }
+
+        private static ValueTuple<ClrType, ClrType, ClrInstanceField, StructFieldsInfo, ClrElementKind, ClrInstanceField, ClrInstanceField> GetHashSetSlotTypeInfo(ClrHeap heap, ulong slotsAddr, ClrType slotsType, out bool useItemType)
+        {
+            useItemType = false;
+            ClrType slotType = slotsType.ComponentType;
+            ClrInstanceField hashCodeFld = slotType.GetFieldByName("hashCode");
+            ClrInstanceField itemFld = slotType.GetFieldByName("value");
+            ClrInstanceField nextFld = slotType.GetFieldByName("next");
+            ClrType itemType = itemFld.Type;
+            ClrElementKind itemKind = TypeExtractor.GetElementKind(itemType);
+            StructFieldsInfo itemSfi = null;
+            if (TypeExtractor.IsStruct(itemKind))
+            {
+
+            }
+            else if (TypeExtractor.IsAmbiguousKind(itemKind))
+            {
+                int cnt = slotsType.GetArrayLength(slotsAddr);
+                for (int i = 0; i < cnt; ++i)
+                {
+                    var eaddr = slotsType.GetArrayElementAddress(slotsAddr, i);
+                    var fobj = itemFld.GetValue(eaddr, true, false);
+                    if (fobj != null && (fobj is ulong))
+                    {
+                        var t = heap.GetObjectType((ulong)fobj);
+                        if (t != null)
+                        {
+                            itemType = t;
+                            var k = TypeExtractor.GetElementKind(itemType);
+                            if (k != itemKind) useItemType = true;
+                            itemKind = k;
+                            break;
+                        }
+                    }
+
+                }
+            }
+
+            return (slotType, itemType, itemFld, itemSfi, itemKind, hashCodeFld, nextFld);
         }
 
 
@@ -790,7 +849,7 @@ namespace ClrMDRIndex
                 KeyValuePair<string, string>[] fldDescription = new KeyValuePair<string, string>[]
                 {
                     new KeyValuePair<string, string>("count", Utils.CountString(count-freeCount)),
-                    new KeyValuePair<string, string>("array count", Utils.CountString(aryLen)),
+                    new KeyValuePair<string, string>("array len", Utils.CountString(aryLen)),
                     new KeyValuePair<string, string>("version", version.ToString()),
                     new KeyValuePair<string, string>("key type", keyTypeName),
                     new KeyValuePair<string, string>("value type", valTypeName),
@@ -806,8 +865,6 @@ namespace ClrMDRIndex
         }
 
         #endregion System.Collections.Concurrent.ConcurrentDictionary<TKey,TValue>
-
-
 
         #region System.Text.StringBuilder
 
@@ -1017,9 +1074,9 @@ namespace ClrMDRIndex
             return (ulong)obj;
         }
 
-        static int GetIntFromField(ClrInstanceField fld, ulong addr)
+        static int GetIntFromField(ClrInstanceField fld, ulong addr, bool intr = false)
         {
-            object obj = fld.GetValue(addr, false, false);
+            object obj = fld.GetValue(addr, intr, false);
             if (obj == null) return int.MinValue;
             Debug.Assert(obj is int);
             return (int)obj;

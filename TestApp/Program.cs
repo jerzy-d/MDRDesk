@@ -113,6 +113,18 @@ namespace TestApp
                 que2.Enqueue(i + 100);
             }
 
+            var hashset = new HashSet<TestEnum>();
+            hashset.Add(TestEnum.First);
+            hashset.Add(TestEnum.Second);
+            hashset.Add(TestEnum.Third);
+            hashset.Add(TestEnum.Forth);
+            hashset.Add(TestEnum.Fifth);
+
+            var hashsetstruct = new HashSet<ValueTuple<string, int, ValueTuple<string, int>, string>>();
+            hashsetstruct.Add(("aaa", 0, ("in-aaa", 0), "l-aaa"));
+            hashsetstruct.Add(("bbb", 1, ("in-bbb", 0), "l-bbb"));
+            hashsetstruct.Add(("ccc", 1, ("in-ccc", 0), "l-ccc"));
+
             Guid guid1 = Guid.NewGuid();
             var cls = (object)guid1;
 

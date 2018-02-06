@@ -50,6 +50,7 @@ namespace MDRDesk
         {
             _instanceValue = instVal;
             Debug.Assert(instVal.ArrayValues != null);
+            Title = TypeExtractor.GetDisplayableTypeName(instVal.TypeName);
             CollectionValues.ItemsSource = instVal.ArrayValues;
             CollectionInfo.Text = descr == null ? GuiUtils.GetExtraDataString(instVal.ExtraData as KeyValuePair<string, string>[], instVal.TypeName, instVal.Address) : descr;
         }

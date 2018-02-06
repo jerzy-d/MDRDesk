@@ -1462,7 +1462,7 @@ namespace ClrMDRIndex
                     (error, description, values) = ValueExtractor.GetListContent(Heap, addr);
                     break;
                 case TypeExtractor.KnownTypes.HashSet:
-                    (error, description, values) = ValueExtractor.GetHashSetContent(Heap, addr);
+                    (error, description, values) = CollectionContent.HashSetContentAsStrings(Heap, addr);
                     break;
                 case TypeExtractor.KnownTypes.StringBuilder:
                     (error, description, value) = CollectionContent.StringBuilderContent(Heap, addr);

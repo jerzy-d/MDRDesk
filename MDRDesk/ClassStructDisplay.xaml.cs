@@ -44,6 +44,8 @@ namespace MDRDesk
 
         public void UpdateInstanceValue(InstanceValue instVal, string descr)
 		{
+            if (instVal.Parent == null)
+                Title = TypeExtractor.GetDisplayableTypeName(instVal.TypeName);
             ClassStructInfo.Text = descr;
             var stackPanel = new StackPanel() { Orientation = Orientation.Horizontal };
 			var textBlk = new TextBlock();

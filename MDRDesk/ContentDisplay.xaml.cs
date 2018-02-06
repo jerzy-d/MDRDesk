@@ -52,6 +52,7 @@ namespace MDRDesk
 
         public void UpdateInstanceValue(InstanceValue instVal, string descr)
         {
+            Title = TypeExtractor.GetDisplayableTypeName(instVal.TypeName);
             ContentInfo.Text = descr;
             ContentValue.Text = instVal.Value.FullContent;
         }
