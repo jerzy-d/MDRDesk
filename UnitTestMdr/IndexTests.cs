@@ -2090,11 +2090,26 @@ namespace UnitTestMdr
                        ("System.Collections.Generic.HashSet<System.TimeSpan>",new ulong[] { 0x00000002853278 }),
                        ("System.Collections.Generic.HashSet<TestApp.TestEnum>",new ulong[] { 0x000000028519f8 }),
                     }
-                )
+                ),
+                (@"C:\WinDbgStuff\Dumps\TestApp\64\TestApp.exe_180207_072611.dmp.map",
+                    new ValueTuple<string,ulong[]>[]
+                    {
+                       ("System.Collections.Generic.HashSet<System.Char>",new ulong[] {0x00024008f23598 }),
+                       ("System.Collections.Generic.HashSet<System.DateTime>",new ulong[] {0x00024008f231b0 }),
+                       ("System.Collections.Generic.GenericEqualityComparer<System.Decimal>",new ulong[] {0x00024008f230e8 }),
+                       ("System.Collections.Generic.GenericEqualityComparer<System.Double>",new ulong[] {0x00024008f234d0 }),
+                       ("System.Collections.Generic.HashSet<System.Guid>",new ulong[] { 0x00024008f23340 }),
+                       ("System.Collections.Generic.HashSet<System.Single>",new ulong[] { 0x00024008f23408 }),
+                       ("System.Collections.Generic.HashSet<System.String>",new ulong[] { 0x00024008f230a8 }),
+                       ("System.Collections.Generic.HashSet<System.TimeSpan>",new ulong[] { 0x00024008f23278 }),
+                       ("System.Collections.Generic.HashSet<System.ValueTuple<System.String,System.Int32,System.ValueTuple<System.String,System.Int32>,System.String>>",new ulong[] { 0x00024008f21c90 }),
+                       ("System.Collections.Generic.HashSet<TestApp.TestEnum>",new ulong[] { 0x00024008f219a0 }),
+                    }
+                ),
             };
 
-            var ndxPath = testData[0].Item1;
-            var addr = testData[0].Item2[0].Item2[0];
+            var ndxPath = testData[1].Item1;
+            var addr = testData[1].Item2[8].Item2[0];
             var index = OpenIndex(ndxPath);
             using (index)
             {

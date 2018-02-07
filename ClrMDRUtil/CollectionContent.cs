@@ -657,7 +657,13 @@ namespace ClrMDRIndex
             StructFieldsInfo itemSfi = null;
             if (TypeExtractor.IsStruct(itemKind))
             {
-
+                int cnt = slotsType.GetArrayLength(slotsAddr);
+                for (int i = 0; i < cnt; ++i)
+                {
+                    var eaddr = slotsType.GetArrayElementAddress(slotsAddr, i);
+                    itemSfi = StructFieldsInfo.GetStructFields(itemType, heap, eaddr);
+                    if (itemSfi != null) break;
+                }
             }
             else if (TypeExtractor.IsAmbiguousKind(itemKind))
             {

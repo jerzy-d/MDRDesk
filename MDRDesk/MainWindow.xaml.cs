@@ -405,6 +405,10 @@ namespace MDRDesk
                         Dispatcher.CurrentDispatcher.InvokeAsync(() => DoCreateDumpIndex(dlg.DumpPath));
                     }
                 }
+                else if (dlgResult == false && dlg.Error != null)
+                {
+                    GuiUtils.ShowError(dlg.Error, this);
+                }
             }
             catch (Exception ex)
             {
