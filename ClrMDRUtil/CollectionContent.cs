@@ -611,7 +611,14 @@ namespace ClrMDRIndex
                     int hash = GetIntFromField(hashCodeFld, eaddr, true);
                     if (hash < 0) continue;
 
-                    if (useItemType)
+                    if (itemSfi != null)
+                    {
+                        var iAddr = itemFld.GetAddress(eaddr, true);
+                        StructValueStrings structVal = StructFieldsInfo.GetStructValueStrings(itemSfi, heap, iAddr);
+                        hvalues[copied++] = StructValueStrings.MergeValues(structVal);
+
+                    }
+                    else if (useItemType)
                     {
                         ulong a = TypeExtractor.IsObjectReference(itemKind)
                             ? (ulong)itemFld.GetValue(eaddr, true)
@@ -661,7 +668,8 @@ namespace ClrMDRIndex
                 for (int i = 0; i < cnt; ++i)
                 {
                     var eaddr = slotsType.GetArrayElementAddress(slotsAddr, i);
-                    itemSfi = StructFieldsInfo.GetStructFields(itemType, heap, eaddr);
+                    var iaddr = itemFld.GetAddress(eaddr, true);
+                    itemSfi = StructFieldsInfo.GetStructFields(itemType, heap, iaddr);
                     if (itemSfi != null) break;
                 }
             }

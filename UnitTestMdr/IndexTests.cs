@@ -2077,18 +2077,19 @@ namespace UnitTestMdr
         {
             var testData = new ValueTuple<string, ValueTuple<string, ulong[]>[]>[]
             {
-                (@"D:\Jerzy\WinDbgStuff\dumps\TestApp\64\TestApp.exe_180206_093111.dmp.map",
+                (@"D:\Jerzy\WinDbgStuff\dumps\TestApp\64\TestApp.exe_180208_081642.dmp.map",
                     new ValueTuple<string,ulong[]>[]
                     {
-                       ("System.Collections.Generic.HashSet<System.Char>",new ulong[] {0x00000002853598 }),
-                       ("System.Collections.Generic.HashSet<System.DateTime>",new ulong[] {0x000000028531b0 }),
-                       ("System.Collections.Generic.GenericEqualityComparer<System.Decimal>",new ulong[] {0x000000028530e8 }),
-                       ("System.Collections.Generic.GenericEqualityComparer<System.Double>",new ulong[] {0x000000028534d0 }),
-                       ("System.Collections.Generic.HashSet<System.Guid>",new ulong[] { 0x00000002853340 }),
-                       ("System.Collections.Generic.HashSet<System.Single>",new ulong[] { 0x00000002853408 }),
-                       ("System.Collections.Generic.HashSet<System.String>",new ulong[] { 0x000000028530a8 }),
-                       ("System.Collections.Generic.HashSet<System.TimeSpan>",new ulong[] { 0x00000002853278 }),
-                       ("System.Collections.Generic.HashSet<TestApp.TestEnum>",new ulong[] { 0x000000028519f8 }),
+                       ("System.Collections.Generic.HashSet<System.Char>",new ulong[] {0x00000002aa3598 }),
+                       ("System.Collections.Generic.HashSet<System.DateTime>",new ulong[] {0x00000002aa31b0 }),
+                       ("System.Collections.Generic.GenericEqualityComparer<System.Decimal>",new ulong[] {0x00000002aa30e8 }),
+                       ("System.Collections.Generic.GenericEqualityComparer<System.Double>",new ulong[] {0x00000002aa34d0 }),
+                       ("System.Collections.Generic.HashSet<System.Guid>",new ulong[] { 0x00000002aa3340 }),
+                       ("System.Collections.Generic.HashSet<System.Single>",new ulong[] { 0x00000002aa3408 }),
+                       ("System.Collections.Generic.HashSet<System.String>",new ulong[] { 0x00000002aa30a8 }),
+                       ("System.Collections.Generic.HashSet<System.TimeSpan>",new ulong[] { 0x00000002aa3278 }),
+                       ("System.Collections.Generic.HashSet<System.ValueTuple<System.String,System.Int32,System.ValueTuple<System.String,System.Int32>,System.String>>",new ulong[] { 0x00000002aa1ce8 }),
+                       ("System.Collections.Generic.HashSet<TestApp.TestEnum>",new ulong[] { 0x00000002aa19f8 }),
                     }
                 ),
                 (@"C:\WinDbgStuff\Dumps\TestApp\64\TestApp.exe_180207_072611.dmp.map",
@@ -2108,8 +2109,8 @@ namespace UnitTestMdr
                 ),
             };
 
-            var ndxPath = testData[1].Item1;
-            var addr = testData[1].Item2[8].Item2[0];
+            var ndxPath = testData[0].Item1;
+            var addr = testData[0].Item2[8].Item2[0];
             var index = OpenIndex(ndxPath);
             using (index)
             {
