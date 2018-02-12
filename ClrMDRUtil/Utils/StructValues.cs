@@ -231,7 +231,7 @@ namespace ClrMDRIndex
                 {
                     ClrType fType = null;
                     ClrElementKind fKind = ClrElementKind.Unknown;
-                    object obj = fld.GetValue(addr, true, false);
+                    object obj = fld.GetValue(addr, false, false);
                     if (obj is ulong)
                     {
                         (fType,fKind) = TypeExtractor.GetRealType(heap, (ulong)obj);

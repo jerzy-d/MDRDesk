@@ -387,9 +387,10 @@ namespace ClrMDRIndex
             try
             {
                 addr = Utils.RealAddress(addr);
-                ClrType clrType = heap.GetObjectType(addr);
-                if (!TypeExtractor.Is(TypeExtractor.KnownTypes.Stack, clrType.Name))
-                    return ("Instance at: " + Utils.RealAddressString(addr) + " is not " + TypeExtractor.GetKnowTypeName(TypeExtractor.KnownTypes.Stack), null, null);
+                {
+                    string err = CheckCollection(heap, addr, TypeExtractor.KnownTypes.Stack);
+                    if (err != null) return (err, null, null);
+                }
                 (string error, ClrType type, ClrElementKind kind, (ClrType[] fldTypes, ClrElementKind[] fldKinds, object[] values, StructValues[] structValues)) =
                     ClassValue.GetClassValues(heap, addr);
                 if (error != null) return (error, null, null);
@@ -582,12 +583,8 @@ namespace ClrMDRIndex
             {
                 addr = Utils.RealAddress(addr);
                 {
-                    ClrType clrType = heap.GetObjectType(addr);
-                    if (clrType == null)
-                        return ("Cannot get type of instance at: " + Utils.RealAddressString(addr) + ", invalid address?", null, null);
-                    if (!TypeExtractor.Is(TypeExtractor.KnownTypes.HashSet, clrType.Name))
-                        return ("Instance at: " + Utils.RealAddressString(addr) + " is not " + TypeExtractor.GetKnowTypeName(TypeExtractor.KnownTypes.HashSet), null, null);
-                    clrType = null;
+                    string err = CheckCollection(heap, addr, TypeExtractor.KnownTypes.HashSet);
+                    if (err != null) return (err, null, null);
                 }
                 (string error, ClrType type, ClrElementKind kind, (ClrType[] fldTypes, ClrElementKind[] fldKinds, object[] values, StructValues[] structValues)) =
                     ClassValue.GetClassValues(heap, addr);
@@ -710,12 +707,8 @@ namespace ClrMDRIndex
             {
                 addr = Utils.RealAddress(addr);
                 {
-                    ClrType clrType = heap.GetObjectType(addr);
-                    if (clrType == null)
-                        return ("Cannot get type of instance at: " + Utils.RealAddressString(addr) + ", invalid address?", null, null);
-                    if (!TypeExtractor.Is(TypeExtractor.KnownTypes.Dictionary, clrType.Name))
-                        return ("Instance at: " + Utils.RealAddressString(addr) + " is not " + TypeExtractor.GetKnowTypeName(TypeExtractor.KnownTypes.Dictionary), null, null);
-                    clrType = null;
+                    string err = CheckCollection(heap, addr, TypeExtractor.KnownTypes.Dictionary);
+                    if (err != null) return (err, null, null);
                 }
 
                 (string error, ClrType type, ClrElementKind kind, (ClrType[] fldTypes, ClrElementKind[] fldKinds, object[] values, StructValues[] structValues)) =
@@ -878,97 +871,138 @@ namespace ClrMDRIndex
             }
         }
 
-        #endregion System.Collections.Concurrent.ConcurrentDictionary<TKey,TValue>
+        #endregion System.Collections.Generic.Dictionary<TKey,TValue>
 
-        #region System.Text.StringBuilder
+        #region System.Collections.Generic.SortedDictionary<TKey, TValue>
 
-        public static ValueTuple<string, KeyValuePair<string, string>[], string> StringBuilderContent(ClrHeap heap, ulong addr)
+        public static ValueTuple<string, KeyValuePair<string, string>[], KeyValuePair<string, string>[]> GetSortedDictionaryContentAsStrings(ClrHeap heap, ulong addr)
         {
             try
             {
+                string error;
                 addr = Utils.RealAddress(addr);
-                ClrType type = heap.GetObjectType(addr);
-                if (!TypeExtractor.Is(TypeExtractor.KnownTypes.StringBuilder, type.Name))
-                    return ("Instance at: " + Utils.RealAddressString(addr) + " is not " + TypeExtractor.GetKnowTypeName(TypeExtractor.KnownTypes.StringBuilder), null, null);
-                int chunkLenNdx = 0, chunkNdx=0, prevChunkNdx = 0, chunkCapacityNdx = 0;
-
-
-                for (int i = 0, icnt = type.Fields.Count; i < icnt; ++i)
                 {
-                    var fld = type.Fields[i];
-                    switch (fld.Name)
+                    error = CheckCollection(heap, addr, TypeExtractor.KnownTypes.SortedDictionary);
+                    if (error != null) return (error, null, null);
+                }
+                ClrType dctType;
+                ClrElementKind dctKind, setKind;
+                ClrType[] dctFldTypes, setFldTypes;
+                ClrElementKind[] dctFldKinds, setFldKinds;
+                object[] dctVals, setVals;
+                StructValues[] dctStructVals, setStructVals;
+                (error, dctType, dctKind, (dctFldTypes, dctFldKinds, dctVals, dctStructVals)) =
+                    ClassValue.GetClassValues(heap, addr);
+                (ulong setAddr, ClrType setType) = GetFieldUInt64AndType(dctType,"_set", dctFldTypes, dctVals);
+
+                (error, setType, setKind, (setFldTypes, setFldKinds, setVals, setStructVals)) =
+                    ClassValue.GetClassValues(heap, setAddr);
+
+
+                int count = GetFieldInt(setType.Fields, "count", setVals);
+                int version = GetFieldInt(setType.Fields, "version", setVals);
+                KeyValuePair<string, string>[] fldDescription = new KeyValuePair<string, string>[]
+                {
+                    new KeyValuePair<string, string>("count", (count).ToString()),
+                    new KeyValuePair<string, string>("version", version.ToString())
+                };
+
+                (ulong rootAddr, ClrType rootType) = GetFieldUInt64AndType(setType, "root", setFldTypes, setVals);
+                ClrElementKind rootKind;
+                ClrType[] rootFldTypes;
+                ClrElementKind[] rootFldKinds;
+                object[] rootVals;
+                StructValues[] rootStructVals;
+                (error, rootType, rootKind, (rootFldTypes, rootFldKinds, rootVals, rootStructVals)) =
+                    ClassValue.GetClassValues(heap, rootAddr);
+
+
+
+                var dctValues = new List<KeyValuePair<string, string>>(count);
+
+                /*
+                var setFld = dctType.GetFieldByName("_set"); // get TreeSet 
+                var setFldAddr = (ulong)setFld.GetValue(addr, false, false);
+                var setType = heap.GetObjectType(setFldAddr);
+                //var count = GetFieldIntValue(heap, setFldAddr, setType, "count");
+                //var version = GetFieldIntValue(heap, setFldAddr, setType, "version");
+                var rootFld = setType.GetFieldByName("root"); // get TreeSet root node
+                var rootFldAddr = (ulong)rootFld.GetValue(setFldAddr, false, false);
+                var rootType = heap.GetObjectType(rootFldAddr);
+                var leftNodeFld = rootType.GetFieldByName("Left");
+                var rightNodeFld = rootType.GetFieldByName("Right");
+                var itemNodeFld = rootType.GetFieldByName("Item");
+
+                var keyFld = itemNodeFld.Type.GetFieldByName("key");
+                var valFld = itemNodeFld.Type.GetFieldByName("value");
+                var itemAddr = itemNodeFld.GetAddress(rootFldAddr, false);
+                (ClrType keyFldType, ClrElementKind keyFldKind, ulong keyFldAddr) =
+                        TypeExtractor.GetRealType(heap, itemAddr, keyFld, true);
+                (ClrType valFldType, ClrElementKind valFldKind, ulong valFldAddr) =
+                  TypeExtractor.GetRealType(heap, itemAddr, valFld, true);
+
+                //KeyValuePair<string, string>[] fldDescription = new KeyValuePair<string, string>[]
+                //{
+                //new KeyValuePair<string, string>("count", (count).ToString()),
+                //new KeyValuePair<string, string>("version", version.ToString())
+                //};
+
+                var stack = new Stack<ulong>(2 * Utils.Log2(count + 1));
+                var node = rootFldAddr;
+                while (node != Constants.InvalidAddress)
+                {
+                    stack.Push(node);
+                    node = GetReferenceFieldAddress(node, leftNodeFld, false);
+                    //if (left != Constants.InvalidAddress) node = left;
+                    //else
+                    //{
+                    //    var right = GetReferenceFieldAddress(node, rightNodeFld, false);
+                    //    node = right;
+                    //}
+                }
+
+                //var values = new List<KeyValuePair<string, string>>(count);
+
+                while (stack.Count > 0)
+                {
+                    node = stack.Pop();
+                    var iAddr = itemNodeFld.GetAddress(node); // GetReferenceFieldAddress(node, itemNodeFld, false);
+                    var keyStr = (string)GetFieldValue(heap, iAddr, keyFld, keyFldType, keyFldKind, true, false);
+                    var valStr = (string)GetFieldValue(heap, iAddr, valFld, valFldType, valFldKind, true, false);
+                    values.Add(new KeyValuePair<string, string>(keyStr, valStr));
+                    node = GetReferenceFieldAddress(node, rightNodeFld, false);
+                    //getReferenceFieldAddress node rightNodeFld false
+                    while (node != Constants.InvalidAddress)
                     {
-                        case "m_ChunkLength":
-                            chunkLenNdx = i;
-                            break;
-                        case "m_MaxCapacity":
-                            chunkCapacityNdx = i;
-                            break;
-                        case "m_ChunkPrevious":
-                            prevChunkNdx = i;
-                            break;
-                        case "m_ChunkChars":
-                            chunkNdx = i;
-                            break;
+                        stack.Push(node);
+                        node = GetReferenceFieldAddress(node, leftNodeFld, false);
+                        if (node == Constants.InvalidAddress)
+                            node = GetReferenceFieldAddress(node, rightNodeFld, false);
                     }
                 }
-
-                List<char[]> chunks = new List<char[]>(8);
-                (int totalSize, int chunkCount, int capacity) = GetStringBuilderArrays(addr, type.Fields[chunkNdx], type.Fields[prevChunkNdx], type.Fields[chunkLenNdx], type.Fields[chunkLenNdx], chunks, 0, 0, 0);
-                var descr = new List<KeyValuePair<string, string>>(8);
-                descr.Add(new KeyValuePair<string, string>("size", Utils.CountString(totalSize)));
-                descr.Add(new KeyValuePair<string, string>("capacity", Utils.CountString(capacity)));
-                descr.Add(new KeyValuePair<string, string>("chunk count", Utils.CountString(chunkCount)));
-                ulong prevChunk = GetAddressFromField(type.Fields[prevChunkNdx], addr);
-                descr.Add(new KeyValuePair<string, string>("previous chunk", Utils.RealAddressString(prevChunk)));
-
-                char[] charAry = new char[totalSize];
-                int offset = 0;
-                for (int i = 0, icnt = chunks.Count; i < icnt; ++i)
-                {
-                    Array.Copy(chunks[i], 0, charAry, offset, chunks[i].Length);
-                    offset += chunks[i].Length;
-                }
-                return (null, descr.ToArray(), new string(charAry));
+                */
+                return (null, fldDescription, dctValues.ToArray());
             }
             catch (Exception ex)
             {
-                var error = Utils.GetExceptionErrorString(ex);
+                string error = Utils.GetExceptionErrorString(ex);
                 return (error, null, null);
             }
         }
 
-
-        static ValueTuple<int,int,int> GetStringBuilderArrays(ulong addr, ClrInstanceField m_ChunkChars, ClrInstanceField m_ChunkPrevious, ClrInstanceField m_ChunkLength, ClrInstanceField m_MaxCapacity, List<char[]> chunks, int size, int chunkCount, int capacity)
-        {
-            if (addr == Constants.InvalidAddress) return (size,chunkCount,capacity);
-            ulong chunkAddr = GetAddressFromField(m_ChunkChars,addr);
-            if (chunkAddr == Constants.InvalidAddress) return (size, chunkCount, capacity);
-            chunkCount += 1;
-            int chunkCapacity = GetIntFromField(m_MaxCapacity, addr);
-            capacity += chunkCapacity;
-            int usedLength = GetIntFromField(m_ChunkLength, addr);
-            if (usedLength <= 0) return (size, chunkCount, capacity);
-            size += usedLength;
-            char[] data = GetCharArrayWithLenght(chunkAddr, m_ChunkChars.Type, usedLength);
-            chunks.Insert(0, data);
-            ulong prevChunk = GetAddressFromField(m_ChunkPrevious, addr);
-            return GetStringBuilderArrays(prevChunk, m_ChunkChars, m_ChunkPrevious, m_ChunkLength, m_MaxCapacity, chunks, size, chunkCount, capacity);
-            throw new ApplicationException("[CollectioContent.GetStringBuilderArrays] Recursive method should not get here.");
-        }
-
-        #endregion System.Text.StringBuilder
+        #endregion System.Collections.Generic.SortedDictionary<TKey, TValue>
 
         #region System.Collections.Generic.SortedSet<T>
 
-        public static ValueTuple<string, KeyValuePair<string, string>[], string[]> SortedSetContentStrings(ClrHeap heap, ulong addr)
+        public static ValueTuple<string, KeyValuePair<string, string>[], string[]> SortedSetContentAsStrings(ClrHeap heap, ulong addr)
         {
             try
             {
                 addr = Utils.RealAddress(addr);
-                ClrType clrType = heap.GetObjectType(addr);
-                if (!TypeExtractor.Is(TypeExtractor.KnownTypes.SortedSet, clrType.Name))
-                    return ("Instance at: " + Utils.RealAddressString(addr) + " is not " + TypeExtractor.GetKnowTypeName(TypeExtractor.KnownTypes.SortedSet), null, null);
+                {
+                    string err = CheckCollection(heap, addr, TypeExtractor.KnownTypes.SortedSet);
+                    if (err != null) return (err, null, null);
+                }
                 (string error, ClrType type, ClrElementKind kind, (ClrType[] fldTypes, ClrElementKind[] fldKinds, object[] values, StructValues[] structValues)) =
                     ClassValue.GetClassValues(heap, addr);
 
@@ -986,7 +1020,7 @@ namespace ClrMDRIndex
                             count = (int)values[i];
                             break;
                         case "version":
-                            version =(int)values[i];
+                            version = (int)values[i];
                             break;
                     }
                 }
@@ -1057,12 +1091,12 @@ namespace ClrMDRIndex
         static void InOrderWalk(ulong addr, ClrInstanceField left, ClrInstanceField right, ClrInstanceField item, int count, List<object> items)
         {
             var stack = new Stack<ulong>((int)Math.Log(count, 2));
-            while(addr != Constants.InvalidAddress)
+            while (addr != Constants.InvalidAddress)
             {
                 stack.Push(addr);
                 addr = GetAddressFromField(left, addr);
             }
-            while(stack.Count > 0)
+            while (stack.Count > 0)
             {
                 addr = stack.Pop();
                 items.Add(item.GetValue(addr, false, false));
@@ -1078,7 +1112,100 @@ namespace ClrMDRIndex
 
         #endregion System.Collections.Generic.SortedSet<T>
 
+        #region System.Text.StringBuilder
+
+        public static ValueTuple<string, KeyValuePair<string, string>[], string> StringBuilderContent(ClrHeap heap, ulong addr)
+        {
+            try
+            {
+                addr = Utils.RealAddress(addr);
+                {
+                    string err = CheckCollection(heap, addr, TypeExtractor.KnownTypes.StringBuilder);
+                    if (err != null) return (err, null, null);
+                }
+                (string error, ClrType type, ClrElementKind kind, (ClrType[] fldTypes, ClrElementKind[] fldKinds, object[] values, StructValues[] structValues)) =
+                    ClassValue.GetClassValues(heap, addr);
+
+                int chunkLenNdx = 0, chunkNdx=0, prevChunkNdx = 0, chunkCapacityNdx = 0;
+
+                for (int i = 0, icnt = type.Fields.Count; i < icnt; ++i)
+                {
+                    var fld = type.Fields[i];
+                    switch (fld.Name)
+                    {
+                        case "m_ChunkLength":
+                            chunkLenNdx = i;
+                            break;
+                        case "m_MaxCapacity":
+                            chunkCapacityNdx = i;
+                            break;
+                        case "m_ChunkPrevious":
+                            prevChunkNdx = i;
+                            break;
+                        case "m_ChunkChars":
+                            chunkNdx = i;
+                            break;
+                    }
+                }
+
+                List<char[]> chunks = new List<char[]>(8);
+                (int totalSize, int chunkCount, int capacity) = GetStringBuilderArrays(addr, type.Fields[chunkNdx], type.Fields[prevChunkNdx], type.Fields[chunkLenNdx], type.Fields[chunkLenNdx], chunks, 0, 0, 0);
+                var descr = new List<KeyValuePair<string, string>>(8);
+                descr.Add(new KeyValuePair<string, string>("size", Utils.CountString(totalSize)));
+                descr.Add(new KeyValuePair<string, string>("capacity", Utils.CountString(capacity)));
+                descr.Add(new KeyValuePair<string, string>("chunk count", Utils.CountString(chunkCount)));
+                ulong prevChunk = GetAddressFromField(type.Fields[prevChunkNdx], addr);
+                descr.Add(new KeyValuePair<string, string>("previous chunk", Utils.RealAddressString(prevChunk)));
+
+                char[] charAry = new char[totalSize];
+                int offset = 0;
+                for (int i = 0, icnt = chunks.Count; i < icnt; ++i)
+                {
+                    Array.Copy(chunks[i], 0, charAry, offset, chunks[i].Length);
+                    offset += chunks[i].Length;
+                }
+                return (null, descr.ToArray(), new string(charAry));
+            }
+            catch (Exception ex)
+            {
+                var error = Utils.GetExceptionErrorString(ex);
+                return (error, null, null);
+            }
+        }
+
+
+        static ValueTuple<int,int,int> GetStringBuilderArrays(ulong addr, ClrInstanceField m_ChunkChars, ClrInstanceField m_ChunkPrevious, ClrInstanceField m_ChunkLength, ClrInstanceField m_MaxCapacity, List<char[]> chunks, int size, int chunkCount, int capacity)
+        {
+            if (addr == Constants.InvalidAddress) return (size,chunkCount,capacity);
+            ulong chunkAddr = GetAddressFromField(m_ChunkChars,addr);
+            if (chunkAddr == Constants.InvalidAddress) return (size, chunkCount, capacity);
+            chunkCount += 1;
+            int chunkCapacity = GetIntFromField(m_MaxCapacity, addr);
+            capacity += chunkCapacity;
+            int usedLength = GetIntFromField(m_ChunkLength, addr);
+            if (usedLength <= 0) return (size, chunkCount, capacity);
+            size += usedLength;
+            char[] data = GetCharArrayWithLenght(chunkAddr, m_ChunkChars.Type, usedLength);
+            chunks.Insert(0, data);
+            ulong prevChunk = GetAddressFromField(m_ChunkPrevious, addr);
+            return GetStringBuilderArrays(prevChunk, m_ChunkChars, m_ChunkPrevious, m_ChunkLength, m_MaxCapacity, chunks, size, chunkCount, capacity);
+            throw new ApplicationException("[CollectioContent.GetStringBuilderArrays] Recursive method should not get here.");
+        }
+
+        #endregion System.Text.StringBuilder
+
+
         #region utils
+
+        static string CheckCollection(ClrHeap heap, ulong addr, TypeExtractor.KnownTypes knownType)
+        {
+            ClrType clrType = heap.GetObjectType(addr);
+            if (clrType == null)
+                return "Cannot get type of instance at: " + Utils.RealAddressString(addr) + ", invalid address?";
+            if (!TypeExtractor.Is(knownType, clrType.Name))
+                return "Instance at: " + Utils.RealAddressString(addr) + " is not " + TypeExtractor.GetKnowTypeName(knownType);
+            return null;
+        }
 
         static ulong GetAddressFromField(ClrInstanceField fld, ulong addr)
         {
@@ -1122,6 +1249,7 @@ namespace ClrMDRIndex
             Debug.Assert(values[ndx] is int);
             return (int)values[ndx];
         }
+
         static int GetFieldInt(IList<ClrInstanceField> fields, string fldName, object[] values)
         {
             int ndx = Constants.InvalidIndex;
@@ -1136,6 +1264,22 @@ namespace ClrMDRIndex
             if (ndx == Constants.InvalidIndex) return Constants.InvalidIndex;
             Debug.Assert(values[ndx] is int);
             return (int)values[ndx];
+        }
+
+        static ulong GetFieldUlong(IList<ClrInstanceField> fields, string fldName, object[] values)
+        {
+            int ndx = Constants.InvalidIndex;
+            for (int i = 0, icnt = fields.Count; i < icnt; ++i)
+            {
+                if (string.Compare(fldName, fields[i].Name, StringComparison.Ordinal) == 0)
+                {
+                    ndx = i;
+                    break;
+                }
+            }
+            if (ndx == Constants.InvalidIndex) return Constants.InvalidAddress;
+            Debug.Assert(values[ndx] is ulong);
+            return (ulong)values[ndx];
         }
 
         static int GetFieldNdx(IList<ClrInstanceField> fields, string fldName)

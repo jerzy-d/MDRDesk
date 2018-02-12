@@ -2517,6 +2517,11 @@ namespace MDRDesk
             ValueWindows.ShowHelpWindow(Setup.HelpFolder + Path.DirectorySeparatorChar + "README.md");
         }
 
+        private void UpdateMDRDeskClicked(object sender, RoutedEventArgs e)
+        {
+
+        }
+
         private void ButtonHelpClicked(object sender, RoutedEventArgs e)
         {
             Grid grid = GetCurrentTabGrid();
@@ -2596,10 +2601,6 @@ namespace MDRDesk
             }
         }
 
-        private void UpdateMDRDeskClicked(object sender, RoutedEventArgs e)
-        {
-
-        }
     }
 
     public static class MenuCommands

@@ -2123,6 +2123,37 @@ namespace UnitTestMdr
         }
 
         [TestMethod]
+        public void CollectionTest_SortedDictionary()
+        {
+            var testData = new ValueTuple<string, ValueTuple<string, ulong[]>[]>[]
+{
+                (@"C:\WinDbgStuff\Dumps\Analytics\Baly\AnalyticsLatencyDump06062016 03354291.dmp.map",
+                    new ValueTuple<string,ulong[]>[]
+                    {
+                       ("System.Collections.Generic.SortedDictionary<System.Int32,ECS.Entitlements.Module.Profiles.PricingGroup>",new ulong[] {0x0000a2ad238ce0 }),
+                       ("System.Collections.Generic.SortedDictionary<System.Int32,System.Collections.Generic.List<ECS.Common.Threading.Queue.Queues.IMessageQueue>>",new ulong[] {0x0000a1ad9cba50 }),
+                       ("System.Collections.Generic.SortedDictionary<System.Int64,System.Int64>",new ulong[] {0x0000a1ada299e0 }),
+                       ("System.Collections.Generic.SortedDictionary<System.String,System.Object>",new ulong[] {0x0000a2c99260b8 }),
+                    }
+                ),
+            };
+
+            var ndxPath = testData[0].Item1;
+           
+            var index = OpenIndex(ndxPath);
+            using (index)
+            {
+                var heap = index.Heap;
+                for (int i = 0, icnt = testData[0].Item2[0].Item2.Length; i < icnt; ++i)
+                {
+                    var addr = testData[0].Item2[0].Item2[i];
+                    (string error, KeyValuePair<string, string>[] decrs, KeyValuePair<string, string>[] values) = CollectionContent.GetSortedDictionaryContentAsStrings(heap, addr);
+                    Assert.IsNull(error, error);
+                }
+            }
+        }
+
+        [TestMethod]
         public void CollectionTest_Dictionary()
         {
             string[] paths = new string[]
@@ -2249,7 +2280,7 @@ namespace UnitTestMdr
             using (index)
             {
                 var heap = index.Heap;
-                (string error, KeyValuePair<string, string>[] decrs, string[] values) = CollectionContent.SortedSetContentStrings(heap, addr);
+                (string error, KeyValuePair<string, string>[] decrs, string[] values) = CollectionContent.SortedSetContentAsStrings(heap, addr);
 
                 Assert.IsNull(error, error);
             }

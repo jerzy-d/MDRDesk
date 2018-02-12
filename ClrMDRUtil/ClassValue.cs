@@ -96,8 +96,11 @@ namespace ClrMDRIndex
                     }
                     else if (TypeExtractor.IsStruct(fldKind))
                     {
+
                         StructFields sf = StructFields.GetStructFields(fldType);
                         StructFieldsEx sfx = StructFieldsEx.GetStructFields(sf, fldType);
+                        ulong saddr = fld.GetAddress(addr, true);
+                        StructFieldsInfo sfi = StructFieldsInfo.GetStructFields(fldType, heap, saddr);
                         sfx.ResetTypes();
                     }
                 }

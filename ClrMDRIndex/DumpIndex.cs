@@ -1468,7 +1468,7 @@ namespace ClrMDRIndex
                     (error, description, value) = CollectionContent.StringBuilderContent(Heap, addr);
                     break;
                 case TypeExtractor.KnownTypes.SortedSet:
-                    (error, description, values) = CollectionContent.SortedSetContentStrings(Heap, addr);
+                    (error, description, values) = CollectionContent.SortedSetContentAsStrings(Heap, addr);
                     break;
             }
             if (error != null) return (error, null, TypeExtractor.KnownTypes.Unknown);
