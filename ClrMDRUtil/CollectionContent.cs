@@ -323,7 +323,7 @@ namespace ClrMDRIndex
                 ClrType clrType = heap.GetObjectType(addr);
                 if (!TypeExtractor.Is(TypeExtractor.KnownTypes.Queue, clrType.Name))
                     return ("Instance at: " + Utils.RealAddressString(addr) + " is not " + TypeExtractor.GetKnowTypeName(TypeExtractor.KnownTypes.Queue), null, null);
-                (string error, ClrType type, ClrElementKind kind, (ClrType[] fldTypes, ClrElementKind[] fldKinds, object[] values, StructValues[] structValues)) =
+                (string error, ClrType type, ClrElementKind kind, (ClrType[] fldTypes, ClrElementKind[] fldKinds, object[] values, StructFieldsInfo[] structFldInfos, StructValues[] structValues)) =
                     ClassValue.GetClassValues(heap, addr);
                 if (error != null) return (error, null, null);
                 var descr = new List<KeyValuePair<string, string>>(8);
@@ -391,7 +391,7 @@ namespace ClrMDRIndex
                     string err = CheckCollection(heap, addr, TypeExtractor.KnownTypes.Stack);
                     if (err != null) return (err, null, null);
                 }
-                (string error, ClrType type, ClrElementKind kind, (ClrType[] fldTypes, ClrElementKind[] fldKinds, object[] values, StructValues[] structValues)) =
+                (string error, ClrType type, ClrElementKind kind, (ClrType[] fldTypes, ClrElementKind[] fldKinds, object[] values, StructFieldsInfo[] structFldInfos, StructValues[] structValues)) =
                     ClassValue.GetClassValues(heap, addr);
                 if (error != null) return (error, null, null);
                 var descr = new List<KeyValuePair<string, string>>(8);
@@ -450,7 +450,7 @@ namespace ClrMDRIndex
                     clrType = null;
                 }
 
-                (string error, ClrType type, ClrElementKind kind, (ClrType[] fldTypes, ClrElementKind[] fldKinds, object[] values, StructValues[] structValues)) =
+                (string error, ClrType type, ClrElementKind kind, (ClrType[] fldTypes, ClrElementKind[] fldKinds, object[] values, StructFieldsInfo[] structFldInfos, StructValues[] structValues)) =
                     ClassValue.GetClassValues(heap, addr);
                 if (error != null) return (error, null, null);
                 int tablesNdx = ClassValue.IndexOfField(type.Fields, "m_tables");
@@ -462,7 +462,7 @@ namespace ClrMDRIndex
 
                 (ClrType keyTypeByName, ClrType valTypeByName) = TypeExtractor.GetKeyValuePairTypesByName(heap, type.Name, "System.Collections.Concurrent.ConcurrentDictionary<");
 
-                (string err, ClrType tblType, ClrElementKind tblKind, (ClrType[] tblFldTypes, ClrElementKind[] tblFldKinds, object[] tblValues, StructValues[] tblStructValues)) =
+                (string err, ClrType tblType, ClrElementKind tblKind, (ClrType[] tblFldTypes, ClrElementKind[] tblFldKinds, object[] tblValues, StructFieldsInfo[] tbStructFldInfos, StructValues[] tblStructValues)) =
                     ClassValue.GetClassValues(heap, tblAddr);
                 int bucketNdx = ClassValue.IndexOfField(tblType.Fields, "m_buckets");
                 if (bucketNdx < 0) return (null, null, null); // TODO JRD
@@ -586,7 +586,7 @@ namespace ClrMDRIndex
                     string err = CheckCollection(heap, addr, TypeExtractor.KnownTypes.HashSet);
                     if (err != null) return (err, null, null);
                 }
-                (string error, ClrType type, ClrElementKind kind, (ClrType[] fldTypes, ClrElementKind[] fldKinds, object[] values, StructValues[] structValues)) =
+                (string error, ClrType type, ClrElementKind kind, (ClrType[] fldTypes, ClrElementKind[] fldKinds, object[] values, StructFieldsInfo[] structFldInfos, StructValues[] structValues)) =
                     ClassValue.GetClassValues(heap, addr);
 
                 int m_count = GetFieldInt(type.Fields, "m_count", values);
@@ -711,7 +711,7 @@ namespace ClrMDRIndex
                     if (err != null) return (err, null, null);
                 }
 
-                (string error, ClrType type, ClrElementKind kind, (ClrType[] fldTypes, ClrElementKind[] fldKinds, object[] values, StructValues[] structValues)) =
+                (string error, ClrType type, ClrElementKind kind, (ClrType[] fldTypes, ClrElementKind[] fldKinds, object[] values, StructFieldsInfo[] structFldInfos, StructValues[] structValues)) =
                     ClassValue.GetClassValues(heap, addr);
                 if (error != null) return (error, null, null);
 
@@ -891,11 +891,12 @@ namespace ClrMDRIndex
                 ClrElementKind[] dctFldKinds, setFldKinds;
                 object[] dctVals, setVals;
                 StructValues[] dctStructVals, setStructVals;
-                (error, dctType, dctKind, (dctFldTypes, dctFldKinds, dctVals, dctStructVals)) =
+                StructFieldsInfo[] dctStructFldInfos, setStructFldInfos;
+                (error, dctType, dctKind, (dctFldTypes, dctFldKinds, dctVals, dctStructFldInfos, dctStructVals)) =
                     ClassValue.GetClassValues(heap, addr);
                 (ulong setAddr, ClrType setType) = GetFieldUInt64AndType(dctType,"_set", dctFldTypes, dctVals);
 
-                (error, setType, setKind, (setFldTypes, setFldKinds, setVals, setStructVals)) =
+                (error, setType, setKind, (setFldTypes, setFldKinds, setVals, setStructFldInfos, setStructVals)) =
                     ClassValue.GetClassValues(heap, setAddr);
 
 
@@ -913,7 +914,8 @@ namespace ClrMDRIndex
                 ClrElementKind[] rootFldKinds;
                 object[] rootVals;
                 StructValues[] rootStructVals;
-                (error, rootType, rootKind, (rootFldTypes, rootFldKinds, rootVals, rootStructVals)) =
+                StructFieldsInfo[] rootStructInfos;
+                (error, rootType, rootKind, (rootFldTypes, rootFldKinds, rootVals, rootStructInfos, rootStructVals)) =
                     ClassValue.GetClassValues(heap, rootAddr);
 
 
@@ -1003,7 +1005,7 @@ namespace ClrMDRIndex
                     string err = CheckCollection(heap, addr, TypeExtractor.KnownTypes.SortedSet);
                     if (err != null) return (err, null, null);
                 }
-                (string error, ClrType type, ClrElementKind kind, (ClrType[] fldTypes, ClrElementKind[] fldKinds, object[] values, StructValues[] structValues)) =
+                (string error, ClrType type, ClrElementKind kind, (ClrType[] fldTypes, ClrElementKind[] fldKinds, object[] values, StructFieldsInfo[] structFldInfos, StructValues[] structValues)) =
                     ClassValue.GetClassValues(heap, addr);
 
                 ulong root = Constants.InvalidAddress;
@@ -1027,7 +1029,7 @@ namespace ClrMDRIndex
                 string[] resultAry = null;
                 if (root != Constants.InvalidAddress || count > 0)
                 {
-                    (string er, ClrType nodeType, ClrElementKind nodeKind, (ClrType[] nodeFldTypes, ClrElementKind[] nodeFldKinds, object[] nodeValues, StructValues[] nodeStructValues)) =
+                    (string er, ClrType nodeType, ClrElementKind nodeKind, (ClrType[] nodeFldTypes, ClrElementKind[] nodeFldKinds, object[] nodeValues, StructFieldsInfo[] nodeStructInfos, StructValues[] nodeStructValues)) =
                         ClassValue.GetClassValues(heap, root);
 
                     ClrInstanceField item = null;
@@ -1123,7 +1125,7 @@ namespace ClrMDRIndex
                     string err = CheckCollection(heap, addr, TypeExtractor.KnownTypes.StringBuilder);
                     if (err != null) return (err, null, null);
                 }
-                (string error, ClrType type, ClrElementKind kind, (ClrType[] fldTypes, ClrElementKind[] fldKinds, object[] values, StructValues[] structValues)) =
+                (string error, ClrType type, ClrElementKind kind, (ClrType[] fldTypes, ClrElementKind[] fldKinds, object[] values, StructFieldsInfo[] structInfos, StructValues[] structValues)) =
                     ClassValue.GetClassValues(heap, addr);
 
                 int chunkLenNdx = 0, chunkNdx=0, prevChunkNdx = 0, chunkCapacityNdx = 0;

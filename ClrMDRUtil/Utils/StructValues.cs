@@ -269,10 +269,32 @@ namespace ClrMDRIndex
                 }
                 else
                 {
-                    values[i] = GetValue(sfi._types[i], sfi._typeKinds[i], sfi._fields[i], sfi._fldKinds[i], heap, addr, true);
+                    values[i] = GetValueAsString(sfi._types[i], sfi._typeKinds[i], sfi._fields[i], sfi._fldKinds[i], heap, addr, true);
                 }
             }
             return new StructValueStrings(values, structs);
+        }
+
+        public static StructValues GetStructValues(StructFieldsInfo sfi, ClrHeap heap, ulong addr)
+        {
+            if (!sfi.IsTotalFldCountSet) sfi.SetTotalFldCount();
+            var values = new object[sfi._fields.Length];
+            StructValues[] structs = null;
+
+            for (int i = 0, icnt = sfi._fields.Length; i < icnt; ++i)
+            {
+                if (sfi._structFlds != null && sfi._structFlds[i] != null)
+                {
+                    if (structs == null) structs = new StructValues[sfi._fields.Length];
+                    var faddr = sfi._fields[i].GetAddress(addr, true);
+                    structs[i] = GetStructValues(sfi._structFlds[i], heap, faddr);
+                }
+                else
+                {
+                    values[i] = GetValue(sfi._types[i], sfi._typeKinds[i], sfi._fields[i], sfi._fldKinds[i], heap, addr, true);
+                }
+            }
+            return new StructValues(values, structs);
         }
 
         /// <summary>
@@ -284,7 +306,7 @@ namespace ClrMDRIndex
         /// <param name="heap"></param>
         /// <param name="addr"></param>
         /// <returns></returns>
-        public static string GetValue(ClrType type, ClrElementKind typeKind, ClrInstanceField field, ClrElementKind fldKind, ClrHeap heap, ulong addr, bool intr)
+        public static string GetValueAsString(ClrType type, ClrElementKind typeKind, ClrInstanceField field, ClrElementKind fldKind, ClrHeap heap, ulong addr, bool intr)
         {
             Debug.Assert(!TypeExtractor.IsStruct(typeKind) && !TypeExtractor.IsStruct(fldKind));
             if (TypeExtractor.IsAmbiguousKind(fldKind))
@@ -357,6 +379,79 @@ namespace ClrMDRIndex
             }
             return Constants.DontKnowHowToGetValue;
         }
+
+        public static object GetValue(ClrType type, ClrElementKind typeKind, ClrInstanceField field, ClrElementKind fldKind, ClrHeap heap, ulong addr, bool intr)
+        {
+            Debug.Assert(!TypeExtractor.IsStruct(typeKind) && !TypeExtractor.IsStruct(fldKind));
+            if (TypeExtractor.IsAmbiguousKind(fldKind))
+            {
+                if (TypeExtractor.IsString(typeKind))
+                {
+                    var faddr = ValueExtractor.ReadUlongAtAddress(addr, heap);
+                    return ValueExtractor.GetStringAtAddress(faddr, heap);
+                }
+
+                if (TypeExtractor.IsKnownStruct(fldKind))
+                {
+                    switch (TypeExtractor.GetSpecialKind(fldKind))
+                    {
+                        case ClrElementKind.Decimal:
+                            return ValueExtractor.GetDecimalValue(addr, type);
+                        case ClrElementKind.DateTime:
+                            return ValueExtractor.DateTimeValue(addr, type);
+                        case ClrElementKind.TimeSpan:
+                            return ValueExtractor.TimeSpanValue(addr, type);
+                        case ClrElementKind.Guid:
+                            return ValueExtractor.GuidValue(addr, type);
+                        default:
+                            return Constants.DontKnowHowToGetValue;
+                    }
+                }
+
+                if (TypeExtractor.IsPrimitive(typeKind))
+                {
+                    return ValueExtractor.PrimitiveValueAsString(addr, type, typeKind);
+                }
+                if (TypeExtractor.IsObjectReference(typeKind))
+                {
+                   return field.GetValue(addr, intr, false);
+                }
+                return Constants.DontKnowHowToGetValue;
+            }
+
+            if (TypeExtractor.IsString(fldKind))
+            {
+                return ValueExtractor.GetStringAtAddress(addr, intr, field);
+            }
+
+            if (TypeExtractor.IsKnownStruct(fldKind))
+            {
+                switch (TypeExtractor.GetSpecialKind(fldKind))
+                {
+                    case ClrElementKind.Decimal:
+                        return ValueExtractor.GetDecimal(addr, field, intr);
+                    case ClrElementKind.DateTime:
+                        return ValueExtractor.GetDateTime(addr, field, intr);
+                    case ClrElementKind.TimeSpan:
+                        return ValueExtractor.GetTimeSpan(addr, field, intr);
+                    case ClrElementKind.Guid:
+                        return ValueExtractor.GetGuid(addr, field, intr);
+                    default:
+                        return Constants.DontKnowHowToGetValue;
+                }
+            }
+            if (TypeExtractor.IsPrimitive(fldKind))
+            {
+                return ValueExtractor.GetPrimitiveValueObject(addr, field, intr);
+            }
+            if (TypeExtractor.IsObjectReference(fldKind))
+            {
+                return field.GetValue(addr, intr, false);
+            }
+
+            return Constants.DontKnowHowToGetValue;
+        }
+
 
         public static StructFields GetStructDescription(StructFieldsInfo sfi)
         {

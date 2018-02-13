@@ -10,14 +10,14 @@ namespace ClrMDRIndex
 {
     public class ClassValue
     {
-        public static ValueTuple<string, ClrType, ClrElementKind, ValueTuple<ClrType[],ClrElementKind[], object[], StructValues[]>> 
+        public static ValueTuple<string, ClrType, ClrElementKind, ValueTuple<ClrType[],ClrElementKind[], object[], StructFieldsInfo[], StructValues[]>> 
             GetClassValues(ClrHeap heap, ulong addr)
         {
             try
             {
                 addr = Utils.RealAddress(addr);
                 var type = heap.GetObjectType(addr);
-                if (type == null) return ("Object Value Error" + Constants.HeavyGreekCrossPadded + "Cannot find an instance." + Constants.HeavyGreekCrossPadded + "Heap cannot get object type at address: " + Utils.RealAddressString(addr), null, ClrElementKind.Unknown, (null,null,null,null));
+                if (type == null) return ("Object Value Error" + Constants.HeavyGreekCrossPadded + "Cannot find an instance." + Constants.HeavyGreekCrossPadded + "Heap cannot get object type at address: " + Utils.RealAddressString(addr), null, ClrElementKind.Unknown, (null,null,null,null,null));
                 var kind = TypeExtractor.GetElementKind(type);
                 var fldCnt = type.Fields.Count;
 
@@ -25,6 +25,7 @@ namespace ClrMDRIndex
                 var fldKinds = fldCnt == 0 ? Utils.EmptyArray<ClrElementKind>.Value : new ClrElementKind[fldCnt];
                 var objects = fldCnt == 0 ? Utils.EmptyArray<object>.Value : new object[fldCnt];
                 StructValues[] structVals = null;
+                StructFieldsInfo[] structFldInfos = null;
                 for (int i = 0; i < fldCnt; ++i)
                 {
                     var fld = type.Fields[i];
@@ -97,21 +98,25 @@ namespace ClrMDRIndex
                     else if (TypeExtractor.IsStruct(fldKind))
                     {
 
-                        StructFields sf = StructFields.GetStructFields(fldType);
-                        StructFieldsEx sfx = StructFieldsEx.GetStructFields(sf, fldType);
+                        //StructFields sf = StructFields.GetStructFields(fldType);
+                        //StructFieldsEx sfx = StructFieldsEx.GetStructFields(sf, fldType);
+                        if (structFldInfos == null) structFldInfos = new StructFieldsInfo[fldCnt];
                         ulong saddr = fld.GetAddress(addr, true);
                         StructFieldsInfo sfi = StructFieldsInfo.GetStructFields(fldType, heap, saddr);
-                        sfx.ResetTypes();
+                        structFldInfos[i] = sfi;
+                        if (sfi != null)
+                        {
+                            if (structVals == null) structVals = new StructValues[fldCnt];
+                            structVals[i] = StructFieldsInfo.GetStructValues(sfi, heap, saddr);
+                        }
                     }
                 }
 
-
-
-                return (null, type, kind, (fldTypes, fldKinds, objects, structVals));
+                return (null, type, kind, (fldTypes, fldKinds, objects, structFldInfos, structVals));
             }
             catch (Exception ex)
             {
-                return (Utils.GetExceptionErrorString(ex), null, ClrElementKind.Unknown, (null,null,null,null));
+                return (Utils.GetExceptionErrorString(ex), null, ClrElementKind.Unknown, (null,null,null,null,null));
             }
 
 

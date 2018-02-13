@@ -863,7 +863,7 @@ namespace UnitTestMdr
             using (dmp)
             {
                 var heap = dmp.Heap;
-                (string error, ClrType type, ClrElementKind kind, (ClrType[] fldTypes, ClrElementKind[] fldKinds, object[] values, StructValues[] structValues)) =
+                (string error, ClrType type, ClrElementKind kind, (ClrType[] fldTypes, ClrElementKind[] fldKinds, object[] values, StructFieldsInfo[] structInfos, StructValues[] structValues)) =
                     ClassValue.GetClassValues(heap, addr);
                 Assert.IsNull(error,error);
 
