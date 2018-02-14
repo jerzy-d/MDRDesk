@@ -918,9 +918,40 @@ namespace ClrMDRIndex
                 (error, rootType, rootKind, (rootFldTypes, rootFldKinds, rootVals, rootStructInfos, rootStructVals)) =
                     ClassValue.GetClassValues(heap, rootAddr);
 
+                var leftNodeFld = FindField(rootType.Fields, "Left");
+                var rightNodeFld = FindField(rootType.Fields, "Right");
+                // Item field is struct
+                var itemFldNdx = GetFieldNdx(rootType.Fields, "Item");
+                var itemSfi = rootStructInfos[itemFldNdx];
+
 
 
                 var dctValues = new List<KeyValuePair<string, string>>(count);
+                var stack = new Stack<ulong>(2 * Utils.Log2(count + 1));
+                var node = rootAddr;
+                while (node != Constants.InvalidAddress)
+                {
+                    stack.Push(node);
+                    node = ValueExtractor.GetReferenceFieldAddress(node, leftNodeFld, false);
+                }
+                /*
+                while (stack.Count > 0)
+                {
+                    node = stack.Pop();
+                    var iAddr = itemNodeFld.GetAddress(node); // GetReferenceFieldAddress(node, itemNodeFld, false);
+                    var keyStr = (string)GetFieldValue(heap, iAddr, keyFld, keyFldType, keyFldKind, true, false);
+                    var valStr = (string)GetFieldValue(heap, iAddr, valFld, valFldType, valFldKind, true, false);
+                    values.Add(new KeyValuePair<string, string>(keyStr, valStr));
+                    node = ValueExtractor.GetReferenceFieldAddress(node, rightNodeFld, false);
+                    while (node != Constants.InvalidAddress)
+                    {
+                        stack.Push(node);
+                        node = ValueExtractor.GetReferenceFieldAddress(node, leftNodeFld, false);
+                        if (node == Constants.InvalidAddress)
+                            node = ValueExtractor.GetReferenceFieldAddress(node, rightNodeFld, false);
+                    }
+                }
+                */
 
                 /*
                 var setFld = dctType.GetFieldByName("_set"); // get TreeSet 
@@ -1196,7 +1227,6 @@ namespace ClrMDRIndex
 
         #endregion System.Text.StringBuilder
 
-
         #region utils
 
         static string CheckCollection(ClrHeap heap, ulong addr, TypeExtractor.KnownTypes knownType)
@@ -1266,6 +1296,18 @@ namespace ClrMDRIndex
             if (ndx == Constants.InvalidIndex) return Constants.InvalidIndex;
             Debug.Assert(values[ndx] is int);
             return (int)values[ndx];
+        }
+
+        static ClrInstanceField FindField(IList<ClrInstanceField> fields, string fldName)
+        {
+            for (int i = 0, icnt = fields.Count; i < icnt; ++i)
+            {
+                if (string.Compare(fldName, fields[i].Name, StringComparison.Ordinal) == 0)
+                {
+                    return fields[i];
+                }
+            }
+            return null;
         }
 
         static ulong GetFieldUlong(IList<ClrInstanceField> fields, string fldName, object[] values)

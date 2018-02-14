@@ -291,7 +291,7 @@ namespace ClrMDRIndex
                 }
                 else
                 {
-                    values[i] = GetValue(sfi._types[i], sfi._typeKinds[i], sfi._fields[i], sfi._fldKinds[i], heap, addr, true);
+                    values[i] = GetValue(sfi._types[i], sfi._typeKinds[i], sfi._fields[i], sfi._fldKinds[i], heap, addr, false);
                 }
             }
             return new StructValues(values, structs);
