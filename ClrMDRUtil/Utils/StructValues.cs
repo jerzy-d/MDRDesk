@@ -297,6 +297,27 @@ namespace ClrMDRIndex
             return new StructValues(values, structs);
         }
 
+        public static ValueTuple<bool, ClrType,ClrInstanceField,ClrElementKind, StructFieldsInfo> GetTypeOrFieldForValueExtraction(StructFieldsInfo sfi, string fldName)
+        {
+            if (sfi == null) return (false, null, null, ClrElementKind.Unknown, null);
+            for (int i = 0, icnt = sfi._fields.Length; i < icnt; ++i)
+            {
+                if (Utils.SameStrings(sfi._fields[i].Name,fldName))
+                {
+                    var fsfi = sfi._structFlds == null ? null : sfi._structFlds[i];
+                    if (TypeExtractor.IsAmbiguousKind(sfi._fldKinds[i]))
+                    {
+                        return (true, sfi._types[i], sfi._fields[i], sfi._typeKinds[i], fsfi);
+                    }
+                    else
+                    {
+                        return (false, sfi._types[i], sfi._fields[i], sfi._fldKinds[i], fsfi);
+                    }
+                }
+            }
+            return (false, null, null, ClrElementKind.Unknown, null);
+        }
+
         /// <summary>
         /// 
         /// </summary>

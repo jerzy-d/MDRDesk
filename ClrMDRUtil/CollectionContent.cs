@@ -923,10 +923,11 @@ namespace ClrMDRIndex
                 // Item field is struct
                 var itemFldNdx = GetFieldNdx(rootType.Fields, "Item");
                 var itemSfi = rootStructInfos[itemFldNdx];
+                Debug.Assert(itemSfi != null);
+                ClrInstanceField itemFld = rootType.Fields[itemFldNdx];
+                (bool keyUseType, ClrType keyType, ClrInstanceField keyFld, ClrElementKind keyKind, StructFieldsInfo keySfi) = StructFieldsInfo.GetTypeOrFieldForValueExtraction(itemSfi, "key");
+                (bool valUseType, ClrType valType, ClrInstanceField valFld, ClrElementKind valKind, StructFieldsInfo valSfi) = StructFieldsInfo.GetTypeOrFieldForValueExtraction(itemSfi, "value");
 
-
-
-                var dctValues = new List<KeyValuePair<string, string>>(count);
                 var stack = new Stack<ulong>(2 * Utils.Log2(count + 1));
                 var node = rootAddr;
                 while (node != Constants.InvalidAddress)
@@ -934,14 +935,22 @@ namespace ClrMDRIndex
                     stack.Push(node);
                     node = ValueExtractor.GetReferenceFieldAddress(node, leftNodeFld, false);
                 }
-                /*
+
+                var dctValues = new List<KeyValuePair<string, string>>(count);
+                EnumValues keyEnum = null;
+                EnumValues valEnum = null;
+                if (keyType.IsEnum) keyEnum = new EnumValues(keyType);
+                if (valType.IsEnum) valEnum = new EnumValues(valType);
+
                 while (stack.Count > 0)
                 {
                     node = stack.Pop();
-                    var iAddr = itemNodeFld.GetAddress(node); // GetReferenceFieldAddress(node, itemNodeFld, false);
-                    var keyStr = (string)GetFieldValue(heap, iAddr, keyFld, keyFldType, keyFldKind, true, false);
-                    var valStr = (string)GetFieldValue(heap, iAddr, valFld, valFldType, valFldKind, true, false);
-                    values.Add(new KeyValuePair<string, string>(keyStr, valStr));
+                    var naddr = itemFld.GetAddress(node);
+
+                    var keyVal = GetStructFieldValueAsString(heap, naddr, keyUseType, keyType, keyFld, keyKind, keySfi, keyEnum);
+                    var valVal = GetStructFieldValueAsString(heap, naddr, valUseType, valType, valFld, valKind, valSfi, valEnum);
+
+                    dctValues.Add(new KeyValuePair<string, string>(keyVal, valVal));
                     node = ValueExtractor.GetReferenceFieldAddress(node, rightNodeFld, false);
                     while (node != Constants.InvalidAddress)
                     {
@@ -951,69 +960,6 @@ namespace ClrMDRIndex
                             node = ValueExtractor.GetReferenceFieldAddress(node, rightNodeFld, false);
                     }
                 }
-                */
-
-                /*
-                var setFld = dctType.GetFieldByName("_set"); // get TreeSet 
-                var setFldAddr = (ulong)setFld.GetValue(addr, false, false);
-                var setType = heap.GetObjectType(setFldAddr);
-                //var count = GetFieldIntValue(heap, setFldAddr, setType, "count");
-                //var version = GetFieldIntValue(heap, setFldAddr, setType, "version");
-                var rootFld = setType.GetFieldByName("root"); // get TreeSet root node
-                var rootFldAddr = (ulong)rootFld.GetValue(setFldAddr, false, false);
-                var rootType = heap.GetObjectType(rootFldAddr);
-                var leftNodeFld = rootType.GetFieldByName("Left");
-                var rightNodeFld = rootType.GetFieldByName("Right");
-                var itemNodeFld = rootType.GetFieldByName("Item");
-
-                var keyFld = itemNodeFld.Type.GetFieldByName("key");
-                var valFld = itemNodeFld.Type.GetFieldByName("value");
-                var itemAddr = itemNodeFld.GetAddress(rootFldAddr, false);
-                (ClrType keyFldType, ClrElementKind keyFldKind, ulong keyFldAddr) =
-                        TypeExtractor.GetRealType(heap, itemAddr, keyFld, true);
-                (ClrType valFldType, ClrElementKind valFldKind, ulong valFldAddr) =
-                  TypeExtractor.GetRealType(heap, itemAddr, valFld, true);
-
-                //KeyValuePair<string, string>[] fldDescription = new KeyValuePair<string, string>[]
-                //{
-                //new KeyValuePair<string, string>("count", (count).ToString()),
-                //new KeyValuePair<string, string>("version", version.ToString())
-                //};
-
-                var stack = new Stack<ulong>(2 * Utils.Log2(count + 1));
-                var node = rootFldAddr;
-                while (node != Constants.InvalidAddress)
-                {
-                    stack.Push(node);
-                    node = GetReferenceFieldAddress(node, leftNodeFld, false);
-                    //if (left != Constants.InvalidAddress) node = left;
-                    //else
-                    //{
-                    //    var right = GetReferenceFieldAddress(node, rightNodeFld, false);
-                    //    node = right;
-                    //}
-                }
-
-                //var values = new List<KeyValuePair<string, string>>(count);
-
-                while (stack.Count > 0)
-                {
-                    node = stack.Pop();
-                    var iAddr = itemNodeFld.GetAddress(node); // GetReferenceFieldAddress(node, itemNodeFld, false);
-                    var keyStr = (string)GetFieldValue(heap, iAddr, keyFld, keyFldType, keyFldKind, true, false);
-                    var valStr = (string)GetFieldValue(heap, iAddr, valFld, valFldType, valFldKind, true, false);
-                    values.Add(new KeyValuePair<string, string>(keyStr, valStr));
-                    node = GetReferenceFieldAddress(node, rightNodeFld, false);
-                    //getReferenceFieldAddress node rightNodeFld false
-                    while (node != Constants.InvalidAddress)
-                    {
-                        stack.Push(node);
-                        node = GetReferenceFieldAddress(node, leftNodeFld, false);
-                        if (node == Constants.InvalidAddress)
-                            node = GetReferenceFieldAddress(node, rightNodeFld, false);
-                    }
-                }
-                */
                 return (null, fldDescription, dctValues.ToArray());
             }
             catch (Exception ex)
@@ -1273,6 +1219,43 @@ namespace ClrMDRIndex
             sb.Append(title);
             StructFields.Description(sfx.Structs, sb, string.Empty);
             return sb.ToString();
+        }
+
+        static string GetStructFieldValueAsString(ClrHeap heap, ulong addr, bool useType, ClrType type, ClrInstanceField fld, ClrElementKind kind, StructFieldsInfo sfi, EnumValues enumVal)
+        {
+            string keyVal = Constants.DontKnowHowToGetValue;
+            if (enumVal != null)
+            {
+                if (useType)
+                {
+                    ulong a = fld.GetAddress(addr, true);
+                    keyVal = enumVal.GetEnumString(a, type, TypeExtractor.GetClrElementType(kind));
+                }
+                else
+                {
+                    object obj = fld.GetValue(addr, type.HasSimpleValue, false);
+                    keyVal = enumVal.GetEnumString(obj, TypeExtractor.GetClrElementType(kind));
+                }
+            }
+            else if (TypeExtractor.IsStruct(kind))
+            {
+                var vAddr = fld.GetAddress(addr, true);
+                StructValueStrings structVal = StructFieldsInfo.GetStructValueStrings(sfi, heap, vAddr);
+                keyVal = StructValueStrings.MergeValues(structVal);
+            }
+            else if (useType)
+            {
+                ulong a = TypeExtractor.IsObjectReference(kind)
+                    ? (ulong)fld.GetValue(addr, true)
+                    : fld.GetAddress(addr, true);
+                keyVal = ValueExtractor.GetTypeValueAsString(heap, a, type, kind);
+            }
+            else
+            {
+                keyVal = (string)ValueExtractor.GetFieldValue(heap, addr, fld, type, kind, true, false);
+            }
+
+            return keyVal;
         }
 
         static int GetFieldInt(ClrType type, string fldName, object[] values)
