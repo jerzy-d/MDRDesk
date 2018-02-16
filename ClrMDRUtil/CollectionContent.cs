@@ -308,6 +308,85 @@ namespace ClrMDRIndex
 
         #endregion array
 
+        #region System.Collections.Generic.List<T>
+
+        public static ValueTuple<ClrType, ClrType, ClrElementKind, ulong, int, int, int> ListInfo(ClrHeap heap, ulong addr, out string error)
+        {
+            error = null;
+            var clrType = heap.GetObjectType(addr);
+            if (clrType == null)
+            {
+                error = "Cannot get type at address: " + Utils.RealAddressString(addr);
+                return (null, null, ClrElementKind.Unknown, 0Ul, 0, 0, 0);
+            }
+            if (!clrType.Name.StartsWith("System.Collections.Generic.List<"))
+            {
+                error = "The type at address: " + Utils.RealAddressString(addr) + " is not List<T>.";
+                return (null, null, ClrElementKind.Unknown, 0UL, 0, 0, 0);
+            }
+            var itemsFld = clrType.GetFieldByName("_items");
+            var sizeFld = clrType.GetFieldByName("_size");
+            var versionFld = clrType.GetFieldByName("_version");
+
+            var itemsobj = itemsFld.GetValue(addr, false, false);
+            ulong itemsAddr = itemsobj == null ? 0UL : (ulong)itemsobj;
+            var len = (int)sizeFld.GetValue(addr, false, false);
+            var version = (int)versionFld.GetValue(addr, false, false);
+            var itemsClrType = heap.GetObjectType(itemsAddr);
+            var kind = TypeExtractor.GetElementKind(itemsClrType.ComponentType);
+            int aryLen = itemsClrType.GetArrayLength(itemsAddr);
+            return (clrType, itemsClrType, kind, itemsAddr, len, aryLen, version);
+        }
+
+
+        public static ValueTuple<string, KeyValuePair<string, string>[], string[]> GetListContentAsStrings(ClrHeap heap, ulong addr)
+        {
+            try
+            {
+                string error;
+                addr = Utils.RealAddress(addr);
+                {
+                    error = CheckCollection(heap, addr, TypeExtractor.KnownTypes.List);
+                    if (error != null) return (error, null, null);
+                }
+
+                ClrType lstType;
+                ClrElementKind lstKind;
+                ClrType[] lstFldTypes;
+                ClrElementKind[] lstFldKinds;
+                object[] lstVals;
+                StructValues[] lstStructVals;
+                StructFieldsInfo[] lstStructFldInfos;
+                (error, lstType, lstKind, (lstFldTypes, lstFldKinds, lstVals, lstStructFldInfos, lstStructVals)) =
+                    ClassValue.GetClassValues(heap, addr);
+
+                (string err, ClrType aryType, ClrType aryElemType, StructFields aryStructFlds, string[] aryVals, StructValueStrings[] aryStructVals) =
+                    GetArrayContentAsStrings(heap, (ulong)lstVals[0]);
+
+                //(ClrType lstType, ClrType itemsType, ClrElementKind itemKind, ulong itemAryAddr, int lstSize, int aryLen, int version) =
+                //    ListInfo(heap, addr, out error);
+                //if (error != null) return (error, null, null);
+                //List<string> types = new List<string>();
+                //string[] items = GetAryItems(heap, itemAryAddr, itemsType, itemsType.ComponentType, itemKind, lstSize, types);
+
+                //KeyValuePair<string, string>[] fldDescription = new KeyValuePair<string, string>[]
+                //{
+                //    new KeyValuePair<string, string>("size", Utils.CountString(lstSize)),
+                //    new KeyValuePair<string, string>("array count", Utils.CountString(aryLen)),
+                //    new KeyValuePair<string, string>("version", version.ToString())
+                //};
+                //return (null, fldDescription, items);
+
+                return (null, null, null);
+            }
+            catch (Exception ex)
+            {
+                return (Utils.GetExceptionErrorString(ex), null, null);
+            }
+        }
+
+        #endregion System.Collections.Generic.List<T> content
+
         #region System.Collections.Generic.Queue<T>
         /// <summary>
         /// TODO JRD
@@ -902,6 +981,8 @@ namespace ClrMDRIndex
 
                 int count = GetFieldInt(setType.Fields, "count", setVals);
                 int version = GetFieldInt(setType.Fields, "version", setVals);
+                if (count < 1)
+                    return (TypeExtractor.GetKnowTypeName(TypeExtractor.KnownTypes.SortedDictionary) + " is empty.", null, null);
                 KeyValuePair<string, string>[] fldDescription = new KeyValuePair<string, string>[]
                 {
                     new KeyValuePair<string, string>("count", (count).ToString()),

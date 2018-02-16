@@ -1453,7 +1453,7 @@ namespace ClrMDRIndex
                     (error, description, kvValues) = CollectionContent.ConcurrentDictionaryContentAsStrings(Heap, addr);
                     break;
                 case TypeExtractor.KnownTypes.SortedDictionary:
-                    (error, description, kvValues) = ValueExtractor.GetSortedDictionaryContent(Heap, addr);
+                    (error, description, kvValues) = CollectionContent.GetSortedDictionaryContentAsStrings(Heap, addr);
                     break;
                 case TypeExtractor.KnownTypes.SortedList:
                     (error, description, kvValues) = ValueExtractor.GetSortedDictionaryContent(Heap, addr);
