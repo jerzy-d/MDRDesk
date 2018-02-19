@@ -105,8 +105,9 @@ namespace ClrMDRIndex
 		public const string BlackDiamondPadded = " \u2756 "; // ❖ BLACK DIAMOND MINUS WHITE X 
 		public const char HeavyVerticalBar = '\u275A'; // ❚ HEAVY VERTICAL BAR
 		public const char MediumVerticalBar = '\u2759'; // ❙ MEDIUM VERTICAL BAR
-		public const string MediumVerticalBarPadded = " \u2759 "; // ❙ MEDIUM VERTICAL BAR
-		public const string BlackFourPointedStarHeader = " \u2726 "; // ✦ BLACK FOUR POINTED STAR 
+        public const string MediumVerticalBarPadded = " \u2759 "; // ❙ MEDIUM VERTICAL BAR
+        public const string MediumVerticalBarHeader = "\u2759 "; // ❙ MEDIUM VERTICAL BAR
+        public const string BlackFourPointedStarHeader = " \u2726 "; // ✦ BLACK FOUR POINTED STAR 
 
 		public const char BlackTriangle = '\u25BC'; // ▼  black down-pointing triangle
 		public const char ShadowedWhiteSquare = '\u274F'; // ❏ LOWER RIGHT DROP-SHADOWED WHITE SQUARE
@@ -171,6 +172,9 @@ namespace ClrMDRIndex
         public const char CircledNineChar = '\u277E'; // ❾ DINGBAT NEGATIVE CIRCLED DIGIT NINE
         public const char CircledTenChar = '\u277F'; // ❿ DINGBAT NEGATIVE CIRCLED NUMBER TEN
         public const char Semicolon = '\uFF1B'; // ； FULLWIDTH SEMICOLON &#65307; &#xff1b; How to type in Microsoft Windows    Alt +FF1B
+        public const char HeavyExclamation = '\u2757'; // ❗ HEAVY EXCLAMATION MARK SYMBOL
+        public const string HeavyExclamationHeader = "\u2757 "; // ❗ HEAVY EXCLAMATION MARK SYMBOL
+
 
 
         public static string LockStr = char.ConvertFromUtf32(0x1F512);

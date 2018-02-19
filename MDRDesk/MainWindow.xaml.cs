@@ -2255,27 +2255,60 @@ namespace MDRDesk
         public async void GetTypeValuesReport(string typeName, int typeId)
         {
             var baseTypeName = Utils.BaseTypeName(typeName); // get type name without namespace
-
             SetStartTaskMainWindowState("Getting type details for: '" + baseTypeName + "', please wait...");
-
-            (string error, ClrtDisplayableType dispType, ulong[] instances) = await Task.Factory.StartNew(() =>
+            try
             {
-                return CurrentIndex.GetTypeDisplayableRecord(typeId);
-            }, DumpSTAScheduler);
+                (string error, ClrtDisplayableType dispType, ulong[] instances) = await Task.Factory.StartNew(() =>
+                {
+                    return CurrentIndex.GetTypeDisplayableRecord(typeId);
+                }, DumpSTAScheduler);
 
-            SetEndTaskMainWindowState("Getting type details for: '" + baseTypeName + "', done");
+                if (error != null && Utils.IsInformation(error) && dispType != null)
+                {
+                    ListingInfo lstInfo = null;
+                    if (TypeExtractor.IsArray(dispType.Kind))
+                    {
+                        lstInfo = CurrentIndex.GetArrayTypeLengthReport(typeId, instances, out error);
+                    }
+                    else if (TypeExtractor.IsString(dispType.Kind))
+                    {
+                        (error, lstInfo) = await Task.Factory.StartNew(() =>
+                        {
+                            lstInfo = CurrentIndex.GetStringTypeContentReport(typeId, instances, out error);
+                            return (error, lstInfo);
+                        }, DumpSTAScheduler);
+                    }
+                    else if (TypeExtractor.IsPrimitive(dispType.Kind))
+                    {
 
-            if (error != null)
-            {
-                if (Utils.IsInformation(error))
-                    GuiUtils.ShowInformation("Type Values Report","Cannot be done.",error,null,this);
-                else 
-                    GuiUtils.ShowError(error, this);
-                return;
-            }
+                    }
+                    if (error != null)
+                    {
+                        SetEndTaskMainWindowState("Getting type details for: '" + baseTypeName + "', done");
+                        GuiUtils.ShowError(error, this);
+                        return;
+                    }
+                    DisplayTypeValuesGrid(lstInfo, Constants.BlackDiamondHeader, TypeValuesReportGrid, Utils.BaseTypeName(typeName));
+                    return;
+                }
+
+                if (error != null)
+                {
+                    if (Utils.IsInformation(error))
+                        GuiUtils.ShowInformation("Type Values Report", "Cannot be done.", error, null, this);
+                    else
+                        GuiUtils.ShowError(error, this);
+                    return;
+                }
 #pragma warning disable CS4014
-            Dispatcher.CurrentDispatcher.InvokeAsync(() => DoDisplayTypeValueReportSetup(dispType));
+                Dispatcher.CurrentDispatcher.InvokeAsync(() => DoDisplayTypeValueReportSetup(dispType));
 #pragma warning restore CS4014
+
+            }
+            finally
+            {
+                SetEndTaskMainWindowState("Getting type details for: '" + baseTypeName + "', done");
+            }
         }
 
         private ulong GetAddressFromList(object listBox)

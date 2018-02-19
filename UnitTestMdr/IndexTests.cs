@@ -2072,7 +2072,7 @@ namespace UnitTestMdr
         }
 
         [TestMethod]
-        public void CollectionTest_list()
+        public void CollectionTest_List()
         {
             var testData = new ValueTuple<string, ValueTuple<string, ulong[]>[]>[]
             {
@@ -2082,6 +2082,36 @@ namespace UnitTestMdr
                        ("System.Collections.Generic.List<System.TimeZoneInfo+AdjustmentRule>",new ulong[] {0x00000002a9ace8 }),
                     }
                 ),
+                (@"C:\WinDbgStuff\Dumps\TestApp\64\TestApp.exe_180207_072611.dmp.map",
+                    new ValueTuple<string,ulong[]>[]
+                    {
+                       ("System.Collections.Generic.List<System.TimeZoneInfo+AdjustmentRule>",new ulong[] {0x00024008f1ac90 }),
+                    }
+                ),
+            };
+            var ndxPath = testData[1].Item1;
+            var addr = testData[1].Item2[0].Item2[0];
+            var index = OpenIndex(ndxPath);
+            using (index)
+            {
+                var heap = index.Heap;
+                (string error, KeyValuePair<string, string>[] decrs, string[] values) = CollectionContent.GetListContentAsStrings(heap, addr);
+
+                Assert.IsNull(error, error);
+            }
+        }
+
+        [TestMethod]
+        public void CollectionTest_SortedList()
+        {
+            var testData = new ValueTuple<string, ValueTuple<string, ulong[]>[]>[]
+            {
+                (@"C:\WinDbgStuff\Dumps\Analytics\Baly\AnalyticsLatencyDump06062016 03354291.dmp.map",
+                    new ValueTuple<string,ulong[]>[]
+                    {
+                       ("System.Collections.Generic.SortedList<System.DateTime,System.DateTime>",new ulong[] {0x0000a1ada51288 }),
+                    }
+                ),
             };
             var ndxPath = testData[0].Item1;
             var addr = testData[0].Item2[0].Item2[0];
@@ -2089,7 +2119,7 @@ namespace UnitTestMdr
             using (index)
             {
                 var heap = index.Heap;
-                (string error, KeyValuePair<string, string>[] decrs, string[] values) = CollectionContent.GetListContentAsStrings(heap, addr);
+                (string error, KeyValuePair<string, string>[] decrs, KeyValuePair<string,string>[] values) = CollectionContent.GetSortedListContentAsStrings(heap, addr);
 
                 Assert.IsNull(error, error);
             }
@@ -2279,6 +2309,32 @@ namespace UnitTestMdr
                 Assert.IsNull(error, error);
             }
 
+        }
+
+        [TestMethod]
+        public void CollectionTest_Queue()
+        {
+            var testData = new ValueTuple<string, ValueTuple<string, ulong[]>[]>[]
+            {
+                (@"C:\WinDbgStuff\Dumps\Analytics\Baly\AnalyticsLatencyDump06062016 03354291.dmp.map",
+                    new ValueTuple<string,ulong[]>[]
+                    {
+                       ("System.Collections.Generic.Queue<ECS.Common.Communicator.Module.Services.EventExtensions.MessageData<ECS.Common.Transport.AnalyticsServerStatus>>",new ulong[] {0x0000a1b7581988 }),
+                       ("System.Collections.Generic.Queue<ECS.Common.Utils.Logging.Log+LogCommand>",new ulong[] {0x0000a32cedfbb8 }),
+                       ("System.Collections.Generic.Queue<System.String>",new ulong[] {0x0000a1ada3d8f8 }),
+                    }
+                ),
+            };
+            var ndxPath = testData[0].Item1;
+            var addr = testData[0].Item2[2].Item2[0];
+            var index = OpenIndex(ndxPath);
+            using (index)
+            {
+                var heap = index.Heap;
+                (string error, KeyValuePair<string, string>[] decrs, string[] values) = CollectionContent.QueueContentAsStrings(heap, addr);
+
+                Assert.IsNull(error, error);
+            }
         }
 
         [TestMethod]

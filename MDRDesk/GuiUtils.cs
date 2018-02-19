@@ -498,6 +498,9 @@ namespace MDRDesk
 
         public static void ShowError(string errStr, Window wnd)
         {
+            string caption = errStr[0] == Constants.HeavyExclamation
+                ? "WARNIG"
+                : (errStr[0] == Constants.HeavyExclamation ? "INFORMATION" : "ERROR");
             string[] parts = errStr.Split(new[] { Constants.HeavyGreekCrossPadded }, StringSplitOptions.None);
             MdrMessageBox dialog;
 
@@ -517,7 +520,7 @@ namespace MDRDesk
                 dialog = new MdrMessageBox()
                 {
                     Owner = wnd,
-                    Caption = "ERROR",
+                    Caption = caption,
                     InstructionHeading = parts[0],
                     InstructionText = parts[1],
                     DeatilsText = string.Empty
@@ -528,8 +531,8 @@ namespace MDRDesk
                 dialog = new MdrMessageBox()
                 {
                     Owner = wnd,
-                    Caption = "ERROR",
-                    InstructionHeading = "ERROR",
+                    Caption = caption,
+                    InstructionHeading = string.Empty,
                     InstructionText = errStr,
                     DeatilsText = string.Empty
                 };

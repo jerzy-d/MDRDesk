@@ -866,13 +866,14 @@ namespace ClrMDRIndex
                     if (clrType == null) continue;
                     if (clrType.Fields == null || clrType.Fields.Count < 1)
                     {
-                        error = Constants.InformationSymbolHeader + "Type: '" + clrType.Name + "' has no fields.";
+                        error = Constants.MediumVerticalBarHeader + "Type: '" + clrType.Name + "' has no fields.";
                         return null;
                     }
 
                     (bool isAmbiguous, ClrElementKind clrTypeKind, ClrType baseType, ClrElementKind baseTypeKind) = IsUndecidedType(clrType);
-
                     var specKind = TypeExtractor.GetSpecialKind(clrTypeKind);
+
+
                     if (specKind != ClrElementKind.Unknown)
                     {
                         switch (specKind)
@@ -882,25 +883,59 @@ namespace ClrMDRIndex
                             case ClrElementKind.DateTime:
                             case ClrElementKind.TimeSpan:
                             case ClrElementKind.Decimal:
+                                error = Constants.MediumVerticalBarHeader + "Type: '" + clrType.Name + "' is known structure or free.";
                                 return new ClrtDisplayableType(null, typeId, Constants.InvalidIndex, clrType.Name, String.Empty, clrTypeKind);
                             case ClrElementKind.Interface:
                                 throw new MdrException("[GetClrtDisplayableType.GetClrtDisplayableType] Interface kind is not expected from ClrHeap.GetHeapObject(...) method.");
                             case ClrElementKind.Enum:
+                                error = Constants.MediumVerticalBarHeader + "Type: '" + clrType.Name + "' is boxed enum.";
                                 return new ClrtDisplayableType(null, typeId, Constants.InvalidIndex, clrType.Name, String.Empty, clrTypeKind);
                             case ClrElementKind.System__Canon:
                                 throw new MdrException("[GetClrtDisplayableType.GetClrtDisplayableType] System__Canon kind is not expected from ClrHeap.GetHeapObject(...) method.");
                             case ClrElementKind.Exception:
+                                var dispType = new ClrtDisplayableType(null, typeId, Constants.InvalidIndex, clrType.Name, String.Empty, clrTypeKind);
+                                var dispFlds = GetClrtDisplayableTypeFields(ndxProxy, heap, dispType, clrType, addr, ambiguousFields);
+                                if (ambiguousFields.Count > 0)
+                                {
+                                    SortedDictionary<string, List<ulong>>[] fldAddrDcts = new SortedDictionary<string, List<ulong>>[ambiguousFields.Count];
+                                    for (int j = 0, jcnt = fldAddrDcts.Length; j < jcnt; ++j)
+                                    {
+                                        fldAddrDcts[j] = new SortedDictionary<string, List<ulong>>(StringComparer.Ordinal);
+                                    }
+                                    for (int j = 0, jcnt = addresses.Length; j < jcnt; ++j)
+                                    {
+                                        var jaddr = addresses[j];
+                                        try
+                                        {
+                                            TryGetClrtDisplayableTypeFields(ndxProxy, heap, jaddr, ambiguousFields, dispFlds, fldAddrDcts);
+                                        }
+                                        catch (Exception ex)
+                                        {
+                                            error = Utils.GetExceptionErrorString(ex);
+                                        }
+                                    }
+                                    HandleAlternatives(dispType, dispFlds, ambiguousFields, fldAddrDcts);
+                                }
+                                dispType.AddFields(dispFlds);
+                                return dispType;
                             case ClrElementKind.Abstract:
                             case ClrElementKind.SystemVoid:
                             case ClrElementKind.SystemObject:
+                                error = Constants.MediumVerticalBarHeader + "Type: '" + clrType.Name + "' is System.Object.";
                                 return new ClrtDisplayableType(null, typeId, Constants.InvalidIndex, clrType.Name, String.Empty, clrTypeKind);
                         }
                     }
                     else
                     {
+                        if (TypeExtractor.IsPrimitive(clrTypeKind))
+                        {
+                            error = Constants.MediumVerticalBarHeader + "Type: '" + clrType.Name + "' is primitive.";
+                            return new ClrtDisplayableType(null, typeId, Constants.InvalidIndex, Constants.NullName, String.Empty, ClrElementKind.Unknown);
+                        }
                         switch (TypeExtractor.GetStandardKind(clrTypeKind))
                         {
                             case ClrElementKind.String:
+                                error = Constants.MediumVerticalBarHeader + "Type: '" + clrType.Name + "' is known structure or free.";
                                 return new ClrtDisplayableType(null, typeId, Constants.InvalidIndex, clrType.Name, String.Empty, clrTypeKind);
                             case ClrElementKind.SZArray:
                             case ClrElementKind.Array:

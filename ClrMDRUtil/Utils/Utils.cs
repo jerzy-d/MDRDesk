@@ -1986,7 +1986,7 @@ namespace ClrMDRIndex
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool IsInformation(string str)
         {
-            return !string.IsNullOrEmpty(str) && (str[0] == Constants.InformationSymbol);
+            return !string.IsNullOrEmpty(str) && (str[0] == Constants.InformationSymbol || str[0] == Constants.MediumVerticalBar);
         }
 
         #endregion Errors Formatting
