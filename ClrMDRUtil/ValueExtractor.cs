@@ -128,6 +128,24 @@ namespace ClrMDRIndex
             return formatSpec == null ? d.ToString("G",CultureInfo.InvariantCulture) : d.ToString(formatSpec);
         }
 
+        public static string DecimalValueAsString(ulong addr, ClrType type, bool intr, string formatSpec = null)
+        {
+            decimal d = GetDecimalValue(addr, type);
+            return formatSpec == null ? d.ToString("G", CultureInfo.InvariantCulture) : d.ToString(formatSpec);
+        }
+
+        public static decimal GetDecimalValue(ulong addr, ClrType type, bool intr)
+        {
+            var flags = (int)type.Fields[0].GetValue(addr, intr);
+            var hi = (int)type.Fields[1].GetValue(addr, true);
+            var lo = (int)type.Fields[2].GetValue(addr, true);
+            var mid = (int)type.Fields[3].GetValue(addr, true);
+            var checkflags = flags & 0x0000FF01;
+            if (!IsValidDecimalFlag(flags)) return 0m;
+            int[] bits = { lo, mid, hi, flags };
+            return new decimal(bits);
+        }
+
         public static decimal GetDecimalValue(ulong addr, ClrType type)
         {
             var flags = (int)type.Fields[0].GetValue(addr, true);
@@ -283,6 +301,14 @@ namespace ClrMDRIndex
             return formatSpec == null ? dt.ToString(CultureInfo.InvariantCulture) : dt.ToString(formatSpec);
         }
 
+        public static string DateTimeValueAsString(ulong addr, ClrType type, bool intr, string formatSpec = null)
+        {
+            var data = (ulong)type.Fields[0].GetValue(addr, intr);
+            data = data & TicksMask;
+            var dt = DateTime.FromBinary((long)data);
+            return formatSpec == null ? dt.ToString(CultureInfo.InvariantCulture) : dt.ToString(formatSpec);
+        }
+
         public static DateTime DateTimeValue(ulong addr, ClrType type)
         {
             var data = (ulong)type.Fields[0].GetValue(addr, true);
@@ -377,6 +403,13 @@ namespace ClrMDRIndex
             return ts.ToString("c");
         }
 
+        public static string TimeSpanValueAsString(ulong addr, ClrType type, bool intr)
+        {
+            var data = (long)type.Fields[0].GetValue(addr, intr);
+            var ts = TimeSpan.FromTicks(data);
+            return ts.ToString("c");
+        }
+
         public static TimeSpan TimeSpanValue(ulong addr, ClrType type)
         {
             var data = (long)type.Fields[0].GetValue(addr, true);
@@ -452,6 +485,29 @@ namespace ClrMDRIndex
             }
             return StringBuilderCache.GetStringAndRelease(sb);
         }
+
+        public static string GuidValueAsString(ulong addr, ClrType type, bool intr)
+        {
+            StringBuilder sb = StringBuilderCache.Acquire(64);
+
+            var ival = (int)type.Fields[0].GetValue(addr, intr);
+            sb.AppendFormat("{0:X8}", ival);
+            sb.Append('-');
+            var sval = (short)type.Fields[1].GetValue(addr, intr);
+            sb.AppendFormat("{0:X4}", sval);
+            sb.Append('-');
+            sval = (short)type.Fields[2].GetValue(addr, intr);
+            sb.AppendFormat("{0:X4}", sval);
+            sb.Append('-');
+            for (var i = 3; i < 11; ++i)
+            {
+                if (i == 5) sb.Append('-');
+                var val = (byte)type.Fields[i].GetValue(addr, intr);
+                sb.AppendFormat("{0:X2}", val);
+            }
+            return StringBuilderCache.GetStringAndRelease(sb);
+        }
+
 
         public static string GuidValue(ulong addr, ClrInstanceField field)
         {
@@ -1820,20 +1876,64 @@ namespace ClrMDRIndex
             return "Don't know how to get value.";
         }
 
-        public static string GetTypeValueString(ClrHeap heap, ulong addr, ClrType type, ClrElementKind kind)
+        //public static string GetTypeValueString(ClrHeap heap, ulong addr, ClrType type, ClrElementKind kind)
+        //{
+        //    if (TypeExtractor.IsKnownStruct(kind))
+        //    {
+        //        switch (TypeExtractor.GetSpecialKind(kind))
+        //        {
+        //            case ClrElementKind.Decimal:
+        //                return DecimalValueAsString(addr, type, null);
+        //            case ClrElementKind.DateTime:
+        //                return DateTimeValueAsString(addr, type, null);
+        //            case ClrElementKind.TimeSpan:
+        //                return TimeSpanValueAsString(addr, type);
+        //            case ClrElementKind.Guid:
+        //                return GuidValueAsString(addr, type);
+        //        }
+        //    }
+
+        //    if (TypeExtractor.IsString(kind))
+        //    {
+        //        return GetStringAtAddress(addr, heap);
+        //    }
+
+        //    if (TypeExtractor.IsObjectReference(kind))
+        //    {
+        //        return Utils.RealAddressString(addr);
+        //    }
+
+        //    if (TypeExtractor.IsEnum(kind))
+        //    {
+        //        long intVal;
+        //        object obj = type.GetValue(addr);
+        //        return GetEnumAsString(addr, type, TypeExtractor.GetClrElementType(kind), obj, out intVal);
+        //    }
+
+        //    if (TypeExtractor.IsKnownPrimitive(kind))
+        //    {
+        //        object val = type.GetValue(addr);
+        //        return PrimitiveValueAsString(val, TypeExtractor.GetClrElementType(kind));
+        //    }
+
+        //    return "Don't know how to get value.";
+
+        //}
+
+        public static string GetTypeValueString(ClrHeap heap, ulong addr, ClrType type, bool intr, ClrElementKind kind)
         {
             if (TypeExtractor.IsKnownStruct(kind))
             {
                 switch (TypeExtractor.GetSpecialKind(kind))
                 {
                     case ClrElementKind.Decimal:
-                        return DecimalValueAsString(addr, type, null);
+                        return DecimalValueAsString(addr, type, intr);
                     case ClrElementKind.DateTime:
-                        return DateTimeValueAsString(addr, type, null);
+                        return DateTimeValueAsString(addr, type, intr);
                     case ClrElementKind.TimeSpan:
-                        return TimeSpanValueAsString(addr, type);
+                        return TimeSpanValueAsString(addr, type, intr);
                     case ClrElementKind.Guid:
-                        return GuidValueAsString(addr, type);
+                        return GuidValueAsString(addr, type, intr);
                 }
             }
 

@@ -930,7 +930,7 @@ namespace ClrMDRIndex
                         if (TypeExtractor.IsPrimitive(clrTypeKind))
                         {
                             error = Constants.MediumVerticalBarHeader + "Type: '" + clrType.Name + "' is primitive.";
-                            return new ClrtDisplayableType(null, typeId, Constants.InvalidIndex, Constants.NullName, String.Empty, ClrElementKind.Unknown);
+                            return new ClrtDisplayableType(null, typeId, Constants.InvalidIndex, clrType.Name, String.Empty, clrTypeKind);
                         }
                         switch (TypeExtractor.GetStandardKind(clrTypeKind))
                         {

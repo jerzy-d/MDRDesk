@@ -2225,64 +2225,29 @@ namespace UnitTestMdr
         {
             string[] paths = new string[]
             {
-/* 0*/          @"C:\WinDbgStuff\Dumps\TestApp.exe_171226_161444.dmp.map",
-                // 0x0002379fb4a520 System.Collections.Generic.Dictionary<System.String,System.AppContext+SwitchValueState>
-                // 0x0002379fb463d8 System.Collections.Generic.Dictionary<System.Int32,System.Object> ERROR test this!
+/* 0*/          @"C:\WinDbgStuff\Dumps\Analytics\Baly\AnalyticsLatencyDump06062016 03354291.dmp.map",
+                // 0x0000a1ada00610 System.Collections.Generic.Dictionary<System.Object,System.String>
+                // 0x0000a12cf26938 System.Collections.Generic.Dictionary<System.Object,System.String>
 /* 1*/          @"C:\WinDbgStuff\Dumps\Analytics\RCG\analytics3.dmp.map",
                 // 0x000006caadcb68 System.Collections.Generic.Dictionary<System.String,ECS.Common.Collections.Tag>
                 // 0x0000094afa1bb0 System.Collections.Generic.Dictionary<System.String,System.Boolean>
                 // 0x000007caaa7408 System.Collections.Generic.Dictionary<Microsoft.Practices.ObjectBuilder.BuilderStage,System.Collections.Generic.List<Microsoft.Practices.ObjectBuilder.IBuilderStrategy>>
-/* 2*/          @"C:\WinDbgStuff\dumps\TestApp.exe_180107_110845.dmp.map",
-                // 0x000173c1b16900 System.Collections.Generic.Dictionary<System.Int32,TestApp.TestEnumUInt8>
-                // 0x000173c1b163d8 System.Collections.Generic.Dictionary<System.Int32,System.Object>
-                // 0x000173c1b1a828 System.Collections.Generic.Dictionary<System.String,System.AppContext+SwitchValueState>
-/* 3*/          @"D:\Jerzy\WinDbgStuff\dumps\TestApp.exe_180108_083751.dmp.map",
-                // 0x00000002bc7130 System.Collections.Generic.Dictionary<System.ValueTuple<System.String,System.String>,System.ValueTuple<System.Int32,System.String,System.ValueTuple<System.Int32,System.String>>>
-/* 4*/          @"C:\WinDbgStuff\Dumps\TestApp\64\TestApp.exe_180113_065315.dmp.map",
-                // 0x0001f2b55e70e0 System.Collections.Generic.Dictionary<System.ValueTuple<System.String,System.String>,System.ValueTuple<System.Int32,System.String,System.ValueTuple<System.Int32,System.String>>>
-/* 5*/          @"C:\WinDbgStuff\Dumps\TestApp\64\TestApp.exe_180126_201106.dmp.map",
-                // 0x0001ab80007718 System.Collections.Generic.Dictionary<System.Collections.Generic.KeyValuePair<System.String,System.Int32>,System.Collections.Generic.KeyValuePair<System.String,System.Int32>>
-                // 0x0001ab80007380 System.Collections.Generic.Dictionary<System.ValueTuple<System.String,System.String>,System.ValueTuple<System.Int32,System.String,System.ValueTuple<System.Int32,System.String>>>
-                // 0x0001ab80007978 System.Collections.Generic.Dictionary<System.String,System.Collections.Generic.KeyValuePair<System.String,System.ValueTuple<System.DateTime,System.Decimal,TestApp.TestEnumInt8>>>
-                // 0x0001ab8000f668 System.Collections.Generic.Dictionary<System.String,System.TimeZoneInfo>
-/* 6*/          @"D:\Jerzy\WinDbgStuff\dumps\Analytics\PrimeCap\a6.dmp.map",
+/* 2*/          @"D:\Jerzy\WinDbgStuff\dumps\Analytics\PrimeCap\a6.dmp.map",
                 // 0x0000de8bdeeae8 System.Collections.Generic.Dictionary<System.String,ECS.Common.Transport.Event_Data.PricingNode>
                 // TODO JRD TEST 0x0000dc8b887ba8 System.Collections.Generic.Dictionary<Microsoft.Practices.ObjectBuilder.BuilderPolicyKey,Microsoft.Practices.ObjectBuilder.IBuilderPolicy>
                 // TODO JRD TEST 0x0000dc8b884de0 ERROR Unexpected special kind Crash Dump: a6.dmp(x64) MDR Desk  0.9.0.18[64 - bit] ❖ a6.dmp
                 // TODO JRD TEST 0x0000de8bb32c58 System.Collections.Generic.Dictionary<Eze.Server.Common.Pulse.Common.Types.RelatedViews,System.Object>
-
                 // TODO JRD TEST 0x0000dc8c06a748 System.Collections.Generic.HashSet<System.String>
-/* 7*/
-                @"D:\Jerzy\WinDbgStuff\dumps\TestApp\TestApp.exe_180126_134041.dmp.map",
-                // 0x000000028d7768 System.Collections.Generic.Dictionary<System.Collections.Generic.KeyValuePair<System.String,System.Int32>,System.Collections.Generic.KeyValuePair<System.String,System.Int32>>
-                // 0x000000028d79c8 System.Collections.Generic.Dictionary<System.String,System.Collections.Generic.KeyValuePair<System.String,System.ValueTuple<System.DateTime,System.Decimal,TestApp.TestEnumInt8>>>
-                // 0x000000028db720 System.Collections.Generic.Dictionary<System.String,System.AppContext+SwitchValueState>
-                // 0x000000028d73d0 System.Collections.Generic.Dictionary<System.ValueTuple<System.String,System.String>,System.ValueTuple<System.Int32,System.String,System.ValueTuple<System.Int32,System.String>>>
-
             };
 
-            decimal d;
-            var ok = decimal.TryParse("", NumberStyles.Number, NumberFormatInfo.InvariantInfo, out d);
-
-
-                var index = OpenIndex(paths[6]);
-            ulong addr = 0x0000de8bb32c58;
+            var index = OpenIndex(paths[0]);
+            ulong addr = 0x0000a1ada00610;
             using (index)
             {
                 var heap = index.Heap;
-                //(string error0, KeyValuePair<string, string>[] descr0, KeyValuePair<string, string>[] values0) = ValueExtractor.GetDictionaryContent(heap, addr);
-                var instanceTypeName = index.GetTypeName(addr);
-                var initType = index.Heap.GetObjectType(addr);
-                (ClrType type, ClrElementKind kind) = TypeExtractor.GetRealType(index.Heap, addr);
-                object val = type.GetValue(addr);
-
-                (ClrType type1, ClrElementKind kind1) = TypeExtractor.GetRealType(index.Heap, (ulong)val);
-
                 (string error, KeyValuePair<string, string>[] descr, KeyValuePair<string, string>[] values) = CollectionContent.DictionaryContentAsStrings(heap, addr);
-
                 Assert.IsNull(error, error);
             }
-
         }
 
         [TestMethod]

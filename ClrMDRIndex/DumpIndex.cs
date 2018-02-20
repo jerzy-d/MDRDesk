@@ -2129,6 +2129,71 @@ namespace ClrMDRIndex
 
         }
 
+        public ListingInfo GetKnownTypeContentReport(int typeId, ulong[] instances, out string error)
+        {
+            error = null;
+            try
+            {
+                Debug.Assert(instances != null && instances.Length > 0);
+                if (instances == null || instances.Length < 1)
+                {
+                    error = Constants.InformationSymbolHeader + "Type instances not found? Should not happen!" + Environment.NewLine + GetTypeName(typeId);
+                    return null;
+                }
+                // get array lengths data
+                //
+
+                int dndx = 0;
+                ClrType clrType = null;
+                ClrElementKind kind = ClrElementKind.Unknown;
+                for (int i = 0, icnt = instances.Length; i < icnt; ++i)
+                {
+                    clrType = Heap.GetObjectType(Utils.RealAddress(instances[i]));
+                    if (clrType != null)
+                    {
+                        kind = TypeExtractor.GetElementKind(clrType);
+                        break;
+                    }
+                }
+                string[] idata = new string[instances.Length * 2];
+                for (int i = 0, icnt = instances.Length; i < icnt; ++i)
+                {
+                    ulong addr = instances[i];
+                    idata[dndx++] = Utils.AddressString(addr);
+                    idata[dndx++] = addr == Constants.InvalidAddress ? Constants.NullValue : ValueExtractor.GetTypeValueString(Heap, addr, clrType, false, kind);
+                }
+
+                // prepare listing output
+                //
+                listing<string>[] items = new listing<string>[instances.Length];
+
+                ColumnInfo[] colInfos = new[]
+                {
+                    new ColumnInfo("Address", ReportFile.ColumnType.Address, 150, 1, true),
+                    new ColumnInfo(Utils.BaseTypeName(clrType.Name), ReportFile.ColumnType.Int32, 450, 2, true),
+                };
+
+                int dataNdx = 0;
+                int ndx = 0;
+                for (int i = 0, icnt = instances.Length; i < icnt; ++i)
+                {
+                    items[ndx++] = new listing<string>(idata, dataNdx, 2);
+                    dataNdx += 2;
+                }
+
+                var sb = StringBuilderCache.Acquire(StringBuilderCache.MaxCapacity);
+
+                sb.AppendLine(GetTypeName(typeId) + "  COUNT: " + Utils.CountString(instances.Length));
+                return new ListingInfo(null, items, colInfos, StringBuilderCache.GetStringAndRelease(sb));
+            }
+            catch (Exception ex)
+            {
+                error = Utils.GetExceptionErrorString(ex);
+                return null;
+            }
+
+        }
+
         private void BuildTypeValueReportInfo(StringBuilder sb, TypeValueQuery qry, string indent)
         {
             sb.AppendLine(indent + qry.FieldName + "   " + qry.TypeName);

@@ -581,7 +581,7 @@ namespace ClrMDRIndex
                         }
                         else
                         {
-                            key = ValueExtractor.GetTypeValueString(heap, keyAddr, nodeFldTypes[m_keyNdx], nodeFldKinds[m_keyNdx]);
+                            key = ValueExtractor.GetTypeValueString(heap, keyAddr, nodeFldTypes[m_keyNdx], false, nodeFldKinds[m_keyNdx]);
                         }
                         ulong valAddr = TypeExtractor.IsObjectReference(nodeFldKinds[m_valueNdx])
                                             ? (ulong)nodeType.Fields[m_valueNdx].GetValue(node, false, false)
@@ -599,7 +599,7 @@ namespace ClrMDRIndex
                         }
                         else
                         {
-                            val = ValueExtractor.GetTypeValueString(heap, valAddr, nodeFldTypes[m_valueNdx], nodeFldKinds[m_valueNdx]);
+                            val = ValueExtractor.GetTypeValueString(heap, valAddr, nodeFldTypes[m_valueNdx], false, nodeFldKinds[m_valueNdx]);
                         }
                         result[resultNdx++] = new KeyValuePair<string, string>(key, val);
                         node = (ulong)nodeType.Fields[m_nextNdx].GetValue(node,false);
@@ -795,6 +795,26 @@ namespace ClrMDRIndex
                     var eaddr = entriesType.GetArrayElementAddress(entriesAddr, i);
                     var hash = ValueExtractor.GetFieldIntValue(heap, eaddr, hashFld, true);
                     if (hash <= 0) continue;
+
+                    if (TypeExtractor.IsAmbiguousKind(keyKind))
+                    {
+                        object keyObj = keyFld.GetValue(eaddr, keyType.HasSimpleValue, false);
+                        if (keyObj != null)
+                        {
+                            var t = heap.GetObjectType((ulong)keyObj);
+                            if (t != null)
+                            {
+                                var k = TypeExtractor.GetElementKind(t);
+                                keyType = t;
+                                keyKind = k;
+                                if (keyType.IsEnum)
+                                {
+                                    keyEnum = new EnumValues(keyType);
+                                }
+                                useKeyTypeToGetValue = true;
+                            }
+                        }
+                    }
 
                     if (TypeExtractor.IsStruct(keyKind))
                     {

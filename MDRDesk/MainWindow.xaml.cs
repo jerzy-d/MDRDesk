@@ -2278,9 +2278,13 @@ namespace MDRDesk
                             return (error, lstInfo);
                         }, DumpSTAScheduler);
                     }
-                    else if (TypeExtractor.IsPrimitive(dispType.Kind))
+                    else if (TypeExtractor.IsKnownStruct(dispType.Kind) || TypeExtractor.IsPrimitive(dispType.Kind) || TypeExtractor.IsEnum(dispType.Kind))
                     {
-
+                        (error, lstInfo) = await Task.Factory.StartNew(() =>
+                        {
+                            lstInfo = CurrentIndex.GetKnownTypeContentReport(typeId, instances, out error);
+                            return (error, lstInfo);
+                        }, DumpSTAScheduler);
                     }
                     if (error != null)
                     {

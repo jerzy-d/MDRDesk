@@ -223,6 +223,7 @@ namespace ClrMDRIndex
             for (int i = 0; i < cnt; ++i)
             {
                 var fld = flds[i];
+                var ftype = fld.Type;
                 fields[i] = fld;
                 fldKinds[i] = TypeExtractor.GetElementKind(fld.Type);
                 types[i] = fld.Type;
@@ -231,7 +232,7 @@ namespace ClrMDRIndex
                 {
                     ClrType fType = null;
                     ClrElementKind fKind = ClrElementKind.Unknown;
-                    object obj = fld.GetValue(addr, false, false);
+                    object obj = fld.GetValue(addr, true, false);
                     if (obj is ulong)
                     {
                         (fType,fKind) = TypeExtractor.GetRealType(heap, (ulong)obj);
@@ -240,13 +241,14 @@ namespace ClrMDRIndex
                     {
                         types[i] = fType;
                         typeKinds[i] = fKind;
+                        ftype = fType;
                     }
                 }
 
-                if (TypeExtractor.IsStruct(fldKinds[i]))
+                if (TypeExtractor.IsStruct(fldKinds[i]) || TypeExtractor.IsStruct(typeKinds[i]))
                 {
                     if (structFields == null) structFields = new StructFieldsInfo[cnt];
-                    var faddr = fld.GetAddress(addr, true);
+                    var faddr = fld.GetAddress(addr, false);
                     structFields[i] = GetStructFields(types[i], heap, faddr);
                 }
             }
@@ -698,7 +700,7 @@ namespace ClrMDRIndex
                 {
                     var fobj = fld.GetValue(addr, true);
                     var faddr = (ulong)fobj;
-                    vals[i] = ValueExtractor.GetTypeValueString(heap, faddr, fldType, kind);
+                    vals[i] = ValueExtractor.GetTypeValueString(heap, faddr, fldType, true, kind);
                 }
                 else
                 {
@@ -785,7 +787,7 @@ namespace ClrMDRIndex
                 {
                     var fobj = fld.GetValue(addr, true);
                     var faddr = (ulong)fobj;
-                    vals[i] = ValueExtractor.GetTypeValueString(heap, faddr, fldType, kind);
+                    vals[i] = ValueExtractor.GetTypeValueString(heap, faddr, fldType, true, kind);
                 }
                 else
                 {
