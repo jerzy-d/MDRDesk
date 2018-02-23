@@ -2228,11 +2228,14 @@ namespace UnitTestMdr
 /* 0*/          @"C:\WinDbgStuff\Dumps\Analytics\Baly\AnalyticsLatencyDump06062016 03354291.dmp.map",
                 // 0x0000a1ada00610 System.Collections.Generic.Dictionary<System.Object,System.String>
                 // 0x0000a12cf26938 System.Collections.Generic.Dictionary<System.Object,System.String>
-/* 1*/          @"C:\WinDbgStuff\Dumps\Analytics\RCG\analytics3.dmp.map",
+/* 1*/          @"D:\Jerzy\WinDbgStuff\dumps\Analytics\Baly\AnalyticsLatencyDump06062016 03354291.dmp.map",
+                // 0x0000a2bb927f80 System.Collections.Generic.Dictionary<System.Object,System.String>
+
+/* 2*/          @"C:\WinDbgStuff\Dumps\Analytics\RCG\analytics3.dmp.map",
                 // 0x000006caadcb68 System.Collections.Generic.Dictionary<System.String,ECS.Common.Collections.Tag>
                 // 0x0000094afa1bb0 System.Collections.Generic.Dictionary<System.String,System.Boolean>
                 // 0x000007caaa7408 System.Collections.Generic.Dictionary<Microsoft.Practices.ObjectBuilder.BuilderStage,System.Collections.Generic.List<Microsoft.Practices.ObjectBuilder.IBuilderStrategy>>
-/* 2*/          @"D:\Jerzy\WinDbgStuff\dumps\Analytics\PrimeCap\a6.dmp.map",
+/* 3*/          @"D:\Jerzy\WinDbgStuff\dumps\Analytics\PrimeCap\a6.dmp.map",
                 // 0x0000de8bdeeae8 System.Collections.Generic.Dictionary<System.String,ECS.Common.Transport.Event_Data.PricingNode>
                 // TODO JRD TEST 0x0000dc8b887ba8 System.Collections.Generic.Dictionary<Microsoft.Practices.ObjectBuilder.BuilderPolicyKey,Microsoft.Practices.ObjectBuilder.IBuilderPolicy>
                 // TODO JRD TEST 0x0000dc8b884de0 ERROR Unexpected special kind Crash Dump: a6.dmp(x64) MDR Desk  0.9.0.18[64 - bit] ❖ a6.dmp
@@ -2240,8 +2243,8 @@ namespace UnitTestMdr
                 // TODO JRD TEST 0x0000dc8c06a748 System.Collections.Generic.HashSet<System.String>
             };
 
-            var index = OpenIndex(paths[0]);
-            ulong addr = 0x0000a1ada00610;
+            var index = OpenIndex(paths[1]);
+            ulong addr = 0x0000a2bb927f80;
             using (index)
             {
                 var heap = index.Heap;
