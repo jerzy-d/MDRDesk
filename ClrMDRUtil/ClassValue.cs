@@ -171,11 +171,11 @@ namespace ClrMDRIndex
             try
             {
                 addr = Utils.RealAddress(addr);
-                var type = heap.GetObjectType(addr);
-                if (type == null) return ("Object Value Error" + Constants.HeavyGreekCrossPadded + "Cannot find an instance." + Constants.HeavyGreekCrossPadded + "Heap cannot get object type at address: " + Utils.RealAddressString(addr), null, ClrElementKind.Unknown, (null, null, null, null));
-                var kind = TypeExtractor.GetElementKind(type);
-                var fldCnt = type.Fields.Count;
 
+                (ClrType type, ClrElementKind kind, ClrType rtype, ClrElementKind rkind) = TypeExtractor.GetRealType(heap, addr);
+                if (type == null) return ("Object Value Error" + Constants.HeavyGreekCrossPadded + "Cannot find an instance." + Constants.HeavyGreekCrossPadded + "Heap cannot get object type at address: " + Utils.RealAddressString(addr), null, ClrElementKind.Unknown, (null, null, null, null));
+
+                var fldCnt = type.Fields.Count;
                 var fldTypes = fldCnt == 0 ? Utils.EmptyArray<ClrType>.Value : new ClrType[fldCnt];
                 var fldKinds = fldCnt == 0 ? Utils.EmptyArray<ClrElementKind>.Value : new ClrElementKind[fldCnt];
                 var strings = fldCnt == 0 ? Utils.EmptyArray<string>.Value : new string[fldCnt];

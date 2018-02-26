@@ -787,14 +787,17 @@ namespace ClrMDRIndex
 
                 bool useKeyTypeToGetValue = false;
                 bool useValTypeToGetValue = false;
-                var valList = new List<KeyValuePair<string, string>>(count - freeCount);
-                for (int i = 0; i < aryLen; ++i)
+                int dcount = count - freeCount;
+                var valList = new List<KeyValuePair<string, string>>(dcount);
+
+                for (int i = 0; i < aryLen && dcount > 0; ++i)
                 {
                     var keyVal = Constants.UnknownValue;
                     var valVal = Constants.UnknownValue;
                     var eaddr = entriesType.GetArrayElementAddress(entriesAddr, i);
                     var hash = ValueExtractor.GetFieldIntValue(heap, eaddr, hashFld, true);
-                    if (hash <= 0) continue;
+                    if (hash < 0) continue;
+                    ulong keyAddr = Constants.InvalidAddress;
 
                     if (TypeExtractor.IsAmbiguousKind(keyKind))
                     {
@@ -804,6 +807,7 @@ namespace ClrMDRIndex
                             var t = heap.GetObjectType((ulong)keyObj);
                             if (t != null)
                             {
+                                keyAddr = (ulong)keyObj;
                                 var k = TypeExtractor.GetElementKind(t);
                                 keyType = t;
                                 keyKind = k;
@@ -818,7 +822,7 @@ namespace ClrMDRIndex
 
                     if (TypeExtractor.IsStruct(keyKind))
                     {
-                        var kAddr = keyFld.GetAddress(eaddr, true);
+                        var kAddr = (keyAddr != Constants.InvalidAddress) ? keyAddr : keyFld.GetAddress(eaddr, true);
                         if (keySfi == null)
                         {
                             keySfi = StructFieldsInfo.GetStructFields(keyType, heap, kAddr);
@@ -903,7 +907,7 @@ namespace ClrMDRIndex
                             else valVal = (string)ValueExtractor.GetFieldValue(heap, eaddr, valFld, valType, valKind, true, false);
                         }
                     }
-
+                    --dcount;
                     valList.Add(new KeyValuePair<string, string>(keyVal, valVal));
                 }
 

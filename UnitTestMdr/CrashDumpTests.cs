@@ -618,6 +618,39 @@ namespace UnitTestMdr
             }
         }
 
+        [TestMethod]
+        public void StructVals()
+        {
+            string error;
+            string dumpPath = @"C:\WinDbgStuff\Dumps\Analytics\Baly\AnalyticsLatencyDump06062016 03354291.dmp";
+            ulong addr = 0x000000a1ada00660;
+            using (var clrDump = OpenDump(dumpPath))
+            {
+                try
+                {
+                    var runtime = clrDump.Runtimes[0];
+                    var heap = runtime.Heap;
+                    ClrType type = heap.GetObjectType(addr);
+                    int fldCount = type.Fields.Count;
+                    Assert.IsTrue(fldCount == 1);
+                    string typeName = type.Name;
+                    var fld = type.Fields[0];
+                    var fldType = fld.Type;
+                    string fldTypeName = fldType.Name;
+                    ulong faddr = (ulong)fld.GetValue(addr);
+                    var newType = heap.GetObjectType(faddr);
+                    var nName = newType.Name;
+
+                }
+                catch (Exception ex)
+                {
+                    error = Utils.GetExceptionErrorString(ex);
+                    Assert.IsTrue(false, error);
+                }
+            }
+        }
+
+
         #endregion misc
 
         #region collection content

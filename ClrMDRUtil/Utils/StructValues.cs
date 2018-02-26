@@ -232,7 +232,7 @@ namespace ClrMDRIndex
                 {
                     ClrType fType = null;
                     ClrElementKind fKind = ClrElementKind.Unknown;
-                    object obj = fld.GetValue(addr, true, false);
+                    object obj = fld.GetValue(addr, false, false);
                     if (obj is ulong)
                     {
                         (fType,fKind) = TypeExtractor.GetRealType(heap, (ulong)obj);
@@ -363,7 +363,7 @@ namespace ClrMDRIndex
                 }
                 if (TypeExtractor.IsObjectReference(typeKind))
                 {
-                    var obj = field.GetValue(addr, intr, false);
+                    var obj = field.GetValue(addr, false, false);
                     if (obj == null || !(obj is ulong)) return Constants.ZeroAddressStr;
                     return Utils.RealAddressString((ulong)obj);
                 }
