@@ -1679,10 +1679,10 @@ namespace UnitTestMdr
             Stopwatch stopWatch = new Stopwatch();
             stopWatch.Start();
 
-            //var index = OpenIndex(@"C:\WinDbgStuff\Dumps\TestApp\32\TestApp.exe_170415_073854.dmp.map");
-            //ulong addr = 0x0256e64c;
-            var index = OpenIndex(@"C:\WinDbgStuff\dumps\Analytics\Baly\AnalyticsLatencyDump06062016 03354291.dmp.map");
-            ulong addr = 0x0000a4ace42d68;
+            var index = OpenIndex(@"D:\Jerzy\WinDbgStuff\dumps\Analytics\Baly\AnalyticsLatencyDump06062016 03354291.dmp.map");
+            ulong addr = 0x0000a1ad9d3cf8;
+            //var index = OpenIndex(@"C:\WinDbgStuff\dumps\Analytics\Baly\AnalyticsLatencyDump06062016 03354291.dmp.map");
+            //ulong addr = 0x0000a4ace42d68;
 
             TestContext.WriteLine(index.DumpFileName + " INDEX OPEN DURATION: " + Utils.StopAndGetDurationString(stopWatch));
 
@@ -2240,7 +2240,7 @@ namespace UnitTestMdr
 
 /* 1*/          @"D:\Jerzy\WinDbgStuff\dumps\Analytics\Baly\AnalyticsLatencyDump06062016 03354291.dmp.map",
                 // 0x0000a2bb927f80 System.Collections.Generic.Dictionary<System.Object,System.String>
-
+                // TODO JRD -- test this: 0x0000a1ad9d3cf8 System.Collections.Generic.Dictionary<System.Object,ECS.Common.Threading.Queue.Queues.IExecutionTimestamps>
 /* 2*/          @"C:\WinDbgStuff\Dumps\Analytics\RCG\analytics3.dmp.map",
                 // 0x000006caadcb68 System.Collections.Generic.Dictionary<System.String,ECS.Common.Collections.Tag>
                 // 0x0000094afa1bb0 System.Collections.Generic.Dictionary<System.String,System.Boolean>
@@ -2253,8 +2253,8 @@ namespace UnitTestMdr
                 // TODO JRD TEST 0x0000dc8c06a748 System.Collections.Generic.HashSet<System.String>
             };
 
-            var index = OpenIndex(paths[0]);
-            ulong addr = 0x0000a1ada43540;
+            var index = OpenIndex(paths[1]);
+            ulong addr = 0x0000a1ad9d3cf8;
             using (index)
             {
                 var heap = index.Heap;

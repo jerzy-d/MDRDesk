@@ -232,10 +232,12 @@ namespace ClrMDRIndex
                 {
                     ClrType fType = null;
                     ClrElementKind fKind = ClrElementKind.Unknown;
+                    ClrType rType = null;
+                    ClrElementKind rKind = ClrElementKind.Unknown;
                     object obj = fld.GetValue(addr, false, false);
                     if (obj is ulong)
                     {
-                        (fType,fKind) = TypeExtractor.GetRealType(heap, (ulong)obj);
+                        (fType,fKind,rType,rKind) = TypeExtractor.GetRealType(heap, (ulong)obj);
                     }
                     if (fType != null)
                     {

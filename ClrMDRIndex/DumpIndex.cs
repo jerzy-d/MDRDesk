@@ -1694,7 +1694,7 @@ namespace ClrMDRIndex
                 }
                 ClrtDisplayableType cdt = TypeExtractor.GetClrtDisplayableType(_indexProxy, Dump.Heap, parent, typeId, instances, out error);
                 if (cdt != null) cdt.SetAddresses(instances);
-                return new ValueTuple<string, ClrtDisplayableType, ulong[]>(error, parent, instances); ;
+                return new ValueTuple<string, ClrtDisplayableType, ulong[]>(error, parent, instances);
             }
             catch (Exception ex)
             {

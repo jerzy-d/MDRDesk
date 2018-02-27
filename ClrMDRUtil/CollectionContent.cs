@@ -770,7 +770,9 @@ namespace ClrMDRIndex
                 (ulong entriesAddr, ClrType entriesType) = GetFieldUInt64AndType(type, "entries", fldTypes, values);
 
                 if (entriesType == null || entriesAddr == Constants.InvalidAddress || (count - freeCount) < 1)
-                    return (TypeExtractor.GetKnowTypeName(TypeExtractor.KnownTypes.Dictionary) + " is empty.", null, null);
+                {
+                    return (EmptyCollectionMessage(TypeExtractor.GetKnowTypeName(TypeExtractor.KnownTypes.Dictionary), addr, type.Name, null), null, null);
+                }
 
                 (ClrType aryElemType, ClrElementKind aryElemKind, int aryLen) = ArrayInfo(heap, entriesType, entriesAddr);
 

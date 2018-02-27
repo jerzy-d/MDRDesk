@@ -681,7 +681,7 @@ namespace ClrMDRIndex
         public static KeyValuePair<ClrType, ClrElementKind> TryGetRealType(ClrHeap heap, ulong addr, ClrInstanceField fld, bool isInternal)
         {
             var obj = fld.GetValue(addr, isInternal);
-            if (obj == null) return new KeyValuePair<ClrType, ClrElementKind>(null, ClrElementKind.Unknown);
+            if (obj == null || !(obj is ulong)) return new KeyValuePair<ClrType, ClrElementKind>(null, ClrElementKind.Unknown);
             var oaddr = (ulong)obj;
             if (oaddr == 0UL) return new KeyValuePair<ClrType, ClrElementKind>(null, ClrElementKind.Unknown);
 
