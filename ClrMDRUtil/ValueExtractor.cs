@@ -1876,50 +1876,6 @@ namespace ClrMDRIndex
             return "Don't know how to get value.";
         }
 
-        //public static string GetTypeValueString(ClrHeap heap, ulong addr, ClrType type, ClrElementKind kind)
-        //{
-        //    if (TypeExtractor.IsKnownStruct(kind))
-        //    {
-        //        switch (TypeExtractor.GetSpecialKind(kind))
-        //        {
-        //            case ClrElementKind.Decimal:
-        //                return DecimalValueAsString(addr, type, null);
-        //            case ClrElementKind.DateTime:
-        //                return DateTimeValueAsString(addr, type, null);
-        //            case ClrElementKind.TimeSpan:
-        //                return TimeSpanValueAsString(addr, type);
-        //            case ClrElementKind.Guid:
-        //                return GuidValueAsString(addr, type);
-        //        }
-        //    }
-
-        //    if (TypeExtractor.IsString(kind))
-        //    {
-        //        return GetStringAtAddress(addr, heap);
-        //    }
-
-        //    if (TypeExtractor.IsObjectReference(kind))
-        //    {
-        //        return Utils.RealAddressString(addr);
-        //    }
-
-        //    if (TypeExtractor.IsEnum(kind))
-        //    {
-        //        long intVal;
-        //        object obj = type.GetValue(addr);
-        //        return GetEnumAsString(addr, type, TypeExtractor.GetClrElementType(kind), obj, out intVal);
-        //    }
-
-        //    if (TypeExtractor.IsKnownPrimitive(kind))
-        //    {
-        //        object val = type.GetValue(addr);
-        //        return PrimitiveValueAsString(val, TypeExtractor.GetClrElementType(kind));
-        //    }
-
-        //    return "Don't know how to get value.";
-
-        //}
-
         public static string GetTypeValueString(ClrHeap heap, ulong addr, ClrType type, bool intr, ClrElementKind kind)
         {
             if (TypeExtractor.IsKnownStruct(kind))

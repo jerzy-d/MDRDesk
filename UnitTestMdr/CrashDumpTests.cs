@@ -3014,6 +3014,108 @@ namespace UnitTestMdr
 
         #region type references
 
+        private int GetInstanceCount(ClrHeap heap)
+        {
+            var segs = heap.Segments;
+            int count = 0;
+            for (int i = 0, icnt = segs.Count; i < icnt; ++i)
+            {
+                var seg = segs[i];
+                ulong addr = seg.FirstObject;
+                while (addr != 0ul)
+                {
+                    var clrType = heap.GetObjectType(addr);
+                    if (clrType == null) goto NEXT_OBJECT;
+                    ++count;
+                    NEXT_OBJECT:
+                    addr = seg.NextObject(addr);
+                }
+            }
+            return count;
+        }
+
+        [TestMethod]
+        public void TypeReferences_GenerateRefData()
+        {
+            string[] dumps = new string[]
+            {
+                 @"\Analytics\Ellerston\Eze.Analytics.Svc_170309_130146.BIG.dmp",
+                 @"\Analytics\BigOne\Analytics11_042015_2.BigOne.dmp"
+            };
+
+            string dumpPath = Setup.DumpsFolder + dumps[1];
+            string dumpName = Path.GetFileNameWithoutExtension(dumpPath);
+            string refsPath = Setup.DumpsFolder + @"\CPP.REFS.BUILD.TEST\" + dumpName + ".REFS.BIN";
+            string addrPath = Setup.DumpsFolder + @"\CPP.REFS.BUILD.TEST\" + dumpName + ".ADDR.BIN";
+            BinaryWriter bwAddr = null;
+            BinaryWriter bwRefs = null;
+
+            try
+            {
+                var dmp = OpenDump(dumpPath);
+                using (dmp)
+                {
+                    var heap = dmp.Heap;
+                    var segs = heap.Segments;
+                    var fieldAddrOffsetList = new List<KeyValuePair<ulong, int>>(64);
+
+                    int instCount = GetInstanceCount(heap);
+                    ulong[] addresses = new ulong[instCount];
+                    int addrNdx = 0;
+
+                    bwAddr = new BinaryWriter(File.Open(addrPath, FileMode.Create));
+                    bwRefs = new BinaryWriter(File.Open(refsPath, FileMode.Create));
+                    bwAddr.Write(instCount);
+
+                    for (int i = 0, icnt = segs.Count; i < icnt; ++i)
+                    {
+                        var seg = segs[i];
+                        ulong addr = seg.FirstObject;
+                        while (addr != 0ul)
+                        {
+                            var clrType = heap.GetObjectType(addr);
+                            if (clrType == null) goto NEXT_OBJECT;
+                            addresses[addrNdx++] = addr;
+                            bwAddr.Write(addr);
+                            fieldAddrOffsetList.Clear();
+                            clrType.EnumerateRefsOfObjectCarefully(addr, (address, off) =>
+                            {
+                                fieldAddrOffsetList.Add(new KeyValuePair<ulong, int>(address, off));
+                            });
+                            int rcnt = fieldAddrOffsetList.Count;
+                            if (rcnt < 1)
+                            {
+                                bwRefs.Write((int)0);
+                            }
+                            else
+                            {
+                                bwRefs.Write(rcnt + 1);
+                                bwRefs.Write(addr);
+                                for (int j = 0, jcnt = fieldAddrOffsetList.Count; j < jcnt; ++j)
+                                {
+                                    bwRefs.Write(fieldAddrOffsetList[j].Key);
+                                }
+                            }
+
+                            NEXT_OBJECT:
+                            addr = seg.NextObject(addr);
+                        }
+                    }
+                    bwRefs.Write((uint)0xFFFFFFFF);
+                } // using dump
+            }
+            catch (Exception ex)
+            {
+                Assert.IsTrue(false, ex.ToString());
+            }
+            finally
+            {
+                bwAddr?.Close();
+                bwRefs?.Close();
+            }
+        }
+
+
         [TestMethod]
         public void TestTypeReferences()
         {
