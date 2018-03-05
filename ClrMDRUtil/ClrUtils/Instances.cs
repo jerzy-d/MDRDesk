@@ -12,11 +12,11 @@ namespace ClrMDRIndex
         public struct RootBits
         {
             public static ulong Mask = 0xF000000000000000;
-            public static ulong FinalizerMask = 0x3000000000000000;
             public static ulong AddressMask = 0x0FFFFFFFFFFFFFFF;
             public static ulong Rooted = 0x8000000000000000;
             public static ulong Finalizer = 0x4000000000000000;
             public static ulong Root = 0x2000000000000000;
+            public static ulong Local = 0x1000000000000000;
             public static ulong RootedMask = (Rooted | Root);
             public static ulong NotRootMask = ~(Root);
         }

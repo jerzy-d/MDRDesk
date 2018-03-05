@@ -123,6 +123,74 @@ namespace ClrMDRIndex
 			}
 		}
 
+        public static ulong[] GetFlaggedRoots(ClrHeap heap, out string error)
+        {
+            error = null;
+            try
+            {
+                Dictionary<ulong, ulong> dct = new Dictionary<ulong, ulong>(1024 * 512);
+                var roots = heap.EnumerateRoots(true);
+                ulong savedAddr;
+                foreach (var root in roots)
+                {
+                    ulong rootAddr = root.Address;
+                    ulong objAddr = root.Object;
+                    ulong flaggedRootAddr = rootAddr;
+                    ulong flaggedObjAddr = objAddr;
+
+                    if (objAddr != 0UL)
+                    {
+                        if (root.Kind == GCRootKind.Finalizer)
+                        {
+                            flaggedObjAddr = Utils.SetAsFinalizer(flaggedObjAddr);
+                        }
+                        else
+                        {
+                            flaggedObjAddr = Utils.SetAsRoot(flaggedObjAddr);
+                        }
+                        if (dct.TryGetValue(objAddr, out savedAddr))
+                        {
+                            dct[objAddr] = savedAddr | flaggedObjAddr;
+                        }
+                        else
+                        {
+                            dct.Add(objAddr, flaggedObjAddr);
+                        }
+                    }
+                    if (rootAddr != 0UL)
+                    {
+                        if (root.Kind == GCRootKind.Finalizer)
+                        {
+                            flaggedRootAddr = Utils.SetAsFinalizer(flaggedRootAddr);
+                        }
+                        else
+                        {
+                            flaggedRootAddr = Utils.SetAsRoot(flaggedRootAddr);
+                        }
+                        if (dct.TryGetValue(rootAddr, out savedAddr))
+                        {
+                            dct[rootAddr] = savedAddr | flaggedRootAddr;
+                        }
+                        else
+                        {
+                            dct.Add(rootAddr, flaggedRootAddr);
+                        }
+                    }
+
+                }
+
+                ulong[] rootAddrs = dct.Values.ToArray();
+                Utils.SortAddresses(rootAddrs);
+                return rootAddrs;
+            }
+            catch (Exception ex)
+            {
+                error = Utils.GetExceptionErrorString(ex);
+                return null;
+            }
+        }
+
+
 
 		public static ValueTuple<ulong[], ulong[]> SetupRootAddresses(int rtm, ClrRuntime runTm, ClrHeap heap, string[] typeNames, StringIdDct strIds, DumpFileMoniker fileMoniker, out string error)
 		{

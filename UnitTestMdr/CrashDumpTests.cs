@@ -3014,10 +3014,15 @@ namespace UnitTestMdr
 
         #region type references
 
-        private int GetInstanceCount(ClrHeap heap)
+        private ulong[] GetInstances(ClrHeap heap)
         {
+            const int BUFF_COUNT = 1024 * 1024 * 4;
             var segs = heap.Segments;
-            int count = 0;
+            int count = 0, buffCount = 0;
+            ulong[] addr_buf = new ulong[BUFF_COUNT];
+            List<ulong[]> buffLst = new List<ulong[]>(100);
+            buffLst.Add(addr_buf);
+
             for (int i = 0, icnt = segs.Count; i < icnt; ++i)
             {
                 var seg = segs[i];
@@ -3027,31 +3032,53 @@ namespace UnitTestMdr
                     var clrType = heap.GetObjectType(addr);
                     if (clrType == null) goto NEXT_OBJECT;
                     ++count;
+                    addr_buf[buffCount++] = addr;
+                    if (buffCount == BUFF_COUNT)
+                    {
+                        addr_buf = new ulong[BUFF_COUNT];
+                        buffLst.Add(addr_buf);
+                        buffCount = 0;
+                    }
                     NEXT_OBJECT:
                     addr = seg.NextObject(addr);
                 }
             }
-            return count;
+            ulong[] addresses = new ulong[count];
+            int off = 0;
+            for(int i = 0, icnt = buffLst.Count; i < icnt; ++i)
+            {
+                int toCopy = Math.Min(BUFF_COUNT, count);
+                Array.Copy(buffLst[i], 0, addresses, off, toCopy);
+                off += toCopy;
+                count -= BUFF_COUNT;
+                buffLst[i] = null;
+            }
+            return addresses;
         }
 
         [TestMethod]
         public void TypeReferences_GenerateRefData()
         {
+            string error = null;
             string[] dumps = new string[]
             {
                  @"\Analytics\Ellerston\Eze.Analytics.Svc_170309_130146.BIG.dmp",
-                 @"\Analytics\BigOne\Analytics11_042015_2.BigOne.dmp"
+                 @"\Analytics\BigOne\Analytics11_042015_2.BigOne.dmp",
+                 @"\Analytics\Anavon\Eze.Analytics.Svc_160225_204724.Anavon.dmp",
             };
 
-            string dumpPath = Setup.DumpsFolder + dumps[1];
-            string dumpName = Path.GetFileNameWithoutExtension(dumpPath);
-            string refsPath = Setup.DumpsFolder + @"\CPP.REFS.BUILD.TEST\" + dumpName + ".REFS.BIN";
-            string addrPath = Setup.DumpsFolder + @"\CPP.REFS.BUILD.TEST\" + dumpName + ".ADDR.BIN";
-            BinaryWriter bwAddr = null;
+            string dumpPath = Setup.DumpsFolder + dumps[2];
+            string dumpName = Path.GetFileName(dumpPath);
+            string refsPath = Setup.DumpsFolder + @"\CPP.REFS.BUILD.TEST\" + dumpName + ".`FWDREFADDRS.TEMP[0].bin";
+            string addrPath = Setup.DumpsFolder + @"\CPP.REFS.BUILD.TEST\" + dumpName + ".`INSTANCES[0].bin";
+
+            //BinaryWriter bwAddr = null;
             BinaryWriter bwRefs = null;
+            ulong[] addresses = null;
 
             try
             {
+                Stopwatch stopWatch = new Stopwatch();
                 var dmp = OpenDump(dumpPath);
                 using (dmp)
                 {
@@ -3059,50 +3086,75 @@ namespace UnitTestMdr
                     var segs = heap.Segments;
                     var fieldAddrOffsetList = new List<KeyValuePair<ulong, int>>(64);
 
-                    int instCount = GetInstanceCount(heap);
-                    ulong[] addresses = new ulong[instCount];
+                    stopWatch.Start();
+                    addresses = GetInstances(heap);
+                    int instCount = addresses.Length;
+                    TestContext.WriteLine(dumpName + " GETTING INSTANCES: " + Utils.StopAndGetDurationString(stopWatch));
+
+                    stopWatch.Start();
+                    ulong[] rootAddrs = ClrtRootInfo.GetFlaggedRoots(heap, out error);
+                    TestContext.WriteLine(dumpName + " GETTING ROOTS: " + Utils.StopAndGetDurationString(stopWatch));
+                    Assert.IsNull(error, error);
                     int addrNdx = 0;
+                    ulong addr, flaggedAddr;
 
-                    bwAddr = new BinaryWriter(File.Open(addrPath, FileMode.Create));
+                    stopWatch.Start();
+                    //bwAddr = new BinaryWriter(File.Open(addrPath, FileMode.Create));
                     bwRefs = new BinaryWriter(File.Open(refsPath, FileMode.Create));
-                    bwAddr.Write(instCount);
+                    //bwAddr.Write(instCount);
 
-                    for (int i = 0, icnt = segs.Count; i < icnt; ++i)
+                    for (int i = 0; i < instCount; ++i)
                     {
-                        var seg = segs[i];
-                        ulong addr = seg.FirstObject;
-                        while (addr != 0ul)
+                        addr = Utils.RealAddress(addresses[i]);
+                        var clrType = heap.GetObjectType(addr);
+                        Debug.Assert(clrType != null);
+                        int rootNdx = Utils.AddressSearch(rootAddrs, addr);
+                        flaggedAddr = (rootNdx >= 0) ? Utils.CopyAddrFlag(rootAddrs[rootNdx], addr) : addr;
+                        bool isAddrFlagged = flaggedAddr != addr;
+                        if (isAddrFlagged) addresses[i] = flaggedAddr;
+                        //bwAddr.Write(flaggedAddr);
+                        fieldAddrOffsetList.Clear();
+                        clrType.EnumerateRefsOfObjectCarefully(addr, (address, off) =>
                         {
-                            var clrType = heap.GetObjectType(addr);
-                            if (clrType == null) goto NEXT_OBJECT;
-                            addresses[addrNdx++] = addr;
-                            bwAddr.Write(addr);
-                            fieldAddrOffsetList.Clear();
-                            clrType.EnumerateRefsOfObjectCarefully(addr, (address, off) =>
+                            fieldAddrOffsetList.Add(new KeyValuePair<ulong, int>(address, off));
+                        });
+                        int rcnt = fieldAddrOffsetList.Count;
+                        if (rcnt < 1)
+                        {
+                            bwRefs.Write((int)0);
+                        }
+                        else
+                        {
+                            bwRefs.Write(rcnt + 1);
+                            bwRefs.Write(addr);
+                            for (int j = 0, jcnt = fieldAddrOffsetList.Count; j < jcnt; ++j)
                             {
-                                fieldAddrOffsetList.Add(new KeyValuePair<ulong, int>(address, off));
-                            });
-                            int rcnt = fieldAddrOffsetList.Count;
-                            if (rcnt < 1)
-                            {
-                                bwRefs.Write((int)0);
-                            }
-                            else
-                            {
-                                bwRefs.Write(rcnt + 1);
-                                bwRefs.Write(addr);
-                                for (int j = 0, jcnt = fieldAddrOffsetList.Count; j < jcnt; ++j)
+                                ulong raddr = fieldAddrOffsetList[j].Key;
+                                if (isAddrFlagged)
                                 {
-                                    bwRefs.Write(fieldAddrOffsetList[j].Key);
+                                    var ndx = Utils.AddressSearch(addresses, raddr);
+                                    if (ndx >= 0)
+                                        addresses[ndx] = Utils.CopyAddrFlag(flaggedAddr, raddr);
                                 }
+                                bwRefs.Write(raddr);
                             }
-
-                            NEXT_OBJECT:
-                            addr = seg.NextObject(addr);
                         }
                     }
                     bwRefs.Write((uint)0xFFFFFFFF);
                 } // using dump
+
+
+                int flg_cnt = 0;
+                for (int i = 0, icnt = addresses.Length; i < icnt; ++i)
+                {
+                    ulong addr = addresses[i];
+                    if (!Utils.IsRealAddress(addr))
+                        ++flg_cnt;
+                }
+
+                Utils.WriteUlongArray(addrPath, addresses, out error);
+
+                TestContext.WriteLine(dumpName + " REFERENCE DURATION: " + Utils.StopAndGetDurationString(stopWatch));
             }
             catch (Exception ex)
             {
@@ -3110,7 +3162,7 @@ namespace UnitTestMdr
             }
             finally
             {
-                bwAddr?.Close();
+                //bwAddr?.Close();
                 bwRefs?.Close();
             }
         }
