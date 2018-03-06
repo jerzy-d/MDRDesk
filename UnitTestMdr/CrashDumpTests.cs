@@ -3067,7 +3067,7 @@ namespace UnitTestMdr
                  @"\Analytics\Anavon\Eze.Analytics.Svc_160225_204724.Anavon.dmp",
             };
 
-            string dumpPath = Setup.DumpsFolder + dumps[2];
+            string dumpPath = Setup.DumpsFolder + dumps[1];
             string dumpName = Path.GetFileName(dumpPath);
             string refsPath = Setup.DumpsFolder + @"\CPP.REFS.BUILD.TEST\" + dumpName + ".`FWDREFADDRS.TEMP[0].bin";
             string addrPath = Setup.DumpsFolder + @"\CPP.REFS.BUILD.TEST\" + dumpName + ".`INSTANCES[0].bin";
@@ -3164,6 +3164,44 @@ namespace UnitTestMdr
             {
                 //bwAddr?.Close();
                 bwRefs?.Close();
+            }
+        }
+
+        [TestMethod]
+        public void TypeReferences_CheckRefData()
+        {
+            string error = null;
+            string[] dumps = new string[]
+            {
+                 @"\Analytics\Ellerston\Eze.Analytics.Svc_170309_130146.BIG.dmp",
+                 @"\Analytics\BigOne\Analytics11_042015_2.BigOne.dmp",
+                 @"\Analytics\Anavon\Eze.Analytics.Svc_160225_204724.Anavon.dmp",
+            };
+
+            string dumpPath = Setup.DumpsFolder + dumps[2];
+            string dumpName = Path.GetFileName(dumpPath);
+            ulong addr = 0x000000007abef45938;
+
+            try
+            {
+                var dmp = OpenDump(dumpPath);
+                using (dmp)
+                {
+                    var heap = dmp.Heap;
+                    var fieldAddrOffsetList = new List<KeyValuePair<ulong, int>>(64);
+                    var clrType = heap.GetObjectType(addr);
+                    Debug.Assert(clrType != null);
+                    fieldAddrOffsetList.Clear();
+                    clrType.EnumerateRefsOfObjectCarefully(addr, (address, off) =>
+                    {
+                        fieldAddrOffsetList.Add(new KeyValuePair<ulong, int>(address, off));
+                    });
+                    int rcnt = fieldAddrOffsetList.Count;
+                } // using dump
+            }
+            catch (Exception ex)
+            {
+                Assert.IsTrue(false, ex.ToString());
             }
         }
 
