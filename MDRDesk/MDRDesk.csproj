@@ -153,6 +153,10 @@
       <DependentUpon>CollectionDisplay.xaml</DependentUpon>
     </Compile>
     <Compile Include="Charts\ChartProvider.cs" />
+    <Compile Include="ConsoleControl\ConsoleControl.xaml.cs" />
+    <Compile Include="ConsoleControl\Imports.cs" />
+    <Compile Include="ConsoleControl\ProcessEventArgs.cs" />
+    <Compile Include="ConsoleControl\ProcessInterface.cs" />
     <Compile Include="ContentDisplay.xaml.cs">
       <DependentUpon>ContentDisplay.xaml</DependentUpon>
     </Compile>
@@ -217,6 +221,10 @@
     <Page Include="CollectionDisplay.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="ConsoleControl\ConsoleControl.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
     </Page>
     <Page Include="ContentDisplay.xaml">
       <SubType>Designer</SubType>
