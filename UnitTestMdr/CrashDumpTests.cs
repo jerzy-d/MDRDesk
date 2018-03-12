@@ -3062,17 +3062,17 @@ namespace UnitTestMdr
             string error = null;
             string[] dumps = new string[]
             {
-                 @"\Analytics\Ellerston\Eze.Analytics.Svc_170309_130146.BIG.dmp",
-                 @"\Analytics\BigOne\Analytics11_042015_2.BigOne.dmp",
-                 @"\Analytics\Anavon\Eze.Analytics.Svc_160225_204724.Anavon.dmp",
+                 @"\Analytics\Ellerston\Eze.Analytics.Svc_170309_130146.BIG.dmp", // 8.81 GB (9,460,290,330 bytes)
+                 @"\Analytics\BigOne\Analytics11_042015_2.BigOne.dmp", // 14.0 GB (15,090,522,609 bytes)
+                 @"\Analytics\Anavon\Eze.Analytics.Svc_160225_204724.Anavon.dmp", // 521 MB (546,629,030 bytes)
+                 @"\Compliance\Meka\Eze.Compliance.Svc_170503_131515.dmp", // 31.3 GB (33,715,861,634 bytes)
             };
 
-            string dumpPath = Setup.DumpsFolder + dumps[1];
+            string dumpPath = Setup.DumpsFolder + dumps[3];
             string dumpName = Path.GetFileName(dumpPath);
             string refsPath = Setup.DumpsFolder + @"\CPP.REFS.BUILD.TEST\" + dumpName + ".`FWDREFADDRS.TEMP[0].bin";
             string addrPath = Setup.DumpsFolder + @"\CPP.REFS.BUILD.TEST\" + dumpName + ".`INSTANCES[0].bin";
 
-            //BinaryWriter bwAddr = null;
             BinaryWriter bwRefs = null;
             ulong[] addresses = null;
 
