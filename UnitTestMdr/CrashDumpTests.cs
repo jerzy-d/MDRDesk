@@ -3091,8 +3091,11 @@ namespace UnitTestMdr
                     int instCount = addresses.Length;
                     TestContext.WriteLine(dumpName + " GETTING INSTANCES: " + Utils.StopAndGetDurationString(stopWatch));
 
+                    string[] typeNames = DumpIndexer.GetTypeNames(heap, out error);
+
                     stopWatch.Start();
-                    ulong[] rootAddrs = ClrtRootInfo.GetFlaggedRoots(heap, out error);
+                    var strIds = new ClrMDRUtil.Utils.StringIdDct();
+                    ulong[] rootAddrs = ClrtRootInfo.GetFlaggedRoots(heap, typeNames, strIds, null, out error);
                     TestContext.WriteLine(dumpName + " GETTING ROOTS: " + Utils.StopAndGetDurationString(stopWatch));
                     Assert.IsNull(error, error);
                     int addrNdx = 0;

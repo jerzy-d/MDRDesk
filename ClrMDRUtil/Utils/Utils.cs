@@ -50,6 +50,12 @@ namespace ClrMDRIndex
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static ulong SetAsLocal(ulong addr)
+        {
+            return addr |= RootBits.Local;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static ulong SetAsFinalizer(ulong addr)
         {
             return addr |= RootBits.Finalizer;

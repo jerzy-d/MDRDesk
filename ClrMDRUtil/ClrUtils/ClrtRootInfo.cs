@@ -123,12 +123,17 @@ namespace ClrMDRIndex
 			}
 		}
 
-        public static ulong[] GetFlaggedRoots(ClrHeap heap, out string error)
+        public static ulong[] GetFlaggedRoots(ClrHeap heap, string[] typeNames, StringIdDct strIds, string rootPath, out string error)
         {
             error = null;
             try
             {
                 Dictionary<ulong, ulong> dct = new Dictionary<ulong, ulong>(1024 * 512);
+                List<ClrtRoot>[] ourRoots = new List<ClrtRoot>[(int)GCRootKind.Max + 1];
+                for (int i = 0, icnt = (int)GCRootKind.Max + 1; i < icnt; ++i)
+                {
+                    ourRoots[i] = new List<ClrtRoot>(256);
+                }
                 var roots = heap.EnumerateRoots(true);
                 ulong savedAddr;
                 foreach (var root in roots)
@@ -138,46 +143,53 @@ namespace ClrMDRIndex
                     ulong flaggedRootAddr = rootAddr;
                     ulong flaggedObjAddr = objAddr;
 
-                    if (objAddr != 0UL)
+                    int typeId;
+                    string typeName;
+                    if (root.Type == null)
                     {
-                        if (root.Kind == GCRootKind.Finalizer)
-                        {
-                            flaggedObjAddr = Utils.SetAsFinalizer(flaggedObjAddr);
-                        }
-                        else
-                        {
-                            flaggedObjAddr = Utils.SetAsRoot(flaggedObjAddr);
-                        }
-                        if (dct.TryGetValue(objAddr, out savedAddr))
-                        {
-                            dct[objAddr] = savedAddr | flaggedObjAddr;
-                        }
-                        else
-                        {
-                            dct.Add(objAddr, flaggedObjAddr);
-                        }
+                        var clrType = heap.GetObjectType(objAddr);
+                        typeName = clrType == null ? Constants.UnknownName : clrType.Name;
                     }
-                    if (rootAddr != 0UL)
+                    else
                     {
-                        if (root.Kind == GCRootKind.Finalizer)
-                        {
-                            flaggedRootAddr = Utils.SetAsFinalizer(flaggedRootAddr);
-                        }
-                        else
-                        {
-                            flaggedRootAddr = Utils.SetAsRoot(flaggedRootAddr);
-                        }
-                        if (dct.TryGetValue(rootAddr, out savedAddr))
-                        {
-                            dct[rootAddr] = savedAddr | flaggedRootAddr;
-                        }
-                        else
-                        {
-                            dct.Add(rootAddr, flaggedRootAddr);
-                        }
+                        typeName = root.Type.Name;
                     }
 
+                    typeId = Array.BinarySearch(typeNames, typeName, StringComparer.Ordinal);
+                    if (typeId < 0) typeId = Constants.InvalidIndex;
+                    string rootName = root.Name == null ? Constants.UnknownName : root.Name;
+
+                    var nameId = strIds.JustGetId(rootName);
+                    var clrtRoot = new ClrtRoot(root, typeId, nameId);
+                    ourRoots[(int)root.Kind].Add(clrtRoot);
+
+                    switch (root.Kind)
+                    {
+                        case GCRootKind.Finalizer:
+                            if (objAddr != 0UL) flaggedObjAddr = Utils.SetAsFinalizer(flaggedObjAddr);
+                            if (rootAddr != 0UL) flaggedRootAddr = Utils.SetAsFinalizer(flaggedRootAddr);
+                            break;
+                        case GCRootKind.LocalVar:
+                            if (objAddr != 0UL) flaggedObjAddr = Utils.SetAsLocal(flaggedObjAddr);
+                            if (rootAddr != 0UL) flaggedRootAddr = Utils.SetAsLocal(flaggedRootAddr);
+                            break;
+                        default:
+                            flaggedObjAddr = Utils.SetAsRoot(flaggedObjAddr);
+                            if (objAddr != 0UL) flaggedObjAddr = Utils.SetAsRoot(flaggedObjAddr);
+                            if (rootAddr != 0UL) flaggedRootAddr = Utils.SetAsRoot(flaggedRootAddr);
+                            break;
+                    }
+                    SetFlaggedAddress(dct, objAddr, flaggedObjAddr);
+                    SetFlaggedAddress(dct, rootAddr, flaggedRootAddr);
                 }
+
+                var rootCmp = new ClrtRootObjCmp();
+                for (int i = 0, icnt = (int)GCRootKind.Max + 1; i < icnt; ++i)
+                {
+                    ourRoots[i].Sort(rootCmp);
+                }
+
+                Save(rootPath, ourRoots, out error);
 
                 ulong[] rootAddrs = dct.Values.ToArray();
                 Utils.SortAddresses(rootAddrs);
@@ -190,9 +202,22 @@ namespace ClrMDRIndex
             }
         }
 
+        private static void SetFlaggedAddress(Dictionary<ulong, ulong> dct, ulong addr, ulong flaggedAddr)
+        {
+            if (addr == 0UL) return;
+            ulong savedAddr;
+            if (dct.TryGetValue(addr, out savedAddr))
+            {
+                dct[addr] = savedAddr | flaggedAddr;
+            }
+            else
+            {
+                dct.Add(addr, flaggedAddr);
+            }
+        }
 
 
-		public static ValueTuple<ulong[], ulong[]> SetupRootAddresses(int rtm, ClrRuntime runTm, ClrHeap heap, string[] typeNames, StringIdDct strIds, DumpFileMoniker fileMoniker, out string error)
+		public static ValueTuple<ulong[], ulong[]> SetupRootAddresses(int rtm, ClrHeap heap, string[] typeNames, StringIdDct strIds, DumpFileMoniker fileMoniker, out string error)
 		{
 			error = null;
 			try
@@ -358,7 +383,42 @@ namespace ClrMDRIndex
 			}
 		}
 
-		public static bool FinalyzerAddressFixup(int rtm, ulong[] finalyzerAddresses, DumpFileMoniker fileMoniker, out string error)
+        public static bool Save(string path, List<ClrtRoot>[] ourRoots, out string error)
+        {
+            error = null;
+            BinaryWriter bw = null;
+            if (path == null) return true;
+            try
+            {
+                bw = new BinaryWriter(File.Open(path, FileMode.Create));
+
+                // root details by kind
+                //
+                bw.Write(ourRoots.Length);
+                for (int i = 0, icnt = ourRoots.Length; i < icnt; ++i)
+                {
+                    var kindRoots = ourRoots[i];
+                    bw.Write(kindRoots.Count);
+                    for (int j = 0, jcnt = kindRoots.Count; j < jcnt; ++j)
+                    {
+                        kindRoots[j].Dump(bw);
+                    }
+                }
+                return true;
+            }
+            catch (Exception ex)
+            {
+                error = Utils.GetExceptionErrorString(ex);
+                return false;
+            }
+            finally
+            {
+                bw?.Close();
+            }
+        }
+
+
+        public static bool FinalyzerAddressFixup(int rtm, ulong[] finalyzerAddresses, DumpFileMoniker fileMoniker, out string error)
 		{
 			error = null;
 			FileWriter fw = null;
@@ -691,7 +751,13 @@ namespace ClrMDRIndex
 			{
 				var aObj = Utils.RealAddress(a.Object);
 				var bObj = Utils.RealAddress(b.Object);
-				return aObj < bObj ? -1 : (aObj > bObj ? 1 : 0);
+                if (aObj == bObj)
+                {
+                    var aRoot = Utils.RealAddress(a.Address);
+                    var bRoot = Utils.RealAddress(b.Address);
+                    return aRoot < bRoot ? -1 : (aRoot > bRoot ? 1 : 0);
+                }
+                return aObj < bObj ? -1 : 1;
 			}
 			return a.TypeId < b.TypeId ? -1 : 1;
 		}

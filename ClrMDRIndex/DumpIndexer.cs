@@ -1,4 +1,5 @@
-﻿using System;
+﻿//#define USE_REFBUILDER
+using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -117,7 +118,7 @@ namespace ClrMDRIndex
                         // get roots
                         //
                         progress?.Report(runtimeIndexHeader + "Getting roots...");
-                        (ulong[] rootObjectAddrs, ulong[] finalizerAddrs) = ClrtRootInfo.SetupRootAddresses(r, runtime, heap, typeNames, strIds, _fileMoniker, out error);
+                        (ulong[] rootObjectAddrs, ulong[] finalizerAddrs) = ClrtRootInfo.SetupRootAddresses(r, heap, typeNames, strIds, _fileMoniker, out error);
                         Debug.Assert(error == null);
                         // for general info dump
                         _finalizerCount[r] = finalizerAddrs.Length;
@@ -126,6 +127,7 @@ namespace ClrMDRIndex
                         // get addresses and types
                         //
                         progress?.Report(runtimeIndexHeader + "Getting addresses and types...");
+
                         addresses = new ulong[addrCount];
                         typeIds = new int[addrCount];
                         if (!GetAddressesAndTypes(heap, addresses, typeIds, typeNames, out error))
@@ -253,6 +255,230 @@ namespace ClrMDRIndex
                         error = builder?.Error;
                         if (error != null) AddError(_currentRuntimeIndex, "InstanceReferences building failed." + Environment.NewLine + error);
  
+                        runtime.Flush();
+                        heap = null;
+                        progress?.Report(runtimeIndexHeader + "Runtime indexing done...");
+                    }
+
+                    var durationStr = Utils.DurationString(DateTime.UtcNow - indexingStart);
+                    DumpIndexInfo(version, clrtDump, durationStr);
+                    progress?.Report("Indexing done, total duration: " + durationStr);
+                    return true;
+                }
+                catch (Exception ex)
+                {
+                    error = Utils.GetExceptionErrorString(ex);
+                    AddError(_currentRuntimeIndex, "Exception in CreateDumpIndex." + Environment.NewLine + error);
+                    return false;
+                }
+                finally
+                {
+                    builder?.Dispose();
+                    DumpErrors();
+                    GCSettings.LargeObjectHeapCompactionMode = GCLargeObjectHeapCompactionMode.CompactOnce;
+                    GC.Collect();
+                }
+            }
+        }
+
+        public bool CreateDumpIndex3(Version version, IProgress<string> progress, out string indexPath, out string error)
+        {
+            error = null;
+            indexPath = _fileMoniker.MapFolder;
+            var clrtDump = new ClrtDump(DumpPath);
+            if (!clrtDump.Init(out error)) return false;
+            _errors = new ConcurrentBag<string>[clrtDump.RuntimeCount];
+            DateTime indexingStart = DateTime.UtcNow;
+            InstanceReferences builder = null;
+
+            using (clrtDump)
+            {
+                try
+                {
+                    if (DumpFileMoniker.GetAndCreateMapFolders(DumpPath, out error) == null) return false;
+                    indexPath = IndexFolder;
+
+                    // indexing
+                    //
+                    if (!GetPrerequisites(clrtDump, progress, out _stringIdDcts, out error)) return false;
+                    if (!GetTargetModuleInfos(clrtDump, progress, out error)) return false;
+
+                    _instanceCount = new int[clrtDump.RuntimeCount];
+                    _typeCount = new int[clrtDump.RuntimeCount];
+                    _finalizerCount = new int[clrtDump.RuntimeCount];
+                    _rootCount = new int[clrtDump.RuntimeCount];
+
+                    for (int r = 0, rcnt = clrtDump.RuntimeCount; r < rcnt; ++r)
+                    {
+                        _currentRuntimeIndex = r;
+                        string runtimeIndexHeader = Utils.RuntimeStringHeader(r);
+                        clrtDump.SetRuntime(r);
+                        ClrRuntime runtime = clrtDump.Runtime;
+                        ClrHeap heap = runtime.Heap;
+                        ConcurrentBag<string> errors = new ConcurrentBag<string>();
+                        _errors[r] = errors;
+                        var strIds = _stringIdDcts[r];
+
+                        string[] typeNames = null;
+                        ulong[] addresses = null;
+                        int[] typeIds = null;
+
+                        // get heap address count
+                        //
+                        progress?.Report(runtimeIndexHeader + "Getting instance count...");
+                        var addrCount = DumpIndexer.GetHeapAddressCount(heap);
+                        progress?.Report(runtimeIndexHeader + "Instance count: " + Utils.CountString(addrCount));
+                        _instanceCount[r] = addrCount; // for general info dump
+
+                        // get type names
+                        //
+                        progress?.Report(runtimeIndexHeader + "Getting type names...");
+                        typeNames = DumpIndexer.GetTypeNames(heap, out error);
+                        Debug.Assert(error == null);
+                        _typeCount[r] = typeNames.Length; // for general info dump
+
+                        // get roots
+                        //
+                        progress?.Report(runtimeIndexHeader + "Getting roots...");
+                        (ulong[] rootObjectAddrs, ulong[] finalizerAddrs) = ClrtRootInfo.SetupRootAddresses(r, heap, typeNames, strIds, _fileMoniker, out error);
+                        Debug.Assert(error == null);
+                        // for general info dump
+                        _finalizerCount[r] = finalizerAddrs.Length;
+                        _rootCount[r] = rootObjectAddrs.Length;
+
+                        // get addresses and types
+                        //
+                        progress?.Report(runtimeIndexHeader + "Getting addresses and types...");
+#if USE_REFBUILDER
+#else
+                        addresses = new ulong[addrCount];
+                        typeIds = new int[addrCount];
+                        if (!GetAddressesAndTypes(heap, addresses, typeIds, typeNames, out error))
+                        {
+                            return false;
+                        }
+#endif
+                        Debug.Assert(Utils.AreAddressesSorted(addresses));
+
+                        // threads and blocking objects
+                        //
+                        progress?.Report(runtimeIndexHeader + "Getting threads, blocking objecks information...");
+                        GetThreadsInfos2(clrtDump.Runtime, addresses, typeIds, typeNames, progress);
+
+                        // setting root information
+                        //
+                        Debug.Assert(Utils.AreAddressesSorted(addresses));
+                        progress?.Report(runtimeIndexHeader + "Setting root information...");
+                        for (int i = 0, icnt = addresses.Length; i < icnt; ++i)
+                        {
+                            ulong addr = addresses[i];
+                            var isroot = Utils.AddressSearch(rootObjectAddrs, addr) >= 0;
+                            var isflnz = Utils.AddressSearch(finalizerAddrs, addr) >= 0;
+                            if (!isroot && !isflnz) continue;
+                            if (isroot && isflnz)
+                            {
+                                addresses[i] = addr | Utils.RootBits.Root | Utils.RootBits.Rooted | Utils.RootBits.Finalizer;
+                                continue;
+                            }
+                            if (isroot)
+                            {
+                                addresses[i] = addr | Utils.RootBits.Root | Utils.RootBits.Rooted;
+                                continue;
+                            }
+                            addresses[i] = addr | Utils.RootBits.Finalizer;
+                        }
+                        rootObjectAddrs = null;
+                        finalizerAddrs = null;
+
+                        // field dependencies
+                        //
+                        if (!Setup.SkipReferences)
+                        {
+#if FALSE
+                            progress?.Report(runtimeIndexHeader + "Creating instance reference data...");
+                            Scullion bld = new Scullion(addressesCopy,
+								_fileMoniker.GetFilePath(r, Constants.MapRefFwdDataFilePostfix),
+								_fileMoniker.GetFilePath(r, Constants.MapRefFwdOffsetsFilePostfix),
+								_fileMoniker.GetFilePath(r, Constants.MapFwdRefsFilePostfix),
+								_fileMoniker.GetFilePath(r, Constants.MapRefBwdOffsetsFilePostfix),
+								_fileMoniker.GetFilePath(r, Constants.MapBwdRefsFilePostfix),
+                                _fileMoniker.GetFilePath(r, Constants.MapInstancesFilePostfix),
+                            progress);
+                            addressesCopy = null;
+                            progress?.Report(runtimeIndexHeader + "Dumping forward instance reference heap data...");
+                            bld.CreateForwardReferences(heap, out error);
+
+                            progress?.Report(runtimeIndexHeader + "Starting instance reference builder...");
+
+
+                            referenceBuilderWorker = new Thread(new ThreadStart(bld.BuildReferences));
+                            referenceBuilderWorker.Start();
+#else
+                            builder = new InstanceReferences(addresses,
+                                                                    new string[]
+                                                                    {
+                                                                    _fileMoniker.GetFilePath(r, Constants.MapRefFwdOffsetsFilePostfix),
+                                                                    _fileMoniker.GetFilePath(r, Constants.MapFwdRefsFilePostfix),
+                                                                    _fileMoniker.GetFilePath(r, Constants.MapRefBwdOffsetsFilePostfix),
+                                                                    _fileMoniker.GetFilePath(r, Constants.MapBwdRefsFilePostfix),
+                                                                    },
+                                                                    progress,
+                                                                    _fileMoniker.GetFilePath(r, Constants.MapInstancesFilePostfix)
+                                                                    );
+                            builder.CreateForwardReferences(heap, out error);
+                            if (error == null)
+                            {
+                                if (!builder.BuildReveresedReferences())
+                                {
+                                    AddError(r, "CreateBackwardReferences failed." + Environment.NewLine + builder.Error);
+                                }
+                            }
+                            else
+                            {
+                                AddError(r, "CreateForwardReferences failed." + Environment.NewLine + error);
+                            }
+#endif
+                        }
+                        else
+                        {
+                            progress?.Report(runtimeIndexHeader + "Skipping generation of instance references...");
+                            InstanceReferences.DeleteInstanceReferenceFiles(r, _fileMoniker, out error);
+                            progress?.Report(runtimeIndexHeader + "Savings instances addresses...");
+                            Utils.WriteUlongArray(_fileMoniker.GetFilePath(r, Constants.MapInstancesFilePostfix), addresses, out error);
+                        }
+
+                        progress?.Report(runtimeIndexHeader + "Building type instance map...");
+                        if (!BuildTypeInstanceMap(r, typeIds, out error))
+                        {
+                            AddError(r, "BuildTypeInstanceMap failed." + Environment.NewLine + error);
+                            return false;
+                        }
+
+                        // save index data
+                        //
+                        progress?.Report(runtimeIndexHeader + "Saving data...");
+
+                        var path = _fileMoniker.GetFilePath(r, Constants.MapInstanceTypesFilePostfix);
+                        Utils.WriteIntArray(path, typeIds, out error);
+                        // save type names
+                        path = _fileMoniker.GetFilePath(r, Constants.TxtTypeNamesFilePostfix);
+                        Utils.WriteStringList(path, typeNames, out error);
+                        {
+                            var reversedNames = Utils.ReverseTypeNames(typeNames);
+                            path = _fileMoniker.GetFilePath(r, Constants.TxtReversedTypeNamesFilePostfix);
+                            Utils.WriteStringList(path, reversedNames, out error);
+                        }
+                        // save string ids
+                        //
+                        path = _fileMoniker.GetFilePath(r, Constants.TxtCommonStringIdsPostfix);
+                        if (!strIds.DumpInIdOrder(path, out error))
+                        {
+                            AddError(_currentRuntimeIndex, "StringIdDct.DumpInIdOrder failed." + Environment.NewLine + error);
+                        }
+
+                        error = builder?.Error;
+                        if (error != null) AddError(_currentRuntimeIndex, "InstanceReferences building failed." + Environment.NewLine + error);
+
                         runtime.Flush();
                         heap = null;
                         progress?.Report(runtimeIndexHeader + "Runtime indexing done...");
@@ -610,7 +836,7 @@ namespace ClrMDRIndex
             return 0;
         }
 
-        #region type fields
+#region type fields
 
         private void RetainFieldTypes(ClrType clrType, int typeId, HashSet<int> doneTypeFields, HashSet<int> tofixTypeFields, string[] typeNames, SortedDictionary<int, long[]> typeFields, StringIdDct idDct)
         {
@@ -703,7 +929,7 @@ namespace ClrMDRIndex
             fieldTypeParents.Clear();
         }
 
-        #endregion type fields
+#endregion type fields
 
         public bool GetAddressesAndTypes(ClrHeap heap, ulong[] addresses, int[] typeIds, string[] typeNames, out string error)
         {
