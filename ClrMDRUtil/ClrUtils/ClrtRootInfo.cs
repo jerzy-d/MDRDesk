@@ -123,7 +123,7 @@ namespace ClrMDRIndex
 			}
 		}
 
-        public static ulong[] GetFlaggedRoots(ClrHeap heap, string[] typeNames, StringIdDct strIds, string rootPath, out string error)
+        public static ValueTuple<ulong[],int,int> GetFlaggedRoots(ClrHeap heap, string[] typeNames, StringIdDct strIds, string rootPath, out string error)
         {
             error = null;
             try
@@ -135,7 +135,9 @@ namespace ClrMDRIndex
                     ourRoots[i] = new List<ClrtRoot>(256);
                 }
                 var roots = heap.EnumerateRoots(true);
-                ulong savedAddr;
+                //ulong savedAddr;
+                int finalizerCount = 0;
+                int rootCount = 0;
                 foreach (var root in roots)
                 {
                     ulong rootAddr = root.Address;
@@ -166,6 +168,7 @@ namespace ClrMDRIndex
                     switch (root.Kind)
                     {
                         case GCRootKind.Finalizer:
+                            ++finalizerCount;
                             if (objAddr != 0UL) flaggedObjAddr = Utils.SetAsFinalizer(flaggedObjAddr);
                             if (rootAddr != 0UL) flaggedRootAddr = Utils.SetAsFinalizer(flaggedRootAddr);
                             break;
@@ -174,6 +177,7 @@ namespace ClrMDRIndex
                             if (rootAddr != 0UL) flaggedRootAddr = Utils.SetAsLocal(flaggedRootAddr);
                             break;
                         default:
+                            ++rootCount;
                             flaggedObjAddr = Utils.SetAsRoot(flaggedObjAddr);
                             if (objAddr != 0UL) flaggedObjAddr = Utils.SetAsRoot(flaggedObjAddr);
                             if (rootAddr != 0UL) flaggedRootAddr = Utils.SetAsRoot(flaggedRootAddr);
@@ -193,12 +197,12 @@ namespace ClrMDRIndex
 
                 ulong[] rootAddrs = dct.Values.ToArray();
                 Utils.SortAddresses(rootAddrs);
-                return rootAddrs;
+                return (rootAddrs,rootCount,finalizerCount);
             }
             catch (Exception ex)
             {
                 error = Utils.GetExceptionErrorString(ex);
-                return null;
+                return (null,0,0);
             }
         }
 
