@@ -3095,7 +3095,10 @@ namespace UnitTestMdr
 
                     stopWatch.Start();
                     var strIds = new ClrMDRUtil.Utils.StringIdDct();
-                    ulong[] rootAddrs = ClrtRootInfo.GetFlaggedRoots(heap, typeNames, strIds, null, out error);
+                    int rootCount, finalizerCount;
+                    ulong[] rootAddrs;
+                    (rootAddrs, rootCount, finalizerCount) = ClrtRootInfo.GetFlaggedRoots(heap, typeNames, strIds, null, out error);
+
                     TestContext.WriteLine(dumpName + " GETTING ROOTS: " + Utils.StopAndGetDurationString(stopWatch));
                     Assert.IsNull(error, error);
                     int addrNdx = 0;

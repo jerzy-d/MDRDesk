@@ -383,28 +383,28 @@ namespace ClrMDRIndex
 
                         // setting root information
                         //
-                        Debug.Assert(Utils.AreAddressesSorted(addresses));
-                        progress?.Report(runtimeIndexHeader + "Setting root information...");
-                        for (int i = 0, icnt = addresses.Length; i < icnt; ++i)
-                        {
-                            ulong addr = addresses[i];
-                            var isroot = Utils.AddressSearch(rootObjectAddrs, addr) >= 0;
-                            var isflnz = Utils.AddressSearch(finalizerAddrs, addr) >= 0;
-                            if (!isroot && !isflnz) continue;
-                            if (isroot && isflnz)
-                            {
-                                addresses[i] = addr | Utils.RootBits.Root | Utils.RootBits.Rooted | Utils.RootBits.Finalizer;
-                                continue;
-                            }
-                            if (isroot)
-                            {
-                                addresses[i] = addr | Utils.RootBits.Root | Utils.RootBits.Rooted;
-                                continue;
-                            }
-                            addresses[i] = addr | Utils.RootBits.Finalizer;
-                        }
-                        rootObjectAddrs = null;
-                        finalizerAddrs = null;
+                        //Debug.Assert(Utils.AreAddressesSorted(addresses));
+                        //progress?.Report(runtimeIndexHeader + "Setting root information...");
+                        //for (int i = 0, icnt = addresses.Length; i < icnt; ++i)
+                        //{
+                        //    ulong addr = addresses[i];
+                        //    var isroot = Utils.AddressSearch(rootObjectAddrs, addr) >= 0;
+                        //    var isflnz = Utils.AddressSearch(finalizerAddrs, addr) >= 0;
+                        //    if (!isroot && !isflnz) continue;
+                        //    if (isroot && isflnz)
+                        //    {
+                        //        addresses[i] = addr | Utils.RootBits.Root | Utils.RootBits.Rooted | Utils.RootBits.Finalizer;
+                        //        continue;
+                        //    }
+                        //    if (isroot)
+                        //    {
+                        //        addresses[i] = addr | Utils.RootBits.Root | Utils.RootBits.Rooted;
+                        //        continue;
+                        //    }
+                        //    addresses[i] = addr | Utils.RootBits.Finalizer;
+                        //}
+                        //rootObjectAddrs = null;
+                        //finalizerAddrs = null;
 
                         // field dependencies
                         //
