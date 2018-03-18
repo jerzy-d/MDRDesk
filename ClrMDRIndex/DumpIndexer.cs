@@ -173,26 +173,6 @@ namespace ClrMDRIndex
                         //
                         if (!Setup.SkipReferences)
                         {
-#if FALSE
-                            progress?.Report(runtimeIndexHeader + "Creating instance reference data...");
-                            Scullion bld = new Scullion(addressesCopy,
-								_fileMoniker.GetFilePath(r, Constants.MapRefFwdDataFilePostfix),
-								_fileMoniker.GetFilePath(r, Constants.MapRefFwdOffsetsFilePostfix),
-								_fileMoniker.GetFilePath(r, Constants.MapFwdRefsFilePostfix),
-								_fileMoniker.GetFilePath(r, Constants.MapRefBwdOffsetsFilePostfix),
-								_fileMoniker.GetFilePath(r, Constants.MapBwdRefsFilePostfix),
-                                _fileMoniker.GetFilePath(r, Constants.MapInstancesFilePostfix),
-                            progress);
-                            addressesCopy = null;
-                            progress?.Report(runtimeIndexHeader + "Dumping forward instance reference heap data...");
-                            bld.CreateForwardReferences(heap, out error);
-
-                            progress?.Report(runtimeIndexHeader + "Starting instance reference builder...");
-
-
-                            referenceBuilderWorker = new Thread(new ThreadStart(bld.BuildReferences));
-                            referenceBuilderWorker.Start();
-#else
                             builder = new InstanceReferences(addresses,
                                                                     new string[]
                                                                     {
@@ -216,7 +196,6 @@ namespace ClrMDRIndex
                             {
                                 AddError(r, "CreateForwardReferences failed." + Environment.NewLine + error);
                             }
-#endif
                         }
                         else
                         {
@@ -260,6 +239,7 @@ namespace ClrMDRIndex
  
                         runtime.Flush();
                         heap = null;
+
                         progress?.Report(runtimeIndexHeader + "Runtime indexing done...");
                     }
 
@@ -281,6 +261,58 @@ namespace ClrMDRIndex
                     GCSettings.LargeObjectHeapCompactionMode = GCLargeObjectHeapCompactionMode.CompactOnce;
                     GC.Collect();
                 }
+            }
+        }
+
+        public static void RefBuilderThread(object data)
+        {
+            Process builder = null;
+            try
+            {
+                var info = data as Tuple<int, string, string, List<string>>;
+                Debug.Assert(info != null);
+                builder = new Process();
+                builder.StartInfo.FileName = "refbuilder.exe";
+                builder.StartInfo.Arguments = info.Item1.ToString() + " \"" + info.Item2 + "\" \"" + info.Item3 + "\"";
+                builder.StartInfo.UseShellExecute = false;
+                builder.StartInfo.RedirectStandardOutput = true;
+                builder.StartInfo.RedirectStandardError = true;
+
+                var output = info.Item4;
+                var errors = new List<string>();
+                builder.OutputDataReceived += (sender, e) => {
+                    if (e.Data != null)
+                    {
+                        output.Add(e.Data);
+                    }
+                };
+                builder.ErrorDataReceived += (sender, e) =>
+                {
+                    if (e.Data == null)
+                    {
+                        errors.Add(e.Data);
+                    }
+                };
+
+                bool ok = builder.Start();
+
+                builder.BeginOutputReadLine();
+                builder.BeginErrorReadLine();
+
+                builder.WaitForExit();
+
+                if (errors.Count > 0)
+                {
+                    output.AddRange(errors);
+                }
+            }
+            catch(Exception ex)
+            {
+
+            }
+            finally
+            {
+                builder?.Dispose();
             }
         }
 
@@ -375,6 +407,13 @@ namespace ClrMDRIndex
                         Debug.Assert(Utils.AreAddressesSorted(addresses));
 
                         // start reference builder
+                        //
+                        progress?.Report("Starting the reference builder process.");
+                        List<string> refBuilderMessages = new List<string>(32);
+                        Thread refBuilderThread = new Thread(RefBuilderThread) { Name = "RefBuilderThread", IsBackground = true };
+                        refBuilderThread.Start(new Tuple<int, string, string, List<string>>(r, "", "", refBuilderMessages));
+
+
 
                         // threads and blocking objects
                         //
@@ -410,26 +449,6 @@ namespace ClrMDRIndex
                         //
                         if (!Setup.SkipReferences)
                         {
-#if FALSE
-                            progress?.Report(runtimeIndexHeader + "Creating instance reference data...");
-                            Scullion bld = new Scullion(addressesCopy,
-								_fileMoniker.GetFilePath(r, Constants.MapRefFwdDataFilePostfix),
-								_fileMoniker.GetFilePath(r, Constants.MapRefFwdOffsetsFilePostfix),
-								_fileMoniker.GetFilePath(r, Constants.MapFwdRefsFilePostfix),
-								_fileMoniker.GetFilePath(r, Constants.MapRefBwdOffsetsFilePostfix),
-								_fileMoniker.GetFilePath(r, Constants.MapBwdRefsFilePostfix),
-                                _fileMoniker.GetFilePath(r, Constants.MapInstancesFilePostfix),
-                            progress);
-                            addressesCopy = null;
-                            progress?.Report(runtimeIndexHeader + "Dumping forward instance reference heap data...");
-                            bld.CreateForwardReferences(heap, out error);
-
-                            progress?.Report(runtimeIndexHeader + "Starting instance reference builder...");
-
-
-                            referenceBuilderWorker = new Thread(new ThreadStart(bld.BuildReferences));
-                            referenceBuilderWorker.Start();
-#else
                             builder = new InstanceReferences(addresses,
                                                                     new string[]
                                                                     {
@@ -453,7 +472,6 @@ namespace ClrMDRIndex
                             {
                                 AddError(r, "CreateForwardReferences failed." + Environment.NewLine + error);
                             }
-#endif
                         }
                         else
                         {
@@ -497,6 +515,14 @@ namespace ClrMDRIndex
 
                         runtime.Flush();
                         heap = null;
+
+                        progress?.Report("Waiting for the reference builder." + Environment.NewLine);
+                        refBuilderThread.Join();
+                        foreach (var msg in refBuilderMessages)
+                        {
+                            progress?.Report(msg);
+                        }
+
                         progress?.Report(runtimeIndexHeader + "Runtime indexing done...");
                     }
 
@@ -754,8 +780,13 @@ namespace ClrMDRIndex
                 List<ulong[]> buffLst = new List<ulong[]>(100);
                 buffLst.Add(addr_buf);
                 int notIncludedCount = 0;
+                ClrtSegment[] mysegs = new ClrtSegment[segs.Count];
                 for (int i = 0, icnt = segs.Count; i < icnt; ++i)
                 {
+                    var genCounts = new int[3];
+                    var genSizes = new ulong[3];
+                    var genFreeCounts = new int[3];
+                    var genFreeSizes = new ulong[3];
                     var seg = segs[i];
                     ulong addr = seg.FirstObject;
                     while (addr != 0ul)
@@ -802,6 +833,9 @@ namespace ClrMDRIndex
         }
 
 
+        /// <summary>
+        /// TODO JRD -- test only remove.
+        /// </summary>
         public static Instances GetHeapAddresses(ClrHeap heap, out ClrtSegment[] segments)
         {
             int count = 0;

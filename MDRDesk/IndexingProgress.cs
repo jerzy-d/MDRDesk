@@ -15,13 +15,13 @@ namespace MDRDesk
     {
         private const string InfoSeparator = "{####}"; // to separate information from progress info in the indexing file
         private static TextBox _progressText; // progress messages
-         private static TextBox _infoText; // general information
+        private static TextBox _infoText; // general information
         private static DateTime _prevDateTime;
         IProgress<string> _progress;
         public IProgress<string> Progress => _progress;
         private CloseableTabItem _tab;
         private static object _lock;
-
+ 
 
         public IndexingProgress()
         {
@@ -131,21 +131,29 @@ namespace MDRDesk
             if (string.IsNullOrWhiteSpace(msg)) return;
             lock (_lock)
             {
-                var dt = DateTime.Now;
-                var tmStr = dt.ToLongTimeString();
-                // get duration of previous action
-                //
-                TimeSpan ts = dt - _prevDateTime;
-                var duration = Utils.DurationString(ts);
-                _prevDateTime = dt;
-                // append duration to the previous action
-                //
-                _progressText.AppendText("  DURATION: " + duration + Environment.NewLine);
-                // display current message
-                //
-                msg = tmStr + " : " + msg;
-                _progressText.AppendText(msg);
-                _progressText.ScrollToEnd();
+                if (msg[0] != '~')
+                {
+                    var dt = DateTime.Now;
+                    var tmStr = dt.ToLongTimeString();
+                    // get duration of previous action
+                    //
+                    TimeSpan ts = dt - _prevDateTime;
+                    var duration = Utils.DurationString(ts);
+                    _prevDateTime = dt;
+                    // append duration to the previous action
+                    //
+                    _progressText.AppendText("  DURATION: " + duration + Environment.NewLine);
+                    // display current message
+                    //
+                    msg = tmStr + " : " + msg;
+                    _progressText.AppendText(msg);
+                    _progressText.ScrollToEnd();
+                }
+                else
+                {
+                    _progressText.AppendText(msg + Environment.NewLine);
+                    _progressText.ScrollToEnd();
+                }
             }
         }
     }

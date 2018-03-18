@@ -4,6 +4,9 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 VisualStudioVersion = 15.0.27130.2026
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MDRDesk", "MDRDesk\MDRDesk.csproj", "{4BB5B249-E4F1-490F-8F40-214BCC05CE64}"
+	ProjectSection(ProjectDependencies) = postProject
+		{C732FB42-338C-4737-B0B1-92A7BE5ACDAB} = {C732FB42-338C-4737-B0B1-92A7BE5ACDAB}
+	EndProjectSection
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ClrMDRIndex", "ClrMDRIndex\ClrMDRIndex.csproj", "{99D75B6D-9BA0-48FF-9C2E-9EC8F0415901}"
 EndProject
@@ -40,6 +43,8 @@ EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MDRDeskInstaller", "MDRDeskInstaller\MDRDeskInstaller.csproj", "{70BC3875-D1D3-415F-B222-EFF07B38A519}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Binaries", "Binaries", "{F7E32BFD-3DBB-481A-98FF-CE2A3A745D99}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "refbuilder", "refbuilder\refbuilder.vcxproj", "{C732FB42-338C-4737-B0B1-92A7BE5ACDAB}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -123,6 +128,16 @@ Global
 		{70BC3875-D1D3-415F-B222-EFF07B38A519}.Release|x64.Build.0 = Release|Any CPU
 		{70BC3875-D1D3-415F-B222-EFF07B38A519}.Release|x86.ActiveCfg = Release|Any CPU
 		{70BC3875-D1D3-415F-B222-EFF07B38A519}.Release|x86.Build.0 = Release|Any CPU
+		{C732FB42-338C-4737-B0B1-92A7BE5ACDAB}.Debug|Any CPU.ActiveCfg = Debug|Win32
+		{C732FB42-338C-4737-B0B1-92A7BE5ACDAB}.Debug|x64.ActiveCfg = Debug|x64
+		{C732FB42-338C-4737-B0B1-92A7BE5ACDAB}.Debug|x64.Build.0 = Debug|x64
+		{C732FB42-338C-4737-B0B1-92A7BE5ACDAB}.Debug|x86.ActiveCfg = Debug|Win32
+		{C732FB42-338C-4737-B0B1-92A7BE5ACDAB}.Debug|x86.Build.0 = Debug|Win32
+		{C732FB42-338C-4737-B0B1-92A7BE5ACDAB}.Release|Any CPU.ActiveCfg = Release|Win32
+		{C732FB42-338C-4737-B0B1-92A7BE5ACDAB}.Release|x64.ActiveCfg = Release|x64
+		{C732FB42-338C-4737-B0B1-92A7BE5ACDAB}.Release|x64.Build.0 = Release|x64
+		{C732FB42-338C-4737-B0B1-92A7BE5ACDAB}.Release|x86.ActiveCfg = Release|Win32
+		{C732FB42-338C-4737-B0B1-92A7BE5ACDAB}.Release|x86.Build.0 = Release|Win32
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
