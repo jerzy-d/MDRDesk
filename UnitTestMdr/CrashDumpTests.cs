@@ -8,6 +8,7 @@ using ClrMDRIndex;
 using ClrMDRUtil;
 using Microsoft.Diagnostics.Runtime;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
+using System.Globalization;
 
 namespace UnitTestMdr
 {
@@ -3172,6 +3173,573 @@ namespace UnitTestMdr
                 bwRefs?.Close();
             }
         }
+
+
+
+        private void GetDumpFiles(string sDir, List<string> files)
+        {
+                foreach (string d in Directory.GetDirectories(sDir))
+                {
+                    GetDumpFiles(d, files);
+                }
+                foreach (var file in Directory.GetFiles(sDir))
+                {
+                    if (string.Compare(".dmp", Path.GetExtension(file), StringComparison.OrdinalIgnoreCase) == 0)
+                        files.Add(file);
+                }
+        }
+
+        [TestMethod]
+        public void SearchDctCouns()
+        {
+            string path = Setup.DumpsFolder + Path.DirectorySeparatorChar + "Analytics";
+            string typeName = "Eze.Server.Common.Pulse.Common.Types.PositionLevelCache+MultiFeedPositionCacheStorage";
+            TypeValue tv = new TypeValue(null, typeName, null);
+            TypeValue _1 = new TypeValue(tv, "System.Collections.Generic.Dictionary<Eze.Server.Common.Pulse.Common.Types.PositionLevelCache+CacheKey,Eze.Server.Common.Pulse.Common.Types.PositionLevelCache+MultiFeedPositionCacheStorage+MultiFeedPositionCacheStorageData<System.Decimal>>",
+                "decimalCaches");
+            TypeValue _2 = new TypeValue(tv, "System.Collections.Generic.Dictionary<Eze.Server.Common.Pulse.Common.Types.PositionLevelCache+CacheKey,Eze.Server.Common.Pulse.Common.Types.PositionLevelCache+MultiFeedPositionCacheStorage+MultiFeedPositionCacheStorageData<Eze.Server.Common.Pulse.Common.Types.CalcArrayResult>>",
+                "objectCaches");
+            _1.AddField("System.Int32", "count");
+            _1.AddField("System.Int32", "freeCount");
+            _2.AddField("System.Int32", "count");
+            _2.AddField("System.Int32", "freeCount");
+            tv.AddField(_1);
+            tv.AddField(_2);
+            Queue<ValueTuple<TypeValue, ulong>> que = new Queue<(TypeValue, ulong)>();
+            var valLst = new List<object>();
+            Stopwatch stopWatch = new Stopwatch();
+
+            List<string> fileList = new List<string>(128);
+            var hist = new SortedDictionary<int, ValueTuple<int, int>>();
+            var tothist = new SortedDictionary<int, ValueTuple<int, int>>();
+            StreamWriter sw = null;
+
+            try
+            {
+            sw = new StreamWriter(Setup.DumpsFolder + Path.DirectorySeparatorChar + "Counts2.txt");
+            GetDumpFiles(path, fileList);
+            stopWatch.Start();
+//            for (int d = 0, dcnt = fileList.Count; d < dcnt; ++d)
+            for (int d = 0, dcnt = fileList.Count; d < 3; ++d)
+            {
+                string file = fileList[d];
+                Trace.WriteLine(d.ToString() + ")  " + file);
+                sw.WriteLine(file);
+
+                //if (string.Compare(".dmp", Path.GetExtension(file), StringComparison.OrdinalIgnoreCase) != 0) continue;
+                    var dmp = OpenDump(file);
+                    using (dmp)
+                    {
+                        valLst.Clear();
+                        tv.ResetClrInfo();
+                        var heap = dmp.Heap;
+                        var segs = heap.Segments;
+                        for (int i = 0, icnt = segs.Count; i < icnt; ++i)
+                        {
+                            var seg = segs[i];
+                            ulong addr = seg.FirstObject;
+                            while (addr != 0ul)
+                            {
+                                var clrType = heap.GetObjectType(addr);
+                                if (clrType == null) goto NEXT_OBJECT;
+                                if (string.Compare(tv.TypeName, clrType.Name, StringComparison.Ordinal) != 0) goto NEXT_OBJECT;
+
+                                tv.GetValue(heap, addr, que);
+                                valLst.Clear();
+                                tv.GetValues(valLst);
+
+                                int dif1 = (int)valLst[0] - (int)valLst[1];
+                                int dif2 = (int)valLst[2] - (int)valLst[3];
+                                ValueTuple<int, int> dctVal; ;
+                                if (hist.TryGetValue(dif1,out dctVal))
+                                {
+                                    hist[dif1] = (dctVal.Item1 + 1,dctVal.Item2);
+                                }
+                                else
+                                {
+                                    hist.Add(dif1, (1,0));
+                                }
+                                if (hist.TryGetValue(dif2, out dctVal))
+                                {
+                                    hist[dif2] = (dctVal.Item1, dctVal.Item2+1);
+                                }
+                                else
+                                {
+                                    hist.Add(dif2, (0, 1));
+                                }
+
+
+                                NEXT_OBJECT:
+                                addr = seg.NextObject(addr);
+                            }
+                        }
+                    }
+                    foreach(var entry in hist)
+                    {
+                        string cnt1 = Utils.CountString(entry.Value.Item1);
+                        string cnt2 = Utils.CountString(entry.Value.Item2);
+                        sw.WriteLine(entry.Key.ToString() + " [" + cnt1 + "] [" + cnt2 + "]");
+
+                        ValueTuple<int, int> dctVal; ;
+                        if (tothist.TryGetValue(entry.Key, out dctVal))
+                        {
+                            tothist[entry.Key] = (dctVal.Item1 + entry.Value.Item1, dctVal.Item2 + entry.Value.Item2);
+                        }
+                        else
+                        {
+                            tothist.Add(entry.Key, (entry.Value.Item1, entry.Value.Item2));
+                        }
+                    }
+                    sw.WriteLine("### GRAND TOTAL");
+                    foreach(var entry in tothist)
+                    {
+                        string cnt1 = Utils.CountString(entry.Value.Item1);
+                        string cnt2 = Utils.CountString(entry.Value.Item2);
+                        sw.WriteLine(entry.Key.ToString() + " [" + cnt1 + "] [" + cnt2 + "]");
+
+                    }
+                }
+             }
+            catch (Exception ex)
+            {
+                Assert.IsTrue(false, ex.ToString());
+            }
+            finally
+            {
+                sw?.Close();
+            }
+            TestContext.WriteLine("file count : " + fileList.Count + " duration " + Utils.StopAndGetDurationString(stopWatch));
+
+        }
+
+        [TestMethod]
+        public void SearchDctCouns2()
+        {
+            string path = Setup.DumpsFolder + Path.DirectorySeparatorChar + "Analytics";
+
+            //
+            //
+            TypeValue tvPPM = new TypeValue(null, "Eze.Server.Common.Pulse.Common.Types.PulsePositionStateManager", null);
+            TypeValue tvPPMAggrSet = new TypeValue(tvPPM, "System.Collections.Generic.Dictionary<ECS.Common.HierarchyCache.Structure.Aggregation,ECS.Common.Transport.ChangeStatus>",
+                "aggregationSet");
+            tvPPM.AddField(tvPPMAggrSet);
+            var PPMHist = new SortedDictionary<int, int>();
+
+            //
+            //
+            string realPosName = "ECS.Common.HierarchyCache.Structure.RealPosition";
+
+            //
+            //
+            string whatIfname = "ECS.Common.HierarchyCache.Structure.WhatIfPosition";
+
+            //
+            //
+            string posIndexGrpName = "ECS.Common.HierarchyCache.Structure.PositionIndexGroup";
+
+ 
+
+            Queue<ValueTuple<TypeValue, ulong>> que = new Queue<(TypeValue, ulong)>();
+            var valLst = new List<object>();
+            Stopwatch stopWatch = new Stopwatch();
+
+            List<string> fileList = new List<string>(128);
+            var hist = new SortedDictionary<int, ValueTuple<int, int>>();
+            var tothist = new SortedDictionary<int, ValueTuple<int, int>>();
+            StreamWriter swPulsePositionStateManager = null;
+            StreamWriter swPIG = null;
+            StreamWriter swRPos = null;
+            StreamWriter swWPos = null;
+
+            try
+            {
+                swPulsePositionStateManager = new StreamWriter(Setup.DumpsFolder + Path.DirectorySeparatorChar + "PulsePositionStateManager.txt");
+                swPulsePositionStateManager.WriteLine(tvPPM.TypeName);
+                swPulsePositionStateManager.WriteLine(tvPPMAggrSet.TypeName);
+
+                swPIG = new StreamWriter(Setup.DumpsFolder + Path.DirectorySeparatorChar + "PositionIndexGroup.txt");
+                swPIG.WriteLine(posIndexGrpName);
+
+                swRPos = new StreamWriter(Setup.DumpsFolder + Path.DirectorySeparatorChar + "RealPosition.txt");
+                swRPos.WriteLine(realPosName);
+
+                swWPos = new StreamWriter(Setup.DumpsFolder + Path.DirectorySeparatorChar + "WhatIfPosition.txt");
+                swWPos.WriteLine(whatIfname);
+
+                GetDumpFiles(path, fileList);
+                stopWatch.Start();
+                for (int d = 0, dcnt = fileList.Count; d < dcnt; ++d)
+                //for (int d = 0, dcnt = fileList.Count; d < 3; ++d)
+                {
+                    string file = fileList[d];
+                    Trace.WriteLine(d.ToString() + ")  " + file);
+                    swPulsePositionStateManager.WriteLine(file);
+                    swPIG.WriteLine(file);
+                    swRPos.WriteLine(file);
+                    swWPos.WriteLine(file);
+
+                    var dmp = OpenDump(file);
+                    using (dmp)
+                    {
+                        valLst.Clear();
+                        tvPPM.ResetClrInfo();
+                        PPMHist.Clear();
+
+                        ClrType PPMAggrSet = null;
+                        ClrInstanceField PPMAggrSetFld = null;
+                        ClrInstanceField PPMAggrSetCountFld = null;
+                        ClrInstanceField PPMAggrSetFreeCountFld = null;
+
+                        ClrInstanceField longAvgCost = null;
+                        ClrInstanceField longAvgGrossCost = null;
+                        ClrInstanceField shortAvgCost = null;
+                        ClrInstanceField shortAvgGrossCost = null;
+                        ClrInstanceField longAvgIntradayUnrealizedGainLoss = null;
+                        ClrInstanceField shortAvgIntradayUnrealizedGainLoss = null;
+                        ClrInstanceField longAvgSpotLocalToBase = null;
+                        ClrInstanceField shortAvgSpotLocalToBase = null;
+                        ClrInstanceField avgStartCost = null;
+                        ClrInstanceField longTotalShares = null;
+                        ClrInstanceField shortTotalShares = null;
+                        ClrInstanceField longTotalHoldingsShares = null;
+                        ClrInstanceField shortTotalHoldingsShares = null;
+                        ClrInstanceField ttzNet = null;
+
+                        ClrInstanceField[] pigFlds = new ClrInstanceField[14];
+
+                        ClrInstanceField editTimeStamp = null;
+                        ClrInstanceField servicingClass = null;
+                        ClrInstanceField lotOrder = null;
+
+                        ClrInstanceField modelingProposedAllocId = null;
+                        ClrInstanceField wlotOrder = null;
+
+                        int wpCnt = 0;
+                        int modelingProposedAllocIdCnt = 0;
+                        int wlotOrderCnt = 0;
+
+                        int rpCnt = 0;
+                        int editTimeStampCnt = 0;
+                        int servicingClassCnt = 0;
+                        int lotOrderCnt = 0;
+
+                        int pigCnt = 0;
+                        int pigDecZeroCnt = 0;
+                        int pigDecCnt = 0;
+
+                        int cntNew = 0;
+                        int cntDelete = 0;
+                        int cntUpdate = 0;
+                        int totPPMCount = 0;
+                        int totPPMCountOK = 0;
+
+                        var heap = dmp.Heap;
+                        var segs = heap.Segments;
+                        for (int i = 0, icnt = segs.Count; i < icnt; ++i)
+                        {
+                            var seg = segs[i];
+                            ulong addr = seg.FirstObject;
+                            while (addr != 0ul)
+                            {
+                                var clrType = heap.GetObjectType(addr);
+                                if (clrType == null) goto NEXT_OBJECT;
+                                if (string.Compare(tvPPM.TypeName, clrType.Name, StringComparison.Ordinal) == 0)
+                                {
+                                    ++totPPMCount;
+                                    if (PPMAggrSetFld == null)
+                                    {
+                                        PPMAggrSetFld = clrType.GetFieldByName("aggregationSet");
+                                    }
+                                    if (PPMAggrSetFld == null) goto NEXT_OBJECT;
+                                    ulong aggrSetAddr = ValueExtractor.GetFieldAddressValue(heap, addr, PPMAggrSetFld, false);
+                                    if (aggrSetAddr == Constants.InvalidAddress) goto NEXT_OBJECT;
+                                    if (PPMAggrSet == null)
+                                    {
+                                        PPMAggrSet = heap.GetObjectType(aggrSetAddr);
+                                    }
+                                    if (PPMAggrSetCountFld == null && PPMAggrSet != null)
+                                        PPMAggrSetCountFld = PPMAggrSet.GetFieldByName("count");
+                                    if (PPMAggrSetFreeCountFld == null && PPMAggrSet != null)
+                                        PPMAggrSetFreeCountFld = PPMAggrSet.GetFieldByName("freeCount");
+                                    if (PPMAggrSetCountFld == null || PPMAggrSetFreeCountFld == null) goto NEXT_OBJECT;
+
+                                    int cnt = ValueExtractor.GetFieldIntValue(heap, aggrSetAddr, PPMAggrSetCountFld, false);
+                                    int freeCnt = ValueExtractor.GetFieldIntValue(heap, aggrSetAddr, PPMAggrSetFreeCountFld, false);
+                                    int dCnt = cnt - freeCnt;
+                                    int dctCnt;
+                                    if (PPMHist.TryGetValue(dCnt, out dctCnt))
+                                    {
+                                        PPMHist[dCnt] = dctCnt + 1;
+                                    }
+                                    else
+                                    {
+                                        PPMHist.Add(dCnt, 1);
+                                    }
+                                    if (dCnt < 1)
+                                    {
+                                        ++totPPMCountOK;
+                                        goto NEXT_OBJECT;
+                                    }
+                                    (string error, KeyValuePair<string, string>[] descr, KeyValuePair<string, string>[] values) = CollectionContent.DictionaryContentAsStrings(heap, aggrSetAddr);
+                                    if (error != null) goto NEXT_OBJECT;
+
+                                    for(int v = 0, vcnt = values.Length; v < vcnt; ++v)
+                                    {
+                                        if (values[v].Value[0] == '2') ++cntUpdate;
+                                        else if (values[v].Value[0] == '0') ++cntNew;
+                                        else if (values[v].Value[0] == '1') ++cntDelete;
+                                    }
+                                    ++totPPMCountOK;
+                                }
+                                else if (string.Compare(realPosName, clrType.Name, StringComparison.Ordinal) == 0)
+                                {
+                                    ++rpCnt;
+                                    if (editTimeStamp == null) editTimeStamp = clrType.GetFieldByName("editTimeStamp");
+                                    if (servicingClass == null) servicingClass = clrType.GetFieldByName("servicingClass");
+                                    if (lotOrder == null) lotOrder = clrType.GetFieldByName("lotOrder");
+                                    if (editTimeStamp != null)
+                                    {
+                                        long tsVal = ValueExtractor.GetFieldLongValue(heap, addr, editTimeStamp, false);
+                                        if (tsVal != 0) ++editTimeStampCnt;
+                                    }
+                                    if (servicingClass != null)
+                                    {
+                                        int scVal = ValueExtractor.GetFieldIntValue(heap, addr, servicingClass, false);
+                                        if (scVal != 0) ++servicingClassCnt;
+
+                                    }
+                                    if (lotOrder != null)
+                                    {
+                                        int scVal = ValueExtractor.GetFieldIntValue(heap, addr, lotOrder, false);
+                                        if (scVal != 0) ++lotOrderCnt;
+                                    }
+                                }
+                                else if (string.Compare(whatIfname, clrType.Name, StringComparison.Ordinal) == 0)
+                                {
+                                    ++wpCnt;
+
+                                    if (modelingProposedAllocId == null) modelingProposedAllocId = clrType.GetFieldByName("modelingProposedAllocId");
+                                    if (wlotOrder == null) wlotOrder = clrType.GetFieldByName("lotOrder");
+                                    if (modelingProposedAllocId != null)
+                                    {
+                                        long tsVal = ValueExtractor.GetFieldLongValue(heap, addr, modelingProposedAllocId, false);
+                                        if (tsVal != 0) ++modelingProposedAllocIdCnt;
+                                    }
+                                    if (wlotOrder != null)
+                                    {
+                                        int scVal = ValueExtractor.GetFieldIntValue(heap, addr, wlotOrder, false);
+                                        if (scVal != 0) ++wlotOrderCnt;
+
+                                    }
+
+                                }
+                                else if (string.Compare(posIndexGrpName, clrType.Name, StringComparison.Ordinal) == 0)
+                                {
+                                    ++pigCnt;
+                                    if (longAvgCost == null) pigFlds[0] = longAvgCost = clrType.GetFieldByName("longAvgCost");
+                                    if (longAvgGrossCost == null) pigFlds[1] = longAvgGrossCost = clrType.GetFieldByName("longAvgGrossCost");
+                                    if (shortAvgCost == null) pigFlds[2] = shortAvgCost = clrType.GetFieldByName("shortAvgCost");
+                                    if (shortAvgGrossCost == null) pigFlds[3] = shortAvgGrossCost = clrType.GetFieldByName("shortAvgGrossCost");
+                                    if (longAvgIntradayUnrealizedGainLoss == null) pigFlds[4] = longAvgIntradayUnrealizedGainLoss = clrType.GetFieldByName("longAvgIntradayUnrealizedGainLoss");
+                                    if (shortAvgIntradayUnrealizedGainLoss == null) pigFlds[5] = shortAvgIntradayUnrealizedGainLoss = clrType.GetFieldByName("shortAvgIntradayUnrealizedGainLoss");
+                                    if (longAvgSpotLocalToBase == null) pigFlds[6] = longAvgSpotLocalToBase = clrType.GetFieldByName("longAvgSpotLocalToBase");
+                                    if (shortAvgSpotLocalToBase == null) pigFlds[7] = shortAvgSpotLocalToBase = clrType.GetFieldByName("shortAvgSpotLocalToBase");
+                                    if (avgStartCost == null) pigFlds[8] = avgStartCost = clrType.GetFieldByName("avgStartCost");
+                                    if (longTotalShares == null) pigFlds[9] = longTotalShares = clrType.GetFieldByName("longTotalShares");
+                                    if (shortTotalShares == null) pigFlds[10] = shortTotalShares = clrType.GetFieldByName("shortTotalShares");
+                                    if (longTotalHoldingsShares == null) pigFlds[11] = longTotalHoldingsShares = clrType.GetFieldByName("longTotalHoldingsShares");
+                                    if (shortTotalHoldingsShares == null) pigFlds[12] = shortTotalHoldingsShares = clrType.GetFieldByName("shortTotalHoldingsShares");
+                                    if (ttzNet == null) pigFlds[13] = ttzNet = clrType.GetFieldByName("ttzNet");
+                                    for (int p = 0, pcnt = pigFlds.Length; p < pcnt; ++p)
+                                    {
+                                        if (pigFlds[p] != null)
+                                        {
+                                            decimal dval = ValueExtractor.GetDecimal(addr, pigFlds[p], false);
+                                            if (dval == 0m)
+                                            {
+                                                ++pigDecZeroCnt;
+                                            }
+                                            else
+                                            {
+                                                ++pigDecCnt;
+                                            }
+                                        }
+                                    }
+                                }
+
+                                
+
+                                NEXT_OBJECT:
+                                addr = seg.NextObject(addr);
+                            }
+                        }
+
+                        swPulsePositionStateManager.WriteLine("INSTANCE TOTAL COUNT: " + Utils.CountString(totPPMCount) + ", processed (" + Utils.CountString(totPPMCountOK) + ")");
+                        swPulsePositionStateManager.WriteLine("New: " + Utils.CountString(cntNew) + ", Update: " + Utils.CountString(cntUpdate) + ", Delete: " + Utils.CountString(cntDelete));
+                        foreach(var entry in PPMHist)
+                        {
+                            swPulsePositionStateManager.WriteLine(entry.Key.ToString() + " [" + Utils.CountString(entry.Value) + "]");
+                        }
+
+                        double zeroPrct = (((double)pigDecZeroCnt / (double)14) / pigCnt) * 100.0;
+                        double nonzeroPrct = (((double)pigDecCnt / (double)14) / pigCnt) * 100.0;
+
+                        swPIG.WriteLine("INSTANCE COUNT: " + Utils.CountString(pigCnt)
+                            + ", zeros: " + zeroPrct.ToString("G", CultureInfo.InvariantCulture)
+                            + ", non-zeros: " + nonzeroPrct.ToString("G", CultureInfo.InvariantCulture)
+                            );
+
+
+                        swRPos.WriteLine("INSTANCE COUNT: " + Utils.CountString(rpCnt)
+                            + ", editTimeStamp: " + Utils.CountString(editTimeStampCnt)
+                            + ", servicingClass: " + Utils.CountString(servicingClassCnt)
+                            + ", lotOrder: " + Utils.CountString(lotOrderCnt)
+                            );
+
+                        swWPos.WriteLine("INSTANCE COUNT: " + Utils.CountString(wpCnt)
+                            + ", modelingProposedAllocId: " + Utils.CountString(modelingProposedAllocIdCnt)
+                            + ", lotOrder: " + Utils.CountString(wlotOrderCnt)
+                            );
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                Assert.IsTrue(false, ex.ToString());
+            }
+            finally
+            {
+                swPulsePositionStateManager?.Close();
+                swPIG?.Close();
+                swRPos?.Close();
+                swWPos?.Close();
+
+            }
+            TestContext.WriteLine("file count : " + fileList.Count + " duration " + Utils.StopAndGetDurationString(stopWatch));
+
+        }
+
+
+        [TestMethod]
+        public void Indexing_Test()
+        {
+            string error = null;
+            string[] dumps = new string[]
+            {
+                 @"\Analytics\Ellerston\Eze.Analytics.Svc_170309_130146.BIG.dmp", // 8.81 GB (9,460,290,330 bytes)
+                 @"\Analytics\BigOne\Analytics11_042015_2.BigOne.dmp", // 14.0 GB (15,090,522,609 bytes)
+                 @"\Analytics\Anavon\Eze.Analytics.Svc_160225_204724.Anavon.dmp", // 521 MB (546,629,030 bytes)
+                 @"\Compliance\Eze.Compliance.Svc_170503_131515.dmp", // 31.3 GB (33,715,861,634 bytes)
+            };
+
+            string dumpPath = Setup.DumpsFolder + dumps[3];
+            string dumpName = Path.GetFileName(dumpPath);
+            string refsPath = Setup.DumpsFolder + @"\CPP.REFS.BUILD.TEST\" + dumpName + Constants.MapFwdRefAddrsTempFilePostfix;
+            string addrPath = Setup.DumpsFolder + @"\CPP.REFS.BUILD.TEST\" + dumpName + Constants.MapInstancesFilePostfix;
+
+            BinaryWriter bwRefs = null;
+            ulong[] addresses = null;
+
+            try
+            {
+                Stopwatch stopWatch = new Stopwatch();
+                var dmp = OpenDump(dumpPath);
+                using (dmp)
+                {
+                    var heap = dmp.Heap;
+                    var segs = heap.Segments;
+                    var fieldAddrOffsetList = new List<KeyValuePair<ulong, int>>(64);
+
+                    stopWatch.Start();
+
+                    string[] typeNames = DumpIndexer.GetTypeNames(heap, out error);
+
+                    stopWatch.Start();
+                    var strIds = new ClrMDRUtil.Utils.StringIdDct();
+                    int rootCount, finalizerCount;
+                    ulong[] rootAddrs;
+                    (rootAddrs, rootCount, finalizerCount) = ClrtRootInfo.GetFlaggedRoots(heap, typeNames, strIds, null, out error);
+
+
+                    addresses = GetInstances(heap);
+                    int instCount = addresses.Length;
+                    TestContext.WriteLine(dumpName + " GETTING INSTANCES: " + Utils.StopAndGetDurationString(stopWatch));
+
+
+                    TestContext.WriteLine(dumpName + " GETTING ROOTS: " + Utils.StopAndGetDurationString(stopWatch));
+                    Assert.IsNull(error, error);
+                    int addrNdx = 0;
+                    ulong addr, flaggedAddr;
+
+                    stopWatch.Start();
+                    //bwAddr = new BinaryWriter(File.Open(addrPath, FileMode.Create));
+                    bwRefs = new BinaryWriter(File.Open(refsPath, FileMode.Create));
+                    //bwAddr.Write(instCount);
+
+                    for (int i = 0; i < instCount; ++i)
+                    {
+                        addr = Utils.RealAddress(addresses[i]);
+                        var clrType = heap.GetObjectType(addr);
+                        Debug.Assert(clrType != null);
+                        int rootNdx = Utils.AddressSearch(rootAddrs, addr);
+                        flaggedAddr = (rootNdx >= 0) ? Utils.CopyAddrFlag(rootAddrs[rootNdx], addr) : addr;
+                        bool isAddrFlagged = flaggedAddr != addr;
+                        if (isAddrFlagged) addresses[i] = flaggedAddr;
+                        //bwAddr.Write(flaggedAddr);
+                        fieldAddrOffsetList.Clear();
+                        clrType.EnumerateRefsOfObjectCarefully(addr, (address, off) =>
+                        {
+                            fieldAddrOffsetList.Add(new KeyValuePair<ulong, int>(address, off));
+                        });
+                        int rcnt = fieldAddrOffsetList.Count;
+                        if (rcnt < 1)
+                        {
+                            bwRefs.Write((int)0);
+                        }
+                        else
+                        {
+                            bwRefs.Write(rcnt + 1);
+                            bwRefs.Write(addr);
+                            for (int j = 0, jcnt = fieldAddrOffsetList.Count; j < jcnt; ++j)
+                            {
+                                ulong raddr = fieldAddrOffsetList[j].Key;
+                                if (isAddrFlagged)
+                                {
+                                    var ndx = Utils.AddressSearch(addresses, raddr);
+                                    if (ndx >= 0)
+                                        addresses[ndx] = Utils.CopyAddrFlag(flaggedAddr, raddr);
+                                }
+                                bwRefs.Write(raddr);
+                            }
+                        }
+                    }
+                    bwRefs.Write((uint)0xFFFFFFFF);
+                } // using dump
+
+
+                int flg_cnt = 0;
+                for (int i = 0, icnt = addresses.Length; i < icnt; ++i)
+                {
+                    ulong addr = addresses[i];
+                    if (!Utils.IsRealAddress(addr))
+                        ++flg_cnt;
+                }
+
+                Utils.WriteUlongArray(addrPath, addresses, out error);
+
+                TestContext.WriteLine(dumpName + " REFERENCE DURATION: " + Utils.StopAndGetDurationString(stopWatch));
+            }
+            catch (Exception ex)
+            {
+                Assert.IsTrue(false, ex.ToString());
+            }
+            finally
+            {
+                //bwAddr?.Close();
+                bwRefs?.Close();
+            }
+        }
+
 
         [TestMethod]
         public void TypeReferences_CheckRefData()

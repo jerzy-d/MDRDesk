@@ -1050,6 +1050,10 @@
                         <MenuItem x:Name="ExtrasGetIpValueAddress" Header="Get IP Int64 Value Address..."  Click="ExtrasGetIpValueAddressClicked"/>
                         <Separator></Separator>
                         <MenuItem x:Name="ExtrasTestInstanceValues" Header="Test"  Click="ExtrasTestClicked"/>
+                        <Separator></Separator>
+                        <MenuItem x:Name="ExtrasCrashDumpSearches" Header="Crash Dump Searches">
+                            <MenuItem x:Name="ExtrasCrashDumpMultiSearch" Header="Search instance field values in crash dumps..."  Click="ExtrasCrashDumpMultiSearchClicked"/>
+                        </MenuItem>
                     </MenuItem>
                     <MenuItem x:Name="Help" Header="Help" Background="LightBlue" VerticalAlignment="Center">
                         <MenuItem x:Name="HelpViewHelp" Header="View Help"  Click="HelpViewHelpClicked"/>

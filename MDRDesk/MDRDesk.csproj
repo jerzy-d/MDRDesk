@@ -157,6 +157,9 @@
       <DependentUpon>ContentDisplay.xaml</DependentUpon>
     </Compile>
     <Compile Include="Converters.cs" />
+    <Compile Include="CrashDumpSearch.xaml.cs">
+      <DependentUpon>CrashDumpSearch.xaml</DependentUpon>
+    </Compile>
     <Compile Include="CreateCrashDump.xaml.cs">
       <DependentUpon>CreateCrashDump.xaml</DependentUpon>
     </Compile>
@@ -219,6 +222,10 @@
       <Generator>MSBuild:Compile</Generator>
     </Page>
     <Page Include="ContentDisplay.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="CrashDumpSearch.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>

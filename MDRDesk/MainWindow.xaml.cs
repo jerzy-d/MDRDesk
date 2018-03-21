@@ -2638,6 +2638,11 @@ namespace MDRDesk
             }
         }
 
+        private void ExtrasCrashDumpMultiSearchClicked(object sender, RoutedEventArgs e)
+        {
+            var wnd = new CrashDumpSearch();
+            wnd.Show();
+        }
     }
 
     public static class MenuCommands

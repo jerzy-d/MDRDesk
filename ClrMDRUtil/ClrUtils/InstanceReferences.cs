@@ -701,12 +701,12 @@ namespace ClrMDRIndex
             error = null;
             try
             {
-                string[] fileList = new string[(int)RefFile.Count + 1];
+                string[] fileList = new string[(int)RefFile.Count];
                 fileList[0] = moniker.GetFilePath(runtmNdx, Constants.MapRefFwdOffsetsFilePostfix);
                 fileList[1] = moniker.GetFilePath(runtmNdx, Constants.MapFwdRefsFilePostfix);
                 fileList[2] = moniker.GetFilePath(runtmNdx, Constants.MapRefBwdOffsetsFilePostfix);
                 fileList[3] = moniker.GetFilePath(runtmNdx, Constants.MapBwdRefsFilePostfix);
-                fileList[4] = moniker.GetFilePath(runtmNdx, Constants.MapRefFwdDataFilePostfix);
+                //fileList[4] = moniker.GetFilePath(runtmNdx, Constants.MapRefFwdDataFilePostfix);
 
                 for (int i = 0, icnt = fileList.Length; i < icnt; ++i)
                 {

@@ -1858,8 +1858,8 @@ namespace ClrMDRIndex
 
             if (TypeExtractor.IsObjectReference(fldKind))
             {
-                var vals = fld.GetAddress(addr, intr);
-                return Utils.RealAddressString(vals);
+                var val = fld.GetValue(addr, intr);
+                return (val == null || !(val is ulong)) ? Constants.InvalidAddress : val;
             }
 
             if (TypeExtractor.IsEnum(fldKind))
@@ -1867,11 +1867,18 @@ namespace ClrMDRIndex
                 return GetEnumStringOfField(addr, fld, intr);
             }
 
+            if (TypeExtractor.IsPrimitive(fldKind))
+            {
+                return GetPrimitiveValueObject(addr, fld, intr);
+            }
+
             if (TypeExtractor.IsKnownPrimitive(fldKind))
             {
                 object val = fld.GetValue(addr, intr);
                 return PrimitiveValueAsString(val, TypeExtractor.GetClrElementType(fldKind));
             }
+
+ 
 
             return "Don't know how to get value.";
         }
@@ -1983,6 +1990,7 @@ namespace ClrMDRIndex
             }
             return 0; // TODO JRD ???
         }
+ 
 
         public static ValueTuple<ClrType,ClrElementKind> GetFieldType(ClrHeap heap, ulong parentAddr, ClrInstanceField fld)
         {
@@ -2015,6 +2023,23 @@ namespace ClrMDRIndex
             Debug.Assert(obj is Int32);
             return (int)obj;
         }
+
+        public static ulong GetFieldAddressValue(ClrHeap heap, ulong addr, ClrInstanceField fld, bool intr)
+        {
+            var obj = fld.GetValue(addr, intr, false);
+            if (obj == null) return 0;
+            Debug.Assert(obj is ulong);
+            return (ulong)obj;
+        }
+
+        public static long GetFieldLongValue(ClrHeap heap, ulong addr, ClrInstanceField fld, bool intr)
+        {
+            var obj = fld.GetValue(addr, intr, false);
+            if (obj == null) return 0;
+            Debug.Assert(obj is long);
+            return (long)obj;
+        }
+
 
         public static ValueTuple<string, ValueTuple<ClrType, ClrInstanceField, ClrElementKind, object>[]>
         GetCollectionInfo(ClrHeap heap, ulong addr, ClrType clrType, string[] flds)

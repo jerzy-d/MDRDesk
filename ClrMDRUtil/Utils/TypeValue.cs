@@ -706,4 +706,154 @@ namespace ClrMDRIndex
 		}
 
 	}
+
+    public class TypeValue
+    {
+        private TypeValue _parent;
+        private TypeValue[] _children;
+        private string _typeName;
+        public string TypeName => _typeName;
+        private string _fieldName;
+        private ClrType _type;
+        private ClrElementKind _kind;
+        private ClrInstanceField _field;
+        private int _fldIndex;
+        private object _value;
+
+        public TypeValue(TypeValue parent, string typeName, string fieldName)
+        {
+            _parent = parent;
+            _typeName = typeName;
+            _fieldName = fieldName;
+        }
+
+        public void ResetClrInfo()
+        {
+            _type = null;
+            _kind = ClrElementKind.Unknown;
+            _field = null;
+            _fldIndex = Constants.InvalidIndex;
+            _value = null;
+            if (_children != null)
+            {
+                for (int i = 0, icnt = _children.Length; i < icnt; ++i)
+                    _children[i].ResetClrInfo();
+            }
+        }
+
+        public void SetValue(object val)
+        {
+            _value = val;
+        }
+
+        public void AddField(string typeName, string fieldName)
+        {
+            var fld = new TypeValue(this, typeName, fieldName);
+            AddField(fld);
+        }
+
+        public void AddField(TypeValue fld)
+        {
+            if (_children == null)
+            {
+                _children = new TypeValue[] { fld };
+            }
+            else
+            {
+                var newChildren = new TypeValue[_children.Length + 1];
+                Array.Copy(_children, newChildren, _children.Length);
+                newChildren[_children.Length] = fld;
+                _children = newChildren;
+            }
+        }
+
+        public void GetValue(ClrHeap heap, ulong address, Queue<ValueTuple<TypeValue,ulong>> que)
+        {
+            que.Clear();
+            que.Enqueue((this,address));
+            while(que.Count > 0)
+            {
+                (TypeValue val, ulong addr) = que.Dequeue();
+                if (val._type == null)
+                {
+                    ClrType clrType = heap.GetObjectType(addr);
+                    if (clrType == null) continue;
+                    val._type = clrType;
+                    val._kind = TypeExtractor.GetElementKind(clrType);
+                    val.SetValue(addr);
+                }
+                if (val._children != null)
+                {
+                    for (int i = 0, icnt = val._children.Length; i < icnt; ++i)
+                    {
+                        TypeValue fldVal = val._children[i];
+
+                        if (fldVal._fieldName != null && fldVal._field == null)
+                        {
+                            ClrInstanceField f = val._type.GetFieldByName(fldVal._fieldName);
+                            if (f == null) continue;
+                            fldVal._field = f;
+                            fldVal._type = f.Type;
+                            fldVal._kind = TypeExtractor.GetElementKind(f.Type);
+                        }
+                        object v = ValueExtractor.GetFieldValue(heap, addr, fldVal._type.IsValueClass, fldVal._field, fldVal._kind);
+                        ulong a = (v is ulong) ? (ulong)v : Constants.InvalidAddress;
+                        fldVal.SetValue(v);
+                        que.Enqueue((val._children[i], (ulong)val._value));
+                    }
+                }
+                else
+                {
+                    if (val._fieldName != null && val._field == null)
+                    {
+                        ClrInstanceField f = val._type.GetFieldByName(val._fieldName);
+                        val._field = f;
+                        val._type = f.Type;
+                        val._kind = TypeExtractor.GetElementKind(f.Type);
+                    }
+                    object v = ValueExtractor.GetFieldValue(heap, addr, val._type.IsValueClass, val._field, val._kind);
+                    val.SetValue(v);
+
+                }
+
+            }
+        }
+
+        public void GetValues(List<ValueTuple<string, string>> vals)
+        {
+            if (_children != null)
+            {
+                for (int i = 0, icnt = _children.Length; i < icnt; ++i)
+                {
+                    _children[i].GetValues(vals);
+                }
+            }
+            else
+            {
+                string valStr = ValueExtractor.ValueToString(_value, _kind);
+                vals.Add((_fieldName,valStr));
+            }
+        }
+
+        public void GetValues(List<object> vals)
+        {
+            if (_children != null)
+            {
+                for (int i = 0, icnt = _children.Length; i < icnt; ++i)
+                {
+                    _children[i].GetValues(vals);
+                }
+            }
+            else
+            {
+                 vals.Add(_value);
+            }
+        }
+
+        public override string ToString()
+        {
+            return string.IsNullOrEmpty(_fieldName) ? _typeName : (_fieldName + "::" + _typeName);
+        }
+
+    }
 }

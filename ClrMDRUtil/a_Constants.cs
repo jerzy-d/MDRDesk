@@ -208,19 +208,20 @@ namespace ClrMDRIndex
         public const string ReportPath = @"ad-hoc.queries";
 
 
-		public const string MapRefFwdDataFilePostfix = ".`REFFWDDATA[0].bin";
+		//public const string MapRefFwdDataFilePostfix = ".`REFFWDDATA[0].bin";
 		public const string MapRefFwdOffsetsFilePostfix = ".`FWDREFOFFSETS[0].bin";
 		public const string MapFwdRefsFilePostfix = ".`FWDREFS[0].bin";
 		public const string MapRefBwdOffsetsFilePostfix = ".`BWDREFOFFSETS[0].bin";
 		public const string MapBwdRefsFilePostfix = ".`BWDREFS[0].bin";
+        public const string MapFwdRefAddrsTempFilePostfix = ".`FWDREFADDRS.TEMP[0].bin";
 
-		// TODO JRD -- new below, delete old field refs files above
+        // TODO JRD -- new below, delete old field refs files above
 
-		// new stuff ////////////////////////////////////////////////////////////////////////////////////////////////////////////
+        // new stuff ////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-		// types
-		//
-		public const string TxtTypeNamesFilePostfix = ".`TYPENAMES[0].txt"; // list of all type names, not all of them are in the heap
+        // types
+        //
+        public const string TxtTypeNamesFilePostfix = ".`TYPENAMES[0].txt"; // list of all type names, not all of them are in the heap
 		public const string TxtReversedTypeNamesFilePostfix = ".`REVERSEDTYPENAMES[0].txt"; // type name followed by namespace, for one of type grids
         public const string MapKindsFilePostfix = ".`KINDS[0].bin"; // our special type kind to ease digging up values 
         public const string MapTypeFieldTypesPostfix = ".`TYPEFIELDTYPES0].bin"; // type ids of field types for each type 
@@ -291,36 +292,6 @@ namespace ClrMDRIndex
 
 		public const string MapTypeFieldIndexFilePostfix = ".TYPEFIELDINDEX[0].map";
 		public const string MapFieldTypeMapFilePostfix = ".FIELDTYPEMAP[0].map";
-
-		//// roots files
-		////
-		//public const string MapFinalizerFilePostfix = ".FINALIZER[0].map"; // list of instance addresses
-		//public const string TxtFinalizerFilePostfix = ".FINALIZER[0].txt"; // debugging/testing only
-		//public const string MapRootsFilePostfix = ".ROOTS[0].map"; // ClrtRoot structures
-		//public const string MapRootAddressesFilePostfix = ".ROOTADDRESSES[0].map"; // root addresses and their map to ClrtRoot array
-		//public const string MapRootObjectsFilePostfix = ".ROOTOBJECTS[0].map"; // root objects and their map to ClrtRoot array
-		//public const string MapUnrootedAddressesFilePostfix = ".UNROOTEDADDRESSES[0].map"; // addresses with no reference
-
-		//public const string MapTypeBaseAndElementFilePostfix = ".TYPEBASEANDELEMENTFILE[0].map";
-		//public const string MapTypeFieldCountsFilePostfix = ".TYPEFIELDCOUNTS[0].map";
-		//public const string MapTypeIntanceCountsFilePostfix = ".TYPEINTANCECOUNTS[0].map";
-
-
-		//public const string MapArraysFilePostfix = ".ARRAYS[0].map";
-		//public const string MapArrayContentsFilePostfix = ".ARRAYCONTENTS[0].map";
-		//public const string TxtArrayValuesFilePostfix = ".ARRAYVALUES[0].txt";
-
-
-		//public const string TxtUnprocessedTypesFilePostfix = ".UNPROCESSEDTYPES.txt";
-
-
-		//public const string MapFinalizerObjectAddressesPostfix = ".FINALIZEROBJECTADDRESSES[0].map";
-
-		//public const string TxtThreadsAndBlocksFilePostfix = ".THREADSANDBLOCKS[0].txt";
-		//public const string MapThreadsAndBlocksFilePostfix = ".THREADSANDBLOCKS[0].map";
-
-
-
 
 	}
 }
