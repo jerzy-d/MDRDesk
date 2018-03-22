@@ -137,7 +137,12 @@ namespace MDRDesk
         {
             try
             {
-                DisplayThreadBlockGraph(CurrentIndex.Deadlock, true);
+                if (CurrentIndex.DeadlockFound)
+                    DisplayThreadBlockGraph(CurrentIndex.Deadlock, true);
+                else
+                {
+                    GuiUtils.ShowInformation("Deadlock", "Show deadlocks requested", "No deadlocks found in this crash dump.",null,this);
+                }
             }
             catch (Exception ex)
             {
