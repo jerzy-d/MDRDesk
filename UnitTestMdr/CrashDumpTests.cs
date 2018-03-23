@@ -3567,8 +3567,6 @@ namespace UnitTestMdr
                                     }
                                 }
 
-                                
-
                                 NEXT_OBJECT:
                                 addr = seg.NextObject(addr);
                             }

@@ -103,4 +103,11 @@
 	 3)	Opening two indexes in two separate instances takes a *long* time – need to open one at a time
 	 4)	Compare dmp1 with dmp2 In the same MDRDesk instance, compare dmp1 to dmp3. Uncaught exception occurs
 	 5)	Compare dmp1 to dmp2 Initiate String Usages causes exception, or trying to get string info forever.
+0049 03/23/18 -- new indexing flow
+	2147483648 -- 2GB
+	2147483648 / 8 = 268435456
+	268,435,456
 
+	268435456 / 4194304 = 64
+	268435456 / 8388608 = 32
+	
