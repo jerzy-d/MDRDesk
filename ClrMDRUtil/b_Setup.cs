@@ -34,6 +34,8 @@ namespace ClrMDRIndex
         public static bool SkipReferences { get; private set; }
         public static bool SkipDeadStackObjects { get; private set; }
 
+        public static bool CppRefBuilder { get; private set; }
+
         public static void SetDacFolder(string folder)
         {
             DacFolder = folder;
@@ -126,7 +128,7 @@ namespace ClrMDRIndex
                 //string myfolder = @"D:\Jerzy\WinDbgStuff\MDRDesk\";
                 string myfolder = @"C:\WinDbgStuff\MDRDesk\";
 #else
-                string myfolder = DumpFileMoniker.MyFolder;
+                string myfolder = @"C:\WinDbgStuff\MDRDesk\";  //DumpFileMoniker.MyFolder;
 #endif
                 string installFolder = DumpFileMoniker.GetParentFolder(myfolder);
                 var config = ConfigurationManager.OpenExeConfiguration(ConfigurationUserLevel.None);
@@ -192,6 +194,11 @@ namespace ClrMDRIndex
                                     errors.AppendLine("Documentation folder does not exist: " + folder);
                                 }
                             }
+                        }
+                        else if (Utils.SameStrings(ky, "refbuilder"))
+                        {
+                            var val = appSettings.Settings[key].Value.Trim();
+                            CppRefBuilder = string.Compare(val, "c++", StringComparison.OrdinalIgnoreCase) == 0;
                         }
                         else if (Utils.SameStrings(ky, "wnddbgfolder"))
                         {

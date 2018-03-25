@@ -7,6 +7,7 @@ using System.IO;
 using System.Linq;
 using System.Runtime;
 using System.Threading;
+using System.Threading.Tasks;
 using ClrMDRUtil.Utils;
 using Microsoft.Diagnostics.Runtime;
 
@@ -60,6 +61,36 @@ namespace ClrMDRIndex
         public DumpIndexer(string dmpPath)
         {
             _fileMoniker = new DumpFileMoniker(dmpPath);
+        }
+
+        /// <summary>
+        /// For unit test only.
+        /// </summary>
+        /// <param name="path"></param>
+        /// <param name="useReferenceBuilder"></param>
+        public static Tuple<bool, string, string> DoCreateDumpIndex(Version version, string path, bool useReferenceBuilder)
+        {
+            Debug.Assert(path != null && System.IO.File.Exists(path));
+            var dmpFileName = Path.GetFileNameWithoutExtension(path);
+            SingleThreadTaskScheduler dumpSTAScheduler = new SingleThreadTaskScheduler();
+            var result = Task.Factory.StartNew(() =>
+            {
+                string error;
+                string indexPath;
+                var indexer = new DumpIndexer(path);
+                bool ok = true;
+                if (useReferenceBuilder)
+                    ok = indexer.CreateDumpIndex3(version, null, out indexPath, out error);
+                else
+                    ok = indexer.CreateDumpIndex2(version, null, out indexPath, out error);
+                return new Tuple<bool, string, string>(ok, error, indexPath);
+            }, dumpSTAScheduler);
+
+            result.Wait();
+
+            Utils.ForceGcWithCompaction();
+
+            return result.Result;
         }
 
         public bool CreateDumpIndex2(Version version, IProgress<string> progress, out string indexPath, out string error)
@@ -273,10 +304,11 @@ namespace ClrMDRIndex
                 Debug.Assert(info != null);
                 builder = new Process();
                 builder.StartInfo.FileName = "refbuilder.exe";
-                builder.StartInfo.Arguments = info.Item1.ToString() + " \"" + info.Item2 + "\" \"" + info.Item3 + "\"";
+                builder.StartInfo.Arguments = info.Item1.ToString() + @" """ + info.Item2 + @""" """ + info.Item3 + @"""";
                 builder.StartInfo.UseShellExecute = false;
                 builder.StartInfo.RedirectStandardOutput = true;
                 builder.StartInfo.RedirectStandardError = true;
+                builder.StartInfo.CreateNoWindow = true;
 
                 var output = info.Item4;
                 var errors = new List<string>();
@@ -342,6 +374,7 @@ namespace ClrMDRIndex
                     _typeCount = new int[clrtDump.RuntimeCount];
                     _finalizerCount = new int[clrtDump.RuntimeCount];
                     _rootCount = new int[clrtDump.RuntimeCount];
+                    _notIncludedCount = new int[clrtDump.RuntimeCount];
 
                     for (int r = 0, rcnt = clrtDump.RuntimeCount; r < rcnt; ++r)
                     {
@@ -354,29 +387,10 @@ namespace ClrMDRIndex
                         _errors[r] = errors;
                         var strIds = _stringIdDcts[r];
 
-                        string[] typeNames = null;
-                        ulong[] addresses = null;
-                        int[] typeIds = null;
-                        int notIncludedCount = 0;
-
-                        // get heap address count
-                        //
-
-                        progress?.Report(runtimeIndexHeader + "Getting instance addresses...");
-                        (addresses, notIncludedCount) = GetInstances(heap, out error);
-                        if (error != null)
-                        {
-                            AddError(r, "GetInstances failed." + Environment.NewLine + error);
-                            return false;
-                        }
-                        progress?.Report(runtimeIndexHeader + "Instance count: " + Utils.CountString(addresses.Length));
-                        _instanceCount[r] = addresses.Length; // for general info dump
-                        _notIncludedCount[r] = notIncludedCount;
-
                         // get type names
                         //
                         progress?.Report(runtimeIndexHeader + "Getting type names...");
-                        typeNames = DumpIndexer.GetTypeNames(heap, out error);
+                        (string[] typeNames, int instanceCount) = GetTypeNames3(heap, out error);
                         Debug.Assert(error == null);
                         _typeCount[r] = typeNames.Length; // for general info dump
 
@@ -399,11 +413,10 @@ namespace ClrMDRIndex
                         // get addresses and types
                         //
                         progress?.Report(runtimeIndexHeader + "Getting addresses and types...");
-                        typeIds = new int[addresses.Length];
-                        if (!GetAddressesAndTypes(heap, addresses, typeIds, typeNames, out error))
-                        {
-                            return false;
-                        }
+                        (ulong[] addresses, int[] typeIds, int notIncludedCount) = GetAddressesAndTypes3(heap, roots, typeNames, out error);
+                        if (error != null) return false;
+                        _instanceCount[r] = addresses.Length; // for general info dump
+                        _notIncludedCount[r] = notIncludedCount;
                         Debug.Assert(Utils.AreAddressesSorted(addresses));
 
                         // start reference builder
@@ -411,75 +424,12 @@ namespace ClrMDRIndex
                         progress?.Report("Starting the reference builder process.");
                         List<string> refBuilderMessages = new List<string>(32);
                         Thread refBuilderThread = new Thread(RefBuilderThread) { Name = "RefBuilderThread", IsBackground = true };
-                        refBuilderThread.Start(new Tuple<int, string, string, List<string>>(r, "", "", refBuilderMessages));
-
-
+                        refBuilderThread.Start(new Tuple<int, string, string, List<string>>(r, _fileMoniker.DumpFileName, IndexFolder, refBuilderMessages));
 
                         // threads and blocking objects
                         //
                         progress?.Report(runtimeIndexHeader + "Getting threads, blocking objecks information...");
                         GetThreadsInfos2(clrtDump.Runtime, addresses, typeIds, typeNames, progress);
-
-                        // setting root information
-                        //
-                        //Debug.Assert(Utils.AreAddressesSorted(addresses));
-                        //progress?.Report(runtimeIndexHeader + "Setting root information...");
-                        //for (int i = 0, icnt = addresses.Length; i < icnt; ++i)
-                        //{
-                        //    ulong addr = addresses[i];
-                        //    var isroot = Utils.AddressSearch(rootObjectAddrs, addr) >= 0;
-                        //    var isflnz = Utils.AddressSearch(finalizerAddrs, addr) >= 0;
-                        //    if (!isroot && !isflnz) continue;
-                        //    if (isroot && isflnz)
-                        //    {
-                        //        addresses[i] = addr | Utils.RootBits.Root | Utils.RootBits.Rooted | Utils.RootBits.Finalizer;
-                        //        continue;
-                        //    }
-                        //    if (isroot)
-                        //    {
-                        //        addresses[i] = addr | Utils.RootBits.Root | Utils.RootBits.Rooted;
-                        //        continue;
-                        //    }
-                        //    addresses[i] = addr | Utils.RootBits.Finalizer;
-                        //}
-                        //rootObjectAddrs = null;
-                        //finalizerAddrs = null;
-
-                        // field dependencies
-                        //
-                        if (!Setup.SkipReferences)
-                        {
-                            builder = new InstanceReferences(addresses,
-                                                                    new string[]
-                                                                    {
-                                                                    _fileMoniker.GetFilePath(r, Constants.MapRefFwdOffsetsFilePostfix),
-                                                                    _fileMoniker.GetFilePath(r, Constants.MapFwdRefsFilePostfix),
-                                                                    _fileMoniker.GetFilePath(r, Constants.MapRefBwdOffsetsFilePostfix),
-                                                                    _fileMoniker.GetFilePath(r, Constants.MapBwdRefsFilePostfix),
-                                                                    },
-                                                                    progress,
-                                                                    _fileMoniker.GetFilePath(r, Constants.MapInstancesFilePostfix)
-                                                                    );
-                            builder.CreateForwardReferences(heap, out error);
-                            if (error == null)
-                            {
-                                if (!builder.BuildReveresedReferences())
-                                {
-                                    AddError(r, "CreateBackwardReferences failed." + Environment.NewLine + builder.Error);
-                                }
-                            }
-                            else
-                            {
-                                AddError(r, "CreateForwardReferences failed." + Environment.NewLine + error);
-                            }
-                        }
-                        else
-                        {
-                            progress?.Report(runtimeIndexHeader + "Skipping generation of instance references...");
-                            InstanceReferences.DeleteInstanceReferenceFiles(r, _fileMoniker, out error);
-                            progress?.Report(runtimeIndexHeader + "Savings instances addresses...");
-                            Utils.WriteUlongArray(_fileMoniker.GetFilePath(r, Constants.MapInstancesFilePostfix), addresses, out error);
-                        }
 
                         progress?.Report(runtimeIndexHeader + "Building type instance map...");
                         if (!BuildTypeInstanceMap(r, typeIds, out error))
@@ -492,10 +442,8 @@ namespace ClrMDRIndex
                         //
                         progress?.Report(runtimeIndexHeader + "Saving data...");
 
-                        var path = _fileMoniker.GetFilePath(r, Constants.MapInstanceTypesFilePostfix);
-                        Utils.WriteIntArray(path, typeIds, out error);
                         // save type names
-                        path = _fileMoniker.GetFilePath(r, Constants.TxtTypeNamesFilePostfix);
+                        string path = _fileMoniker.GetFilePath(r, Constants.TxtTypeNamesFilePostfix);
                         Utils.WriteStringList(path, typeNames, out error);
                         {
                             var reversedNames = Utils.ReverseTypeNames(typeNames);
@@ -1150,386 +1098,178 @@ namespace ClrMDRIndex
             }
         }
 
-        //string GetIndexingDurationString(Stopwatch sw, TimeSpan prevTimeSpan, out TimeSpan newPrevTimespan)
-        //{
-        //    newPrevTimespan = sw.Elapsed;
-        //    var curDiff = newPrevTimespan - prevTimeSpan;
-        //    return Utils.DurationString(curDiff) + "/" + Utils.DurationString(newPrevTimespan);
-        //}
+        public ValueTuple<ulong[],int[], int> GetAddressesAndTypes3(ClrHeap heap, ulong[] flaggedRoots, string[] typeNames, out string error)
+        {
+            error = null;
+            BinaryWriter bwRefs = null;
+            try
+            {
+                var segs = heap.Segments;
+                ClrtSegment[] mysegs = new ClrtSegment[segs.Count];
+                int addrNdx = 0;
+                int segIndex = 0;
+                var addrBuf = new BigArray<ulong>();
+                var sizeBuf = new BigArray<uint>();
+                var baseSizeBuf = new BigArray<uint>();
+                var typeIdBuf = new BigArray<int>();
+                int[] typeKinds = new int[typeNames.Length];
+                var arraySizes = new List<ValueTuple<int, int, ClrElementKind>>(BigArray<uint>.BUFF_MAX_ITEM_COUNT);
+                HashSet<int> doneTypeFields = new HashSet<int>();
+                HashSet<int> tofixTypeFields = new HashSet<int>();
+                var typeFields = new SortedDictionary<int, long[]>();
+                bwRefs = new BinaryWriter(File.Open(_fileMoniker.GetFilePath(_currentRuntimeIndex, Constants.MapFwdRefAddrsTempFilePostfix), FileMode.Create));
+                var fieldAddrOffsetList = new List<KeyValuePair<ulong, int>>(64);
+                int instanceCount = 0;
+                int notIncludedCount = 0;
+                for (int segNdx = 0, icnt = segs.Count; segNdx < icnt; ++segNdx)
+                {
+                    var seg = segs[segNdx];
+                    var genCounts = new int[3];
+                    var genSizes = new ulong[3];
+                    var genFreeCounts = new int[3];
+                    var genFreeSizes = new ulong[3];
 
+                    ulong addr = seg.FirstObject;
+                    ulong firstAddr = addr, lastAddr = addr, flaggedAddr = Constants.InvalidAddress;
+                    while (addr != 0ul)
+                    {
+                        var clrType = heap.GetObjectType(addr);
+                        if (clrType == null) goto NEXT_OBJECT;
+                        if (++instanceCount > BigArray<ulong>.MAX_ITEM_COUNT)
+                        {
+                            ++notIncludedCount;
+                            goto NEXT_OBJECT;
+                        }
 
-//        private void GetThreadsInfos(ClrRuntime runtm, ulong[] instances, int[] typeIds, string[] typeNames, IProgress<string> progress = null)
-//        {
-//            string error;
-//            BinaryWriter bw = null;
-//            StreamWriter sw = null;
-//            string progressHeader = Constants.HeavyCheckMarkHeader + "[Threads] ";
-//            try
-//            {
-//                var heap = runtm.Heap;
-//                progress?.Report(progressHeader + "Getting thread list...");
-//                var threads = DumpIndexer.GetThreads(runtm);
-//                progress?.Report(progressHeader + "Getting blocking object list...");
-//                var blocks = DumpIndexer.GetBlockingObjects(heap);
+                        int typeId = Array.BinarySearch(typeNames, clrType.Name, StringComparer.Ordinal);
+                        if (typeId < 0)
+                        {
+                            int a = 1;
+                        }
+                        typeIdBuf.Add(typeId);
+                        if (typeKinds[typeId] == 0) typeKinds[typeId] = (int)TypeExtractor.GetElementKind(clrType);
 
-//                progress?.Report(progressHeader + "Generating thread and blocking object references...");
-//                var threadSet = new HashSet<ClrThread>(new ClrThreadEqualityCmp());
-//                var blkGraph = new List<Tuple<BlockingObject, ClrThread[], ClrThread[]>>();
-//                var allBlkList = new List<BlockingObject>();
-//                var owners = new List<ClrThread>();
-//                var waiters = new List<ClrThread>();
+                        var isFree = Utils.SameStrings(clrType.Name, Constants.FreeTypeName);
+                        var baseSize = clrType.BaseSize;
+                        baseSizeBuf.Add((uint)baseSize);
+                        var size = clrType.GetSize(addr);
+                        if (size > (ulong)UInt32.MaxValue) size = (ulong)UInt32.MaxValue;
+                        sizeBuf.Add((uint)size);
 
-//                for (int i = 0, icnt = blocks.Length; i < icnt; ++i)
-//                {
-//                    var blk = blocks[i];
-//                    owners.Clear();
-//                    waiters.Clear();
-//                    ClrThread owner = null;
-//                    if (blk.Taken && blk.HasSingleOwner)
-//                    {
-//                        owner = blk.Owner;
-//                        if (owner != null)
-//                        {
-//                            threadSet.Add(owner);
-//                            owners.Add(owner);
-//                        }
-//                    }
+                        RetainFieldTypes(clrType, typeId, doneTypeFields, tofixTypeFields, typeNames, typeFields, _stringIdDcts[_currentRuntimeIndex]);
 
-//                    if (blk.Owners != null && blk.Owners.Count > 0)
-//                    {
-//                        for (int j = 0, jcnt = blk.Owners.Count; j < jcnt; ++j)
-//                        {
-//                            var th = blk.Owners[j];
-//                            if (th != null)
-//                            {
-//                                threadSet.Add(th);
-//                                if (owner == null || owner.Address != th.Address)
-//                                    owners.Add(th);
-//                            }
-//                        }
-//                    }
+                        // get generation stats
+                        //
+                        if (isFree)
+                        {
+                            ClrtSegment.SetGenerationStats(seg, addr, size, genFreeCounts, genFreeSizes);
+                            addrBuf.Add(addr);
+                            bwRefs.Write((int)0);
+                        }
+                        else
+                        {
+                            int rndx = Utils.AddressSearch(flaggedRoots, addr);
+                            flaggedAddr = (rndx >= 0) ? Utils.CopyAddrFlag(flaggedRoots[rndx], addr) : addr;
+                            ClrtSegment.SetGenerationStats(seg, addr, size, genCounts, genSizes);
+                            addrBuf.Add(flaggedAddr);
 
-//                    if (blk.Waiters != null && blk.Waiters.Count > 0)
-//                    {
-//                        for (int j = 0, jcnt = blk.Waiters.Count; j < jcnt; ++j)
-//                        {
-//                            var th = blk.Waiters[j];
-//                            if (th != null)
-//                            {
-//                                threadSet.Add(th);
-//                                waiters.Add(th);
-//                            }
-//                        }
-//                    }
+                            fieldAddrOffsetList.Clear();
+                            clrType.EnumerateRefsOfObjectCarefully(addr, (address, off) =>
+                            {
+                                fieldAddrOffsetList.Add(new KeyValuePair<ulong, int>(address, off));
+                            });
+                            int rcnt = fieldAddrOffsetList.Count;
+                            if (rcnt < 1)
+                            {
+                                bwRefs.Write((int)0);
+                            }
+                            else
+                            {
+                                bwRefs.Write(rcnt + 1);
+                                bwRefs.Write(flaggedAddr);
+                                for (int j = 0, jcnt = fieldAddrOffsetList.Count; j < jcnt; ++j)
+                                {
+                                    ulong raddr = fieldAddrOffsetList[j].Key;
+                                    bwRefs.Write(Utils.CopyAddrFlag(flaggedAddr, raddr));
+                                }
+                            }
+                        }
+                        if (clrType.IsArray)
+                        {
+                            int asz = clrType.GetArrayLength(addr);
+                            ClrElementKind aryElKind = TypeExtractor.GetElementKind(clrType.ComponentType);
 
-//                    if (owners.Count > 0)
-//                    {
-//                        var ownerAry = owners.ToArray();
-//                        var waiterAry = waiters.ToArray();
-//                        blkGraph.Add(new Tuple<BlockingObject, ClrThread[], ClrThread[]>(blk, ownerAry, waiterAry));
-//                        allBlkList.Add(blk);
-//                    }
-//                    else if (waiters.Count > 0)
-//                    {
-//                        blkGraph.Add(new Tuple<BlockingObject, ClrThread[], ClrThread[]>(blk, Utils.EmptyArray<ClrThread>.Value,
-//                            waiters.ToArray()));
-//                        allBlkList.Add(blk);
-//                    }
-//                }
+                            arraySizes.Add((addrNdx, asz, aryElKind));
+                        }
 
-//                var thrCmp = new ClrThreadCmp();
-//                var blkCmp = new BlockingObjectCmp();
-//                var blkInfoCmp = new BlkObjInfoCmp();
+                        NEXT_OBJECT:
+                        lastAddr = addr;
+                        addr = seg.NextObject(addr);
+                        ++addrNdx;
+                    }
+                    // set segment info
+                    //
+                    mysegs[segNdx] = new ClrtSegment(heap.Segments[segNdx], firstAddr, lastAddr, segIndex, addrNdx - 1);
+                    segIndex = addrNdx;
+                    mysegs[segNdx].SetGenerationStats(genCounts, genSizes, genFreeCounts, genFreeSizes);
+                }
 
-//                // blocks and threads found in blocking objects
-//                //
-//                var blkThreadAry = threadSet.ToArray();
-//                Array.Sort(blkThreadAry, thrCmp);
-//                var blkBlockAry = allBlkList.ToArray();
-//                Array.Sort(blkBlockAry, blkCmp);
-//                var threadBlocksAry = blkGraph.ToArray();
-//                Array.Sort(threadBlocksAry, blkInfoCmp);
+                bwRefs.Write((int)-1);
 
-//                progress?.Report(progressHeader + "Building thread and blocking object graph...");
-//                // create maps
-//                //
-//                int[] blkMap = new int[blkBlockAry.Length];
-//                int[] thrMap = new int[blkThreadAry.Length];
-//                for (int i = 0, icnt = blkMap.Length; i < icnt; ++i)
-//                {
-//                    blkMap[i] = Array.BinarySearch(blocks, blkBlockAry[i], blkCmp);
-//                    Debug.Assert(blkMap[i] >= 0);
-//                }
+                ulong[] instances = addrBuf.GetArrayAndClean();
+                int[] typeIds = typeIdBuf.GetArrayAndClean();
 
-//                for (int i = 0, icnt = thrMap.Length; i < icnt; ++i)
-//                {
-//                    thrMap[i] = Array.BinarySearch(threads, blkThreadAry[i], thrCmp);
-//                    Debug.Assert(thrMap[i] >= 0);
-//                }
+                //
+                // dump data
+                //
 
-//                int blkThreadCount = blkThreadAry.Length;
+                if (!Utils.WriteUlongArray(_fileMoniker.GetFilePath(_currentRuntimeIndex, Constants.MapInstancesFilePostfix), instances, out error))
+                {
+                    _errors[_currentRuntimeIndex].Add("Dumping instances failed." + Environment.NewLine + error);
+                }
 
-//#if FALSE
-//                Digraph graph = new Digraph(blkThreadCount + blkBlockAry.Length);
+                if (!Utils.WriteIntArray(_fileMoniker.GetFilePath(_currentRuntimeIndex, Constants.MapInstanceTypesFilePostfix), typeIds, out error))
+                {
+                    _errors[_currentRuntimeIndex].Add("Dumping type ids failed." + Environment.NewLine + error);
+                }
 
-//                for (int i = 0, cnt = threadBlocksAry.Length; i < cnt; ++i)
-//                {
-//                    var blkInfo = threadBlocksAry[i];
-//                    for (int j = 0, tcnt = blkInfo.Item2.Length; j < tcnt; ++j)
-//                    {
-//                        var ndx = Array.BinarySearch(blkThreadAry, blkInfo.Item2[j], thrCmp);
-//                        Debug.Assert(ndx >= 0);
-//                        graph.AddDistinctEdge(blkThreadCount + i, ndx);
-//                    }
-//                    for (int j = 0, tcnt = blkInfo.Item3.Length; j < tcnt; ++j)
-//                    {
-//                        var ndx = Array.BinarySearch(blkThreadAry, blkInfo.Item3[j], thrCmp);
-//                        Debug.Assert(ndx >= 0);
-//                        graph.AddDistinctEdge(ndx, blkThreadCount + i);
-//                    }
-//                }
-//#endif
-//                List<int>[] adjLists = new List<int>[blkThreadCount + blkBlockAry.Length];
-//                int edgeCount = 0;
-//                for (int i = 0, cnt = threadBlocksAry.Length; i < cnt; ++i)
-//                {
-//                    var blkInfo = threadBlocksAry[i];
-//                    for (int j = 0, tcnt = blkInfo.Item2.Length; j < tcnt; ++j)
-//                    {
-//                        var ndx = Array.BinarySearch(blkThreadAry, blkInfo.Item2[j], thrCmp);
-//                        Debug.Assert(ndx >= 0);
-//                        DGraph.AddDistinctEdge(adjLists, blkThreadCount + i, ndx,ref edgeCount);
-//                    }
-//                    for (int j = 0, tcnt = blkInfo.Item3.Length; j < tcnt; ++j)
-//                    {
-//                        var ndx = Array.BinarySearch(blkThreadAry, blkInfo.Item3[j], thrCmp);
-//                        Debug.Assert(ndx >= 0);
-//                        DGraph.AddDistinctEdge(adjLists, ndx, blkThreadCount + i, ref edgeCount);
-//                    }
-//                }
- 
-//                progress?.Report(progressHeader + "Searching for thread and blocking object cycles...");
+                if (!ClrtSegment.DumpSegments(_fileMoniker.GetFilePath(_currentRuntimeIndex, Constants.MapSegmentInfoFilePostfix), mysegs, out error))
+                {
+                    _errors[_currentRuntimeIndex].Add("DumpSegments failed." + Environment.NewLine + error);
+                }
 
-//                int[][] allCycles = null;
-//                DGraph dgraph = new DGraph(adjLists, edgeCount);
-//                if (DGraph.HasCycle(dgraph.Graph))
-//                {
-//                    progress?.Report(progressHeader + "Found one cycle, searching for more, possible deadlock(s)...");
-//                    allCycles = Circuits.GetCycles(dgraph.Graph, out error);
-//                    // TODO JRD -- handle error 
-//                }
-//#if FALSE
-//                var cycle = new DirectedCycle(graph);
-//                var cycles = cycle.GetCycle();
-//                int[][] allCycles = null;
-//                if (cycles != null && cycles.Length > 0)
-//                {
-//                    progress?.Report(progressHeader + "Found one cycle, searching for more, possible deadlock(s)...");
-//                    var g = graph.GetJaggedArrayGraph();
-//                    allCycles = Circuits.GetCycles(g);
-//                }
-//#endif
+                SaveFieldTypes(typeFields);
 
-//                // save graph
-//                //
-//                progress?.Report(progressHeader + "Saving thread and blocking object graph...");
-//                var path = _fileMoniker.GetFilePath(_currentRuntimeIndex, Constants.MapThreadsAndBlocksGraphFilePostfix);
-//                bw = new BinaryWriter(File.Open(path, FileMode.Create));
-//                if (allCycles != null)
-//                {
-//                    bw.Write(allCycles.Length);
-//                    for (int i = 0, icnt = allCycles.Length; i < icnt; ++i)
-//                    {
-//                        bw.Write(allCycles[i].Length);
-//                        for(int j = 0, jcnt=allCycles[i].Length; j < jcnt; ++j)
-//                        {
-//                            bw.Write(allCycles[i][j]);
-//                        }
-//                    }
-//                }
-//                else
-//                {
-//                    bw.Write((int)0);
-//                }
-//                bw.Write(thrMap.Length);
-//                for (int i = 0, icnt = thrMap.Length; i < icnt; ++i)
-//                {
-//                    bw.Write(thrMap[i]);
-//                }
-//                bw.Write(blkMap.Length);
-//                for (int i = 0, icnt = blkMap.Length; i < icnt; ++i)
-//                {
-//                    bw.Write(blkMap[i]);
-//                }
+                if (!Utils.WriteUintArray(_fileMoniker.GetFilePath(_currentRuntimeIndex, Constants.MapInstanceSizesFilePostfix), sizeBuf.GetArrayAndClean(), out error))
+                {
+                    _errors[_currentRuntimeIndex].Add("Dumping sizes failed." + Environment.NewLine + error);
+                }
+                if (!Utils.WriteUintArray(_fileMoniker.GetFilePath(_currentRuntimeIndex, Constants.MapInstanceBaseSizesFilePostfix), baseSizeBuf.GetArrayAndClean(), out error))
+                {
+                    _errors[_currentRuntimeIndex].Add("Dumping base sizes failed." + Environment.NewLine + error);
+                }
+                if (!Utils.WriteIntArray(_fileMoniker.GetFilePath(_currentRuntimeIndex, Constants.MapKindsFilePostfix), typeKinds, out error))
+                {
+                    _errors[_currentRuntimeIndex].Add("Dumping type kinds failed." + Environment.NewLine + error);
+                }
+                if (!Utils.WriteArrayInfos(_fileMoniker.GetFilePath(_currentRuntimeIndex, Constants.MapArraySizesFilePostfix), arraySizes, out error))
+                {
+                    _errors[_currentRuntimeIndex].Add("Dumping array sizes failed." + Environment.NewLine + error);
+                }
 
-//#if FALSE
-//                graph.Dump(bw, out error);
-//#endif
-//                DGraph.Dump(bw, dgraph, out error);
+                return (instances,typeIds,notIncludedCount);
+            }
+            catch (Exception ex)
+            {
+                error = Utils.GetExceptionErrorString(ex);
+                return (null,null,0);
+            }
+            finally
+            {
+                bwRefs?.Close();
+            }
+        }
 
-//                bw.Close();
-//                bw = null;
-//                if (error != null)
-//                    AddError(_currentRuntimeIndex, "Exception in GetThreadsInfos." + Environment.NewLine + error);
-
-//                // get frames info
-//                //
-//                var frames = new StringIdDct();
-//                var stObjCmp = new Utils.KVIntUlongCmpAsc();
-//                var stackObject = new SortedDictionary<KeyValuePair<int, ulong>, int>(stObjCmp);
-//                var stackTraceLst = new List<ClrStackFrame>();
-//                var rootEqCmp = new ClrRootEqualityComparer();
-//                var frameIds = new List<int>();
-//                var frameStackPtrs = new List<ulong>();
-//                var aliveIds = new List<int>();
-//                var deadIds = new List<int>();
-
-//                // save threads and blocks, generate stack info
-//                //
-//                path = _fileMoniker.GetFilePath(_currentRuntimeIndex, Constants.MapThreadsAndBlocksFilePostfix);
-//                bw = new BinaryWriter(File.Open(path, FileMode.Create));
-//                bw.Write(threads.Length);
-//                progress?.Report(progressHeader + "Getting frames information...");
-//                List<KeyValuePair<int,ulong>> stackZeros = new List<KeyValuePair<int, ulong>>();
-//                for (int i = 0, icnt = threads.Length; i < icnt; ++i)
-//                {
-//                    if (threads[i].StackBase == 0) stackZeros.Add(new KeyValuePair<int, ulong>(i,threads[i].StackLimit));
-//                }
-
-//                for (int i = 0, icnt = threads.Length; i < icnt; ++i)
-//                {
-//                    var thread = threads[i];
-//                    stackTraceLst.Clear();
-//                    foreach (var st in thread.EnumerateStackTrace())
-//                    {
-//                        stackTraceLst.Add(st);
-//                        if (stackTraceLst.Count > 100) break;
-//                    }
-
-//                    ClrRoot[] threadLocalAliveVars = Utils.GetArray<ClrRoot>(thread.EnumerateStackObjects(false));
-//                    ClrRoot[] threadLocalDeadVars;
-//                    if (!Setup.SkipDeadStackObjects)
-//                    {
-//                        ClrRoot[] all;
-//                        long stackSz = (thread.StackLimit > thread.StackBase) ? (long)(thread.StackLimit - thread.StackBase) : (long)(thread.StackBase - thread.StackLimit);
-//                        if (thread.StackBase != 0 && (stackSz < 10 * 1024 * 1024))
-//                        {
-//                            all = Utils.GetArray<ClrRoot>(thread.EnumerateStackObjects(true));
-//                        }
-//                        else
-//                        {
-//                            all = Utils.EmptyArray<ClrRoot>.Value;
-//                        }
-//                        threadLocalDeadVars = all.Except(threadLocalAliveVars, rootEqCmp).ToArray();
-//                    }
-//                    else
-//                    {
-//                        threadLocalDeadVars = Utils.EmptyArray<ClrRoot>.Value;
-//                    }
-//                    var threadFrames = stackTraceLst.ToArray();
-
-//                    aliveIds.Clear();
-//                    for (int j = 0, jcnt = threadLocalAliveVars.Length; j < jcnt; ++j)
-//                    {
-//                        ClrRoot root = threadLocalAliveVars[j];
-//                        ClrType clrType = heap.GetObjectType(root.Object);
-//                        var typeName = clrType == null ? Constants.NullTypeName : clrType.Name;
-//                        var typeId = Array.BinarySearch(typeNames, typeName, StringComparer.Ordinal);
-//                        if (typeId < 0) typeId = Constants.InvalidIndex;
-//                        int stackId;
-//                        if (!stackObject.TryGetValue(new KeyValuePair<int, ulong>(typeId, root.Object), out stackId))
-//                        {
-//                            stackId = stackObject.Count;
-//                            stackObject.Add(new KeyValuePair<int, ulong>(typeId, root.Object), stackId);
-//                        }
-//                        aliveIds.Add(stackId);
-//                    }
-
-//                    deadIds.Clear();
-//                    for (int j = 0, jcnt = threadLocalDeadVars.Length; j < jcnt; ++j)
-//                    {
-//                        ClrRoot root = threadLocalDeadVars[j];
-//                        ClrType clrType = heap.GetObjectType(root.Object);
-//                        var typeName = clrType == null ? Constants.NullTypeName : clrType.Name;
-//                        var typeId = Array.BinarySearch(typeNames, typeName, StringComparer.Ordinal);
-//                        if (typeId < 0) typeId = Constants.InvalidIndex;
-//                        int stackId;
-//                        if (!stackObject.TryGetValue(new KeyValuePair<int, ulong>(typeId, root.Object), out stackId))
-//                        {
-//                            stackId = stackObject.Count;
-//                            stackObject.Add(new KeyValuePair<int, ulong>(typeId, root.Object), stackId);
-//                        }
-//                        deadIds.Add(stackId);
-//                    }
-
-//                    frameIds.Clear();
-//                    frameStackPtrs.Clear();
-//                    for (int j = 0, jcnt = threadFrames.Length; j < jcnt; ++j)
-//                    {
-//                        ClrStackFrame fr = threadFrames[j];
-//                        frameStackPtrs.Add(fr.StackPointer);
-//                        if (fr.Method != null)
-//                        {
-//                            string fullSig = fr.Method.GetFullSignature();
-//                            if (fullSig == null)
-//                                fullSig = fr.Method.Name;
-//                            if (fullSig == null) fullSig = "UKNOWN METHOD";
-//                            var frameStr = Utils.RealAddressStringHeader(fr.InstructionPointer) + fullSig;
-//                            var frId = frames.JustGetId(frameStr);
-//                            frameIds.Add(frId);
-//                        }
-//                        else
-//                        {
-//                            string sig = string.IsNullOrEmpty(fr.DisplayString) ? "UKNOWN METHOD" : fr.DisplayString;
-//                            var frameStr = Utils.RealAddressStringHeader(fr.InstructionPointer) + sig;
-//                            var frId = frames.JustGetId(frameStr);
-//                            frameIds.Add(frId);
-//                        }
-//                    }
-
-//                    var clrtThread = new ClrtThread(thread, blocks, blkCmp, frameIds.ToArray(), frameStackPtrs.ToArray(), aliveIds.ToArray(), deadIds.ToArray());
-//                    Debug.Assert(clrtThread != null);
-//                    clrtThread.Dump(bw);
-//                }
-
-//                progress?.Report(progressHeader + "Saving data...");
-//                bw.Write(blocks.Length);
-//                for (int i = 0, icnt = blocks.Length; i < icnt; ++i)
-//                {
-//                    var blk = blocks[i];
-//                    var typeId = GetTypeId(blk.Object, instances, typeIds);
-//                    var clrtBlock = new ClrtBlkObject(blk, i, typeId);
-//                    Debug.Assert(clrtBlock != null);
-//                    clrtBlock.Dump(bw);
-//                }
-//                Utils.CloseStream(ref bw);
-
-//                path = _fileMoniker.GetFilePath(_currentRuntimeIndex, Constants.MapThreadFramesFilePostfix);
-//                bw = new BinaryWriter(File.Open(path, FileMode.Create));
-//                var ary = stackObject.ToArray();
-//                Array.Sort(ary, (a, b) => a.Value < b.Value ? -1 : (a.Value > b.Value ? 1 : 0));
-//                bw.Write(ary.Length);
-//                for (int i = 0, icnt = ary.Length; i < icnt; ++i)
-//                {
-//                    bw.Write(ary[i].Key.Key);
-//                    bw.Write(ary[i].Key.Value);
-//                }
-//                Utils.CloseStream(ref bw);
-//                path = _fileMoniker.GetFilePath(_currentRuntimeIndex, Constants.TxtThreadFrameDescriptionFilePostfix);
-//                frames.DumpInIdOrder(path, out error);
-//                progress?.Report(progressHeader + "Thread processing done...");
-//            }
-//            catch (Exception ex)
-//            {
-//                AddError(_currentRuntimeIndex,
-//                    "Exception in GetThreadsInfos." + Environment.NewLine + Utils.GetExceptionErrorString(ex));
-//            }
-//            finally
-//            {
-//                bw?.Close();
-//                sw?.Close();
-//            }
-//        }
 
         private void GetThreadsInfos2(ClrRuntime runtm, ulong[] instances, int[] typeIds, string[] typeNames, IProgress<string> progress = null)
         {
@@ -2056,8 +1796,10 @@ namespace ClrMDRIndex
             {
                 List<string> typeNames = new List<string>(35000);
                 AddStandardTypeNames(typeNames);
-                var typeList = heap.EnumerateTypes();
-                typeNames.AddRange(typeList.Select(clrType => clrType.Name));
+                foreach(var type in heap.EnumerateTypes())
+                {
+                    typeNames.Add(type.Name);
+                }
                 typeNames.Sort(StringComparer.Ordinal);
                 string[] names = typeNames.Distinct().ToArray();
                 return names;
@@ -2066,6 +1808,51 @@ namespace ClrMDRIndex
             {
                 error = Utils.GetExceptionErrorString(ex);
                 return null;
+            }
+        }
+
+        public static ValueTuple<string[],int> GetTypeNames3(ClrHeap heap, out string error)
+        {
+            error = null;
+            int instanceCount = 0;
+            try
+            {
+                List<string> typeNames = new List<string>(1024*32);
+                // looks like some types are missing in heap.EnumerateTypes()
+                HashSet<string> set = new HashSet<string>(typeNames, StringComparer.Ordinal);
+                var segs = heap.Segments;
+                for (int i = 0, icnt = segs.Count; i < icnt; ++i)
+                {
+                    var seg = segs[i];
+                    ulong addr = seg.FirstObject;
+                    while (addr != 0ul)
+                    {
+                        ClrType type = heap.GetObjectType(addr);
+                        if (type != null && set.Add(type.Name))
+                        {
+                            typeNames.Add(type.Name);
+                        }
+                        addr = seg.NextObject(addr);
+                    }
+                }
+
+                AddStandardTypeNames(typeNames);
+                foreach (var type in heap.EnumerateTypes())
+                {
+                    if (type != null && set.Add(type.Name))
+                    {
+                        typeNames.Add(type.Name);
+                    }
+                }
+
+                typeNames.Sort(StringComparer.Ordinal);
+                string[] names = typeNames.ToArray();
+                return (names, instanceCount);
+            }
+            catch (Exception ex)
+            {
+                error = Utils.GetExceptionErrorString(ex);
+                return (null,0);
             }
         }
 

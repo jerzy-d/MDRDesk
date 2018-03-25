@@ -242,10 +242,10 @@ namespace ClrMDRIndex
 
 		// instance addresses and their types
 		//
-		public const string MapInstancesFilePostfix = ".`INSTANCES[0].bin"; // instance addresses and corresponding type ids
-		public const string MapInstanceTypesFilePostfix = ".`INSTANCETYPES[0].bin"; // instance addresses and corresponding type ids
-		public const string MapInstanceSizesFilePostfix = ".`INSTANCESIZES[0].bin"; // instance addresses and corresponding type ids
-		public const string MapInstanceBaseSizesFilePostfix = ".`INSTANCEBASESIZES[0].bin"; // instance addresses and corresponding type ids
+		public const string MapInstancesFilePostfix = ".`INSTANCES[0].bin"; // instance addresses
+		public const string MapInstanceTypesFilePostfix = ".`INSTANCETYPES[0].bin"; // instance type ids
+		public const string MapInstanceSizesFilePostfix = ".`INSTANCESIZES[0].bin"; // instance sizes
+		public const string MapInstanceBaseSizesFilePostfix = ".`INSTANCEBASESIZES[0].bin"; // instance base sizes
 		public const string MapArraySizesFilePostfix = ".`ARRAYSIZES[0].bin"; //
 		public const string MapTypeInstanceOffsetsFilePostfix = ".`TYPEINSTANCEOFFSETS[0].bin"; // instance addresses and corresponding type ids
 		public const string MapTypeInstanceMapFilePostfix = ".`TYPEINSTANCEMAP[0].bin"; // instance addresses and corresponding type ids

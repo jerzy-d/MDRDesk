@@ -504,8 +504,12 @@ namespace MDRDesk
                 string error;
                 string indexPath;
                 var indexer = new DumpIndexer(path);
-                var ok = indexer.CreateDumpIndex2(_myVersion, indexingProgress.Progress, out indexPath, out error);
-                return new Tuple<bool, string, string>(ok, error, indexPath);
+                    bool ok = false;
+                    if (Setup.CppRefBuilder)
+                        ok = indexer.CreateDumpIndex3(_myVersion, indexingProgress.Progress, out indexPath, out error);
+                    else
+                        ok = indexer.CreateDumpIndex2(_myVersion, indexingProgress.Progress, out indexPath, out error);
+                    return new Tuple<bool, string, string>(ok, error, indexPath);
                 }, _dumpSTAScheduler);
 
             indexingProgress.Close(DumpFileMoniker.GetFilePath(-1, path, Constants.TxtIndexingInfoFilePostfix));
@@ -525,6 +529,9 @@ namespace MDRDesk
             Dispatcher.CurrentDispatcher.InvokeAsync(() => DoOpenDumpIndex(0, result.Item3));
 #pragma warning restore CS4014
         }
+
+
+
 
         private void OpenDumpIndexClicked(object sender, RoutedEventArgs e)
         {

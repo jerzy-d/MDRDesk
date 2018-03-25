@@ -10,6 +10,7 @@ using ClrMDRUtil.Utils;
 using Microsoft.Diagnostics.Runtime;
 using System.Globalization;
 using System.Text;
+using System.Text.RegularExpressions;
 
 namespace UnitTestMdr
 {
@@ -516,6 +517,27 @@ namespace UnitTestMdr
 
 		#endregion type default values
 
+        [TestMethod]
+        public void TestIndexing()
+        {
+            try
+            {
+                string dumpFilePath = @"C:\WinDbgStuff\Dumps\Analytics\Anavon\Eze.Analytics.Svc_160225_204724.AnavonCopy.dmp";
+                var version = Assembly.GetExecutingAssembly().GetName().Version;
+                var execpath = Assembly.GetExecutingAssembly().CodeBase;
+                Stopwatch stopWatch = new Stopwatch();
+                TestContext.WriteLine(dumpFilePath);
+                stopWatch.Start();
+                (bool ok, string error, string indexPath) = DumpIndexer.DoCreateDumpIndex(version, dumpFilePath , true);
+                Assert.IsTrue(ok, error);
+                stopWatch.Stop();
+                TestContext.WriteLine(Utils.DurationString(stopWatch.Elapsed));
+            }
+            catch(Exception ex)
+            {
+                Assert.IsTrue(false, ex.ToString());
+            }
+        }
 
 		[TestMethod]
 		public void GetTypeNamesAndCounts()
@@ -2568,6 +2590,48 @@ namespace UnitTestMdr
             Assert.IsTrue(snull == string.Empty);
 
 
+        }
+
+        [TestMethod]
+        public void CompareIndexFolders()
+        {
+            string folder1 = @"C:\WinDbgStuff\Dumps\Analytics\Anavon\Eze.Analytics.Svc_160225_204724.Anavon.dmp.map";
+            string folder2 = @"C:\WinDbgStuff\Dumps\Analytics\Anavon\Eze.Analytics.Svc_160225_204724.AnavonCopy.dmp.map";
+
+            Dictionary<string, ValueTuple<long, long>> dct = new Dictionary<string, (long, long)>(StringComparer.OrdinalIgnoreCase);
+            DirectoryInfo di = new DirectoryInfo(folder1);
+            foreach(var fi in di.EnumerateFiles())
+            {
+                ValueTuple<long, long> val;
+                dct.Add(fi.Name, (fi.Length,-1));
+            }
+            di = new DirectoryInfo(folder2);
+            foreach (var fi in di.EnumerateFiles())
+            {
+                ValueTuple<long, long> val;
+
+                string name = Regex.Replace(fi.Name, "Copy", string.Empty);
+
+                if (dct.TryGetValue(name, out val))
+                {
+                    dct[name] = (val.Item1, fi.Length);
+                }
+                else
+                {
+                    dct.Add(name, (-1, fi.Length));
+                }
+            }
+
+            TestContext.WriteLine("COMPARE TWO FOLDERS");
+            TestContext.WriteLine(folder1);
+            TestContext.WriteLine(folder2);
+            foreach (var kv in dct)
+            {
+                if (kv.Value.Item1 != kv.Value.Item2)
+                {
+                    TestContext.WriteLine("[" + kv.Value.Item1 + " <> " + kv.Value.Item2 + "] " + kv.Key);
+                }
+            }
         }
 
         [TestMethod]

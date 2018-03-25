@@ -168,9 +168,6 @@ public:
 						std::copy(refs.begin(), refs.end(), std::back_inserter(ref_ndxs));
 						read_cnt = true;
 						++rec_count;
-						if ((rec_count % 100000) == 0) {
-							std::wcout << addr_cnt << L" / " << rec_count << L'\r' << std::flush;
-						}
 					}
 					if (end - begin < sizeof(uint64_t)) break;
 				} // while (begin < end)
@@ -192,9 +189,6 @@ public:
 			CloseHandle(hFileOffs);
 			CloseHandle(hFileRefs);
 			assert(rec_count == addr_cnt);
-
-			std::wcout << std::endl << L"done count: " << rec_count << std::endl;
-
 			return true;
 		}
 		catch (const std::exception& e) {
@@ -250,8 +244,6 @@ public:
 			while (count != 0xFFFFFFFF)
 			{
 				++rec_count;
-				if ((rec_count % 100000) == 0)
-					std::wcout << addr_cnt << L" / " << rec_count << L'\r' << std::flush;
 				while (count == 0) {
 					if (ref_offsets.size() >= ref_off_cnt_max) {
 						dump_vector<uint64_t>(hFileOffs, ref_offsets);
@@ -301,8 +293,6 @@ public:
 			CloseHandle(hFileRefs);
 			assert(rec_count == addr_cnt);
 
-			std::wcout << std::endl << L"done count: " << rec_count << std::endl;
-
 			return true;
 		}
 		catch (const std::exception& e) {
@@ -336,7 +326,6 @@ public:
 			int iter_count = 0;
 			while (bit_set.set_count() > 0) {
 				++iter_count;
-				std::wcout << L"refs to process: " << bit_set.set_count() << L" iter: " << iter_count << L'\r' << std::flush;
 				int i = bit_set.get_next_set(-1);
 				while (i != -1) {
 					auto off_cnt = get_offset_and_cnt((uint64_t*)offs_ptr, i);
@@ -358,8 +347,6 @@ public:
 					i = bit_set.get_next_set(i);
 				}
 			}
-
-			std::wcout << std::endl;
 
 			release_file_mapping(hFileOffs, hFileMapOffs, offs_ptr);
 			release_file_mapping(hFileRefs, hFileMapRefs, refs_ptr);
@@ -416,8 +403,6 @@ public:
 
 			fwd_off0 = *pfwdoffs;
 			for (int i = 0; i < addr_cnt; ++i) {
-				if ((1 % 1000000) == 0)
-					std::wcout << addr_cnt << L" / " << i << L'\r' << std::flush;
 				++pfwdoffs;
 				fwd_off1 = *pfwdoffs;
 				if (fwd_off1 == fwd_off0) continue;
@@ -592,8 +577,9 @@ public:
 		int cndx;
 		for (auto it = refs.begin(); it != refs.end(); ++it) {
 			cndx = bin_search(addresses, *it, 0, addresses_cnt - 1);
-			if (cndx >= 0)
+			if (cndx >= 0) {
 				ndxs.push_back(cndx);
+			}
 		}
 		return pndx;
 	}
