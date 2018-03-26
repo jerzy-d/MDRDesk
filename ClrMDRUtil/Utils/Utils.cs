@@ -226,6 +226,13 @@ namespace ClrMDRIndex
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static string FlaggedAddressStringHeader(ulong addr)
+        {
+            return string.Format("0x{0:x16} ", addr);
+        }
+
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static ulong SetRooted(ulong addr)
         {
             return addr | (ulong)RootBits.Rooted;
@@ -241,6 +248,18 @@ namespace ClrMDRIndex
         public static bool IsRooted(ulong addr)
         {
             return (addr & (ulong)RootBits.RootedMask) > 0;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static bool IsNonRootRooted(ulong addr)
+        {
+            return (addr & (ulong)RootBits.Rooted) > 0;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static bool IsLocal(ulong addr)
+        {
+            return (addr & (ulong)RootBits.Local) > 0;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]

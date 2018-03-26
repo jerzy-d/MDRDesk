@@ -522,7 +522,7 @@ namespace UnitTestMdr
         {
             try
             {
-                string dumpFilePath = @"C:\WinDbgStuff\Dumps\Analytics\Anavon\Eze.Analytics.Svc_160225_204724.AnavonCopy.dmp";
+                string dumpFilePath = @"D:\Jerzy\WinDbgStuff\Dumps\Analytics\Anavon\Eze.Analytics.Svc_160225_204724.AnavonCopy.dmp";
                 var version = Assembly.GetExecutingAssembly().GetName().Version;
                 var execpath = Assembly.GetExecutingAssembly().CodeBase;
                 Stopwatch stopWatch = new Stopwatch();
@@ -2595,8 +2595,8 @@ namespace UnitTestMdr
         [TestMethod]
         public void CompareIndexFolders()
         {
-            string folder1 = @"C:\WinDbgStuff\Dumps\Analytics\Anavon\Eze.Analytics.Svc_160225_204724.Anavon.dmp.map";
-            string folder2 = @"C:\WinDbgStuff\Dumps\Analytics\Anavon\Eze.Analytics.Svc_160225_204724.AnavonCopy.dmp.map";
+            string folder1 = @"D:\Jerzy\WinDbgStuff\Dumps\Analytics\Anavon\Eze.Analytics.Svc_160225_204724.Anavon.dmp.map";
+            string folder2 = @"D:\Jerzy\WinDbgStuff\Dumps\Analytics\Anavon\Eze.Analytics.Svc_160225_204724.AnavonCopy.dmp.map";
 
             Dictionary<string, ValueTuple<long, long>> dct = new Dictionary<string, (long, long)>(StringComparer.OrdinalIgnoreCase);
             DirectoryInfo di = new DirectoryInfo(folder1);
@@ -2633,6 +2633,95 @@ namespace UnitTestMdr
                 }
             }
         }
+
+        [TestMethod]
+        public void DumpRefsFile()
+        {
+            //string instPath = @"D:\Jerzy\WinDbgStuff\dumps\Analytics\Anavon\Eze.Analytics.Svc_160225_204724.AnavonCopy.dmp.map\Eze.Analytics.Svc_160225_204724.AnavonCopy.dmp.`INSTANCES[0].bin";
+            //string typePath = @"D:\Jerzy\WinDbgStuff\dumps\Analytics\Anavon\Eze.Analytics.Svc_160225_204724.AnavonCopy.dmp.map\Eze.Analytics.Svc_160225_204724.AnavonCopy.dmp.`INSTANCETYPES[0].bin";
+            //string brefPath = @"D:\Jerzy\WinDbgStuff\dumps\Analytics\Anavon\Eze.Analytics.Svc_160225_204724.AnavonCopy.dmp.map\Eze.Analytics.Svc_160225_204724.AnavonCopy.dmp.`BWDREFS[0].bin";
+            //string boffPath = @"D:\Jerzy\WinDbgStuff\dumps\Analytics\Anavon\Eze.Analytics.Svc_160225_204724.AnavonCopy.dmp.map\Eze.Analytics.Svc_160225_204724.AnavonCopy.dmp.`BWDREFOFFSETS[0].bin";
+
+            string instPath = @"D:\Jerzy\WinDbgStuff\dumps\Analytics\Anavon\Eze.Analytics.Svc_160225_204724.Anavon.dmp.map\Eze.Analytics.Svc_160225_204724.Anavon.dmp.`INSTANCES[0].bin";
+            string typePath = @"D:\Jerzy\WinDbgStuff\dumps\Analytics\Anavon\Eze.Analytics.Svc_160225_204724.Anavon.dmp.map\Eze.Analytics.Svc_160225_204724.Anavon.dmp.`INSTANCETYPES[0].bin";
+            string brefPath = @"D:\Jerzy\WinDbgStuff\dumps\Analytics\Anavon\Eze.Analytics.Svc_160225_204724.Anavon.dmp.map\Eze.Analytics.Svc_160225_204724.Anavon.dmp.`BWDREFS[0].bin";
+            string boffPath = @"D:\Jerzy\WinDbgStuff\dumps\Analytics\Anavon\Eze.Analytics.Svc_160225_204724.Anavon.dmp.map\Eze.Analytics.Svc_160225_204724.Anavon.dmp.`BWDREFOFFSETS[0].bin";
+
+
+
+            BinaryReader br0 = null, br1 = null;
+            StreamWriter sw = null;
+            try
+            {
+                br0 = new BinaryReader(File.Open(instPath, FileMode.Open, FileAccess.Read, FileShare.Read));
+                br1 = new BinaryReader(File.Open(typePath, FileMode.Open, FileAccess.Read, FileShare.Read));
+                sw = new StreamWriter(instPath + ".txt");
+                int cnt0 = br0.ReadInt32();
+                int cnt1 = br1.ReadInt32();
+                Assert.IsTrue(cnt1 == cnt0);
+                for (int i = 0; i < cnt0; ++i)
+                {
+                    ulong addr = br0.ReadUInt64();
+                    int typeId = br1.ReadInt32();
+                    sw.Write(Utils.FlaggedAddressStringHeader(addr));
+                    sw.Write(Utils.SortableCountStringHeader(typeId));
+                    if (!Utils.IsRealAddress(addr))
+                    {
+                        if (Utils.IsRoot(addr))
+                            sw.Write("`R ");
+                        if (Utils.IsNonRootRooted(addr))
+                            sw.Write("`P ");
+                        if (Utils.IsFinalizer(addr))
+                            sw.Write("`F ");
+                        if (Utils.IsLocal(addr))
+                            sw.Write("`L ");
+                    }
+                    sw.WriteLine();
+                }
+                br0.Close();
+                br1.Close();
+                sw.Close();
+
+                br0 = new BinaryReader(File.Open(brefPath, FileMode.Open, FileAccess.Read, FileShare.Read));
+                br1 = new BinaryReader(File.Open(boffPath, FileMode.Open, FileAccess.Read, FileShare.Read));
+                sw = new StreamWriter(brefPath + ".txt");
+                long off = br1.ReadInt64();
+                for (int i = 0; i < cnt0; ++i)
+                {
+                    long next = br1.ReadInt64();
+                    Assert.IsTrue(next >= off);
+                    int rcnt = (int)(next - off);
+                    off = next;
+                    if (rcnt == 0)
+                    {
+
+                    }
+                    else
+                    {
+                        sw.Write(i.ToString() + " [" + rcnt.ToString() + "] ");
+                        int maxIds = Math.Min(32, rcnt);
+                        for(int j = 0; j < rcnt; ++j)
+                        {
+                            int id = br0.ReadInt32();
+                            if (j < maxIds)
+                                sw.Write(id.ToString() + " ");
+                        }
+                        sw.WriteLine();
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                Assert.IsTrue(false, ex.ToString());
+            }
+            finally
+            {
+                br0?.Close();
+                br1?.Close();
+                sw?.Close();
+            }
+        }
+
 
         [TestMethod]
         public void Misc()

@@ -125,10 +125,10 @@ namespace ClrMDRIndex
             try
             {
 #if DEBUG
-                //string myfolder = @"D:\Jerzy\WinDbgStuff\MDRDesk\";
-                string myfolder = @"C:\WinDbgStuff\MDRDesk\";
+                string myfolder = @"D:\Jerzy\WinDbgStuff\MDRDesk\";
+                //string myfolder = @"C:\WinDbgStuff\MDRDesk\";
 #else
-                string myfolder = @"C:\WinDbgStuff\MDRDesk\";  //DumpFileMoniker.MyFolder;
+                string myfolder = DumpFileMoniker.MyFolder;
 #endif
                 string installFolder = DumpFileMoniker.GetParentFolder(myfolder);
                 var config = ConfigurationManager.OpenExeConfiguration(ConfigurationUserLevel.None);

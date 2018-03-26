@@ -516,6 +516,27 @@ public:
 		return true;
 	}
 
+	static bool dump_tofile(const wchar_t* path, int count, LPVOID data, size_t size) {
+		if (size < 1) return true;
+		HANDLE hFile = CreateFile(path, GENERIC_WRITE, 0, NULL, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL);
+		if (!is_valid_handle(hFile)) { return false; }
+		DWORD written;
+		if (!WriteFile(hFile, &count, sizeof(int), &written, nullptr)) {
+			get_last_err();
+			CloseHandle(hFile);
+			return false;
+		}
+		assert(written == sizeof(int));
+		if (!WriteFile(hFile, data, size, &written, nullptr)) {
+			get_last_err();
+			CloseHandle(hFile);
+			return false;
+		}
+		assert(written == size);
+		CloseHandle(hFile);
+		return true;
+	}
+
 	static bool read_file(HANDLE hFile, LPVOID data, size_t size) {
 		if (size < 1) return true;
 		DWORD read;
