@@ -2637,78 +2637,148 @@ namespace UnitTestMdr
         [TestMethod]
         public void DumpRefsFile()
         {
-            //string instPath = @"D:\Jerzy\WinDbgStuff\dumps\Analytics\Anavon\Eze.Analytics.Svc_160225_204724.AnavonCopy.dmp.map\Eze.Analytics.Svc_160225_204724.AnavonCopy.dmp.`INSTANCES[0].bin";
-            //string typePath = @"D:\Jerzy\WinDbgStuff\dumps\Analytics\Anavon\Eze.Analytics.Svc_160225_204724.AnavonCopy.dmp.map\Eze.Analytics.Svc_160225_204724.AnavonCopy.dmp.`INSTANCETYPES[0].bin";
-            //string brefPath = @"D:\Jerzy\WinDbgStuff\dumps\Analytics\Anavon\Eze.Analytics.Svc_160225_204724.AnavonCopy.dmp.map\Eze.Analytics.Svc_160225_204724.AnavonCopy.dmp.`BWDREFS[0].bin";
-            //string boffPath = @"D:\Jerzy\WinDbgStuff\dumps\Analytics\Anavon\Eze.Analytics.Svc_160225_204724.AnavonCopy.dmp.map\Eze.Analytics.Svc_160225_204724.AnavonCopy.dmp.`BWDREFOFFSETS[0].bin";
+            string instPath = @"D:\Jerzy\WinDbgStuff\dumps\Analytics\Anavon\Eze.Analytics.Svc_160225_204724.AnavonCopy.dmp.map\Eze.Analytics.Svc_160225_204724.AnavonCopy.dmp.`INSTANCES[0].bin";
+            string typePath = @"D:\Jerzy\WinDbgStuff\dumps\Analytics\Anavon\Eze.Analytics.Svc_160225_204724.AnavonCopy.dmp.map\Eze.Analytics.Svc_160225_204724.AnavonCopy.dmp.`INSTANCETYPES[0].bin";
+            string brefPath = @"D:\Jerzy\WinDbgStuff\dumps\Analytics\Anavon\Eze.Analytics.Svc_160225_204724.AnavonCopy.dmp.map\Eze.Analytics.Svc_160225_204724.AnavonCopy.dmp.`BWDREFS[0].bin";
+            string boffPath = @"D:\Jerzy\WinDbgStuff\dumps\Analytics\Anavon\Eze.Analytics.Svc_160225_204724.AnavonCopy.dmp.map\Eze.Analytics.Svc_160225_204724.AnavonCopy.dmp.`BWDREFOFFSETS[0].bin";
+            string frefPath = @"D:\Jerzy\WinDbgStuff\dumps\Analytics\Anavon\Eze.Analytics.Svc_160225_204724.AnavonCopy.dmp.map\Eze.Analytics.Svc_160225_204724.AnavonCopy.dmp.`FWDREFS[0].bin";
+            string foffPath = @"D:\Jerzy\WinDbgStuff\dumps\Analytics\Anavon\Eze.Analytics.Svc_160225_204724.AnavonCopy.dmp.map\Eze.Analytics.Svc_160225_204724.AnavonCopy.dmp.`FWDREFOFFSETS[0].bin";
 
-            string instPath = @"D:\Jerzy\WinDbgStuff\dumps\Analytics\Anavon\Eze.Analytics.Svc_160225_204724.Anavon.dmp.map\Eze.Analytics.Svc_160225_204724.Anavon.dmp.`INSTANCES[0].bin";
-            string typePath = @"D:\Jerzy\WinDbgStuff\dumps\Analytics\Anavon\Eze.Analytics.Svc_160225_204724.Anavon.dmp.map\Eze.Analytics.Svc_160225_204724.Anavon.dmp.`INSTANCETYPES[0].bin";
-            string brefPath = @"D:\Jerzy\WinDbgStuff\dumps\Analytics\Anavon\Eze.Analytics.Svc_160225_204724.Anavon.dmp.map\Eze.Analytics.Svc_160225_204724.Anavon.dmp.`BWDREFS[0].bin";
-            string boffPath = @"D:\Jerzy\WinDbgStuff\dumps\Analytics\Anavon\Eze.Analytics.Svc_160225_204724.Anavon.dmp.map\Eze.Analytics.Svc_160225_204724.Anavon.dmp.`BWDREFOFFSETS[0].bin";
-
+            //string instPath = @"D:\Jerzy\WinDbgStuff\dumps\Analytics\Anavon\Eze.Analytics.Svc_160225_204724.Anavon.dmp.map\Eze.Analytics.Svc_160225_204724.Anavon.dmp.`INSTANCES[0].bin";
+            //string typePath = @"D:\Jerzy\WinDbgStuff\dumps\Analytics\Anavon\Eze.Analytics.Svc_160225_204724.Anavon.dmp.map\Eze.Analytics.Svc_160225_204724.Anavon.dmp.`INSTANCETYPES[0].bin";
+            //string brefPath = @"D:\Jerzy\WinDbgStuff\dumps\Analytics\Anavon\Eze.Analytics.Svc_160225_204724.Anavon.dmp.map\Eze.Analytics.Svc_160225_204724.Anavon.dmp.`BWDREFS[0].bin";
+            //string boffPath = @"D:\Jerzy\WinDbgStuff\dumps\Analytics\Anavon\Eze.Analytics.Svc_160225_204724.Anavon.dmp.map\Eze.Analytics.Svc_160225_204724.Anavon.dmp.`BWDREFOFFSETS[0].bin";
+            //string frefPath = @"D:\Jerzy\WinDbgStuff\dumps\Analytics\Anavon\Eze.Analytics.Svc_160225_204724.Anavon.dmp.map\Eze.Analytics.Svc_160225_204724.Anavon.dmp.`FWDREFS[0].bin";
+            //string foffPath = @"D:\Jerzy\WinDbgStuff\dumps\Analytics\Anavon\Eze.Analytics.Svc_160225_204724.Anavon.dmp.map\Eze.Analytics.Svc_160225_204724.Anavon.dmp.`FWDREFOFFSETS[0].bin";
 
 
             BinaryReader br0 = null, br1 = null;
             StreamWriter sw = null;
+            int instanceCount = 0, typeCount = 0, rcnt = 0, ndx = 0;
+            long off = 0, next = 0;
             try
             {
-                br0 = new BinaryReader(File.Open(instPath, FileMode.Open, FileAccess.Read, FileShare.Read));
-                br1 = new BinaryReader(File.Open(typePath, FileMode.Open, FileAccess.Read, FileShare.Read));
-                sw = new StreamWriter(instPath + ".txt");
-                int cnt0 = br0.ReadInt32();
-                int cnt1 = br1.ReadInt32();
-                Assert.IsTrue(cnt1 == cnt0);
-                for (int i = 0; i < cnt0; ++i)
+                try
                 {
-                    ulong addr = br0.ReadUInt64();
-                    int typeId = br1.ReadInt32();
-                    sw.Write(Utils.FlaggedAddressStringHeader(addr));
-                    sw.Write(Utils.SortableCountStringHeader(typeId));
-                    if (!Utils.IsRealAddress(addr))
+                    br0 = new BinaryReader(File.Open(instPath, FileMode.Open, FileAccess.Read, FileShare.Read));
+                    br1 = new BinaryReader(File.Open(typePath, FileMode.Open, FileAccess.Read, FileShare.Read));
+                    sw = new StreamWriter(instPath + ".txt");
+                    instanceCount = br0.ReadInt32();
+                    typeCount = br1.ReadInt32();
+                    Assert.IsTrue(typeCount == instanceCount);
+                    for (ndx = 0; ndx < instanceCount; ++ndx)
                     {
-                        if (Utils.IsRoot(addr))
-                            sw.Write("`R ");
-                        if (Utils.IsNonRootRooted(addr))
-                            sw.Write("`P ");
-                        if (Utils.IsFinalizer(addr))
-                            sw.Write("`F ");
-                        if (Utils.IsLocal(addr))
-                            sw.Write("`L ");
-                    }
-                    sw.WriteLine();
-                }
-                br0.Close();
-                br1.Close();
-                sw.Close();
-
-                br0 = new BinaryReader(File.Open(brefPath, FileMode.Open, FileAccess.Read, FileShare.Read));
-                br1 = new BinaryReader(File.Open(boffPath, FileMode.Open, FileAccess.Read, FileShare.Read));
-                sw = new StreamWriter(brefPath + ".txt");
-                long off = br1.ReadInt64();
-                for (int i = 0; i < cnt0; ++i)
-                {
-                    long next = br1.ReadInt64();
-                    Assert.IsTrue(next >= off);
-                    int rcnt = (int)(next - off);
-                    off = next;
-                    if (rcnt == 0)
-                    {
-
-                    }
-                    else
-                    {
-                        sw.Write(i.ToString() + " [" + rcnt.ToString() + "] ");
-                        int maxIds = Math.Min(32, rcnt);
-                        for(int j = 0; j < rcnt; ++j)
+                        ulong addr = br0.ReadUInt64();
+                        int typeId = br1.ReadInt32();
+                        sw.Write(Utils.FlaggedAddressStringHeader(addr));
+                        sw.Write(Utils.SortableCountStringHeader(typeId));
+                        if (!Utils.IsRealAddress(addr))
                         {
-                            int id = br0.ReadInt32();
-                            if (j < maxIds)
-                                sw.Write(id.ToString() + " ");
+                            if (Utils.IsRoot(addr))
+                                sw.Write("`R ");
+                            if (Utils.IsNonRootRooted(addr))
+                                sw.Write("`P ");
+                            if (Utils.IsFinalizer(addr))
+                                sw.Write("`F ");
+                            if (Utils.IsLocal(addr))
+                                sw.Write("`L ");
                         }
                         sw.WriteLine();
                     }
                 }
+                catch(Exception ex)
+                {
+                    TestContext.WriteLine(ex.ToString());
+                }
+                finally
+                {
+                    br0.Close(); br0 = null;
+                    br1.Close(); br1 = null;
+                    sw.Close(); sw = null;
+                }
+
+                try
+                {
+                    br0 = new BinaryReader(File.Open(brefPath, FileMode.Open, FileAccess.Read, FileShare.Read));
+                    br1 = new BinaryReader(File.Open(boffPath, FileMode.Open, FileAccess.Read, FileShare.Read));
+                    sw = new StreamWriter(brefPath + ".txt");
+                    off = br1.ReadInt64();
+                    for (ndx = 0; ndx < instanceCount; ++ndx)
+                    {
+                        next = br1.ReadInt64();
+                        Assert.IsTrue(next >= off);
+                        rcnt = (int)(next - off);
+                        off = next;
+                        if (rcnt == 0)
+                        {
+
+                        }
+                        else
+                        {
+                            sw.Write(ndx.ToString() + " [" + rcnt.ToString() + "] ");
+                            int maxIds = Math.Min(32, rcnt);
+                            for (int j = 0; j < rcnt; ++j)
+                            {
+                                int id = br0.ReadInt32();
+                                if (j < maxIds)
+                                    sw.Write(id.ToString() + " ");
+                            }
+                            sw.WriteLine();
+                        }
+                    }
+                }
+                catch(Exception ex)
+                {
+                    TestContext.WriteLine(ex.ToString());
+                }
+                finally
+                {
+                    br0.Close(); br0 = null;
+                    br1.Close(); br1 = null;
+                    sw.Close(); sw = null;
+                }
+
+                try
+                {
+                    br0 = new BinaryReader(File.Open(frefPath, FileMode.Open, FileAccess.Read, FileShare.Read));
+                    br1 = new BinaryReader(File.Open(foffPath, FileMode.Open, FileAccess.Read, FileShare.Read));
+                    sw = new StreamWriter(frefPath + ".txt");
+                    off = br1.ReadInt64();
+                    for (ndx = 0; ndx < instanceCount; ++ndx)
+                    {
+                        next = br1.ReadInt64();
+                        Assert.IsTrue(next >= off);
+                        rcnt = (int)(next - off);
+                        off = next;
+                        if (rcnt == 0)
+                        {
+
+                        }
+                        else
+                        {
+                            sw.Write(ndx.ToString() + " [" + rcnt.ToString() + "] ");
+                            int maxIds = Math.Min(32, rcnt);
+                            for (int j = 0; j < rcnt; ++j)
+                            {
+                                int id = br0.ReadInt32();
+                                if (j < maxIds)
+                                    sw.Write(id.ToString() + " ");
+                            }
+                            sw.WriteLine();
+                        }
+                    }
+                }
+                catch (Exception ex)
+                {
+                    TestContext.WriteLine(ex.ToString());
+                }
+                finally
+                {
+                    br0.Close(); br0 = null;
+                    br1.Close(); br1 = null;
+                    sw.Close(); sw = null;
+                }
+
             }
             catch (Exception ex)
             {
