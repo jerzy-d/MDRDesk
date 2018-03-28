@@ -407,7 +407,7 @@ public:
 				fwd_off1 = *pfwdoffs;
 				if (fwd_off1 == fwd_off0) continue;
 				assert(fwd_off1 > fwd_off0);
-				fwd_cnt = ((int)(fwd_off1 - fwd_off0)) / sizeof(int);
+				fwd_cnt = (int)(fwd_off1 - fwd_off0);
 				pfwdorefs = (int*)((uint8_t*)fwd_map_refs_ptr + fwd_off0);
 				fwd_off0 = fwd_off1;
 				for (int j = 0; j < fwd_cnt; ++j) {

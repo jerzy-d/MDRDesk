@@ -182,7 +182,7 @@ namespace ClrMDRIndex
                 return "\u25BC\u2718{0:x14}";
             if (isRoot)
                 return "\u25BCx{0:x14}";
-            bool isRooted = IsRooted(addr);
+            bool isRooted = IsNonRootRooted(addr);
             if (!isRooted && isFinalizer)
                 return "\u2714\u2718{0:x14}";
             if (isFinalizer)

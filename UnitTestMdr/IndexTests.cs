@@ -2637,19 +2637,19 @@ namespace UnitTestMdr
         [TestMethod]
         public void DumpRefsFile()
         {
-            string instPath = @"D:\Jerzy\WinDbgStuff\dumps\Analytics\Anavon\Eze.Analytics.Svc_160225_204724.AnavonCopy.dmp.map\Eze.Analytics.Svc_160225_204724.AnavonCopy.dmp.`INSTANCES[0].bin";
-            string typePath = @"D:\Jerzy\WinDbgStuff\dumps\Analytics\Anavon\Eze.Analytics.Svc_160225_204724.AnavonCopy.dmp.map\Eze.Analytics.Svc_160225_204724.AnavonCopy.dmp.`INSTANCETYPES[0].bin";
-            string brefPath = @"D:\Jerzy\WinDbgStuff\dumps\Analytics\Anavon\Eze.Analytics.Svc_160225_204724.AnavonCopy.dmp.map\Eze.Analytics.Svc_160225_204724.AnavonCopy.dmp.`BWDREFS[0].bin";
-            string boffPath = @"D:\Jerzy\WinDbgStuff\dumps\Analytics\Anavon\Eze.Analytics.Svc_160225_204724.AnavonCopy.dmp.map\Eze.Analytics.Svc_160225_204724.AnavonCopy.dmp.`BWDREFOFFSETS[0].bin";
-            string frefPath = @"D:\Jerzy\WinDbgStuff\dumps\Analytics\Anavon\Eze.Analytics.Svc_160225_204724.AnavonCopy.dmp.map\Eze.Analytics.Svc_160225_204724.AnavonCopy.dmp.`FWDREFS[0].bin";
-            string foffPath = @"D:\Jerzy\WinDbgStuff\dumps\Analytics\Anavon\Eze.Analytics.Svc_160225_204724.AnavonCopy.dmp.map\Eze.Analytics.Svc_160225_204724.AnavonCopy.dmp.`FWDREFOFFSETS[0].bin";
+            string instPath = @"c:\WinDbgStuff\dumps\Analytics\Anavon\Eze.Analytics.Svc_160225_204724.AnavonCopy.dmp.map\Eze.Analytics.Svc_160225_204724.AnavonCopy.dmp.`INSTANCES[0].bin";
+            string typePath = @"c:\WinDbgStuff\dumps\Analytics\Anavon\Eze.Analytics.Svc_160225_204724.AnavonCopy.dmp.map\Eze.Analytics.Svc_160225_204724.AnavonCopy.dmp.`INSTANCETYPES[0].bin";
+            string brefPath = @"c:\WinDbgStuff\dumps\Analytics\Anavon\Eze.Analytics.Svc_160225_204724.AnavonCopy.dmp.map\Eze.Analytics.Svc_160225_204724.AnavonCopy.dmp.`BWDREFS[0].bin";
+            string boffPath = @"c:\WinDbgStuff\dumps\Analytics\Anavon\Eze.Analytics.Svc_160225_204724.AnavonCopy.dmp.map\Eze.Analytics.Svc_160225_204724.AnavonCopy.dmp.`BWDREFOFFSETS[0].bin";
+            string frefPath = @"c:\WinDbgStuff\dumps\Analytics\Anavon\Eze.Analytics.Svc_160225_204724.AnavonCopy.dmp.map\Eze.Analytics.Svc_160225_204724.AnavonCopy.dmp.`FWDREFS[0].bin";
+            string foffPath = @"c:\WinDbgStuff\dumps\Analytics\Anavon\Eze.Analytics.Svc_160225_204724.AnavonCopy.dmp.map\Eze.Analytics.Svc_160225_204724.AnavonCopy.dmp.`FWDREFOFFSETS[0].bin";
 
-            //string instPath = @"D:\Jerzy\WinDbgStuff\dumps\Analytics\Anavon\Eze.Analytics.Svc_160225_204724.Anavon.dmp.map\Eze.Analytics.Svc_160225_204724.Anavon.dmp.`INSTANCES[0].bin";
-            //string typePath = @"D:\Jerzy\WinDbgStuff\dumps\Analytics\Anavon\Eze.Analytics.Svc_160225_204724.Anavon.dmp.map\Eze.Analytics.Svc_160225_204724.Anavon.dmp.`INSTANCETYPES[0].bin";
-            //string brefPath = @"D:\Jerzy\WinDbgStuff\dumps\Analytics\Anavon\Eze.Analytics.Svc_160225_204724.Anavon.dmp.map\Eze.Analytics.Svc_160225_204724.Anavon.dmp.`BWDREFS[0].bin";
-            //string boffPath = @"D:\Jerzy\WinDbgStuff\dumps\Analytics\Anavon\Eze.Analytics.Svc_160225_204724.Anavon.dmp.map\Eze.Analytics.Svc_160225_204724.Anavon.dmp.`BWDREFOFFSETS[0].bin";
-            //string frefPath = @"D:\Jerzy\WinDbgStuff\dumps\Analytics\Anavon\Eze.Analytics.Svc_160225_204724.Anavon.dmp.map\Eze.Analytics.Svc_160225_204724.Anavon.dmp.`FWDREFS[0].bin";
-            //string foffPath = @"D:\Jerzy\WinDbgStuff\dumps\Analytics\Anavon\Eze.Analytics.Svc_160225_204724.Anavon.dmp.map\Eze.Analytics.Svc_160225_204724.Anavon.dmp.`FWDREFOFFSETS[0].bin";
+            //string instPath = @"c:\WinDbgStuff\dumps\Analytics\Anavon\Eze.Analytics.Svc_160225_204724.Anavon.dmp.map\Eze.Analytics.Svc_160225_204724.Anavon.dmp.`INSTANCES[0].bin";
+            //string typePath = @"c:\WinDbgStuff\dumps\Analytics\Anavon\Eze.Analytics.Svc_160225_204724.Anavon.dmp.map\Eze.Analytics.Svc_160225_204724.Anavon.dmp.`INSTANCETYPES[0].bin";
+            //string brefPath = @"c:\WinDbgStuff\dumps\Analytics\Anavon\Eze.Analytics.Svc_160225_204724.Anavon.dmp.map\Eze.Analytics.Svc_160225_204724.Anavon.dmp.`BWDREFS[0].bin";
+            //string boffPath = @"c:\WinDbgStuff\dumps\Analytics\Anavon\Eze.Analytics.Svc_160225_204724.Anavon.dmp.map\Eze.Analytics.Svc_160225_204724.Anavon.dmp.`BWDREFOFFSETS[0].bin";
+            //string frefPath = @"c:\WinDbgStuff\dumps\Analytics\Anavon\Eze.Analytics.Svc_160225_204724.Anavon.dmp.map\Eze.Analytics.Svc_160225_204724.Anavon.dmp.`FWDREFS[0].bin";
+            //string foffPath = @"c:\WinDbgStuff\dumps\Analytics\Anavon\Eze.Analytics.Svc_160225_204724.Anavon.dmp.map\Eze.Analytics.Svc_160225_204724.Anavon.dmp.`FWDREFOFFSETS[0].bin";
 
 
             BinaryReader br0 = null, br1 = null;
