@@ -2637,23 +2637,23 @@ namespace UnitTestMdr
         [TestMethod]
         public void DumpRefsFile()
         {
-            string instPath = @"c:\WinDbgStuff\dumps\Analytics\Anavon\Eze.Analytics.Svc_160225_204724.AnavonCopy.dmp.map\Eze.Analytics.Svc_160225_204724.AnavonCopy.dmp.`INSTANCES[0].bin";
-            string typePath = @"c:\WinDbgStuff\dumps\Analytics\Anavon\Eze.Analytics.Svc_160225_204724.AnavonCopy.dmp.map\Eze.Analytics.Svc_160225_204724.AnavonCopy.dmp.`INSTANCETYPES[0].bin";
-            string brefPath = @"c:\WinDbgStuff\dumps\Analytics\Anavon\Eze.Analytics.Svc_160225_204724.AnavonCopy.dmp.map\Eze.Analytics.Svc_160225_204724.AnavonCopy.dmp.`BWDREFS[0].bin";
-            string boffPath = @"c:\WinDbgStuff\dumps\Analytics\Anavon\Eze.Analytics.Svc_160225_204724.AnavonCopy.dmp.map\Eze.Analytics.Svc_160225_204724.AnavonCopy.dmp.`BWDREFOFFSETS[0].bin";
-            string frefPath = @"c:\WinDbgStuff\dumps\Analytics\Anavon\Eze.Analytics.Svc_160225_204724.AnavonCopy.dmp.map\Eze.Analytics.Svc_160225_204724.AnavonCopy.dmp.`FWDREFS[0].bin";
-            string foffPath = @"c:\WinDbgStuff\dumps\Analytics\Anavon\Eze.Analytics.Svc_160225_204724.AnavonCopy.dmp.map\Eze.Analytics.Svc_160225_204724.AnavonCopy.dmp.`FWDREFOFFSETS[0].bin";
+            string instPath = @"D:\Jerzy\WinDbgStuff\dumps\Analytics\Anavon\Eze.Analytics.Svc_160225_204724.AnavonCopy.dmp.map\Eze.Analytics.Svc_160225_204724.AnavonCopy.dmp.`INSTANCES[0].bin";
+            string typePath = @"D:\Jerzy\WinDbgStuff\dumps\Analytics\Anavon\Eze.Analytics.Svc_160225_204724.AnavonCopy.dmp.map\Eze.Analytics.Svc_160225_204724.AnavonCopy.dmp.`INSTANCETYPES[0].bin";
+            string brefPath = @"D:\Jerzy\WinDbgStuff\dumps\Analytics\Anavon\Eze.Analytics.Svc_160225_204724.AnavonCopy.dmp.map\Eze.Analytics.Svc_160225_204724.AnavonCopy.dmp.`BWDREFS[0].bin";
+            string boffPath = @"D:\Jerzy\WinDbgStuff\dumps\Analytics\Anavon\Eze.Analytics.Svc_160225_204724.AnavonCopy.dmp.map\Eze.Analytics.Svc_160225_204724.AnavonCopy.dmp.`BWDREFOFFSETS[0].bin";
+            string frefPath = @"D:\Jerzy\WinDbgStuff\dumps\Analytics\Anavon\Eze.Analytics.Svc_160225_204724.AnavonCopy.dmp.map\Eze.Analytics.Svc_160225_204724.AnavonCopy.dmp.`FWDREFS[0].bin";
+            string foffPath = @"D:\Jerzy\WinDbgStuff\dumps\Analytics\Anavon\Eze.Analytics.Svc_160225_204724.AnavonCopy.dmp.map\Eze.Analytics.Svc_160225_204724.AnavonCopy.dmp.`FWDREFOFFSETS[0].bin";
 
-            //string instPath = @"c:\WinDbgStuff\dumps\Analytics\Anavon\Eze.Analytics.Svc_160225_204724.Anavon.dmp.map\Eze.Analytics.Svc_160225_204724.Anavon.dmp.`INSTANCES[0].bin";
-            //string typePath = @"c:\WinDbgStuff\dumps\Analytics\Anavon\Eze.Analytics.Svc_160225_204724.Anavon.dmp.map\Eze.Analytics.Svc_160225_204724.Anavon.dmp.`INSTANCETYPES[0].bin";
-            //string brefPath = @"c:\WinDbgStuff\dumps\Analytics\Anavon\Eze.Analytics.Svc_160225_204724.Anavon.dmp.map\Eze.Analytics.Svc_160225_204724.Anavon.dmp.`BWDREFS[0].bin";
-            //string boffPath = @"c:\WinDbgStuff\dumps\Analytics\Anavon\Eze.Analytics.Svc_160225_204724.Anavon.dmp.map\Eze.Analytics.Svc_160225_204724.Anavon.dmp.`BWDREFOFFSETS[0].bin";
-            //string frefPath = @"c:\WinDbgStuff\dumps\Analytics\Anavon\Eze.Analytics.Svc_160225_204724.Anavon.dmp.map\Eze.Analytics.Svc_160225_204724.Anavon.dmp.`FWDREFS[0].bin";
-            //string foffPath = @"c:\WinDbgStuff\dumps\Analytics\Anavon\Eze.Analytics.Svc_160225_204724.Anavon.dmp.map\Eze.Analytics.Svc_160225_204724.Anavon.dmp.`FWDREFOFFSETS[0].bin";
+            //string instPath = @"D:\Jerzy\WinDbgStuff\dumps\Analytics\Anavon\Eze.Analytics.Svc_160225_204724.Anavon.dmp.map\Eze.Analytics.Svc_160225_204724.Anavon.dmp.`INSTANCES[0].bin";
+            //string typePath = @"D:\Jerzy\WinDbgStuff\dumps\Analytics\Anavon\Eze.Analytics.Svc_160225_204724.Anavon.dmp.map\Eze.Analytics.Svc_160225_204724.Anavon.dmp.`INSTANCETYPES[0].bin";
+            //string brefPath = @"D:\Jerzy\WinDbgStuff\dumps\Analytics\Anavon\Eze.Analytics.Svc_160225_204724.Anavon.dmp.map\Eze.Analytics.Svc_160225_204724.Anavon.dmp.`BWDREFS[0].bin";
+            //string boffPath = @"D:\Jerzy\WinDbgStuff\dumps\Analytics\Anavon\Eze.Analytics.Svc_160225_204724.Anavon.dmp.map\Eze.Analytics.Svc_160225_204724.Anavon.dmp.`BWDREFOFFSETS[0].bin";
+            //string frefPath = @"D:\Jerzy\WinDbgStuff\dumps\Analytics\Anavon\Eze.Analytics.Svc_160225_204724.Anavon.dmp.map\Eze.Analytics.Svc_160225_204724.Anavon.dmp.`FWDREFS[0].bin";
+            //string foffPath = @"D:\Jerzy\WinDbgStuff\dumps\Analytics\Anavon\Eze.Analytics.Svc_160225_204724.Anavon.dmp.map\Eze.Analytics.Svc_160225_204724.Anavon.dmp.`FWDREFOFFSETS[0].bin";
 
 
             BinaryReader br0 = null, br1 = null;
-            StreamWriter sw = null;
+            StreamWriter sw = null, swoff = null;
             int instanceCount = 0, typeCount = 0, rcnt = 0, ndx = 0;
             long off = 0, next = 0;
             try
@@ -2702,16 +2702,19 @@ namespace UnitTestMdr
                     br0 = new BinaryReader(File.Open(brefPath, FileMode.Open, FileAccess.Read, FileShare.Read));
                     br1 = new BinaryReader(File.Open(boffPath, FileMode.Open, FileAccess.Read, FileShare.Read));
                     sw = new StreamWriter(brefPath + ".txt");
+                    swoff = new StreamWriter(boffPath + ".txt");
+
                     off = br1.ReadInt64();
                     for (ndx = 0; ndx < instanceCount; ++ndx)
                     {
                         next = br1.ReadInt64();
                         Assert.IsTrue(next >= off);
-                        rcnt = (int)(next - off);
+                        rcnt = (int)((next - off)/sizeof(int));
+                        swoff.WriteLine(off.ToString());
                         off = next;
                         if (rcnt == 0)
                         {
-
+                            
                         }
                         else
                         {
@@ -2726,47 +2729,7 @@ namespace UnitTestMdr
                             sw.WriteLine();
                         }
                     }
-                }
-                catch(Exception ex)
-                {
-                    TestContext.WriteLine(ex.ToString());
-                }
-                finally
-                {
-                    br0.Close(); br0 = null;
-                    br1.Close(); br1 = null;
-                    sw.Close(); sw = null;
-                }
-
-                try
-                {
-                    br0 = new BinaryReader(File.Open(frefPath, FileMode.Open, FileAccess.Read, FileShare.Read));
-                    br1 = new BinaryReader(File.Open(foffPath, FileMode.Open, FileAccess.Read, FileShare.Read));
-                    sw = new StreamWriter(frefPath + ".txt");
-                    off = br1.ReadInt64();
-                    for (ndx = 0; ndx < instanceCount; ++ndx)
-                    {
-                        next = br1.ReadInt64();
-                        Assert.IsTrue(next >= off);
-                        rcnt = (int)(next - off);
-                        off = next;
-                        if (rcnt == 0)
-                        {
-
-                        }
-                        else
-                        {
-                            sw.Write(ndx.ToString() + " [" + rcnt.ToString() + "] ");
-                            int maxIds = Math.Min(32, rcnt);
-                            for (int j = 0; j < rcnt; ++j)
-                            {
-                                int id = br0.ReadInt32();
-                                if (j < maxIds)
-                                    sw.Write(id.ToString() + " ");
-                            }
-                            sw.WriteLine();
-                        }
-                    }
+                    swoff.WriteLine(off.ToString());
                 }
                 catch (Exception ex)
                 {
@@ -2777,6 +2740,52 @@ namespace UnitTestMdr
                     br0.Close(); br0 = null;
                     br1.Close(); br1 = null;
                     sw.Close(); sw = null;
+                    swoff.Close(); swoff = null;
+                }
+
+                try
+                {
+                    br0 = new BinaryReader(File.Open(frefPath, FileMode.Open, FileAccess.Read, FileShare.Read));
+                    br1 = new BinaryReader(File.Open(foffPath, FileMode.Open, FileAccess.Read, FileShare.Read));
+                    sw = new StreamWriter(frefPath + ".txt");
+                    swoff = new StreamWriter(foffPath + ".txt");
+                    off = br1.ReadInt64();
+                    for (ndx = 0; ndx < instanceCount; ++ndx)
+                    {
+                        next = br1.ReadInt64();
+                        Assert.IsTrue(next >= off);
+                        rcnt = (int)((next - off)/sizeof(int));
+                        swoff.WriteLine(off.ToString());
+                        off = next;
+                        if (rcnt == 0)
+                        {
+
+                        }
+                        else
+                        {
+                            sw.Write(ndx.ToString() + " [" + rcnt.ToString() + "] ");
+                            int maxIds = Math.Min(32, rcnt);
+                            for (int j = 0; j < rcnt; ++j)
+                            {
+                                int id = br0.ReadInt32();
+                                if (j < maxIds)
+                                    sw.Write(id.ToString() + " ");
+                            }
+                            sw.WriteLine();
+                        }
+                    }
+                    swoff.WriteLine(off.ToString());
+                }
+                catch (Exception ex)
+                {
+                    TestContext.WriteLine(ex.ToString());
+                }
+                finally
+                {
+                    br0.Close(); br0 = null;
+                    br1.Close(); br1 = null;
+                    sw.Close(); sw = null;
+                    swoff.Close(); swoff = null;
                 }
 
             }
@@ -2789,6 +2798,7 @@ namespace UnitTestMdr
                 br0?.Close();
                 br1?.Close();
                 sw?.Close();
+                swoff?.Close();
             }
         }
 

@@ -380,15 +380,15 @@ public:
 			if (!save_bwref_offsets(path_bwd_offs, addr_cnt, bwd_counts, bwd_offs)) {
 				return false;
 			}
-			if (!create_file_with_size(path_bwd_refs, bwd_offs.back())) {
+			if (!create_file_with_size(path_bwd_refs, bwd_offs.back()*sizeof(int32_t))) {
 				return false;
 			}
 
 			int rec_cnt{ 0 };
 			uint64_t* pfwdoffs;
-			int* pfwdorefs;
-			int* pbwdorefs;
-			int fwd_cnt, fwd_ndx;
+			int32_t* pfwdorefs;
+			int32_t* pbwdorefs;
+			int32_t fwd_cnt, fwd_ndx;
 			uint64_t fwd_off0, fwd_off1, bwd_off;
 			std::tie(ok, hFwdOffs, hFwdOffsMap, fwd_map_offs_ptr) = get_file_read_mapping(path_fwd_offs);
 			if (!ok) { goto EXIT; }
@@ -398,8 +398,8 @@ public:
 			if (!ok) { goto EXIT; }
 
 			pfwdoffs = (uint64_t*)fwd_map_offs_ptr;
-			pfwdorefs = (int*)fwd_map_refs_ptr;
-			pbwdorefs = (int*)bwd_map_ptr;
+			pfwdorefs = (int32_t*)fwd_map_refs_ptr;
+			pbwdorefs = (int32_t*)bwd_map_ptr;
 
 			fwd_off0 = *pfwdoffs;
 			for (int i = 0; i < addr_cnt; ++i) {
@@ -407,14 +407,15 @@ public:
 				fwd_off1 = *pfwdoffs;
 				if (fwd_off1 == fwd_off0) continue;
 				assert(fwd_off1 > fwd_off0);
-				fwd_cnt = (int)(fwd_off1 - fwd_off0);
-				pfwdorefs = (int*)((uint8_t*)fwd_map_refs_ptr + fwd_off0);
+				fwd_cnt = (int)((fwd_off1 - fwd_off0)/sizeof(int32_t));
+				pfwdorefs = (int32_t*)((uint8_t*)fwd_map_refs_ptr + fwd_off0);
 				fwd_off0 = fwd_off1;
 				for (int j = 0; j < fwd_cnt; ++j) {
-					bwd_off = bwd_offs[*pfwdorefs];
-					pbwdorefs = (int*)((uint8_t*)bwd_map_ptr + bwd_off);
+					fwd_ndx = *pfwdorefs;
+					bwd_off = bwd_offs[fwd_ndx];
+					pbwdorefs = (int32_t*)((uint8_t*)bwd_map_ptr + bwd_off);
 					*pbwdorefs = i;
-					bwd_offs[*pfwdorefs] += sizeof(int);
+					bwd_offs[fwd_ndx] += sizeof(int32_t);
 					++pfwdorefs;
 				}
 			}
@@ -443,21 +444,22 @@ public:
 			bwd_offs.reserve(addr_cnt + 1);
 			uint64_t off = 0;
 			size_t dump_count = 0;
+			bwd_offs.push_back(0);
 			for (int i = 0; i < addr_cnt; ++i) {
-				if ((i % 1000) == 0 && bwd_offs.size() > 0) {
+				if ((bwd_offs.size() % 10000) == 0) {
 					auto it = bwd_offs.begin() + dump_count;
 					auto dsz = bwd_offs.end() - it;
 					dump_tofile(hOffs, &*it, dsz * sizeof(uint64_t));
-					dump_count = i;
+					dump_count = bwd_offs.size();
 				}
 				off += bwd_counts[i] * sizeof(int);
 				bwd_offs.push_back(off);
 			}
-			bwd_offs.push_back(off);
 
 			auto it = bwd_offs.begin() + dump_count;
 			auto dsz = bwd_offs.end() - it;
 			dump_tofile(hOffs, &*it, dsz * sizeof(uint64_t));
+
 
 			CloseHandle(hOffs);
 			return true;
