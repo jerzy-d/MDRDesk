@@ -144,6 +144,7 @@
     <Compile Include="Utils\listing.cs" />
     <Compile Include="Utils\ReportFile.cs" />
     <Compile Include="Utils\Reports.cs" />
+    <Compile Include="Utils\Set.cs" />
     <Compile Include="Utils\StringBuilderCache.cs" />
     <Compile Include="Utils\StringCache.cs" />
     <Compile Include="Utils\StringIdAsyncDct.cs" />

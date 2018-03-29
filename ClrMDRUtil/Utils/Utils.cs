@@ -173,6 +173,18 @@ namespace ClrMDRIndex
             return string.Format(format, realAddr);
         }
 
+
+        /// <summary>
+        /// Format address for display showing its flags.
+        /// </summary>
+        /// <param name="addr">Instance address, should be flagged during reference building.</param>
+        /// <returns>Formatted address string.</returns>
+        /// <remarks>
+        /// \u25BC ▼ : root, non-local variable
+        /// \u2718 ✘ : in finalizer queue
+        /// \u2731 ✱ : local variable
+        /// \u2714 ✔ : unrooted
+        /// </remarks>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static string GetAddressFormat(ulong addr)
         {
@@ -184,15 +196,24 @@ namespace ClrMDRIndex
                 }
                 return "\u25BCx{0:x14}";
             }
+            bool nonRooted = !IsNonRootRooted(addr);
             if (IsLocal(addr))
             {
                 if (IsFinalizer(addr))
                 {
+                    if (nonRooted)
+                    {
+                        return "\u2731\u2714\u2718{0:x13}";
+                    }
                     return "\u2731\u2718{0:x14}";
+                }
+                if (nonRooted)
+                {
+                    return "\u2731\u2714{0:x14}";
                 }
                 return "\u2731x{0:x14}";
             }
-            if (!IsNonRootRooted(addr))
+            if (nonRooted)
             {
                 if (IsFinalizer(addr))
                 {
@@ -207,25 +228,9 @@ namespace ClrMDRIndex
             return "0x{0:x14}";
         }
 
-        //[MethodImpl(MethodImplOptions.AggressiveInlining)]
-        //public static string GetAddressHeaderFormat(ulong addr)
-        //{
-        //    bool isRoot = IsRoot(addr);
-        //    bool isFinalizer = IsFinalizer(addr);
-        //    if (isRoot && isFinalizer)
-        //        return "\u25BC\u2718{0:x14} ";
-        //    if (isRoot)
-        //        return "\u25BCx{0:x14} ";
-        //    bool isRooted = IsRooted(addr);
-        //    if (!isRooted && isFinalizer)
-        //        return "\u2714\u2718{0:x14} ";
-        //    if (isFinalizer)
-        //        return "\u2718x{0:x14} ";
-        //    if (isRooted)
-        //        return "0x{0:x14} ";
-        //    return "\u2714x{0:x14} ";
-        //}
-
+        /// <summary>
+        /// Same as GetAddressFormat, see above, with the space attached at the end.
+        /// </summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static string GetAddressHeaderFormat(ulong addr)
         {
@@ -237,15 +242,24 @@ namespace ClrMDRIndex
                 }
                 return "\u25BCx{0:x14} ";
             }
+            bool nonRooted = !IsNonRootRooted(addr);
             if (IsLocal(addr))
             {
                 if (IsFinalizer(addr))
                 {
+                    if (nonRooted)
+                    {
+                        return "\u2731\u2714\u2718{0:x13} ";
+                    }
                     return "\u2731\u2718{0:x14} ";
+                }
+                if (nonRooted)
+                {
+                    return "\u2731\u2714{0:x14} ";
                 }
                 return "\u2731x{0:x14} ";
             }
-            if (!IsNonRootRooted(addr))
+            if (nonRooted)
             {
                 if (IsFinalizer(addr))
                 {
