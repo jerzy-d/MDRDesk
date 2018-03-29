@@ -176,39 +176,88 @@ namespace ClrMDRIndex
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static string GetAddressFormat(ulong addr)
         {
-            bool isRoot = IsRoot(addr);
-            bool isFinalizer = IsFinalizer(addr);
-            if (isRoot && isFinalizer)
-                return "\u25BC\u2718{0:x14}";
-            if (isRoot)
+            if (IsRoot(addr))
+            {
+                if (IsFinalizer(addr))
+                {
+                    return "\u25BC\u2718{0:x14}";
+                }
                 return "\u25BCx{0:x14}";
-            bool isRooted = IsNonRootRooted(addr);
-            if (!isRooted && isFinalizer)
-                return "\u2714\u2718{0:x14}";
-            if (isFinalizer)
+            }
+            if (IsLocal(addr))
+            {
+                if (IsFinalizer(addr))
+                {
+                    return "\u2731\u2718{0:x14}";
+                }
+                return "\u2731x{0:x14}";
+            }
+            if (!IsNonRootRooted(addr))
+            {
+                if (IsFinalizer(addr))
+                {
+                    return "\u2714\u2718{0:x14}";
+                }
+                return "\u2714x{0:x14}";
+            }
+            if (IsFinalizer(addr))
+            {
                 return "\u2718x{0:x14}";
-            if (isRooted)
-                return "0x{0:x14}";
-            return "\u2714x{0:x14}";
+            }
+            return "0x{0:x14}";
         }
+
+        //[MethodImpl(MethodImplOptions.AggressiveInlining)]
+        //public static string GetAddressHeaderFormat(ulong addr)
+        //{
+        //    bool isRoot = IsRoot(addr);
+        //    bool isFinalizer = IsFinalizer(addr);
+        //    if (isRoot && isFinalizer)
+        //        return "\u25BC\u2718{0:x14} ";
+        //    if (isRoot)
+        //        return "\u25BCx{0:x14} ";
+        //    bool isRooted = IsRooted(addr);
+        //    if (!isRooted && isFinalizer)
+        //        return "\u2714\u2718{0:x14} ";
+        //    if (isFinalizer)
+        //        return "\u2718x{0:x14} ";
+        //    if (isRooted)
+        //        return "0x{0:x14} ";
+        //    return "\u2714x{0:x14} ";
+        //}
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static string GetAddressHeaderFormat(ulong addr)
         {
-            bool isRoot = IsRoot(addr);
-            bool isFinalizer = IsFinalizer(addr);
-            if (isRoot && isFinalizer)
-                return "\u25BC\u2718{0:x14} ";
-            if (isRoot)
+            if (IsRoot(addr))
+            {
+                if (IsFinalizer(addr))
+                {
+                    return "\u25BC\u2718{0:x14} ";
+                }
                 return "\u25BCx{0:x14} ";
-            bool isRooted = IsRooted(addr);
-            if (!isRooted && isFinalizer)
-                return "\u2714\u2718{0:x14} ";
-            if (isFinalizer)
+            }
+            if (IsLocal(addr))
+            {
+                if (IsFinalizer(addr))
+                {
+                    return "\u2731\u2718{0:x14} ";
+                }
+                return "\u2731x{0:x14} ";
+            }
+            if (!IsNonRootRooted(addr))
+            {
+                if (IsFinalizer(addr))
+                {
+                    return "\u2714\u2718{0:x14} ";
+                }
+                return "\u2714x{0:x14} ";
+            }
+            if (IsFinalizer(addr))
+            {
                 return "\u2718x{0:x14} ";
-            if (isRooted)
-                return "0x{0:x14} ";
-            return "\u2714x{0:x14} ";
+            }
+            return "0x{0:x14} ";
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
