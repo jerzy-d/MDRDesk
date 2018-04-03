@@ -22,7 +22,9 @@ namespace ClrMDRIndex
             JustInstanceRefs = 1,
         }
 
-        public const int MaxInstanceshandled = 268435450;
+        //public const int MaxInstanceshandled = 268,435,450;
+        public const int MAX_ITEM_COUNT = 268435456 - 64;
+
 
         /// <summary>
         /// Files and directories helper.
@@ -36,6 +38,8 @@ namespace ClrMDRIndex
 
         private int[] _instanceCount;
         private int[] _notIncludedCount;
+        private int[] _freeCount;
+        private int[] _nullCount;
         private int[] _typeCount;
         private int[] _finalizerCount;
         private int[] _rootCount;
@@ -375,6 +379,8 @@ namespace ClrMDRIndex
                     _finalizerCount = new int[clrtDump.RuntimeCount];
                     _rootCount = new int[clrtDump.RuntimeCount];
                     _notIncludedCount = new int[clrtDump.RuntimeCount];
+                    _freeCount = new int[clrtDump.RuntimeCount];
+                    _nullCount = new int[clrtDump.RuntimeCount];
 
                     for (int r = 0, rcnt = clrtDump.RuntimeCount; r < rcnt; ++r)
                     {
@@ -390,9 +396,15 @@ namespace ClrMDRIndex
                         // get type names
                         //
                         progress?.Report(runtimeIndexHeader + "Getting type names...");
-                        (string[] typeNames, int instanceCount) = GetTypeNames3(heap, out error);
+
+                        (string[] typeNames, int instanceCount, int freeCount, int notIncludedCount, int nullCount) =
+                            GetTypeNames3(heap, out error);
                         Debug.Assert(error == null);
                         _typeCount[r] = typeNames.Length; // for general info dump
+                        _instanceCount[r] = instanceCount;
+                        _notIncludedCount[r] = notIncludedCount;
+                        _freeCount[r] = freeCount;
+                        _nullCount[r] = nullCount;
 
                         // get roots
                         //
@@ -413,10 +425,8 @@ namespace ClrMDRIndex
                         // get addresses and types
                         //
                         progress?.Report(runtimeIndexHeader + "Getting addresses and types...");
-                        (ulong[] addresses, int[] typeIds, int notIncludedCount) = GetAddressesAndTypes3(heap, roots, typeNames, out error);
+                        (ulong[] addresses, int[] typeIds) = GetAddressesAndTypes3(heap, roots, typeNames, instanceCount, out error);
                         if (error != null) return false;
-                        _instanceCount[r] = addresses.Length; // for general info dump
-                        _notIncludedCount[r] = notIncludedCount;
                         Debug.Assert(Utils.AreAddressesSorted(addresses));
 
                         // start reference builder
@@ -716,69 +726,69 @@ namespace ClrMDRIndex
         }
 
 
-        static public ValueTuple<ulong[],int> GetInstances(ClrHeap heap, out string error)
-        {
-            error = null;
-            try
-            {
-                const int BUFF_COUNT = 1024 * 1024 * 4;
-                var segs = heap.Segments;
-                int count = 0, buffCount = 0;
-                ulong[] addr_buf = new ulong[BUFF_COUNT];
-                List<ulong[]> buffLst = new List<ulong[]>(100);
-                buffLst.Add(addr_buf);
-                int notIncludedCount = 0;
-                ClrtSegment[] mysegs = new ClrtSegment[segs.Count];
-                for (int i = 0, icnt = segs.Count; i < icnt; ++i)
-                {
-                    var genCounts = new int[3];
-                    var genSizes = new ulong[3];
-                    var genFreeCounts = new int[3];
-                    var genFreeSizes = new ulong[3];
-                    var seg = segs[i];
-                    ulong addr = seg.FirstObject;
-                    while (addr != 0ul)
-                    {
-                        var clrType = heap.GetObjectType(addr);
-                        if (clrType == null) goto NEXT_OBJECT;
-                        if (count >= DumpIndexer.MaxInstanceshandled)
-                        {
+        //static public ValueTuple<ulong[],int> GetInstances(ClrHeap heap, out string error)
+        //{
+        //    error = null;
+        //    try
+        //    {
+        //        const int BUFF_COUNT = 1024 * 1024 * 4;
+        //        var segs = heap.Segments;
+        //        int count = 0, buffCount = 0;
+        //        ulong[] addr_buf = new ulong[BUFF_COUNT];
+        //        List<ulong[]> buffLst = new List<ulong[]>(100);
+        //        buffLst.Add(addr_buf);
+        //        int notIncludedCount = 0;
+        //        ClrtSegment[] mysegs = new ClrtSegment[segs.Count];
+        //        for (int i = 0, icnt = segs.Count; i < icnt; ++i)
+        //        {
+        //            var genCounts = new int[3];
+        //            var genSizes = new ulong[3];
+        //            var genFreeCounts = new int[3];
+        //            var genFreeSizes = new ulong[3];
+        //            var seg = segs[i];
+        //            ulong addr = seg.FirstObject;
+        //            while (addr != 0ul)
+        //            {
+        //                var clrType = heap.GetObjectType(addr);
+        //                if (clrType == null) goto NEXT_OBJECT;
+        //                if (count >= DumpIndexer.MaxInstanceshandled)
+        //                {
 
-                            break;
-                        }
-                        ++count;
-                        addr_buf[buffCount++] = addr;
-                        if (buffCount == BUFF_COUNT)
-                        {
-                            addr_buf = new ulong[BUFF_COUNT];
-                            buffLst.Add(addr_buf);
-                            buffCount = 0;
-                        }
-                        if (count > DumpIndexer.MaxInstanceshandled)
-                            break;
-                        NEXT_OBJECT:
-                        addr = seg.NextObject(addr);
-                    }
-                }
-                ulong[] addresses = new ulong[count];
-                int off = 0;
-                for (int i = 0, icnt = buffLst.Count; i < icnt; ++i)
-                {
-                    int toCopy = Math.Min(BUFF_COUNT, count);
-                    Array.Copy(buffLst[i], 0, addresses, off, toCopy);
-                    off += toCopy;
-                    count -= BUFF_COUNT;
-                    buffLst[i] = null;
-                }
-                return (addresses,notIncludedCount);
+        //                    break;
+        //                }
+        //                ++count;
+        //                addr_buf[buffCount++] = addr;
+        //                if (buffCount == BUFF_COUNT)
+        //                {
+        //                    addr_buf = new ulong[BUFF_COUNT];
+        //                    buffLst.Add(addr_buf);
+        //                    buffCount = 0;
+        //                }
+        //                if (count > DumpIndexer.MaxInstanceshandled)
+        //                    break;
+        //                NEXT_OBJECT:
+        //                addr = seg.NextObject(addr);
+        //            }
+        //        }
+        //        ulong[] addresses = new ulong[count];
+        //        int off = 0;
+        //        for (int i = 0, icnt = buffLst.Count; i < icnt; ++i)
+        //        {
+        //            int toCopy = Math.Min(BUFF_COUNT, count);
+        //            Array.Copy(buffLst[i], 0, addresses, off, toCopy);
+        //            off += toCopy;
+        //            count -= BUFF_COUNT;
+        //            buffLst[i] = null;
+        //        }
+        //        return (addresses,notIncludedCount);
 
-            }
-            catch (Exception ex)
-            {
-                error = Utils.GetExceptionErrorString(ex);
-                return (null, 0);
-            }
-        }
+        //    }
+        //    catch (Exception ex)
+        //    {
+        //        error = Utils.GetExceptionErrorString(ex);
+        //        return (null, 0);
+        //    }
+        //}
 
 
         /// <summary>
@@ -1098,7 +1108,7 @@ namespace ClrMDRIndex
             }
         }
 
-        public ValueTuple<ulong[],int[], int> GetAddressesAndTypes3(ClrHeap heap, ulong[] flaggedRoots, string[] typeNames, out string error)
+        public ValueTuple<ulong[],int[]> GetAddressesAndTypes3(ClrHeap heap, ulong[] flaggedRoots, string[] typeNames, int instCount, out string error)
         {
             error = null;
             BinaryWriter bwRefs = null;
@@ -1108,19 +1118,18 @@ namespace ClrMDRIndex
                 ClrtSegment[] mysegs = new ClrtSegment[segs.Count];
                 int addrNdx = 0;
                 int segIndex = 0;
-                var addrBuf = new BigArray<ulong>();
-                var sizeBuf = new BigArray<uint>();
-                var baseSizeBuf = new BigArray<uint>();
-                var typeIdBuf = new BigArray<int>();
+                var addrAry = new ulong[instCount];
+                var sizeAry = new uint[instCount];
+                var baseSizeAry = new uint[instCount];
+                var typeIdAry = new int[instCount];
                 int[] typeKinds = new int[typeNames.Length];
-                var arraySizes = new List<ValueTuple<int, int, ClrElementKind>>(BigArray<uint>.BUFF_MAX_ITEM_COUNT);
+                var arraySizes = new List<ValueTuple<int, int, ClrElementKind>>(1024*512);
                 HashSet<int> doneTypeFields = new HashSet<int>();
                 HashSet<int> tofixTypeFields = new HashSet<int>();
                 var typeFields = new SortedDictionary<int, long[]>();
                 bwRefs = new BinaryWriter(File.Open(_fileMoniker.GetFilePath(_currentRuntimeIndex, Constants.MapFwdRefAddrsTempFilePostfix), FileMode.Create));
                 var fieldAddrOffsetList = new List<KeyValuePair<ulong, int>>(64);
-                int instanceCount = 0;
-                int notIncludedCount = 0;
+                int addrCount = 0;
                 for (int segNdx = 0, icnt = segs.Count; segNdx < icnt; ++segNdx)
                 {
                     var seg = segs[segNdx];
@@ -1135,43 +1144,28 @@ namespace ClrMDRIndex
                     {
                         var clrType = heap.GetObjectType(addr);
                         if (clrType == null) goto NEXT_OBJECT;
-                        if (++instanceCount > BigArray<ulong>.MAX_ITEM_COUNT)
-                        {
-                            ++notIncludedCount;
-                            goto NEXT_OBJECT;
-                        }
+                        var isFree = Utils.SameStrings(clrType.Name, Constants.FreeTypeName);
 
                         int typeId = Array.BinarySearch(typeNames, clrType.Name, StringComparer.Ordinal);
-                        if (typeId < 0)
+                        if (typeId >= 0 && typeKinds[typeId] == 0)
                         {
-                            int a = 1;
+                            typeKinds[typeId] = (int)TypeExtractor.GetElementKind(clrType);
                         }
-                        typeIdBuf.Add(typeId);
-                        if (typeKinds[typeId] == 0) typeKinds[typeId] = (int)TypeExtractor.GetElementKind(clrType);
 
-                        var isFree = Utils.SameStrings(clrType.Name, Constants.FreeTypeName);
                         var baseSize = clrType.BaseSize;
-                        baseSizeBuf.Add((uint)baseSize);
                         var size = clrType.GetSize(addr);
                         if (size > (ulong)UInt32.MaxValue) size = (ulong)UInt32.MaxValue;
-                        sizeBuf.Add((uint)size);
 
-                        RetainFieldTypes(clrType, typeId, doneTypeFields, tofixTypeFields, typeNames, typeFields, _stringIdDcts[_currentRuntimeIndex]);
+                        if (addrCount < instCount)
+                        {
+                            baseSizeAry[addrCount] = (uint)baseSize;
+                            sizeAry[addrCount] = (uint)size;
+                            typeIdAry[addrCount] = typeId;
 
-                        // get generation stats
-                        //
-                        if (isFree)
-                        {
-                            ClrtSegment.SetGenerationStats(seg, addr, size, genFreeCounts, genFreeSizes);
-                            addrBuf.Add(addr);
-                            bwRefs.Write((int)0);
-                        }
-                        else
-                        {
+                            RetainFieldTypes(clrType, typeId, doneTypeFields, tofixTypeFields, typeNames, typeFields, _stringIdDcts[_currentRuntimeIndex]);
                             int rndx = Utils.AddressSearch(flaggedRoots, addr);
                             flaggedAddr = (rndx >= 0) ? Utils.CopyAddrFlag(flaggedRoots[rndx], addr) : addr;
-                            ClrtSegment.SetGenerationStats(seg, addr, size, genCounts, genSizes);
-                            addrBuf.Add(flaggedAddr);
+                            addrAry[addrCount] = flaggedAddr;
 
                             fieldAddrOffsetList.Clear();
                             clrType.EnumerateRefsOfObjectCarefully(addr, (address, off) =>
@@ -1193,20 +1187,26 @@ namespace ClrMDRIndex
                                     bwRefs.Write(Utils.CopyAddrFlag(flaggedAddr, raddr));
                                 }
                             }
-                        }
-                        if (clrType.IsArray)
-                        {
-                            int asz = clrType.GetArrayLength(addr);
-                            ClrElementKind aryElKind = TypeExtractor.GetElementKind(clrType.ComponentType);
+                            if (clrType.IsArray)
+                            {
+                                int asz = clrType.GetArrayLength(addr);
+                                ClrElementKind aryElKind = TypeExtractor.GetElementKind(clrType.ComponentType);
 
-                            arraySizes.Add((addrNdx, asz, aryElKind));
+                                arraySizes.Add((addrNdx, asz, aryElKind));
+                            }
+                            ++addrCount;
                         }
+                        if (isFree)
+                            ClrtSegment.SetGenerationStats(seg, addr, size, genFreeCounts, genFreeSizes);
+                        else
+                            ClrtSegment.SetGenerationStats(seg, addr, size, genCounts, genSizes);
 
                         NEXT_OBJECT:
                         lastAddr = addr;
                         addr = seg.NextObject(addr);
                         ++addrNdx;
                     }
+
                     // set segment info
                     //
                     mysegs[segNdx] = new ClrtSegment(heap.Segments[segNdx], firstAddr, lastAddr, segIndex, addrNdx - 1);
@@ -1216,19 +1216,16 @@ namespace ClrMDRIndex
 
                 bwRefs.Write((int)-1);
 
-                ulong[] instances = addrBuf.GetArrayAndClean();
-                int[] typeIds = typeIdBuf.GetArrayAndClean();
-
                 //
                 // dump data
                 //
 
-                if (!Utils.WriteUlongArray(_fileMoniker.GetFilePath(_currentRuntimeIndex, Constants.MapInstancesFilePostfix), instances, out error))
+                if (!Utils.WriteUlongArray(_fileMoniker.GetFilePath(_currentRuntimeIndex, Constants.MapInstancesFilePostfix), addrAry, out error))
                 {
                     _errors[_currentRuntimeIndex].Add("Dumping instances failed." + Environment.NewLine + error);
                 }
 
-                if (!Utils.WriteIntArray(_fileMoniker.GetFilePath(_currentRuntimeIndex, Constants.MapInstanceTypesFilePostfix), typeIds, out error))
+                if (!Utils.WriteIntArray(_fileMoniker.GetFilePath(_currentRuntimeIndex, Constants.MapInstanceTypesFilePostfix), typeIdAry, out error))
                 {
                     _errors[_currentRuntimeIndex].Add("Dumping type ids failed." + Environment.NewLine + error);
                 }
@@ -1240,11 +1237,11 @@ namespace ClrMDRIndex
 
                 SaveFieldTypes(typeFields);
 
-                if (!Utils.WriteUintArray(_fileMoniker.GetFilePath(_currentRuntimeIndex, Constants.MapInstanceSizesFilePostfix), sizeBuf.GetArrayAndClean(), out error))
+                if (!Utils.WriteUintArray(_fileMoniker.GetFilePath(_currentRuntimeIndex, Constants.MapInstanceSizesFilePostfix), sizeAry, out error))
                 {
                     _errors[_currentRuntimeIndex].Add("Dumping sizes failed." + Environment.NewLine + error);
                 }
-                if (!Utils.WriteUintArray(_fileMoniker.GetFilePath(_currentRuntimeIndex, Constants.MapInstanceBaseSizesFilePostfix), baseSizeBuf.GetArrayAndClean(), out error))
+                if (!Utils.WriteUintArray(_fileMoniker.GetFilePath(_currentRuntimeIndex, Constants.MapInstanceBaseSizesFilePostfix), baseSizeAry, out error))
                 {
                     _errors[_currentRuntimeIndex].Add("Dumping base sizes failed." + Environment.NewLine + error);
                 }
@@ -1257,12 +1254,12 @@ namespace ClrMDRIndex
                     _errors[_currentRuntimeIndex].Add("Dumping array sizes failed." + Environment.NewLine + error);
                 }
 
-                return (instances,typeIds,notIncludedCount);
+                return (addrAry,typeIdAry);
             }
             catch (Exception ex)
             {
                 error = Utils.GetExceptionErrorString(ex);
-                return (null,null,0);
+                return (null,null);
             }
             finally
             {
@@ -1811,32 +1808,55 @@ namespace ClrMDRIndex
             }
         }
 
-        public static ValueTuple<string[],int> GetTypeNames3(ClrHeap heap, out string error)
+        public static ValueTuple<string[], int, int, int, int> GetTypeNames3(ClrHeap heap, out string error)
         {
             error = null;
             int instanceCount = 0;
+            int freeCount = 0;
+            int nullCount = 0;
+            int notIncludedCount = 0;
             try
             {
-                List<string> typeNames = new List<string>(1024*32);
+                var typeNames = new List<string>(1024*32);
+                var typeKinds = new List<ClrElementKind>(1024 * 32);
                 // looks like some types are missing in heap.EnumerateTypes()
-                HashSet<string> set = new HashSet<string>(typeNames, StringComparer.Ordinal);
+                var set = new Set<string>(1024*16,StringComparer.Ordinal);
+                AddStandardTypeNames(typeNames,set);
                 var segs = heap.Segments;
-                for (int i = 0, icnt = segs.Count; i < icnt; ++i)
+                for (int segndx = 0, icnt = segs.Count; segndx < icnt; ++segndx)
                 {
-                    var seg = segs[i];
+                    var seg = segs[segndx];
                     ulong addr = seg.FirstObject;
                     while (addr != 0ul)
                     {
                         ClrType type = heap.GetObjectType(addr);
-                        if (type != null && set.Add(type.Name))
+                        if (type == null)
+                        {
+                            ++nullCount;
+                            goto NEXT_OBJECT;
+                        }
+                        if (Utils.SameStrings("Free", type.Name))
+                        {
+                            ++freeCount;
+                        }
+                        if (set.Add(type.Name))
                         {
                             typeNames.Add(type.Name);
                         }
+                        if (instanceCount == MAX_ITEM_COUNT)
+                        {
+                            ++notIncludedCount;
+                        }
+                        else
+                        {
+                            ++instanceCount;
+                        }
+
+                        NEXT_OBJECT:
                         addr = seg.NextObject(addr);
                     }
                 }
 
-                AddStandardTypeNames(typeNames);
                 foreach (var type in heap.EnumerateTypes())
                 {
                     if (type != null && set.Add(type.Name))
@@ -1847,18 +1867,18 @@ namespace ClrMDRIndex
 
                 typeNames.Sort(StringComparer.Ordinal);
                 string[] names = typeNames.ToArray();
-                return (names, instanceCount);
+                return (names, instanceCount, freeCount, notIncludedCount, nullCount);
             }
             catch (Exception ex)
             {
                 error = Utils.GetExceptionErrorString(ex);
-                return (null,0);
+                return (null, 0, 0, 0, 0);
             }
         }
 
 
 
-        public static void AddStandardTypeNames(List<string> typeNames)
+        public static void AddStandardTypeNames(List<string> typeNames, Set<string> set = null)
         {
             typeNames.Add(Constants.NullTypeName);
             typeNames.Add(Constants.UnknownTypeName);
@@ -1866,6 +1886,15 @@ namespace ClrMDRIndex
             typeNames.Add(Constants.FreeTypeName);
             typeNames.Add(Constants.System__Canon);
             typeNames.Add(Constants.SystemObject);
+            if (set != null)
+            {
+                set.Add(Constants.NullTypeName);
+                set.Add(Constants.UnknownTypeName);
+                set.Add(Constants.ErrorTypeName);
+                set.Add(Constants.FreeTypeName);
+                set.Add(Constants.System__Canon);
+                set.Add(Constants.SystemObject);
+            }
         }
 
         private void AddError(int rtNdx, string error)

@@ -35,6 +35,7 @@ namespace ClrMDRIndex
         public static bool SkipDeadStackObjects { get; private set; }
 
         public static bool CppRefBuilder { get; private set; }
+        public static bool MapRefReader { get; private set; }
 
         public static void SetDacFolder(string folder)
         {
@@ -125,8 +126,8 @@ namespace ClrMDRIndex
             try
             {
 #if DEBUG
-                string myfolder = @"D:\Jerzy\WinDbgStuff\MDRDesk\";
-                //string myfolder = @"C:\WinDbgStuff\MDRDesk\";
+                //string myfolder = @"D:\Jerzy\WinDbgStuff\MDRDesk\";
+                string myfolder = @"C:\WinDbgStuff\MDRDesk\";
 #else
                 string myfolder = DumpFileMoniker.MyFolder;
 #endif
@@ -199,6 +200,11 @@ namespace ClrMDRIndex
                         {
                             var val = appSettings.Settings[key].Value.Trim();
                             CppRefBuilder = string.Compare(val, "c++", StringComparison.OrdinalIgnoreCase) == 0;
+                        }
+                        else if (Utils.SameStrings(ky, "refreader"))
+                        {
+                            var val = appSettings.Settings[key].Value.Trim();
+                            MapRefReader = string.Compare(val, "map", StringComparison.OrdinalIgnoreCase) == 0;
                         }
                         else if (Utils.SameStrings(ky, "wnddbgfolder"))
                         {
@@ -288,6 +294,8 @@ namespace ClrMDRIndex
                 settings["dacfolder"].Value = DacFolder;
                 settings["mapfolder"].Value = DumpsFolder;
                 settings["procdumpfolder"].Value = ProcDumpFolder;
+                settings["refbuilder"].Value = CppRefBuilder ? "c++" : "";
+                settings["refreader"].Value = MapRefReader ? "map" : "";
                 settings["helpfolder"].Value = HelpFolder;
 
                 var skip = SkipReferences ? "true" : "false";

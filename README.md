@@ -19,7 +19,7 @@ _MDRDesk_ _is_ _not_ _ready_ _yet_, _I'm_ _planning_ _to_ _have_ _first_ _releas
 _I_ _do_ _not_ _have_ _msi_ _installer_, _and_ _not_ _planning_ _to_ _have_ _one_.
 _Upgrades_ _are_ _handled_ _by_ _MDRDesk_, _in_ _the_ _main_ _menu_ : _Help_ -> _Update_ _MDRDesk_.
 
-Warnig. MDRDesk requires .NET Framework 4.7.1.
+##### Warnig. MDRDesk requires .NET Framework 4.7.1.  
 You can download it from : https://www.microsoft.com/net/download/dotnet-framework-runtime,
 if it's not installed on your computer.
 

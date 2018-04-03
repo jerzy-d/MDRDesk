@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
+using System.IO.MemoryMappedFiles;
 using System.Threading;
 using ClrMDRUtil;
 using Microsoft.Diagnostics.Runtime;
@@ -51,6 +52,11 @@ namespace ClrMDRIndex
         long[] _bwdOffsets;
         BinaryReader[] _readers;
 
+        MemoryMappedFile[] _maps;
+        MemoryMappedViewAccessor[] _views;
+
+
+
         #region building fields
 
         int[] _forwardRefsCounts;
@@ -66,14 +72,20 @@ namespace ClrMDRIndex
 
         #endregion building fields
 
+        #region ctors / initialization
+
         public InstanceReferences(ulong[] instances, string[] fileList, IProgress<string> progress = null, string instanceFilePath = null)
         {
             Debug.Assert(fileList.Length == (int)RefFile.Count);
             _fileList = fileList;
             _instances = instances;
-            _readers = new BinaryReader[(int)RefFile.Count];
             _progress = progress;
             _instanceFilePath = instanceFilePath;
+            _maps = new MemoryMappedFile[(int)RefFile.Count];
+            _views = new MemoryMappedViewAccessor[(int)RefFile.Count];
+            _readers = new BinaryReader[(int)RefFile.Count];
+
+
         }
 
         public InstanceReferences(ulong[] instances, int runtmNdx, DumpFileMoniker moniker)
@@ -84,6 +96,9 @@ namespace ClrMDRIndex
             _fileList[1] = moniker.GetFilePath(runtmNdx, Constants.MapFwdRefsFilePostfix);
             _fileList[2] = moniker.GetFilePath(runtmNdx, Constants.MapRefBwdOffsetsFilePostfix);
             _fileList[3] = moniker.GetFilePath(runtmNdx, Constants.MapBwdRefsFilePostfix);
+            _maps = new MemoryMappedFile[(int)RefFile.Count];
+            _views = new MemoryMappedViewAccessor[(int)RefFile.Count];
+            _readers = new BinaryReader[(int)RefFile.Count];
             _readers = new BinaryReader[(int)RefFile.Count];
         }
 
@@ -101,6 +116,8 @@ namespace ClrMDRIndex
             }
         }
 
+        #endregion ctors / initialization
+
         private int ReferenceCount(long off1, long off2)
         {
             return (int)(off2 - off1) / sizeof(int);
@@ -117,6 +134,13 @@ namespace ClrMDRIndex
             return refs;
         }
 
+        private int[] ReadReferences(MemoryMappedViewAccessor va, long offset, int count)
+        {
+            int[] refs = new int[count];
+            va.ReadArray<int>(offset, refs, 0, count);
+            return refs;
+        }
+
         private void ReadReferences(BinaryReader br, long offset, int count, int[] buf)
         {
             Debug.Assert(buf.Length >= count);
@@ -127,22 +151,10 @@ namespace ClrMDRIndex
             }
         }
 
-        private int ReadReference(BinaryReader br, long offset)
+        private void ReadReferences(MemoryMappedViewAccessor va, long offset, int count, int[] buf)
         {
-            br.BaseStream.Seek(offset, SeekOrigin.Begin);
-            return br.ReadInt32();
-        }
-
-        private IndexNode[] ReadReferences(BinaryReader br, long offset, int count, int level)
-        {
-            IndexNode[] refs = new IndexNode[count];
-            br.BaseStream.Seek(offset, SeekOrigin.Begin);
-            for (int i = 0, icnt = count; i < icnt; ++i)
-            {
-                var ndx = br.ReadInt32();
-                refs[i] = new IndexNode(ndx, level);
-            }
-            return refs;
+            Debug.Assert(buf.Length >= count);
+            va.ReadArray<int>(offset, buf, 0, count);
         }
 
         private IndexNode[] ReadReferences(BinaryReader br, long offset, int count, int level, Queue<IndexNode> que)
@@ -152,6 +164,21 @@ namespace ClrMDRIndex
             for (int i = 0, icnt = count; i < icnt; ++i)
             {
                 var ndx = br.ReadInt32();
+                var node = new IndexNode(ndx, level);
+                refs[i] = node;
+                que.Enqueue(node);
+            }
+            return refs;
+        }
+
+        private IndexNode[] ReadReferences(MemoryMappedViewAccessor va, long offset, int count, int level, Queue<IndexNode> que)
+        {
+            IndexNode[] refs = new IndexNode[count];
+            int[] ndxs = new int[count];
+            va.ReadArray<int>(offset, ndxs, 0, count);
+            for (int i = 0, icnt = count; i < icnt; ++i)
+            {
+                var ndx = ndxs[i];
                 var node = new IndexNode(ndx, level);
                 refs[i] = node;
                 que.Enqueue(node);
@@ -176,7 +203,7 @@ namespace ClrMDRIndex
             }
         }
 
-        long[] ReadOffsets(RefFile fileNdx, int count)
+        private long[] ReadOffsets(RefFile fileNdx, int count)
         {
             BinaryReader br = null;
             try
@@ -195,11 +222,35 @@ namespace ClrMDRIndex
 
         }
 
+        private ValueTuple<long,int> GetRefOffsetAndCount(MemoryMappedViewAccessor va, int instNdx)
+        {
+            long off;
+            va.Read<long>((long)instNdx * (long)sizeof(long),out off);
+            long next;
+            va.Read<long>((long)(instNdx+1) * (long)sizeof(long), out next);
+            return (off, (int)((next - off) / sizeof(int)));
+        }
+
         private BinaryReader GetReader(RefFile fileNdx)
         {
             if (_readers[(int)fileNdx] != null) return _readers[(int)fileNdx];
             _readers[(int)fileNdx] = new BinaryReader(File.Open(_fileList[(int)fileNdx], FileMode.Open, FileAccess.Read));
             return _readers[(int)fileNdx];
+        }
+
+        private MemoryMappedViewAccessor GetMapReader(RefFile fileNdx)
+        {
+            if (_views[(int)fileNdx] == null)
+            {
+                if (_maps[(int)fileNdx] == null)
+                {
+                    _maps[(int)fileNdx] = MemoryMappedFile.CreateFromFile(_fileList[(int)fileNdx], FileMode.Open,null);
+
+                }
+                _views[(int)fileNdx] = _maps[(int)fileNdx].CreateViewAccessor();
+            }
+
+            return _views[(int)fileNdx];
         }
 
 
@@ -213,10 +264,10 @@ namespace ClrMDRIndex
             return new BinaryWriter(File.Open(_fileList[(int)fileNdx], mode, FileAccess.Write, FileShare.None));
         }
 
-
+        
         #region queries
 
-        public KeyValuePair<IndexNode, int>[] GetReferenceNodes(int[] addrNdxs, int maxLevel, ulong[] instances, out string error, ReferenceType refType = ReferenceType.Ancestors | ReferenceType.All)
+        public KeyValuePair<IndexNode, int>[] GetReferenceNodes(int[] addrNdxs, int maxLevel, out string error, ReferenceType refType = ReferenceType.Ancestors | ReferenceType.All)
         {
             error = null;
             try
@@ -272,6 +323,61 @@ namespace ClrMDRIndex
             }
         }
 
+        public KeyValuePair<IndexNode, int>[] GetMappedReferenceNodes(int[] addrNdxs, int maxLevel, out string error, ReferenceType refType = ReferenceType.Ancestors | ReferenceType.All)
+        {
+            error = null;
+            try
+            {
+                var results = new List<KeyValuePair<IndexNode, int>>(addrNdxs.Length);
+                var uniqueSet = new HashSet<int>();
+                var que = new Queue<IndexNode>(256);
+                var offAccessor = GetMapReader((ReferenceType.Ancestors & refType) != 0 ? RefFile.BwdOffsets : RefFile.FwdOffsets);
+                var refAccessor = GetMapReader((ReferenceType.Ancestors & refType) != 0 ? RefFile.BwdRefs : RefFile.FwdRefs);
+                for (int ndx = 0, ndxCnt = addrNdxs.Length; ndx < ndxCnt; ++ndx)
+                {
+                    uniqueSet.Clear();
+                    que.Clear();
+                    var addrNdx = addrNdxs[ndx];
+                    var rootNode = new IndexNode(addrNdx, 0); // we at level 0
+                    que.Enqueue(rootNode);
+                    uniqueSet.Add(addrNdx);
+                    int nodeCount = 0; // do not count root node
+                    while (que.Count > 0)
+                    {
+                        var curNode = que.Dequeue();
+                        ++nodeCount;
+                        if (curNode.Level >= maxLevel || nodeCount > MaxNodes) continue;
+                        int curndx = curNode.Index;
+
+                        (long offset, int count) = GetRefOffsetAndCount(offAccessor, curndx);
+                        if (count == 0) continue;
+
+                        var nodes = new IndexNode[count];
+                        curNode.AddNodes(nodes);
+                        var refs = ReadReferences(refAccessor, offset, count);
+                        for (int i = 0; i < count; ++i)
+                        {
+                            var rNdx = refs[i];
+                            var cnode = new IndexNode(rNdx, curNode.Level + 1);
+                            nodes[i] = cnode;
+                            if (!uniqueSet.Add(rNdx))
+                            {
+                                ++nodeCount;
+                                continue;
+                            }
+                            que.Enqueue(cnode);
+                        }
+                    }
+                    results.Add(new KeyValuePair<IndexNode, int>(rootNode, nodeCount));
+                }
+                return results.ToArray();
+            }
+            catch (Exception ex)
+            {
+                error = Utils.GetExceptionErrorString(ex);
+                return null;
+            }
+        }
 
         public KeyValuePair<IndexNode[], int> GetAncestors(int[] instanceNdxs, int maxLevel, out string error, ReferenceType refType = ReferenceType.Ancestors | ReferenceType.All)
         {
@@ -315,6 +421,58 @@ namespace ClrMDRIndex
                     totalCount += count;
                     if (count == 0) continue;
                     IndexNode[] refs = ReadReferences(br, offset, count, node.Level + 1, que);
+                    node.AddNodes(refs);
+                }
+
+                return new KeyValuePair<IndexNode[], int>(lst, totalCount);
+            }
+            catch (Exception ex)
+            {
+                error = Utils.GetExceptionErrorString(ex);
+                return new KeyValuePair<IndexNode[], int>(null, 0); ;
+            }
+        }
+
+        public KeyValuePair<IndexNode[], int> GetMappedAncestors(int[] instanceNdxs, int maxLevel, out string error, ReferenceType refType = ReferenceType.Ancestors | ReferenceType.All)
+        {
+            error = null;
+            try
+            {
+                IndexNode[] lst = new IndexNode[instanceNdxs.Length];
+
+                int level = 0;
+
+                int totalCount = instanceNdxs.Length;
+                Queue<IndexNode> que = new Queue<IndexNode>(instanceNdxs.Length);
+
+                var offAccessor = GetMapReader((ReferenceType.Ancestors & refType) != 0 ? RefFile.BwdOffsets : RefFile.FwdOffsets);
+                var refAccessor = GetMapReader((ReferenceType.Ancestors & refType) != 0 ? RefFile.BwdRefs : RefFile.FwdRefs);
+                for (int i = 0, icnt = instanceNdxs.Length; i < icnt; ++i)
+                {
+                    int ndx = instanceNdxs[i];
+                    (long offset, int count) = GetRefOffsetAndCount(offAccessor, ndx);
+                    totalCount += count;
+                    if (count == 0)
+                    {
+                        lst[i] = new IndexNode(ndx, level);
+                        continue;
+                    }
+                    IndexNode[] refs = ReadReferences(refAccessor, offset, count, level + 1, que);
+                    lst[i] = new IndexNode(ndx, level, refs);
+                }
+                ++level;
+                if (maxLevel <= level) return new KeyValuePair<IndexNode[], int>(lst, totalCount);
+
+                while (que.Count > 0)
+                {
+                    var node = que.Dequeue();
+                    if (node.Level >= maxLevel) continue;
+                    int ndx = node.Index;
+                    Debug.Assert(!node.HasReferences());
+                    (long offset, int count) = GetRefOffsetAndCount(offAccessor, ndx);
+                    totalCount += count;
+                    if (count == 0) continue;
+                    IndexNode[] refs = ReadReferences(refAccessor, offset, count, node.Level + 1, que);
                     node.AddNodes(refs);
                 }
 
@@ -373,6 +531,50 @@ namespace ClrMDRIndex
             }
         }
 
+        public KeyValuePair<IndexNode, int> GetMappedAncestors(int instanceNdx, int maxLevel, out string error, ReferenceType refType = ReferenceType.Ancestors | ReferenceType.All)
+        {
+            error = null;
+            try
+            {
+                int level = 0;
+
+                Queue<IndexNode> que = new Queue<IndexNode>(128);
+
+                var offAccessor = GetMapReader((ReferenceType.Ancestors & refType) != 0 ? RefFile.BwdOffsets : RefFile.FwdOffsets);
+                var refAccessor = GetMapReader((ReferenceType.Ancestors & refType) != 0 ? RefFile.BwdRefs : RefFile.FwdRefs);
+                (long offset, int count) = GetRefOffsetAndCount(offAccessor, instanceNdx);
+                if (count == 0)
+                {
+                    return new KeyValuePair<IndexNode, int>(new IndexNode(instanceNdx, level), 1);
+                }
+                int totalCount = count + 1;
+                IndexNode[] refs = ReadReferences(refAccessor, offset, count, level + 1, que);
+                var rootNode = new IndexNode(instanceNdx, level, refs);
+                HashSet<int> set = new HashSet<int>();
+                set.Add(rootNode.Index);
+                while (que.Count > 0)
+                {
+                    var node = que.Dequeue();
+                    if (node.Level >= maxLevel) continue;
+                    if (!set.Add(node.Index)) continue;
+                    int ndx = node.Index;
+                    Debug.Assert(!node.HasReferences());
+                    (offset, count) = GetRefOffsetAndCount(offAccessor, instanceNdx);
+                    if (count == 0) continue;
+                    totalCount += count;
+                    refs = ReadReferences(refAccessor, offset, count, node.Level + 1, que);
+                    node.AddNodes(refs);
+                }
+
+                return new KeyValuePair<IndexNode, int>(rootNode, totalCount);
+            }
+            catch (Exception ex)
+            {
+                error = Utils.GetExceptionErrorString(ex);
+                return new KeyValuePair<IndexNode, int>(null, 0); ;
+            }
+        }
+
         public int[] GetReferences(int instNdx, out string error, ReferenceType refType = ReferenceType.Ancestors | ReferenceType.All)
         {
             error = null;
@@ -386,7 +588,17 @@ namespace ClrMDRIndex
             return ReadReferences(br, offset, count);
         }
 
+        public int[] GetMappedReferences(int instNdx, out string error, ReferenceType refType = ReferenceType.Ancestors | ReferenceType.All)
+        {
+            error = null;
+            var offAccessor = GetMapReader((ReferenceType.Ancestors & refType) != 0 ? RefFile.BwdOffsets : RefFile.FwdOffsets);
+            var refAccessor = GetMapReader((ReferenceType.Ancestors & refType) != 0 ? RefFile.BwdRefs : RefFile.FwdRefs);
 
+            (long offset, int count) = GetRefOffsetAndCount(offAccessor, instNdx);
+            if (count == 0) return Utils.EmptyArray<int>.Value;
+
+            return ReadReferences(refAccessor, offset, count);
+        }
 
         #endregion queries
 
@@ -784,6 +996,8 @@ namespace ClrMDRIndex
                 for (int i = 0, icnt = (int)RefFile.Count; i < icnt; ++i)
                 {
                     _readers[i]?.Close();
+                    _views[i]?.Dispose();
+                    _maps[i]?.Dispose();
                 }
             }
 

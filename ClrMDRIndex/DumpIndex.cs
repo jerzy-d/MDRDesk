@@ -234,7 +234,6 @@ namespace ClrMDRIndex
             }
         }
 
-
         private bool LoadThreadBlockGraph(out string error)
         {
             error = null;
@@ -1117,9 +1116,11 @@ namespace ClrMDRIndex
                     {
                         var inst = instances[i];
                         if (!set.Add(inst)) continue;
-
-                        var ancestors = _instanceReferences.GetReferences(inst, out error, flag);
-
+                        int[] ancestors;
+                        if (Setup.MapRefReader)
+                            ancestors = _instanceReferences.GetMappedReferences(inst, out error, flag);
+                        else
+                            ancestors = _instanceReferences.GetReferences(inst, out error, flag);
 
                         for (int j = 0, jcnt = ancestors.Length; j < jcnt; ++j)
                         {
@@ -1173,7 +1174,11 @@ namespace ClrMDRIndex
                 return new ListingInfo(error);
             }
 
-            KeyValuePair<IndexNode, int> result = _instanceReferences.GetAncestors(instNdx, level, out error, flag);
+            KeyValuePair<IndexNode, int> result;
+            if (Setup.MapRefReader)
+                result = _instanceReferences.GetMappedAncestors(instNdx, level, out error, flag);
+            else
+                result = _instanceReferences.GetAncestors(instNdx, level, out error, flag);
 
             if (!string.IsNullOrEmpty(error) && error[0] != Constants.InformationSymbol)
             {
@@ -1199,7 +1204,12 @@ namespace ClrMDRIndex
                 return null;
             }
 
-            KeyValuePair<IndexNode, int> result = _instanceReferences.GetAncestors(instNdx, int.MaxValue, out error, type);
+            KeyValuePair<IndexNode, int> result;
+            if (Setup.MapRefReader)
+                result = _instanceReferences.GetMappedAncestors(instNdx, int.MaxValue, out error, type);
+            else
+                result = _instanceReferences.GetAncestors(instNdx, int.MaxValue, out error, type);
+
             if (error != null) return null;
             List<int> lst = new List<int>(result.Value);
             Queue<IndexNode> que = new Queue<IndexNode>(1024);
@@ -1236,7 +1246,12 @@ namespace ClrMDRIndex
             int[] typeInstances = GetTypeInstanceIndices(typeId, refType);
             if (typeInstances.Length < 1)
                 return new ListingInfo(Constants.InformationSymbolHeader + "No " + InstanceReferences.InstanceTypeString(refType) + " instances found for this type");
-            KeyValuePair<IndexNode, int>[] result = _instanceReferences.GetReferenceNodes(typeInstances, level, _instances, out error, refType);
+            KeyValuePair<IndexNode, int>[] result = null;
+            if (Setup.MapRefReader)
+                result = _instanceReferences.GetMappedReferenceNodes(typeInstances, level, out error, refType);
+            else
+                result = _instanceReferences.GetReferenceNodes(typeInstances, level, out error, refType);
+
             if (!string.IsNullOrEmpty(error) && error[0] != Constants.InformationSymbol)
             {
                 return new ListingInfo(error);
@@ -1249,7 +1264,11 @@ namespace ClrMDRIndex
             string error;
             if (typeInstances.Length < 1)
                 return new ListingInfo(Constants.InformationSymbolHeader + "No " + InstanceReferences.InstanceTypeString(refType) + " instances found for this type");
-            KeyValuePair<IndexNode, int>[] result = _instanceReferences.GetReferenceNodes(typeInstances, level, _instances, out error, refType);
+            KeyValuePair<IndexNode, int>[] result = null;
+            if (Setup.MapRefReader)
+                result = _instanceReferences.GetMappedReferenceNodes(typeInstances, level, out error, refType);
+            else
+                result = _instanceReferences.GetReferenceNodes(typeInstances, level, out error, refType);
             if (!string.IsNullOrEmpty(error) && error[0] != Constants.InformationSymbol)
             {
                 return new ListingInfo(error);
@@ -1596,7 +1615,11 @@ namespace ClrMDRIndex
                 var instNdx = GetInstanceIndex(addr);
                 if (instNdx >= 0)
                 {
-                    var ancestors = _instanceReferences.GetReferences(instNdx, out error, InstanceReferences.ReferenceType.Ancestors | InstanceReferences.ReferenceType.All);
+                    int[] ancestors;
+                    if (Setup.MapRefReader)
+                        ancestors = _instanceReferences.GetMappedReferences(instNdx, out error, InstanceReferences.ReferenceType.Ancestors | InstanceReferences.ReferenceType.All);
+                    else
+                        ancestors = _instanceReferences.GetReferences(instNdx, out error, InstanceReferences.ReferenceType.Ancestors | InstanceReferences.ReferenceType.All);
 
                     if (error != null && !Utils.IsInformation(error)) return null;
                     if (ancestors != null && ancestors.Length > 0)

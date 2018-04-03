@@ -303,7 +303,7 @@ namespace ClrMDRIndex
 			var freeTotalGenSize = new ulong[4];
 
 			// check unrooted
-			if (!hasUnrootedInfo)
+//			if (!hasUnrootedInfo)
 			{
 				for (int i = 0, icnt = instances.Length; i < icnt; ++i)
 				{

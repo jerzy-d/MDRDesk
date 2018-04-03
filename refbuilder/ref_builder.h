@@ -449,7 +449,10 @@ public:
 				if ((bwd_offs.size() % 10000) == 0) {
 					auto it = bwd_offs.begin() + dump_count;
 					auto dsz = bwd_offs.end() - it;
-					dump_tofile(hOffs, &*it, dsz * sizeof(uint64_t));
+					if (!dump_tofile(hOffs, &*it, dsz * sizeof(uint64_t))) {
+						CloseHandle(hOffs);
+						return false;
+					}
 					dump_count = bwd_offs.size();
 				}
 				off += bwd_counts[i] * sizeof(int);
@@ -458,11 +461,9 @@ public:
 
 			auto it = bwd_offs.begin() + dump_count;
 			auto dsz = bwd_offs.end() - it;
-			dump_tofile(hOffs, &*it, dsz * sizeof(uint64_t));
-
-
+			bool ok = dump_tofile(hOffs, &*it, dsz * sizeof(uint64_t));
 			CloseHandle(hOffs);
-			return true;
+			return ok;
 		}
 		catch (const std::exception& e) {
 			errors_ << L"EXCEPTION!!! save_bwref_offsets" << std::endl << e.what() << std::endl;

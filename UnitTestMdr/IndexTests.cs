@@ -522,7 +522,7 @@ namespace UnitTestMdr
         {
             try
             {
-                string dumpFilePath = @"D:\Jerzy\WinDbgStuff\Dumps\Analytics\Anavon\Eze.Analytics.Svc_160225_204724.AnavonCopy.dmp";
+                string dumpFilePath = @"C:\WinDbgStuff\Dumps\Analytics\Anavon\Eze.Analytics.Svc_160225_204724.AnavonCopy.dmp";
                 var version = Assembly.GetExecutingAssembly().GetName().Version;
                 var execpath = Assembly.GetExecutingAssembly().CodeBase;
                 Stopwatch stopWatch = new Stopwatch();
@@ -1042,7 +1042,11 @@ namespace UnitTestMdr
 
                 using (referencer)
                 {
-                    var kv = referencer.GetAncestors(typeInstanceNdxs, 2, out error);
+                    KeyValuePair<IndexNode[], int> kv;
+                    if (Setup.MapRefReader)
+                        kv = referencer.GetMappedAncestors(typeInstanceNdxs, 2, out error);
+                    else
+                        kv = referencer.GetAncestors(typeInstanceNdxs, 2, out error);
                 }
                 Assert.IsNull(error);
             }
@@ -1091,9 +1095,13 @@ namespace UnitTestMdr
 //			(bool countsSame, bool offse3tsSame) = referencer.TestOffsets();
 			using (referencer)
 			{
-				var kv = referencer.GetAncestors(lst.ToArray(), 2, out error);
-			}
-			Assert.IsNull(error);
+                KeyValuePair<IndexNode[], int> kv;
+                if (Setup.MapRefReader)
+    				kv = referencer.GetMappedAncestors(lst.ToArray(), 2, out error);
+                else
+                    kv = referencer.GetAncestors(lst.ToArray(), 2, out error);
+            }
+            Assert.IsNull(error);
 
 		}
 
