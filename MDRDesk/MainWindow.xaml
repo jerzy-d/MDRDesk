@@ -1049,7 +1049,10 @@
                         <MenuItem x:Name="ExtrasGetIpAddressValue" Header="Get IP Address Int64 Value..."  Click="ExtrasGetIpAddressValueClicked"/>
                         <MenuItem x:Name="ExtrasGetIpValueAddress" Header="Get IP Int64 Value Address..."  Click="ExtrasGetIpValueAddressClicked"/>
                         <Separator></Separator>
-                        <MenuItem x:Name="ExtrasTestInstanceValues" Header="Test"  Click="ExtrasTestClicked"/>
+                        <MenuItem x:Name="ExtrasTests" Header="Tests">
+                            <MenuItem x:Name="ExtrasTestsTypeCounts" Header="Type Counts"  Click="ExtrasTestsTypeCountsCmpClicked"/>
+                            <MenuItem x:Name="ExtrasTestsNetExtCounts" Header="Netext Type Counts"  Click="ExtrasTestsNetextTypeCountsCmpClicked"/>
+                        </MenuItem>
                         <Separator></Separator>
                         <MenuItem x:Name="ExtrasCrashDumpSearches" Header="Crash Dump Searches">
                             <MenuItem x:Name="ExtrasCrashDumpMultiSearch" Header="Search instance field values in crash dumps..."  Click="ExtrasCrashDumpMultiSearchClicked"/>

@@ -131,12 +131,12 @@ namespace ClrMDRIndex
             _errors = new ConcurrentBag<string>();
         }
 
-        public static DumpIndex OpenIndexInstanceReferences(Version version, string dumpPath, int runtimeNdx,
-            out string error, IProgress<string> progress = null)
+        public static DumpIndex OpenIndexInstanceReferences(Version version, string dumpPath, int runtimeNdx, out string error, IProgress<string> progress = null)
         {
             error = null;
             try
             {
+                string msgHeader = "Opening " + Utils.GetPathLastFolder(dumpPath) + ": ";
                 var index = new DumpIndex(dumpPath, runtimeNdx, IndexType.InstanceRefrences);
                 index._dumpInfo = index.LoadDumpInfo(out error);
                 if (error != null) return null;
@@ -151,13 +151,13 @@ namespace ClrMDRIndex
 
                 }
 
-                if (!index.LoadInstanceData(out error)) return null;
+                if (!index.LoadInstanceData(msgHeader, out error, progress)) return null;
                 if (InstanceReferences.InstanceReferenceFilesAvailable(runtimeNdx, index._fileMoniker, out error))
                 {
                     index._instanceReferences = new InstanceReferences(index._instances, runtimeNdx, index._fileMoniker);
                 }
 
-                if (!index.InitDump(out error, progress, index.Instances)) return null;
+                if (!index.InitDump(out error, msgHeader, progress, index.Instances)) return null;
                 index._indexProxy = new IndexProxy(index.Dump, index._instances, index._instanceTypes, index._typeNames, index.TypeKinds,
                     index._roots, index._fileMoniker);
                 return index;
@@ -169,20 +169,23 @@ namespace ClrMDRIndex
             }
         }
 
-        private bool LoadInstanceData(out string error)
+        private bool LoadInstanceData(string msgHeader, out string error, IProgress<string> progress = null)
         {
             error = null;
             try
             {
+                progress?.Report(msgHeader + "loadng instance data...");
                 string path = _fileMoniker.GetFilePath(_currentRuntimeIndex, Constants.MapInstancesFilePostfix);
                 _instances = Utils.ReadUlongArray(path, out error);
                 if (error != null) return false;
+                progress?.Report(msgHeader + "loadng type data...");
                 path = _fileMoniker.GetFilePath(_currentRuntimeIndex, Constants.MapInstanceTypesFilePostfix);
                 _instanceTypes = Utils.ReadIntArray(path, out error);
                 if (error != null) return false;
 
                 // types/instances map
                 //
+                progress?.Report(msgHeader + "loadng type/instance map...");
                 path = _fileMoniker.GetFilePath(_currentRuntimeIndex, Constants.MapTypeInstanceMapFilePostfix);
                 _typeInstanceMap = Utils.ReadIntArray(path, out error);
                 if (error != null) return false;
@@ -192,17 +195,19 @@ namespace ClrMDRIndex
 
                 // segments -- generation info
                 //
+                progress?.Report(msgHeader + "loadng gc generation info...");
                 path = _fileMoniker.GetFilePath(_currentRuntimeIndex, Constants.MapSegmentInfoFilePostfix);
-
                 _segments = ClrtSegment.ReadSegments(path, out _segmentInfoUnrooted, out error);
 
                 // roots
                 //
+                progress?.Report(msgHeader + "loadng roots data...");
                 _roots = ClrtRootInfo.Load(_currentRuntimeIndex, _fileMoniker, out error);
                 if (error != null) return false;
 
                 // typenames
                 //
+                progress?.Report(msgHeader + "loading type names...");
                 path = _fileMoniker.GetFilePath(_currentRuntimeIndex, Constants.TxtTypeNamesFilePostfix);
                 _typeNames = Utils.GetStringListFromFile(path, out error);
                 if (error != null) return false;
@@ -220,6 +225,7 @@ namespace ClrMDRIndex
 
                 // threads and blocks
                 //
+                progress?.Report(msgHeader + "loadng thread data...");
                 if (!LoadThreadBlockGraph(out error))
                 {
                     return false;
@@ -784,18 +790,18 @@ namespace ClrMDRIndex
             return result;
         }
 
-        public KeyValuePair<int, ulong[]>[] GetTypeRealAddresses(int[] typeIds, out int totalCount)
-        {
-            totalCount = 0;
-            KeyValuePair<int, ulong[]>[] result = new KeyValuePair<int, ulong[]>[typeIds.Length];
-            for (int i = 0, icnt = typeIds.Length; i < icnt; ++i)
-            {
-                var addrAry = GetTypeRealAddresses(typeIds[i]);
-                totalCount += addrAry.Length;
-                result[i] = new KeyValuePair<int, ulong[]>(typeIds[i], addrAry);
-            }
-            return result;
-        }
+        //public KeyValuePair<int, ulong[]>[] GetTypeRealAddresses(int[] typeIds, out int totalCount)
+        //{
+        //    totalCount = 0;
+        //    KeyValuePair<int, ulong[]>[] result = new KeyValuePair<int, ulong[]>[typeIds.Length];
+        //    for (int i = 0, icnt = typeIds.Length; i < icnt; ++i)
+        //    {
+        //        var addrAry = GetTypeRealAddresses(typeIds[i]);
+        //        totalCount += addrAry.Length;
+        //        result[i] = new KeyValuePair<int, ulong[]>(typeIds[i], addrAry);
+        //    }
+        //    return result;
+        //}
 
         public ValueTuple<string, int, ClrElementKind, string[], int[], ClrElementKind[], string[]> GetTypeInfo(string typeName, out string error)
         {
@@ -3111,6 +3117,32 @@ namespace ClrMDRIndex
             }
         }
 
+        public ValueTuple<int, int[], string[]> GetTypeCounts(out string error)
+        {
+            error = null;
+            try
+            {
+                int count = 0;
+                var typeNames = new string[_typeInstanceOffsets.Length - 1];
+                var typeCounts = new int[_typeInstanceOffsets.Length - 1];
+                for (int i = 0, icnt = _typeInstanceOffsets.Length-1; i < icnt; ++i)
+                {
+                    var kv = _typeInstanceOffsets[i];
+                    var cnt = _typeInstanceOffsets[i + 1].Value - kv.Value;
+                    typeCounts[i] = cnt;
+                    count += cnt;
+                    typeNames[i] = _typeNames[kv.Key];
+                }
+                return (count, typeCounts, typeNames);
+            }
+            catch (Exception ex)
+            {
+                error = Utils.GetExceptionErrorString(ex);
+                return (-1, null, null);
+            }
+        }
+
+
         public ValueTuple<double[], string[]> GetTypeSizesWithNames(out string error)
         {
             try
@@ -4078,15 +4110,16 @@ namespace ClrMDRIndex
 
         #region dump
 
-        private bool InitDump(out string error, IProgress<string> progress, ulong[] instances = null)
+        private bool InitDump(out string error, string msgHeader, IProgress<string> progress, ulong[] instances = null)
         {
             error = null;
             try
             {
                 _clrtDump = new ClrtDump(DumpPath);
+                progress?.Report(msgHeader + "initializing the crash dump...");
                 if (_clrtDump.Init(out error, instances))
                 {
-                    _clrtDump.WarmupHeap();
+                    //_clrtDump.WarmupHeap();
                     return true;
                 }
                 return false;
@@ -4141,6 +4174,70 @@ namespace ClrMDRIndex
             }
         }
 
+        public static bool GetNetExtObjects(string netExtFilePath, string outPath, out string error)
+        {
+            const string classLineBegin = " {\"00";
+            SortedDictionary<string, int> dct = new SortedDictionary<string, int>(StringComparer.Ordinal);
+            error = null;
+            StreamReader rd = null;
+            StreamWriter sw = null;
+            try
+            {
+                int totalCnt = 0;
+                int dupCnt = 0;
+                rd = new StreamReader(netExtFilePath);
+                string ln = rd.ReadLine();
+                while (ln != null)
+                {
+                    if (!ln.StartsWith(classLineBegin)) goto NEXT_LINE;
+
+                    int pos = Utils.SkipNonWhites(ln, classLineBegin.Length);
+                    pos = Utils.SkipWhites(ln, pos);
+                    int endPos = Utils.SkipNonWhites(ln, pos);
+                    string typeName = ln.Substring(pos, endPos - pos);
+                    pos = Utils.SkipWhites(ln, endPos);
+                    ++pos;
+                    endPos = Utils.SkipDecimalDigits(ln, pos);
+                    int cnt = Int32.Parse(ln.Substring(pos, endPos - pos));
+                    totalCnt += cnt;
+                    int dctCnt;
+                    if (dct.TryGetValue(typeName, out dctCnt))
+                    {
+                        dct[typeName] = dctCnt + cnt;
+                        dupCnt += cnt;
+                    }
+                    else
+                    {
+                        dct.Add(typeName, cnt);
+                    }
+
+                    NEXT_LINE:
+                    ln = rd.ReadLine();
+                }
+                rd.Close();
+                rd = null;
+
+                sw = new StreamWriter(outPath);
+                sw.WriteLine("### TOTAL COUNT: " + Utils.CountString(totalCnt) + "  DUP COUNT: " + Utils.CountString(dupCnt));
+                foreach (var kv in dct)
+                {
+                    sw.WriteLine("[" + kv.Value.ToString() + "] " + kv.Key);
+                }
+
+                return true;
+            }
+            catch(Exception ex)
+            {
+                error = Utils.GetExceptionErrorString(ex);
+                return false;
+            }
+            finally
+            {
+                rd?.Close();
+                sw?.Close();
+            }
+        }
+
         #endregion testing
 
         #region dispose
@@ -4163,6 +4260,7 @@ namespace ClrMDRIndex
             {
                 // Free any other managed objects here.
                 //
+                _instanceReferences?.Dispose();
                 _clrtDump?.Dispose();
             }
 

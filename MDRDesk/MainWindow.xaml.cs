@@ -1492,15 +1492,66 @@ namespace MDRDesk
             }
         }
 
-        private void ExtrasTestClicked(object sender, RoutedEventArgs e)
+        private void ExtrasTestsTypeCountsCmpClicked(object sender, RoutedEventArgs e)
         {
-            FolderSelector dlg = new FolderSelector("Select MdrDesk Index Folder", @"C:\WinDbgStuff\Dumps", ".map") { Owner = this };
-            dlg.ShowDialog();
+            if (!GuiUtils.IsIndexAvailable(this, null)) return; // TODO JRD - show message
+            StreamWriter sw = null;
+            try
+            {
+                string error;
+                (int totalCount, int[] counts, string[] typenames) = CurrentIndex.GetTypeCounts(out error);
+                sw = new StreamWriter(CurrentIndex.OutputFolder + Path.DirectorySeparatorChar + CurrentIndex.DumpFileName + ".~TypeCounts.txt");
+                sw.WriteLine("### TOTAL COUNT: " + Utils.CountString(totalCount));
+                for (int i = 0, icnt = counts.Length; i < icnt; ++i)
+                {
+                    sw.WriteLine("[" + counts[i].ToString() + "] " + typenames[i]);
+                }
+
+            }
+            catch(Exception ex)
+            {
+                GuiUtils.ShowError(ex, this);
+            }
+            finally
+            {
+                sw?.Close();
+            }
+
         }
 
-#endregion Extras
+        private void ExtrasTestsNetextTypeCountsCmpClicked(object sender, RoutedEventArgs e)
+        {
+            string d1 = Environment.GetFolderPath(Environment.SpecialFolder.Personal, Environment.SpecialFolderOption.None);
+            string d2 = Environment.GetFolderPath(Environment.SpecialFolder.Cookies, Environment.SpecialFolderOption.None);
+            string d3 = Environment.GetFolderPath(Environment.SpecialFolder.InternetCache, Environment.SpecialFolderOption.None);
+            string d4 = Environment.GetFolderPath(Environment.SpecialFolder.LocalizedResources, Environment.SpecialFolderOption.None);
+            string d5 = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments, Environment.SpecialFolderOption.None);
+            string d6 = Environment.GetFolderPath(Environment.SpecialFolder.Templates, Environment.SpecialFolderOption.None);
+            string d7 = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile, Environment.SpecialFolderOption.None);
 
-#region File Reports
+            string initialDir = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData, Environment.SpecialFolderOption.None) + @"\Temp";
+            string path = GuiUtils.SelectFile(string.Format("*.{0}", "tmp"), string.Format("Temp files (*.tmp)|*.tmp"), initialDir);
+            if (path == null) return;
+            string outPath = null;
+            if (!GuiUtils.IsIndexAvailable(this, null))
+            {
+                outPath = Setup.DumpsFolder + Path.DirectorySeparatorChar + Path.GetFileName(path) + ".NetExtTypes.txt";
+            }
+            else
+            {
+                outPath = CurrentIndex.OutputFolder + Path.DirectorySeparatorChar + CurrentIndex.DumpFileName + ".~NetExtTypes.txt";
+            }
+            string error;
+            if (!DumpIndex.GetNetExtObjects(path, outPath, out error))
+            {
+                GuiUtils.ShowError(error, this);
+            }
+        }
+    
+
+        #endregion Extras
+
+        #region File Reports
 
         bool IsCsv(object sender)
         {
@@ -2650,6 +2701,8 @@ namespace MDRDesk
             var wnd = new CrashDumpSearch();
             wnd.Show();
         }
+
+ 
     }
 
     public static class MenuCommands

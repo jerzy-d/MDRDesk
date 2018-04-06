@@ -374,13 +374,13 @@ public:
 		const int off_buf_size{ 2048 };
 		const int off_read_size{ off_buf_size * sizeof(uint64_t) };
 		int fwdndx{ 0 };
-
+		uint64_t* bwd_offs{ nullptr };
 		try {
-			std::vector<uint64_t> bwd_offs;
-			if (!save_bwref_offsets(path_bwd_offs, addr_cnt, bwd_counts, bwd_offs)) {
+			bwd_offs = save_bwref_offsets(path_bwd_offs, addr_cnt, bwd_counts);
+			if (bwd_offs == nullptr) {
 				return false;
 			}
-			if (!create_file_with_size(path_bwd_refs, bwd_offs.back()*sizeof(int32_t))) {
+			if (!create_file_with_size(path_bwd_refs, bwd_offs[addr_cnt])) {
 				return false;
 			}
 
@@ -421,12 +421,14 @@ public:
 			}
 
 		EXIT:
+			delete bwd_offs;
 			release_file_mapping(hBwdRefs, hBwdRefsMap, bwd_map_ptr);
 			release_file_mapping(hFwdRefs, hFwdRefsMap, fwd_map_refs_ptr);
 			release_file_mapping(hFwdOffs, hFwdOffsMap, fwd_map_offs_ptr);
 			return ok;
 		}
 		catch (const std::exception& e) {
+			delete bwd_offs;
 			release_file_mapping(hBwdRefs, hBwdRefsMap, bwd_map_ptr);
 			release_file_mapping(hFwdRefs, hFwdRefsMap, fwd_map_refs_ptr);
 			release_file_mapping(hFwdOffs, hFwdOffsMap, fwd_map_offs_ptr);
@@ -469,6 +471,31 @@ public:
 			errors_ << L"EXCEPTION!!! save_bwref_offsets" << std::endl << e.what() << std::endl;
 			CloseHandle(hOffs);
 			return false;
+		}
+	}
+
+	static uint64_t* save_bwref_offsets(const wchar_t* path_bwd_offs, int addr_cnt, int* bwd_counts) {
+		HANDLE hOffs = INVALID_HANDLE_VALUE;
+		try {
+			uint64_t* boffs = new uint64_t[addr_cnt + 1];
+			uint64_t off = 0;
+			size_t dump_count = 0;
+			for (int i = 0; i < addr_cnt; ++i) {
+				boffs[i] = off;
+				off += bwd_counts[i] * sizeof(int);
+			}
+			boffs[addr_cnt] = off;
+
+			hOffs = CreateFile(path_bwd_offs, GENERIC_WRITE, 0, NULL, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL);
+			if (!is_valid_handle(hOffs)) { return false; }
+			bool ok = dump_tofile(hOffs, boffs, (addr_cnt + 1) * sizeof(uint64_t));
+			CloseHandle(hOffs);
+			return ok ? boffs : nullptr;
+		}
+		catch (const std::exception& e) {
+			errors_ << L"EXCEPTION!!! save_bwref_offsets" << std::endl << e.what() << std::endl;
+			CloseHandle(hOffs);
+			return nullptr;
 		}
 	}
 

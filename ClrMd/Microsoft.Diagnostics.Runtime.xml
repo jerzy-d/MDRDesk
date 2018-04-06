@@ -756,6 +756,13 @@
             <param name="attachFlag">The type of attach requested for the target process.</param>
             <returns>A DataTarget instance.</returns>
         </member>
+        <member name="M:Microsoft.Diagnostics.Runtime.DataTarget.CreateSnapshotAndAttach(System.Int32)">
+            <summary>
+            Attaches to a snapshot process (see https://msdn.microsoft.com/en-us/library/dn457825(v=vs.85).aspx).
+            </summary>
+            <param name="pid">The process ID of the process to attach to.</param>
+            <returns>A DataTarget instance.</returns>
+        </member>
         <member name="P:Microsoft.Diagnostics.Runtime.DataTarget.DataReader">
             <summary>
             The data reader for this instance.

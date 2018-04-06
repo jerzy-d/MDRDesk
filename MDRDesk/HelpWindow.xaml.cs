@@ -74,6 +74,8 @@ namespace MDRDesk
             _markdown.Heading4Style = h4Style;
             var h5Style = this.TryFindResource("H5Style") as Style;
             _markdown.Heading5Style = h5Style;
+            var h6Style = this.TryFindResource("H6Style") as Style;
+            _markdown.Heading5Style = h6Style;
             var linkStyle = this.TryFindResource("LinkStyle") as Style;
             _markdown.LinkStyle = linkStyle;
 

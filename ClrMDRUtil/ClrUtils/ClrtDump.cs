@@ -177,7 +177,7 @@ namespace ClrMDRIndex
 		public int WarmupHeap()
 		{
 			var heap = Heap;
-			List<ClrType> lst = new List<ClrType>(1000000);
+            int count = 0;
 			for (int i = 0, icnt = heap.Segments.Count; i < icnt; ++i)
 			{
 				var seg = heap.Segments[i];
@@ -185,11 +185,11 @@ namespace ClrMDRIndex
 				while (addr != 0UL)
 				{
 					var clrType = heap.GetObjectType(addr);
-					lst.Add(clrType);
+                    ++count;
 					addr = seg.NextObject(addr);
 				}
 			}
-			return lst.Count;
+			return count;
 		}
 
 		public ClrtDump Clone(out string error)
