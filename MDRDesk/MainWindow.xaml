@@ -1093,7 +1093,7 @@
                         <RowDefinition Height="50*"/>
                         <RowDefinition Height="50*"/>
                     </Grid.RowDefinitions>
-                    <Label Grid.Row="0" Content="Type Display"  FontFamily="Arial" FontSize="10" FontStyle="Italic" Foreground="Blue"/>
+                    <Label Grid.Row="0" Content="Type Display"  FontFamily="Arial" FontSize="10" FontStyle="Italic" Foreground="DarkGray" FontWeight="Black"/>
                     <ComboBox x:Name="TypeDisplayMode"  Grid.Row="1" IsEditable="False" FontFamily="Arial" FontSize="10" Background="LightGray" FontWeight="Bold" BorderThickness="0" SelectionChanged="TypeDisplayModeChanged" Style="{StaticResource ComboBoxFlatStyle}">
                         <ComboBoxItem Content="Namespace/Class"></ComboBoxItem>
                         <ComboBoxItem Content="Class/Namespace"></ComboBoxItem>

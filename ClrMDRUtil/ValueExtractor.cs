@@ -341,12 +341,24 @@ namespace ClrMDRIndex
             return formatSpec == null ? dt.ToString(CultureInfo.InvariantCulture) : dt.ToString(formatSpec);
         }
 
-        //public static DateTime GetDateTime(ulong addr, ClrInstanceField fld)
-        //{
-        //    var data = (ulong)fld.Type.Fields[0].GetValue(addr, true);
-        //    data = data & TicksMask;
-        //    return DateTime.FromBinary((long)data);
-        //}
+
+        /// <summary>
+        /// Get value of DateTimeField given enclosing object address.
+        /// </summary>
+        /// <param name="addr">Enclosing object address.</param>
+        /// <param name="fld">DateTime field.</param>
+        /// <param name="intern">Is enclosing object of value type (struct).</param>
+        /// <param name="formatSpec">DateTime string format, optional.</param>
+        /// <returns></returns>
+        public static string DateTimeValue(ulong addr, ClrInstanceField fld, bool intern, string formatSpec = null)
+        {
+            addr = fld.GetAddress(addr, intern);
+            var data = (ulong)fld.Type.Fields[0].GetValue(addr, true, false);
+            data = data & TicksMask;
+            var dt = DateTime.FromBinary((long)data);
+            return formatSpec == null ? dt.ToString(CultureInfo.InvariantCulture) : dt.ToString(formatSpec);
+        }
+
 
         public static string GetDateTimeValue(ulong addr, ClrInstanceField fld, bool internalPtr, string formatSpec = null)
         {
@@ -392,6 +404,18 @@ namespace ClrMDRIndex
 
         #endregion System.Datetime
 
+        #region System.TimeSpan
+
+        public static string TimeSpanValueString(ulong addr, ClrInstanceField fld, bool intr) // TODO JRD -- check if this works
+        {
+            ulong fldAddr = fld.GetAddress(addr, intr);
+            var data = (long)fld.Type.Fields[0].GetValue(fldAddr, true);
+            var ts = TimeSpan.FromTicks(data);
+            return ts.ToString("c");
+        }
+
+        #endregion System.TimeSpan
+
         //
         // System.TimeSpan
         //
@@ -429,13 +453,6 @@ namespace ClrMDRIndex
             return TimeSpan.FromTicks(data);
         }
 
-        public static string GetTimeSpanValue(ulong addr, ClrInstanceField fld, bool intr) // TODO JRD -- check if this works
-        {
-            ulong fldAddr = fld.GetAddress(addr, intr);
-            var data = (long)fld.Type.Fields[0].GetValue(fldAddr, true);
-            var ts = TimeSpan.FromTicks(data);
-            return ts.ToString("c");
-        }
 
         public static TimeSpan GetTimeSpan(ulong addr, ClrInstanceField fld, bool intr) // TODO JRD -- check if this works
         {
@@ -1462,15 +1479,15 @@ namespace ClrMDRIndex
             var specKind = TypeExtractor.GetSpecialKind(kind);
             if (specKind != ClrElementKind.Unknown)
             {
-                fldAddr = fld.GetAddress(addr, true);
+                fldAddr = intern ? fld.GetAddress(addr, true) : addr;
                 switch (specKind)
                 {
                     case ClrElementKind.Guid:
-                        return GuidValue(fldAddr, fld);
+                        return GuidValue(fldAddr, fld);   // TODO JRD
                     case ClrElementKind.DateTime:
-                        return DateTimeValue(fldAddr, fld);
+                        return DateTimeValue(addr, fld, intern);
                     case ClrElementKind.TimeSpan:
-                        return TimeSpanValue(fldAddr, fld);
+                        return TimeSpanValueString(addr, fld, intern);
                     case ClrElementKind.Decimal:
                         return DecimalValue(fldAddr, fld);
                     case ClrElementKind.Exception:
@@ -1645,9 +1662,7 @@ namespace ClrMDRIndex
         public static ValueTuple<string, InstanceValue> GetInstanceValue(IndexProxy ndxProxy, ClrHeap heap, ulong decoratedAddr, int fldNdx, InstanceValue parent)
         {
             var addr = Utils.RealAddress(decoratedAddr);
-            var typeInfo = TypeExtractor.TryGetRealType(heap, addr);
-            var clrType = typeInfo.Key;
-            var kind = typeInfo.Value;
+            (ClrType clrType, ClrElementKind kind, string realName) = TypeExtractor.TryGetRealType(heap, addr);
             var specKind = TypeExtractor.GetSpecialKind(kind);
             var typeId = ndxProxy.GetTypeIdAtAddr(addr);
             if (typeId == Constants.InvalidIndex) typeId = ndxProxy.GetTypeId(clrType.Name);
@@ -1718,9 +1733,7 @@ namespace ClrMDRIndex
             string error;
             InstanceValue[] fldValues;
             var addr = Utils.RealAddress(decoratedAddr);
-            var typeInfo = TypeExtractor.TryGetRealType(heap, addr);
-            var clrType = typeInfo.Key; // TODO JRD if clrType == null ??
-            var kind = typeInfo.Value;
+            (ClrType clrType, ClrElementKind kind, string realName) = TypeExtractor.TryGetRealType(heap, addr);
             var specKind = TypeExtractor.GetSpecialKind(kind);
             var typeId = ndxProxy.GetTypeIdAtAddr(addr);
             if (typeId == Constants.InvalidIndex) typeId = ndxProxy.GetTypeId(clrType.Name);

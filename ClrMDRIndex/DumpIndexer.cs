@@ -22,7 +22,9 @@ namespace ClrMDRIndex
             JustInstanceRefs = 1,
         }
 
-        //public const int MaxInstanceshandled = 268,435,450;
+        /// <summary>
+        /// This is the maximum number of object instances on the heap we can handle.
+        /// </summary>
         public const int MAX_ITEM_COUNT = 268435456 - 64;
 
 
@@ -30,11 +32,10 @@ namespace ClrMDRIndex
         /// Files and directories helper.
         /// </summary>
         private DumpFileMoniker _fileMoniker;
-        public string AdhocFolder => _fileMoniker.OutputFolder;
-        public string OutputFolder => AdhocFolder;
-        public string IndexFolder => _fileMoniker.MapFolder;
-        public string DumpPath => _fileMoniker.Path;
-        public string DumpFileName => _fileMoniker.FileName;
+        public string AdhocFolder => _fileMoniker.OutputFolder; // auxiliary directory
+        public string IndexFolder => _fileMoniker.MapFolder; // index directory path
+        public string DumpPath => _fileMoniker.Path; // full path of the crash dump file
+        public string DumpFileName => _fileMoniker.FileName; // the crash dump file name, no path
 
         private int[] _instanceCount;
         private int[] _notIncludedCount;
@@ -399,7 +400,7 @@ namespace ClrMDRIndex
 
                         (string[] typeNames, int instanceCount, int freeCount, int notIncludedCount, int nullCount) =
                             GetTypeNames3(heap, out error);
-                        Debug.Assert(error == null);
+                        if (error != null) return false;
                         _typeCount[r] = typeNames.Length; // for general info dump
                         _instanceCount[r] = instanceCount;
                         _notIncludedCount[r] = notIncludedCount;
@@ -579,306 +580,6 @@ namespace ClrMDRIndex
                 }
             }
             return count;
-        }
-
-        public static ulong[] GetHeapAddressesCount(ClrHeap heap)
-        {
-            int count = 0;
-            var segs = heap.Segments;
-            for (int i = 0, icnt = segs.Count; i < icnt; ++i)
-            {
-                var seg = segs[i];
-                ulong addr = seg.FirstObject;
-                while (addr != 0ul)
-                {
-                    ++count;
-                    addr = seg.NextObject(addr);
-                }
-            }
-            ulong[] ary = new ulong[count];
-            int aryNdx = 0;
-            for (int i = 0, icnt = segs.Count; i < icnt; ++i)
-            {
-                var seg = segs[i];
-                ulong addr = seg.FirstObject;
-                while (addr != 0ul)
-                {
-                    ary[aryNdx++] = addr;
-                    addr = seg.NextObject(addr);
-                }
-            }
-
-            return ary;
-        }
-
-        public static Instances GetHeapAddresses(ClrHeap heap, out ClrtSegment[] segments, out SortedDictionary<string, List<ClrType>> typeDct)
-        {
-            typeDct = new SortedDictionary<string, List<ClrType>>();
-            int count = 0;
-            ulong pointerSize = (ulong)heap.PointerSize;
-            var segs = heap.Segments;
-            segments = new ClrtSegment[segs.Count];
-            ulong[][] segAddrs = new ulong[segs.Count][];
-            List<ulong> segAddrLst = new List<ulong>(1024 * 1024 * 10);
-            bool canWalkHeap = heap.CanWalkHeap;
-            if (canWalkHeap)
-            {
-                for (int i = 0, icnt = segs.Count; i < icnt; ++i)
-                {
-                    var seg = segs[i];
-                    ulong addr = seg.FirstObject;
-                    ulong end = seg.CommittedEnd;
-                    ulong segFirst = addr;
-                    ulong segLast = addr;
-                    int segFirstInst = count;
-                    int segLastInst = count;
-                    if (addr == 0) ++count;
-                    bool firstbad = addr == 0 ? true : false;
-                    int badcount = (addr == 0) ? 1 : 0;
-                    if (addr != 0)
-                    {
-                        ClrType tp = heap.GetObjectType(addr);
-                        segAddrLst.Add(addr);
-                        AddClrType(typeDct, tp);
-                    }
-
-                    while (addr != 0ul)
-                    {
-                        ClrType tp;
-                        addr = seg.NextObject(addr, out tp);
-                        if (addr != 0)
-                        {
-                            segAddrLst.Add(addr);
-                            segLastInst = count;
-                            segLast = addr;
-                            ++count;
-                            AddClrType(typeDct, tp);
-                        }
-                    }
-                    segments[i] = new ClrtSegment(seg, segFirst, segLast, segFirstInst, segLastInst);
-                    segAddrs[i] = segAddrLst.ToArray();
-                    segAddrLst.Clear();
-                }
-
-            }
-            else
-            {
-                for (int i = 0, icnt = segs.Count; i < icnt; ++i)
-                {
-                    var seg = segs[i];
-
-                    ulong first = seg.FirstObject;
-                    ulong end = seg.CommittedEnd;
-                    ulong addr = first;
-                    addr = TryFindNextValidAddress(heap, addr, end, pointerSize);
-                    // save some segment info
-                    ulong segFirst = addr;
-                    ulong segLast = addr;
-                    int segFirstInst = count;
-                    int segLastInst = count;
-                    if (addr == 0) ++count;
-                    bool firstbad = addr == 0 ? true : false;
-                    int badcount = (addr == 0) ? 1 : 0;
-                    if (addr != 0) segAddrLst.Add(addr);
-
-                    while (addr != 0ul)
-                    {
-                        var newAddr = seg.NextObject(addr);
-                        if (newAddr == 0)
-                        {
-                            newAddr = TryFindNextValidAddress(heap, addr + pointerSize, end, pointerSize);
-                        }
-                        addr = newAddr;
-                        if (addr != 0)
-                        {
-                            segAddrLst.Add(addr);
-                            segLastInst = count;
-                            segLast = addr;
-                            ++count;
-                         }
-                    }
-                    segments[i] = new ClrtSegment(seg, segFirst, segLast, segFirstInst, segLastInst);
-                    segAddrs[i] = segAddrLst.ToArray();
-                    segAddrLst.Clear();
-                }
-            }
-            segAddrLst = null;
-            return new Instances(segAddrs);
-        }
-
-        private static void AddClrType(SortedDictionary<string, List<ClrType>> typeDc, ClrType tp)
-        {
-            string tpName = tp.Name;
-            List<ClrType> lst;
-            if (typeDc.TryGetValue(tpName,out lst))
-            {
-                bool found = false;
-                for (int i = 0, icnt = lst.Count; i < icnt; ++i)
-                {
-                    if (tp == lst[i]) { found = true; break; }
-                }
-                if (!found) lst.Add(tp);
-            }
-            else
-            {
-                typeDc.Add(tpName, new List<ClrType>() { tp });
-            }
-        }
-
-
-        //static public ValueTuple<ulong[],int> GetInstances(ClrHeap heap, out string error)
-        //{
-        //    error = null;
-        //    try
-        //    {
-        //        const int BUFF_COUNT = 1024 * 1024 * 4;
-        //        var segs = heap.Segments;
-        //        int count = 0, buffCount = 0;
-        //        ulong[] addr_buf = new ulong[BUFF_COUNT];
-        //        List<ulong[]> buffLst = new List<ulong[]>(100);
-        //        buffLst.Add(addr_buf);
-        //        int notIncludedCount = 0;
-        //        ClrtSegment[] mysegs = new ClrtSegment[segs.Count];
-        //        for (int i = 0, icnt = segs.Count; i < icnt; ++i)
-        //        {
-        //            var genCounts = new int[3];
-        //            var genSizes = new ulong[3];
-        //            var genFreeCounts = new int[3];
-        //            var genFreeSizes = new ulong[3];
-        //            var seg = segs[i];
-        //            ulong addr = seg.FirstObject;
-        //            while (addr != 0ul)
-        //            {
-        //                var clrType = heap.GetObjectType(addr);
-        //                if (clrType == null) goto NEXT_OBJECT;
-        //                if (count >= DumpIndexer.MaxInstanceshandled)
-        //                {
-
-        //                    break;
-        //                }
-        //                ++count;
-        //                addr_buf[buffCount++] = addr;
-        //                if (buffCount == BUFF_COUNT)
-        //                {
-        //                    addr_buf = new ulong[BUFF_COUNT];
-        //                    buffLst.Add(addr_buf);
-        //                    buffCount = 0;
-        //                }
-        //                if (count > DumpIndexer.MaxInstanceshandled)
-        //                    break;
-        //                NEXT_OBJECT:
-        //                addr = seg.NextObject(addr);
-        //            }
-        //        }
-        //        ulong[] addresses = new ulong[count];
-        //        int off = 0;
-        //        for (int i = 0, icnt = buffLst.Count; i < icnt; ++i)
-        //        {
-        //            int toCopy = Math.Min(BUFF_COUNT, count);
-        //            Array.Copy(buffLst[i], 0, addresses, off, toCopy);
-        //            off += toCopy;
-        //            count -= BUFF_COUNT;
-        //            buffLst[i] = null;
-        //        }
-        //        return (addresses,notIncludedCount);
-
-        //    }
-        //    catch (Exception ex)
-        //    {
-        //        error = Utils.GetExceptionErrorString(ex);
-        //        return (null, 0);
-        //    }
-        //}
-
-
-        /// <summary>
-        /// TODO JRD -- test only remove.
-        /// </summary>
-        public static Instances GetHeapAddresses(ClrHeap heap, out ClrtSegment[] segments)
-        {
-            int count = 0;
-            ulong pointerSize = (ulong)heap.PointerSize;
-            var segs = heap.Segments;
-            segments = new ClrtSegment[segs.Count];
-            ulong[][] segAddrs = new ulong[segs.Count][];
-            List<ulong> segAddrLst = new List<ulong>(1024 * 1024 * 10);
-            bool canWalkHeap = heap.CanWalkHeap;
-            if (canWalkHeap)
-            {
-                for (int i = 0, icnt = segs.Count; i < icnt; ++i)
-                {
-                    var seg = segs[i];
-                    ulong addr = seg.FirstObject;
-                    ulong end = seg.CommittedEnd;
-                    ulong segFirst = addr;
-                    ulong segLast = addr;
-                    int segFirstInst = count;
-                    int segLastInst = count;
-                    if (addr == 0) ++count;
-                    bool firstbad = addr == 0 ? true : false;
-                    int badcount = (addr == 0) ? 1 : 0;
-                    if (addr != 0) segAddrLst.Add(addr);
-
-                    while (addr != 0ul)
-                    {
-                        addr = seg.NextObject(addr);
-                        if (addr != 0)
-                        {
-                            segAddrLst.Add(addr);
-                            segLastInst = count;
-                            segLast = addr;
-                            ++count;
-                        }
-                    }
-                    segments[i] = new ClrtSegment(seg, segFirst, segLast, segFirstInst, segLastInst);
-                    segAddrs[i] = segAddrLst.ToArray();
-                    segAddrLst.Clear();
-                }
-
-            }
-            else
-            {
-                for (int i = 0, icnt = segs.Count; i < icnt; ++i)
-                {
-                    var seg = segs[i];
-
-                    ulong first = seg.FirstObject;
-                    ulong end = seg.CommittedEnd;
-                    ulong addr = first;
-                    addr = TryFindNextValidAddress(heap, addr, end, pointerSize);
-                    // save some segment info
-                    ulong segFirst = addr;
-                    ulong segLast = addr;
-                    int segFirstInst = count;
-                    int segLastInst = count;
-                    if (addr == 0) ++count;
-                    bool firstbad = addr == 0 ? true : false;
-                    int badcount = (addr == 0) ? 1 : 0;
-                    if (addr != 0) segAddrLst.Add(addr);
-
-                    while (addr != 0ul)
-                    {
-                        var newAddr = seg.NextObject(addr);
-                        if (newAddr == 0)
-                        {
-                            newAddr = TryFindNextValidAddress(heap, addr + pointerSize, end, pointerSize);
-                        }
-                        addr = newAddr;
-                        if (addr != 0)
-                        {
-                            segAddrLst.Add(addr);
-                            segLastInst = count;
-                            segLast = addr;
-                            ++count;
-                        }
-                    }
-                    segments[i] = new ClrtSegment(seg, segFirst, segLast, segFirstInst, segLastInst);
-                    segAddrs[i] = segAddrLst.ToArray();
-                    segAddrLst.Clear();
-                }
-            }
-            segAddrLst = null;
-            return new Instances(segAddrs);
         }
 
         private static ulong TryFindNextValidAddress(ClrHeap heap, ulong addr, ulong end, ulong pointerSize)
@@ -1689,11 +1390,14 @@ namespace ClrMDRIndex
                         txtWriter.WriteLine("Shared domain: " + (runtime.SharedDomain.Name ?? "unnamed") + ", id: " +
                                             runtime.SharedDomain.Id + ", module cnt: " +
                                             runtime.SharedDomain.Modules.Count);
+                    DumpCount(txtWriter, "Instance Count: ", i, _instanceCount);
+                    DumpCount(txtWriter, "Type Count: ", i, _typeCount);
+                    DumpCount(txtWriter, "Finalizer Queue Count: ", i, _finalizerCount);
+                    DumpCount(txtWriter, "Roots Count: ", i, _rootCount);
+                    DumpCount(txtWriter, "Free Count: ", i, _freeCount);
+                    DumpCount(txtWriter, "Null Type Count: ", i, _nullCount);
+                    DumpCount(txtWriter, "Not Included Count: ", i, _notIncludedCount);
 
-                    txtWriter.WriteLine("Instance Count: " + Utils.LargeNumberString(_instanceCount[i]));
-                    txtWriter.WriteLine("Type Count: " + Utils.LargeNumberString(_typeCount[i]));
-                    txtWriter.WriteLine("Finalizer Queue Count: " + Utils.LargeNumberString(_finalizerCount[i]));
-                    txtWriter.WriteLine("Roots Count: " + Utils.LargeNumberString(_rootCount[i]));
                     string error;
                     var heapBalance = dump.GetHeapBalance(i, out error);
                     if (error != null)
@@ -1729,6 +1433,12 @@ namespace ClrMDRIndex
                 //	File.SetAttributes(path, File.GetAttributes(path) | FileAttributes.ReadOnly);
                 //}
             }
+        }
+
+        void DumpCount(StreamWriter sw, string header, int rtIndex, int[] counts)
+        {
+            if (counts == null || counts.Length <= rtIndex || counts[rtIndex] < 1) return;
+            sw.WriteLine(header + Utils.LargeNumberString(counts[rtIndex]));
         }
 
 #endregion data dumping
@@ -1822,6 +1532,15 @@ namespace ClrMDRIndex
                 // looks like some types are missing in heap.EnumerateTypes()
                 var set = new Set<string>(1024*16,StringComparer.Ordinal);
                 AddStandardTypeNames(typeNames,set);
+                if (heap.Segments == null || heap.Segments.Count < 1)
+                {
+                    error = "CANNOT INDEX DUMP" + Constants.HeavyGreekCrossPadded // caption
+                           + "ClrHeap.Segments are empty." + Constants.HeavyGreekCrossPadded // heading
+                           + "This crash dump might be corrupted," + Environment.NewLine
+                           + "the heap object instances cannot be listed."; // text
+                    return (null, 0, 0, 0, 0);
+                }
+
                 var segs = heap.Segments;
                 for (int segndx = 0, icnt = segs.Count; segndx < icnt; ++segndx)
                 {

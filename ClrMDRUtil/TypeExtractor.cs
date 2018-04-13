@@ -37,21 +37,22 @@ namespace ClrMDRIndex
         Object = ClrElementType.Object,
         SZArray = ClrElementType.SZArray,
 
-        Decimal = 0x00010000,
-        DateTime = 0x00020000,
-        TimeSpan = 0x00030000,
-        Guid = 0x00040000,
-        Exception = 0x00050000,
+        Decimal =       0x00010000,
+        DateTime =      0x00020000,
+        TimeSpan =      0x00030000,
+        Guid =          0x00040000,
+        Exception =     0x00050000,
         System__Canon = 0x00060000,
-        Interface = 0x00070000,
-        Abstract = 0x00080000,
-        Enum = 0x00090000,
-        SystemObject = 0x000A0000,
-        SystemVoid = 0x000B0000,
+        Interface =     0x00070000,
+        Abstract =      0x00080000,
+        Enum =          0x00090000,
+        SystemObject =  0x000A0000,
+        SystemVoid =    0x000B0000,
+        SystemNullable =0x000C0000,
 
-        Null = 0x00F00000,
-        Free = 0x01000000,
-        Error = 0x02000000
+        Null =          0x00F00000,
+        Free =          0x01000000,
+        Error =         0x02000000
     }
 
     public class TypeExtractor
@@ -60,11 +61,13 @@ namespace ClrMDRIndex
         {
             if (clrType == null) return ClrElementKind.Unknown;
             ClrElementKind kind = (ClrElementKind)(clrType.ElementType);
-            if (Utils.SameStrings(clrType.Name, "Error")) return ClrElementKind.Error;
+            string name = clrType.Name;
+            if (Utils.SameStrings(name, "Error")) return ClrElementKind.Error;
+            if (name.StartsWith("System.Nullable<", StringComparison.Ordinal)) return ClrElementKind.SystemNullable;
             switch (kind)
             {
                 case ClrElementKind.Object:
-                    switch (clrType.Name)
+                    switch (name)
                     {
                         case "System.Object":
                             kind |= ClrElementKind.SystemObject;
@@ -167,6 +170,13 @@ namespace ClrMDRIndex
         public static bool IsEnum(ClrElementKind kind)
         {
             return GetSpecialKind(kind) == ClrElementKind.Enum;
+        }
+
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static bool IsSystemNullable(ClrElementKind kind)
+        {
+            return GetSpecialKind(kind) == ClrElementKind.SystemNullable;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -642,23 +652,25 @@ namespace ClrMDRIndex
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static KeyValuePair<ClrType, ClrElementKind> TryGetRealType(ClrHeap heap, ulong addr)
+        public static ValueTuple<ClrType, ClrElementKind, string> TryGetRealType(ClrHeap heap, ulong addr)
         {
             ClrElementKind kind = ClrElementKind.Unknown;
             ClrType clrType = heap.GetObjectType(addr);
+            string name = string.Empty;
             if (clrType != null)
             {
+                name = clrType.Name;
                 if (clrType.IsRuntimeType)
                 {
                     var type = clrType.GetRuntimeType(addr);
                     if (type != null)
                     {
-                        clrType = type;
+                        name = type.Name;
                     }
                 }
                 kind = GetElementKind(clrType);
             }
-            return new KeyValuePair<ClrType, ClrElementKind>(clrType, kind);
+            return new ValueTuple<ClrType, ClrElementKind,string>(clrType, kind,name);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]

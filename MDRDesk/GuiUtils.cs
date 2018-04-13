@@ -162,8 +162,8 @@ namespace MDRDesk
         {
             var txtBlk = new TextBlock();
             if (!string.IsNullOrWhiteSpace(val.FieldName))
-                txtBlk.Inlines.Add(new Italic(new Run(val.FieldName + "   ") { Foreground = Brushes.DarkRed }));
-            txtBlk.Inlines.Add(new Bold(new Run(InstanceValueValueString(val))));
+                txtBlk.Inlines.Add(new Run(val.FieldName + "   ") { Foreground = Brushes.DarkRed, FontStyle = FontStyles.Italic });
+            txtBlk.Inlines.Add(new Run(InstanceValueValueString(val)) { FontWeight = FontWeights.Bold });
             txtBlk.Inlines.Add(new Run("   " + val.TypeName));
             return txtBlk;
         }
@@ -489,6 +489,21 @@ namespace MDRDesk
             dialog.SetButtonsPredefined(EnumPredefinedButtons.Ok);
             dialog.DetailsExpander.Visibility = string.IsNullOrEmpty(details) ? Visibility.Collapsed : Visibility.Visible;
             dialog.ShowDialog();
+        }
+
+        public static bool ShowInformationYesNo(string caption, string header, string text, string details, Window wnd)
+        {
+            var dialog = new MdrMessageBox()
+            {
+                Owner = wnd,
+                Caption = string.IsNullOrWhiteSpace(caption) ? "Message" : caption,
+                InstructionHeading = string.IsNullOrWhiteSpace(header) ? "???" : header,
+                InstructionText = string.IsNullOrWhiteSpace(text) ? String.Empty : text,
+                DeatilsText = string.IsNullOrWhiteSpace(details) ? String.Empty : details
+            };
+            dialog.SetButtonsPredefined(EnumPredefinedButtons.YesNo);
+            dialog.DetailsExpander.Visibility = string.IsNullOrEmpty(details) ? Visibility.Collapsed : Visibility.Visible;
+            return (bool)dialog.ShowDialog();
         }
 
         public static void ShowError(Exception ex, Window wnd)

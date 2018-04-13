@@ -110,4 +110,11 @@
 
 	268435456 / 4194304 = 64
 	268435456 / 8388608 = 32
-	
+0050 04/12/18 -- bad data value D:\Jerzy\WinDbgStuff\dumps\Eze.Portfolio.Management\EPM_OnRefreshGrid2.dmp.map
+	Type:      ECS.Common.Communicator.Module.Business_Entities.ProcessDescription
+	Address:   0x00000017371684
+		<LastProbeUpdate>k_BackingField 06/12/0340 07:28:23\
+	Type:      ECS.Common.Communicator.Module.Business_Entities.EzeServiceDescription
+	Address:   0x000000173dc3e8
+		eventTimeout 745654.01:04:00 should be 00:00:15
+

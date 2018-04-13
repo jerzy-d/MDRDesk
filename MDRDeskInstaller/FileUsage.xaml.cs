@@ -20,12 +20,52 @@ namespace MDRDeskInstaller
     /// </summary>
     public partial class FileUsage : Window
     {
-        FileInfo[] _files;
+        private string _error;
+        public string Error => _error;
+        public bool Result;
+        public MainWindow MainWindowInstance => (MainWindow)(((App)Application.Current).MainWindow);
 
-        public FileUsage(FileInfo[] files)
+
+        public FileUsage()
         {
             InitializeComponent();
-            _files = files;
+            PopulateLockedFileList();
+        }
+
+        private bool PopulateLockedFileList()
+        {
+            LockedFileList.Items.Clear();
+            if (MainWindowInstance._lockedFiles != null && MainWindowInstance._lockedFiles.Length > 1)
+            {
+                foreach (var item in MainWindowInstance._lockedFiles)
+                {
+                    LockedFileList.Items.Add(item);
+                }
+                return true;
+            }
+            return false;
+        }
+
+        private void CancelBtnClicked(object sender, RoutedEventArgs e)
+        {
+            Result = false;
+            Close();
+        }
+
+        private void TryAgainBtnClicked(object sender, RoutedEventArgs e)
+        {
+            MainWindowInstance.CheckFiles(out _error);
+            bool stillSome = PopulateLockedFileList();
+            if (_error != null)
+            {
+                Result = false;
+                Close();
+            }
+            if (!stillSome)
+            {
+                Result = true;
+                Close();
+            }
         }
     }
 }

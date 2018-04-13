@@ -251,6 +251,7 @@ public:
 					count = *(int*)data;
 					data += sizeof(int);
 					ref_offsets.push_back(ref_off);
+					if (count == 0xFFFFFFFF) goto EXIT;
 					++rec_count;
 				}
 				parent_addr = *(uint64_t*)data;

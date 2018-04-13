@@ -2497,93 +2497,6 @@ namespace UnitTestMdr
             }
         }
 
-        [TestMethod]
-        public void TestBigDump2()
-        {
-            string error = null;
-            using (var clrDump = OpenDump(@"C:\WinDbgStuff\Dumps\Compliance\Eze.Compliance.Svc_170503_131515.dmp"))
-            {
-                try
-                {
-                    var runtime = clrDump.Runtimes[0];
-                    var heap = runtime.Heap;
-                    ClrtSegment[] segments;
-                    var instances = DumpIndexer.GetHeapAddresses(heap, out segments);
-                    var addrSorted = Utils.AreAddressesSorted(instances.Addresses);
-                    var addr2Sorted = Utils.AreAddressesSorted(instances.Addresses2);
-                }
-                catch (Exception ex)
-                {
-                    error = Utils.GetExceptionErrorString(ex);
-                    Assert.IsTrue(false, error);
-                }
-            }
-        }
-
-        [TestMethod]
-        public void TestGetAddressesAndTypes()
-        {
-            string error = null;
-            StreamWriter sw = null;
-            StringBuilder sb = StringBuilderCache.Acquire(StringBuilderCache.MaxCapacity);
-
-            using (var clrDump = OpenDump(@"C:\WinDbgStuff\Dumps\Analytics\Highline\analyticsdump111.dlk.dmp"))
-            {
-                try
-                {
-                    sw = new StreamWriter(clrDump.DumpFolder + Path.DirectorySeparatorChar + clrDump.DumpFileNameNoExt + ".TypeTest.txt");
-                    var runtime = clrDump.Runtimes[0];
-                    var heap = runtime.Heap;
-                    ClrtSegment[] segments;
-                    SortedDictionary<string, List<ClrType>> typeDct;
-                    var instances = DumpIndexer.GetHeapAddresses(heap, out segments, out typeDct);
-                    int multCnt = 0;
-                    int multMax = 0;
-                    List<string> runTimeTypes = new List<string>();
-                   foreach(var kv in typeDct)
-                    {
-                        var tp0 = kv.Value[0];
-                        if (tp0.IsRuntimeType)
-                            runTimeTypes.Add(tp0.Name);
-                        int cnt = kv.Value.Count;
-                        if (cnt > 1)
-                        {
-                            ++multCnt;
-                            if (cnt > multMax)
-                            {
-                                multMax = cnt;
-                            }
-                            var lst = kv.Value;
-                            sw.WriteLine("### " + kv.Key);
-                            for (int i = 0, icnt = lst.Count; i < icnt; ++i)
-                            {
-                                var tp = lst[i];
-                                sb.Append(tp.IsRuntimeType).Append(" ")
-                                    .Append(tp.MethodTable).Append(" ")
-                                    .Append(tp.MetadataToken).Append(" [")
-                                    .Append(tp.Fields.Count).Append("] ")
-                                    ;
-                                sw.WriteLine(sb.ToString());
-                                sb.Clear();
-                            }
-                        }
-                    }
-
-
-                }
-                catch (Exception ex)
-                {
-                    error = Utils.GetExceptionErrorString(ex);
-                    Assert.IsTrue(false, error);
-                }
-                finally
-                {
-                    StringBuilderCache.Release(sb);
-                    sw?.Close();
-                }
-            }
-        }
-
         private ulong TryFindNextValidAddress(ClrHeap heap, ulong addr, ulong end, ulong pointerSize, List<ulong> deltas)
         {
             var clrType = heap.GetObjectType(addr);
@@ -2903,17 +2816,52 @@ namespace UnitTestMdr
             }
         }
 
+        private bool FindFields(ValueTuple<string, ClrInstanceField>[] flds, IList<ClrInstanceField> fields)
+        {
+            int found = 0;
+            for(int i = 0, icnt = flds.Length; i < icnt; ++i)
+            {
+                string name = flds[i].Item1;
+                ClrInstanceField fld = null;
+                for (int j = 0, jcnt = fields.Count; j < jcnt; ++j)
+                {
+                    if (Utils.SameStrings(fields[j].Name, name))
+                    {
+                        fld = fields[j];
+                        ++found;
+                        break;
+                    }
+                }
+                if (fld == null) return false;
+                flds[i] = (name,fld);
+            }
+            return true;
+        }
+
+        enum FldNdx : int { TARGET, METHODPTR, METHODPTRAUX, INVOCATIONLIST, INVOCATIONCOUNT };
+
         [TestMethod]
         public void TestGetDelegateTypes()
         {
             string[] fldNames = new string[] { "_target", "_methodPtr", "_methodPtrAux", "_invocationList", "_invocationCount" };
+            var fields = new ValueTuple<string,ClrInstanceField>[] {
+               ( "_target", null),
+               ( "_methodPtr", null),
+               ( "_methodPtrAux", null),
+               ( "_invocationList", null),
+               ( "_invocationCount", null)
+            };
+
             string error = null;
             HashSet<string> done = new HashSet<string>(StringComparer.Ordinal);
             List<string> delegateTypes = new List<string>(256);
             List<ClrMethod> delegateMethods = new List<ClrMethod>(256);
             List<ClrType> delegates = new List<ClrType>(256);
-            var dct = new SortedDictionary<string, Tuple<List<ulong>, ClrType, List<KeyValuePair<ulong,ClrMethod>>>>(StringComparer.Ordinal);
-            using (var clrDump = OpenDump(@"c:\WinDbgStuff\dumps\Analytics\Highline\analyticsdump111.dlk.dmp"))
+
+            var dct = new SortedDictionary<string, List<Tuple<ulong, ulong, string, ulong, string, string>>>(StringComparer.Ordinal);
+            
+
+            using (var clrDump = OpenDump(@"d:\Jerzy\WinDbgStuff\dumps\Analytics\Highline\analyticsdump111.dlk.dmp"))
             {
                 try
                 {
@@ -2927,58 +2875,45 @@ namespace UnitTestMdr
                         while (addr != 0ul)
                         {
                             var clrType = heap.GetObjectType(addr);
-                            if (clrType == null || clrType.Fields == null || clrType.Fields.Count < 5) goto NEXT_OBJECT;
-                            Tuple<List<ulong>, ClrType, List<KeyValuePair<ulong, ClrMethod>>> val;
+                            if (clrType == null 
+                                || clrType.Fields == null 
+                                || clrType.Fields.Count < 5
+                                || !FindFields(fields, clrType.Fields)
+                                ) goto NEXT_OBJECT;
+
+                            ulong targetAddr = ValueExtractor.GetFieldAddressValue(heap, addr, fields[(int)FldNdx.TARGET].Item2, false);
+                            ClrType targetType = targetAddr != 0 ? heap.GetObjectType(targetAddr) : null;
+                            string targetName = targetType == null ? Constants.NullTypeName : targetType.Name;
+
+                            ulong mthdAddr = (ulong)ValueExtractor.GetFieldLongValue(heap, addr, fields[(int)FldNdx.METHODPTR].Item2, false);
+                            ClrMethod mthd = mthdAddr != 0
+                                ? ClrtDump.GetDelegateMethod(mthdAddr, runtime, heap)
+                                : null;
+                            if (mthd == null)
+                            {
+                                mthdAddr = (ulong)ValueExtractor.GetFieldLongValue(heap, addr, fields[(int)FldNdx.METHODPTRAUX].Item2, false);
+                                mthd = mthdAddr != 0
+                                    ? ClrtDump.GetDelegateMethod(mthdAddr, runtime, heap)
+                                    : null;
+                            }
+
+                            string mthdSig = mthd == null ? Constants.NullTypeName : mthd.GetFullSignature();
+                            string mthdClassName = Constants.NullTypeName;
+                            if (mthd != null && mthd.Type != null)
+                            {
+                                mthdClassName = mthd.Type.Name;
+                            }
+
+
+                            var tup = Tuple.Create(addr, targetAddr, targetName, mthdAddr, mthdSig, mthdClassName);
+                            List<Tuple<ulong, ulong, string, ulong, string, string>> val;
                             if (dct.TryGetValue(clrType.Name,out val))
                             {
-                                ClrMethod mthd = null;
-                                ulong mthdAddr = 0;
-                                var fld = clrType.GetFieldByName("_methodPtr");
-                                if (fld != null)
-                                {
-                                    long mthdPtr = (long)fld.GetValue(addr);
-                                    mthdAddr = (ulong)mthdPtr;
-                                    mthd = ClrtDump.GetDelegateMethod(mthdAddr, runtime, heap);
-                                }
-                                val.Item1.Add(addr);
-                                if (mthdAddr != 0)
-                                {
-                                    int nx = 0;
-                                    int nxcnt = val.Item3.Count;
-                                    for (; nx < nxcnt; ++nx)
-                                    {
-                                        var lkv = val.Item3[nx];
-                                        if (lkv.Key == mthdAddr) break;
-                                    }
-                                    if (nx == nxcnt) val.Item3.Add(new KeyValuePair<ulong, ClrMethod>(mthdAddr,mthd));
-                                }
+                                val.Add(tup);
                             }
                             else
                             {
-                                int foundFlds = 0;
-                                for (int j = 0, jcnt = clrType.Fields.Count; j < jcnt; ++j)
-                                {
-                                    if (fldNames.Contains(clrType.Fields[j].Name)) ++foundFlds;
-                                }
-                                if (foundFlds == 5)
-                                {
-                                    ClrMethod mthd = null;
-                                    var fld = clrType.GetFieldByName("_methodPtr");
-                                    if (fld != null)
-                                    {
-                                        long mthdPtr = (long)fld.GetValue(addr);
-                                        mthd = ClrtDump.GetDelegateMethod((ulong)mthdPtr, runtime, heap);
-                                        if (mthdPtr != 0)
-                                        {
-                                            dct.Add(clrType.Name, new Tuple<List<ulong>, ClrType, List<KeyValuePair<ulong, ClrMethod>>>(
-                                                new List<ulong>() { addr },
-                                                clrType,
-                                                new List<KeyValuePair<ulong, ClrMethod>>() { new KeyValuePair<ulong, ClrMethod>((ulong)mthdPtr, mthd) }
-                                                ));
-                                        }
-                                    }
-
-                                }
+                                dct.Add(clrType.Name, new List<Tuple<ulong, ulong, string, ulong, string, string>>() { tup });
                             }
                             NEXT_OBJECT:
                             addr = seg.NextObject(addr);
@@ -2990,12 +2925,19 @@ namespace UnitTestMdr
                             sw = new StreamWriter(path);
                             foreach(var kv in dct)
                             {
-                                sw.Write(Utils.CountStringHeader(kv.Value.Item1.Count));
-                                sw.Write(kv.Key + "  ");
-                                sw.Write(Utils.CountStringHeader(kv.Value.Item3.Count));
-                                sw.WriteLine();
+                                sw.WriteLine(kv.Key);
+                                var lst = kv.Value;
+                                for (int j = 0, jcnt = lst.Count; j < jcnt; ++j)
+                                {
+                                    var tup = lst[j];
+                                    sw.Write("   " + Utils.RealAddressStringHeader(tup.Item1));
+                                    sw.Write(Utils.RealAddressStringHeader(tup.Item2));
+                                    sw.Write(Utils.RealAddressStringHeader(tup.Item4));
+                                    sw.Write(tup.Item3);
+                                    sw.Write("  " + tup.Item5);
+                                    sw.WriteLine("  " + tup.Item6);
+                                }
                             }
-    
                         }
                         finally
                         {

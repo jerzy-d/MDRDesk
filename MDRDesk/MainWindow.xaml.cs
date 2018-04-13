@@ -512,6 +512,12 @@ namespace MDRDesk
                     return new Tuple<bool, string, string>(ok, error, indexPath);
                 }, _dumpSTAScheduler);
 
+            if (!result.Item1)
+            {
+                indexingProgress.Progress.Report("INEXING FAILED: " + dmpFileName);
+                indexingProgress.Progress.Report("Check error messages, and close this tab...");
+            }
+
             indexingProgress.Close(DumpFileMoniker.GetFilePath(-1, path, Constants.TxtIndexingInfoFilePostfix));
 
             Utils.ForceGcWithCompaction();
@@ -2614,7 +2620,23 @@ namespace MDRDesk
 
         private void UpdateMDRDeskClicked(object sender, RoutedEventArgs e)
         {
+            try
+            {
+                if (!GuiUtils.ShowInformationYesNo("MDRDesk Update", "Do you want check for update?", 
+                    "Warning! This instance of MDRDesk will close automatically!" + Environment.NewLine
+                    + "Please close other instances if they running." + Environment.NewLine,
+                    null, this))
+                    return;
 
+                Process installer = new Process();
+                installer.StartInfo.FileName = "MDRDeskInstaller.exe";
+                installer.Start();
+                Application.Current.Shutdown();
+            }
+            catch(Exception ex)
+            {
+                GuiUtils.ShowError(ex, this);
+            }
         }
 
         private void ButtonHelpClicked(object sender, RoutedEventArgs e)

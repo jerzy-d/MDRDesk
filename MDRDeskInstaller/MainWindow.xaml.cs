@@ -26,6 +26,7 @@ namespace MDRDeskInstaller
     public partial class MainWindow : Window
     {
         const char InformationSymbol = '\u2110'; // ℐ SCRIPT CAPITAL I
+        public static bool Install = false;
 
         enum UpdtNdx
         {
@@ -37,9 +38,11 @@ namespace MDRDeskInstaller
         }
 
         string _myFolder;
+        public string MyFolder => _myFolder;
         string _myVersion;
         string _myDacVersion;
         string _localServerPath;
+        public FileInfo[] _lockedFiles;
 
         IProgress<string> _progress;
         DateTime _time;
@@ -107,16 +110,22 @@ namespace MDRDeskInstaller
                 _progress.Report("Current MDRDesk and dacs are the latest. No need to upgrade.");
             }
 
-            if (updateMdrDesk)
+            if (true)
+//          if (updateMdrDesk)
             {
-                _progress.Report("Checking if MDRDesk files can be overwritten.");
+                    _progress.Report("Checking if MDRDesk files can be overwritten.");
 
-                var lockedFiles = CheckFiles(_myFolder, out error);
-                if (lockedFiles.Length > 1)
+                _lockedFiles = CheckFiles(_myFolder, out error);
+                if (_lockedFiles.Length > 1)
                 {
-
+                    FileUsage fileUsage = new FileUsage() { Owner = this, Title = "Locked Files" };
+                    fileUsage.ShowDialog();
                 }
 
+               
+
+                // TODO JRD temp remove
+                return;
 
                 string mdrDeskZip = tempFolder + @"\MDRDesk.zip";
                 WebClient client = new WebClient();
@@ -221,6 +230,11 @@ namespace MDRDeskInstaller
             string tempDirectory = System.IO.Path.Combine(System.IO.Path.GetTempPath(), System.IO.Path.GetRandomFileName());
             Directory.CreateDirectory(tempDirectory);
             return tempDirectory;
+        }
+
+        public void CheckFiles(out string error)
+        {
+            _lockedFiles = CheckFiles(_myFolder, out error);
         }
 
         public static FileInfo[] CheckFiles(string folder, out string error)

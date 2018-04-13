@@ -15,6 +15,7 @@
             <MenuItem x:Name="InstanceValueGetValue" Header="Get Value" Click="InstanceValueGetValueClicked"></MenuItem>
             <MenuItem x:Name="InstanceValueGetRawValue" Header="Get Value (raw)" Click="InstanceValueGetValueRawClicked"></MenuItem>
             <Separator></Separator>
+            <MenuItem x:Name="InstanceValueCopyEntry" Header="Copy Entry Text (clipboard)" Click="InstanceValueCopyEntry"/>
             <MenuItem x:Name="InstanceValueViewMemory" Header="View Memory" Click="InstanceValueViewMemoryClicked"/>
         </ContextMenu>
         <Button x:Key="LockBtn" Click="LockBtnClicked">

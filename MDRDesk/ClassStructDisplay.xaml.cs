@@ -7,6 +7,7 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 using ClrMDRIndex;
+using System.Text;
 
 namespace MDRDesk
 {
@@ -233,6 +234,25 @@ namespace MDRDesk
             var val = selInstValue.Value.FullContent;
             GuiUtils.CopyToClipboard(val);
             StatusText.Text = "The value was copied to the clipboard";
+        }
+
+        private void InstanceValueCopyEntry(object sender, RoutedEventArgs e)
+        {
+            TreeViewItem selTreeItem = InstanceValueTreeview.SelectedItem as TreeViewItem;
+            if (selTreeItem == null) return;
+
+            var sp = selTreeItem.Header as StackPanel;
+            var tb = sp.Children[0] as TextBlock;
+
+            StringBuilder s = new StringBuilder();
+            foreach (var line in tb.Inlines)
+            {
+                if (line is System.Windows.Documents.Run)
+                    s.Append(((System.Windows.Documents.Run)line).Text).Append(" ");
+            }
+            var text = s.ToString().Trim();
+            GuiUtils.CopyToClipboard(text);
+            StatusText.Text = "The entry was copied to the clipboard";
         }
 
         private void InstanceValueViewMemoryClicked(object sender, RoutedEventArgs e)

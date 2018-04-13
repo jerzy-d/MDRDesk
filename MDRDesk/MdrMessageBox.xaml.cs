@@ -52,12 +52,23 @@ namespace MDRDesk
 
         private void Button1_Click(object sender, RoutedEventArgs e)
         {
+            DialogResult = GetResult(Button1);
             Close();
         }
 
         private void Button2_Click(object sender, RoutedEventArgs e)
         {
+            DialogResult = GetResult(Button2);
             Close();
+        }
+
+        private bool GetResult(Button btn)
+        {
+            EnumDialogResults res = (EnumDialogResults)btn.Tag;
+            if (res == EnumDialogResults.Cancel || res == EnumDialogResults.No)
+                return false;
+            else
+                return true;
         }
 
         private void Button3_Click(object sender, RoutedEventArgs e)

@@ -1849,10 +1849,10 @@ namespace ClrMDRIndex
             bool accepted = true;
             if (qry.IsAlternative)
             {
-                KeyValuePair<ClrType, ClrElementKind> kv0 = TypeExtractor.TryGetRealType(heap, addr);
+                //KeyValuePair<ClrType, ClrElementKind> kv0 = TypeExtractor.TryGetRealType(heap, addr);
                 ulong faddr = ValueExtractor.GetReferenceFieldAddress(addr, parentQry.Type.Fields[qry.FieldIndex], qry.IsValueClass);
-                KeyValuePair<ClrType, ClrElementKind> kv = TypeExtractor.TryGetRealType(heap, faddr);
-                if (kv.Key == null || !qry.IsMyType(kv.Key.Name))
+                var kv = TypeExtractor.TryGetRealType(heap, faddr);
+                if (kv.Item1 == null || !qry.IsMyType(kv.Item1.Name))
                 {
                     if (qry.GetValue) qry.AddValue(Constants.NotAvailableValue);
                     if (qry.HasChildren)
@@ -1866,7 +1866,7 @@ namespace ClrMDRIndex
                 }
                 if (qry.Type == null)
                 {
-                    qry.SetTypeAndKind(kv.Key, kv.Value);
+                    qry.SetTypeAndKind(kv.Item1, kv.Item2);
                 }
 
                 if (qry.GetValue) // this must be address only
@@ -1892,15 +1892,15 @@ namespace ClrMDRIndex
                 if (!pmatch)
                 {
                     ulong faddr = ValueExtractor.GetReferenceFieldAddress(addr, pFld, qry.IsValueClass);
-                    KeyValuePair<ClrType, ClrElementKind> kv = TypeExtractor.TryGetRealType(heap, faddr);
-                    qry.SetTypeAndKind(kv.Key, kv.Value);
+                    var kv = TypeExtractor.TryGetRealType(heap, faddr);
+                    qry.SetTypeAndKind(kv.Item1, kv.Item2);
                 }
 
                 if (qry.HasChildren)
                 {
                     ulong faddr = ValueExtractor.GetReferenceFieldAddress(addr, qry.Field, qry.IsValueClass);
-                    KeyValuePair<ClrType, ClrElementKind> kv = TypeExtractor.TryGetRealType(heap, faddr);
-                    qry.SetTypeAndKind(kv.Key, kv.Value);
+                    var kv = TypeExtractor.TryGetRealType(heap, faddr);
+                    qry.SetTypeAndKind(kv.Item1, kv.Item2);
                 }
             }
             object val = ValueExtractor.GetFieldValue(heap, addr, qry.Field, qry.Type, qry.Kind, parentQry.IsValueClass, true);
@@ -1971,7 +1971,7 @@ namespace ClrMDRIndex
                     if (query.Type == null)
                     {
                         var kv = TypeExtractor.TryGetRealType(heap, addr);
-                        query.SetTypeAndKind(kv.Key, kv.Value);
+                        query.SetTypeAndKind(kv.Item1, kv.Item2);
                     }
                     query.AddValue(Utils.AddressString(instances[i]));
 

@@ -13,5 +13,18 @@ namespace MDRDeskInstaller
     /// </summary>
     public partial class App : Application
     {
+        private void App_Startup(object sender, StartupEventArgs e)
+        {
+            string[] args = e.Args;
+            bool install = false;
+            if (args != null && args.Length > 0)
+            {
+                string arg = args[0] != null ? args[0].ToLower() : string.Empty;
+                if (arg.IndexOf("install") >= 0)
+                    install = true;
+            }
+
+            MDRDeskInstaller.MainWindow.Install = install;
+        }
     }
 }
