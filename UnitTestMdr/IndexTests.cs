@@ -2048,13 +2048,15 @@ namespace UnitTestMdr
         {
             Stopwatch stopWatch = new Stopwatch();
             stopWatch.Start();
-            var index = OpenIndex(@"D:\Jerzy\WinDbgStuff\Dumps\Analytics\Cowen\Cowen.Analytics.Svc_170717_165238.dmp.map");
+            //var index = OpenIndex(@"D:\Jerzy\WinDbgStuff\Dumps\Analytics\Cowen\Cowen.Analytics.Svc_170717_165238.dmp.map");
+            var index = OpenIndex(@"C:\WinDbgStuff\Dumps\TestApp\64\TestApp.exe_180414_071636.dmp.map");
             TestContext.WriteLine(index.DumpFileName + " INDEX OPEN DURATION: " + Utils.StopAndGetDurationString(stopWatch));
-            ulong addr = 0x000053078c26e0; // 0x00005504146250; // 0x00005407533ca0;
+            ulong addr = 0x0001d64ebe3598; // 0x000053078c26e0; // 0x00005504146250; // 0x00005407533ca0;
             using (index)
             {
                 var heap = index.GetHeap();
-                var (error, description, values) = ValueExtractor.GetHashSetContent(heap, addr);
+                //var (error, description, values) = ValueExtractor.GetHashSetContent(heap, addr);
+                (string error, KeyValuePair<string, string>[] values, string[] ex) = CollectionContent.HashSetContentAsStrings(heap, addr);
                 Assert.IsNull(error, error);
             }
 

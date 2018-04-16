@@ -16,9 +16,10 @@ namespace ClrMDRIndex
             try
             {
                 addr = Utils.RealAddress(addr);
-                var type = heap.GetObjectType(addr);
+                (ClrType type, ClrElementKind kind, ClrType rtType, ClrElementKind rtKind) = TypeExtractor.GetRealType(heap, addr);
+                    heap.GetObjectType(addr);
+
                 if (type == null) return ("Object Value Error" + Constants.HeavyGreekCrossPadded + "Cannot find an instance." + Constants.HeavyGreekCrossPadded + "Heap cannot get object type at address: " + Utils.RealAddressString(addr), null, ClrElementKind.Unknown, (null,null,null,null,null));
-                var kind = TypeExtractor.GetElementKind(type);
                 var fldCnt = type.Fields.Count;
 
                 var fldTypes = fldCnt == 0 ? Utils.EmptyArray<ClrType>.Value : new ClrType[fldCnt];

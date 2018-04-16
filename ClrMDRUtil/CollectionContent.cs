@@ -646,6 +646,7 @@ namespace ClrMDRIndex
 
                 ClrType slotsType = fldTypes[slotsFldNdx];
                 ulong slotsAddr =(ulong)values[slotsFldNdx];
+                ClrType slotType = slotsType.ComponentType;
                 bool useItemType;
                 (ClrType slotType, ClrType itemType, ClrInstanceField itemFld, StructFieldsInfo itemSfi, ClrElementKind itemKind, ClrInstanceField hashCodeFld, ClrInstanceField nextFld) = GetHashSetSlotTypeInfo(heap, slotsAddr, slotsType, out useItemType);
                 int aryLen = slotsType.GetArrayLength(slotsAddr);
