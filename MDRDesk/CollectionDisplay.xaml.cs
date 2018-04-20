@@ -158,6 +158,7 @@ namespace MDRDesk
             {
                 Dispatcher.CurrentDispatcher.InvokeAsync(() => ((MainWindow)Owner).ExecuteInstanceValueQuery("Getting object value at: " + Utils.RealAddressString(addr), addr));
             }
+
         }
 
         private void ItemLstGetTypeValuesReportClicked(object sender, RoutedEventArgs e)

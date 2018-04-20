@@ -11,6 +11,8 @@ using Microsoft.Diagnostics.Runtime;
 using System.Globalization;
 using System.Text;
 using System.Text.RegularExpressions;
+using System.Threading.Tasks;
+using System.Threading;
 
 namespace UnitTestMdr
 {
@@ -993,6 +995,67 @@ namespace UnitTestMdr
         #endregion type sizes and distribution
 
         #region references
+
+        [TestMethod]
+        public void TestAddressSetRefs()
+        {
+            string error = null;
+            AncestorNode ancestors = null;
+            string path0 = @"D:\Jerzy\WinDbgStuff\dumps\Analytics\GQG\Eze.Analytics.Svc_180419_164426.dmp.map\ad-hoc.queries\All.txt";
+            string path1 = @"D:\Jerzy\WinDbgStuff\dumps\Analytics\GQG\Eze.Analytics.Svc_180419_164426.dmp.map\ad-hoc.queries\Subset.txt";
+            string typeName = "Eze.Server.Common.Pulse.CalculationCache.RelatedViewsCache";
+
+            ulong[] addresses = AddressDiffs(path0,path1,out error);
+
+            var index = OpenIndex(@"D:\Jerzy\WinDbgStuff\dumps\Analytics\GQG\Eze.Analytics.Svc_180419_164426.dmp.map");
+            using (index)
+            {
+                int[] instances = index.GetInstanceIndices(addresses);
+                int typeId = index.GetTypeId(typeName);
+
+                (error, ancestors) = index.GetParentTree(typeId, instances, 20, InstanceReferences.ReferenceType.Ancestors | InstanceReferences.ReferenceType.All);
+
+            }
+
+        }
+
+        ulong[] AddressDiffs(string path0, string path1, out string error)
+        {
+            error = null;
+            try
+            {
+                ulong[] set1 = GetAddressesFromTextFile(path0);
+                ulong[] set2 = GetAddressesFromTextFile(path1);
+                return set1.Except(set2).ToArray();
+            }
+            catch (Exception ex)
+            {
+                error = ex.ToString();
+                return null;
+            }
+        }
+
+        ulong[] GetAddressesFromTextFile(string path)
+        {
+            StreamReader rd = null;
+            try
+            {
+                rd = new StreamReader(path);
+                List<ulong> lst = new List<ulong>(512);
+                string ln = rd.ReadLine();
+                while (ln != null)
+                {
+                    ulong u = Convert.ToUInt64(ln, 16);
+                    lst.Add(u);
+                    ln = rd.ReadLine();
+                }
+                return lst.ToArray();
+            }
+            finally
+            {
+                rd?.Close();
+            }
+        }
 
         [TestMethod]
         public void TestReferences0()
@@ -2046,19 +2109,45 @@ namespace UnitTestMdr
         [TestMethod]
         public void TestHashSetContent()
         {
+            ulong addr = 0x00000002853598; // 0x000000028530a8; // 0x00000002853598; 
+            string path = @"D:\Jerzy\WinDbgStuff\dumps\TestApp\64\TestApp.exe_180413_131610.dmp.map";
+
             Stopwatch stopWatch = new Stopwatch();
             stopWatch.Start();
-            //var index = OpenIndex(@"D:\Jerzy\WinDbgStuff\Dumps\Analytics\Cowen\Cowen.Analytics.Svc_170717_165238.dmp.map");
-            var index = OpenIndex(@"C:\WinDbgStuff\Dumps\TestApp\64\TestApp.exe_180414_071636.dmp.map");
-            TestContext.WriteLine(index.DumpFileName + " INDEX OPEN DURATION: " + Utils.StopAndGetDurationString(stopWatch));
-            ulong addr = 0x0001d64ebe3598; // 0x000053078c26e0; // 0x00005504146250; // 0x00005407533ca0;
-            using (index)
+            var _dumpSTAScheduler = new SingleThreadTaskScheduler();
+            CancellationTokenSource source = new CancellationTokenSource();
+            CancellationToken token = source.Token;
+
+            var t = Task<ValueTuple<string, KeyValuePair<string, string>[], string[]>>.Factory.StartNew(
+            (a) =>
             {
-                var heap = index.GetHeap();
-                //var (error, description, values) = ValueExtractor.GetHashSetContent(heap, addr);
-                (string error, KeyValuePair<string, string>[] values, string[] ex) = CollectionContent.HashSetContentAsStrings(heap, addr);
-                Assert.IsNull(error, error);
-            }
+                var index = OpenIndex(path);
+                using (index)
+                {
+                    index.WarmupHeap();
+                    var heap = index.GetHeap();
+                    //var (error, description, values) = 
+                    //return ValueExtractor.GetHashSetContent(heap, addr);
+                    //(string error, KeyValuePair<string, string>[] values, string[] ex) = 
+                    return CollectionContent.HashSetContentAsStrings(heap, addr);
+                }
+            },
+            null,
+            token,
+            TaskCreationOptions.LongRunning,
+            _dumpSTAScheduler);
+            t.Wait();
+            var result = t.Result;
+            
+            //TestContext.WriteLine(index.DumpFileName + " INDEX OPEN DURATION: " + Utils.StopAndGetDurationString(stopWatch));
+            //using (index)
+            //{
+            //    index.Runtime.Flush();
+            //    var heap = index.GetHeap();
+            //    //var (error, description, values) = ValueExtractor.GetHashSetContent(heap, addr);
+            //    (string error, KeyValuePair<string, string>[] values, string[] ex) = CollectionContent.HashSetContentAsStrings(heap, addr);
+            //    Assert.IsNull(error, error);
+            //}
 
         }
 

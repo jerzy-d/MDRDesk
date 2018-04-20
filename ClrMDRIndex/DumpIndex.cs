@@ -446,7 +446,7 @@ namespace ClrMDRIndex
             return Utils.AddressSearch(_instances, address);
         }
 
-        private int[] GetInstanceIndices(ulong[] addresses)
+        public int[] GetInstanceIndices(ulong[] addresses)
         {
             List<int> indices = new List<int>(addresses.Length);
             for (int i = 0, icnt = addresses.Length; i < icnt; ++i)
@@ -4119,7 +4119,7 @@ namespace ClrMDRIndex
                 progress?.Report(msgHeader + "initializing the crash dump...");
                 if (_clrtDump.Init(out error, instances))
                 {
-                    //_clrtDump.WarmupHeap();
+                    WarmupHeap();
                     return true;
                 }
                 return false;
@@ -4129,6 +4129,12 @@ namespace ClrMDRIndex
                 error = Utils.GetExceptionErrorString(ex);
                 return false;
             }
+        }
+
+        public void WarmupHeap()
+        {
+            Runtime.Flush();
+            _clrtDump.WarmupHeap();
         }
 
         #endregion dump

@@ -2332,74 +2332,74 @@ namespace ClrMDRIndex
 
         #endregion System.Collections.Generic.SortedDictionary<TKey, TValue>
 
-        #region System.Collections.Generic.HashSet<T>
+        //#region System.Collections.Generic.HashSet<T>
 
-        private static ValueTuple<ClrType, ClrInstanceField, ClrElementKind, ClrInstanceField, ClrInstanceField> GetHashSetSlotTypeInfo(ClrHeap heap, ulong hashSetAddr, ulong slotAddr, ClrType slotsType, int lastIndex)
-        {
-            ClrType slotType = slotsType.ComponentType;
-            ClrInstanceField hashCodeFld = slotType.GetFieldByName("hashCode");
-            ClrInstanceField valueFld = slotType.GetFieldByName("value");
-            ClrInstanceField nextFld = slotType.GetFieldByName("next");
-            ClrElementKind valueFldTypeKind = TypeExtractor.GetElementKind(valueFld.Type);
+        //private static ValueTuple<ClrType, ClrInstanceField, ClrElementKind, ClrInstanceField, ClrInstanceField> GetHashSetSlotTypeInfo(ClrHeap heap, ulong hashSetAddr, ulong slotAddr, ClrType slotsType, int lastIndex)
+        //{
+        //    ClrType slotType = slotsType.ComponentType;
+        //    ClrInstanceField hashCodeFld = slotType.GetFieldByName("hashCode");
+        //    ClrInstanceField valueFld = slotType.GetFieldByName("value");
+        //    ClrInstanceField nextFld = slotType.GetFieldByName("next");
+        //    ClrElementKind valueFldTypeKind = TypeExtractor.GetElementKind(valueFld.Type);
 
-            return (slotType, valueFld, valueFldTypeKind, hashCodeFld, nextFld);
-        }
+        //    return (slotType, valueFld, valueFldTypeKind, hashCodeFld, nextFld);
+        //}
 
-        public static ValueTuple<string, KeyValuePair<string, string>[], string[]> GetHashSetContent(ClrHeap heap, ulong addr)
-        {
-            try
-            {
-                addr = Utils.RealAddress(addr);
-                ClrType clrType = heap.GetObjectType(addr);
-                if (!TypeExtractor.Is(TypeExtractor.KnownTypes.HashSet, clrType.Name))
-                    return ("Instance at: " + Utils.RealAddressString(addr) + " is not " + TypeExtractor.GetKnowTypeName(TypeExtractor.KnownTypes.HashSet), null, null);
+        //public static ValueTuple<string, KeyValuePair<string, string>[], string[]> GetHashSetContent(ClrHeap heap, ulong addr)
+        //{
+        //    try
+        //    {
+        //        addr = Utils.RealAddress(addr);
+        //        ClrType clrType = heap.GetObjectType(addr);
+        //        if (!TypeExtractor.Is(TypeExtractor.KnownTypes.HashSet, clrType.Name))
+        //            return ("Instance at: " + Utils.RealAddressString(addr) + " is not " + TypeExtractor.GetKnowTypeName(TypeExtractor.KnownTypes.HashSet), null, null);
 
-                int count = GetFieldIntValue(heap, addr, clrType, "m_count");
-                if (count < 1)
-                {
-                    return (null, Utils.EmptyArray<KeyValuePair<string, string>>.Value, Utils.EmptyArray<string>.Value);
-                }
-                int lastIndex = GetFieldIntValue(heap, addr, clrType, "m_lastIndex");
-                int version = GetFieldIntValue(heap, addr, clrType, "m_version");
-                ClrInstanceField slotsFld = clrType.GetFieldByName("m_slots");
-                (ClrType slotsFldType, ClrElementKind slotsFldKind, ulong slotsFldAddr) = TypeExtractor.GetRealType(heap, addr, slotsFld, false);
-                var aryLen = slotsFldType == null ? 0 : slotsFldType.GetArrayLength(slotsFldAddr);
-                KeyValuePair<string, string>[] fldDescription = new KeyValuePair<string, string>[]
-                {
-                    new KeyValuePair<string, string>("count", count.ToString()),
-                    new KeyValuePair<string, string>("slot count", aryLen.ToString()),
-                    new KeyValuePair<string, string>("last index", lastIndex.ToString()),
-                    new KeyValuePair<string, string>("version", version.ToString())
-                };
+        //        int count = GetFieldIntValue(heap, addr, clrType, "m_count");
+        //        if (count < 1)
+        //        {
+        //            return (null, Utils.EmptyArray<KeyValuePair<string, string>>.Value, Utils.EmptyArray<string>.Value);
+        //        }
+        //        int lastIndex = GetFieldIntValue(heap, addr, clrType, "m_lastIndex");
+        //        int version = GetFieldIntValue(heap, addr, clrType, "m_version");
+        //        ClrInstanceField slotsFld = clrType.GetFieldByName("m_slots");
+        //        (ClrType slotsFldType, ClrElementKind slotsFldKind, ulong slotsFldAddr) = TypeExtractor.GetRealType(heap, addr, slotsFld, false);
+        //        var aryLen = slotsFldType == null ? 0 : slotsFldType.GetArrayLength(slotsFldAddr);
+        //        KeyValuePair<string, string>[] fldDescription = new KeyValuePair<string, string>[]
+        //        {
+        //            new KeyValuePair<string, string>("count", count.ToString()),
+        //            new KeyValuePair<string, string>("slot count", aryLen.ToString()),
+        //            new KeyValuePair<string, string>("last index", lastIndex.ToString()),
+        //            new KeyValuePair<string, string>("version", version.ToString())
+        //        };
 
-                (ClrType slotType, ClrInstanceField slotValueFld, ClrElementKind valueFldTypeKind, ClrInstanceField slotHashFld, ClrInstanceField slotNextFld) = GetHashSetSlotTypeInfo(heap, addr, slotsFldAddr, slotsFldType, lastIndex);
+        //        (ClrType slotType, ClrInstanceField slotValueFld, ClrElementKind valueFldTypeKind, ClrInstanceField slotHashFld, ClrInstanceField slotNextFld) = GetHashSetSlotTypeInfo(heap, addr, slotsFldAddr, slotsFldType, lastIndex);
 
-                var slotTypeName = slotType.Name;
-                var slotValueFldTypeName = slotValueFld.Type.Name;
+        //        var slotTypeName = slotType.Name;
+        //        var slotValueFldTypeName = slotValueFld.Type.Name;
 
-                string[] values = new string[count];
-                int copied = 0;
-                for (int i = 0; i < lastIndex && copied < count; ++i)
-                {
-                    var eaddr = slotsFldType.GetArrayElementAddress(slotsFldAddr, i);
-                    int hash = GetFieldIntValue(heap, eaddr, slotHashFld, true);
-                    if (hash < 0) continue;
-                    string val = (string)GetFieldValue(heap, eaddr, slotValueFld, slotValueFld.Type, valueFldTypeKind, true, false);
-                    values[copied++] = val;
-                }
+        //        string[] values = new string[count];
+        //        int copied = 0;
+        //        for (int i = 0; i < lastIndex && copied < count; ++i)
+        //        {
+        //            var eaddr = slotsFldType.GetArrayElementAddress(slotsFldAddr, i);
+        //            int hash = GetFieldIntValue(heap, eaddr, slotHashFld, true);
+        //            if (hash < 0) continue;
+        //            string val = (string)GetFieldValue(heap, eaddr, slotValueFld, slotValueFld.Type, valueFldTypeKind, true, false);
+        //            values[copied++] = val;
+        //        }
 
-                return (null, fldDescription, values);
-            }
-            catch (Exception ex)
-            {
-                string error = Utils.GetExceptionErrorString(ex);
-                return (error, null, null);
-            }
+        //        return (null, fldDescription, values);
+        //    }
+        //    catch (Exception ex)
+        //    {
+        //        string error = Utils.GetExceptionErrorString(ex);
+        //        return (error, null, null);
+        //    }
 
-        }
+        //}
 
 
-        #endregion System.Collections.Generic.HashSet<T>
+        //#endregion System.Collections.Generic.HashSet<T>
 
         #region System.Collections.Generic.Queue<T>
         /// <summary>

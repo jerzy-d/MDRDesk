@@ -16,13 +16,6 @@ namespace ClrMDRIndex
             ClrType elType = type.ComponentType;
             ClrElementKind elKind = TypeExtractor.GetElementKind(elType);
             int len = type.GetArrayLength(addr);
-            if (elKind == ClrElementKind.Unknown || TypeExtractor.IsAmbiguousKind(elKind))
-            {
-                for (int i = 0; i < len; ++i)
-                {
-
-                }
-            }
             return (elType, elKind, len);
         }
 
@@ -622,18 +615,14 @@ namespace ClrMDRIndex
 
         #region System.Collections.Generic.HashSet<T>
 
-        // C:\WinDbgStuff\Dumps\TestApp.exe_180107_110845.dmp.map
-        // TODO JRD -- check error
-        //  0x000173c1b230a8       System.Collections.Generic.HashSet<System.String>
-
         public static ValueTuple<string, KeyValuePair<string, string>[], string[]> HashSetContentAsStrings(ClrHeap heap, ulong addr)
         {
             try
             {
                 addr = Utils.RealAddress(addr);
                 {
-                    string err = CheckCollection(heap, addr, TypeExtractor.KnownTypes.HashSet);
-                    if (err != null) return (err, null, null);
+                    string terr = CheckCollection(heap, addr, TypeExtractor.KnownTypes.HashSet);
+                    if (terr != null) return (terr, null, null);
                 }
                 (string error, ClrType type, ClrElementKind kind, (ClrType[] fldTypes, ClrElementKind[] fldKinds, object[] values, StructFieldsInfo[] structFldInfos, StructValues[] structValues)) =
                     ClassValue.GetClassValues(heap, addr);
@@ -644,14 +633,54 @@ namespace ClrMDRIndex
                 int m_version = GetFieldInt(type.Fields, "m_version", values);
                 int slotsFldNdx = GetFieldNdx(type.Fields, "m_slots");
 
-                ClrType slotsType = fldTypes[slotsFldNdx];
                 ulong slotsAddr =(ulong)values[slotsFldNdx];
-                ClrType slotType = slotsType.ComponentType;
-                bool useItemType;
-                (ClrType slotType, ClrType itemType, ClrInstanceField itemFld, StructFieldsInfo itemSfi, ClrElementKind itemKind, ClrInstanceField hashCodeFld, ClrInstanceField nextFld) = GetHashSetSlotTypeInfo(heap, slotsAddr, slotsType, out useItemType);
-                int aryLen = slotsType.GetArrayLength(slotsAddr);
+                ClrType slotsType = heap.GetObjectType(slotsAddr);
+                bool useItemType = false;
+
+                (ClrType slotType, ClrElementKind slotKind, int slotAryLen) = ArrayInfo(heap, slotsType, slotsAddr);
+
+                ClrInstanceField hashCodeFld = FindField(slotType.Fields,"hashCode");
+                ClrInstanceField itemFld = FindField(slotType.Fields, "value");
+                ClrInstanceField nextFld = FindField(slotType.Fields, "next");
+
+                ClrType itemType = itemFld.Type;
+                ClrElementKind itemKind = TypeExtractor.GetElementKind(itemType);
+                StructFieldsInfo itemSfi = null;
+                if (TypeExtractor.IsStruct(itemKind))
+                {
+                    for (int i = 0; i < slotAryLen; ++i)
+                    {
+                        var eaddr = slotsType.GetArrayElementAddress(slotsAddr, i);
+                        var iaddr = itemFld.GetAddress(eaddr, true);
+                        itemSfi = StructFieldsInfo.GetStructFields(itemType, heap, iaddr);
+                        if (itemSfi != null) break;
+                    }
+                }
+                else if (TypeExtractor.IsAmbiguousKind(itemKind))
+                {
+                    for (int i = 0; i < slotAryLen; ++i)
+                    {
+                        var eaddr = slotsType.GetArrayElementAddress(slotsAddr, i);
+                        var fobj = itemFld.GetValue(eaddr, true, false);
+                        if (fobj != null && (fobj is ulong))
+                        {
+                            var t = heap.GetObjectType((ulong)fobj);
+                            if (t != null)
+                            {
+                                itemType = t;
+                                var k = TypeExtractor.GetElementKind(itemType);
+                                if (k != itemKind) useItemType = true;
+                                itemKind = k;
+                                break;
+                            }
+                        }
+
+                    }
+                }
+
                 string[] hvalues = new string[m_count];
                 int copied = 0;
+                
                 for (int i = 0; i < m_lastIndex && copied < m_count; ++i)
                 {
                     var eaddr = slotsType.GetArrayElementAddress(slotsAddr, i);
@@ -670,26 +699,20 @@ namespace ClrMDRIndex
                         ulong a = TypeExtractor.IsObjectReference(itemKind)
                             ? (ulong)itemFld.GetValue(eaddr, true)
                             : itemFld.GetAddress(eaddr, true);
-                        //if (valEnum != null) valVal = valEnum.GetEnumString(a, valType, TypeExtractor.GetClrElementType(valKind));
                         hvalues[copied++] = ValueExtractor.GetTypeValueAsString(heap, a, itemType, itemKind);
                     }
                     else
                     {
-                        //if (valEnum != null) valVal = valEnum.GetEnumString(valObj, TypeExtractor.GetClrElementType(valKind));
                         hvalues[copied++] = (string)ValueExtractor.GetFieldValue(heap, eaddr, itemFld, itemType, itemKind, true, false);
                     }
-
-                    //string val = (string)GetFieldValue(heap, eaddr, slotValueFld, slotValueFld.Type, valueFldTypeKind, true, false);
-                    //values[copied++] = val;
                 }
 
                 KeyValuePair<string, string>[] fldDescription = new KeyValuePair<string, string>[]
                 {
                     new KeyValuePair<string, string>("count", m_count.ToString()),
-                    new KeyValuePair<string, string>("array len", aryLen.ToString()),
+                    new KeyValuePair<string, string>("array len", slotAryLen.ToString()),
                     new KeyValuePair<string, string>("version", m_version.ToString())
                 };
-
 
                 return (null, fldDescription, hvalues);
             }
