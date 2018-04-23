@@ -3763,7 +3763,7 @@ namespace ClrMDRIndex
                             switch (TypeExtractor.GetSpecialKind(fldKinds[j]))
                             {
                                 case ClrElementKind.Decimal:
-                                    var dec = ValueExtractor.GetDecimal(addr, fields[j], intrnl);
+                                    var dec = ValueExtractor.GetDecimalPAF(addr, fields[j], intrnl);
                                     if (dec == 0m)
                                     {
                                         counts[j] = counts[j] + 1;
@@ -3771,7 +3771,7 @@ namespace ClrMDRIndex
                                     }
                                     break;
                                 case ClrElementKind.DateTime:
-                                    var dt = ValueExtractor.GetDateTime(addr, fields[j], intrnl);
+                                    var dt = ValueExtractor.GetDateTimePAF(addr, fields[j], intrnl);
                                     if (dt < minDt)
                                     {
                                         counts[j] = counts[j] + 1;

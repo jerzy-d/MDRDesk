@@ -83,13 +83,13 @@ namespace ClrMDRIndex
                         switch (TypeExtractor.GetSpecialKind(fldKind))
                         {
                             case ClrElementKind.DateTime:
-                                objects[i] = ValueExtractor.GetDateTime(addr, fld, false);
+                                objects[i] = ValueExtractor.GetDateTimePAF(addr, fld, false);
                                 break;
                             case ClrElementKind.Guid:
                                 objects[i] = ValueExtractor.GetGuid(addr, fld, false);
                                 break;
                             case ClrElementKind.Decimal:
-                                objects[i] = ValueExtractor.GetDecimal(addr, fld, false);
+                                objects[i] = ValueExtractor.GetDecimalPAF(addr, fld, false);
                                 break;
                             case ClrElementKind.TimeSpan:
                                 objects[i] = ValueExtractor.TimeSpanValue(addr, fldType);
@@ -284,7 +284,7 @@ namespace ClrMDRIndex
                                 strings[i] = ValueExtractor.GuidValueAsString(addr, fldType);
                                 break;
                             case ClrElementKind.Decimal:
-                                strings[i] = ValueExtractor.GetDecimalValue(addr, fld, false);
+                                strings[i] = ValueExtractor.DecimalStringPAF(addr, fld, false);
                                 break;
                             case ClrElementKind.TimeSpan:
                                 strings[i] = ValueExtractor.TimeSpanValueAsString(addr, fldType);

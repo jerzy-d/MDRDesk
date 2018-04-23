@@ -13,7 +13,7 @@
         xmlns:mdr="clr-namespace:ClrMDRIndex;assembly=ClrMDRIndex"
         xmlns:wpfgraphcontrol="clr-namespace:Microsoft.Msagl.WpfGraphControl;assembly=Microsoft.Msagl.WpfGraphControl"
         mc:Ignorable="d"
-        Title="MainWindow" Height="750" Width="1200"  Background="#FF43626C"
+        Title="MainWindow" Height="850" Width="1360"  Background="#FF43626C"
         Icon="Images/appbar.list.gear.ico"
         Closing="MainWindow_Closing">
 
@@ -136,73 +136,6 @@
         <!-- change ulong value to hex string-->
         <local:LongHexConverter x:Key="LongHexConverter" />
 
-        <!--Grid x:Key="ListingGrid" x:Shared="False">
-            <Grid.RowDefinitions>
-                <RowDefinition Height="75*"/>
-                <RowDefinition Height="5"/>
-                <RowDefinition Height="20*"/>
-            </Grid.RowDefinitions>
-            <ListView  Name="ListingView" Grid.Row="0" VerticalAlignment="Stretch" HorizontalAlignment="Stretch" Margin="2,2,2,2" GridViewColumnHeader.Click="ListViewBottomGridHeaderClick">
-                <ListView.ItemContainerStyle>
-                    <Style TargetType="ListViewItem">
-                        <Setter Property="HorizontalContentAlignment" Value="Left" />
-                    </Style>
-                </ListView.ItemContainerStyle>
-                <ListView.View>
-                    <GridView AllowsColumnReorder="True">
-                    </GridView>
-                </ListView.View>
-            </ListView>
-            <GridSplitter Grid.Row="1" VerticalAlignment="Center" HorizontalAlignment="Stretch" Height="5" ShowsPreview="False" Background="DarkGray"></GridSplitter>
-            <TextBox Name="ListingInformation" v4:Grid.Row="2" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" Margin="2,2,2,2">
-            </TextBox>
-        </-->
-        <!-- thread grids -->
-        <!-- ############ -->
-        <!--<Grid x:Key="DeadlockGraphXGrid" x:Shared="False">
-            <DockPanel>
-                <gx:ZoomControl x:Name="DlkZoomCtrl" Visibility="Visible">
-                    <local:DlkGraphArea x:Name="DlkGraphArea"/>
-                </gx:ZoomControl>
-            </DockPanel>
-        </Grid>
-        <Grid x:Key="ThreadBlockingGraphXGrid" x:Shared="False">
-            <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="32"/>
-                <ColumnDefinition Width="32"/>
-                <ColumnDefinition Width="*"/>
-            </Grid.ColumnDefinitions>
-            <Grid.RowDefinitions>
-                <RowDefinition Height="40"></RowDefinition>
-                <RowDefinition Height="*"></RowDefinition>
-            </Grid.RowDefinitions>
-            <StackPanel v4:Grid.Row="0" v4:Grid.ColumnSpan="3" Background="WhiteSmoke"  Orientation="Horizontal">
-                <Button  x:Name="ThreadBlockingGraphXBack" Margin="2,0,2,0" Width="24" Height="24" HorizontalAlignment="Center" VerticalAlignment="Center" BorderThickness="0" Click="ThreadBlockingGraphXBackClicked"
-                         Background="LightGray">
-                    <Button.ToolTip>Redo</Button.ToolTip>
-                    <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                        <Image Source=".\Images\Backward_16x.png" Width="16" Height="16" Margin="0,0,10,0" VerticalAlignment="Center" HorizontalAlignment="Center"/>
-                        -->
-        <!--<TextBlock FontWeight="Bold" FontSize="12">Redo</TextBlock>-->
-        <!--
-                    </StackPanel>
-                </Button>
-                <Button x:Name="ThreadBlockingGraphXForward" Margin="2,0,2,0" Width="24" Height="24" HorizontalAlignment="Right" VerticalAlignment="Center" BorderThickness="0" Click="ThreadBlockingGraphXForwardClicked"
-                        Background="LightGray">
-                    <Button.ToolTip>Undo</Button.ToolTip>
-                    <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                        <Image Source=".\Images\Forward_16x.png" Width="16" Height="16" Margin="0,0,10,0" VerticalAlignment="Center" HorizontalAlignment="Center"/>
-                        -->
-        <!--<TextBlock FontWeight="Bold" FontSize="12">Undo</TextBlock>-->
-        <!--
-                    </StackPanel>
-                </Button>
-                <TextBlock Name="ThreadBlockingGraphXHelp" Margin="32,0,2,0" HorizontalAlignment="Right" VerticalAlignment="Center" FontFamily="Trebuchet MS"  FontSize="12" FontStyle="Italic"></TextBlock>
-            </StackPanel>
-            <gx:ZoomControl x:Name="TBZoomCtrl" Visibility="Visible" v4:Grid.Row="1" v4:Grid.Column="0" v4:Grid.ColumnSpan="3">
-                <local:DlkGraphArea x:Name="TBGraphArea" Margin="2,2,2,2"/>
-            </gx:ZoomControl>
-        </Grid>-->
         <Grid x:Key="ThreadViewGrid" x:Shared="False">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="60*"/>
@@ -227,10 +160,6 @@
                     </ListView.View>
                 </ListView>
                 <GridSplitter Grid.Row="1" VerticalAlignment="Center" HorizontalAlignment="Stretch" Height="5" ShowsPreview="False" Background="DarkGray"></GridSplitter>
-                <!--<TextBox Name="ThreadListingInformation" v4:Grid.Row="2" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" Margin="2,2,2,2">
-                </TextBox>-->
-                <!--<ListBox Name="ThreadListingFrames" v4:Grid.Row="2" Grid.Column="0" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" Margin="2,2,2,2" FontFamily="Consolas">
-                </ListBox>-->
                 <ListView Name="ThreadListingFrames" Grid.Row="2" VerticalAlignment="Stretch" HorizontalAlignment="Stretch" Margin="2,2,2,2" FontFamily="Consolas">
                     <ListView.ItemContainerStyle>
                         <Style TargetType="ListViewItem">
@@ -440,24 +369,6 @@
             </Grid>
         </Grid>
 
-        <!-- instance grids -->
-        <!-- ############ -->
-        <Grid x:Key="InstanceHierarchyView" Name="InstanceHierarchyView" x:Shared="False">
-            <Grid.RowDefinitions>
-                <RowDefinition Height="5*"/>
-                <RowDefinition Height="10"/>
-                <RowDefinition Height="85*"/>
-            </Grid.RowDefinitions>
-            <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="50*"/>
-                <ColumnDefinition Width="50*"/>
-            </Grid.ColumnDefinitions>
-            <TextBlock Name="HirarchyViewInstance" Grid.Row="0" Grid.Column="0" Grid.ColumnSpan="2" HorizontalAlignment="Stretch" VerticalAlignment="Stretch"></TextBlock>
-            <Label Content="Parent" Grid.Row="1" Grid.Column="0" HorizontalAlignment="Center"/>
-            <Label Content="Children" Grid.Row="1" Grid.Column="1" HorizontalAlignment="Center"/>
-            <ListBox Name="InstanceHierarchyParents" Grid.Row="2" Grid.Column="0" HorizontalAlignment="Stretch" VerticalAlignment="Stretch"/>
-            <ListBox Name="InstanceHierarchyChildren" Grid.Row="2" Grid.Column="1" HorizontalAlignment="Stretch" VerticalAlignment="Stretch"/>
-        </Grid>
         <Grid x:Key="GeneralInfoView" Name="GeneralInfoView" x:Shared="False">
             <Grid.RowDefinitions>
                 <RowDefinition Height="70*"/>
@@ -477,15 +388,6 @@
                     <DataGridTextColumn Header="Total" Binding="{Binding TotalCount}" CellStyle="{StaticResource RightDataGridCell}" Width="*"></DataGridTextColumn>
                 </DataGrid.Columns>
             </DataGrid>
-            <!--<Label Name="GenerationInfoLabel" Grid.Row="1" FontWeight="Bold" FontSize="12"></Label>-->
-            <!--<Grid Name="GeneralInfoChart" Grid.Row="2">
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="50*"/>
-                    <ColumnDefinition Width="50*"/>
-                </Grid.ColumnDefinitions>
-                <Grid Name="GeneralInfoChart1" Grid.Column="0"></Grid>
-                <Grid Name="GeneralInfoChart2" Grid.Column="1"></Grid>
-            </Grid>-->
         </Grid>
         <!-- display non-static instances -->
         <Grid x:Key="NameTypeView" x:Shared="False">
@@ -504,7 +406,7 @@
             </ToolBarTray>
             <ListBox Grid.Row="1" Grid.Column="0" Margin="4,4,4,4" Name="lbTypeViewTypeNames" HorizontalAlignment="Stretch" SelectionChanged="lbTypeNamesSelectionChange" DisplayMemberPath="Key" FontFamily="Consolas" FontSize="12" ContextMenu="{StaticResource TypeListContextMenu}" >
             </ListBox>
-            <ListBox Grid.Row="1" Grid.Column="1" Margin="4,4,4,4" Name="lbTypeNameAddresses" HorizontalAlignment="Stretch" SelectionMode="Single" SelectionChanged="Selector_OnSelectionChanged" FontFamily="Consolas" FontSize="12" ContextMenu="{StaticResource AddresListContextMenu}"  MouseDoubleClick="AddressListDoubleClicked" >
+            <ListBox Grid.Row="1" Grid.Column="1" Margin="4,4,4,4" Name="lbTypeNameAddresses" HorizontalAlignment="Stretch" SelectionMode="Extended" SelectionChanged="Selector_OnSelectionChanged" FontFamily="Consolas" FontSize="12" ContextMenu="{StaticResource AddresListContextMenu}"  MouseDoubleClick="AddressListDoubleClicked" >
                 <ListBox.ItemTemplate>
                     <DataTemplate>
                         <TextBlock Text="{Binding Converter={StaticResource LongHexConverter}}"/>
@@ -543,7 +445,7 @@
             <ListBox Grid.Row="1" Grid.Column="2" Margin="4,4,4,4" Name="lbNamespaceViewTypeNames" HorizontalAlignment="Stretch" SelectionMode="Single" SelectionChanged="lbTpNamesSelectionChange" DisplayMemberPath="Key" FontFamily="Consolas" FontSize="12" ContextMenu="{StaticResource TypeListContextMenu}">
             </ListBox>
             <GridSplitter Grid.Row="1"  Grid.Column="3" VerticalAlignment="Stretch" HorizontalAlignment="Center" Width="5" ShowsPreview="False" Background="DarkGray"></GridSplitter>
-            <ListBox Grid.Row="1" Grid.Column="4" Margin="4,4,4,4" Name="lbTypeNamespaceAddresses" HorizontalAlignment="Stretch" SelectionMode="Single" ContextMenu="{StaticResource AddresListContextMenu}"  FontFamily="Consolas" FontSize="12" MouseDoubleClick="AddressListDoubleClicked">
+            <ListBox Grid.Row="1" Grid.Column="4" Margin="4,4,4,4" Name="lbTypeNamespaceAddresses" HorizontalAlignment="Stretch" SelectionMode="Extended" ContextMenu="{StaticResource AddresListContextMenu}"  FontFamily="Consolas" FontSize="12" MouseDoubleClick="AddressListDoubleClicked">
                 <ListBox.ItemTemplate>
                     <DataTemplate>
                         <TextBlock Text="{Binding Converter={StaticResource LongHexConverter}}"/>
@@ -768,21 +670,6 @@
             </TextBox>
         </Grid>
 
-        <Grid x:Key="GraphGrid" x:Shared="False" VerticalAlignment="Stretch" HorizontalAlignment="Stretch" ClipToBounds="True">
-            <Grid.RowDefinitions>
-                <RowDefinition Height="75*"/>
-                <RowDefinition Height="5"/>
-                <RowDefinition Height="20*"/>
-            </Grid.RowDefinitions>
-            <Grid Name="GraphGrid" Grid.Row="0" VerticalAlignment="Stretch" HorizontalAlignment="Stretch" ClipToBounds="True">
-
-            </Grid>
-            <!--<StackPanel Name="GraphPanel" Grid.Row="0" VerticalAlignment="Stretch" HorizontalAlignment="Stretch" Margin="2,2,2,2" Visibility="Visible" Orientation="Horizontal">
-            </StackPanel>-->
-            <GridSplitter Grid.Row="1" VerticalAlignment="Center" HorizontalAlignment="Stretch" Height="5" ShowsPreview="False" Background="DarkGray"></GridSplitter>
-            <TextBox Name="GraphInformation" Grid.Row="2" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" Margin="2,2,2,2">
-            </TextBox>
-        </Grid>
         <!-- ### Show roots. -->
         <Grid x:Key="RootsGrid" x:Shared="False">
             <Grid.ColumnDefinitions>
@@ -864,8 +751,8 @@
                 <ColumnDefinition Width="20*"/>
                 <ColumnDefinition Width="5"/>
                 <ColumnDefinition Width="40*"/>
-                <ColumnDefinition Width="5"/>
-                <ColumnDefinition Width="Auto"/>
+                <!--<ColumnDefinition Width="5"/>
+                <ColumnDefinition Width="Auto"/>-->
             </Grid.ColumnDefinitions>
             <Grid x:Name="InstHierarchyValueGrid" Grid.Row="0" Grid.Column="0" Grid.ColumnSpan="5">
                 <Grid.ColumnDefinitions>
@@ -917,7 +804,12 @@
             </Grid>
             <GridSplitter Grid.Row="1" Grid.Column="1" VerticalAlignment="Stretch" HorizontalAlignment="Center" Width="5" ShowsPreview="False" Background="DarkGray"></GridSplitter>
             <Grid x:Name="InstHierarchyFieldGrid" Grid.Row="1" Grid.Column="2">
-                <TreeView x:Name="InstHierarchyFieldTreeview" VerticalAlignment="Stretch" HorizontalAlignment="Stretch" Margin="2,2,2,2" FontSize="12" 
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="50*"/>
+                    <RowDefinition Height="5"/>
+                    <RowDefinition Height="50*"/>
+                </Grid.RowDefinitions>
+                <TreeView x:Name="InstHierarchyFieldTreeview" Grid.Row="0" VerticalAlignment="Stretch" HorizontalAlignment="Stretch" Margin="2,2,2,2" FontSize="12" 
                           MouseDoubleClick="InstHierarchyTreeViewDoubleClicked">
                     <TreeView.ItemContainerStyle>
                         <Style TargetType="TreeViewItem">
@@ -926,12 +818,15 @@
                     </TreeView.ItemContainerStyle>
                     <TreeView.BorderBrush>BlanchedAlmond</TreeView.BorderBrush>
                 </TreeView>
+                <GridSplitter Grid.Row="1" VerticalAlignment="Center" HorizontalAlignment="Stretch" Height="5" ShowsPreview="False" Background="DarkGray"></GridSplitter>
+                <Grid Name="InstHierarchyGraph" Grid.Row="2" VerticalAlignment="Stretch" HorizontalAlignment="Stretch" ClipToBounds="True">
+                </Grid>
             </Grid>
-            <GridSplitter Grid.Row="1" Grid.Column="3" VerticalAlignment="Stretch" HorizontalAlignment="Center" Width="5" ShowsPreview="False" Background="DarkGray"></GridSplitter>
-            <Expander x:Name="CollectionExpander" Margin="0,7,0,0" DockPanel.Dock="Bottom" Header="..." Grid.Row="1" Grid.Column="4" ExpandDirection="Left">
+            <!--<GridSplitter Grid.Row="1" Grid.Column="3" VerticalAlignment="Stretch" HorizontalAlignment="Center" Width="5" ShowsPreview="False" Background="DarkGray"></GridSplitter>-->
+            <!--<Expander x:Name="CollectionExpander" Margin="0,7,0,0" DockPanel.Dock="Bottom" Header="..." Grid.Row="1" Grid.Column="4" ExpandDirection="Left">
                 <DockPanel x:Name="CollectionExpanderPanel" Margin="3" LastChildFill="True">
                 </DockPanel>
-            </Expander>
+            </Expander>-->
         </Grid>
     </Window.Resources>
     <Window.CommandBindings>

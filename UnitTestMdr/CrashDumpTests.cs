@@ -3496,7 +3496,7 @@ namespace UnitTestMdr
                                     {
                                         if (pigFlds[p] != null)
                                         {
-                                            decimal dval = ValueExtractor.GetDecimal(addr, pigFlds[p], false);
+                                            decimal dval = ValueExtractor.GetDecimalPAF(addr, pigFlds[p], false);
                                             if (dval == 0m)
                                             {
                                                 ++pigDecZeroCnt;

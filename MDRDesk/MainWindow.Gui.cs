@@ -92,7 +92,7 @@ namespace MDRDesk
         private const string RootsGrid = "RootsGrid";
         private const string RootsGrid_RootTypeList = "RootTypeList";
 
-        private const string GraphGrid = "GraphGrid";
+        //private const string GraphGrid = "GraphGrid";
         private const string ReferenceGraphGrid = "ReferenceGraphGrid";
 
         private string GetReportTitle(ListView lst)

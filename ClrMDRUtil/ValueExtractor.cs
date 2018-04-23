@@ -76,9 +76,30 @@ namespace ClrMDRIndex
             return d.ToString(CultureInfo.InvariantCulture);
         }
 
-        public static decimal GetDecimal(ulong parentAddr, ClrInstanceField field, bool intr)
+        //public static decimal GetDecimal(ulong parentAddr, ClrInstanceField field, bool intr)
+        //{
+        //    var addr = field.GetAddress(parentAddr, intr);
+        //    var flags = (int)field.Type.Fields[0].GetValue(addr, true);
+        //    var hi = (int)field.Type.Fields[1].GetValue(addr, true);
+        //    var lo = (int)field.Type.Fields[2].GetValue(addr, true);
+        //    var mid = (int)field.Type.Fields[3].GetValue(addr, true);
+
+        //    int[] bits = { lo, mid, hi, flags };
+        //    decimal d = new decimal(bits);
+
+        //    return d;
+        //}
+
+        /// <summary>
+        /// Get decimal value given a class/struct address and its decimal field.
+        /// </summary>
+        /// <param name="parentAddr">Enclosing class/struct address.</param>
+        /// <param name="field">Decimal field.</param>
+        /// <param name="intern">Is the field parent a struct?</param>
+        /// <returns>Decimal value.</returns>
+        public static decimal GetDecimalPAF(ulong parentAddr, ClrInstanceField field, bool intern)
         {
-            var addr = field.GetAddress(parentAddr, intr);
+            var addr = field.GetAddress(parentAddr, intern);
             var flags = (int)field.Type.Fields[0].GetValue(addr, true);
             var hi = (int)field.Type.Fields[1].GetValue(addr, true);
             var lo = (int)field.Type.Fields[2].GetValue(addr, true);
@@ -90,22 +111,34 @@ namespace ClrMDRIndex
             return d;
         }
 
-        public static string DecimalValue(ulong addr, ClrInstanceField field)
+        /// <summary>
+        /// Get decimal value given a class/struct address and its decimal field.
+        /// </summary>
+        /// <param name="parentAddr">Enclosing class/struct address.</param>
+        /// <param name="field">Decimal field.</param>
+        /// <param name="intern">Is the field parent a struct?</param>
+        /// <returns>Decimal value.</returns>
+        public static string DecimalStringPAF(ulong parentAddr, ClrInstanceField field, bool intern, string formatSpec=null)
         {
-            Debug.Assert(field.Type != null);
-            var flags = (int)field.Type.Fields[0].GetValue(addr, false);
-            var hi = (int)field.Type.Fields[1].GetValue(addr, false);
-            var lo = (int)field.Type.Fields[2].GetValue(addr, false);
-            var mid = (int)field.Type.Fields[3].GetValue(addr, false);
-
-
-            int[] bits = { lo, mid, hi, flags };
-            decimal d = new decimal(bits);
-
-            return d.ToString("G", CultureInfo.InvariantCulture);
+            decimal d = GetDecimalPAF(parentAddr, field, intern);
+            return formatSpec == null ? d.ToString("G", CultureInfo.InvariantCulture) : d.ToString(formatSpec);
         }
 
-        //public static string GetDecimalValueR(ulong addr, ClrType type, string formatSpec)
+        //public static string DecimalValue(ulong addr, ClrInstanceField field)
+        //{
+        //    Debug.Assert(field.Type != null);
+        //    var flags = (int)field.Type.Fields[0].GetValue(addr, true);
+        //    var hi = (int)field.Type.Fields[1].GetValue(addr, true);
+        //    var lo = (int)field.Type.Fields[2].GetValue(addr, true);
+        //    var mid = (int)field.Type.Fields[3].GetValue(addr, true);
+
+        //    int[] bits = { lo, mid, hi, flags };
+        //    decimal d = new decimal(bits);
+
+        //    return d.ToString("G", CultureInfo.InvariantCulture);
+        //}
+
+        ////public static string GetDecimalValueR(ulong addr, ClrType type, string formatSpec)
         //{
         //    decimal d = GetDecimalValueR(addr, type);
         //    return formatSpec == null ? d.ToString("G", CultureInfo.InvariantCulture) : d.ToString(formatSpec);
@@ -134,17 +167,17 @@ namespace ClrMDRIndex
             return formatSpec == null ? d.ToString("G", CultureInfo.InvariantCulture) : d.ToString(formatSpec);
         }
 
-        public static decimal GetDecimalValue(ulong addr, ClrType type, bool intr)
-        {
-            var flags = (int)type.Fields[0].GetValue(addr, intr);
-            var hi = (int)type.Fields[1].GetValue(addr, true);
-            var lo = (int)type.Fields[2].GetValue(addr, true);
-            var mid = (int)type.Fields[3].GetValue(addr, true);
-            var checkflags = flags & 0x0000FF01;
-            if (!IsValidDecimalFlag(flags)) return 0m;
-            int[] bits = { lo, mid, hi, flags };
-            return new decimal(bits);
-        }
+        //public static decimal GetDecimalValue(ulong addr, ClrType type, bool intr)
+        //{
+        //    var flags = (int)type.Fields[0].GetValue(addr, intr);
+        //    var hi = (int)type.Fields[1].GetValue(addr, true);
+        //    var lo = (int)type.Fields[2].GetValue(addr, true);
+        //    var mid = (int)type.Fields[3].GetValue(addr, true);
+        //    var checkflags = flags & 0x0000FF01;
+        //    if (!IsValidDecimalFlag(flags)) return 0m;
+        //    int[] bits = { lo, mid, hi, flags };
+        //    return new decimal(bits);
+        //}
 
         public static decimal GetDecimalValue(ulong addr, ClrType type)
         {
@@ -167,31 +200,31 @@ namespace ClrMDRIndex
             return true;
         }
 
-        public static void Swap(int[] ary, int i1, int i2)
-        {
-            var temp = ary[i1];
-            ary[i1] = ary[i2];
-            ary[i2] = temp;
-        }
+        //public static void Swap(int[] ary, int i1, int i2)
+        //{
+        //    var temp = ary[i1];
+        //    ary[i1] = ary[i2];
+        //    ary[i2] = temp;
+        //}
 
-        public static decimal GetDecimalValue(ClrHeap heap, ulong addr)
-        {
-            int[] bits = ReadIntAryAtAddress(addr, 4, heap);
-            // flags, hi, lo, mid 
-            Swap(bits, 0, 3);
-            // mid, hi, lo, flags 
-            Swap(bits, 2, 0);
-            // lo, hi,mid, flags 
-            Swap(bits, 1, 2);
-            // lo, mid, hi, flags
-            return new decimal(bits);
-        }
+        //public static decimal GetDecimalValue(ClrHeap heap, ulong addr)
+        //{
+        //    int[] bits = ReadIntAryAtAddress(addr, 4, heap);
+        //    // flags, hi, lo, mid 
+        //    Swap(bits, 0, 3);
+        //    // mid, hi, lo, flags 
+        //    Swap(bits, 2, 0);
+        //    // lo, hi,mid, flags 
+        //    Swap(bits, 1, 2);
+        //    // lo, mid, hi, flags
+        //    return new decimal(bits);
+        //}
 
-        public static string GetDecimalValue(ClrHeap heap, ulong addr, string formatSpec)
-        {
-            decimal d = GetDecimalValue(heap, addr);
-            return formatSpec == null ? d.ToString(CultureInfo.InvariantCulture) : d.ToString(formatSpec);
-        }
+        //public static string GetDecimalValue(ClrHeap heap, ulong addr, string formatSpec)
+        //{
+        //    decimal d = GetDecimalValue(heap, addr);
+        //    return formatSpec == null ? d.ToString(CultureInfo.InvariantCulture) : d.ToString(formatSpec);
+        //}
 
         #endregion decimal
 
@@ -376,7 +409,7 @@ namespace ClrMDRIndex
         /// <param name="fld">DateTime field.</param>
         /// <param name="internalPtr">Is containing instance a struct.</param>
         /// <returns></returns>
-        public static DateTime GetDateTime(ulong parentAddr, ClrInstanceField fld, bool internalPtr)
+        public static DateTime GetDateTimePAF(ulong parentAddr, ClrInstanceField fld, bool internalPtr)
         {
             ulong fldAddr = fld.GetAddress(parentAddr, internalPtr);
             var data = (ulong)fld.Type.Fields[0].GetValue(fldAddr, true);
@@ -1294,11 +1327,11 @@ namespace ClrMDRIndex
                     case ClrElementKind.Guid:
                         return theValue ? (object)GetGuid(addr, fld) : GuidValue(addr, fld);
                     case ClrElementKind.DateTime:
-                        return theValue ? (object)GetDateTime(addr, fld, intern) : GetDateTimeString(addr, fld, intern);
+                        return theValue ? (object)GetDateTimePAF(addr, fld, intern) : GetDateTimeString(addr, fld, intern);
                     case ClrElementKind.TimeSpan:
                         return theValue ? (object)GetTimeSpan(addr, fld) : TimeSpanValue(addr, fld);
                     case ClrElementKind.Decimal:
-                        return theValue ? (object)GetDecimal(addr, fld, intern) : GetDecimalValue(addr, fld, intern);
+                        return theValue ? (object)GetDecimalPAF(addr, fld, intern) : DecimalStringPAF(addr, fld, intern);
                     case ClrElementKind.Exception:
                         return theValue ? (object)addr : Utils.RealAddressString(addr);
                     case ClrElementKind.Enum:
@@ -1489,7 +1522,7 @@ namespace ClrMDRIndex
                     case ClrElementKind.TimeSpan:
                         return TimeSpanValueString(addr, fld, intern);
                     case ClrElementKind.Decimal:
-                        return DecimalValue(fldAddr, fld);
+                        return DecimalStringPAF(addr, fld, intern);
                     case ClrElementKind.Exception:
                         return Utils.RealAddressString(fldAddr);
                     case ClrElementKind.Enum:
@@ -1532,7 +1565,7 @@ namespace ClrMDRIndex
                     case ClrElementKind.TimeSpan:
                         return TimeSpanValue(fldAddr, fld);
                     case ClrElementKind.Decimal:
-                        return DecimalValue(fldAddr, fld);
+                        return DecimalStringPAF(addr, fld, intern);
                     case ClrElementKind.Exception:
                         return Utils.RealAddressString(fldAddr);
                     case ClrElementKind.Enum:
@@ -1812,7 +1845,7 @@ namespace ClrMDRIndex
                 switch(TypeExtractor.GetSpecialKind(fldKind))
                 {
                     case ClrElementKind.Decimal:
-                        return GetDecimalValue(addr, fld, intr);
+                        return DecimalStringPAF(addr, fld, intr);
                     case ClrElementKind.DateTime:
                         return GetDateTimeValue(addr, fld, intr);
                     case ClrElementKind.TimeSpan:
@@ -1854,7 +1887,7 @@ namespace ClrMDRIndex
                 switch (TypeExtractor.GetSpecialKind(fldKind))
                 {
                     case ClrElementKind.Decimal:
-                        return GetDecimalValue(addr, fld, intr);
+                        return GetDecimalPAF(addr, fld, intr);
                     case ClrElementKind.DateTime:
                         return GetDateTimeValue(addr, fld, intr);
                     case ClrElementKind.TimeSpan:

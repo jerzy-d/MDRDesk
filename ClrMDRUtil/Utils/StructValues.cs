@@ -381,7 +381,7 @@ namespace ClrMDRIndex
                 switch (TypeExtractor.GetSpecialKind(fldKind))
                 {
                     case ClrElementKind.Decimal:
-                        return ValueExtractor.GetDecimalValue(addr, field, intr);
+                        return ValueExtractor.DecimalStringPAF(addr, field, intr);
                     case ClrElementKind.DateTime:
                         return ValueExtractor.GetDateTimeValue(addr, field, intr);
                     case ClrElementKind.TimeSpan:
@@ -455,9 +455,9 @@ namespace ClrMDRIndex
                 switch (TypeExtractor.GetSpecialKind(fldKind))
                 {
                     case ClrElementKind.Decimal:
-                        return ValueExtractor.GetDecimal(addr, field, intr);
+                        return ValueExtractor.GetDecimalPAF(addr, field, intr);
                     case ClrElementKind.DateTime:
-                        return ValueExtractor.GetDateTime(addr, field, intr);
+                        return ValueExtractor.GetDateTimePAF(addr, field, intr);
                     case ClrElementKind.TimeSpan:
                         return ValueExtractor.GetTimeSpan(addr, field, intr);
                     case ClrElementKind.Guid:
