@@ -131,7 +131,7 @@ namespace ClrMDRIndex
                 kinds[i] = TypeExtractor.GetElementKind(fld.Type);
                 names[i] = fld.Name;
                 typeNames[i] = fld.Type == null ? Constants.UnknownName : fld.Type.Name;
-                if (TypeExtractor.IsStruct(kinds[i]))
+                if (TypeExtractor.IsUnknownStruct(kinds[i]))
                 {
                     if (structFields == null) structFields = new StructFields[cnt];
                     structFields[i] = GetStructFields(fld.Type);
@@ -248,7 +248,7 @@ namespace ClrMDRIndex
                     }
                 }
 
-                if (TypeExtractor.IsStruct(fldKinds[i]) || TypeExtractor.IsStruct(typeKinds[i]))
+                if (TypeExtractor.IsUnknownStruct(fldKinds[i]) || TypeExtractor.IsUnknownStruct(typeKinds[i]))
                 {
                     if (structFields == null) structFields = new StructFieldsInfo[cnt];
                     var faddr = fld.GetAddress(addr, false);
@@ -334,7 +334,7 @@ namespace ClrMDRIndex
         /// <returns></returns>
         public static string GetValueAsString(ClrType type, ClrElementKind typeKind, ClrInstanceField field, ClrElementKind fldKind, ClrHeap heap, ulong addr, bool intr)
         {
-            Debug.Assert(!TypeExtractor.IsStruct(typeKind) && !TypeExtractor.IsStruct(fldKind));
+            Debug.Assert(!TypeExtractor.IsUnknownStruct(typeKind) && !TypeExtractor.IsUnknownStruct(fldKind));
             if (TypeExtractor.IsAmbiguousKind(fldKind))
             {
                 if (TypeExtractor.IsString(typeKind))
@@ -408,7 +408,7 @@ namespace ClrMDRIndex
 
         public static object GetValue(ClrType type, ClrElementKind typeKind, ClrInstanceField field, ClrElementKind fldKind, ClrHeap heap, ulong addr, bool intr)
         {
-            Debug.Assert(!TypeExtractor.IsStruct(typeKind) && !TypeExtractor.IsStruct(fldKind));
+            Debug.Assert(!TypeExtractor.IsUnknownStruct(typeKind) && !TypeExtractor.IsUnknownStruct(fldKind));
             if (TypeExtractor.IsAmbiguousKind(fldKind))
             {
                 if (TypeExtractor.IsString(typeKind))
@@ -553,7 +553,7 @@ namespace ClrMDRIndex
             {
                 var fld = flds[i];
                 var kind = TypeExtractor.GetElementKind(fld.Type);
-                if (TypeExtractor.IsStruct(kind))
+                if (TypeExtractor.IsUnknownStruct(kind))
                 {
                     fields[i] = fld;
                     types[i] = fld.Type;
@@ -595,7 +595,7 @@ namespace ClrMDRIndex
                 fields[i] = fld;
                 types[i] = fType ?? fld.Type;
 
-                if (TypeExtractor.IsStruct(kind))
+                if (TypeExtractor.IsUnknownStruct(kind))
                 {
                     if (structFields == null) structFields = new StructFieldsEx[cnt];
                     Debug.Assert(sf.Structs[i] != null);
@@ -625,7 +625,7 @@ namespace ClrMDRIndex
                     return (null, null);
                 }
                 ClrElementKind kind = TypeExtractor.GetElementKind(type);
-                if (TypeExtractor.IsStruct(kind))
+                if (TypeExtractor.IsUnknownStruct(kind))
                 {
                     error = "StructValues.GetStructInfo" + Constants.HeavyGreekCrossPadded
                    + "Expected structure at address: " + Utils.RealAddressString(addr) + Constants.HeavyGreekCrossPadded

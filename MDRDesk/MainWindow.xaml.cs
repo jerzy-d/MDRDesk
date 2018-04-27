@@ -2191,6 +2191,69 @@ namespace MDRDesk
 
         }
 
+        private ValueTuple<string[],ulong[]> GetypeValuesReportAllAddresses(bool asString)
+        {
+            try
+            {
+                string[] strings = null;
+                ulong[] addrVals = null;
+                var lstView = GetCurrentListView(TypeValuesReportView);
+                Debug.Assert(lstView != null);
+                var entries = lstView.ItemsSource as listing<string>[];
+                if (asString) strings = new string[entries.Length];
+                else addrVals = new ulong[entries.Length];
+                for (int i = 0, icnt = entries.Length; i < icnt; ++i)
+                {
+                    ulong addr = Utils.GetAddressValue(entries[i].GetItem(0));
+                    if (asString) strings[i] = Utils.RealAddressString(addr);
+                    else addrVals[i] = Utils.RealAddress(addr);
+                }
+
+                return (strings,addrVals);
+            }
+            catch (Exception ex)
+            {
+                var error = Utils.GetExceptionErrorString(ex);
+                MessageBox.Show(error, "GetypeValuesReportAllAddresses", MessageBoxButton.OK, MessageBoxImage.Error);
+                return (null,null);
+            }
+
+        }
+
+        private ValueTuple<string[], ulong[]> GetypeValuesReportSelectedAddresses(bool asString)
+        {
+            try
+            {
+                string[] strings = null;
+                ulong[] addrVals = null;
+                ListView lstView = GetCurrentListView(TypeValuesReportView);
+                Debug.Assert(lstView != null);
+                int count = lstView.SelectedItems.Count;
+                if (count > 0)
+                {
+
+                    if (asString) strings = new string[count];
+                    else addrVals = new ulong[count];
+                    int ndx = 0;
+                    foreach (var sel in lstView.SelectedItems)
+                    {
+                        ulong addr = Utils.GetAddressValue(((listing<string>)sel).First);
+                        if (asString) strings[ndx] = Utils.RealAddressString(addr);
+                        else addrVals[ndx] = Utils.RealAddress(addr);
+                        ++ndx;
+                    }
+                }
+                return (strings, addrVals);
+            }
+            catch (Exception ex)
+            {
+                var error = Utils.GetExceptionErrorString(ex);
+                MessageBox.Show(error, "GetypeValuesReportAllAddresses", MessageBoxButton.OK, MessageBoxImage.Error);
+                return (null, null);
+            }
+
+        }
+
         private void TypeValuesReportCopyRowClicked(object sender, RoutedEventArgs e)
         {
             var row = GetypeValuesReportRow();
@@ -2210,12 +2273,21 @@ namespace MDRDesk
             MessageBox.Show(addrStr, "Copied to clipboard.", MessageBoxButton.OK, MessageBoxImage.Information);
         }
 
+        private void TypeValuesReportCopyAllAddressesClicked(object sender, RoutedEventArgs e)
+        {
+            (string[] addrStrs, ulong[] addrVals) = GetypeValuesReportAllAddresses(true);
+            GuiUtils.CopyToClipboard(string.Join(Environment.NewLine,addrStrs));
+            MessageBox.Show("All Addresses", "Copied to clipboard.", MessageBoxButton.OK, MessageBoxImage.Information);
+        }
+
         private void TypeValuesReportGetParentRefsClicked(object sender, RoutedEventArgs e)
         {
-            var row = GetypeValuesReportRow();
-            if (row.IsEmpty) return;
-            ulong addr = Utils.GetAddressValue(row.GetItem(0));
-            DisplayInstanceParentReferences(addr);
+            (string[] addrStrs, ulong[] addrVals) = GetypeValuesReportSelectedAddresses(false);
+            GetTypeReferences(addrVals);
+            //var row = GetypeValuesReportRow();
+            //if (row.IsEmpty) return;
+            //ulong addr = Utils.GetAddressValue(row.GetItem(0));
+            //DisplayInstanceParentReferences(addr);
         }
 
         private void TypeValuesReportGetInstSizesClicked(object sender, RoutedEventArgs e)
@@ -2723,8 +2795,6 @@ namespace MDRDesk
             var wnd = new CrashDumpSearch();
             wnd.Show();
         }
-
- 
     }
 
     public static class MenuCommands

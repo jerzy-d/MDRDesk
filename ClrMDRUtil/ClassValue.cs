@@ -96,7 +96,7 @@ namespace ClrMDRIndex
                                 break;
                         }
                     }
-                    else if (TypeExtractor.IsStruct(fldKind))
+                    else if (TypeExtractor.IsUnknownStruct(fldKind))
                     {
 
                         //StructFields sf = StructFields.GetStructFields(fldType);
@@ -242,7 +242,7 @@ namespace ClrMDRIndex
                                     break;
                             }
                         }
-                        else if (TypeExtractor.IsStruct(fldKind))
+                        else if (TypeExtractor.IsUnknownStruct(fldKind))
                         {
                             StructFields sf = StructFields.GetStructFields(fldType);
                             StructFieldsEx sfx = StructFieldsEx.GetStructFields(sf, fldType);
@@ -291,7 +291,7 @@ namespace ClrMDRIndex
                                 break;
                         }
                     }
-                    else if (TypeExtractor.IsStruct(fldKind))
+                    else if (TypeExtractor.IsUnknownStruct(fldKind))
                     {
                         StructFields sf = StructFields.GetStructFields(fldType);
                         StructFieldsEx sfx = StructFieldsEx.GetStructFields(sf, fldType);

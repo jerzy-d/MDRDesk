@@ -59,7 +59,7 @@ namespace ClrMDRIndex
                     values = ArrayOfKnownTypeValueStrings(heap, aryType, addr, aryLen, elType, elKind);
                     return (null, aryType, elType, null, values, null);
                 }
-                if (TypeExtractor.IsStruct(elKind))
+                if (TypeExtractor.IsUnknownStruct(elKind))
                 {
                     (StructFields fs, StructValueStrings[] values) = ArrayOfStructValueStrings(heap, aryType, elType, addr, aryLen);
                     return (null, aryType, elType, fs, null, values);
@@ -115,7 +115,7 @@ namespace ClrMDRIndex
                     values = ArrayOfKnownTypeValueStrings(heap, aryType, addr, aryLen, elType, elKind);
                     return (null, aryType, elType, null, values, null);
                 }
-                if (TypeExtractor.IsStruct(elKind))
+                if (TypeExtractor.IsUnknownStruct(elKind))
                 {
                     //(StructFields fs, StructValueStrings[] values) = ArrayOfStructValueStrings(heap, aryType, elType, addr, aryLen);
                     //return (null, aryType, elType, fs, null, values);
@@ -559,7 +559,7 @@ namespace ClrMDRIndex
                         ulong keyAddr = TypeExtractor.IsObjectReference(nodeFldKinds[m_keyNdx])
                                             ? (ulong)nodeType.Fields[m_keyNdx].GetValue(node,false,false)
                                             : nodeType.Fields[m_keyNdx].GetAddress(node);
-                        if (TypeExtractor.IsStruct(nodeFldKinds[m_keyNdx]))
+                        if (TypeExtractor.IsUnknownStruct(nodeFldKinds[m_keyNdx]))
                         {
                             if (sfxKey == null)
                             {
@@ -579,7 +579,7 @@ namespace ClrMDRIndex
                         ulong valAddr = TypeExtractor.IsObjectReference(nodeFldKinds[m_valueNdx])
                                             ? (ulong)nodeType.Fields[m_valueNdx].GetValue(node, false, false)
                                             : nodeType.Fields[m_valueNdx].GetAddress(node);
-                        if (TypeExtractor.IsStruct(nodeFldKinds[m_valueNdx]))
+                        if (TypeExtractor.IsUnknownStruct(nodeFldKinds[m_valueNdx]))
                         {
                             if (sfxValue == null)
                             {
@@ -646,7 +646,7 @@ namespace ClrMDRIndex
                 ClrType itemType = itemFld.Type;
                 ClrElementKind itemKind = TypeExtractor.GetElementKind(itemType);
                 StructFieldsInfo itemSfi = null;
-                if (TypeExtractor.IsStruct(itemKind))
+                if (TypeExtractor.IsUnknownStruct(itemKind))
                 {
                     for (int i = 0; i < slotAryLen; ++i)
                     {
@@ -732,7 +732,7 @@ namespace ClrMDRIndex
             ClrType itemType = itemFld.Type;
             ClrElementKind itemKind = TypeExtractor.GetElementKind(itemType);
             StructFieldsInfo itemSfi = null;
-            if (TypeExtractor.IsStruct(itemKind))
+            if (TypeExtractor.IsUnknownStruct(itemKind))
             {
                 int cnt = slotsType.GetArrayLength(slotsAddr);
                 for (int i = 0; i < cnt; ++i)
@@ -846,7 +846,7 @@ namespace ClrMDRIndex
                         }
                     }
 
-                    if (TypeExtractor.IsStruct(keyKind))
+                    if (TypeExtractor.IsUnknownStruct(keyKind))
                     {
                         var kAddr = (keyAddr != Constants.InvalidAddress) ? keyAddr : keyFld.GetAddress(eaddr, true);
                         if (keySfi == null)
@@ -889,7 +889,7 @@ namespace ClrMDRIndex
                         }
                     }
 
-                    if (TypeExtractor.IsStruct(valKind))
+                    if (TypeExtractor.IsUnknownStruct(valKind))
                     {
                         var vAddr = valFld.GetAddress(eaddr, true);
                         if (valSfi == null)
@@ -1396,7 +1396,7 @@ namespace ClrMDRIndex
                     keyVal = enumVal.GetEnumString(obj, TypeExtractor.GetClrElementType(kind));
                 }
             }
-            else if (TypeExtractor.IsStruct(kind))
+            else if (TypeExtractor.IsUnknownStruct(kind))
             {
                 var vAddr = fld.GetAddress(addr, true);
                 StructValueStrings structVal = StructFieldsInfo.GetStructValueStrings(sfi, heap, vAddr);

@@ -10,9 +10,9 @@ using System.Windows;
 [assembly: AssemblyTitle("MDRDeskInstaller")]
 [assembly: AssemblyDescription("")]
 [assembly: AssemblyConfiguration("")]
-[assembly: AssemblyCompany("")]
+[assembly: AssemblyCompany("JRD")]
 [assembly: AssemblyProduct("MDRDeskInstaller")]
-[assembly: AssemblyCopyright("Copyright ©  2018")]
+[assembly: AssemblyCopyright("Copyright © JRD 2018")]
 [assembly: AssemblyTrademark("")]
 [assembly: AssemblyCulture("")]
 

@@ -1367,6 +1367,19 @@ namespace MDRDesk
             System.Windows.Threading.Dispatcher.CurrentDispatcher.InvokeAsync(() => GetParentReferences(typeName, typeId, null));
         }
 
+        public void GetTypeReferences(ulong[] addresses)
+        {
+            int typeId = CurrentIndex.GetTypeId(addresses[0]);
+            string typeName = CurrentIndex.GetTypeName(typeId);
+            GetTypeReferences(typeName, typeId, addresses);
+        }
+
+        public void GetTypeReferences(string typeName, int typeId, ulong[] addresses)
+        {
+            int[] instances = CurrentIndex.GetInstanceIndices(addresses);
+            GetParentReferences(typeName, typeId, instances);
+        }
+
         public async void GetParentReferences(string typeName, int typeId, int[] instIds)
         {
             int instCount = CurrentIndex.GetTypeInstanceCount(typeId);
@@ -2416,6 +2429,9 @@ namespace MDRDesk
 
             (string error, InstanceValue inst, TypeExtractor.KnownTypes knownType) = await Task.Factory.StartNew(() =>
             {
+                (string err, ClrType itype, ClrElementKind ikind, (ClrType[] fldTypes, ClrElementKind[] fldKinds, string[] strVals, StructValueStrings[] structVals)) =
+                ClassValue.GetClassValueStrings(CurrentIndex.Heap, addr);
+
                 return CurrentIndex.GetInstanceValue(addr, null);
             }, DumpSTAScheduler);
 

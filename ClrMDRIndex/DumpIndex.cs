@@ -718,7 +718,7 @@ namespace ClrMDRIndex
 
         public int[] GetRealAddressIndices(ulong[] addresses)
         {
-            Debug.Assert(Utils.IsSorted(addresses));
+            Debug.Assert(Utils.AreAddressesSorted(addresses));
             int i = 0, _i = 0, icnt = addresses.Length, _icnt = _instances.Length;
             int[] indices = new int[icnt];
             while (i < icnt && _i < _icnt)

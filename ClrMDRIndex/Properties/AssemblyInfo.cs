@@ -8,9 +8,9 @@ using System.Runtime.InteropServices;
 [assembly: AssemblyTitle("ClrMDRIndex")]
 [assembly: AssemblyDescription("")]
 [assembly: AssemblyConfiguration("")]
-[assembly: AssemblyCompany("Eze Castle Software")]
+[assembly: AssemblyCompany("JRD")]
 [assembly: AssemblyProduct("ClrMDRIndex")]
-[assembly: AssemblyCopyright("Copyright © Eze Castle Software 2016")]
+[assembly: AssemblyCopyright("Copyright © JRD 2016")]
 [assembly: AssemblyTrademark("")]
 [assembly: AssemblyCulture("")]
 

@@ -125,6 +125,7 @@
         <ContextMenu x:Key="TypeValuesReportContextMenu" x:Shared="False">
             <MenuItem x:Name="TypeValuesReportCopyRow" Header="Copy Row (clipboard)" Click="TypeValuesReportCopyRowClicked" ></MenuItem>
             <MenuItem x:Name="TypeValuesReportCopyAddress" Header="Copy Address (clipboard)" Click="TypeValuesReportCopyAddressClicked" ></MenuItem>
+            <MenuItem x:Name="TypeValuesReportCopyAllAddresses" Header="Copy All Addresses (clipboard)" Click="TypeValuesReportCopyAllAddressesClicked" ></MenuItem>
             <MenuItem x:Name="TypeValuesReportGetParentRefs" Header="Get Instance References" Click="TypeValuesReportGetParentRefsClicked"/>
             <MenuItem x:Name="TypeValuesReportGetInstSizes" Header="Get Instance Sizes" Click="TypeValuesReportGetInstSizesClicked"/>
             <MenuItem x:Name="TypeValuesReportGetInstValue" Header="Get Instance Value" Click="TypeValuesReportGetInstValueClicked"/>
@@ -988,7 +989,7 @@
                         <RowDefinition Height="50*"/>
                         <RowDefinition Height="50*"/>
                     </Grid.RowDefinitions>
-                    <Label Grid.Row="0" Content="Type Display"  FontFamily="Arial" FontSize="10" FontStyle="Italic" Foreground="DarkGray" FontWeight="Black"/>
+                    <Label Grid.Row="0" Content="Types Display"  FontFamily="Arial" FontSize="10" FontStyle="Italic" Foreground="DarkGray" FontWeight="Black"/>
                     <ComboBox x:Name="TypeDisplayMode"  Grid.Row="1" IsEditable="False" FontFamily="Arial" FontSize="10" Background="LightGray" FontWeight="Bold" BorderThickness="0" SelectionChanged="TypeDisplayModeChanged" Style="{StaticResource ComboBoxFlatStyle}">
                         <ComboBoxItem Content="Namespace/Class"></ComboBoxItem>
                         <ComboBoxItem Content="Class/Namespace"></ComboBoxItem>
@@ -997,7 +998,7 @@
                 </Grid>
             </ToolBar>
             <ToolBar HorizontalAlignment="Right">
-                <Label x:Name="ProcessMemory" HorizontalAlignment="Right" HorizontalContentAlignment="Right"  VerticalAlignment="Center" Content="Working Set (Memory)" FontFamily="Consolas" FontSize="11" FontWeight="Bold" FontStyle="Italic" Foreground="Brown">
+                <Label x:Name="ProcessMemory" HorizontalAlignment="Right" HorizontalContentAlignment="Right"  VerticalAlignment="Center" Content="Working Set (my memory)" FontFamily="Consolas" FontSize="11" FontWeight="Bold" FontStyle="Italic" Foreground="Brown">
                     <Label.ToolTip>
                         <ToolTip Style="{StaticResource MenuTooltip}">
                             <TextBlock>"This app Working and Peak Working Set."</TextBlock>

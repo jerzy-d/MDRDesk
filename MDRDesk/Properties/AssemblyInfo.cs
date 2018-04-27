@@ -7,12 +7,12 @@ using System.Windows;
 // General Information about an assembly is controlled through the following 
 // set of attributes. Change these attribute values to modify the information
 // associated with an assembly.
-[assembly: AssemblyTitle("MDRDesk")]
+[assembly: AssemblyTitle("MDRDesk32")]
 [assembly: AssemblyDescription("")]
 [assembly: AssemblyConfiguration("")]
-[assembly: AssemblyCompany("Eze Castle Software")]
+[assembly: AssemblyCompany("JRD")]
 [assembly: AssemblyProduct("MDRDesk")]
-[assembly: AssemblyCopyright("Copyright © Eze Castle Software 2016")]
+[assembly: AssemblyCopyright("Copyright © JRD 2016")]
 [assembly: AssemblyTrademark("")]
 [assembly: AssemblyCulture("")]
 

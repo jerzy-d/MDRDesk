@@ -63,7 +63,7 @@ namespace ClrMDRIndex
             ClrElementKind kind = (ClrElementKind)(clrType.ElementType);
             string name = clrType.Name;
             if (Utils.SameStrings(name, "Error")) return ClrElementKind.Error;
-            if (name.StartsWith("System.Nullable<", StringComparison.Ordinal)) return ClrElementKind.SystemNullable;
+            if (name.StartsWith("System.Nullable<", StringComparison.Ordinal)) return kind |= ClrElementKind.SystemNullable;
             switch (kind)
             {
                 case ClrElementKind.Object:
@@ -463,7 +463,7 @@ namespace ClrMDRIndex
 
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static bool IsStruct(ClrElementKind kind)
+        public static bool IsUnknownStruct(ClrElementKind kind)
         {
             return kind == ClrElementKind.Struct;
         }

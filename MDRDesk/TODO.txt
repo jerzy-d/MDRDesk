@@ -117,4 +117,17 @@
 	Type:      ECS.Common.Communicator.Module.Business_Entities.EzeServiceDescription
 	Address:   0x000000173dc3e8
 		eventTimeout 745654.01:04:00 should be 00:00:15
-
+0051 04/26/18 -- bad field address - D:\Jerzy\WinDbgStuff\dumps\OMS\CNS\EzeOMS.exe_180425_144639.dmp.map
+     Eze.Server.Common.Pulse.Transport.Types.ClientStartupData
+	 Address:   0x0000001e7139b4
+	  array
+	  Type:      ECS.Common.HierarchyCache.Structure.Security[]
+      Item Type: ECS.Common.HierarchyCache.Structure.Security
+      Address:   0x000000224c73a4
+      Lenght:    8,776
+	    array elem
+	    Type:      ECS.Common.HierarchyCache.Structure.Security
+        Address:   0x000000224e2740
+		  field
+		  securitySimpleState    0x00000022501d14    ECS.Common.HierarchyCache.Structure.SecurityReadOnlyState
+		     Reg42flag    0x00000022501d14    System.Nullable<System.Boolean> -- this field has the same value as parent !!!

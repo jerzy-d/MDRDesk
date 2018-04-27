@@ -1503,7 +1503,7 @@ namespace ClrMDRIndex
             fldType = fld.Type;
             kind = TypeExtractor.GetElementKind(fldType);
             fldAddr = Constants.InvalidAddress;
-            if (TypeExtractor.IsStruct(kind))
+            if (TypeExtractor.IsUnknownStruct(kind))
             {
                 fldAddr = fld.GetAddress(addr, true);
                 return Utils.RealAddressString(fldAddr);
@@ -1527,6 +1527,9 @@ namespace ClrMDRIndex
                         return Utils.RealAddressString(fldAddr);
                     case ClrElementKind.Enum:
                         return GetEnumString(addr, fld, false);
+                    case ClrElementKind.SystemNullable:
+                        fldAddr = fld.GetAddress(addr, true);
+                        return NullableValueAsString(heap, fldAddr, fld.Type);
                     case ClrElementKind.Free:
                     case ClrElementKind.SystemVoid: // TODO JRD -- get the pointer address?
                         fldAddr = GetReferenceFieldAddress(addr, fld, false);
@@ -1685,7 +1688,7 @@ namespace ClrMDRIndex
                 ClrElementKind fldKind;
                 ClrType fldType;
                 ulong fldAddr;
-                var value = GetFieldValue(ndxProxy, heap, addr, clrType.Fields[i], TypeExtractor.IsStruct(kind), out fldType, out fldKind, out fldAddr);
+                var value = GetFieldValue(ndxProxy, heap, addr, clrType.Fields[i], TypeExtractor.IsUnknownStruct(kind), out fldType, out fldKind, out fldAddr);
                 var ftypeId = ndxProxy.GetTypeId(fldType.Name);
                 fields[i] = new InstanceValue(ftypeId, fldKind, fldAddr, fldType.Name, fld.Name, value, i, parent);
             }
@@ -2203,12 +2206,12 @@ namespace ClrMDRIndex
                 var values = new KeyValuePair<string, string>[count];
 
                 List<string> types = new List<string>() { keyType.Name };
-                var keyItems = TypeExtractor.IsStruct(keyFldKind)
+                var keyItems = TypeExtractor.IsUnknownStruct(keyFldKind)
                     ? GetAryStructItems(heap, keysFldAddr, keysFldType, keyType, keyFldKind, count, types)
                     : GetAryItems(heap, keysFldAddr, keysFldType, keyType, keyFldKind, count, types);
                 types.Clear();
                 types.Add(valueType.Name);
-                var valueItems = TypeExtractor.IsStruct(valueFldKind)
+                var valueItems = TypeExtractor.IsUnknownStruct(valueFldKind)
                     ? GetAryStructItems(heap, valuesFldAddr, valuesFldType, valueType, valueFldKind, count, types)
                     : GetAryItems(heap, valuesFldAddr, valuesFldType, valueType, valueFldKind, count, types);
 
@@ -2531,7 +2534,7 @@ namespace ClrMDRIndex
             var elemInst = new InstanceValue(elemTypeId, elemKind, Constants.InvalidAddress, elemType.Name, String.Empty, Utils.CountString(len), Constants.InvalidIndex, aryInst);
             aryInst.SetFields(new InstanceValue[] { elemInst });
             List<string> types = new List<string>() { elemType.Name };
-            var aryItems = TypeExtractor.IsStruct(elemKind)
+            var aryItems = TypeExtractor.IsUnknownStruct(elemKind)
                 ? GetAryStructItems(heap, addr, clrType, elemType, elemKind, len, types)
                 : GetAryItems(heap, addr, clrType, elemType, elemKind, len, types);
             if (types.Count > 1) // we have alternative types in the array
@@ -2581,7 +2584,7 @@ namespace ClrMDRIndex
         public static string[] GetAryStructItems(ClrHeap heap, ulong addr, ClrType aryType, ClrType elemType, ClrElementKind elemKind, int aryCnt, List<string> types)
         {
             var ary = new string[aryCnt];
-            Debug.Assert(TypeExtractor.IsStruct(elemKind));
+            Debug.Assert(TypeExtractor.IsUnknownStruct(elemKind));
             List<ValueTuple<ClrType, ClrInstanceField, ClrElementKind>> fields = new List<(ClrType, ClrInstanceField, ClrElementKind)>(elemType.Fields.Count);
             ValueTuple<ClrType, ClrInstanceField, ClrElementKind>[] fldInfos = TypeExtractor.GetFieldsAndKinds(elemType);
             var sb = StringBuilderCache.Acquire(StringBuilderCache.MaxCapacity);
@@ -2635,7 +2638,7 @@ namespace ClrMDRIndex
                 }
                 return Constants.UnknownValue;
             }
-            if (TypeExtractor.IsStruct(elemKind))
+            if (TypeExtractor.IsUnknownStruct(elemKind))
             {
                 return Utils.RealAddressString(elemAddr);
             }
@@ -2736,6 +2739,25 @@ namespace ClrMDRIndex
 
             return new IPAddress(bytes);
         }
+
+
+        public static ValueTuple<object,ClrInstanceField> NullableValue(ClrHeap heap, ulong addr, ClrType type)
+        {
+            if (type == null) return (null,null);
+            Debug.Assert(type.Fields.Count == 2);
+            ClrInstanceField valueFld = type.Fields[0].Name == "value" ? type.Fields[0] : type.Fields[1];
+            return (valueFld.GetValue(addr, true, false),valueFld);
+        }
+
+        public static string NullableValueAsString(ClrHeap heap, ulong addr, ClrType type)
+        {
+            (object val, ClrInstanceField valueFld) = NullableValue(heap, addr, type);
+            if (val == null || valueFld == null || valueFld.Type == null) return Constants.UnknownValue;
+            if (valueFld.Type.IsPrimitive)
+                return PrimitiveValueAsString(val, valueFld.ElementType);
+            return Constants.UnknownValue;
+        }
+
         /*
         try
             let addr = Utils.RealAddress(decoratedAddr)
