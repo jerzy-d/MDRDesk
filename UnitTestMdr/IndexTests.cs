@@ -1919,7 +1919,20 @@ namespace UnitTestMdr
             return Utils.EmptyArray<string>.Value;
         }
 
-
+        [TestMethod]
+        public void GetTypeFieldInfo()
+        {
+            string error;
+            string typeNameIn = "ECS.Common.HierarchyCache.Structure.Security";
+            var index = OpenIndex(@"C:\WinDbgStuff\Dumps\Analytics\Anavon\Eze.Analytics.Svc_160225_204724.Anavon.dmp.map");
+            using (index)
+            {
+                (string typeName, int typeId, ClrElementKind typeKind,
+                    string[] fieldTypeNames, int[] fieldTypeIds, ClrElementKind[] fieldKinds, string[] fieldnames) =
+                    index.GetTypeInfo(typeNameIn, out error);
+                Assert.IsTrue(error == null, error);
+            }
+        }
 
         [TestMethod]
         public void GetTypeValueAsString_Test()

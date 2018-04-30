@@ -398,8 +398,8 @@ namespace ClrMDRIndex
                         //
                         progress?.Report(runtimeIndexHeader + "Getting type names...");
 
-                        (string[] typeNames, int instanceCount, int freeCount, int notIncludedCount, int nullCount) =
-                            GetTypeNames3(heap, out error);
+                        (string[] typeNames, ClrElementKind[] typeKinds, int instanceCount, int freeCount, int notIncludedCount, int nullCount) =
+                            GetTypeNames3(heap, strIds, _fileMoniker.GetFilePath(_currentRuntimeIndex, Constants.MapTypeFieldTypesPostfix), out error);
                         if (error != null) return false;
                         _typeCount[r] = typeNames.Length; // for general info dump
                         _instanceCount[r] = instanceCount;
@@ -608,7 +608,11 @@ namespace ClrMDRIndex
 
         private void RetainFieldTypes(ClrType clrType, int typeId, HashSet<int> doneTypeFields, HashSet<int> tofixTypeFields, string[] typeNames, SortedDictionary<int, long[]> typeFields, StringIdDct idDct)
         {
-            if (doneTypeFields.Add(typeId))
+            if (clrType.Name== "ECS.Common.HierarchyCache.Structure.Security")
+            {
+                int a = 1;
+            }
+            if (doneTypeFields.Add(typeId) || tofixTypeFields.Contains(typeId))
             {
                 int fldCnt = clrType.Fields == null ? 0 : clrType.Fields.Count;
                 if (fldCnt < 1) return;
@@ -825,9 +829,9 @@ namespace ClrMDRIndex
                 var typeIdAry = new int[instCount];
                 int[] typeKinds = new int[typeNames.Length];
                 var arraySizes = new List<ValueTuple<int, int, ClrElementKind>>(1024*512);
-                HashSet<int> doneTypeFields = new HashSet<int>();
-                HashSet<int> tofixTypeFields = new HashSet<int>();
-                var typeFields = new SortedDictionary<int, long[]>();
+                //HashSet<int> doneTypeFields = new HashSet<int>();
+                //HashSet<int> tofixTypeFields = new HashSet<int>();
+                //var typeFields = new SortedDictionary<int, long[]>();
                 bwRefs = new BinaryWriter(File.Open(_fileMoniker.GetFilePath(_currentRuntimeIndex, Constants.MapFwdRefAddrsTempFilePostfix), FileMode.Create));
                 var fieldAddrOffsetList = new List<KeyValuePair<ulong, int>>(64);
                 int addrCount = 0;
@@ -863,7 +867,7 @@ namespace ClrMDRIndex
                             sizeAry[addrCount] = (uint)size;
                             typeIdAry[addrCount] = typeId;
 
-                            RetainFieldTypes(clrType, typeId, doneTypeFields, tofixTypeFields, typeNames, typeFields, _stringIdDcts[_currentRuntimeIndex]);
+                            //RetainFieldTypes(clrType, typeId, doneTypeFields, tofixTypeFields, typeNames, typeFields, _stringIdDcts[_currentRuntimeIndex]);
                             int rndx = Utils.AddressSearch(flaggedRoots, addr);
                             flaggedAddr = (rndx >= 0) ? Utils.CopyAddrFlag(flaggedRoots[rndx], addr) : addr;
                             addrAry[addrCount] = flaggedAddr;
@@ -936,7 +940,7 @@ namespace ClrMDRIndex
                     _errors[_currentRuntimeIndex].Add("DumpSegments failed." + Environment.NewLine + error);
                 }
 
-                SaveFieldTypes(typeFields);
+                //SaveFieldTypes(typeFields);
 
                 if (!Utils.WriteUintArray(_fileMoniker.GetFilePath(_currentRuntimeIndex, Constants.MapInstanceSizesFilePostfix), sizeAry, out error))
                 {
@@ -1518,7 +1522,8 @@ namespace ClrMDRIndex
             }
         }
 
-        public static ValueTuple<string[], int, int, int, int> GetTypeNames3(ClrHeap heap, out string error)
+        public static ValueTuple<string[], ClrElementKind[], int, int, int, int> 
+            GetTypeNames3(ClrHeap heap, StringIdDct strIds, string fldInfoPath, out string error)
         {
             error = null;
             int instanceCount = 0;
@@ -1527,18 +1532,18 @@ namespace ClrMDRIndex
             int notIncludedCount = 0;
             try
             {
-                var typeNames = new List<string>(1024*32);
-                var typeKinds = new List<ClrElementKind>(1024 * 32);
-                // looks like some types are missing in heap.EnumerateTypes()
-                var set = new Set<string>(1024*16,StringComparer.Ordinal);
-                AddStandardTypeNames(typeNames,set);
+                var fldInfoDct = new SortedDictionary<string, ValueTuple<string,int,ClrElementKind>[]>(StringComparer.Ordinal);
+                var typeDct = new Dictionary<string, ClrElementKind>(1024 * 32, StringComparer.Ordinal);
+                var fldDct = new Dictionary<string, ClrElementKind>(1024 * 32, StringComparer.Ordinal);
+                var fldInfo = new List<ValueTuple<string, int, ClrElementKind>>(64);
+                AddStandardTypeNames(typeDct);
                 if (heap.Segments == null || heap.Segments.Count < 1)
                 {
                     error = "CANNOT INDEX DUMP" + Constants.HeavyGreekCrossPadded // caption
                            + "ClrHeap.Segments are empty." + Constants.HeavyGreekCrossPadded // heading
                            + "This crash dump might be corrupted," + Environment.NewLine
                            + "the heap object instances cannot be listed."; // text
-                    return (null, 0, 0, 0, 0);
+                    return (null, null, 0, 0, 0, 0);
                 }
 
                 var segs = heap.Segments;
@@ -1558,9 +1563,31 @@ namespace ClrMDRIndex
                         {
                             ++freeCount;
                         }
-                        if (set.Add(type.Name))
+                        if (!typeDct.ContainsKey(type.Name))
                         {
-                            typeNames.Add(type.Name);
+                            var kind = TypeExtractor.GetElementKind(type);
+                            typeDct.Add(type.Name, kind);
+                            if (type.Fields != null && type.Fields.Count > 0)
+                            {
+                                fldInfo.Clear();
+                                for (int i = 0, icount = type.Fields.Count; i < icount; ++i)
+                                {
+                                    var fld = type.Fields[i];
+                                    if (fld.Type != null && fld.Type.Name != null)
+                                    {
+                                        string name = fld.Type.Name;
+                                        var fldkind = TypeExtractor.GetElementKind(fld.Type);
+                                        var fldName = strIds.JustGetId(fld.Name);
+                                        fldInfo.Add((name,fldName,fldkind));
+                                        if (!typeDct.ContainsKey(name) && !fldDct.ContainsKey(name))
+                                        {
+                                            fldDct.Add(name,fldkind);
+                                        }
+                                    }
+                                }
+                                if (fldInfo.Count > 0)
+                                    fldInfoDct.Add(type.Name, fldInfo.ToArray());
+                            }
                         }
                         if (instanceCount == MAX_ITEM_COUNT)
                         {
@@ -1578,20 +1605,56 @@ namespace ClrMDRIndex
 
                 foreach (var type in heap.EnumerateTypes())
                 {
-                    if (type != null && set.Add(type.Name))
-                    {
-                        typeNames.Add(type.Name);
-                    }
+                    if (type != null && !typeDct.ContainsKey(type.Name) && !fldDct.ContainsKey(type.Name))
+                        typeDct.Add(type.Name,ClrElementKind.Unknown);
                 }
 
-                typeNames.Sort(StringComparer.Ordinal);
-                string[] names = typeNames.ToArray();
-                return (names, instanceCount, freeCount, notIncludedCount, nullCount);
+                KeyValuePair<string,ClrElementKind>[] ary = typeDct.Union(fldDct).ToArray();
+                Array.Sort(ary, new Utils.KvStrKindCmp());
+                var typeNameAry = new string[ary.Length];
+                var kindAry = new ClrElementKind[ary.Length];
+                for (int i = 0, icnt = ary.Length; i < icnt; ++i)
+                {
+                    typeNameAry[i] = ary[i].Key;
+                    kindAry[i] = ary[i].Value;
+                }
+
+                BinaryWriter bw = null;
+                try
+                {
+                    bw = new BinaryWriter(File.Open(fldInfoPath, FileMode.Create));
+                    bw.Write(fldInfoDct.Count);
+                    foreach (var entry in fldInfoDct)
+                    {
+                        int typeId = Array.BinarySearch(typeNameAry, entry.Key,StringComparer.Ordinal);
+                        Debug.Assert(typeId >= 0);
+                        for (int i = 0, icnt = entry.Value.Length; i < icnt; ++i)
+                        {
+                            bw.Write(typeId);
+                            (string fldTypeName, int fldNameId, ClrElementKind fldKind) = entry.Value[i];
+                            int fldTypeId = Array.BinarySearch(typeNameAry, entry.Key, StringComparer.Ordinal);
+                            Debug.Assert(fldTypeId >= 0);
+                            bw.Write(fldTypeId);
+                            bw.Write((int)fldKind);
+                            bw.Write(fldNameId);
+                        }
+                    }
+                }
+                catch
+                {
+
+                }
+                finally
+                {
+                    bw?.Close();
+                }
+
+                return (typeNameAry, kindAry, instanceCount, freeCount, notIncludedCount, nullCount);
             }
             catch (Exception ex)
             {
                 error = Utils.GetExceptionErrorString(ex);
-                return (null, 0, 0, 0, 0);
+                return (null, null, 0, 0, 0, 0);
             }
         }
 
@@ -1615,6 +1678,29 @@ namespace ClrMDRIndex
                 set.Add(Constants.SystemObject);
             }
         }
+
+        public static void AddStandardTypeNames(HashSet<string> set)
+        {
+            Debug.Assert(set != null);
+            set.Add(Constants.NullTypeName);
+            set.Add(Constants.UnknownTypeName);
+            set.Add(Constants.ErrorTypeName);
+            set.Add(Constants.FreeTypeName);
+            set.Add(Constants.System__Canon);
+            set.Add(Constants.SystemObject);
+        }
+        public static void AddStandardTypeNames(Dictionary<string, ClrElementKind> dct)
+        {
+            Debug.Assert(dct != null);
+            dct.Add(Constants.NullTypeName,ClrElementKind.Null);
+            dct.Add(Constants.UnknownTypeName, ClrElementKind.Unknown);
+            dct.Add(Constants.ErrorTypeName, ClrElementKind.Error);
+            dct.Add(Constants.FreeTypeName, ClrElementKind.Free);
+            dct.Add(Constants.System__Canon, ClrElementKind.System__Canon);
+            dct.Add(Constants.SystemObject, ClrElementKind.SystemObject);
+        }
+
+        
 
         private void AddError(int rtNdx, string error)
         {

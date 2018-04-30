@@ -150,6 +150,7 @@
     <Compile Include="Utils\StringIdAsyncDct.cs" />
     <Compile Include="Utils\StringIdDct.cs" />
     <Compile Include="Utils\StructValues.cs" />
+    <Compile Include="Utils\TypeFldInfo.cs" />
     <Compile Include="Utils\TypeValue.cs" />
     <Compile Include="Utils\UndoRedoList.cs" />
     <Compile Include="Utils\ValueString.cs" />

@@ -1443,6 +1443,27 @@ namespace ClrMDRIndex
             }
         }
 
+        public class KvStrKindCmp : IComparer<KeyValuePair<string,ClrElementKind>>
+        {
+            public int Compare(KeyValuePair<string, ClrElementKind> a, KeyValuePair<string, ClrElementKind> b)
+            {
+                return string.Compare(a.Key, b.Key, StringComparison.Ordinal);
+            }
+        }
+
+        public class KvStrKindEqCmp : IEqualityComparer<KeyValuePair<string, ClrElementKind>>
+        {
+            public bool Equals(KeyValuePair<string, ClrElementKind> a, KeyValuePair<string, ClrElementKind> b)
+            {
+                return string.Compare(a.Key, b.Key, StringComparison.Ordinal)==0;
+            }
+
+            public int GetHashCode(KeyValuePair<string, ClrElementKind> kv)
+            {
+                return kv.Key.GetHashCode();
+            }
+        }
+
         public class IntArrayHeadCmp : IComparer<Int32[]>
         {
             public int Compare(int[] a, int[] b)
