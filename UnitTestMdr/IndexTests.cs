@@ -1982,37 +1982,28 @@ namespace UnitTestMdr
         [TestMethod]
         public void GetTypeReferences_Test()
         {
+
             string error = null;
-            Stopwatch stopWatch = new Stopwatch();
-            stopWatch.Start();
+            var index = OpenIndex(@"D:\Jerzy\WinDbgStuff\dumps\Analytics\Anavon\Eze.Analytics.Svc_160225_204724.Anavon.dmp.map");
             //var index = OpenIndex(@"D:\Jerzy\WinDbgStuff\dumps\TestApp\TestApp.exe_170818_102413.dmp.map");
-            var index = OpenIndex(@"D:\Jerzy\WinDbgStuff\dumps\Analytics\Cowen\Cowen.Analytics.Svc_170717_165238.dmp.map");
+            //var index = OpenIndex(@"D:\Jerzy\WinDbgStuff\dumps\Analytics\Cowen\Cowen.Analytics.Svc_170717_165238.dmp.map");
             //var index = OpenIndex(@"D:\Jerzy\WinDbgStuff\dumps\Analytics\Highline\analyticsdump111.dlk.dmp.map");
-
-            TestContext.WriteLine(index.DumpFileName + " INDEX OPEN DURATION: " + Utils.StopAndGetDurationString(stopWatch));
-
+            //string typeName = "System.String";
+            string typeName = "ECS.Common.HierarchyCache.Structure.RealPosition";
+            string fieldTypeName = "ECS.Common.HierarchyCache.Structure.IReadOnlyPosition";
             using (index)
             {
                 var heap = index.Heap;
 
                 try
                 {
-                    string[] typeNames = index.TypeNames;
-                    string[] strIds = index.StringIds;
-                    IdReferences typeToFields = index.TypeFieldIds;
-                    Assert.IsNotNull(typeToFields);
-                    IdReferences fieldToTypes = index.FieldParentTypeIds;
-                    Assert.IsNotNull(fieldToTypes);
-                    string typeName = "ECS.Common.HierarchyCache.Structure.RealPosition";
-                    var typeId = index.GetTypeId(typeName);
-                    var ids = typeToFields.GetReferences(typeId);
-                    string[] fldTypes = new string[ids.Key.Length];
-                    string[] fldNames = new string[ids.Value.Length];
-                    for (int i = 0, icnt = ids.Key.Length; i < icnt; ++i)
-                    {
-                        fldTypes[i] = typeNames[ids.Key[i]];
-                        fldNames[i] = strIds[ids.Value[i]];
-                    }
+                    (string tpName, int TypeId, ClrElementKind typeKind, string[] fldTypeNames, int[] fldTypeIds, ClrElementKind[] fldKinds, string[] fldNames) =
+                        index.GetTypeInfo(typeName, out error);
+                    Assert.IsTrue(error == null || error[0] == Constants.InformationSymbol);
+
+
+                    (int[] typeIds, string[] typeNames, string[] fieldNames) = index.GetTypesWithFieldType(fieldTypeName, out error);
+                    Assert.IsTrue(error == null || error[0] == Constants.InformationSymbol);
 
                     var outfolder = index.OutputFolder + Path.DirectorySeparatorChar;
                 }
@@ -2023,8 +2014,6 @@ namespace UnitTestMdr
                     TestContext.WriteLine(Environment.NewLine + error);
                 }
             }
-
-            Assert.IsNull(error, error);
         }
 
 		[TestMethod]
@@ -3008,14 +2997,17 @@ namespace UnitTestMdr
 			return index;
 		}
 
-		public static DumpIndex OpenIndex(string mapPath)
+		public DumpIndex OpenIndex(string mapPath)
 		{
 			string error;
-			var version = Assembly.GetExecutingAssembly().GetName().Version;
+            Stopwatch stopWatch = new Stopwatch();
+            stopWatch.Start();
+            var version = Assembly.GetExecutingAssembly().GetName().Version;
 			var index = DumpIndex.OpenIndexInstanceReferences(version, mapPath, 0, out error);
-			Assert.IsNotNull(index, error);
+            TestContext.WriteLine(index.DumpFileName + " INDEX OPEN DURATION: " + Utils.StopAndGetDurationString(stopWatch));
+            Assert.IsNotNull(index, error);
 			return index;
-		}
+        }
 
 #endregion open index
 

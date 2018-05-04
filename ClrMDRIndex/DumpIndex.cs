@@ -52,10 +52,12 @@ namespace ClrMDRIndex
 
         private string[] _typeNames;
         public string[] TypeNames => _typeNames;
-        private WeakReference<IdReferences> _typeFieldIds;
-        public IdReferences TypeFieldIds => GetTypeFieldReferences();
-        //private WeakReference<IdReferences> _fieldParentTypeIds;
-        public IdReferences FieldParentTypeIds => GetFieldParentTypeReferences();
+
+        private TypeFldInfo _typeFieldInfo;
+        //private WeakReference<IdReferences> _typeFieldIds;
+        //public IdReferences TypeFieldIds => GetTypeFieldReferences();
+        ////private WeakReference<IdReferences> _fieldParentTypeIds;
+        //public IdReferences FieldParentTypeIds => GetFieldParentTypeReferences();
 
         private KeyValuePair<string, int>[] _displayableTypeNames;
         public KeyValuePair<string, int>[] DisplayableTypeNames => _displayableTypeNames;
@@ -220,6 +222,10 @@ namespace ClrMDRIndex
                     Array.Sort(_reversedTypeNames, new KvStrIntKeyCmp());
                     _typeNamespaces = GetTypeNamespaceOrdering(_reversedTypeNames);
                 }
+
+                // type fields info
+                //
+                _typeFieldInfo = new TypeFldInfo(_fileMoniker.GetFilePath(_currentRuntimeIndex, Constants.MapTypeFieldTypesPostfix));
 
                 if (error != null) return false;
 
@@ -790,19 +796,12 @@ namespace ClrMDRIndex
             return result;
         }
 
-        //public KeyValuePair<int, ulong[]>[] GetTypeRealAddresses(int[] typeIds, out int totalCount)
-        //{
-        //    totalCount = 0;
-        //    KeyValuePair<int, ulong[]>[] result = new KeyValuePair<int, ulong[]>[typeIds.Length];
-        //    for (int i = 0, icnt = typeIds.Length; i < icnt; ++i)
-        //    {
-        //        var addrAry = GetTypeRealAddresses(typeIds[i]);
-        //        totalCount += addrAry.Length;
-        //        result[i] = new KeyValuePair<int, ulong[]>(typeIds[i], addrAry);
-        //    }
-        //    return result;
-        //}
-
+        /// <summary>
+        /// Get quickly field info for a given type.
+        /// </summary>
+        /// <param name="typeName">Name of the queried type.</param>
+        /// <param name="error"></param>
+        /// <returns>Tuple of (type name, type id, type kind, field type names, field type ids, field kinds, field names).</returns>
         public ValueTuple<string, int, ClrElementKind, string[], int[], ClrElementKind[], string[]> GetTypeInfo(string typeName, out string error)
         {
             error = null;
@@ -817,28 +816,27 @@ namespace ClrMDRIndex
 
                 var kinds = TypeKinds;
                 var typeKind = kinds[typeId];
-                var fldIds = TypeFieldIds.GetReferences(typeId);
-                if (fldIds.Key == null || fldIds.Key.Length < 1)
+
+
+                (int[] fldTypes, ClrElementKind[] fldKinds, int[] fldNameIds) = _typeFieldInfo.GetTypeFieldInfo(typeId, out error);
+                if (error != null)
                 {
-                    error = "No fields found for type: " + typeName;
+                    if (error[0] == Constants.InformationSymbol)
+                    {
+                        error = Constants.InformationSymbolHeader + "No fields found for type: " + typeName;
+                    }
                     return (null, Constants.InvalidIndex, ClrElementKind.Unknown, null, null, null, null);
                 }
 
-                string[] fldNames = new string[fldIds.Key.Length];
-                string[] fldTypeNames = new string[fldIds.Key.Length];
-                int[] fldTypeIds = new int[fldIds.Key.Length];
-                string[] strings = StringIds;
-                ClrElementKind[] fldKinds = new ClrElementKind[fldTypeIds.Length];
-                for (int i = 0, icnt = fldIds.Key.Length; i < icnt; ++i)
+                string[] fldNames = new string[fldTypes.Length];
+                string[] fldTypeNames = new string[fldTypes.Length];
+                for (int i = 0, icnt = fldTypes.Length; i < icnt; ++i)
                 {
-                    var fldTypeId = fldIds.Key[i];
-                    fldTypeIds[i] = fldTypeId;
-                    fldNames[i] = GetString(fldIds.Value[i]);
-
+                    var fldTypeId = fldTypes[i];
                     fldTypeNames[i] = GetTypeName(fldTypeId);
-                    fldKinds[i] = kinds[i];
+                    fldNames[i] = GetString(fldNameIds[i]);
                 }
-                return (typeName, typeId, typeKind, fldTypeNames, fldTypeIds, fldKinds, fldNames);
+                return (typeName, typeId, typeKind, fldTypeNames, fldTypes, fldKinds, fldNames);
             }
             catch (Exception ex)
             {
@@ -846,6 +844,45 @@ namespace ClrMDRIndex
                 return (null, Constants.InvalidIndex, ClrElementKind.Unknown, null, null, null, null);
             }
 
+        }
+
+        public ValueTuple<int[], string[], string[]> GetTypesWithFieldType(string typeName, out string error)
+        {
+            error = null;
+            try
+            {
+                var typeId = GetTypeId(typeName);
+                if (typeId == Constants.InvalidIndex)
+                {
+                    error = "Uknown type: " + typeName;
+                    return (null, null, null);
+                }
+
+                (int[] typeIds, int[] fldNameIds) = _typeFieldInfo.GetTypesWithFieldType(typeId, out error);
+                if (error != null)
+                {
+                    if (error[0] == Constants.InformationSymbol)
+                    {
+                        error = Constants.InformationSymbolHeader + "No fields found for type: " + typeName;
+                    }
+                    return (null, null, null);
+                }
+                string[] fldNames = new string[typeIds.Length];
+                string[] typeNames = new string[typeIds.Length];
+                for (int i = 0, icnt = typeIds.Length; i < icnt; ++i)
+                {
+                    var id = typeIds[i];
+                    typeNames[i] = GetTypeName(id);
+                    fldNames[i] = GetString(fldNameIds[i]);
+                }
+                return (typeIds,typeNames,fldNames);
+
+            }
+            catch(Exception ex)
+            {
+                error = Utils.GetExceptionErrorString(ex);
+                return (null, null, null);
+            }
         }
 
         public ValueTuple<string, object> GetFieldUsage(int typeId, ClrElementKind typeKind, string[] fldTypeNames, int[] fldIds, ClrElementKind[] fldKinds, string[] fldNames)
@@ -3318,45 +3355,45 @@ namespace ClrMDRIndex
         }
 
 
-        public IdReferences GetTypeFieldReferences()
-        {
-            return GetTypeFieldReferences(true);
-        }
-        public IdReferences GetFieldParentTypeReferences()
-        {
-            return GetTypeFieldReferences(false);
-        }
+        //public IdReferences GetTypeFieldReferences()
+        //{
+        //    return GetTypeFieldReferences(true);
+        //}
+        //public IdReferences GetFieldParentTypeReferences()
+        //{
+        //    return GetTypeFieldReferences(false);
+        //}
 
-        private IdReferences GetTypeFieldReferences(bool typeFields)
-        {
-            try
-            {
-                IdReferences refs = null;
-                if (_typeFieldIds == null || !_typeFieldIds.TryGetTarget(out refs))
-                {
-                    string path = typeFields
-                        ? _fileMoniker.GetFilePath(_currentRuntimeIndex, Constants.MapTypeFieldTypesPostfix)
-                        : _fileMoniker.GetFilePath(_currentRuntimeIndex, Constants.MapFieldTypeParentTypesPostfix);
-                    (string error, int[] ids, int[] offs, long[] fldRefs) = IdReferences.LoadIdReferences(path);
-                    if (error != null)
-                    {
-                        _errors.Add(error);
-                        return null;
-                    }
-                    refs = new IdReferences(ids, offs, fldRefs);
-                    if (_typeFieldIds == null)
-                        _typeFieldIds = new WeakReference<IdReferences>(refs);
-                    else
-                        _typeFieldIds.SetTarget(refs);
-                }
-                return refs;
-            }
-            catch (Exception ex)
-            {
-                _errors.Add(Utils.GetExceptionErrorString(ex));
-                return null;
-            }
-        }
+        //private IdReferences GetTypeFieldReferences(bool typeFields)
+        //{
+        //    try
+        //    {
+        //        IdReferences refs = null;
+        //        if (_typeFieldIds == null || !_typeFieldIds.TryGetTarget(out refs))
+        //        {
+        //            string path = typeFields
+        //                ? _fileMoniker.GetFilePath(_currentRuntimeIndex, Constants.MapTypeFieldTypesPostfix)
+        //                : _fileMoniker.GetFilePath(_currentRuntimeIndex, Constants.MapFieldTypeParentTypesPostfix);
+        //            (string error, int[] ids, int[] offs, long[] fldRefs) = IdReferences.LoadIdReferences(path);
+        //            if (error != null)
+        //            {
+        //                _errors.Add(error);
+        //                return null;
+        //            }
+        //            refs = new IdReferences(ids, offs, fldRefs);
+        //            if (_typeFieldIds == null)
+        //                _typeFieldIds = new WeakReference<IdReferences>(refs);
+        //            else
+        //                _typeFieldIds.SetTarget(refs);
+        //        }
+        //        return refs;
+        //    }
+        //    catch (Exception ex)
+        //    {
+        //        _errors.Add(Utils.GetExceptionErrorString(ex));
+        //        return null;
+        //    }
+        //}
 
         private uint[] GetSizes()
         {

@@ -1565,6 +1565,10 @@ namespace ClrMDRIndex
                         }
                         if (!typeDct.ContainsKey(type.Name))
                         {
+                            if (type.Name == "Eze.Server.Common.Pulse.CalculationCache.RowCache")
+                            {
+                                int a = 0;
+                            }
                             var kind = TypeExtractor.GetElementKind(type);
                             typeDct.Add(type.Name, kind);
                             if (type.Fields != null && type.Fields.Count > 0)
@@ -1576,6 +1580,10 @@ namespace ClrMDRIndex
                                     if (fld.Type != null && fld.Type.Name != null)
                                     {
                                         string name = fld.Type.Name;
+                                        if (name== "ECS.Common.HierarchyCache.Structure.IReadOnlyPosition")
+                                        {
+                                            int b = 1;
+                                        }
                                         var fldkind = TypeExtractor.GetElementKind(fld.Type);
                                         var fldName = strIds.JustGetId(fld.Name);
                                         fldInfo.Add((name,fldName,fldkind));
@@ -1624,25 +1632,37 @@ namespace ClrMDRIndex
                 {
                     bw = new BinaryWriter(File.Open(fldInfoPath, FileMode.Create));
                     bw.Write(fldInfoDct.Count);
+                    int count = 0;
                     foreach (var entry in fldInfoDct)
                     {
                         int typeId = Array.BinarySearch(typeNameAry, entry.Key,StringComparer.Ordinal);
+                        if (typeId < 0)
+                        {
+                            int d = 0;
+                        }
                         Debug.Assert(typeId >= 0);
                         for (int i = 0, icnt = entry.Value.Length; i < icnt; ++i)
                         {
                             bw.Write(typeId);
                             (string fldTypeName, int fldNameId, ClrElementKind fldKind) = entry.Value[i];
-                            int fldTypeId = Array.BinarySearch(typeNameAry, entry.Key, StringComparer.Ordinal);
-                            Debug.Assert(fldTypeId >= 0);
+                            int fldTypeId = Array.BinarySearch(typeNameAry, fldTypeName, StringComparer.Ordinal);
+                            if (fldTypeId < 0)
+                            {
+                                int c = 0;
+                            }
+                            //Debug.Assert(fldTypeId >= 0);
                             bw.Write(fldTypeId);
                             bw.Write((int)fldKind);
                             bw.Write(fldNameId);
+                            ++count;
                         }
                     }
+                    bw.Seek(0, SeekOrigin.Begin);
+                    bw.Write(count);
                 }
-                catch
+                catch(Exception ex)
                 {
-
+                    error = Utils.GetExceptionErrorString(ex);
                 }
                 finally
                 {
