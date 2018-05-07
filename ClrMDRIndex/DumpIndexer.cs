@@ -1580,10 +1580,6 @@ namespace ClrMDRIndex
                                     if (fld.Type != null && fld.Type.Name != null)
                                     {
                                         string name = fld.Type.Name;
-                                        if (name== "ECS.Common.HierarchyCache.Structure.IReadOnlyPosition")
-                                        {
-                                            int b = 1;
-                                        }
                                         var fldkind = TypeExtractor.GetElementKind(fld.Type);
                                         var fldName = strIds.JustGetId(fld.Name);
                                         fldInfo.Add((name,fldName,fldkind));
@@ -1591,6 +1587,7 @@ namespace ClrMDRIndex
                                         {
                                             fldDct.Add(name,fldkind);
                                         }
+                                        // TODO JRD -- get nested struct recursively
                                     }
                                 }
                                 if (fldInfo.Count > 0)

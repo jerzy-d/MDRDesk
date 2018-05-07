@@ -16,6 +16,9 @@ namespace ClrMDRIndex
         int[] _typeIds;
         int[] _fldTypeIds;
         int[] _fldNameIds;
+        int[] _baseClasses; // TODO JRD
+        int[][] _interfaces; // TODO JRD
+
         ClrElementKind[] _fldKinds;
 
         private bool IsLoaded => _loaded > 0;

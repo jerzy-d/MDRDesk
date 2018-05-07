@@ -191,6 +191,9 @@
     <Compile Include="ReferenceSearchSetup.xaml.cs">
       <DependentUpon>ReferenceSearchSetup.xaml</DependentUpon>
     </Compile>
+    <Compile Include="Search.xaml.cs">
+      <DependentUpon>Search.xaml</DependentUpon>
+    </Compile>
     <Compile Include="SearchType.xaml.cs">
       <DependentUpon>SearchType.xaml</DependentUpon>
     </Compile>
@@ -279,6 +282,10 @@
       <Generator>MSBuild:Compile</Generator>
     </Page>
     <Page Include="ReferenceSearchSetup.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="Search.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>
