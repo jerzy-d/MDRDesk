@@ -8,10 +8,7 @@ namespace ClrMDRIndex
 {
 	public static class StringBuilderCache
 	{
-		// The value 360 was chosen in discussion with performance experts as a compromise between using
-		// as litle memory (per thread) as possible and still covering a large part of short-lived
-		// StringBuilder creations on the startup path of VS designers.
-		private const int MAX_BUILDER_SIZE = 512;
+		private const int MAX_BUILDER_SIZE = 512; // ???
 
 		public static int MaxCapacity => MAX_BUILDER_SIZE;
 
@@ -25,8 +22,6 @@ namespace ClrMDRIndex
 				StringBuilder sb = StringBuilderCache.CachedInstance;
 				if (sb != null)
 				{
-					// Avoid stringbuilder block fragmentation by getting a new StringBuilder
-					// when the requested size is larger than the current capacity
 					if (capacity <= sb.Capacity)
 					{
 						StringBuilderCache.CachedInstance = null;

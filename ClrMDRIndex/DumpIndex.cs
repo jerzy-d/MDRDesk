@@ -967,7 +967,7 @@ namespace ClrMDRIndex
                     if (typeDct.TryGetValue(typeName, out info))
                     {
                         var maxSz = info.Item3 < sz ? sz : info.Item3;
-                        var minSz = info.Item3 > sz ? sz : info.Item3;
+                        var minSz = info.Item4 > sz ? sz : info.Item4;
                         typeDct[typeName] = (info.Item1 + 1, info.Item2 + sz, maxSz, minSz);
                     }
                     else

@@ -28,6 +28,14 @@ namespace MDRDeskInstaller
         const char InformationSymbol = '\u2110'; // ℐ SCRIPT CAPITAL I
         public static bool Install = false;
 
+        enum CmpSet
+        {
+            LT = -1,
+            EQ = 0,
+            GT = 1,
+            ER = 10
+        }
+
         enum UpdtNdx
         {
             Version,
@@ -80,8 +88,7 @@ namespace MDRDeskInstaller
 
         private async void Upgrade()
         {
-            string error;
-
+            MainStatusLabel.Content = "Checking if update is needed.";
             _progress.Report("Checking available updates.");
 
             string tempFolder = _myFolder + @"Temp";
@@ -94,13 +101,13 @@ namespace MDRDeskInstaller
                 Directory.CreateDirectory(tempFolder);
             }
 
-            (bool ok, bool updateMdrDesk, bool updateDacs, string[] updateInfo) =
+            (string error, bool updateMdrDesk, bool updateDacs, string[] updateInfo) =
             await Task.Factory.StartNew(() =>
             {
                 return CheckUpdates(tempFolder);
             });
 
-            if (!ok)
+            if (error != null)
             {
 
             }
@@ -108,6 +115,7 @@ namespace MDRDeskInstaller
             if(!updateMdrDesk && !updateDacs)
             {
                 _progress.Report("Current MDRDesk and dacs are the latest. No need to upgrade.");
+                return;
             }
 
             if (true)
@@ -134,13 +142,15 @@ namespace MDRDeskInstaller
             }
         }
 
-        private ValueTuple<bool, bool, bool, string[]> CheckUpdates(string folder)
+        private ValueTuple<string, bool, bool, string[]> CheckUpdates(string folder)
         {
-            (bool ok, List<string> updateInfoLst) = GetUpdateInfo(folder);
-            if (!ok)
+            string error = null;
+            List<string> updateInfoLst = GetUpdateInfo(folder, out error);
+            if (updateInfoLst == null || error != null)
             {
-                return (false, false, false, updateInfoLst.ToArray());
+                return (error, false, false, null);
             }
+
             string[] updateInfo = new string[(int)UpdtNdx.Count];
             string[] prefixes = new string[]
             {
@@ -163,36 +173,39 @@ namespace MDRDeskInstaller
                     updateInfo[(int)UpdtNdx.DacZip] = item.Substring(prefixes[(int)UpdtNdx.DacZip].Length);
             }
             bool updateMdrDesk = false, updateDacs = false;
-            if (string.Compare(updateInfo[(int)UpdtNdx.Version], _myVersion) > 0) updateMdrDesk = true;
-            var dacver = updateInfo[(int)UpdtNdx.DacVersion];
-            if (!(dacver.Length < _myDacVersion.Length))
+            CmpSet cmp = CompareVersions(_myVersion, updateInfo[(int)UpdtNdx.Version], out error);
+            if (cmp == CmpSet.ER)
             {
-                if (dacver.Length > _myDacVersion.Length) updateDacs = true;
-                else updateDacs = string.Compare(dacver, _myDacVersion) > 0;
+                return (error, false, false, updateInfoLst.ToArray());
             }
+            updateMdrDesk = cmp == CmpSet.LT;
 
-            return (true, updateMdrDesk, updateDacs, updateInfo);
+            cmp = CompareIntVersion(_myDacVersion, updateInfo[(int)UpdtNdx.DacVersion], out error);
+            if (cmp == CmpSet.ER)
+            {
+                return (error, false, false, updateInfoLst.ToArray());
+            }
+            updateDacs = cmp == CmpSet.LT;
+
+            return (null, updateMdrDesk, updateDacs, updateInfo);
         }
 
-        public ValueTuple<bool,List<string>> GetUpdateInfo(string folder)
+        public List<string> GetUpdateInfo(string folder, out string error)
         {
-            StreamReader sr = null;
+            error = null;
+            //StreamReader sr = null;
             var updateInfo = new List<string>();
             try
             {
                 string ln;
                 if (_localServerPath != null) // we have release on our local server
                 {
-
-                    sr = new StreamReader(_localServerPath);
-                    ln = sr.ReadLine();
-
-                    while (ln != null)
+                    string filePath = _localServerPath + @"\CurrentRelease.txt";
+                    if (File.Exists(filePath))
                     {
-                        updateInfo.Add(ln);
-                        ln = sr.ReadLine();
+                        if (!ReadUpdateInfo(filePath, updateInfo, out error)) return null;
+                        return updateInfo;
                     }
-                    return (true,updateInfo);
                 }
 
                 var path = folder + @"\CurrentRelease.txt";
@@ -203,21 +216,37 @@ namespace MDRDeskInstaller
 
                 }
                 client = null;
-                sr = new StreamReader(path);
-                ln = sr.ReadLine();
 
-                while (ln != null)
-                {
-                    updateInfo.Add(ln);
-                    ln = sr.ReadLine();
-                }
-                return (true,updateInfo);
+                if (!ReadUpdateInfo(path, updateInfo, out error)) return null;
+                return updateInfo;
             }
             catch(Exception ex)
             {
-                updateInfo.Add(ex.Message);
-                updateInfo.Add(ex.StackTrace);
-                return (false,updateInfo);
+                error = ex.ToString();
+                return null;
+            }
+        }
+
+        private static bool ReadUpdateInfo(string path, List<string> updList, out string error)
+        {
+            error = null;
+            StreamReader sr = null;
+            try
+            {
+                sr = new StreamReader(path);
+                string ln = sr.ReadLine();
+                while (ln != null)
+                {
+                    if (!(string.IsNullOrWhiteSpace(ln) || ln[0] == '#'))
+                        updList.Add(ln);
+                    ln = sr.ReadLine();
+                }
+                return true;
+            }
+            catch(Exception ex)
+            {
+                error = ex.ToString();
+                return false;
             }
             finally
             {
@@ -363,6 +392,7 @@ namespace MDRDeskInstaller
                 msg = tmStr + " : " + msg;
                 UpdateProgressText.AppendText(msg);
                 UpdateProgressText.ScrollToEnd();
+                UpdateProgressText.UpdateLayout();
             }
         }
 
@@ -396,6 +426,71 @@ namespace MDRDeskInstaller
 
         }
 
+
+        private static CmpSet CompareVersions(string v1, string v2, out string error)
+        {
+            error = null;
+            int[] v1Vals = GetVersionValues(v1, out error);
+            if (error != null) return CmpSet.ER;
+            int[] v2Vals = GetVersionValues(v2, out error);
+            if (error != null) return CmpSet.ER;
+            CmpSet cmp = CmpSet.EQ;
+            for (int i = 0; i < 4; ++i)
+            {
+                cmp = v1Vals[i] < v2Vals[i] ? CmpSet.LT : (v1Vals[i] > v2Vals[i] ? CmpSet.GT : CmpSet.EQ);
+                if (cmp != CmpSet.EQ) return cmp;
+            }
+            return CmpSet.EQ;
+        }
+
+        private static int[] GetVersionValues(string ver, out string error)
+        {
+            error = null;
+            string[] valStr= ver.Split(new char[] { '.' });
+            if (valStr.Length != 4)
+            {
+                error = "Version string is corrupted: " + ver;
+                return null;
+            }
+            int[] vals = new int[4];
+            for (int i = 0; i < 4; ++i)
+            {
+                vals[0] = ParseIntString(valStr[0], out error);
+                if (error != null) return null;
+            }
+            return vals;
+        }
+
+        private static int ParseIntString(string s, out string error)
+        {
+            error = null;
+            int val;
+            if (!Int32.TryParse(s, out val))
+            {
+                error = "[ParseIntString] Failed to parse: " + s;
+                return Int32.MinValue;
+            }
+            return val;
+        }
+
+        private static CmpSet CompareIntVersion(string s1, string s2, out string error)
+        {
+            error = null;
+            int s1Val;
+            if (!Int32.TryParse(s1,out s1Val))
+            {
+                error = "Int32.TryParse failed on the first argument: " + s1;
+                return CmpSet.ER;
+            }
+            int s2Val;
+            if (!Int32.TryParse(s2, out s2Val))
+            {
+                error = "Int32.TryParse failed on the second argument: " + s2;
+                return CmpSet.ER;
+            }
+
+            return s1Val < s2Val ? CmpSet.LT : (s1Val > s2Val ? CmpSet.GT : CmpSet.EQ);
+        }
 
     }
 }
