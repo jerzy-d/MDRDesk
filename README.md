@@ -1,10 +1,7 @@
 # MDRDesk
 ## Microsoft.Diagnostics.Runtime Gui Interface
 
-_MDRDesk_ _is_ _not_ _ready_ _yet_, _I'm_ _planning_ _to_ _have_ _first_ _release_ _early_ _in_ _2018_.  
-
 [MDRDesk Github site](https://github.com/jerzy-d/MDRDesk)  
-
 
 1. [Credits](./Documentation/Credits.md)
 
@@ -28,5 +25,6 @@ Optionally you can create a subfolder in this directory called 'Dumps' where you
 keep crash dumps you inspecting. We have under 'Dumps' directory subfolders for each client we supporting.
 Download MDRDesk.zip, and mscordacwks.zip from the release to 'MDRDesk' folder.
 Unzip both and you should be all set.
+To create crash dumps of local processes from MDRDesk, you need to setup procdump.exe location.
 
 TODO - local process crash dumps creation.

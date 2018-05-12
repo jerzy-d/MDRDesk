@@ -28,13 +28,17 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution 
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Documentation", "Documentation", "{A32781E3-ED13-4692-8186-B140B2C6E4D9}"
 	ProjectSection(SolutionItems) = preProject
+		Documentation\ClearWindowContent_16x.png = Documentation\ClearWindowContent_16x.png
 		Documentation\Configuration.md = Documentation\Configuration.md
 		Documentation\Credits.md = Documentation\Credits.md
 		Documentation\DumpLocalProcess.md = Documentation\DumpLocalProcess.md
 		Documentation\GettingStarted.md = Documentation\GettingStarted.md
 		Documentation\MainMenu.md = Documentation\MainMenu.md
+		Documentation\MainMenu.PNG = Documentation\MainMenu.PNG
 		Documentation\NotWrittenYet.md = Documentation\NotWrittenYet.md
 		Documentation\RootsDisplay.md = Documentation\RootsDisplay.md
+		Documentation\SequenceFile_32x.png = Documentation\SequenceFile_32x.png
+		Documentation\Settings_32x.png = Documentation\Settings_32x.png
 		Documentation\ThreadsBlocksGraph.md = Documentation\ThreadsBlocksGraph.md
 		Documentation\ValueWindows.md = Documentation\ValueWindows.md
 		Documentation\WriteToHistory32x.png = Documentation\WriteToHistory32x.png
