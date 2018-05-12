@@ -70,29 +70,29 @@ Show the help content in a local window. This should look the same as documentat
 The contemt of some displayed tabs can be transformed into a specially formatted text file.
 This report file can be opened using Open Report File. WARNING: Not fully implemented yet.
 
-![Write csv file](../Documentation/SequenceFile_32x.PNG)
+![Write csv file](./SequenceFile_32x.PNG)
 *Write csv file, from a current tab.*  
 The contemt of some displayed tabs can be transformed into a specially formatted csv file.
 The separator character is: '\uFF1B' (FULLWIDTH SEMICOLON). How to type in Microsoft Windows: Alt +FF1B.
 This report file can be opened using for ex.: Excel, specifying separator character. WARNING: Not fully implemented yet.
 
-![Write csv file](../Documentation/Settings_32x.PNG)
+![Write csv file](./Settings_32x.PNG)
 *MDRDesk settings/configuration.*  
 View/modify MDRDesk setup. This maps directly MDRDesk.exe.Config, MDRDesk32.exe.Config files.
-[See details..](../Documentation/Configuration.md)
+[See details..](./Configuration.md)
 
-![Force GC](../Documentation/ClearWindowContent_16x.PNG)
+![Force GC](./ClearWindowContent_16x.PNG)
 *Force GC*  
 Forces MDRDesk's full GC collection with compaction and finalization.
 
-![Type Display](../Documentation/TypeDisplay.PNG)
+![Type Display](./TypeDisplay.PNG)
 *How to display type list.*
 Instances (list of heap instances) tab content can be displayed in 3 ways:  
 (1) Namespace/Class -- the first column displays namespaces, the second one all classes which belong to the namespace.  
 (2) Class/Namespace -- the type list is sorted by class name, and its namespace follows after a star character.  
 (3) Full Name -- the type full name list is displayed.
 
-![My Memory](../Documentation/MyMemory.PNG)  
+![My Memory](./MyMemory.PNG)  
 Current MDRDesk usage of memory: private working set, and peak working set are displayed.
 
 ##### Hot Keys
