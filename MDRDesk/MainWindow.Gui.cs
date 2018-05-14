@@ -1249,10 +1249,10 @@ namespace MDRDesk
             MainStatusShowMessage(typeName + ": " + histStr);
         }
 
-        private void GetFieldValuesClicked(object sender, RoutedEventArgs e)
-        {
-            MessageBox.Show("Not implemented yet.", "Get Field Values", MessageBoxButton.OK, MessageBoxImage.Information);
-        }
+        //private void GetFieldValuesClicked(object sender, RoutedEventArgs e)
+        //{
+        //    MessageBox.Show("Not implemented yet.", "Get Field Values", MessageBoxButton.OK, MessageBoxImage.Information);
+        //}
 
 
         private async void GetFieldDefaultValuesClicked(object sender, RoutedEventArgs e)
@@ -1997,59 +1997,59 @@ namespace MDRDesk
             DisplayTypeValuesGrid(listing, Constants.BlackDiamondHeader, TypeValuesReportGrid, Utils.BaseTypeName(query.TypeName));
         }
 
-        private void ExecuteTypeFieldUsageQuery(string typeName, string fieldTypeName = null, string fieldName = null)
-        {
-            string baseTypeName = Utils.BaseTypeName(typeName);
-            string error = null;
-            (string tpName, int typeId, ClrElementKind typeKind, string[] fldTypeNames, int[] fldIds, ClrElementKind[] fldKinds, string[] fldNames)
-                = CurrentIndex.GetTypeInfo(typeName, out error);
-            if (error != null)
-            {
-                GuiUtils.ShowError(error, this);
-                return;
-            }
-            if (fieldTypeName == null && fieldName == null) // let user select a field
-            {
-                Debug.Assert(Utils.SameStrings(typeName, tpName));
-                KeyValuePair<string, string>[] fldNameTypes = new KeyValuePair<string, string>[fldIds.Length];
-                for (int i = 0, icnt = fldIds.Length; i < icnt; ++i)
-                {
-                    fldNameTypes[i] = new KeyValuePair<string, string>(fldNames[i], fldTypeNames[i]);
-                }
-                var dlg = new TypeFieldValueQrySetup(tpName, fldNameTypes) { Owner = this };
-                dlg.ShowDialog();
-            }
-            else if (fieldName == null) // get usage for all fields of FieldTypeName type
-            {
+        //private void ExecuteTypeFieldUsageQuery(string typeName, string fieldTypeName = null, string fieldName = null)
+        //{
+        //    string baseTypeName = Utils.BaseTypeName(typeName);
+        //    string error = null;
+        //    (string tpName, int typeId, ClrElementKind typeKind, string[] fldTypeNames, int[] fldIds, ClrElementKind[] fldKinds, string[] fldNames)
+        //        = CurrentIndex.GetTypeInfo(typeName, out error);
+        //    if (error != null)
+        //    {
+        //        GuiUtils.ShowError(error, this);
+        //        return;
+        //    }
+        //    if (fieldTypeName == null && fieldName == null) // let user select a field
+        //    {
+        //        Debug.Assert(Utils.SameStrings(typeName, tpName));
+        //        KeyValuePair<string, string>[] fldNameTypes = new KeyValuePair<string, string>[fldIds.Length];
+        //        for (int i = 0, icnt = fldIds.Length; i < icnt; ++i)
+        //        {
+        //            fldNameTypes[i] = new KeyValuePair<string, string>(fldNames[i], fldTypeNames[i]);
+        //        }
+        //        var dlg = new TypeFieldValueQrySetup(tpName, fldNameTypes) { Owner = this };
+        //        dlg.ShowDialog();
+        //    }
+        //    else if (fieldName == null) // get usage for all fields of FieldTypeName type
+        //    {
 
-            }
-            else // get usage for a selected field
-            {
+        //    }
+        //    else // get usage for a selected field
+        //    {
 
-            }
-            SetStartTaskMainWindowState("Please wait... Type field usage: " + baseTypeName);
+        //    }
+        //    SetStartTaskMainWindowState("Please wait... Type field usage: " + baseTypeName);
 
-            //var (error, listing) = await Task.Factory.StartNew(() =>
-            //{
-            //    string err;
-            //    var info = CurrentIndex.GetTypeValuesReport(query, instances, out err);
-            //    return (err, info);
-            //}, DumpSTAScheduler);
+        //    //var (error, listing) = await Task.Factory.StartNew(() =>
+        //    //{
+        //    //    string err;
+        //    //    var info = CurrentIndex.GetTypeValuesReport(query, instances, out err);
+        //    //    return (err, info);
+        //    //}, DumpSTAScheduler);
 
 
-            SetEndTaskMainWindowState(error == null
-                ? "DONE. Type field usage: " + baseTypeName
-                : "FAILED! Type field usage: " + baseTypeName);
+        //    SetEndTaskMainWindowState(error == null
+        //        ? "DONE. Type field usage: " + baseTypeName
+        //        : "FAILED! Type field usage: " + baseTypeName);
 
-            if (error != null)
-            {
-                GuiUtils.ShowError(error,this);
-                return;
-            }
+        //    if (error != null)
+        //    {
+        //        GuiUtils.ShowError(error,this);
+        //        return;
+        //    }
 
-            // TODO JRD
-            //DisplayTypeValuesGrid(listing, Constants.BlackDiamondHeader, TypeValuesReportGrid, Utils.BaseTypeName(query.TypeName));
-        }
+        //    // TODO JRD
+        //    //DisplayTypeValuesGrid(listing, Constants.BlackDiamondHeader, TypeValuesReportGrid, Utils.BaseTypeName(query.TypeName));
+        //}
 
         private void DisplayTypeValuesGrid(ListingInfo info, string prefix, string name, string reportTitle)
         {

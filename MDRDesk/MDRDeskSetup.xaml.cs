@@ -40,8 +40,6 @@ namespace MDRDesk
                     TypeDisplayNamespace.IsChecked = true;
                     break;
             }
-            if (Setup.SkipReferences) IndexInstanceReferences.IsChecked = true;
-            if (Setup.SkipDeadStackObjects) IndexDeadStackObjects.IsChecked = true;
         }
 
         private void ButtonDacFolder_OnClick(object sender, RoutedEventArgs e)
@@ -101,8 +99,6 @@ namespace MDRDesk
                 Setup.SetTypesDisplayMode("fulltypenames");
             else
                 Setup.SetTypesDisplayMode("namespaces");
-            Setup.SetSkipIndexingRefs(IsTrue(IndexInstanceReferences));
-            Setup.SetSkipDeadStackObjects(IsTrue(IndexDeadStackObjects));
 
             string error;
             Setup.SaveConfigSettings(out error);

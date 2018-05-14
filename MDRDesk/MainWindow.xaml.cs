@@ -2537,18 +2537,18 @@ namespace MDRDesk
             }
         }
 
-        private void GetTypeStringUsage(object sender, RoutedEventArgs e)
-        {
-            if (!GuiUtils.IsIndexAvailable(this, "Cannot get type string, an index is not opened.")) return;
-            ListBox listBox = GetTypeNameListBox(sender);
-            string typeName = null;
-            if (listBox == null || listBox.SelectedItems.Count <= 0) return;
-            var sel = listBox.SelectedItems[0];
-            int typeId;
-            typeName = GetTypeNameFromSelection(sel, out typeId);
-            if (typeId == Constants.InvalidIndex) return;
-            Dispatcher.CurrentDispatcher.InvokeAsync(() => ExecuteTypeFieldUsageQuery(typeName));
-        }
+        //private void GetTypeStringUsage(object sender, RoutedEventArgs e)
+        //{
+        //    if (!GuiUtils.IsIndexAvailable(this, "Cannot get type string, an index is not opened.")) return;
+        //    ListBox listBox = GetTypeNameListBox(sender);
+        //    string typeName = null;
+        //    if (listBox == null || listBox.SelectedItems.Count <= 0) return;
+        //    var sel = listBox.SelectedItems[0];
+        //    int typeId;
+        //    typeName = GetTypeNameFromSelection(sel, out typeId);
+        //    if (typeId == Constants.InvalidIndex) return;
+        //    Dispatcher.CurrentDispatcher.InvokeAsync(() => ExecuteTypeFieldUsageQuery(typeName));
+        //}
 
         private void AddrLstViewMemoryClicked(object sender, RoutedEventArgs e)
         {

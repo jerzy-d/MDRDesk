@@ -207,39 +207,31 @@ namespace ClrMDRIndex
 
                         // field dependencies
                         //
-                        if (!Setup.SkipReferences)
+                        
+                        builder = new InstanceReferences(addresses,
+                                                                new string[]
+                                                                {
+                                                                _fileMoniker.GetFilePath(r, Constants.MapRefFwdOffsetsFilePostfix),
+                                                                _fileMoniker.GetFilePath(r, Constants.MapFwdRefsFilePostfix),
+                                                                _fileMoniker.GetFilePath(r, Constants.MapRefBwdOffsetsFilePostfix),
+                                                                _fileMoniker.GetFilePath(r, Constants.MapBwdRefsFilePostfix),
+                                                                },
+                                                                progress,
+                                                                _fileMoniker.GetFilePath(r, Constants.MapInstancesFilePostfix)
+                                                                );
+                        builder.CreateForwardReferences(heap, out error);
+                        if (error == null)
                         {
-                            builder = new InstanceReferences(addresses,
-                                                                    new string[]
-                                                                    {
-                                                                    _fileMoniker.GetFilePath(r, Constants.MapRefFwdOffsetsFilePostfix),
-                                                                    _fileMoniker.GetFilePath(r, Constants.MapFwdRefsFilePostfix),
-                                                                    _fileMoniker.GetFilePath(r, Constants.MapRefBwdOffsetsFilePostfix),
-                                                                    _fileMoniker.GetFilePath(r, Constants.MapBwdRefsFilePostfix),
-                                                                    },
-                                                                    progress,
-                                                                    _fileMoniker.GetFilePath(r, Constants.MapInstancesFilePostfix)
-                                                                    );
-                            builder.CreateForwardReferences(heap, out error);
-                            if (error == null)
+                            if (!builder.BuildReveresedReferences())
                             {
-                                if (!builder.BuildReveresedReferences())
-                                {
-                                    AddError(r, "CreateBackwardReferences failed." + Environment.NewLine + builder.Error);
-                                }
-                            }
-                            else
-                            {
-                                AddError(r, "CreateForwardReferences failed." + Environment.NewLine + error);
+                                AddError(r, "CreateBackwardReferences failed." + Environment.NewLine + builder.Error);
                             }
                         }
                         else
                         {
-                            progress?.Report(runtimeIndexHeader + "Skipping generation of instance references...");
-                            InstanceReferences.DeleteInstanceReferenceFiles(r, _fileMoniker, out error);
-                            progress?.Report(runtimeIndexHeader + "Savings instances addresses...");
-                            Utils.WriteUlongArray(_fileMoniker.GetFilePath(r, Constants.MapInstancesFilePostfix), addresses, out error);
+                            AddError(r, "CreateForwardReferences failed." + Environment.NewLine + error);
                         }
+ 
 
                         progress?.Report(runtimeIndexHeader + "Building type instance map...");
                         if (!BuildTypeInstanceMap(r, typeIds, out error))
@@ -1037,24 +1029,17 @@ namespace ClrMDRIndex
 
                     ClrRoot[] threadLocalAliveVars = Utils.GetArray<ClrRoot>(thread.EnumerateStackObjects(false));
                     ClrRoot[] threadLocalDeadVars;
-                    if (!Setup.SkipDeadStackObjects)
+                    ClrRoot[] all;
+                    long stackSz = (thread.StackLimit > thread.StackBase) ? (long)(thread.StackLimit - thread.StackBase) : (long)(thread.StackBase - thread.StackLimit);
+                    if (thread.StackBase != 0 && (stackSz < 10 * 1024 * 1024))
                     {
-                        ClrRoot[] all;
-                        long stackSz = (thread.StackLimit > thread.StackBase) ? (long)(thread.StackLimit - thread.StackBase) : (long)(thread.StackBase - thread.StackLimit);
-                        if (thread.StackBase != 0 && (stackSz < 10 * 1024 * 1024))
-                        {
-                            all = Utils.GetArray<ClrRoot>(thread.EnumerateStackObjects(true));
-                        }
-                        else
-                        {
-                            all = Utils.EmptyArray<ClrRoot>.Value;
-                        }
-                        threadLocalDeadVars = all.Except(threadLocalAliveVars, rootEqCmp).ToArray();
+                        all = Utils.GetArray<ClrRoot>(thread.EnumerateStackObjects(true));
                     }
                     else
                     {
-                        threadLocalDeadVars = Utils.EmptyArray<ClrRoot>.Value;
+                        all = Utils.EmptyArray<ClrRoot>.Value;
                     }
+                    threadLocalDeadVars = all.Except(threadLocalAliveVars, rootEqCmp).ToArray();
                     var threadFrames = stackTraceLst.ToArray();
 
                     aliveIds.Clear();

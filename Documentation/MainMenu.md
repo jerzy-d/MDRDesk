@@ -55,7 +55,7 @@ This tab is visible if an index is loaded immediately after the indexing.
 Displays the list of module basic informations.
 
 **Show Finalizer Queue...**  
-Displays the list of module basic informations.
+Displays the list of instances in the finalizer queue.
 
 
 #### Ad-hoc Queries
