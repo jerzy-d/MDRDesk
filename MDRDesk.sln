@@ -41,7 +41,7 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Documentation", "Documentat
 		Documentation\Settings_32x.png = Documentation\Settings_32x.png
 		Documentation\ThreadsBlocksGraph.md = Documentation\ThreadsBlocksGraph.md
 		Documentation\ValueWindows.md = Documentation\ValueWindows.md
-		Documentation\WriteToHistory32x.png = Documentation\WriteToHistory32x.png
+		Documentation\WriteToHistory.png = Documentation\WriteToHistory.png
 	EndProjectSection
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MDRDeskInstaller", "MDRDeskInstaller\MDRDeskInstaller.csproj", "{70BC3875-D1D3-415F-B222-EFF07B38A519}"

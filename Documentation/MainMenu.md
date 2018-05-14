@@ -65,7 +65,7 @@ I'll add information if something practical is added there.
 #### Help  
 Show the help content in a local window. This should look the same as documentation on the github site.
 
-![Write report file](WriteToHistory32x.PNG)
+![Write report file](WriteToHistory.PNG)
 *Write report file, from a current tab.*  
 The contemt of some displayed tabs can be transformed into a specially formatted text file.
 This report file can be opened using Open Report File. WARNING: Not fully implemented yet.
