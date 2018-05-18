@@ -2701,7 +2701,7 @@ namespace MDRDesk
                     return;
 
                 Process installer = new Process();
-                installer.StartInfo.FileName = "MDRDeskInstaller.exe";
+                installer.StartInfo.FileName = "MDRDeskUpdate.exe";
                 installer.Start();
                 Application.Current.Shutdown();
             }

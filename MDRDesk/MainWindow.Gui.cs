@@ -2429,8 +2429,8 @@ namespace MDRDesk
 
             (string error, InstanceValue inst, TypeExtractor.KnownTypes knownType) = await Task.Factory.StartNew(() =>
             {
-                (string err, ClrType itype, ClrElementKind ikind, (ClrType[] fldTypes, ClrElementKind[] fldKinds, string[] strVals, StructValueStrings[] structVals)) =
-                ClassValue.GetClassValueStrings(CurrentIndex.Heap, addr);
+                //(string err, ClrType itype, ClrElementKind ikind, (ClrType[] fldTypes, ClrElementKind[] fldKinds, string[] strVals, StructValueStrings[] structVals)) =
+                //ClassValue.GetClassValueStrings(CurrentIndex.Heap, addr);
 
                 return CurrentIndex.GetInstanceValue(addr, null);
             }, DumpSTAScheduler);

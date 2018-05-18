@@ -3255,6 +3255,119 @@ namespace UnitTestMdr
         }
 
         [TestMethod]
+        public void SearchAggregations()
+        {
+            string path = Setup.DumpsFolder + Path.DirectorySeparatorChar + "Analytics";
+            string typeName = "ECS.Common.HierarchyCache.Structure.AggregationTracksClosedPositions";
+            string duration = string.Empty;
+            List<string> fileList = new List<string>(128);
+            Stopwatch stopWatch = new Stopwatch();
+            string[] fieldNames = new[]
+            {
+                "closedPositionCountLong",
+                "closedPositionCountShort",
+                "sodPositionCountLong",
+                "sodPositionCountShort",
+                "totalPositionCountLong",
+                "totalPositionCountShort",
+                "whatIfPositionCountLong",
+                "whatIfPositionCountShort",
+            };
+
+            int[] values = new int[fieldNames.Length];
+            long typeTotalCount = 0;
+            long[] typeValueTotals = new long[fieldNames.Length / 2];
+            SortedDictionary<string, KeyValuePair<int, int[]>> dct = new SortedDictionary<string, KeyValuePair<int, int[]>>();
+            StreamWriter sw = null;
+            try
+            {
+                GetDumpFiles(path, fileList);
+                stopWatch.Start();
+                for (int d = 0, dcnt = fileList.Count; d < dcnt; ++d)
+                //for (int d = 0, dcnt = fileList.Count; d < 4; ++d)
+                {
+                    string file = fileList[d];
+                    Trace.WriteLine(d.ToString() + ")  " + file);
+
+                    var dmp = OpenDump(file);
+                    using (dmp)
+                    {
+                        int typeDumpCount = 0;
+                        int[] typeDumpTotals = new int[fieldNames.Length / 2];
+
+                        var heap = dmp.Heap;
+                        var segs = heap.Segments;
+                        for (int i = 0, icnt = segs.Count; i < icnt; ++i)
+                        {
+                            var seg = segs[i];
+                            ulong addr = seg.FirstObject;
+                            while (addr != 0ul)
+                            {
+                                var clrType = heap.GetObjectType(addr);
+                                if (clrType == null || !Utils.SameStrings(clrType.Name,typeName)) goto NEXT_OBJECT;
+                                int ndx = 0;
+                                for (int j = 0, jcnt = fieldNames.Length; j < jcnt; ++j)
+                                {
+                                    values[j] = 0;
+                                    ClrInstanceField fld = clrType.GetFieldByName(fieldNames[j]);
+                                    int val = CollectionContent.GetIntFromField(fld, addr);
+                                    if (val == int.MinValue) val = 0;
+                                    values[j] = val;
+                                    
+                                    if ((j&1)!=0)
+                                    {
+                                        int sum = values[j - 1] + values[j];
+                                        typeDumpTotals[ndx] += sum;
+                                        typeValueTotals[ndx] += sum;
+                                        ++ndx;
+
+                                    }
+                                }
+                                ++typeDumpCount;
+                                ++typeTotalCount;
+
+                                NEXT_OBJECT:
+                                addr = seg.NextObject(addr);
+                            }
+                        }
+                        dct.Add(file, new KeyValuePair<int, int[]>(typeDumpCount, typeDumpTotals));
+                    }
+                }
+                duration = Utils.StopAndGetDurationString(stopWatch);
+                sw = new StreamWriter(Setup.DumpsFolder + Path.DirectorySeparatorChar + typeName + "-counts.txt");
+                sw.WriteLine("file count: " + fileList.Count + " duration: " + duration);
+                sw.WriteLine("### GRAND TOTALS");
+                sw.WriteLine("Instance Count......  " + Utils.JustSizeString((ulong)typeTotalCount));
+                sw.WriteLine("Closed Positions....  " + Utils.JustSizeString((ulong)typeValueTotals[0]));
+                sw.WriteLine("SOD Positions.......  " + Utils.JustSizeString((ulong)typeValueTotals[1]));
+                sw.WriteLine("Total Positions.....  " + Utils.JustSizeString((ulong)typeValueTotals[2]));
+                sw.WriteLine("Whatif Positions....  " + Utils.JustSizeString((ulong)typeValueTotals[3]));
+                sw.WriteLine("### DUMP LIST");
+                sw.WriteLine("[Instance Count], [Closed Positions], [Closed Positions], [Closed Positions], [Closed Positions], [Dump Path]");
+                foreach(var entry in dct)
+                {
+                    int count = entry.Value.Key;
+                    int[] counts = entry.Value.Value;
+                    sw.Write(Utils.CountStringHeader(count));
+                    sw.Write(Utils.CountStringHeader(counts[0]));
+                    sw.Write(Utils.CountStringHeader(counts[1]));
+                    sw.Write(Utils.CountStringHeader(counts[2]));
+                    sw.Write(Utils.CountStringHeader(counts[3]));
+                    sw.WriteLine(entry.Key);
+                }
+            }
+            catch (Exception ex)
+            {
+                Assert.IsTrue(false, ex.ToString());
+            }
+            finally
+            {
+                sw?.Close();
+                TestContext.WriteLine("file count : " + fileList.Count + " duration " + duration);
+            }
+        }
+
+        [TestMethod]
         public void SearchDctCouns2()
         {
             string path = Setup.DumpsFolder + Path.DirectorySeparatorChar + "Analytics";

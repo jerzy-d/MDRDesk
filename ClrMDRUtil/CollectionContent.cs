@@ -1352,7 +1352,7 @@ namespace ClrMDRIndex
             return (ulong)obj;
         }
 
-        static int GetIntFromField(ClrInstanceField fld, ulong addr, bool intr = false)
+        public static int GetIntFromField(ClrInstanceField fld, ulong addr, bool intr = false)
         {
             object obj = fld.GetValue(addr, intr, false);
             if (obj == null) return int.MinValue;

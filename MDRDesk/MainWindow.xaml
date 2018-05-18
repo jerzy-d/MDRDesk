@@ -91,16 +91,10 @@
         <ContextMenu x:Key="TypeListContextMenu" x:Shared="False">
             <MenuItem x:Name="TypeListCopyTypeName" Header="Copy Type Name" Click="CopyTypeNameClicked"></MenuItem>
             <MenuItem x:Name="TypeListGenerationDistribution" Header="Generation Ditribution" Click="GenerationDistributionClicked"></MenuItem>
-            <!--<MenuItem x:Name="TypeListGetFieldValues" Header="Get Field Values" Click="GetFieldValuesClicked"></MenuItem>-->
             <MenuItem x:Name="TypeListGetFieldDefaultValues" Header="Field Default Values Report" Click="GetFieldDefaultValuesClicked"></MenuItem>
             <Separator></Separator>
-            <!--<MenuItem x:Name="TypeListGetTotalHeapSize" Header="Get Type Total Heap Size" Click="GetTotalHeapSizeClicked"></MenuItem>
-            <MenuItem x:Name="TypeListGetTotalHeapSizeReport" Header="Get Type Total Heap Size Report" Click="GetTotalHeapSizeReportClicked"></MenuItem>-->
             <MenuItem x:Name="TypeListGetBaseHeapSize" Header="Get Type Total Size" Click="GetTypeSizesClicked"></MenuItem>
-            <!--<MenuItem x:Name="TypeListGetBaseHeapSizeReport" Header="Get Type Heap Base Size Report" Click="GetHeapBaseSizeReportClicked"></MenuItem>-->
             <Separator></Separator>
-            <!--<MenuItem x:Name="TypeListGetStringUsage" Header="Get String Usage" Click="GetTypeStringUsage"></MenuItem>-->
-
             <MenuItem x:Name="TypeListGetParentReferences" Header="Get Type References" Click="GetParentReferences"></MenuItem>
             <MenuItem x:Name="TypeListGenerateSizeDetailsReport" Header="Generate Size Details Report" Click="GenerateSizeDetailsReport"></MenuItem>
             <MenuItem x:Name="TypeListGetTypeValuesReport" Header="Type Values Report" Click="GetTypeValuesReportClicked"></MenuItem>

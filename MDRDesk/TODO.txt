@@ -131,3 +131,6 @@
 		  field
 		  securitySimpleState    0x00000022501d14    ECS.Common.HierarchyCache.Structure.SecurityReadOnlyState
 		     Reg42flag    0x00000022501d14    System.Nullable<System.Boolean> -- this field has the same value as parent !!!
+0052 05/18/18 -- D:\Jerzy\WinDbgStuff\dumps\Modeling\Fisher\Eze.Modeling.Svc_180518_120141.dmp.map
+      0x00001e0ef433e8 - ExecuteInstanceValueQuery  -- ClassValue.GetClassValueStrings fails -- it is currently commented out
+

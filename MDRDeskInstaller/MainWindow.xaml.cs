@@ -209,7 +209,11 @@ namespace MDRDeskInstaller
                 }
 
                 var path = folder + @"\CurrentRelease.txt";
+                ServicePointManager.SecurityProtocol = SecurityProtocolType.Ssl3 | SecurityProtocolType.Tls | SecurityProtocolType.Tls11 | SecurityProtocolType.Tls12;
+                // Skip validation of SSL/TLS certificate
+                ServicePointManager.ServerCertificateValidationCallback = delegate { return true; };
                 WebClient client = new WebClient();
+                
                 using (client)
                 {
                     client.DownloadFile(@"https://github.com/jerzy-d/MDRDesk/releases/download/v.0.0-info.0/CurrentRelease.txt", path);
@@ -275,7 +279,7 @@ namespace MDRDeskInstaller
                 List<FileInfo> lst = new List<FileInfo>();
                 foreach (FileInfo file in directory.GetFiles())
                 {
-                    if (file.Name.StartsWith("MDRDeskInstaller")) continue;
+                    if (file.Name.StartsWith("MDRDeskUpdate")) continue;
                     if (IsFileLocked(file)) lst.Add(file);
                 }
                 return lst.ToArray();
