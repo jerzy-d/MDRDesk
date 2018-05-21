@@ -1980,6 +1980,40 @@ namespace UnitTestMdr
         }
 
         [TestMethod]
+        public void GetTypeValue_Test()
+        {
+            string error = null;
+            Stopwatch stopWatch = new Stopwatch();
+            ulong addr = 0x00001e0ef432f8;
+            var index = OpenIndex(@"C:\WinDbgStuff\Dumps\Modeling\Fisher\Eze.Modeling.Svc_180518_120141.dmp.map");
+
+            using (index)
+            {
+                var heap = index.Heap;
+
+                try
+                {
+#if TRUE
+                    (string err1, ClrType type1, ClrElementKind kind1, (ClrType[] fldTypes, ClrElementKind[] fldKinds1, string[] strVals, StructValueStrings[] structVals1))
+                        = ClassValue.GetClassValueStrings(index.Heap, addr);
+                    Assert.IsNull(err1, err1);
+#endif
+                    (string err2, ClrType type2, ClrElementKind kind2, (ClrType[] fldType, ClrElementKind[] fldKinds2, object[] vals, StructFieldsInfo[] structInfos, StructValues[] structVals2))
+                        = ClassValue.GetClassValues(index.Heap, addr);
+                    Assert.IsNull(err2, err2);
+                }
+                catch (Exception ex)
+                {
+                    error = ex.ToString();
+                    Assert.IsTrue(false, error);
+                    TestContext.WriteLine(Environment.NewLine + error);
+                }
+            }
+
+            Assert.IsNull(error, error);
+        }
+
+        [TestMethod]
         public void GetTypeReferences_Test()
         {
 
@@ -2588,9 +2622,9 @@ namespace UnitTestMdr
             return (elType, elKind, len);
         }
 
-        #endregion instance value
+#endregion instance value
 
-        #region type values report
+#region type values report
 
         //[TestMethod]
         //public void TestSavedTypeValuesReport()

@@ -17,7 +17,6 @@ namespace ClrMDRIndex
             {
                 addr = Utils.RealAddress(addr);
                 (ClrType type, ClrElementKind kind, ClrType rtType, ClrElementKind rtKind) = TypeExtractor.GetRealType(heap, addr);
-                    heap.GetObjectType(addr);
 
                 if (type == null) return ("Object Value Error" + Constants.HeavyGreekCrossPadded + "Cannot find an instance." + Constants.HeavyGreekCrossPadded + "Heap cannot get object type at address: " + Utils.RealAddressString(addr), null, ClrElementKind.Unknown, (null,null,null,null,null));
                 var fldCnt = type.Fields.Count;
@@ -32,6 +31,12 @@ namespace ClrMDRIndex
                     var fld = type.Fields[i];
                     var fldType = fld.Type; // returns ClrElementKind.Unknown if fld.Type is null
                     var fldKind = TypeExtractor.GetElementKind(fldType);
+                    if (fldKind == ClrElementKind.Unknown)
+                    {
+                        objects[i] = null;
+                        continue; // nothing to do here, from MDR lib: There is
+                                  // a bug in several versions of our debugging layer which causes this.
+                    }
                     if (fldType == null || TypeExtractor.IsAmbiguousKind(fldKind))
                     {
                         var fldValObj = fld.GetValue(addr, type.IsValueClass, false);
@@ -188,8 +193,12 @@ namespace ClrMDRIndex
                     fldTypes[i] = fldType;
                     var fldKind = TypeExtractor.GetElementKind(fldType);
                     fldKinds[i] = fldKind;
-                    if (fldKind == ClrElementKind.Unknown) continue; // nothing to do here, from MDR lib: There is
-                                                                     // a bug in several versions of our debugging layer which causes this.
+                    if (fldKind == ClrElementKind.Unknown)
+                    {
+                        strings[i] = Constants.UnknownValue;
+                        continue; // nothing to do here, from MDR lib: There is
+                                  // a bug in several versions of our debugging layer which causes this.
+                    }
                     if (TypeExtractor.IsAmbiguousKind(fldKind))
                     {
                         (ClrType aType, ClrElementKind aKind) = TypeExtractor.GetReferenceFieldRealTypeAndKind(heap, addr, fld);
@@ -201,64 +210,10 @@ namespace ClrMDRIndex
                             fldKinds[i] = fldKind;
                         }
                     }
-                    if (!Utils.SameStrings(fld.Type.Name,fldType.Name))
-                    {
-                        ulong fldAddr = fld.GetAddress(addr, type.IsValueClass);
-                        if (TypeExtractor.IsString(fldKind))
-                        {
-                            var obj = ValueExtractor.GetStringValue(fldType, fldAddr);
-                            strings[i] = obj == null ? Constants.NullValue : (string)obj;
-                        }
-                        else if (TypeExtractor.IsObjectReference(fldKind))
-                        {
-                            var obj = fld.GetValue(addr, false, false);
-                            strings[i] = obj == null ? Constants.InvalidAddressStr : Utils.RealAddressString((ulong)obj);
-                        }
-                        else if (TypeExtractor.IsEnum(fldKind))
-                        {
-                            long intVal;
-                            strings[i] = ValueExtractor.GetEnumValueString(fldAddr, fldType, out intVal);
-                        }
-                        else if (fldType.IsPrimitive)
-                        {
-                            var obj = fld.Type.GetValue(fldAddr);
-                            strings[i] = ValueExtractor.PrimitiveValue(obj, fldKind);
-                        }
-                        else if (TypeExtractor.IsKnownStruct(fldKind))
-                        {
-                            switch (TypeExtractor.GetSpecialKind(fldKind))
-                            {
-                                case ClrElementKind.DateTime:
-                                    strings[i] = ValueExtractor.DateTimeValueString(fldAddr, fldType, null);
-                                    break;
-                                case ClrElementKind.Guid:
-                                    strings[i] = ValueExtractor.GuidValueAsString(fldAddr, fldType);
-                                    break;
-                                case ClrElementKind.Decimal:
-                                    strings[i] = ValueExtractor.DecimalValueAsString(fldAddr, fldType,null);
-                                    break;
-                                case ClrElementKind.TimeSpan:
-                                    strings[i] = ValueExtractor.TimeSpanValueAsString(fldAddr, fldType);
-                                    break;
-                            }
-                        }
-                        else if (TypeExtractor.IsUnknownStruct(fldKind))
-                        {
-                            StructFields sf = StructFields.GetStructFields(fldType);
-                            StructFieldsEx sfx = StructFieldsEx.GetStructFields(sf, fldType);
-                            sfx.ResetTypes();
-                            if (structVals == null) structVals = new StructValueStrings[fldCnt];
-                            ulong structAddr = fld.GetAddress(addr, false);
-                            structVals[i] = StructFieldsEx.GetStructValueStrings(sfx, heap, structAddr);
-                        }
-
-                        continue;
-                    }
-
                     if (TypeExtractor.IsString(fldKind))
                     {
-                        var obj = fld.GetValue(addr, false, true);
-                        strings[i] = obj == null ? Constants.NullValue : (string)obj;
+                        var o = fld.GetValue(addr, false, true);
+                        strings[i] = o == null ? Constants.NullValue : o.ToString();
                     }
                     else if (TypeExtractor.IsObjectReference(fldKind))
                     {
@@ -301,8 +256,59 @@ namespace ClrMDRIndex
                         structVals[i] = StructFieldsEx.GetStructValueStrings(sfx, heap, structAddr);
                     }
                 }
+                //if (!Utils.SameStrings(fld.Type.Name,fldType.Name))
+                //    {
+                //        ulong fldAddr = fld.GetAddress(addr, type.IsValueClass);
+                //        if (TypeExtractor.IsString(fldKind))
+                //        {
+                //            var obj = ValueExtractor.GetStringValue(fldType, fldAddr);
+                //            strings[i] = obj == null ? Constants.NullValue : (string)obj;
+                //        }
+                //        else if (TypeExtractor.IsObjectReference(fldKind))
+                //        {
+                //            var obj = fld.GetValue(addr, false, false);
+                //            strings[i] = obj == null ? Constants.InvalidAddressStr : Utils.RealAddressString((ulong)obj);
+                //        }
+                //        else if (TypeExtractor.IsEnum(fldKind))
+                //        {
+                //            long intVal;
+                //            strings[i] = ValueExtractor.GetEnumValueString(fldAddr, fldType, out intVal);
+                //        }
+                //        else if (fldType.IsPrimitive)
+                //        {
+                //            var obj = fld.Type.GetValue(fldAddr);
+                //            strings[i] = ValueExtractor.PrimitiveValue(obj, fldKind);
+                //        }
+                //        else if (TypeExtractor.IsKnownStruct(fldKind))
+                //        {
+                //            switch (TypeExtractor.GetSpecialKind(fldKind))
+                //            {
+                //                case ClrElementKind.DateTime:
+                //                    strings[i] = ValueExtractor.DateTimeValueString(fldAddr, fldType, null);
+                //                    break;
+                //                case ClrElementKind.Guid:
+                //                    strings[i] = ValueExtractor.GuidValueAsString(fldAddr, fldType);
+                //                    break;
+                //                case ClrElementKind.Decimal:
+                //                    strings[i] = ValueExtractor.DecimalValueAsString(fldAddr, fldType,null);
+                //                    break;
+                //                case ClrElementKind.TimeSpan:
+                //                    strings[i] = ValueExtractor.TimeSpanValueAsString(fldAddr, fldType);
+                //                    break;
+                //            }
+                //        }
+                //        else if (TypeExtractor.IsUnknownStruct(fldKind))
+                //        {
+                //            StructFields sf = StructFields.GetStructFields(fldType);
+                //            StructFieldsEx sfx = StructFieldsEx.GetStructFields(sf, fldType);
+                //            sfx.ResetTypes();
+                //            if (structVals == null) structVals = new StructValueStrings[fldCnt];
+                //            ulong structAddr = fld.GetAddress(addr, false);
+                //            structVals[i] = StructFieldsEx.GetStructValueStrings(sfx, heap, structAddr);
+                //        }
 
-
+                //        continue;
+            
 
                 return (null, type, kind, (fldTypes, fldKinds, strings, structVals));
             }
