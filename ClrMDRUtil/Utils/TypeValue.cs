@@ -464,13 +464,13 @@ namespace ClrMDRIndex
 						accept = AcceptGuid((Guid)obj, (Guid)_value, _op);
 						break;
 					case ClrElementKind.DateTime:
-						accept = AcceptDateTime((DateTime)obj, (DateTime)_value, _op);
+						accept = Accept<DateTime>((DateTime)obj, (DateTime)_value, _op);
 						break;
 					case ClrElementKind.TimeSpan:
-						accept = AcceptTimeSpan((TimeSpan)obj, (TimeSpan)_value, _op);
+						accept = Accept<TimeSpan>((TimeSpan)obj, (TimeSpan)_value, _op);
 						break;
 					case ClrElementKind.Decimal:
-						accept = AcceptDecimal((decimal)obj, (decimal)_value, _op);
+						accept = Accept<decimal>((decimal)obj, (decimal)_value, _op);
 						break;
 					case ClrElementKind.SystemVoid:
 						break;
@@ -478,7 +478,7 @@ namespace ClrMDRIndex
 					case ClrElementKind.Interface:
 					case ClrElementKind.Abstract:
 					case ClrElementKind.System__Canon:
-						accept = AcceptUlong((ulong)obj, (ulong)_value, _op);
+						accept = Accept<ulong>((ulong)obj, (ulong)_value, _op);
 						break;
 					default:
 						break;
@@ -495,7 +495,7 @@ namespace ClrMDRIndex
 					case ClrElementKind.SZArray:
 					case ClrElementKind.Array:
 					case ClrElementKind.Object:
-						accept = AcceptUlong((ulong)obj, (ulong)_value, _op);
+						accept = Accept<ulong>((ulong)obj, (ulong)_value, _op);
 						break;
 					case ClrElementKind.Boolean:
                         accept = AcceptBoolean((bool)obj, (bool)_value);
@@ -504,32 +504,32 @@ namespace ClrMDRIndex
                         accept = Accept<char>((char)obj, (char)_value, _op);
                         break;
 					case ClrElementKind.Int8:
-                        accept = AcceptLong((long)((sbyte)obj), (long)((sbyte)_value), _op);
+                        accept = Accept<sbyte>((sbyte)obj, (sbyte)_value, _op);
                         break;
                     case ClrElementKind.Int16:
                         accept = Accept<Int16>((Int16)obj, (Int16)_value, _op);
                         break;
                     case ClrElementKind.Int32:
-                        accept = AcceptLong((long)((Int32)obj), (long)((Int32)_value), _op);
+                        accept = Accept<Int32>((Int32)obj, (Int32)_value, _op);
                         break;
                     case ClrElementKind.Int64:
-                        accept = AcceptLong((long)obj, (long)_value, _op);
+                        accept = Accept<long>((long)obj, (long)_value, _op);
                         break;
                     case ClrElementKind.UInt8:
-                        accept = AcceptUlong((ulong)((byte)obj), (ulong)((byte)_value), _op);
+                        accept = Accept<byte>((byte)obj, (byte)_value, _op);
                         break;
                     case ClrElementKind.UInt16:
-                        accept = AcceptUlong((ulong)((Int16)obj), (ulong)((Int16)_value), _op);
+                        accept = Accept<Int16>((Int16)obj, (Int16)_value, _op);
                         break;
                     case ClrElementKind.UInt32:
-                        accept = AcceptUlong((ulong)((Int32)obj), (ulong)((Int32)_value), _op);
+                        accept = Accept<UInt32>((UInt32)obj, (UInt32)_value, _op);
                         break;
                     case ClrElementKind.UInt64:
-						accept = AcceptUlong((ulong)obj, (ulong)_value, _op);
+						accept = Accept<UInt64>((ulong)obj, (ulong)_value, _op);
 						break;
 					case ClrElementKind.Float:
 					case ClrElementKind.Double:
-						accept = AcceptDouble((double)obj, (double)_value, _op);
+						accept = Accept<double>((double)obj, (double)_value, _op);
 						break;
 					case ClrElementKind.String:
 						accept = AcceptString((string)obj, _filterString, _op);
@@ -538,7 +538,7 @@ namespace ClrMDRIndex
 					case ClrElementKind.NativeInt:
 					case ClrElementKind.NativeUInt:
 					case ClrElementKind.FunctionPointer:
-						accept = AcceptUlong((ulong)obj, (ulong)_value, _op);
+						accept = Accept<UInt64>((ulong)obj, (ulong)_value, _op);
 						break;
 					default:
 						break;
@@ -548,21 +548,23 @@ namespace ClrMDRIndex
 			return accept;
 		}
 
-		private bool AcceptDecimal(decimal val, decimal other, Op op) 
-		{
-			if (FilterValue.IsOp(Op.EQ, op))
-				return val == other;
-			else if (FilterValue.IsOp(Op.LT, op))
-				return val < other;
-			else if (FilterValue.IsOp(Op.LTEQ, op))
-				return val <= other;
-			else if (FilterValue.IsOp(Op.GT, op))
-				return val > other;
-			else if (FilterValue.IsOp(Op.GTEQ, op))
-				return val >= other;
-			else
-				return true;
-		}
+		//private bool AcceptDecimal(decimal val, decimal other, Op op) 
+		//{
+		//	if (FilterValue.IsOp(Op.EQ, op))
+		//		return val == other;
+		//	else if (FilterValue.IsOp(Op.LT, op))
+		//		return val < other;
+		//	else if (FilterValue.IsOp(Op.LTEQ, op))
+		//		return val <= other;
+		//	else if (FilterValue.IsOp(Op.GT, op))
+		//		return val > other;
+  //          else if (FilterValue.IsOp(Op.GTEQ, op))
+  //              return val >= other;
+  //          else if (FilterValue.IsOp(Op.NOTEQ, op))
+  //              return val != other;
+  //          else
+  //              return true;
+		//}
 
         private bool AcceptBoolean(bool val, bool other)
         {
@@ -582,89 +584,93 @@ namespace ClrMDRIndex
                 return cmp > 0;
             else if (FilterValue.IsOp(Op.GTEQ, op))
                 return cmp > 0 || cmp == 0;
+            else if (FilterValue.IsOp(Op.NOTEQ, op))
+                return cmp != 0;
             else
                 return true;
         }
 
-        private bool AcceptDouble(double val, double other, Op op)
-		{
-			if (FilterValue.IsOp(Op.EQ, op))
-				return val == other;
-			else if (FilterValue.IsOp(Op.LT, op))
-				return val < other;
-			else if (FilterValue.IsOp(Op.LTEQ, op))
-				return val <= other;
-			else if (FilterValue.IsOp(Op.GT, op))
-				return val > other;
-			else if (FilterValue.IsOp(Op.GTEQ, op))
-				return val >= other;
-			else
-				return true;
-		}
+  //      private bool AcceptDouble(double val, double other, Op op)
+		//{
+		//	if (FilterValue.IsOp(Op.EQ, op))
+		//		return val == other;
+		//	else if (FilterValue.IsOp(Op.LT, op))
+		//		return val < other;
+		//	else if (FilterValue.IsOp(Op.LTEQ, op))
+		//		return val <= other;
+		//	else if (FilterValue.IsOp(Op.GT, op))
+		//		return val > other;
+		//	else if (FilterValue.IsOp(Op.GTEQ, op))
+		//		return val >= other;
+  //          else if (FilterValue.IsOp(Op.GTEQ, op))
+  //              return val != other;
+  //          else
+  //              return true;
+		//}
 
-		private bool AcceptUlong(ulong val, ulong other, Op op)
-		{
-			if (FilterValue.IsOp(Op.EQ, op))
-				return val == other;
-			else if (FilterValue.IsOp(Op.LT, op))
-				return val < other;
-			else if (FilterValue.IsOp(Op.LTEQ, op))
-				return val <= other;
-			else if (FilterValue.IsOp(Op.GT, op))
-				return val > other;
-			else if (FilterValue.IsOp(Op.GTEQ, op))
-				return val >= other;
-			else
-				return true;
-		}
+		//private bool AcceptUlong(ulong val, ulong other, Op op)
+		//{
+		//	if (FilterValue.IsOp(Op.EQ, op))
+		//		return val == other;
+		//	else if (FilterValue.IsOp(Op.LT, op))
+		//		return val < other;
+		//	else if (FilterValue.IsOp(Op.LTEQ, op))
+		//		return val <= other;
+		//	else if (FilterValue.IsOp(Op.GT, op))
+		//		return val > other;
+		//	else if (FilterValue.IsOp(Op.GTEQ, op))
+		//		return val >= other;
+		//	else
+		//		return true;
+		//}
 
-        private bool AcceptLong(long val, long other, Op op)
-        {
-            if (FilterValue.IsOp(Op.EQ, op))
-                return val == other;
-            else if (FilterValue.IsOp(Op.LT, op))
-                return val < other;
-            else if (FilterValue.IsOp(Op.LTEQ, op))
-                return val <= other;
-            else if (FilterValue.IsOp(Op.GT, op))
-                return val > other;
-            else if (FilterValue.IsOp(Op.GTEQ, op))
-                return val >= other;
-            else
-                return true;
-        }
+        //private bool AcceptLong(long val, long other, Op op)
+        //{
+        //    if (FilterValue.IsOp(Op.EQ, op))
+        //        return val == other;
+        //    else if (FilterValue.IsOp(Op.LT, op))
+        //        return val < other;
+        //    else if (FilterValue.IsOp(Op.LTEQ, op))
+        //        return val <= other;
+        //    else if (FilterValue.IsOp(Op.GT, op))
+        //        return val > other;
+        //    else if (FilterValue.IsOp(Op.GTEQ, op))
+        //        return val >= other;
+        //    else
+        //        return true;
+        //}
 
-        private bool AcceptDateTime(DateTime val, DateTime other, Op op)
-		{
-			if (FilterValue.IsOp(Op.EQ, op))
-				return val == other;
-			else if (FilterValue.IsOp(Op.LT, op))
-				return val < other;
-			else if (FilterValue.IsOp(Op.LTEQ, op))
-				return val <= other;
-			else if (FilterValue.IsOp(Op.GT, op))
-				return val > other;
-			else if (FilterValue.IsOp(Op.GTEQ, op))
-				return val >= other;
-			else
-				return true;
-		}
+  //      private bool AcceptDateTime(DateTime val, DateTime other, Op op)
+		//{
+		//	if (FilterValue.IsOp(Op.EQ, op))
+		//		return val == other;
+		//	else if (FilterValue.IsOp(Op.LT, op))
+		//		return val < other;
+		//	else if (FilterValue.IsOp(Op.LTEQ, op))
+		//		return val <= other;
+		//	else if (FilterValue.IsOp(Op.GT, op))
+		//		return val > other;
+		//	else if (FilterValue.IsOp(Op.GTEQ, op))
+		//		return val >= other;
+		//	else
+		//		return true;
+		//}
 
-		private bool AcceptTimeSpan(TimeSpan val, TimeSpan other, Op op)
-		{
-			if (FilterValue.IsOp(Op.EQ, op))
-				return val == other;
-			else if (FilterValue.IsOp(Op.LT, op))
-				return val < other;
-			else if (FilterValue.IsOp(Op.LTEQ, op))
-				return val <= other;
-			else if (FilterValue.IsOp(Op.GT, op))
-				return val > other;
-			else if (FilterValue.IsOp(Op.GTEQ, op))
-				return val >= other;
-			else
-				return true;
-		}
+		//private bool AcceptTimeSpan(TimeSpan val, TimeSpan other, Op op)
+		//{
+		//	if (FilterValue.IsOp(Op.EQ, op))
+		//		return val == other;
+		//	else if (FilterValue.IsOp(Op.LT, op))
+		//		return val < other;
+		//	else if (FilterValue.IsOp(Op.LTEQ, op))
+		//		return val <= other;
+		//	else if (FilterValue.IsOp(Op.GT, op))
+		//		return val > other;
+		//	else if (FilterValue.IsOp(Op.GTEQ, op))
+		//		return val >= other;
+		//	else
+		//		return true;
+		//}
 
 		private bool AcceptGuid(Guid val, Guid other, Op op)
 		{
@@ -700,10 +706,10 @@ namespace ClrMDRIndex
 		}
 
 
-		public bool AcceptNull()
-		{
-			return true;
-		}
+		//public bool AcceptNull()
+		//{
+		//	return true;
+		//}
 
 	}
 

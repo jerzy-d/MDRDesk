@@ -57,135 +57,6 @@ namespace UnitTestMdr
 
 		#endregion (new) types and instances
 
-
-
-
-		#region instance sizes
-
-		[TestMethod]
-		public void TestInstanceSizes()
-		{
-			var map = OpenMap(_indexPath);
-			using (map)
-			{
-				string error;
-				var sizeInfo = map.GetSizeArrays(out error);
-				Assert.IsNull(error, error);
-				ClrElementKind[] elems = map.TypeKinds;
-				Assert.IsNull(error, error);
-				Assert.IsTrue(sizeInfo.Key.Length == sizeInfo.Value.Length);
-				Assert.IsTrue(map.Instances.Length == sizeInfo.Key.Length);
-				HashSet<string> set = new HashSet<string>(StringComparer.Ordinal);
-				int totalCount = sizeInfo.Key.Length;
-				int freeId = map.GetTypeId("Free");
-				int equalCnt = 0;
-				uint maxDiff = 0;
-				ulong maxAddr = 0UL;
-				string maxTypeName = string.Empty;
-				ClrElementKind maxElem = ClrElementKind.Unknown;
-				for (int i = 0; i < totalCount; ++i)
-				{
-					var typeId = map.GetTypeId(i);
-					if (typeId == freeId) continue;
-
-					var bsize = sizeInfo.Key[i];
-					var tsize = sizeInfo.Value[i];
-					if (bsize == tsize)
-					{
-						++equalCnt;
-						continue;
-					}
-					string typeName = map.GetTypeName(typeId);
-					set.Add(typeName);
-					ClrElementKind elem = elems[typeId];
-					Assert.IsTrue(tsize >= bsize);
-					uint diff = tsize - bsize;
-					if (diff > maxDiff)
-					{
-						maxDiff = diff;
-						maxTypeName = typeName;
-						maxElem = elem;
-						maxAddr = map.GetInstanceAddress(i);
-					}
-
-
-				}
-			}
-		}
-
-		#endregion instance sizes
-
-		[TestMethod]
-		public void TestTypeNamespaceDisplay()
-		{
-			using (var map = OpenMap(@"D:\Jerzy\WinDbgStuff\Dumps\DumpTest\DumpTest.exe_160820_073947.map"))
-			{
-				var dispInfo = map.GetNamespaceDisplay();
-			}
-		}
-
-
-		#region Types
-
-		[TestMethod]
-		public void TestTypeInstanceSearch()
-		{
-			var map = OpenMap(_indexPath);
-			Assert.IsNotNull(map);
-			List<string> columns = new List<string>();
-			using (map)
-			{
-				try
-				{
-					var typeId = map.GetTypeId(_typeName);
-					int unrootedCount;
-					var typeInstances = map.GetTypeInstances(typeId,out unrootedCount);
-					var heap = map.Dump.Heap;
-					for (int i = 0, icnt = typeInstances.Length; i < icnt; ++i)
-					{
-						var addr = Utils.RealAddress(typeInstances[i]);
-						var clrType = heap.GetObjectType(addr);
-						var fldCalc = clrType.GetFieldByName("calc");
-						Assert.IsNotNull(fldCalc);
-						var calcObj = fldCalc.GetValue(addr, false, false);
-						if (calcObj == null || (ulong)calcObj == 0UL)
-						{
-							var fldColumnName = clrType.GetFieldByName("ColumnName");
-							Assert.IsNotNull(fldColumnName);
-							var colName = (string)fldColumnName.GetValue(addr, false, true);
-							columns.Add(colName);
-						}
-					}
-				}
-				catch (Exception ex)
-				{
-					Assert.IsTrue(false,ex.ToString());
-				}
-			}
-
-		}
-
-		[TestMethod]
-		public void TestTypeAccess()
-		{
-			const string typeName =
-				"System.Collections.Concurrent.ConcurrentDictionary+Tables<System.Int32,System.Collections.Concurrent.ConcurrentDictionary<System.Int32,ECS.Common.Transport.HierarchyCache.IReadOnlyRealtimePrice>>";
-			var map = OpenMap(@"D:\Jerzy\WinDbgStuff\dumps\Analytics\ConvergEx\Analytics.map");
-			using (map)
-			{
-				int totalCount, unrootedCount;
-				var result = map.GetTypeWithPrefixAddresses(typeName, true, out totalCount, out unrootedCount);
-
-				var id = map.GetTypeId(typeName);
-				var tname = map.GetTypeName(id);
-				Debug.Assert(tname == typeName);
-				var addresses = map.GetTypeRealAddresses(id);
-			}
-
-		}
-
-		#endregion Types
-
 		[TestMethod]
 		public void TextFinalizationQueue()
 		{
@@ -199,233 +70,234 @@ namespace UnitTestMdr
 			}
 		}
 
-		[TestMethod]
-		public void TestGetTypeGroupedContent()
-		{
-			const string str = "Eze.Server.Common.Pulse.Common.Types.CachedValue+DefaultOnly<System.Decimal>";
-			SortedDictionary<string, int> dct = new SortedDictionary<string, int>(StringComparer.Ordinal);
-			using (
-				var map =
-					OpenMap(
-						@"D:\Jerzy\WinDbgStuff\dumps\Analytics\Memory.Usage.OPAM.971\RealPositionCmp\Eze.Analytics.Svc.RPSMALL0_160913_153220.map")
-			)
-			{
-				try
-				{
-					ClrType clrType = null;
-					ClrInstanceField bitwiseCurrentPositionToggleState = null;
-					ClrInstanceField indexIntoPositionIndexToFieldNumberConversionSet = null;
-					int typeId = map.GetTypeId(str);
-					ulong[] addresses = map.GetTypeRealAddresses(typeId);
-					var heap = map.Dump.GetFreshHeap();
-					for (int i = 0, icnt = addresses.Length; i < icnt; ++i)
-					{
-						var addr = addresses[i];
-						if (clrType == null)
-						{
-							clrType = heap.GetObjectType(addr);
-							bitwiseCurrentPositionToggleState = clrType.GetFieldByName("bitwiseCurrentPositionToggleState");
-							indexIntoPositionIndexToFieldNumberConversionSet =
-								clrType.GetFieldByName("indexIntoPositionIndexToFieldNumberConversionSet");
-							Assert.IsNotNull(bitwiseCurrentPositionToggleState.Type);
-							Assert.IsNotNull(indexIntoPositionIndexToFieldNumberConversionSet.Type);
-						}
+        // TODO JRD - will be usefull ?
+        //[TestMethod]
+        //public void TestGetTypeGroupedContent()
+        //{
+        //	const string str = "Eze.Server.Common.Pulse.Common.Types.CachedValue+DefaultOnly<System.Decimal>";
+        //	SortedDictionary<string, int> dct = new SortedDictionary<string, int>(StringComparer.Ordinal);
+        //	using (
+        //		var map =
+        //			OpenMap(
+        //				@"D:\Jerzy\WinDbgStuff\dumps\Analytics\Memory.Usage.OPAM.971\RealPositionCmp\Eze.Analytics.Svc.RPSMALL0_160913_153220.map")
+        //	)
+        //	{
+        //		try
+        //		{
+        //			ClrType clrType = null;
+        //			ClrInstanceField bitwiseCurrentPositionToggleState = null;
+        //			ClrInstanceField indexIntoPositionIndexToFieldNumberConversionSet = null;
+        //			int typeId = map.GetTypeId(str);
+        //			ulong[] addresses = map.GetTypeRealAddresses(typeId);
+        //			var heap = map.Dump.GetFreshHeap();
+        //			for (int i = 0, icnt = addresses.Length; i < icnt; ++i)
+        //			{
+        //				var addr = addresses[i];
+        //				if (clrType == null)
+        //				{
+        //					clrType = heap.GetObjectType(addr);
+        //					bitwiseCurrentPositionToggleState = clrType.GetFieldByName("bitwiseCurrentPositionToggleState");
+        //					indexIntoPositionIndexToFieldNumberConversionSet =
+        //						clrType.GetFieldByName("indexIntoPositionIndexToFieldNumberConversionSet");
+        //					Assert.IsNotNull(bitwiseCurrentPositionToggleState.Type);
+        //					Assert.IsNotNull(indexIntoPositionIndexToFieldNumberConversionSet.Type);
+        //				}
 
-						object fld1ValObj = bitwiseCurrentPositionToggleState.GetValue(addr);
-						string fld1Val = ValueExtractor.GetPrimitiveValue(fld1ValObj, bitwiseCurrentPositionToggleState.Type);
-						object fld2ValObj = indexIntoPositionIndexToFieldNumberConversionSet.GetValue(addr);
-						string fld2Val = ValueExtractor.GetPrimitiveValue(fld2ValObj,
-							indexIntoPositionIndexToFieldNumberConversionSet.Type);
-						var key = fld1Val + "_" + fld2Val;
-						int count;
-						if (dct.TryGetValue(key, out count))
-						{
-							dct[key] = count + 1;
-						}
-						else
-						{
-							dct.Add(key, 1);
-						}
-					}
+        //				object fld1ValObj = bitwiseCurrentPositionToggleState.GetValue(addr);
+        //				string fld1Val = ValueExtractor.GetPrimitiveValue(fld1ValObj, bitwiseCurrentPositionToggleState.Type);
+        //				object fld2ValObj = indexIntoPositionIndexToFieldNumberConversionSet.GetValue(addr);
+        //				string fld2Val = ValueExtractor.GetPrimitiveValue(fld2ValObj,
+        //					indexIntoPositionIndexToFieldNumberConversionSet.Type);
+        //				var key = fld1Val + "_" + fld2Val;
+        //				int count;
+        //				if (dct.TryGetValue(key, out count))
+        //				{
+        //					dct[key] = count + 1;
+        //				}
+        //				else
+        //				{
+        //					dct.Add(key, 1);
+        //				}
+        //			}
 
-				}
-				catch (Exception ex)
-				{
-					Assert.IsTrue(false, ex.ToString());
-				}
-			}
-		}
+        //		}
+        //		catch (Exception ex)
+        //		{
+        //			Assert.IsTrue(false, ex.ToString());
+        //		}
+        //	}
+        //}
 
+        // TODO JRD - will be usefull ?
+        //[TestMethod]
+        //public void TestGetTypeGroupedContent2()
+        //{
+        //	const string str = "ECS.Common.Collections.Common.EzeBitVector";
+        //	SortedDictionary<string, int> dct = new SortedDictionary<string, int>(StringComparer.Ordinal);
+        //	int nullFieldCount = 0;
+        //	StringBuilder sb = new StringBuilder(256);
+        //	using (var index = OpenMap(@"D:\Jerzy\WinDbgStuff\dumps\Analytics\Lou\Analytics3.dmp.map"))
+        //	{
+        //		try
+        //		{
+        //			ClrType clrType = null;
+        //			ClrType aryType = null;
+        //			ClrInstanceField bits = null;
+        //			ulong aryAddr = 0;
+        //			int typeId = index.GetTypeId(str);
+        //			ulong[] addresses = index.GetTypeRealAddresses(typeId);
+        //			var heap = index.Dump.GetFreshHeap();
+        //			for (int i = 0, icnt = addresses.Length; i < icnt; ++i)
+        //			{
+        //				var addr = addresses[i];
+        //				if (clrType == null)
+        //				{
+        //					clrType = heap.GetObjectType(addr);
+        //					bits = clrType.GetFieldByName("bits");
+        //					Assert.IsNotNull(bits.Type);
+        //					Assert.IsNotNull(bits.Type);
+        //					aryType = bits.Type;
+        //				}
+        //				var aryAddrObj = bits.GetValue(addr);
+        //				if (aryAddrObj == null)
+        //				{
+        //					++nullFieldCount;
+        //					continue;
+        //				}
+        //				aryAddr = (ulong) aryAddrObj;
+        //				int aryCount = aryType.GetArrayLength(aryAddr);
+        //				sb.Clear();
+        //				sb.Append(aryCount.ToString()).Append("_");
+        //				for (int j = 0; j < aryCount; ++j)
+        //				{
+        //					var elemVal = aryType.GetArrayElementValue(aryAddr, j);
+        //					if (elemVal == null)
+        //						continue;
+        //					var valStr = elemVal.ToString();
+        //					sb.Append(valStr).Append("_");
+        //				}
+        //				if (sb.Length > 0) sb.Remove(sb.Length - 1, 1);
+        //				var key = sb.ToString();
+        //				int dctCnt;
+        //				if (dct.TryGetValue(key, out dctCnt))
+        //				{
+        //					dct[key] = dctCnt + 1;
+        //				}
+        //				else
+        //				{
+        //					dct.Add(key, 1);
+        //				}
+        //			}
 
-		[TestMethod]
-		public void TestGetTypeGroupedContent2()
-		{
-			const string str = "ECS.Common.Collections.Common.EzeBitVector";
-			SortedDictionary<string, int> dct = new SortedDictionary<string, int>(StringComparer.Ordinal);
-			int nullFieldCount = 0;
-			StringBuilder sb = new StringBuilder(256);
-			using (var index = OpenMap(@"D:\Jerzy\WinDbgStuff\dumps\Analytics\Lou\Analytics3.dmp.map"))
-			{
-				try
-				{
-					ClrType clrType = null;
-					ClrType aryType = null;
-					ClrInstanceField bits = null;
-					ulong aryAddr = 0;
-					int typeId = index.GetTypeId(str);
-					ulong[] addresses = index.GetTypeRealAddresses(typeId);
-					var heap = index.Dump.GetFreshHeap();
-					for (int i = 0, icnt = addresses.Length; i < icnt; ++i)
-					{
-						var addr = addresses[i];
-						if (clrType == null)
-						{
-							clrType = heap.GetObjectType(addr);
-							bits = clrType.GetFieldByName("bits");
-							Assert.IsNotNull(bits.Type);
-							Assert.IsNotNull(bits.Type);
-							aryType = bits.Type;
-						}
-						var aryAddrObj = bits.GetValue(addr);
-						if (aryAddrObj == null)
-						{
-							++nullFieldCount;
-							continue;
-						}
-						aryAddr = (ulong) aryAddrObj;
-						int aryCount = aryType.GetArrayLength(aryAddr);
-						sb.Clear();
-						sb.Append(aryCount.ToString()).Append("_");
-						for (int j = 0; j < aryCount; ++j)
-						{
-							var elemVal = aryType.GetArrayElementValue(aryAddr, j);
-							if (elemVal == null)
-								continue;
-							var valStr = elemVal.ToString();
-							sb.Append(valStr).Append("_");
-						}
-						if (sb.Length > 0) sb.Remove(sb.Length - 1, 1);
-						var key = sb.ToString();
-						int dctCnt;
-						if (dct.TryGetValue(key, out dctCnt))
-						{
-							dct[key] = dctCnt + 1;
-						}
-						else
-						{
-							dct.Add(key, 1);
-						}
-					}
+        //			StreamWriter sw = null;
+        //			try
+        //			{
 
-					StreamWriter sw = null;
-					try
-					{
+        //				sw = new StreamWriter(index.AdhocFolder + Path.DirectorySeparatorChar + "EzeBitVector.txt");
+        //				sw.WriteLine("#### Total EzeBitVector Instance Count: " + Utils.SizeString(addresses.Length));
+        //				sw.WriteLine("#### Total EzeBitVector Unique Count: " + Utils.SizeString(dct.Count));
+        //				sw.WriteLine("#### Columns: duplicate count, ulong[] size, vector content");
+        //				foreach (var kv in dct)
+        //				{
+        //					var pos = kv.Key.IndexOf('_');
+        //					int aryCount = Int32.Parse(kv.Key.Substring(0, pos));
+        //					sw.WriteLine(Utils.CountStringHeader(kv.Value) + Utils.CountStringHeader(aryCount) + kv.Key.Substring(pos + 1));
+        //				}
 
-						sw = new StreamWriter(index.AdhocFolder + Path.DirectorySeparatorChar + "EzeBitVector.txt");
-						sw.WriteLine("#### Total EzeBitVector Instance Count: " + Utils.SizeString(addresses.Length));
-						sw.WriteLine("#### Total EzeBitVector Unique Count: " + Utils.SizeString(dct.Count));
-						sw.WriteLine("#### Columns: duplicate count, ulong[] size, vector content");
-						foreach (var kv in dct)
-						{
-							var pos = kv.Key.IndexOf('_');
-							int aryCount = Int32.Parse(kv.Key.Substring(0, pos));
-							sw.WriteLine(Utils.CountStringHeader(kv.Value) + Utils.CountStringHeader(aryCount) + kv.Key.Substring(pos + 1));
-						}
+        //			}
+        //			catch (Exception ex)
+        //			{
+        //				Assert.IsTrue(false, ex.ToString());
+        //			}
+        //			finally
+        //			{
+        //				sw?.Close();
+        //			}
 
-					}
-					catch (Exception ex)
-					{
-						Assert.IsTrue(false, ex.ToString());
-					}
-					finally
-					{
-						sw?.Close();
-					}
+        //		}
+        //		catch (Exception ex)
+        //		{
+        //			Assert.IsTrue(false, ex.ToString());
+        //		}
+        //	}
+        //}
 
-				}
-				catch (Exception ex)
-				{
-					Assert.IsTrue(false, ex.ToString());
-				}
-			}
-		}
+  //      [TestMethod]
+		//public void TestGetTypeSizeDetails()
+		//{
+		//	string reportPath = null;
+		//	StreamWriter sw = null;
+		//	const string typeName = "ECS.Common.HierarchyCache.Structure.RealPosition";
+		//	string error = null;
+  //          Tuple<ulong, ulong[], SortedDictionary<string, KeyValuePair<int, ulong>>, SortedDictionary<string, List<int>>, ValueTuple<int, ulong, string>[]> result = null;
 
-		[TestMethod]
-		public void TestGetTypeSizeDetails()
-		{
-			string reportPath = null;
-			StreamWriter sw = null;
-			const string typeName = "ECS.Common.HierarchyCache.Structure.RealPosition";
-			string error = null;
-            Tuple<ulong, ulong[], SortedDictionary<string, KeyValuePair<int, ulong>>, SortedDictionary<string, List<int>>, ValueTuple<int, ulong, string>[]> result = null;
+		//	try
+		//	{
+		//		using (
+		//			var map =
+		//				OpenMap(
+		//					@"D:\Jerzy\WinDbgStuff\dumps\Analytics\Memory.Usage.OPAM.971\RealPositionCmp\Eze.Analytics.Svc.RPSMALL0_160913_153220.map")
+		//			)
+		//		{
+		//			int typeId = map.GetTypeId(typeName);
+		//			result = map.GetTypeSizeDetails(typeId, out error);
+		//			reportPath = map.AdhocFolder + Path.DirectorySeparatorChar + Utils.BaseTypeName(typeName) + ".SIZE.DETAILS.txt";
+		//		}
 
-			try
-			{
-				using (
-					var map =
-						OpenMap(
-							@"D:\Jerzy\WinDbgStuff\dumps\Analytics\Memory.Usage.OPAM.971\RealPositionCmp\Eze.Analytics.Svc.RPSMALL0_160913_153220.map")
-					)
-				{
-					int typeId = map.GetTypeId(typeName);
-					result = map.GetTypeSizeDetails(typeId, out error);
-					reportPath = map.AdhocFolder + Path.DirectorySeparatorChar + Utils.BaseTypeName(typeName) + ".SIZE.DETAILS.txt";
-				}
+		//		Assert.IsNotNull(result,error);
 
-				Assert.IsNotNull(result,error);
+		//		sw = new StreamWriter(reportPath);
+		//		sw.WriteLine("### TOTAL SIZE: " + Utils.LargeNumberString(result.Item1));
+		//		sw.WriteLine("### INVALID ADDRESSES COUNT: " + Utils.LargeNumberString(result.Item2.Length));
+		//		var typeDct = result.Item3;
+		//		sw.WriteLine("### TYPE COUNT: " + Utils.LargeNumberString(typeDct.Count));
+		//		foreach (var kv in typeDct)
+		//		{
+		//			var name = kv.Key;
+		//			var cnt = kv.Value.Key;
+		//			var sz = kv.Value.Value;
+		//			sw.WriteLine(Utils.SortableSizeStringHeader(cnt) + Utils.SortableLengthStringHeader(sz) + name);
+		//		}
+		//		var aryDct = result.Item4;
+		//		sw.WriteLine("### ARRAYS AND THEIR COUNTS");
+		//		sw.WriteLine("### ARRAY COUNT: " + Utils.LargeNumberString(aryDct.Count));
+		//		sw.WriteLine("### Columns: array count, min elem count, max elem count, avg elem count, total elem count, type name");
+		//		foreach (var kv in aryDct)
+		//		{
+		//			var name = kv.Key;
+		//			var lst = kv.Value;
+		//			var acnt = lst.Count;
+		//			var totalElemCount = 0;
+		//			var minElemCount = Int32.MaxValue;
+		//			var maxElemCount = 0;
+		//			var avgElemCount = 0;
+		//			for (int i = 0, icnt = lst.Count; i < icnt; ++i)
+		//			{
+		//				var val = lst[i];
+		//				totalElemCount += val;
+		//				if (val < minElemCount) minElemCount = val;
+		//				if (val > maxElemCount) maxElemCount = val;
+		//			}
+		//			avgElemCount = (int) Math.Round((double) totalElemCount/(double) acnt);
+		//			sw.Write(Utils.CountStringHeader(acnt));
+		//			sw.Write(Utils.CountStringHeader(minElemCount));
+		//			sw.Write(Utils.CountStringHeader(maxElemCount));
+		//			sw.Write(Utils.CountStringHeader(avgElemCount));
+		//			sw.Write(Utils.SortableSizeStringHeader(totalElemCount));
+		//			sw.WriteLine(name);
 
-				sw = new StreamWriter(reportPath);
-				sw.WriteLine("### TOTAL SIZE: " + Utils.LargeNumberString(result.Item1));
-				sw.WriteLine("### INVALID ADDRESSES COUNT: " + Utils.LargeNumberString(result.Item2.Length));
-				var typeDct = result.Item3;
-				sw.WriteLine("### TYPE COUNT: " + Utils.LargeNumberString(typeDct.Count));
-				foreach (var kv in typeDct)
-				{
-					var name = kv.Key;
-					var cnt = kv.Value.Key;
-					var sz = kv.Value.Value;
-					sw.WriteLine(Utils.SortableSizeStringHeader(cnt) + Utils.SortableLengthStringHeader(sz) + name);
-				}
-				var aryDct = result.Item4;
-				sw.WriteLine("### ARRAYS AND THEIR COUNTS");
-				sw.WriteLine("### ARRAY COUNT: " + Utils.LargeNumberString(aryDct.Count));
-				sw.WriteLine("### Columns: array count, min elem count, max elem count, avg elem count, total elem count, type name");
-				foreach (var kv in aryDct)
-				{
-					var name = kv.Key;
-					var lst = kv.Value;
-					var acnt = lst.Count;
-					var totalElemCount = 0;
-					var minElemCount = Int32.MaxValue;
-					var maxElemCount = 0;
-					var avgElemCount = 0;
-					for (int i = 0, icnt = lst.Count; i < icnt; ++i)
-					{
-						var val = lst[i];
-						totalElemCount += val;
-						if (val < minElemCount) minElemCount = val;
-						if (val > maxElemCount) maxElemCount = val;
-					}
-					avgElemCount = (int) Math.Round((double) totalElemCount/(double) acnt);
-					sw.Write(Utils.CountStringHeader(acnt));
-					sw.Write(Utils.CountStringHeader(minElemCount));
-					sw.Write(Utils.CountStringHeader(maxElemCount));
-					sw.Write(Utils.CountStringHeader(avgElemCount));
-					sw.Write(Utils.SortableSizeStringHeader(totalElemCount));
-					sw.WriteLine(name);
+		//		}
 
-				}
-
-			}
-			catch (Exception ex)
-			{
-				Assert.IsTrue(false, ex.ToString());
-			}
-			finally
-			{
-				sw?.Close();
-			}
-		}
+		//	}
+		//	catch (Exception ex)
+		//	{
+		//		Assert.IsTrue(false, ex.ToString());
+		//	}
+		//	finally
+		//	{
+		//		sw?.Close();
+		//	}
+		//}
 
 		[TestMethod]
 		public void TestGetProportionsOfFromThreeFiles()
@@ -666,184 +538,24 @@ namespace UnitTestMdr
 
 		#endregion Field Parents / Dependencies
 
-		#region Object Sizes
 
-		[TestMethod]
-	    public void SelectedBaseObjectSizesTest()
-	    {
-            var map = OpenMap(@"D:\Jerzy\WinDbgStuff\dumps\Analytics\Baly\AnalyticsLatencyDump06062016 03354291.map");
+        #region open index
 
-	        var requestedTypeNames = new string[]
-	        {
-                "ECS.Common.HierarchyCache.Structure.CashEffectPosition",
-                "ECS.Common.HierarchyCache.Structure.RealPosition",
-                "ECS.Common.HierarchyCache.Structure.WhatIfPosition",
-                "ECS.Common.HierarchyCache.Structure.CashPosition"
-
-                //"ECS.Common.HierarchyCache.Structure.RealtimePrice",
-                //"ECS.Common.HierarchyCache.Structure.IndirectRealtimePrice",
-
-            };
-		    string[] typeNames;
-			List<ulong[]> addressesLst;
-
-            ulong[] allAddress;
-	        Tuple<ulong, ulong[]> result;
-	        int usedCnt = 0;
-	        int fraction = 2;
-
-            Assert.IsNotNull(map);
+		public DumpIndex OpenIndex(string indexPath)
+		{
+			string error = null;
+			var version = Assembly.GetExecutingAssembly().GetName().Version;
             Stopwatch stopWatch = new Stopwatch();
             stopWatch.Start();
-
-            using (map)
-	        {
-                var dmp = map.Dump;
-                Assert.IsNotNull(dmp, "Map property 'Dump (ClrtDump)' is null.");
-                string error;
-				int len = 0;
-				var typeNameLst = new List<string>(requestedTypeNames.Length);
-				addressesLst = new List<ulong[]>(requestedTypeNames.Length);
-				for (int i = 0, icnt = requestedTypeNames.Length; i < icnt; ++i)
-				{
-					var id = map.GetTypeId(requestedTypeNames[i]);
-					if (id != Constants.InvalidIndex)
-					{
-						typeNameLst.Add(requestedTypeNames[i]);
-						var addrAry = map.GetTypeRealAddresses(id);
-						addressesLst.Add(addrAry);
-						len += addrAry.Length;
-					}
-				}
-
-		        typeNames = typeNameLst.ToArray();
-				typeNameLst.Clear();
-		        typeNameLst = null;
-				int[] typeIds = new int[typeNames.Length];
-
-	            allAddress = new ulong[len];
-	            int off = 0;
-	            for (int i = 0, icnt = typeNames.Length; i < icnt; ++i)
-	            {
-	                Array.Copy(addressesLst[i],0,allAddress,off,addressesLst[i].Length);
-	                off += addressesLst[i].Length;
-	            }
-                Array.Sort(allAddress);
-
-				HashSet<ulong> done = new HashSet<ulong>();
-
-				usedCnt = allAddress.Length/fraction;
-	            ulong[] ary;
-	            if (fraction > 1)
-	            {
-	                ary = new ulong[usedCnt];
-	                int ndx = 0;
-	                for (int i = 0, icnt = allAddress.Length; i < icnt && ndx < usedCnt; ++i)
-	                {
-						if ((i%fraction) == 0)
-							ary[ndx++] = allAddress[i];
-						else
-						{
-							done.Add(allAddress[i]);
-						}
-	                }
-	            }
-	            else
-	            {
-	                ary = allAddress;
-	            }
-				result = ClrtDump.GetTotalSize(map.GetFreshHeap(), ary, done, out error);
-                Assert.IsNotNull(result);
-
-	        }
-
-	        double dpct = (double) usedCnt/(double) allAddress.Length*100.0;
-
+            var index = DumpIndex.OpenIndexInstanceReferences(version, indexPath, 0, out error);
+            bool ok = index != null;
             stopWatch.Stop();
-            TestContext.WriteLine("TEST DURATION: " + Utils.DurationString(stopWatch.Elapsed));
-            TestContext.WriteLine("Instance count: " + Utils.SizeString(allAddress.Length));
-            TestContext.WriteLine("Used instances count: " + Utils.SizeString(usedCnt));
-            TestContext.WriteLine("Total size: " + Utils.SizeString(result.Item1));
-            TestContext.WriteLine("Percent considered: " + Utils.SizeString((int)dpct));
-            for (int i = 0, icnt = typeNames.Length; i < icnt; ++i)
-            {
-                TestContext.WriteLine(Utils.SizeStringHeader(addressesLst[i].Length) + typeNames[i]);
-            }
-        }
-
-
-        [TestMethod]
-		public void SelectedObjectSizesTest()
-		{
-			ulong[] addresses = new ulong[]
-			{
-0x0000a12f531808,
-0x0000a12f531848,
-0x0000a12f531888,
-0x0000a12f531908,
-0x0000a12f531948,
-0x0000a12f531988,
-0x0000a12f5319c8,
-
-			};
-
-			var map = OpenMap(@"D:\Jerzy\WinDbgStuff\dumps\Analytics\Baly\AnalyticsLatencyDump06062016 03354291.map");
-			var dmp = map.Dump;
-			Assert.IsNotNull(dmp, "Map property 'Dump (ClrtDump)' is null.");
-			string error;
-			Stopwatch stopWatch = new Stopwatch();
-			stopWatch.Start();
-
-			var typeId = map.GetTypeId("ECS.Common.HierarchyCache.MarketData.FastSmartWeakEvent<System.EventHandler>");
-			Assert.AreNotEqual(Constants.InvalidIndex,typeId);
-			var allAddresses = map.GetTypeRealAddresses(typeId);
-			addresses = allAddresses;
-			//addresses = new ulong[1000];
-			//Array.Copy(allAddresses,addresses,addresses.Length);
-
-			HashSet<ulong> done = new HashSet<ulong>();
-			var result = ClrtDump.GetTotalSize(map.GetFreshHeap(), addresses, done, out error);
-			var typeName = map.GetTypeName(addresses[0]);
-			var totalSize = result.Item1;
-			var notFoundTypes = result.Item2;
-
-			stopWatch.Stop();
-
-			TestContext.WriteLine("TEST DURATION: " + Utils.DurationString(stopWatch.Elapsed));
-			TestContext.WriteLine("Type name: " + typeName);
-			TestContext.WriteLine("Address count: " + Utils.SizeString(addresses.Length));
-			TestContext.WriteLine("Total size: " + Utils.SizeString(totalSize));
-			TestContext.WriteLine("Types not found count: " + Utils.SizeString(notFoundTypes.Length));
-			TestContext.WriteLine("  ");
-			var maxCnt = Math.Min(12, notFoundTypes.Length);
-			for (int i = 0; i < maxCnt; ++i)
-			{
-				TestContext.WriteLine("  " + Utils.AddressString(notFoundTypes[i]));
-			}
-
-		}
-
-        #endregion Object Sizes
-
-        #region Open Map
-
-        public static DumpIndex OpenMap(string mapPath)
-		{
-			string error;
-			var map = DumpIndex.OpenIndexInstanceReferences(new Version(0,2,0,1), mapPath, 0, out error);
-			Assert.IsTrue(map != null, error);
-			return map;
-		}
-
-		public static DumpIndex OpenIndex(string mapPath)
-		{
-			string error;
-			var version = Assembly.GetExecutingAssembly().GetName().Version;
-			var index = DumpIndex.OpenIndexInstanceReferences(version, mapPath, 0, out error);
-			Assert.IsTrue(index != null, error);
+            TestContext.WriteLine(indexPath);
+            TestContext.WriteLine((ok?"":"FAILED TO OPEN... ") + "OPENING DURATION: " + Utils.DurationString(stopWatch.Elapsed));
+            Assert.IsTrue(ok, error);
 			return index;
 		}
 
-		#endregion OpenMap
+		#endregion open index
 	}
 }

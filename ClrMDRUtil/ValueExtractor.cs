@@ -513,11 +513,16 @@ namespace ClrMDRIndex
 
         #region System.Guid
 
-        // TODO JRD -- bad
+        /// <summary>
+        /// Gets a string of a guid value.
+        /// </summary>
+        /// <param name="addr">Address of the type instance.</param>
+        /// <param name="type">Should be System.Decimal.</param>
+        /// <returns></returns>
+        /// <remarks>Used in CollectionContent for arrays.</remarks>
         public static string GuidValueAsString(ulong addr, ClrType type)
         {
             StringBuilder sb = StringBuilderCache.Acquire(64);
-
             var ival = (int)type.Fields[0].GetValue(addr, true);
             sb.AppendFormat("{0:X8}", ival);
             sb.Append('-');
@@ -578,28 +583,6 @@ namespace ClrMDRIndex
                 sb.AppendFormat("{0:X2}", val);
             }
             return StringBuilderCache.GetStringAndRelease(sb);
-        }
-
-        /// <summary>
-        /// TODO JRD -- looks like we have to pass 
-        /// </summary>
-        /// <param name="addr"></param>
-        /// <param name="type"></param>
-        /// <returns></returns>
-        public static Guid GetGuid(ulong addr, ClrInstanceField field)
-        {
-            var ival = (int)field.Type.Fields[0].GetValue(addr, true);
-            var sval1 = (short)field.Type.Fields[1].GetValue(addr, true);
-            var sval2 = (short)field.Type.Fields[2].GetValue(addr, true);
-            byte b1 = (byte)field.Type.Fields[3].GetValue(addr, true);
-            byte b2 = (byte)field.Type.Fields[4].GetValue(addr, true);
-            byte b3 = (byte)field.Type.Fields[5].GetValue(addr, true);
-            byte b4 = (byte)field.Type.Fields[6].GetValue(addr, true);
-            byte b5 = (byte)field.Type.Fields[7].GetValue(addr, true);
-            byte b6 = (byte)field.Type.Fields[8].GetValue(addr, true);
-            byte b7 = (byte)field.Type.Fields[9].GetValue(addr, true);
-            byte b8 = (byte)field.Type.Fields[10].GetValue(addr, true);
-            return new Guid(ival, sval1, sval2, b1, b2, b3, b4, b5, b6, b7, b8);
         }
 
         public static Guid GetGuid(ulong parentAddr, ClrInstanceField field, bool intr)
@@ -1325,7 +1308,8 @@ namespace ClrMDRIndex
                 switch (fldSpecKind)
                 {
                     case ClrElementKind.Guid:
-                        return theValue ? (object)GetGuid(addr, fld) : GuidValue(addr, fld);
+                        return theValue ? (object)GetGuid(addr, fld, intern) : GetGuidValue(addr, fld, intern);
+                        
                     case ClrElementKind.DateTime:
                         return theValue ? (object)GetDateTimePAF(addr, fld, intern) : GetDateTimeString(addr, fld, intern);
                     case ClrElementKind.TimeSpan:
@@ -1516,7 +1500,8 @@ namespace ClrMDRIndex
                 switch (specKind)
                 {
                     case ClrElementKind.Guid:
-                        return GuidValue(fldAddr, fld);   // TODO JRD
+                        //return GuidValue(fldAddr, fld);   // TODO JRD
+                        return GetGuidValue(addr, fld, intern);
                     case ClrElementKind.DateTime:
                         return DateTimeValue(addr, fld, intern);
                     case ClrElementKind.TimeSpan:
@@ -1602,80 +1587,6 @@ namespace ClrMDRIndex
                 }
             }
         }
-
-
-        //public static InstanceValue GetFieldValue(IndexProxy ndxProxy, ClrHeap heap, ClrType clrType, ulong addr, InstanceValue parent, int fldNdx, out string error)
-        //{
-        //    error = null;
-        //    var fld = clrType.Fields[fldNdx];
-        //    var typeId = ndxProxy.GetTypeId(fld.Type.Name);
-        //    var kind = TypeExtractor.GetElementKind(fld.Type);
-        //    if (kind == ClrElementKind.Unknown)
-        //    {
-        //        // TODO JRD
-        //        return null;
-        //    }
-        //    if (TypeExtractor.IsStruct(kind))
-        //    {
-        //        // TODO JRD
-        //        return null;
-        //    }
-        //    var specKind = TypeExtractor.GetSpecialKind(kind);
-        //    string value;
-        //    if (specKind != ClrElementKind.Unknown)
-        //    {
-        //        switch (specKind)
-        //        {
-        //            case ClrElementKind.Guid:
-        //                value = GetGuidValue(addr, clrType);
-        //                return new InstanceValue(typeId, kind, addr, clrType.Name, value, Utils.RealAddressString(addr), fldNdx, parent);
-        //            case ClrElementKind.DateTime:
-        //                value = GetDateTimeValue(addr, clrType);
-        //                return new InstanceValue(typeId, kind, addr, clrType.Name, value, Utils.RealAddressString(addr), fldNdx, parent);
-        //            case ClrElementKind.TimeSpan:
-        //                value = GetTimeSpanValue(addr, clrType);
-        //                return new InstanceValue(typeId, kind, addr, clrType.Name, value, Utils.RealAddressString(addr), fldNdx, parent);
-        //            case ClrElementKind.Decimal:
-        //                value = GetDecimalValue(addr, clrType, "0,0.00");
-        //                return new InstanceValue(typeId, kind, addr, clrType.Name, value, Utils.RealAddressString(addr), fldNdx, parent);
-        //            case ClrElementKind.Exception:
-        //                value = GetShortExceptionValue(addr, clrType, heap);
-        //                return new InstanceValue(typeId, kind, addr, clrType.Name, value, Utils.RealAddressString(addr), fldNdx, parent);
-        //            case ClrElementKind.Free:
-        //            case ClrElementKind.Abstract:
-        //            case ClrElementKind.SystemVoid:
-        //            case ClrElementKind.SystemObject:
-        //                return new InstanceValue(typeId, kind, addr, clrType.Name, string.Empty, Utils.RealAddressString(addr), fldNdx, parent);
-        //            default:
-        //                error = "Unexpected special kind";
-        //                return new InstanceValue(typeId, kind, addr, clrType.Name, string.Empty, Utils.RealAddressString(addr), fldNdx, parent);
-        //        }
-        //    }
-        //    else
-        //    {
-        //        //switch (kind)
-        //        //{
-        //        //	case ClrElementKind.String:
-        //        //		return new KeyValuePair<string, InstanceValue>(null, null);
-        //        //	case ClrElementKind.SZArray:
-        //        //	case ClrElementKind.Array:
-        //        //		return new KeyValuePair<string, InstanceValue>(null, null);
-        //        //	case ClrElementKind.Object:
-        //        //	case ClrElementKind.Class:
-
-        //        //		var inst = new InstanceValue(typeId, kind, addr, clrType.Name, string.Empty, Utils.AddressString(decoratedAddr), fldNdx, parent);
-        //        //		return new KeyValuePair<string, InstanceValue>(error, inst);
-        //        //	case ClrElementKind.Unknown:
-        //        //		return new KeyValuePair<string, InstanceValue>(null, null);
-        //        //	default:
-        //        //		return new KeyValuePair<string, InstanceValue>(null, null);
-        //        //}
-        //    }
-
-
-        //    return null;
-        //}
-
 
         public static InstanceValue[] GetFieldValues(IndexProxy ndxProxy, ClrHeap heap, ClrType clrType, ClrElementKind kind, ulong addr, InstanceValue parent, out string error)
         {

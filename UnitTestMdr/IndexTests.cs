@@ -63,11 +63,7 @@ namespace UnitTestMdr
         public void TestThreadFrames()
         {
             string error = null;
-            Stopwatch stopWatch = new Stopwatch();
-            stopWatch.Start();
             var index = OpenIndex(@"C:\WinDbgStuff\Dumps\Analytics\Highline\analyticsdump111.dlk.dmp.map");
-            TestContext.WriteLine(index.DumpFileName + " INDEX OPEN DURATION: " + Utils.StopAndGetDurationString(stopWatch));
-
             using (index)
             {
                 Tuple<ClrtThread[], string[], KeyValuePair<int, ulong>[]> info = index.GetThreads(out error);
@@ -126,15 +122,13 @@ namespace UnitTestMdr
 		public void ThreadInformation()
 		{
 			string error = null;
-			Stopwatch stopWatch = new Stopwatch();
-			stopWatch.Start();
 			var index = OpenIndex();
-			TestContext.WriteLine(index.DumpFileName + " INDEX OPEN DURATION: " + Utils.StopAndGetDurationString(stopWatch));
 
 			using (index)
 			{
-				stopWatch.Restart();
-				var threads = DumpIndexer.GetThreads(index.Runtime);
+                Stopwatch stopWatch = new Stopwatch();
+                stopWatch.Start();
+                var threads = DumpIndexer.GetThreads(index.Runtime);
 				TestContext.WriteLine(index.DumpFileName + " THREAD COUNT: " + Utils.LargeNumberString(threads.Length) +
 				                      ", GETTING THREAD LIST DURATION: " + Utils.StopAndGetDurationString(stopWatch));
 				stopWatch.Restart();
@@ -475,26 +469,6 @@ namespace UnitTestMdr
 			}
 		}
 
-        [TestMethod]
-        public void TestCheckCycle()
-        {
-            string error = null;
-            Stopwatch stopWatch = new Stopwatch();
-            stopWatch.Start();
-            var index = OpenIndex(@"C:\WinDbgStuff\Dumps\Analytics\Highline\analyticsdump111.dlk.dmp.map");
-            TestContext.WriteLine(index.DumpFileName + " INDEX OPEN DURATION: " + Utils.StopAndGetDurationString(stopWatch));
-
-            using (index)
-            {
-                var digraph = index.ThreadBlockgraph;
-                var haveCycle = DGraph.HasCycle(digraph.Graph.Graph);
-                var result = Circuits.GetCycles(digraph.Graph.Graph, out error);
-                Assert.IsTrue(haveCycle);
-            }
-
-            Assert.IsNull(error, error);
-        }
-
         #endregion threads
 
         #region type default values
@@ -503,11 +477,7 @@ namespace UnitTestMdr
 		public void GetTypeDefaultValues()
 		{
 			string error = null;
-			Stopwatch stopWatch = new Stopwatch();
-			stopWatch.Start();
 			var index = OpenIndex();
-			TestContext.WriteLine(index.DumpFileName + " INDEX OPEN DURATION: " + Utils.StopAndGetDurationString(stopWatch));
-
 			using (index)
 			{
 				var typeId = index.GetTypeId("ECS.Common.HierarchyCache.Structure.RealPosition");
@@ -545,11 +515,7 @@ namespace UnitTestMdr
 		public void GetTypeNamesAndCounts()
 		{
 			string error = null;
-			Stopwatch stopWatch = new Stopwatch();
-			stopWatch.Start();
 			var index = OpenIndex(Setup.DumpsFolder + @"\Compliance\Eze.Compliance.Svc_170503_131515.dmp.map");
-			TestContext.WriteLine(index.DumpFileName + " INDEX OPEN DURATION: " + Utils.StopAndGetDurationString(stopWatch));
-//			var dct = new Dictionary<int, int>();
 			var sdct = new SortedDictionary<string, KeyValuePair<int, int>>();
 			using (index)
 			{
@@ -569,20 +535,6 @@ namespace UnitTestMdr
 						sdct.Add(typeName, new KeyValuePair<int, int>(1,0));
 					}
 				}
-				//string[] typeNames = new string[dct.Count];
-				//int[] counts = new int[dct.Count];
-				//int ndx = 0;
-				//int totalCnt = 0;
-				//foreach(var kv in dct)
-				//{
-				//	string typeName = index.GetTypeName(kv.Key);
-				//	typeNames[ndx] = typeName;
-				//	counts[ndx] = kv.Value;
-				//	totalCnt += kv.Value;
-				//	++ndx;
-				//}
-				//Array.Sort(typeNames, counts);
-
 			}
 
 			StreamReader sr = null;
@@ -594,7 +546,6 @@ namespace UnitTestMdr
 				var seps = new char[] { ' ' };
 				sr = new StreamReader(@"C:\WinDbgStuff\Dumps\Compliance\Eze.Compliance.Svc_170503_131515.HEA2E7F.tmp.Cleaned.txt");
 				string ln = sr.ReadLine();
-
 				while(ln!=null)
 				{
 					string[] data = ln.Split(seps,StringSplitOptions.RemoveEmptyEntries);
@@ -613,10 +564,7 @@ namespace UnitTestMdr
 					}
 
 					ln = sr.ReadLine();
-
 				}
-
-
 				sr.Close();
 				sr = null;
 				sw = new StreamWriter(@"C:\WinDbgStuff\Dumps\Compliance\Eze.Compliance.Svc_170503_131515.HEA2E7F.TypeDiff.txt");
@@ -629,15 +577,12 @@ namespace UnitTestMdr
 					sw.WriteLine("  1[" + kv.Value.Key + "] 2[" + kv.Value.Value + "]");
 				}
 				sw.WriteLine("#### TOTALS  1[" + _1Count + "] 2[" + _2Count + "]");
-
-
 			}
 			finally
 			{
 				sr?.Close();
 				sw?.Close();
 			}
-
 			Assert.IsNull(error, error);
 		}
 
@@ -646,10 +591,7 @@ namespace UnitTestMdr
         {
             string indexPath = @"D:\Jerzy\WinDbgStuff\dumps\Analytics\Highline\analyticsdump111.dlk.dmp";
             string error = null;
-            Stopwatch stopWatch = new Stopwatch();
-            stopWatch.Start();
             var index = OpenIndex(indexPath);
-            TestContext.WriteLine(index.DumpFileName + " INDEX OPEN DURATION: " + Utils.StopAndGetDurationString(stopWatch));
 
             var dctTypeInterfaces = new SortedDictionary<string, List<string>>();
             var dctInterfaceTypes = new SortedDictionary<string, List<string>>();
@@ -722,17 +664,13 @@ namespace UnitTestMdr
             Assert.IsNull(error, error);
         }
 
-
         #region type sizes and distribution
 
         [TestMethod]
         public void GetTypeSizeHistogram()
         {
             string error = null;
-            Stopwatch stopWatch = new Stopwatch();
-            stopWatch.Start();
             var index = OpenIndex(Setup.DumpsFolder + @"\Analytics\Ellerston\Eze.Analytics.Svc_170309_130146.BIG.dmp.map");
-            TestContext.WriteLine(index.DumpFileName + " INDEX OPEN DURATION: " + Utils.StopAndGetDurationString(stopWatch));
             string typeName = "Free";
             int[] genHistogram = new int[5];
             SortedDictionary<ulong, int> dct = new SortedDictionary<ulong, int>();
@@ -770,10 +708,7 @@ namespace UnitTestMdr
         public void TestAllIndicesGetTypeCounts()
         {
             string error = null;
-            Stopwatch stopWatch = new Stopwatch();
-            stopWatch.Start();
             var version = Assembly.GetExecutingAssembly().GetName().Version;
-
             string folder = @"D:\Jerzy\WinDbgStuff\dumps\Analytics";
             string[] ndxDirs = Directory.GetDirectories(folder, "*.map", SearchOption.AllDirectories);
             List<string> lstGood = new List<string>();
@@ -792,21 +727,6 @@ namespace UnitTestMdr
                 }
                 index?.Dispose();
             }
-
-            //try
-            //{
-
-            //}
-
-            //var index = OpenIndex();
-            //TestContext.WriteLine(index.DumpFileName + " INDEX OPEN DURATION: " + Utils.StopAndGetDurationString(stopWatch));
-
-            //using (index)
-            //{
-
-            //}
-
-            //Assert.IsNull(error, error);
         }
 
         [TestMethod]
@@ -1117,15 +1037,8 @@ namespace UnitTestMdr
         public void TestReferences0()
         {
             string error = null;
-            Stopwatch stopWatch = new Stopwatch();
-            stopWatch.Start();
             string dumpPath = dumps[0];
             var testFolder = Path.GetDirectoryName(dumpPath);
-
-            //FwdOffsets,
-            //FwdRefs,
-            //BwdOffsets,
-            //BwdRefs
 
             string[] testFolders = new string[]
             {
@@ -1136,9 +1049,6 @@ namespace UnitTestMdr
             };
 
             var index = OpenIndex(dumpPath + ".map");
-
-
-            TestContext.WriteLine(index.DumpFileName + " INDEX OPEN DURATION: " + Utils.StopAndGetDurationString(stopWatch));
 
             using (index)
             {
@@ -1368,11 +1278,7 @@ namespace UnitTestMdr
         public void TestInstancesTimestamps()
         {
             string error = null;
-            Stopwatch stopWatch = new Stopwatch();
-            stopWatch.Start();
             var index = OpenIndex(@"D:\Jerzy\WinDbgStuff\dumps\Analytics\Ellerston\Eze.Analytics.Svc_170607_214916.dmp.map");
-            TestContext.WriteLine(index.DumpFileName + " INDEX OPEN DURATION: " + Utils.StopAndGetDurationString(stopWatch));
-
             using (index)
             {
                 var heap = index.Heap;
@@ -1443,13 +1349,9 @@ namespace UnitTestMdr
 		public void TestRootScan()
 		{
 			string error = null;
-			Stopwatch stopWatch = new Stopwatch();
-			stopWatch.Start();
 			var index = OpenIndex();
-			Assert.IsNotNull(index);
-			TestContext.WriteLine(index.DumpFileName + " INDEX OPEN DURATION: " + Utils.StopAndGetDurationString(stopWatch));
-
-			stopWatch.Restart();
+            Stopwatch stopWatch = new Stopwatch();
+            stopWatch.Start();
 			using (index)
 			{
 				var rootAddresses = index.RootObjects;
@@ -1633,12 +1535,7 @@ namespace UnitTestMdr
 		[TestMethod]
 		public void TestIndexRoots()
 		{
-			Stopwatch stopWatch = new Stopwatch();
-			stopWatch.Start();
 			var index = OpenIndex(@"C:\WinDbgStuff\Dumps\Analytics\Cowen\Cowen.Analytics.Svc_170717_165238.dmp.map");
-			Assert.IsNotNull(index);
-			TestContext.WriteLine(index.DumpFileName + " INDEX OPEN DURATION: " + Utils.StopAndGetDurationString(stopWatch));
-			stopWatch.Restart();
 
             ulong[] addrs = new ulong[]
             {
@@ -1711,15 +1608,8 @@ namespace UnitTestMdr
         public void TestIndexRootsVsHeap()
         {
             string error;
-            Stopwatch stopWatch = new Stopwatch();
-            stopWatch.Start();
 			var dumpPath = dumps[0];
 			var index = OpenIndex(dumpPath+".map");
-			TestContext.WriteLine("DUMP: " + dumpPath);
-
-            Assert.IsNotNull(index);
-            TestContext.WriteLine(index.DumpFileName + " INDEX OPEN DURATION: " + Utils.StopAndGetDurationString(stopWatch));
-            stopWatch.Restart();
             using (index)
             {
                 var instances = index.Instances;
@@ -1799,10 +1689,7 @@ namespace UnitTestMdr
 		public void TestDisassemble()
 		{
 			string error = null;
-			Stopwatch stopWatch = new Stopwatch();
-			stopWatch.Start();
 			var index = OpenIndex();
-			TestContext.WriteLine(index.DumpFileName + " INDEX OPEN DURATION: " + Utils.StopAndGetDurationString(stopWatch));
 			ulong addr = 0x000000800812a8;
 			using (index)
 			{
@@ -1825,17 +1712,12 @@ namespace UnitTestMdr
         public void InstanceValue_Test()
         {
             string error = null;
-            Stopwatch stopWatch = new Stopwatch();
-            stopWatch.Start();
-
             var index = OpenIndex(@"D:\Jerzy\WinDbgStuff\dumps\Analytics\Baly\AnalyticsLatencyDump06062016 03354291.dmp.map");
             ulong addr = 0x0000a1ad9d3cf8;
             //var index = OpenIndex(@"C:\WinDbgStuff\dumps\Analytics\Baly\AnalyticsLatencyDump06062016 03354291.dmp.map");
             //ulong addr = 0x0000a4ace42d68;
 
-            TestContext.WriteLine(index.DumpFileName + " INDEX OPEN DURATION: " + Utils.StopAndGetDurationString(stopWatch));
-
-			InstanceValue inst;
+            InstanceValue inst;
             using (index)
             {
                 //(error, inst) = ValueExtractor.GetInstanceValue(index.IndexProxy, index.Heap, addr, Constants.InvalidIndex,null);
@@ -1938,13 +1820,9 @@ namespace UnitTestMdr
         public void GetTypeValueAsString_Test()
         {
             string error = null;
-            Stopwatch stopWatch = new Stopwatch();
-            stopWatch.Start();
             var index = OpenIndex(@"D:\Jerzy\WinDbgStuff\dumps\TestApp\TestApp.exe_170818_102413.dmp.map");
             //var index = OpenIndex(@"D:\Jerzy\WinDbgStuff\dumps\Analytics\Cowen\Cowen.Analytics.Svc_170717_165238.dmp.map");
             //var index = OpenIndex(@"D:\Jerzy\WinDbgStuff\dumps\Analytics\Highline\analyticsdump111.dlk.new2.dmp.map");
-            
-            TestContext.WriteLine(index.DumpFileName + " INDEX OPEN DURATION: " + Utils.StopAndGetDurationString(stopWatch));
 
             using (index)
             {
@@ -2053,10 +1931,7 @@ namespace UnitTestMdr
 		[TestMethod]
 		public void TestArrayContent()
 		{
-			Stopwatch stopWatch = new Stopwatch();
-			stopWatch.Start();
 			var index = OpenIndex(@"D:\Jerzy\WinDbgStuff\dumps\Analytics\Cowen\Cowen.Analytics.Svc_170717_165238.dmp.map");
-			TestContext.WriteLine(index.DumpFileName + " INDEX OPEN DURATION: " + Utils.StopAndGetDurationString(stopWatch));
 			ulong addr = 0x0000055099f9b08; //0x0000055070662f0; // 0x0000560623a968;
 
             using (index)
@@ -2068,35 +1943,10 @@ namespace UnitTestMdr
 
 		}
 
-        //[TestMethod]
-        //public void TestDictionaryContent()
-        //{
-        //    Stopwatch stopWatch = new Stopwatch();
-        //    stopWatch.Start();
-        //    var index = OpenIndex(@"D:\Jerzy\WinDbgStuff\Dumps\Analytics\Cowen\Cowen.Analytics.Svc_170717_165238.dmp.map");
-        //    TestContext.WriteLine(index.DumpFileName + " INDEX OPEN DURATION: " + Utils.StopAndGetDurationString(stopWatch));
-        //    ulong addr = 0x0000550415a8f8; // 0x00005308d8b3c0; // 0x000055070662f0;
-        //    using (index)
-        //    {
-        //        //       (string error, InstanceValue inst) = ValueExtractor.GetDictionaryInfo(index.IndexProxy, index.Heap, addr, null);
-        //        var heap = index.GetHeap();
-        //        var clrType = index.GetObjectType(addr);
-
-        //        //(string error0, KeyValuePair<string, string>[] fldDescription, int count, ClrType dctType, ClrType entryKeyType, ClrType entryValueType, KeyValuePair< string,string >[] entryList) = CollectionContent.dictionaryContent(heap, addr);
-        //        //Assert.IsNull(error0, error0);
-        //        var (error1, description, values) = ValueExtractor.GetDictionaryContent(heap, addr);
-
-        //    }
-
-        //}
-
         [TestMethod]
         public void TestSortedDictionaryContent()
         {
-            Stopwatch stopWatch = new Stopwatch();
-            stopWatch.Start();
             var index = OpenIndex(@"D:\Jerzy\WinDbgStuff\Dumps\Analytics\Cowen\Cowen.Analytics.Svc_170717_165238.dmp.map");
-            TestContext.WriteLine(index.DumpFileName + " INDEX OPEN DURATION: " + Utils.StopAndGetDurationString(stopWatch));
             ulong addr = 0x000056124fa2b8; // 0x0000530f3bec68; // 0x00005604535698;
             using (index)
             {
@@ -2110,10 +1960,7 @@ namespace UnitTestMdr
         [TestMethod]
         public void TestSortedListContent()
         {
-            Stopwatch stopWatch = new Stopwatch();
-            stopWatch.Start();
             var index = OpenIndex(@"D:\Jerzy\WinDbgStuff\Dumps\Analytics\Cowen\Cowen.Analytics.Svc_170717_165238.dmp.map");
-            TestContext.WriteLine(index.DumpFileName + " INDEX OPEN DURATION: " + Utils.StopAndGetDurationString(stopWatch));
             ulong addr = 0x0000550440b180; // 0x0000560623aab8;
             using (index)
             {
@@ -2127,10 +1974,7 @@ namespace UnitTestMdr
         [TestMethod]
         public void TestListContent()
         {
-            Stopwatch stopWatch = new Stopwatch();
-            stopWatch.Start();
             var index = OpenIndex(@"D:\Jerzy\WinDbgStuff\dumps\Analytics\Highline\analyticsdump111.dlk.dmp.map");
-            TestContext.WriteLine(index.DumpFileName + " INDEX OPEN DURATION: " + Utils.StopAndGetDurationString(stopWatch));
             ulong addr = 0x00000080447368; //;
             using (index)
             {
@@ -2155,8 +1999,6 @@ namespace UnitTestMdr
             ulong addr = 0x00000002853598; // 0x000000028530a8; // 0x00000002853598; 
             string path = @"D:\Jerzy\WinDbgStuff\dumps\TestApp\64\TestApp.exe_180413_131610.dmp.map";
 
-            Stopwatch stopWatch = new Stopwatch();
-            stopWatch.Start();
             var _dumpSTAScheduler = new SingleThreadTaskScheduler();
             CancellationTokenSource source = new CancellationTokenSource();
             CancellationToken token = source.Token;
@@ -2169,9 +2011,6 @@ namespace UnitTestMdr
                 {
                     index.WarmupHeap();
                     var heap = index.GetHeap();
-                    //var (error, description, values) = 
-                    //return ValueExtractor.GetHashSetContent(heap, addr);
-                    //(string error, KeyValuePair<string, string>[] values, string[] ex) = 
                     return CollectionContent.HashSetContentAsStrings(heap, addr);
                 }
             },
@@ -2181,17 +2020,6 @@ namespace UnitTestMdr
             _dumpSTAScheduler);
             t.Wait();
             var result = t.Result;
-            
-            //TestContext.WriteLine(index.DumpFileName + " INDEX OPEN DURATION: " + Utils.StopAndGetDurationString(stopWatch));
-            //using (index)
-            //{
-            //    index.Runtime.Flush();
-            //    var heap = index.GetHeap();
-            //    //var (error, description, values) = ValueExtractor.GetHashSetContent(heap, addr);
-            //    (string error, KeyValuePair<string, string>[] values, string[] ex) = CollectionContent.HashSetContentAsStrings(heap, addr);
-            //    Assert.IsNull(error, error);
-            //}
-
         }
 
         [TestMethod]
@@ -2624,46 +2452,13 @@ namespace UnitTestMdr
 
 #endregion instance value
 
-#region type values report
-
-        //[TestMethod]
-        //public void TestSavedTypeValuesReport()
-        //{
-        //    string error;
-        //    Stopwatch stopWatch = new Stopwatch();
-        //    stopWatch.Start();
-        //    var index = OpenIndex(@"C:\WinDbgStuff\dumps\Analytics\Highline\analyticsdump111.dlk.dmp.map");
-        //    TestContext.WriteLine(index.DumpFileName + " INDEX OPEN DURATION: " + Utils.StopAndGetDurationString(stopWatch));
-
-        //    using (index)
-        //    {
-        //        // deserialize query
-        //        //
-        //        string qpath = @"C:\WinDbgStuff\Dumps\Analytics\Highline\analyticsdump111.dlk.dmp.map\ad-hoc.queries\ClrtDisplayableType.2017-05-27-05-58-41-608.bin";
-        //        ClrtDisplayableType[] queryItems = ClrtDisplayableType.DeserializeArray(qpath, out error);
-        //        try
-        //        {
-        //            ListingInfo listing = index.GetTypeValuesReport(queryItems, out error);
-        //        }
-        //        catch (Exception ex)
-        //        {
-        //            Assert.IsTrue(false, ex.ToString());
-        //        }
-
-        //    }
-
-        //    Assert.IsNull(error, error);
-        //}
-
+        #region type values report
 
         [TestMethod]
         public void TestTypeValuesReport()
         {
             string error = null;
-            Stopwatch stopWatch = new Stopwatch();
-            stopWatch.Start();
             var index = OpenIndex(@"C:\WinDbgStuff\dumps\Analytics\Highline\analyticsdump111.dlk.dmp.map");
-            TestContext.WriteLine(index.DumpFileName + " INDEX OPEN DURATION: " + Utils.StopAndGetDurationString(stopWatch));
 
             using (index)
             {
@@ -2686,15 +2481,29 @@ namespace UnitTestMdr
             Assert.IsNull(error, error);
         }
 
-#endregion type values report
+        #endregion type values report
 
-#region get list of specific clr objects
+        #region test application (TestApp) tests
 
-#endregion get list of specific clr objects
+        [TestMethod]
+        public void TestApp_Guid()
+        {
+            string error = null;
+            ulong addr = 0x000000000284fa78;
+            var index = OpenIndex(@"D:\Jerzy\WinDbgStuff\dumps\TestApp\64\TestApp.exe_180413_131610.dmp.map");
+            using (index)
+            {
+                (string err, ClrType aryType, ClrType elemType, StructFields structFlds, string[] values, StructValueStrings[] structValues) 
+                    = CollectionContent.GetArrayContentAsStrings(index.Heap, addr);
+            }
+            Assert.IsNull(error, error);
+        }
 
-#region misc
+        #endregion test application (TestApp) tests
 
-		[TestMethod]
+        #region misc
+
+        [TestMethod]
 		public void TestKnownTypes()
 		{
 			string[] typeNames = new string[]
@@ -2995,55 +2804,59 @@ namespace UnitTestMdr
 			}
 		}
 
-#endregion misc
+        #endregion misc
 
-#region template
+        #region template
 
 		[TestMethod]
 		public void TestSnippet()
 		{
 			string error = null;
-			Stopwatch stopWatch = new Stopwatch();
-			stopWatch.Start();
 			var index = OpenIndex();
-			TestContext.WriteLine(index.DumpFileName + " INDEX OPEN DURATION: " + Utils.StopAndGetDurationString(stopWatch));
-
 			using (index)
 			{
 
 			}
-
 			Assert.IsNull(error,error);
 		}
 
-#endregion template
+        #endregion template
 
-#region open index
+        #region open index
 
-		public static DumpIndex OpenIndex(int indexNdx=0)
+		public DumpIndex OpenIndex(int indexNdx=0)
 		{
-			string error;
+			string error = null;
 			var indexPath = Setup.GetRecentIndexPath(indexNdx);
 			Assert.IsNotNull(indexPath,"Setup returned null when asked for index " + indexNdx + ".");
 			var version = Assembly.GetExecutingAssembly().GetName().Version;
-			var index = DumpIndex.OpenIndexInstanceReferences(version, indexPath, 0, out error);
-			Assert.IsNotNull(index, error);
+            Stopwatch stopWatch = new Stopwatch();
+            stopWatch.Start();
+            var index = DumpIndex.OpenIndexInstanceReferences(version, indexPath, 0, out error);
+            bool ok = index != null;
+            stopWatch.Stop();
+            TestContext.WriteLine(indexPath);
+            TestContext.WriteLine((ok ? "" : "FAILED TO OPEN... ") + "OPENING DURATION: " + Utils.DurationString(stopWatch.Elapsed));
+            Assert.IsNotNull(index, error);
 			return index;
 		}
 
-		public DumpIndex OpenIndex(string mapPath)
-		{
-			string error;
+        public DumpIndex OpenIndex(string indexPath)
+        {
+            string error = null;
+            var version = Assembly.GetExecutingAssembly().GetName().Version;
             Stopwatch stopWatch = new Stopwatch();
             stopWatch.Start();
-            var version = Assembly.GetExecutingAssembly().GetName().Version;
-			var index = DumpIndex.OpenIndexInstanceReferences(version, mapPath, 0, out error);
-            TestContext.WriteLine(index.DumpFileName + " INDEX OPEN DURATION: " + Utils.StopAndGetDurationString(stopWatch));
-            Assert.IsNotNull(index, error);
-			return index;
+            var index = DumpIndex.OpenIndexInstanceReferences(version, indexPath, 0, out error);
+            bool ok = index != null;
+            stopWatch.Stop();
+            TestContext.WriteLine(indexPath);
+            TestContext.WriteLine((ok ? "" : "FAILED TO OPEN... ") + "OPENING DURATION: " + Utils.DurationString(stopWatch.Elapsed));
+            Assert.IsTrue(ok, error);
+            return index;
         }
 
-#endregion open index
+        #endregion open index
 
-	}
+    }
 }

@@ -891,9 +891,11 @@ namespace UnitTestMdr
                 /* 2*/ @"C:\WinDbgStuff\Dumps\Analytics\RCG\analytics3.dmp",
                 // 0x0000064b718b98 System.Collections.Generic.Dictionary+Entry<System.String,ECS.Common.HierarchyCache.Structure.Position>[]
                 // 0x0000064b45e768 ECS.Common.HierarchyCache.Structure.RealPosition
+                /* 3*/ @"D:\Jerzy\WinDbgStuff\dumps\Analytics\Anavon\Eze.Analytics.Svc_160225_204724.Anavon.dmp",
+                // 0x00007abebb5658 Eze.Server.Common.Pulse.Common.Types.ModelingSession
             };
-            var dmp = OpenDump(dumps[2]);
-            ulong addr = 0x0000064b45e768;
+            var dmp = OpenDump(dumps[3]);
+            ulong addr = 0x00007abebb5658;
             using (dmp)
             {
                 var heap = dmp.Heap;
