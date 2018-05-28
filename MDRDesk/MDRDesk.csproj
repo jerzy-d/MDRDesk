@@ -101,10 +101,6 @@
   </PropertyGroup>
   <PropertyGroup />
   <ItemGroup>
-    <Reference Include="Markdown.Xaml, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
-      <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\Markdown.XAML\Markdown.Xaml.dll</HintPath>
-    </Reference>
     <Reference Include="Microsoft.Diagnostics.Runtime">
       <HintPath>..\ClrMd\Microsoft.Diagnostics.Runtime.dll</HintPath>
     </Reference>
@@ -353,6 +349,10 @@
       <Project>{7b01ccc0-8c10-4aa1-8154-4b55160e322b}</Project>
       <Name>ClrMDRUtil</Name>
     </ProjectReference>
+    <ProjectReference Include="..\Markdown.Xaml\Markdown.Xaml.csproj">
+      <Project>{34186c3b-c308-4cae-b462-db7b5f5e378c}</Project>
+      <Name>Markdown.Xaml</Name>
+    </ProjectReference>
   </ItemGroup>
   <ItemGroup>
     <Resource Include="appbar.list.gear.ico" />
@@ -504,6 +504,9 @@
   </ItemGroup>
   <ItemGroup>
     <Resource Include="Images\Folder_grey_16x.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <Folder Include="Resources\" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <PropertyGroup>

@@ -28,7 +28,7 @@
             <RowDefinition Height="15*"/>
             <RowDefinition Height="5"/>
             <RowDefinition Height="77*"/>
-            <RowDefinition Height="8*"/>
+            <RowDefinition Height="40"/>
         </Grid.RowDefinitions>
         <TextBox x:Name="CollectionInfo" Grid.Row="0" Margin="2,2,2,2" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" FontFamily="Consolas" FontSize="11">
             <TextBox.BorderBrush>BlanchedAlmond</TextBox.BorderBrush>
@@ -47,9 +47,9 @@
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="30"/>
                             <ColumnDefinition Width="77*"/>
-                            <ColumnDefinition Width="8*"/>
-                            <ColumnDefinition Width="8*"/>
-                            <ColumnDefinition Width="8*"/>
+                            <ColumnDefinition Width="40"/>
+                            <ColumnDefinition Width="40"/>
+                            <ColumnDefinition Width="40"/>
                         </Grid.ColumnDefinitions>
                     </Grid>
                 </ItemsPanelTemplate>

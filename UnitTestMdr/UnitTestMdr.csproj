@@ -92,6 +92,8 @@
     </Reference>
     <Reference Include="System" />
     <Reference Include="System.Configuration" />
+    <Reference Include="System.Net" />
+    <Reference Include="WindowsBase" />
   </ItemGroup>
   <Choose>
     <When Condition="('$(VisualStudioVersion)' == '10.0' or '$(VisualStudioVersion)' == '') and '$(TargetFrameworkVersion)' == 'v3.5'">
@@ -118,6 +120,10 @@
     <ProjectReference Include="..\ClrMDRUtil\ClrMDRUtil.csproj">
       <Project>{7b01ccc0-8c10-4aa1-8154-4b55160e322b}</Project>
       <Name>ClrMDRUtil</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\Markdown.Xaml\Markdown.Xaml.csproj">
+      <Project>{34186c3b-c308-4cae-b462-db7b5f5e378c}</Project>
+      <Name>Markdown.Xaml</Name>
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>

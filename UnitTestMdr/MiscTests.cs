@@ -7,10 +7,11 @@ using System.Reflection;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using ClrMDRIndex;
 using ClrMDRUtil.Utils;
+using Markdown.Xaml;
 using Microsoft.Diagnostics.Runtime;
 using System.Globalization;
 using System.Text;
-
+using System.Text.RegularExpressions;
 
 namespace UnitTestMdr
 {
@@ -113,5 +114,56 @@ namespace UnitTestMdr
 
             Assert.IsTrue(s1 == s3);
         }
+
+
+        [TestMethod]
+        public void TestHtmlDecoding()
+        {
+            const string txt = @"#### MDRDesk
+[Up](../ README.md)
+### Instance Value Views  
+There are four types of windows to display an instance content.
+Each one has the help button and F1 hot key to display this document.  
+
+&#x2776; Class/structure treeview.  
+&#x2777; A key/value collection view for dictionaries.  
+&#x2778; A single item collection view for arrays, lists, sets, queues, etc..  
+&#x2779; An instant value.  
+Useful to display large strings, and string builders content.
+";
+            string newTxt = Markdown.Xaml.Markdown.Normalize(txt);
+        }
+
+        //public string EntityToUnicode(string html)
+        //{
+        //    var replacements = new Dictionary<string, string>();
+        //    int ndx = html.IndexOf("&#x");
+        //    while(ndx >= 0)
+        //    {
+        //        int endx = html.IndexOf(';', ndx);
+        //        if (endx > ndx && endx - ndx < 9)
+        //        {
+        //            ++endx;
+        //            var val = html.Substring(ndx, endx - ndx);
+        //            var unicode = System.Net.WebUtility.HtmlDecode(val);
+        //            if (unicode.Length == 1)
+        //            {
+        //                replacements.Add(val, unicode);
+        //            }
+        //            ndx = html.IndexOf("&#x",endx);
+        //        }
+        //        else
+        //        {
+        //            ndx = -1;
+        //        }
+
+        //    }
+        //     foreach (var replacement in replacements)
+        //    {
+        //        html = html.Replace(replacement.Key, replacement.Value);
+        //    }
+        //    return html;
+        //}
+
     }
 }
