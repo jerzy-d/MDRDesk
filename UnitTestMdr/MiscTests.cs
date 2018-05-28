@@ -133,37 +133,5 @@ Useful to display large strings, and string builders content.
 ";
             string newTxt = Markdown.Xaml.Markdown.Normalize(txt);
         }
-
-        //public string EntityToUnicode(string html)
-        //{
-        //    var replacements = new Dictionary<string, string>();
-        //    int ndx = html.IndexOf("&#x");
-        //    while(ndx >= 0)
-        //    {
-        //        int endx = html.IndexOf(';', ndx);
-        //        if (endx > ndx && endx - ndx < 9)
-        //        {
-        //            ++endx;
-        //            var val = html.Substring(ndx, endx - ndx);
-        //            var unicode = System.Net.WebUtility.HtmlDecode(val);
-        //            if (unicode.Length == 1)
-        //            {
-        //                replacements.Add(val, unicode);
-        //            }
-        //            ndx = html.IndexOf("&#x",endx);
-        //        }
-        //        else
-        //        {
-        //            ndx = -1;
-        //        }
-
-        //    }
-        //     foreach (var replacement in replacements)
-        //    {
-        //        html = html.Replace(replacement.Key, replacement.Value);
-        //    }
-        //    return html;
-        //}
-
     }
 }

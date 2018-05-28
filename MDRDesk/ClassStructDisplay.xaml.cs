@@ -155,29 +155,7 @@ namespace MDRDesk
                     ValueWindows.ShowContentWindow(fields[0].GetDescription(), fields[0], ValueWindows.WndType.List);
                     return;
                 }
-
-                //TypeExtractor.KnownTypes knownType = TypeExtractor.IsKnownCollection(fields[0].TypeName);
-                //if (knownType != TypeExtractor.KnownTypes.Unknown)
-                //{
-                //    var inst = fields[0];
-                //    switch(knownType)
-                //    {
-                //        case TypeExtractor.KnownTypes.StringBuilder:
-                //            ValueWindows.ShowContentWindow(inst.GetDescription(), inst, ValueWindows.WndType.Content);
-                //            return;
-                //        case TypeExtractor.KnownTypes.HashSet:
-                //        case TypeExtractor.KnownTypes.List:
-                //            ValueWindows.ShowContentWindow(inst.GetDescription(), inst, ValueWindows.WndType.List);
-                //            return;
-
-                //        case TypeExtractor.KnownTypes.Dictionary:
-                //        case TypeExtractor.KnownTypes.SortedDictionary:
-                //        case TypeExtractor.KnownTypes.SortedList:
-                //            ValueWindows.ShowContentWindow(inst.GetDescription(), inst, ValueWindows.WndType.KeyValues);
-                //            return;
-                //    }
-                //}
-
+                 
                 if (fields.Length > 0)
                 {
                     selInstValue.SetFields(fields);
