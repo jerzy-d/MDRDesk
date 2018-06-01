@@ -194,7 +194,7 @@ namespace ClrMDRIndex
                         values[i] = ValueExtractor.DateTimeValueAsString(elAddr, elType);
                         break;
                     case ClrElementKind.Guid:
-                        values[i] = ValueExtractor.GuidValueAsString(elAddr, elType);
+                        values[i] = ValueExtractor.GuidValueAsString(elAddr, elType, true);
                         break;
                     case ClrElementKind.Decimal:
                         values[i] = ValueExtractor.DecimalValueAsString(elAddr, elType, null);
@@ -332,10 +332,12 @@ namespace ClrMDRIndex
                 (string err, ClrType aryType, ClrType aryElemType, StructFields aryStructFlds, string[] aryVals, StructValueStrings[] aryStructVals) =
                     GetArrayContentAsStrings(heap, itemsAddr);
 
+                int capacity = aryVals != null ? aryVals.Length : (aryStructVals != null ? aryStructVals.Length : 0);
+
                 KeyValuePair<string, string>[] fldDescription = new KeyValuePair<string, string>[]
                 {
                     new KeyValuePair<string, string>("size", Utils.CountString(size)),
-                    new KeyValuePair<string, string>("capacity", Utils.CountString(aryVals.Length)),
+                    new KeyValuePair<string, string>("capacity", Utils.CountString(capacity)),
                     new KeyValuePair<string, string>("version", version.ToString())
                 };
 
@@ -344,6 +346,14 @@ namespace ClrMDRIndex
                     return (EmptyCollectionMessage(TypeExtractor.GetKnowTypeName(TypeExtractor.KnownTypes.List), addr, lstType.Name, fldDescription),
                             null,
                             null);
+                }
+                if (aryVals == null && aryStructVals != null)
+                {
+                    aryVals = new string[aryStructVals.Length];
+                    for(int i = 0, icnt = aryStructVals.Length; i < icnt; ++i)
+                    {
+                        aryVals[i] = StructValueStrings.MergeValues(aryStructVals[i]);
+                    }
                 }
 
                 return (null, fldDescription, aryVals);
@@ -699,7 +709,7 @@ namespace ClrMDRIndex
                         ulong a = TypeExtractor.IsObjectReference(itemKind)
                             ? (ulong)itemFld.GetValue(eaddr, true)
                             : itemFld.GetAddress(eaddr, true);
-                        hvalues[copied++] = ValueExtractor.GetTypeValueAsString(heap, a, itemType, itemKind);
+                        hvalues[copied++] = ValueExtractor.GetTypeValueAsString(heap, a, itemType, itemKind, false);
                     }
                     else
                     {
@@ -880,7 +890,7 @@ namespace ClrMDRIndex
                                         ? (ulong)keyFld.GetValue(eaddr, true)
                                         : keyFld.GetAddress(eaddr, true);
                             if (keyEnum != null) keyVal = keyEnum.GetEnumString(a, keyType, TypeExtractor.GetClrElementType(keyKind));
-                            else keyVal = ValueExtractor.GetTypeValueAsString(heap, a, keyType, keyKind);
+                            else keyVal = ValueExtractor.GetTypeValueAsString(heap, a, keyType, keyKind, true);
                         }
                         else
                         {
@@ -925,7 +935,7 @@ namespace ClrMDRIndex
                                 ? (ulong)valFld.GetValue(eaddr, true)
                                 : valFld.GetAddress(eaddr, true);
                             if (valEnum != null) valVal = valEnum.GetEnumString(a, valType, TypeExtractor.GetClrElementType(valKind));
-                            else valVal = ValueExtractor.GetTypeValueAsString(heap, a, valType, valKind);
+                            else valVal = ValueExtractor.GetTypeValueAsString(heap, a, valType, valKind, true);
                         }
                         else
                         {
@@ -1407,7 +1417,7 @@ namespace ClrMDRIndex
                 ulong a = TypeExtractor.IsObjectReference(kind)
                     ? (ulong)fld.GetValue(addr, true)
                     : fld.GetAddress(addr, true);
-                keyVal = ValueExtractor.GetTypeValueAsString(heap, a, type, kind);
+                keyVal = ValueExtractor.GetTypeValueAsString(heap, a, type, kind, true);
             }
             else
             {

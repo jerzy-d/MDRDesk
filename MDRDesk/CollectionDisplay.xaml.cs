@@ -33,7 +33,7 @@ namespace MDRDesk
              InitializeComponent();
             SetLock(locked);
             UpdateInstanceValue(instVal, descr);
-            Title = TypeExtractor.GetKnowTypeName(instVal.TypeName);
+            Title = TypeExtractor.GetDisplayableTypeName(instVal.TypeName);
         }
 
         private void SetLock(bool locked)

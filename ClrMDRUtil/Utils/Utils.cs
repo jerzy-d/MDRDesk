@@ -1332,7 +1332,9 @@ namespace ClrMDRIndex
         {
             public int Compare(KeyValuePair<string, string> a, KeyValuePair<string, string> b)
             {
-                return string.Compare(a.Value, b.Value, StringComparison.Ordinal);
+                int cmp = string.Compare(a.Key, b.Key, StringComparison.Ordinal);
+                if (cmp == 0) cmp = string.Compare(a.Value, b.Value, StringComparison.Ordinal);
+                return cmp;
             }
         }
 

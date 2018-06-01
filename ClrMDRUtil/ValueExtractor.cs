@@ -520,26 +520,26 @@ namespace ClrMDRIndex
         /// <param name="type">Should be System.Decimal.</param>
         /// <returns></returns>
         /// <remarks>Used in CollectionContent for arrays.</remarks>
-        public static string GuidValueAsString(ulong addr, ClrType type)
-        {
-            StringBuilder sb = StringBuilderCache.Acquire(64);
-            var ival = (int)type.Fields[0].GetValue(addr, true);
-            sb.AppendFormat("{0:X8}", ival);
-            sb.Append('-');
-            var sval = (short)type.Fields[1].GetValue(addr, true);
-            sb.AppendFormat("{0:X4}", sval);
-            sb.Append('-');
-            sval = (short)type.Fields[2].GetValue(addr, true);
-            sb.AppendFormat("{0:X4}", sval);
-            sb.Append('-');
-            for (var i = 3; i < 11; ++i)
-            {
-                if (i == 5) sb.Append('-');
-                var val = (byte)type.Fields[i].GetValue(addr, true);
-                sb.AppendFormat("{0:X2}", val);
-            }
-            return StringBuilderCache.GetStringAndRelease(sb);
-        }
+        //public static string GuidValueAsString(ulong addr, ClrType type)
+        //{
+        //    StringBuilder sb = StringBuilderCache.Acquire(64);
+        //    var ival = (int)type.Fields[0].GetValue(addr, true);
+        //    sb.AppendFormat("{0:X8}", ival);
+        //    sb.Append('-');
+        //    var sval = (short)type.Fields[1].GetValue(addr, true);
+        //    sb.AppendFormat("{0:X4}", sval);
+        //    sb.Append('-');
+        //    sval = (short)type.Fields[2].GetValue(addr, true);
+        //    sb.AppendFormat("{0:X4}", sval);
+        //    sb.Append('-');
+        //    for (var i = 3; i < 11; ++i)
+        //    {
+        //        if (i == 5) sb.Append('-');
+        //        var val = (byte)type.Fields[i].GetValue(addr, true);
+        //        sb.AppendFormat("{0:X2}", val);
+        //    }
+        //    return StringBuilderCache.GetStringAndRelease(sb);
+        //}
 
         public static string GuidValueAsString(ulong addr, ClrType type, bool intr)
         {
@@ -1429,7 +1429,7 @@ namespace ClrMDRIndex
         }
 
 
-        public static string GetTypeValueAsString(ClrHeap heap, ulong addr, ClrType clrType, ClrElementKind kind)
+        public static string GetTypeValueAsString(ClrHeap heap, ulong addr, ClrType clrType, ClrElementKind kind, bool intern)
         {
             if (kind == ClrElementKind.Unknown)
             {
@@ -1446,7 +1446,7 @@ namespace ClrMDRIndex
                 switch (specKind)
                 {
                     case ClrElementKind.Guid:
-                        return GuidValueAsString(addr, clrType);
+                        return GuidValueAsString(addr, clrType, intern);
                     case ClrElementKind.DateTime:
                         return DateTimeValueAsString(addr, clrType);
                     case ClrElementKind.TimeSpan:
@@ -1531,7 +1531,7 @@ namespace ClrMDRIndex
                         var newkind = TypeExtractor.GetElementKind(fldType);
                         if (newkind != kind)
                         {
-                            return GetTypeValueAsString(heap, fldAddr, fldType, newkind);
+                            return GetTypeValueAsString(heap, fldAddr, fldType, newkind, intern);
                         }
 
                         specKind = TypeExtractor.GetSpecialKind(kind);
@@ -1613,13 +1613,14 @@ namespace ClrMDRIndex
             var specKind = TypeExtractor.GetSpecialKind(kind);
             var typeId = ndxProxy.GetTypeIdAtAddr(addr);
             if (typeId == Constants.InvalidIndex) typeId = ndxProxy.GetTypeId(clrType.Name);
+            bool intern = (parent != null) ? parent.IsValueClass() : false;
             string value;
             if (specKind != ClrElementKind.Unknown)
             {
                 switch (specKind)
                 {
                     case ClrElementKind.Guid:
-                        value = GuidValueAsString(addr, clrType);
+                        value = GuidValueAsString(addr, clrType, intern);
                         return (null, new InstanceValue(typeId, kind, addr, clrType.Name, value, Utils.RealAddressString(decoratedAddr), fldNdx, parent));
                     case ClrElementKind.DateTime:
                         value = DateTimeValueAsString(addr, clrType);
@@ -2559,7 +2560,7 @@ namespace ClrMDRIndex
                 switch (specKind)
                 {
                     case ClrElementKind.Guid:
-                        return GuidValueAsString(elemAddr, elemType);
+                        return GuidValueAsString(elemAddr, elemType, false);
                     case ClrElementKind.DateTime:
                         return DateTimeValueAsString(elemAddr, elemType);
                     case ClrElementKind.TimeSpan:

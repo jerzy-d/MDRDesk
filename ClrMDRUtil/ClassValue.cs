@@ -236,7 +236,7 @@ namespace ClrMDRIndex
                                 strings[i] = ValueExtractor.GetDateTimeString(addr, fld, false);
                                 break;
                             case ClrElementKind.Guid:
-                                strings[i] = ValueExtractor.GuidValueAsString(addr, fldType);
+                                strings[i] = ValueExtractor.GuidValueAsString(addr, fldType, false);
                                 break;
                             case ClrElementKind.Decimal:
                                 strings[i] = ValueExtractor.DecimalStringPAF(addr, fld, false);

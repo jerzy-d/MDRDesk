@@ -66,13 +66,13 @@
                 <TextBlock x:Name="StatusText" FontStyle="Italic" Foreground="Blue"/>
             </StatusBarItem>
             <StatusBarItem Grid.Column="2" Margin="2,0,2,0" HorizontalAlignment="Right" VerticalAlignment="Center">
-                <Button x:Name="ButtonHelp" Grid.Row ="6" Grid.Column="1" HorizontalAlignment="Center" Margin="2,2,2,2" VerticalAlignment="Center" Width="28" Height="28" Click="ButtonHelpClicked" Background="Transparent" BorderThickness="0">
+                <Button x:Name="ButtonHelp" Grid.Row ="6" Grid.Column="1" HorizontalAlignment="Center" Margin="2,2,2,2" VerticalAlignment="Center" Click="ButtonHelpClicked"  Style="{StaticResource {x:Static ToolBar.ButtonStyleKey}}">
                     <Button.ToolTip>Usage help.</Button.ToolTip>
                     <Image Source=".\Images\Help.png" Width="16" Height="16" Margin="0,0,0,0" VerticalAlignment="Center" HorizontalAlignment="Center"/>
                 </Button>
             </StatusBarItem>
             <StatusBarItem x:Name="LockBtnBarItem" Grid.Column="3" Margin="2,0,2,0" HorizontalAlignment="Right" >
-                <Button x:Name="LockBtn" Click="LockBtnClicked">
+                <Button x:Name="LockBtn" Click="LockBtnClicked"  Style="{StaticResource {x:Static ToolBar.ButtonStyleKey}}">
                      <Button.ToolTip>Lock/unlock content of this window.</Button.ToolTip>
                 </Button>
             </StatusBarItem>

@@ -134,4 +134,9 @@
 0052 05/18/18 -- D:\Jerzy\WinDbgStuff\dumps\Modeling\Fisher\Eze.Modeling.Svc_180518_120141.dmp.map
       0x00001e0ef433e8 - ExecuteInstanceValueQuery  -- ClassValue.GetClassValueStrings fails -- it is currently commented out
 	  0x00001e0ef432f8
-
+*** 0053 05/30/18 -- D:\Jerzy\WinDbgStuff\dumps\Analytics\Local\CNS-Issue\Eze.Analytics.Svc.exe_180530_104805.dmp.map
+	0x000000803ef268 Eze.Server.Common.Pulse.CalculationCache.AggregationRowPreserializedRowCache
+		relatedViewCacheViewedColumns    0x0000040064f430    Eze.Server.Common.Pulse.CalculationCache.RelatedViewCacheViewedColumns
+			defaultPositionCalculationOptions    0x00000400650e58    ECS.Common.HierarchyCache.Structure.PositionCalculationOptions
+				### ERROR when double click on the below
+				storedMarketDataSetIds    0x00000400650ed0    System.Collections.Generic.List<System.Collections.Generic.KeyValuePair<System.Guid,ECS.Common.HierarchyCache.MarketData.MarketDataSetType>>

@@ -2059,7 +2059,7 @@ namespace ClrMDRIndex
                 }
 
                 var sb = StringBuilderCache.Acquire(StringBuilderCache.MaxCapacity);
-                sb.AppendLine(query.TypeName + "  COUNT: " + valCnt);
+                sb.AppendLine(query.TypeName + "  COUNT: " + ndx); // actual number of rows after filtering
                 if (query.HasChildren)
                 {
                     for (int i = 0, icnt = query.Children.Length; i < icnt; ++i)

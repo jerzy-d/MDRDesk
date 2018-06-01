@@ -1730,77 +1730,6 @@ namespace UnitTestMdr
         }
 
 
-        private static string[] GetTypeValueAsStringOfAll(ClrHeap heap, ClrType clrType, ClrElementKind kind, ulong[] addrs, out string error, string path = null)
-        {
-            error = null;
-            StreamWriter sw = null;
-            ClrType myType = clrType;
-            try
-            {
-                if (path != null) sw = new StreamWriter(path);
-                string[] values = new string[addrs.Length];
-                for (int i = 0, icnt = addrs.Length; i < icnt; ++i)
-                {
-                    var addr = addrs[i];
-                    if (clrType == null)
-                    {
-                        myType = heap.GetObjectType(addr);
-                        Assert.IsNotNull(myType);
-                        kind = TypeExtractor.GetElementKind(myType);
-                        Assert.IsFalse(kind == ClrElementKind.Unknown);
-                    }
-
-                    values[i] = ValueExtractor.GetTypeValueAsString(heap, addr, myType, kind);
-                    if (sw != null)
-                        sw.WriteLine(Utils.RealAddressStringHeader(addr) + values[i] + Constants.HeavyGreekCrossPadded + (clrType==null?myType.Name:string.Empty));
-                }
-                return values;
-            }
-            catch (Exception ex)
-            {
-                error = ex.ToString();
-                return null;
-            }
-            finally
-            {
-                sw?.Close();
-            }
-        }
-
-        private static string[] GetTypeValues(DumpIndex index, ClrHeap heap, string typeName, string path)
-        {
-            string error;
-            int typeId = index.GetTypeId(typeName);
-            ulong[] addrs = index.GetTypeRealAddresses(typeId);
-
-            if (addrs != null || addrs.Length > 0)
-            {
-                ClrType clrType = heap.GetObjectType(addrs[0]);
-                Assert.IsNotNull(clrType);
-                ClrElementKind kind = TypeExtractor.GetElementKind(clrType);
-                Assert.IsFalse(kind == ClrElementKind.Unknown);
-                Assert.IsTrue(Utils.SameStrings(clrType.Name,typeName));
-                string[] values = GetTypeValueAsStringOfAll(heap, clrType, kind, addrs, out error, path);
-                Assert.IsNull(error, error);
-                Assert.IsNotNull(values);
-                return values;
-            }
-            return Utils.EmptyArray<string>.Value;
-        }
-
-        private static string[] GetTypeValues(DumpIndex index, ClrHeap heap, ulong[] addrs, string path)
-        {
-            string error;
-            if (addrs != null || addrs.Length > 0)
-            {
-                string[] values = GetTypeValueAsStringOfAll(heap, null, ClrElementKind.Unknown, addrs, out error, path);
-                Assert.IsNull(error, error);
-                Assert.IsNotNull(values);
-                return values;
-            }
-            return Utils.EmptyArray<string>.Value;
-        }
-
         [TestMethod]
         public void GetTypeFieldInfo()
         {
@@ -1814,47 +1743,6 @@ namespace UnitTestMdr
                     index.GetTypeInfo(typeNameIn, out error);
                 Assert.IsTrue(error == null, error);
             }
-        }
-
-        [TestMethod]
-        public void GetTypeValueAsString_Test()
-        {
-            string error = null;
-            var index = OpenIndex(@"D:\Jerzy\WinDbgStuff\dumps\TestApp\TestApp.exe_170818_102413.dmp.map");
-            //var index = OpenIndex(@"D:\Jerzy\WinDbgStuff\dumps\Analytics\Cowen\Cowen.Analytics.Svc_170717_165238.dmp.map");
-            //var index = OpenIndex(@"D:\Jerzy\WinDbgStuff\dumps\Analytics\Highline\analyticsdump111.dlk.new2.dmp.map");
-
-            using (index)
-            {
-                var heap = index.Heap;
-
-                try
-                {
-                    string[] values = null;
-                    ulong[] addrs = null;
-                    var folder = index.OutputFolder + Path.DirectorySeparatorChar;
-
-#if FALSE
-                    values = GetTypeValues(index, heap, "System.Guid", folder + "System.Guid" + ".Values" + ".txt");
-                    values = GetTypeValues(index, heap, "System.DateTime", folder + "System.DateTime" + ".Values" + ".txt");
-                    values = GetTypeValues(index, heap, "System.TimeSpan", folder + "System.TimeSpan" + ".Values" + ".txt");
-                    values = GetTypeValues(index, heap, "System.Decimal", folder + "System.Decimal" + ".Values" + ".txt");
-
-                    addrs = index.GetSpecialKindTypeInstances(ClrElementKind.Exception);
-                    values = GetTypeValues(index, heap, addrs, folder + "Exception" + ".Values" + ".txt");
-#endif
-                    addrs = index.GetSpecialKindTypeInstances(ClrElementKind.Enum);
-                    values = GetTypeValues(index, heap, addrs, folder + "Enum" + ".Values" + ".txt");
-                }
-                catch (Exception ex)
-                {
-                    error = ex.ToString();
-                    Assert.IsTrue(false, error);
-                    TestContext.WriteLine(Environment.NewLine + error);
-                }
-            }
-
-            Assert.IsNull(error, error);
         }
 
         [TestMethod]
@@ -2243,15 +2131,100 @@ namespace UnitTestMdr
                 // TODO JRD TEST 0x0000dc8b884de0 ERROR Unexpected special kind Crash Dump: a6.dmp(x64) MDR Desk  0.9.0.18[64 - bit] ❖ a6.dmp
                 // TODO JRD TEST 0x0000de8bb32c58 System.Collections.Generic.Dictionary<Eze.Server.Common.Pulse.Common.Types.RelatedViews,System.Object>
                 // TODO JRD TEST 0x0000dc8c06a748 System.Collections.Generic.HashSet<System.String>
+                @"D:\Jerzy\WinDbgStuff\dumps\Analytics\CNS\Analytics8dmp_052318.dmp.map",
+                // 0x0000b99bd13428 System.Collections.Generic.Dictionary<System.String,Eze.Server.Common.Pulse.Common.Types.RelatedViews>
             };
 
-            var index = OpenIndex(paths[1]);
-            ulong addr = 0x0000a1ad9d3cf8;
+            var index = OpenIndex(paths[4]);
+            ulong addr = 0x0000b99bd13428;
             using (index)
             {
                 var heap = index.Heap;
                 (string error, KeyValuePair<string, string>[] descr, KeyValuePair<string, string>[] values) = CollectionContent.DictionaryContentAsStrings(heap, addr);
                 Assert.IsNull(error, error);
+                Array.Sort(values,new Utils.KVStrStrCmp());
+
+            }
+        }
+
+        [TestMethod]
+        public void Specific_Dictionaries()
+        {
+            string outDir = @"D:\Jerzy\ezeprojects\OPAMS\2082 CNS High Memory Due to Resynch\";
+            string indexPath = @"D:\Jerzy\WinDbgStuff\dumps\Analytics\CNS\Analytics8dmp_052318.dmp.map";
+            // 0x0000b99bd13428 System.Collections.Generic.Dictionary<System.String,Eze.Server.Common.Pulse.Common.Types.RelatedViews>
+            // 0x0000b99bf7e3f8 System.Collections.Generic.Dictionary<System.String,System.Collections.Generic.Dictionary<System.String,System.Boolean>>
+            ulong addr0 = 0x0000b99bd13428;
+            ulong addr = 0x0000b99bf7e3f8;
+
+            var rviews = new SortedDictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+            var endPoints = new SortedDictionary<string, string[]>(StringComparer.OrdinalIgnoreCase);
+
+            var index = OpenIndex(indexPath);
+            using (index)
+            {
+                string error;
+                KeyValuePair< string, string>[] descr;
+                KeyValuePair<string, string>[] values, values2;
+                var heap = index.Heap;
+
+                (error, descr, values) = CollectionContent.DictionaryContentAsStrings(heap, addr0);
+                Assert.IsNull(error, error);
+                for (int i = 0, icnt = values.Length; i < icnt; ++i)
+                {
+                    rviews.Add(values[i].Key, values[i].Value);
+                }
+
+                (error, descr, values) = CollectionContent.DictionaryContentAsStrings(heap, addr);
+                for (int i = 0, icnt = values.Length; i < icnt; ++i)
+                {
+                    string rvAddr = values[i].Value;
+                    ulong a = ulong.Parse(rvAddr.Substring(2), NumberStyles.HexNumber | NumberStyles.AllowHexSpecifier);
+                    (error, descr, values2) = CollectionContent.DictionaryContentAsStrings(heap, a);
+                    string[] ary = new string[values2.Length];
+                    for (int j = 0, jcnt = values2.Length; j < jcnt; ++j)
+                    {
+                        string key = values2[j].Key;
+                        string rvaddr;
+                        if (!rviews.TryGetValue(key, out rvaddr)) rvaddr = Constants.InvalidAddressStr;
+                        ary[j] = rvaddr + Constants.HeavyGreekCrossPadded + key;
+                    }
+                    endPoints.Add(values[i].Key, ary);
+                }
+
+                StreamWriter sw = null;
+                try
+                {
+                    string path = outDir + "RelatedViewsListManager.txt";
+                    sw = new StreamWriter(path);
+                    foreach(var kv in rviews)
+                    {
+                        sw.WriteLine(kv.Value + Constants.HeavyGreekCrossPadded + kv.Key);
+                    }
+                    sw.Close();
+                    sw = null;
+
+                    path = outDir + "Subscriptions.txt";
+                    sw = new StreamWriter(path);
+                    foreach(var kv in endPoints)
+                    {
+                        sw.WriteLine(kv.Key);
+                        for (int i = 0, icnt = kv.Value.Length; i < icnt; ++i)
+                        {
+                            sw.WriteLine("   " + kv.Value[i]);
+                        }
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Assert.IsTrue(false, ex.ToString());
+                }
+                finally
+                {
+                    sw?.Close();
+                }
+
+ 
             }
         }
 

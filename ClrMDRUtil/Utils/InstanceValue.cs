@@ -75,6 +75,11 @@ namespace ClrMDRIndex
 			_fields = fields;
 	    }
 
+        public bool IsValueClass()
+        {
+            return TypeExtractor.IsValueClass(_kind);
+        }
+
         public void AddArrayTypes(List<string> lst)
         {
             Debug.Assert(lst.Count > 2);
