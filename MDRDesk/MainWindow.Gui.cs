@@ -641,7 +641,7 @@ namespace MDRDesk
 
         #region type references
 
-        private void DisplayTypeAncestorsGraph(AncestorNode root, InstanceReferences.ReferenceType flag)
+        private void DisplayTypeAncestorsGraph(AncestorNode root, int totalNodeCount, int totalInstanceCount, int maxLevel, InstanceReferences.ReferenceType flag)
         {
             try
             {
@@ -698,7 +698,7 @@ namespace MDRDesk
                 Debug.Assert(grid != null);
                 var graphGrid = (Grid)LogicalTreeHelper.FindLogicalNode(grid, "ReferenceGrid");
                 var graphLabel = (Label)LogicalTreeHelper.FindLogicalNode(grid, "RfGraphDescription");
-                graphLabel.Content = GetGraphDescription(root, flag);
+                graphLabel.Content = GetGraphDescription(root, flag, totalNodeCount, totalInstanceCount, maxLevel);
                 Debug.Assert(graphGrid != null);
                 GraphViewer graphViewer = new GraphViewer();
                 graphViewer.GraphCanvas.HorizontalAlignment = HorizontalAlignment.Stretch;
@@ -909,7 +909,7 @@ namespace MDRDesk
             return Color.WhiteSmoke;
         }
 
-        TextBlock GetGraphDescription(AncestorNode node, InstanceReferences.ReferenceType flag)
+        TextBlock GetGraphDescription(AncestorNode node, InstanceReferences.ReferenceType flag, int totalNodeCount, int totalInstanceCount, int maxLevel)
         {
             var txtBlk = new TextBlock();
 
@@ -927,6 +927,11 @@ namespace MDRDesk
                 txtBlk.Inlines.Add(new Run(" finalizer  ") { Foreground = Brushes.DarkRed, FontStyle = FontStyles.Italic, FontWeight = FontWeights.Bold, FontSize = 10 });
             if ((flag & InstanceReferences.ReferenceType.All) != InstanceReferences.ReferenceType.None)
                 txtBlk.Inlines.Add(new Run(" all ") { Foreground = Brushes.DarkRed, FontStyle = FontStyles.Italic, FontWeight = FontWeights.Bold, FontSize = 10 });
+
+            string tnc = Utils.CountString(totalNodeCount);
+            string tic = Utils.CountString(totalInstanceCount);
+            txtBlk.Inlines.Add(new Run("  N:" + tnc + ", I:" + tic + ", D:" + maxLevel.ToString()) { Foreground = Brushes.Black, FontStyle = FontStyles.Italic, FontWeight = FontWeights.Bold, FontSize = 12 });
+
             return txtBlk;
         }
 
@@ -1431,8 +1436,8 @@ namespace MDRDesk
                     return;
                 }
                 SetEndTaskMainWindowState("Getting parent references for: '" + Utils.BaseTypeName(typeName) + "', done.");
-                if (dispMode == ReferenceSearchSetup.DispMode.Graph) DisplayTypeAncestorsGraph(report.Item2,searchFlag);
-                else DisplayTypeAncestorsTree(report.Item2, searchFlag);
+                if (dispMode == ReferenceSearchSetup.DispMode.Graph) DisplayTypeAncestorsGraph(report.Item2, report.Item3, report.Item4, report.Item5, searchFlag);
+                else DisplayTypeAncestorsTree(report.Item2, report.Item3, report.Item4, report.Item5, searchFlag);
             }
         }
 
@@ -1510,7 +1515,7 @@ namespace MDRDesk
                 SetStartTaskMainWindowState(msg + "please wait...");
 
                 //(string error, AncestorNode node) = await Task.Run(() => CurrentIndex.GetParentTree(addr, level));
-                (string error, AncestorNode node) = await Task.Factory.StartNew(() =>
+                (string error, AncestorNode node, int totalNodeCnt, int totalInstCnt, int maxLevel) = await Task.Factory.StartNew(() =>
                 {
                     return CurrentIndex.GetParentTree(addr, level, InstanceReferences.ReferenceType.Ancestors | InstanceReferences.ReferenceType.All);
                 }, DumpSTAScheduler);
@@ -1522,8 +1527,8 @@ namespace MDRDesk
                     return;
                 }
                 SetEndTaskMainWindowState(msg + "done.");
-                if (dispMode == ReferenceSearchSetup.DispMode.Graph) DisplayTypeAncestorsGraph(node, direction | dataSource);
-                else DisplayTypeAncestorsTree(node, direction|dataSource);
+                if (dispMode == ReferenceSearchSetup.DispMode.Graph) DisplayTypeAncestorsGraph(node, totalNodeCnt, totalInstCnt, maxLevel, direction | dataSource);
+                else DisplayTypeAncestorsTree(node, totalNodeCnt, totalInstCnt, maxLevel, direction|dataSource);
             }
         }
 
@@ -2128,7 +2133,7 @@ namespace MDRDesk
         //    MainTab.UpdateLayout();
         //}
 
-        private void DisplayTypeAncestorsTree(AncestorNode root, InstanceReferences.ReferenceType flag)
+        private void DisplayTypeAncestorsTree(AncestorNode root, int totalNodeCnt, int totalInstCnt, int maxLevel, InstanceReferences.ReferenceType flag)
         {
             // populate tree view
             TreeViewItem tvRoot = new TreeViewItem();
@@ -2169,20 +2174,8 @@ namespace MDRDesk
             bool ascending = (flag & InstanceReferences.ReferenceType.Ancestors) != InstanceReferences.ReferenceType.None;
             txtBlk.Tag = ascending; // true if fields -> class refs
             Debug.Assert(txtBlk != null);
-            //if (root.Data is Tuple<string, int>)
-            //{
-            //    txtBlk.Inlines.Add(new Run(root.TypeName + " \"") { FontSize = 16, FontWeight = FontWeights.Bold });
-            //    var data = root.Data as Tuple<string, int>;
-            //    var str = data.Item1;
-            //    var cnt = data.Item2; // TODO JRD
-            //    txtBlk.Inlines.Add(new Run(ShortenString(str, 60)) { FontSize = 12, Foreground = Brushes.Green });
-            //    txtBlk.Inlines.Add(new Run("\"") { FontSize = 16, FontWeight = FontWeights.Bold });
-            //}
-            //else
-            //{
             txtBlk.Inlines.Add(new Run(root.TypeName) { FontSize = 16, FontWeight = FontWeights.Bold });
             txtBlk.Inlines.Add(new Run("   ref type: " + (ascending ? "FIELDS->CLASS" : "CLASS->FIELDS")) { FontSize = 14, FontWeight = FontWeights.Bold, FontStyle = FontStyles.Italic, Foreground = Brushes.SlateGray });
-            //}
 
             txtBlk.Inlines.Add(Environment.NewLine);
 
@@ -2192,6 +2185,11 @@ namespace MDRDesk
             txtBlk.Inlines.Add(Environment.NewLine);
             txtBlk.Inlines.Add(new Run("Instance addresses of the selected node are shown in the list box. To inspect individual instances right click on selected address.") { Foreground = Brushes.Chocolate, FontSize = 12, FontStyle = FontStyles.Italic, FontWeight = FontWeights.DemiBold });
             txtBlk.Inlines.Add(Environment.NewLine);
+
+            var txtBlkNodesInfo = (TextBlock)LogicalTreeHelper.FindLogicalNode(grid, "TreeNodesInfo");
+            string tnc = Utils.CountString(totalNodeCnt);
+            string tic = Utils.CountString(totalInstCnt);
+            txtBlkNodesInfo.Inlines.Add(new Run("  N:" + tnc + ", I:" + tic + ", D:" + maxLevel.ToString()) { Foreground = Brushes.Black, FontStyle = FontStyles.Italic, FontWeight = FontWeights.Bold, FontSize = 12 });
 
             var tab = new CloseableTabItem() { Header = Constants.BlackDiamond + " Type References", Content = grid, Name = "HeapIndexTypeViewTab" };
             MainTab.Items.Add(tab);
@@ -2358,12 +2356,12 @@ namespace MDRDesk
                 return;
             }
             SetEndTaskMainWindowState("Getting parent references for: '" + Utils.BaseTypeName(baseTypeName) + "', done.");
-            if (dispMode == ReferenceSearchSetup.DispMode.Tree) DisplayTypeAncestorsTree(report.Item2,searchFlag);
-            else if (dispMode == ReferenceSearchSetup.DispMode.Graph) DisplayTypeAncestorsGraph(report.Item2, searchFlag);
+            if (dispMode == ReferenceSearchSetup.DispMode.Tree) DisplayTypeAncestorsTree(report.Item2, report.Item3, report.Item4, report.Item5, searchFlag);
+            else if (dispMode == ReferenceSearchSetup.DispMode.Graph) DisplayTypeAncestorsGraph(report.Item2, report.Item3, report.Item4, report.Item5, searchFlag);
             else
             {
                 Debug.Assert(dispMode == ReferenceSearchSetup.DispMode.List);
-                DisplayTypeAncestorsTree(report.Item2,searchFlag);
+                DisplayTypeAncestorsTree(report.Item2, report.Item3, report.Item4, report.Item5, searchFlag);
             }
         }
 

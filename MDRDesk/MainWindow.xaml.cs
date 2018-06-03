@@ -1298,7 +1298,7 @@ namespace MDRDesk
                                     Dispatcher.CurrentDispatcher.InvokeAsync(() => GuiUtils.ShowError(task.Result.Item1,this));
                                     return;
                                 }
-                                DisplayTypeAncestorsTree(task.Result.Item2, InstanceReferences.ReferenceType.Ancestors| InstanceReferences.ReferenceType.All);
+                                DisplayTypeAncestorsTree(task.Result.Item2, 0, 0, 0, InstanceReferences.ReferenceType.Ancestors| InstanceReferences.ReferenceType.All);
                                 break;
                             case ReportTitleSTypesWithString:
                                 selStr = entries[ndx].Second;

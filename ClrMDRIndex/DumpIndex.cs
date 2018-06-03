@@ -1084,7 +1084,7 @@ namespace ClrMDRIndex
 
         #region instance references
 
-        public ValueTuple<string, AncestorNode> GetParentTree(ulong address, int levelMax, InstanceReferences.ReferenceType flag)
+        public ValueTuple<string, AncestorNode, int, int, int> GetParentTree(ulong address, int levelMax, InstanceReferences.ReferenceType flag)
         {
             string error = null;
             try
@@ -1093,7 +1093,7 @@ namespace ClrMDRIndex
                 if (instanceId < 0)
                 {
                     error = "Cannot find instance at address: " + Utils.AddressString(address);
-                    return (error, null);
+                    return (error, null, 0, 0, 0);
                 }
                 var typeId = _instanceTypes[instanceId];
                 var typeName = _typeNames[typeId];
@@ -1104,28 +1104,28 @@ namespace ClrMDRIndex
             catch (Exception ex)
             {
                 error = Utils.GetExceptionErrorString(ex);
-                return (error, null);
+                return (error, null, 0, 0, 0);
             }
         }
 
-        public ValueTuple<string, AncestorNode> GetParentTree(int typeId, int levelMax, InstanceReferences.ReferenceType refType, int[] instances)
+        public ValueTuple<string, AncestorNode, int, int, int> GetParentTree(int typeId, int levelMax, InstanceReferences.ReferenceType refType, int[] instances)
         {
             try
             {
                 string typeName = GetTypeName(typeId);
                 if (instances == null) instances = GetTypeInstanceIndices(typeId, refType);
                 if (instances.Length < 1)
-                    return ("Cannot find find instances of type: " + GetTypeName(typeId), null);
+                    return ("Cannot find find instances of type: " + GetTypeName(typeId), null, 0, 0, 0);
                 var rootNode = new AncestorNode(null, 0, 0, typeId, typeName, instances);
                 return GetParentTree(rootNode, levelMax, refType);
             }
             catch (Exception ex)
             {
-                return (Utils.GetExceptionErrorString(ex), null);
+                return (Utils.GetExceptionErrorString(ex), null, 0, 0, 0);
             }
         }
 
-        public ValueTuple<string, AncestorNode> GetParentTree(int typeId, int[] instIds, int levelMax, InstanceReferences.ReferenceType flag)
+        public ValueTuple<string, AncestorNode, int, int, int> GetParentTree(int typeId, int[] instIds, int levelMax, InstanceReferences.ReferenceType flag)
         {
             try
             {
@@ -1135,22 +1135,26 @@ namespace ClrMDRIndex
             }
             catch (Exception ex)
             {
-                return (Utils.GetExceptionErrorString(ex), null);
+                return (Utils.GetExceptionErrorString(ex), null, 0, 0, 0);
             }
         }
 
-        public ValueTuple<string, AncestorNode> GetParentTree(AncestorNode rootNode, int levelMax, InstanceReferences.ReferenceType flag)
+        public ValueTuple<string, AncestorNode, int, int, int> GetParentTree(AncestorNode rootNode, int levelMax, InstanceReferences.ReferenceType flag)
         {
             string error = null;
             try
             {
-                HashSet<int> set = new HashSet<int>();
+                Set<int> set = new Set<int>();
                 Queue<AncestorNode> que = new Queue<AncestorNode>(Math.Min(1000, rootNode.Instances.Length));
                 var dct = new SortedDictionary<int, ValueTuple<string, List<int>, int, int>>();
                 que.Enqueue(rootNode);
+                int totalNodeCount = 1;
+                int totalInstanceCount = 0;
+                int level = rootNode.Level;
                 while (que.Count > 0)
                 {
                     AncestorNode currentNode = que.Dequeue();
+
                     dct.Clear();
                     int currentNodeLevel = currentNode.Level + 1;
                     if (currentNodeLevel >= levelMax) continue;
@@ -1159,6 +1163,7 @@ namespace ClrMDRIndex
                     {
                         var inst = instances[i];
                         if (!set.Add(inst)) continue;
+                        ++totalInstanceCount;
                         int[] ancestors;
                         if (Setup.MapRefReader)
                             ancestors = _instanceReferences.GetMappedReferences(inst, out error, flag);
@@ -1196,14 +1201,16 @@ namespace ClrMDRIndex
                         ++n;
                     }
                     currentNode.AddNodes(nodes);
+                    if (nodes.Length > 0) level = nodes[0].Level;
+                    totalNodeCount += nodes.Length;
                     currentNode.Sort(AncestorNode.SortAncestors.ByteInstanceCountDesc);
                 }
-                return (null, rootNode);
+                return (null, rootNode, totalNodeCount, totalInstanceCount, level);
             }
             catch (Exception ex)
             {
                 error = Utils.GetExceptionErrorString(ex);
-                return (error, null);
+                return (error, null, 0, 0, 0);
             }
         }
 
@@ -3092,7 +3099,7 @@ namespace ClrMDRIndex
 
                 var indices = GetInstanceIndices(addresses);
                 int typeId = GetTypeId("System.String");
-                (string err, AncestorNode node) = GetParentTree(typeId, indices, 2, InstanceReferences.ReferenceType.Ancestors | InstanceReferences.ReferenceType.All);
+                (string err, AncestorNode node, int totalNodeCnt, int totalInstCnt, int level) = GetParentTree(typeId, indices, 2, InstanceReferences.ReferenceType.Ancestors | InstanceReferences.ReferenceType.All);
                 if (err != null)
                 {
                     return (err, null);
