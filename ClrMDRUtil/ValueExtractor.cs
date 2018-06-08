@@ -1930,6 +1930,25 @@ namespace ClrMDRIndex
 
         #region utils
 
+        public static string GetFieldString(ClrHeap heap, ulong addr, ClrType type, string[] fldNames)
+        {
+            int ndx = 0;
+            ClrInstanceField fld = type.GetFieldByName(fldNames[ndx++]);
+            ClrType valType = type;
+            while(ndx < fldNames.Length)
+            {
+                object val = fld.GetValue(addr, valType.IsValueClass, false);
+                ulong valAddr = val != null ? (ulong)val : 0UL;
+                if (valAddr == 0UL) return Constants.UnknownValue;
+                addr = valAddr;
+                valType = heap.GetObjectType(addr);
+                if (valType == null) return Constants.UnknownValue;
+                fld = valType.GetFieldByName(fldNames[ndx++]);
+            }
+            string strVal = fld.GetValue(addr, valType.IsValueClass, true) as string;
+            return (strVal == null) ? Constants.NullValue : strVal;
+        }
+
         public static ValueTuple<ClrType, ClrInstanceField, ClrElementKind> FindFieldByName(ValueTuple<ClrType, ClrInstanceField, ClrElementKind>[] fldInfos, string name)
         {
             for (int i = 0, icnt = fldInfos.Length; i < icnt; ++i)

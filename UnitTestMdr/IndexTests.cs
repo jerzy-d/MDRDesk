@@ -916,6 +916,146 @@ namespace UnitTestMdr
 
         #region references
 
+        [TestMethod]
+        public void CompareRefs()
+        {
+            var index = OpenIndex(@"D:\Jerzy\WinDbgStuff\dumps\Analytics\CNS\Analytics8dmp_052318.dmp.map");
+            string output = null;
+            int targetLevel = 32;
+            ulong badAddr = 0x0000b91bef9100; // 0x0000bd0aff15d8; //  0x0000ba22edf030;
+            ulong goodAddr = 0x0000bd0b7f06b8; // 0x0000ba22edf030; //  0x0000bf95486dd0;
+            var dct0 = new SortedDictionary<int, SortedDictionary<string, int>>();
+            var dct1 = new SortedDictionary<int, SortedDictionary<string, int>>();
+
+            using (index)
+            {
+                output = index.OutputFolder + Path.DirectorySeparatorChar + "GraphDiffRowCache.txt";
+                (string error0, AncestorNode node0, int totalNodeCnt0, int totalInstCnt0, int maxLevel0) = 
+                    index.GetParentTree(goodAddr, targetLevel, InstanceReferences.ReferenceType.Ancestors | InstanceReferences.ReferenceType.All);
+                GatherTypes(dct0, node0);
+                node0 = null;
+                (string error1, AncestorNode node1, int totalNodeCnt1, int totalInstCnt1, int maxLevel1) =
+                    index.GetParentTree(badAddr, targetLevel, InstanceReferences.ReferenceType.Ancestors | InstanceReferences.ReferenceType.All);
+                GatherTypes(dct1, node1);
+                node1 = null;
+            }
+            index = null;
+            StreamWriter sw = null;
+            try
+            {
+                sw = new StreamWriter(output);
+                sw.WriteLine("good: " + Utils.RealAddressStringHeader(goodAddr) + " -> bad: " + Utils.RealAddressStringHeader(badAddr));
+
+                var d0empty = new SortedDictionary<string, int>(StringComparer.Ordinal);
+                var d1empty = new SortedDictionary<string, int>(StringComparer.Ordinal);
+
+                for (int i = 1; i <= targetLevel; ++i)
+                {
+                    SortedDictionary<string, int> d0;
+                    dct0.TryGetValue(i, out d0);
+                    if (d0 == null) d0 = d0empty;
+                    SortedDictionary<string, int> d1;
+                    dct1.TryGetValue(i, out d1);
+                    if (d1 == null) d1 = d1empty;
+
+                    sw.WriteLine("### LEVEL " + i.ToString());
+
+                    var enum0 = d0.GetEnumerator();
+                    bool i0 = enum0.MoveNext();
+                    var enum1 = d1.GetEnumerator();
+                    bool i1 = enum1.MoveNext();
+                    while (i0 && i1)
+                    {
+                        int cmp = string.Compare(enum0.Current.Key,enum1.Current.Key,StringComparison.Ordinal);
+                        if (cmp < 0)
+                        {
+                            sw.Write(Utils.CountStringHeader(enum0.Current.Value));
+                            sw.Write(Utils.CountStringHeader(0));
+                            sw.WriteLine(enum0.Current.Key);
+                            i0 = enum0.MoveNext();
+                        }
+                        else if (cmp > 0)
+                        {
+                            sw.Write(Utils.CountStringHeader(0));
+                            sw.Write(Utils.CountStringHeader(enum1.Current.Value));
+                            sw.WriteLine(enum1.Current.Key);
+                            i1 = enum1.MoveNext();
+                        }
+                        else
+                        {
+                            sw.Write(Utils.CountStringHeader(enum0.Current.Value));
+                            sw.Write(Utils.CountStringHeader(enum1.Current.Value));
+                            sw.WriteLine(enum0.Current.Key);
+                            i0 = enum0.MoveNext();
+                            i1 = enum1.MoveNext();
+                        }
+                    }
+                    while(i0)
+                    {
+                        sw.Write(Utils.CountStringHeader(enum0.Current.Value));
+                        sw.Write(Utils.CountStringHeader(0));
+                        sw.WriteLine(enum0.Current.Key);
+                        i0 = enum0.MoveNext();
+                    }
+                    while (i1)
+                    {
+                        sw.Write(Utils.CountStringHeader(0));
+                        sw.Write(Utils.CountStringHeader(enum1.Current.Value));
+                        sw.WriteLine(enum1.Current.Key);
+                        i1 = enum1.MoveNext();
+                    }
+                }
+            }
+            catch(Exception ex)
+            {
+                Assert.IsTrue(false, ex.ToString());
+            }
+            finally
+            {
+                sw?.Close();
+            }
+
+        }
+
+        private void GatherTypes(SortedDictionary<int, SortedDictionary<string, int>> dct, AncestorNode root)
+        {
+            var que = new Queue<AncestorNode>();
+            que.Enqueue(root);
+            while (que.Count > 0)
+            {
+                var parentNode = que.Dequeue();
+                AddType(dct, parentNode.Level, parentNode.TypeName);
+                if (parentNode.Ancestors == null || parentNode.Ancestors.Length < 1) continue;
+                for(int i = 0, icnt = parentNode.Ancestors.Length; i < icnt; ++i)
+                {
+                    que.Enqueue(parentNode.Ancestors[i]);
+                }
+            }
+        }
+
+        private void AddType(SortedDictionary<int, SortedDictionary<string, int>> dct, int level, string typeName)
+        {
+            SortedDictionary<string, int> data;
+            if (dct.TryGetValue(level, out data))
+            {
+                int cnt;
+                if (data.TryGetValue(typeName,out cnt))
+                {
+                    data[typeName] = cnt + 1;
+                }
+                else
+                {
+                    data.Add(typeName, 1);
+                }
+            }
+            else
+            {
+                data = new SortedDictionary<string, int>(StringComparer.Ordinal);
+                data.Add(typeName, 1);
+                dct.Add(level, data);
+            }
+        }
+
         ulong[] AddressDiffs(string path0, string path1, out string error)
         {
             error = null;
@@ -2054,17 +2194,66 @@ namespace UnitTestMdr
                 // TODO JRD TEST 0x0000dc8c06a748 System.Collections.Generic.HashSet<System.String>
                 @"D:\Jerzy\WinDbgStuff\dumps\Analytics\CNS\Analytics8dmp_052318.dmp.map",
                 // 0x0000b99bd13428 System.Collections.Generic.Dictionary<System.String,Eze.Server.Common.Pulse.Common.Types.RelatedViews>
+                // 0x0000bb1f196c50 System.Collections.Generic.Dictionary<System.String,ECS.Common.HierarchyCache.Structure.Position>
             };
 
             var index = OpenIndex(paths[4]);
-            ulong addr = 0x0000b99bd13428;
+            ulong addr = 0x0000bb1f196c50;
+            var lst = new List<string>(1024 * 5);
+
+            string[] cashEffectPrt = new[] { "portfolio", "prtName" };
+            string[] cashEffectSec = new[] { "cashEffectSecurity", "securitySimpleState", "Symbol" };
+
+            string[] whatIfPrt = new[] { "portcd" };
+            string[] whatIfSec = new[] { "sec", "securitySimpleState", "Symbol" };
+
             using (index)
             {
                 var heap = index.Heap;
                 (string error, KeyValuePair<string, string>[] descr, KeyValuePair<string, string>[] values) = CollectionContent.DictionaryContentAsStrings(heap, addr);
                 Assert.IsNull(error, error);
-                Array.Sort(values,new Utils.KVStrStrCmp());
+                for (int i = 0, icnt = values.Length; i < icnt; ++i)
+                {
+                    var add = Utils.GetAddressValue(values[i].Value);
+                    var clrType = heap.GetObjectType(add);
+                    Assert.IsNotNull(clrType);
+                    string portfolio = Constants.UnknownValue;
+                    string symbol = Constants.UnknownValue;
+                    if (clrType.Name.EndsWith(".CashEffectPosition"))
+                    {
+                        portfolio = ValueExtractor.GetFieldString(heap, add, clrType, cashEffectPrt);
+                        symbol = ValueExtractor.GetFieldString(heap, add, clrType, cashEffectSec);
+                    }
+                    else if (clrType.Name.EndsWith(".WhatIfPosition") || clrType.Name.EndsWith(".RealPosition"))
+                    {
+                        portfolio = ValueExtractor.GetFieldString(heap, add, clrType, whatIfPrt);
+                        symbol = ValueExtractor.GetFieldString(heap, add, clrType, whatIfSec);
+                    }
+                    lst.Add(portfolio + Constants.HeavyGreekCrossPadded
+                                + symbol + Constants.HeavyGreekCrossPadded
+                                + values[i].Key + Constants.HeavyGreekCrossPadded
+                                + values[i].Value + Constants.HeavyGreekCrossPadded
+                                + clrType.Name);
+                }
 
+                lst.Sort();
+                StreamWriter sw = null;
+                try
+                {
+                    sw = new StreamWriter(index.OutputFolder + Path.DirectorySeparatorChar + "SESSIONS.txt");
+                    foreach(var item in lst)
+                    {
+                        sw.WriteLine(item);
+                    }
+                }
+                catch(Exception ex)
+                {
+                    Assert.IsTrue(false, ex.ToString());
+                }
+                finally
+                {
+                    sw?.Close();
+                }
             }
         }
 

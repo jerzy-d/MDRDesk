@@ -140,3 +140,6 @@
 			defaultPositionCalculationOptions    0x00000400650e58    ECS.Common.HierarchyCache.Structure.PositionCalculationOptions
 				### ERROR when double click on the below
 				storedMarketDataSetIds    0x00000400650ed0    System.Collections.Generic.List<System.Collections.Generic.KeyValuePair<System.Guid,ECS.Common.HierarchyCache.MarketData.MarketDataSetType>>
+0054 06/05/18n ECS.Common.HierarchyCache.Manager.MarketDataManager
+				optionsById    0x0000bb9bdded68    System.Collections.Concurrent.ConcurrentDictionary<System.Int32,ECS.Common.HierarchyCache.Structure.PositionCalculationOptions>
+				reading ConcurrentDictionary content does not work
