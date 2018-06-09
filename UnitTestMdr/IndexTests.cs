@@ -1772,7 +1772,6 @@ namespace UnitTestMdr
         [TestMethod]
         public void InstanceValue_Test()
         {
-            string error = null;
             var index = OpenIndex(@"D:\Jerzy\WinDbgStuff\dumps\Analytics\Baly\AnalyticsLatencyDump06062016 03354291.dmp.map");
             ulong addr = 0x0000a1ad9d3cf8;
             //var index = OpenIndex(@"C:\WinDbgStuff\dumps\Analytics\Baly\AnalyticsLatencyDump06062016 03354291.dmp.map");
@@ -2636,7 +2635,6 @@ namespace UnitTestMdr
             DirectoryInfo di = new DirectoryInfo(folder1);
             foreach(var fi in di.EnumerateFiles())
             {
-                ValueTuple<long, long> val;
                 dct.Add(fi.Name, (fi.Length,-1));
             }
             di = new DirectoryInfo(folder2);
