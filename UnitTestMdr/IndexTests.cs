@@ -487,7 +487,59 @@ namespace UnitTestMdr
 			Assert.IsNull(error, error);
 		}
 
-		#endregion type default values
+        #endregion type default values
+
+        #region get values report
+
+        [TestMethod]
+        public void GetValuesReport()
+        {
+            //string indexPath = @"D:\Jerzy\WinDbgStuff\dumps\Analytics\PrimeCap\a6.dmp.map";
+            //string indexPath = @"D:\Jerzy\WinDbgStuff\dumps\Analytics\Healthcor\analytics.dmp.map";
+            string indexPath = @"D:\Jerzy\WinDbgStuff\dumps\Analytics\Baly\AnalyticsLatencyDump06062016 03354291.dmp.map";
+            string typeName = @"Eze.Server.Common.Pulse.Common.Types.CachedValue+One<System.Decimal>";
+
+            SortedDictionary<ValueTuple<ushort, short, decimal>, int> dct = new SortedDictionary<(ushort, short, decimal), int>();
+            string error = null;
+            var index = OpenIndex(indexPath);
+            using (index)
+            {
+                var heap = index.Heap;
+                var typeId = index.GetTypeId(typeName);
+                int unrooted;
+                ulong[] addresses = index.GetTypeInstances(typeId, out unrooted);
+                ClrType clrType = heap.GetObjectType(Utils.RealAddress(addresses[0]));
+                var kind = TypeExtractor.GetElementKind(clrType);
+                ClrInstanceField fldToggle = clrType.GetFieldByName(@"bitwiseCurrentPositionToggleState"); // System.UInt16
+                ClrInstanceField fldIndex = clrType.GetFieldByName(@"indexIntoPositionIndexToFieldNumberConversionSet"); //  System.Int16
+                ClrInstanceField fldOne = clrType.GetFieldByName(@"one"); // System.Decimal
+
+                for (int i = 0, icnt = addresses.Length; i < icnt; ++i)
+                {
+                    var addr = Utils.RealAddress(addresses[i]);
+                    decimal one = ValueExtractor.GetDecimalPAF(addr, fldOne, false);
+                    ushort toggle = (ushort)fldToggle.GetValue(addr, false, false);
+                    short ndx = (short)fldIndex.GetValue(addr, false, false);
+                    int cnt;
+                    if (dct.TryGetValue((toggle,ndx,one),out cnt))
+                    {
+                        dct[(toggle, ndx, one)] = cnt + 1;
+                    }
+                    else
+                    {
+                        dct.Add((toggle, ndx, one), 1);
+                    }
+
+                }
+
+            }
+
+            Assert.IsNull(error, error);
+        }
+
+
+
+        #endregion get values report
 
         [TestMethod]
         public void TestIndexing()
