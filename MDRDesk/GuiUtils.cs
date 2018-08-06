@@ -261,6 +261,9 @@ namespace MDRDesk
                     case ClrElementKind.Abstract:
                         image.Source = ((Image)Application.Current.FindResource("ClassPng")).Source;
                         break;
+                    case ClrElementKind.SystemNullable:
+                        image.Source = ((Image)Application.Current.FindResource("StructPng")).Source;
+                        break;
                 }
             }
             else

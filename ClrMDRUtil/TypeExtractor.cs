@@ -803,6 +803,7 @@ namespace ClrMDRIndex
                 {
                     switch (specKind)
                     {
+                        case ClrElementKind.SystemNullable:
                         case ClrElementKind.Exception:
                         case ClrElementKind.Enum:
                         case ClrElementKind.Free:
