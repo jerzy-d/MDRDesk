@@ -1444,6 +1444,15 @@ namespace ClrMDRIndex
                 return a.Key < b.Key ? -1 : 1;
             }
         }
+        public class KvIntStrDesc : IComparer<KeyValuePair<int, string>>
+        {
+            public int Compare(KeyValuePair<int, string> a, KeyValuePair<int, string> b)
+            {
+                if (a.Key == b.Key)
+                    return string.Compare(a.Value, b.Value, StringComparison.Ordinal);
+                return a.Key > b.Key ? -1 : 1;
+            }
+        }
 
         public class KvStrKindCmp : IComparer<KeyValuePair<string,ClrElementKind>>
         {

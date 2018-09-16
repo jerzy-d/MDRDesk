@@ -3133,6 +3133,78 @@ namespace UnitTestMdr
                 }
         }
 
+
+
+        [TestMethod]
+        public void SearchInstCouns()
+        {
+            string path1 = Setup.DumpsFolder + Path.DirectorySeparatorChar + "Analytics";
+            string path2 = Setup.DumpsFolder + Path.DirectorySeparatorChar + "Lou";
+            //string typeName = "System.Collections.Concurrent.ConcurrentDictionary+Node<System.Collections.Generic.KeyValuePair<ECS.Common.Collections.Common.EzeBitVector,System.Int32>,ECS.Common.Collections.Common.EzeBitVector>";
+            string typeName = "ECS.Pulse.Server.HierarchyCache.Queue.MessageQueueDirtySecurity.DirtySecurity";
+            List<KeyValuePair<int, string>> result = new List<KeyValuePair<int, string>>(128);
+            List<string> fileList = new List<string>(128);
+            StreamWriter sw = null;
+            Stopwatch stopWatch = new Stopwatch();
+            int countWithInstances = 0;
+            try
+            {
+                GetDumpFiles(path1, fileList);
+                GetDumpFiles(path2, fileList);
+                stopWatch.Start();
+                //            for (int d = 0, dcnt = fileList.Count; d < dcnt; ++d)
+                for (int d = 0, dcnt = fileList.Count; d < dcnt; ++d)
+                {
+                    string file = fileList[d];
+                    int count = 0;
+                    var dmp = OpenDump(file);
+                    using (dmp)
+                    {
+                        var heap = dmp.Heap;
+                        var segs = heap.Segments;
+                        for (int i = 0, icnt = segs.Count; i < icnt; ++i)
+                        {
+                            var seg = segs[i];
+                            ulong addr = seg.FirstObject;
+                            while (addr != 0ul)
+                            {
+                                var clrType = heap.GetObjectType(addr);
+                                if (clrType == null) goto NEXT_OBJECT;
+                                if (string.Compare(typeName, clrType.Name, StringComparison.Ordinal) != 0) goto NEXT_OBJECT;
+                                ++count;
+                                NEXT_OBJECT:
+                                addr = seg.NextObject(addr);
+                            }
+                        }
+                    }
+                    result.Add(new KeyValuePair<int, string>(count, file));
+                    if (count > 0) ++countWithInstances;
+                }
+                //sw = new StreamWriter(Setup.DumpsFolder + Path.DirectorySeparatorChar + "NodeCounts.txt");
+                sw = new StreamWriter(Setup.DumpsFolder + Path.DirectorySeparatorChar + "DirtySecurity.txt");
+                sw.WriteLine("Dump count : " + fileList.Count + ", duration " + Utils.StopAndGetDurationString(stopWatch));
+                sw.WriteLine("Searched for instances of: " + typeName);
+                sw.WriteLine("Count of dumps with the searched type: " + countWithInstances);
+                sw.WriteLine();
+                result.Sort(new Utils.KvIntStrDesc());
+                foreach(var kv in result)
+                {
+                    sw.Write(Utils.CountStringPadded(kv.Key));
+                    sw.WriteLine(kv.Value);
+                }
+
+            }
+            catch (Exception ex)
+            {
+                Assert.IsTrue(false, ex.ToString());
+            }
+            finally
+            {
+                sw?.Close();
+            }
+         }
+
+
         [TestMethod]
         public void SearchDctCouns()
         {
@@ -3157,6 +3229,7 @@ namespace UnitTestMdr
             var hist = new SortedDictionary<int, ValueTuple<int, int>>();
             var tothist = new SortedDictionary<int, ValueTuple<int, int>>();
             StreamWriter sw = null;
+
 
             try
             {

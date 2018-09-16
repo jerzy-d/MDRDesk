@@ -1403,6 +1403,8 @@ namespace ClrMDRIndex
                     case ClrElementKind.SystemObject:
                     case ClrElementKind.Interface:
                         return Utils.RealAddressString((ulong)val);
+                    case ClrElementKind.SystemNullable:
+                        return "true";
                     default:
                         throw new ArgumentException("[ValueExtractor.ValueToString(..)] Invalid kind: " + kind.ToString());
                 }
