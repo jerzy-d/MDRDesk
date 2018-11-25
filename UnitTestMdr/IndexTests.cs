@@ -2394,6 +2394,8 @@ namespace UnitTestMdr
         {
             string[] paths = new string[]
             {
+                @"D:\Jerzy\WinDbgStuff\dumps\Analytics\Viking\Analytics7.dmp",
+                // 0x0000e38c28e740 System.Collections.Concurrent.ConcurrentDictionary<System.Int32,ECS.Common.HierarchyCache.Structure.PositionCalculationOptions>
                 @"C:\WinDbgStuff\dumps\TestApp.exe_171224_113813.dmp",
                 // 0x0002a98000f1e8 System.Collections.Concurrent.ConcurrentDictionary<System.Int32,TestApp.TestEnum>
                 @"C:\WinDbgStuff\Dumps\Analytics\RCG\analytics3.dmp.map",
@@ -2403,8 +2405,8 @@ namespace UnitTestMdr
                 @"D:\Jerzy\WinDbgStuff\dumps\TestApp.exe_180108_083751.dmp.map",
                 // 0x00000002bd04b0 System.Collections.Concurrent.ConcurrentDictionary<System.ValueTuple<System.String,System.String>,System.ValueTuple<System.Int32,System.String,System.ValueTuple<System.Int32,System.String>>>
             };
-            var index = OpenIndex(paths[2]);
-            ulong addr = 0x00000002bd04b0;
+            var index = OpenIndex(paths[0]);
+            ulong addr = 0x0000e38c28e740;
             using (index)
             {
                 var heap = index.Heap;

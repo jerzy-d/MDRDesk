@@ -566,25 +566,34 @@ namespace ClrMDRIndex
                         string key = Constants.NullValue;
                         string val = Constants.NullValue;
 
-                        ulong keyAddr = TypeExtractor.IsObjectReference(nodeFldKinds[m_keyNdx])
-                                            ? (ulong)nodeType.Fields[m_keyNdx].GetValue(node,false,false)
-                                            : nodeType.Fields[m_keyNdx].GetAddress(node);
-                        if (TypeExtractor.IsUnknownStruct(nodeFldKinds[m_keyNdx]))
+                        if (TypeExtractor.IsPrimitive(nodeFldKinds[m_keyNdx]))
                         {
-                            if (sfxKey == null)
-                            {
-                                var kAddr = nodeType.Fields[m_keyNdx].GetAddress(node,true);
-                                var kType = heap.GetObjectType(kAddr);
-                                StructFields sf = StructFields.GetStructFields(nodeFldTypes[m_keyNdx]);
-                                sfxKey = StructFieldsEx.GetStructFields(sf, nodeFldTypes[m_keyNdx]);
-                                sfxKey.ResetTypes();
-                            }
-                            var structVal = StructFieldsEx.GetStructValueStrings(sfxKey, heap, keyAddr);
-                            key = StructValueStrings.MergeValues(structVal);
+                            var o = nodeType.Fields[m_keyNdx].GetValue(node, false, false);
+                            key = ValueExtractor.GetPrimitiveValue(o, nodeType.Fields[m_keyNdx].Type);
                         }
                         else
                         {
-                            key = ValueExtractor.GetTypeValueString(heap, keyAddr, nodeFldTypes[m_keyNdx], false, nodeFldKinds[m_keyNdx]);
+                            ulong keyAddr = TypeExtractor.IsObjectReference(nodeFldKinds[m_keyNdx])
+                                                ? (ulong)nodeType.Fields[m_keyNdx].GetValue(node, false, false)
+                                                : nodeType.Fields[m_keyNdx].GetAddress(node);
+                            if (TypeExtractor.IsUnknownStruct(nodeFldKinds[m_keyNdx]))
+                            {
+                                if (sfxKey == null)
+                                {
+                                    var kAddr = nodeType.Fields[m_keyNdx].GetAddress(node, true);
+                                    var kType = heap.GetObjectType(kAddr);
+                                    StructFields sf = StructFields.GetStructFields(nodeFldTypes[m_keyNdx]);
+                                    sfxKey = StructFieldsEx.GetStructFields(sf, nodeFldTypes[m_keyNdx]);
+                                    sfxKey.ResetTypes();
+                                }
+                                var structVal = StructFieldsEx.GetStructValueStrings(sfxKey, heap, keyAddr);
+                                key = StructValueStrings.MergeValues(structVal);
+                            }
+                            else
+                            {
+                                key = ValueExtractor.GetTypeValueString(heap, keyAddr, nodeFldTypes[m_keyNdx], false, nodeFldKinds[m_keyNdx]);
+                            }
+
                         }
                         ulong valAddr = TypeExtractor.IsObjectReference(nodeFldKinds[m_valueNdx])
                                             ? (ulong)nodeType.Fields[m_valueNdx].GetValue(node, false, false)
