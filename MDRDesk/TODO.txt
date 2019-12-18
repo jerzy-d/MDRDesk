@@ -146,4 +146,16 @@
 0055 11/01/18  D:\Jerzy\WinDbgStuff\dumps\Analytics\Viking\Analytics7.dmp.map
 				ECS.Cache.Transport.Caches.DatafeedStaticData -- 0x0000e20e3849a8
 				<FieldValue>k__BackingField    0    System.Decimal -- VALUE IS WRONG !!!
-				
+0056 05/07/19	here is the address of a value holder 0x00001b127d3c60 
+				D:\Jerzy\WinDbgStuff\dumps\Lou\Analytics2dump_05012019.dmp.map
+				ECS.Common.HierarchyCache.MarketData.MarketDataRepository : 0x00001c09ae5348
+				subscriptionBasedPricingEntitlementProfile    
+				0x00001c09ae5620    
+				ECS.Common.Threading.Queue.Util.ReaderWriterLockedDictionary<System.Int32,ECS.Common.Threading.Queue.Util.ReaderWriterLockedDictionary<System.String,ECS.Common.Threading.Queue.Util.ReaderWriterLockedDictionaryCachedKeys<ECS.Common.HierarchyCache.MarketData.IValueHolder>>>
+				data
+				0x00001c09ae5680
+				System.Collections.Generic.Dictionary<System.Int32,ECS.Common.Threading.Queue.Util.ReaderWriterLockedDictionary<System.String,ECS.Common.Threading.Queue.Util.ReaderWriterLockedDictionaryCachedKeys<ECS.Common.HierarchyCache.MarketData.IValueHolder>>>
+				0x00001c0d2dae80
+				data
+				0x00001c0d2daee0
+				System.Collections.Generic.Dictionary<System.String,ECS.Common.Threading.Queue.Util.ReaderWriterLockedDictionaryCachedKeys<ECS.Common.HierarchyCache.MarketData.IValueHolder>>

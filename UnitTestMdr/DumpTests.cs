@@ -3036,7 +3036,17 @@ namespace UnitTestMdr
             }
         }
 
+        [TestMethod]
+        public void GetDecimalValue()
+        {
+           var flags = (int)131072;
+           var hi = (int)0;
+           var lo = (int)102692;
+           var mid = (int)0;
 
+           int[] bits = { lo, mid, hi, flags };
+           decimal d = new decimal(bits);
+        }
 
         #endregion Types
 
