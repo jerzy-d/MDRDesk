@@ -488,7 +488,7 @@ public:
 			boffs[addr_cnt] = off;
 
 			hOffs = CreateFile(path_bwd_offs, GENERIC_WRITE, 0, NULL, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL);
-			if (!is_valid_handle(hOffs)) { return false; }
+			if (!is_valid_handle(hOffs)) { return nullptr; }
 			bool ok = dump_tofile(hOffs, boffs, (addr_cnt + 1) * sizeof(uint64_t));
 			CloseHandle(hOffs);
 			return ok ? boffs : nullptr;
