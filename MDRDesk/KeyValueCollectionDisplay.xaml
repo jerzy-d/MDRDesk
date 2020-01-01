@@ -42,8 +42,12 @@
         <ListView x:Name="KeyValuePairs" Grid.Row="2" Margin="2,2,2,2" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" FontFamily="Consolas" FontSize="11" ContextMenu="{StaticResource KeyValueContextMenu}"  MouseDoubleClick="KeyValueDoubleClicked">
             <ListView.View>
                 <GridView>
-                    <GridViewColumn Header="Key" Width="200" DisplayMemberBinding="{Binding Key}" />
-                    <GridViewColumn Header="Value" Width="200" DisplayMemberBinding="{Binding Value}" />
+                    <GridViewColumn Width="200" DisplayMemberBinding="{Binding Key}" >
+                        <GridViewColumnHeader Tag="Key" Click="lvHeaderClicked">Key</GridViewColumnHeader>
+                    </GridViewColumn>
+                    <GridViewColumn Width="200" DisplayMemberBinding="{Binding Value}" >
+                        <GridViewColumnHeader Tag="Value" Click="lvHeaderClicked">Value</GridViewColumnHeader>
+                    </GridViewColumn>
                 </GridView>
             </ListView.View>
         </ListView>

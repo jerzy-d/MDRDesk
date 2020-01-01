@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace ClrMDRIndex
 {
-    public struct DisplayableString
+    public struct DisplayableString : IComparable
     {
         private const int MaxLength = 40;
         private readonly string _content;
@@ -62,6 +62,11 @@ namespace ClrMDRIndex
             }
             else
                 return ReplaceNewlines(_content);
+        }
+
+        public int CompareTo(object other)
+        {
+            return string.CompareOrdinal(this.FullContent, ((DisplayableString)other).FullContent);
         }
     }
 
